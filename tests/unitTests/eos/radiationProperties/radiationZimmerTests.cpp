@@ -75,4 +75,10 @@ INSTANTIATE_TEST_SUITE_P(RadationZimmerTests, ZimmerTestFixture,
                                                                 .conservedValues = {0.5, NAN, NAN, NAN, NAN, 0.0015, 0.0005, 0.0035, 0.0045},  //!< The Density Yi values live here
                                                                 .temperatureIn = 1200.0,
                                                                 .densityIn = 1.1,
-                                                                .expectedAbsorptivity = 0.2480760899}));
+                                                                .expectedAbsorptivity = 0.2480760899},
+                                         (ZimmerTestParameters){.fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
+                                                                           ablate::domain::Field{.name = "densityYi", .numberComponents = 4, .components = {"H2O", "co2", "ch4", "co"}, .offset = 5}},
+                                                                .conservedValues = {0.00, NAN, NAN, NAN, NAN, 0.0, 0.0, 0.0, 0.0},  //!< The Density Yi values live here
+                                                                .temperatureIn = 300.0,
+                                                                .densityIn = 0.00,
+                                                                .expectedAbsorptivity = 0.0}));

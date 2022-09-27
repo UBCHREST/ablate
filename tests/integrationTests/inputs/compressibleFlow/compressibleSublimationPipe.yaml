@@ -195,5 +195,7 @@ solvers:
         eos: *eos
         pgs: *pgs
         massFractions: *massFractions
-
+    monitors:
+      # a monitor is needed to write to a hdf5
+      - !ablate::monitors::BoundarySolverMonitor
 

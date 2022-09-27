@@ -34,5 +34,9 @@ void ablate::monitors::FieldMonitor::Register(std::string id, std::shared_ptr<so
     PetscObjectSetName((PetscObject)monitorSubDomain->GetSolutionVector(), "monitor") >> checkError;
 }
 
-void ablate::monitors::FieldMonitor::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) { monitorSubDomain->Save(viewer, sequenceNumber, time); }
+void ablate::monitors::FieldMonitor::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBeginUser;
+    monitorSubDomain->Save(viewer, sequenceNumber, time);
+    PetscFunctionReturnVoid();
+}
 void ablate::monitors::FieldMonitor::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) { monitorSubDomain->Restore(viewer, sequenceNumber, time); }

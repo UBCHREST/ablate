@@ -1,0 +1,1645 @@
+<?xml version="1.0" ?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf>
+  <Domain Name="domain">
+    <Grid CollectionType="Temporal" GridType="Collection" Name="TimeSeries">
+      <Time TimeType="List">
+        <DataItem Dimensions="51" Format="XML" NumberType="Float">
+          0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50
+        </DataItem>
+      </Time>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              3 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              3 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              4 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              4 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              5 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              5 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              6 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              6 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              7 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              7 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              8 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              8 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              9 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              9 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              10 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              10 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              11 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              11 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              12 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              12 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              13 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              13 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              14 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              14 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              15 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              15 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              16 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              16 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              17 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              17 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              18 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              18 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              19 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              19 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              20 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              20 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              21 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              21 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              22 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              22 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              23 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              23 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              24 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              24 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              25 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              25 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              26 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              26 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              27 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              27 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              28 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              28 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              29 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              29 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              30 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              30 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              31 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              31 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              32 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              32 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              33 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              33 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              34 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              34 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              35 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              35 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              36 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              36 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              37 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              37 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              38 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              38 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              39 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              39 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              40 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              40 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              41 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              41 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              42 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              42 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              43 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              43 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              44 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              44 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              45 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              45 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              46 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              46 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              47 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              47 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              48 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              48 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              49 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              49 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NodesPerElement="2" NumberOfElements="52" TopologyType="Polyline">
+          <DataItem Dimensions="52 2" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            bottomBoundary_monitor.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="52 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            bottomBoundary_monitor.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_heatFlux" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              50 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_heatFlux
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="bottomBoundary_monitor_regRate" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              50 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="51 52 1" Format="HDF" Precision="8">
+              bottomBoundary_monitor.hdf5:/cell_fields/bottomBoundary_monitor_regRate
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+    </Grid>
+  </Domain>
+</Xdmf>

@@ -14,4 +14,5 @@ target_sources(ablateLibrary
         boundaryFunction.hpp
         cellSolver.hpp
         range.hpp
+        dynamicRange.hpp
         )

@@ -54,7 +54,7 @@ TEST_P(SublimationTestFixture, ShouldComputeCorrectSourceTerm) {
     auto boundary = std::make_shared<ablate::boundarySolver::physics::Sublimation>(params.latentHeatOfFusion, transportModel, eos, params.speciesMassFractions, params.additionalHeatTransfer);
 
     // initialization is not needed for testing if species are not set
-    boundary->Initialize(params.numberSpecies);
+    boundary->Setup(params.numberSpecies);
 
     PetscInt uOff[1] = {0};
     PetscInt aOff[1] = {0};

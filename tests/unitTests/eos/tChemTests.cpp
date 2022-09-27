@@ -40,7 +40,7 @@ static void FillDensityMassFraction(const ablate::domain::Field& densityYiField,
 struct TChemCreateAndViewParameters {
     std::filesystem::path mechFile;
     std::filesystem::path thermoFile;
-    std::string expectedView;
+    std::string expectedViewStart;
 };
 
 class TChemCreateAndViewFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemCreateAndViewParameters> {};
@@ -56,15 +56,19 @@ TEST_P(TChemCreateAndViewFixture, ShouldCreateAndView) {
 
     // assert the output is as expected
     auto outputString = outputStream.str();
-    ASSERT_EQ(outputString, GetParam().expectedView);
+
+    // only check the start because the kokkos details may change on each machine
+    bool startsWith = outputString.rfind(GetParam().expectedViewStart, 0) == 0;
+
+    ASSERT_TRUE(startsWith) << "Should start with expected string. ";
 }
 
 INSTANTIATE_TEST_SUITE_P(
     TChemTests, TChemCreateAndViewFixture,
     testing::Values((TChemCreateAndViewParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                    .thermoFile = "inputs/eos/thermo30.dat",
-                                                   .expectedView = "EOS: TChem\n\tmechFile: \"inputs/eos/grimech30.dat\"\n\tthermoFile: \"inputs/eos/thermo30.dat\"\n\tnumberSpecies: 53\n"},
-                    (TChemCreateAndViewParameters){.mechFile = "inputs/eos/gri30.yaml", .expectedView = "EOS: TChem\n\tmechFile: \"inputs/eos/gri30.yaml\"\n\tnumberSpecies: 53\n"}),
+                                                   .expectedViewStart = "EOS: TChem\n\tmechFile: \"inputs/eos/grimech30.dat\"\n\tthermoFile: \"inputs/eos/thermo30.dat\"\n\tnumberSpecies: 53\n"},
+                    (TChemCreateAndViewParameters){.mechFile = "inputs/eos/gri30.yaml", .expectedViewStart = "EOS: TChem\n\tmechFile: \"inputs/eos/gri30.yaml\"\n\tnumberSpecies: 53\n"}),
     [](const testing::TestParamInfo<TChemCreateAndViewParameters>& info) {
         return testingResources::PetscTestFixture::SanitizeTestName(info.param.mechFile.string() + "_" + info.param.thermoFile.string());
     });
