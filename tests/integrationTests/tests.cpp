@@ -172,7 +172,7 @@ INSTANTIATE_TEST_SUITE_P(Monitors, IntegrationTestsSpecifier,
                                          (MpiTestParameter){.testName = "inputs/monitors/turbFlowStatsMonitor.yaml",
                                                             .nproc = 1,
                                                             .arguments = "",
-                                                            .expectedFiles{{"outputs/monitors/turbFlowStatsMonitor/TurbFlowStats.xmf", "TurbFlowStats.xmf"},
+                                                            .expectedFiles{{"outputs/monitors/turbFlowStatsMonitor/flowField_turbulenceFlowStats.xmf", "flowField_turbulenceFlowStats.xmf"},
                                                                            {"outputs/monitors/turbFlowStatsMonitor/domain.xmf", "domain.xmf"}}}),
                          [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
