@@ -98,6 +98,11 @@ class RunEnvironment {
 
     static inline char*** GetArgs() { return GlobalArgs; }
 
+    /**
+     * Return the current version as a string_view to standardize access to the version
+     */
+    static std::string_view GetVersion();
+
    private:
     inline static std::unique_ptr<RunEnvironment> runEnvironment = std::unique_ptr<RunEnvironment>();
 };
