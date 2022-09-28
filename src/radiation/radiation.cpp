@@ -602,9 +602,9 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         }
     }
 
-    // TODO: In a second loop, get carrier particles and set their values equal to the values of the carriers of the access identifiers
-    // TODO: This avoids solving any redundant rays, and also avoids changing the logic too much.
-    // TODO: Here we actually want to iterate through all of the particles.
+    // In a second loop, get carrier particles and set their values equal to the values of the carriers of the access identifiers
+    // This avoids solving any redundant rays, and also avoids changing the logic too much.
+    // Here we actually want to iterate through all particles.
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         carrier[ipart].Ij = rays[Key(&access[ipart])].Ij;
         carrier[ipart].Krad = rays[Key(&access[ipart])].Krad;
