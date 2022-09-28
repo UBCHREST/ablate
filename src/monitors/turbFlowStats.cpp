@@ -151,10 +151,10 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
 
 void ablate::monitors::TurbFlowStats::Register(std::shared_ptr<ablate::solver::Solver> solverIn) {
     // Create the monitor name
-    std::string dmID = "TurbFlowStats";
+    std::string dmID = solverIn->GetSolverId() + "_turbulenceFlowStats";
 
     // Create suffix vector
-    std::vector<std::string> suffix{"_rhoMult", "_rhoDtMult", "_rhoSqr", "_sum", "_sumSqr", "_favreAvg", "_rms", "_mRms"};
+    std::vector<std::string> suffix{"rhoMult", "rhoDtMult", "rhoSqr", "sum", "sumSqr", "favreAvg", "rms", "mRms"};
 
     // Create vectors of names for all components of all fields
     std::vector<std::vector<std::string>> processedCompNames;
@@ -163,7 +163,7 @@ void ablate::monitors::TurbFlowStats::Register(std::shared_ptr<ablate::solver::S
         std::vector<std::string> innerCompNames(SectionLabels::END * field.numberComponents);
         for (PetscInt c = 0; c < field.numberComponents; c++) {
             for (std::size_t p = 0; p < suffix.size(); p++) {
-                innerCompNames[SectionLabels::END * c + p] = field.name + (field.numberComponents ? "_" + field.components[c] : "") + suffix[p];
+                innerCompNames[SectionLabels::END * c + p] = (field.numberComponents > 1 ? field.components[c] + "_" : "") + suffix[p];
             }
         }
         processedCompNames.push_back(innerCompNames);
