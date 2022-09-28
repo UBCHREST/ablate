@@ -348,8 +348,9 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                  * Hash the identifier into a key value that can be used in the map
                  * We should only iterate the identifier of the search particle (/ add a solver particle) if the point is valid in the domain and is being used
                  * */
-                if (presence.count(Key(&identifier[ipart])) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
-                    identifier[ipart].nsegment++;             //!< The particle has passed through another domain!
+                if (presence.count(Key(&identifier[ipart])) ==
+                    0) {                           //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
+                    identifier[ipart].nsegment++;  //!< The particle has passed through another domain!
                     presence[Key(&identifier[ipart])] = true;
                     DMSwarmAddPoint(radsolve) >> checkError;  //!< Another solve particle is added here because the search particle has entered a new domain
 
@@ -372,16 +373,29 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                     // All inputs of information will come from the ray segment of the access identifier
                     carrier[newpoint].Krad = 1;  //!< The new particle gets an empty carrier because it is holding no information yet (Krad must be initialized to 1 here: everything is init 0)
 
+                    /** Send the search particle to the end of the ray that it has picked up. This will speed up the process of stepping the particle out of the domain as much as possible.
+                     * When the search particle finds a ray segment to draw from in the new domain, it will need to travel to the location of the last cell in this segment.
+                     * The segment will likely not be complete yet, so the search particle will need to step without picking up cells until it reaches the end of this partition and reaches a new
+                     * partition The particle should exit the domain in this fashion, leaving a carrier particle with access to the other local ray segment, and no unique segment to be identified to
+                     * it. The carrier particle will have an identifier to control its travel, and an identifier to control where it draws information from. These identifiers in effect point to the
+                     * same ray.
+                     * If the particle is native to this domain, then we don't want to mess with it at all because it's at the beginning of building a ray.
+                     */
+                    if (access[newpoint].origin != identifier[ipart].origin) {
+                        PetscReal centroid[3];
+                        PetscInt numPoints = static_cast<int>(rays[Key(&access[newpoint])].cells.size());
+                        DMPlexComputeCellGeometryFVM(subDomain.GetDM(), rays[Key(&access[newpoint])].cells[numPoints - 1], nullptr, centroid, nullptr) >>
+                            checkError;                                                                        //!< Get the cell center of the last cell in the ray segment
+                        virtualcoord[ipart].x = centroid[0] + (virtualcoord[ipart].xdir * 2 * minCellRadius);  //!< Offset from the centroid slightly so they sit in a cell if they are on its face.
+                        virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 2 * minCellRadius);
+                        virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 2 * minCellRadius);
+                    }
+
                     DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&solveidentifier) >> checkError;  //!< The fields must be returned so that the swarm can be updated correctly?
                     DMSwarmRestoreField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
                     DMSwarmRestoreField(radsolve, "access", nullptr, nullptr, (void**)&access) >> checkError;
                 }
 
-                /** When the search particle finds a ray segment to draw from in the new domain, it will need to travel to the location of the last cell in this segment.
-                 * The segment will likely not be complete yet, so the search particle will need to step without picking up cells until it reaches the end of this partition and reaches a new partition
-                 * The particle should exit the domain in this fashion, leaving a carrier particle with access to the other local ray segment, and no unique segment to be identified to it.
-                 * The carrier particle will have an identifier to control its travel, and an identifier to control where it draws information from. These identifiers in effect point to the same ray.
-                 */
                 /** ********************************************
                  * The face stepping routine will give the precise path length of the mesh without any error. It will also allow the faces of the cells to be accounted for so that the
                  * boundary conditions and the conditions at reflection can be accounted for. This will make the entire initialization much faster by only requiring a single step through each
@@ -666,7 +680,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                  * We will need to sort the rays in order of domain segment. We need to start at the end of the ray and go towards the beginning of the ray. */
                 Identifier loopid = {.origin = rank, .iCell = iCell, .ntheta = ntheta, .nphi = nphi, .nsegment = 1};  //!< Instantiate an identifier associated with this loop location.
 
-                /** Get the maximum nsegment by looping through all of the particles and searching for it. (This is dumb and slow but easy to think of)*/
+                /** Get the maximum nsegment by looping through all of the particles and searching for it.*/
                 bool pointfound = true;
                 PetscInt oldsegment = loopid.nsegment;
                 while (pointfound) {
@@ -918,8 +932,8 @@ PetscReal ablate::radiation::Radiation::ReallySolveParallelPlates(PetscReal z) {
      * */
     PetscReal G;
     PetscReal kappa = 1;                                                                // Kappa is not spatially dependant in this special case
-    PetscReal zBottom = 5;                                                              //-0.01;                                             // Prescribe the top and bottom heights for the domain
-    PetscReal zTop = 10;                                                                // 0.01;
+    PetscReal zBottom = -0.01;                                                          //-0.01;                                             // Prescribe the top and bottom heights for the domain
+    PetscReal zTop = 0.01;                                                              // 0.01;
     PetscReal IT = ablate::radiation::Radiation::FlameIntensity(1, Temperature(zTop));  // Intensity of rays originating from the top plate
     PetscReal IB =
         ablate::radiation::Radiation::FlameIntensity(1, Temperature(zBottom));  // Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
@@ -928,7 +942,7 @@ PetscReal ablate::radiation::Radiation::ReallySolveParallelPlates(PetscReal z) {
     PetscReal Ibz;
 
     PetscReal pi = 3.1415926535897932384626433832795028841971693993;
-    const PetscReal sbc = 5.6696e-8;
+    //    const PetscReal sbc = 5.6696e-8;
     PetscInt nZp = 5000;
 
     std::vector<PetscReal> Iplus;
@@ -971,15 +985,15 @@ PetscReal ablate::radiation::Radiation::ReallySolveParallelPlates(PetscReal z) {
     G = 2 * pi * (term1 + term2 + term3 + term4);
 
     /**Now compute the losses at the given input point (this is in order to match the output that is given by the ComputeRHSFunction)*/
-    if (z <= 0) {                      // Two parabolas, is the z coordinate in one half of the domain or the other
-        temperature = Temperature(z);  // temperature = -6.349E6 * z * z + 2000.0;
-    } else {
-        temperature = Temperature(z);  // temperature = -1.179E7 * z * z + 2000.0;
-    }
-    PetscReal losses = 4 * sbc * temperature * temperature * temperature * temperature;
-    PetscReal radTotal = -kappa * (losses - G);
+    //    if (z <= 0) {                      // Two parabolas, is the z coordinate in one half of the domain or the other
+    //        temperature = Temperature(z);  // temperature = -6.349E6 * z * z + 2000.0;
+    //    } else {
+    //        temperature = Temperature(z);  // temperature = -1.179E7 * z * z + 2000.0;
+    //    }
+    //    PetscReal losses = 4 * sbc * temperature * temperature * temperature * temperature;
+    //    PetscReal radTotal = -kappa * (losses - G);
 
-    return radTotal;
+    return G;
 }
 
 #include "registrar.hpp"
