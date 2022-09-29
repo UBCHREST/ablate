@@ -24,7 +24,7 @@ class LevelSetField : public domain::FieldDescriptor {
 
     // Constructors
     LevelSetField(std::shared_ptr<domain::Region> = {});
-    LevelSetField(std::shared_ptr<RBF> rbf = {}, levelSetShape shape = LevelSetField::levelSetShape::SPHERE);
+    LevelSetField(std::shared_ptr<ablate::radialBasis::RBF> rbf = {}, levelSetShape shape = LevelSetField::levelSetShape::SPHERE);
 
     // Destructor
     ~LevelSetField();
@@ -73,7 +73,7 @@ class LevelSetField : public domain::FieldDescriptor {
     void Normal3D(PetscInt c, PetscReal *n);
 
     // The RBF to be used for derivatives
-    std::shared_ptr<RBF> rbf = nullptr;
+    std::shared_ptr<ablate::radialBasis::RBF> rbf = nullptr;
 
     // Possible initial shapes
     PetscReal Sphere(PetscReal pos[], PetscReal center[], PetscReal radius);

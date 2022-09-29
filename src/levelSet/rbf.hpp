@@ -8,14 +8,15 @@
 #include <petscdmplex.h>
 #include <petscksp.h>
 #include "domain/domain.hpp"
+#include "solver/solver.hpp"
 #include "lsSupport.hpp"
 
 
-namespace ablate::levelSet {
+namespace ablate::radialBasis {
 
-class RBF {
-
+class RBF : public ablate::solver::Solver {
   private:
+
     PetscInt  dim = -1;                 // Dimension of the DM
     PetscInt  p = -1;                   // The supplementary polynomial order
     PetscInt  nPoly = -1;               // The number of polynomial components to include
@@ -26,9 +27,6 @@ class RBF {
 
     // Compute the LU-decomposition of the augmented RBF matrix given a cell list.
     void Matrix(PetscInt c, PetscReal **x, Mat *LUA);
-
-
-
 
     // Derivative data
     PetscBool hasDerivativeInformation = PETSC_FALSE;
@@ -63,6 +61,8 @@ class RBF {
     // Desctructor
     ~RBF();
 
+    enum class RBFType { MQ, PHS, IMQ, GA };
+
     // Print all of the parameters.
     void ShowParameters();
 
@@ -81,10 +81,6 @@ class RBF {
     // Interpolation stuff
     void SetInterpolation(PetscBool hasInterpolation);
     PetscReal Interpolate(Vec f, PetscInt c, PetscReal x[3]);
-
-
-
-
 
 };
 
@@ -136,7 +132,11 @@ class GA: public RBF {
     PetscReal RBFDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) override {return InternalDer(std::move(x), std::move(dx), std::move(dy), std::move(dz)); }
 };
 
+std::istream& operator>>(std::istream& is, RBF::RBFType& v);
+
 }  // namespace ablate::levelSet
+
+
 
 #endif  // ABLATELIBRARY_RBF_HPP
 

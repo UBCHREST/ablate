@@ -2,10 +2,28 @@
 #include "utilities/petscError.hpp"
 #include "domain/subDomain.hpp"
 
-using namespace ablate::levelSet;
+
+static const std::map<std::string, ablate::radialBasis::RBF::RBFType> stringToRBFType = {{"", ablate::radialBasis::RBF::RBFType::MQ},
+                                                                                           {"phs", ablate::radialBasis::RBF::RBFType::PHS},
+                                                                                           {"PHS", ablate::radialBasis::RBF::RBFType::PHS},
+                                                                                           {"mq", ablate::radialBasis::RBF::RBFType::MQ},
+                                                                                           {"MQ", ablate::radialBasis::RBF::RBFType::MQ},
+                                                                                           {"imq", ablate::radialBasis::RBF::RBFType::IMQ},
+                                                                                           {"IMQ", ablate::radialBasis::RBF::RBFType::IMQ},
+                                                                                           {"ga", ablate::radialBasis::RBF::RBFType::GA},
+                                                                                           {"GA", ablate::radialBasis::RBF::RBFType::GA}};
+
+std::istream& ablate::radialBasis::operator>>(std::istream& is, ablate::radialBasis::RBF::RBFType& v) {
+    std::string enumString;
+    is >> enumString;
+    v = stringToRBFType.at(enumString);
+    return is;
+}
+
+
+using namespace ablate::radialBasis;
 
 /************ Begin Base Class **********************/
-
 // Setup for the RBF class
 RBF::RBF(DM dm, PetscInt p){
 
@@ -170,7 +188,7 @@ void RBF::Matrix(PetscInt c, PetscReal **xCenters, Mat *LUA) {
 
   // Create the matrix
   MatCreateSeqDense(PETSC_COMM_SELF, matSize, matSize, NULL, &A) >> ablate::checkError;
-  PetscObjectSetName((PetscObject)A,"ablate::levelSet::RBF::A") >> ablate::checkError;
+  PetscObjectSetName((PetscObject)A,"ablate::radialBasis::RBF::A") >> ablate::checkError;
   MatZeroEntries(A) >> ablate::checkError;
   MatSetOption(A, MAT_SYMMETRIC, PETSC_TRUE) >> ablate::checkError;
 
@@ -208,7 +226,7 @@ void RBF::Matrix(PetscInt c, PetscReal **xCenters, Mat *LUA) {
     }
   }
   MatDenseRestoreArrayWrite(A, &vals) >> ablate::checkError;
-  MatViewFromOptions(A,NULL,"-ablate::levelSet::RBF::A_view") >> ablate::checkError;
+  MatViewFromOptions(A,NULL,"-ablate::radialBasis::RBF::A_view") >> ablate::checkError;
 
   // Factor the matrix
   MatLUFactor(A, NULL, NULL, NULL) >> ablate::checkError;
@@ -252,7 +270,7 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
 
   //Create the RHS
   MatCreateSeqDense(PETSC_COMM_SELF, matSize, nDer, NULL, &B) >> ablate::checkError;
-  PetscObjectSetName((PetscObject)B,"ablate::levelSet::RBF::rhs") >> ablate::checkError;
+  PetscObjectSetName((PetscObject)B,"ablate::radialBasis::RBF::rhs") >> ablate::checkError;
   MatZeroEntries(B) >> ablate::checkError;
   MatDenseGetArrayWrite(B, &vals) >> ablate::checkError;
 
@@ -295,11 +313,11 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
 
   MatDenseRestoreArrayWrite(B, &vals) >> ablate::checkError;
 
-  MatViewFromOptions(B,NULL,"-ablate::levelSet::RBF::rhs_view") >> ablate::checkError;
+  MatViewFromOptions(B,NULL,"-ablate::radialBasis::RBF::rhs_view") >> ablate::checkError;
 
   MatMatSolve(A, B, B) >> ablate::checkError;
 
-  MatViewFromOptions(B,NULL,"-ablate::levelSet::RBF::sol_view") >> ablate::checkError;
+  MatViewFromOptions(B,NULL,"-ablate::radialBasis::RBF::sol_view") >> ablate::checkError;
 
   // Now populate the output
   PetscMalloc1(nDer*nCells, &(RBF::stencilWeights[c])) >> ablate::checkError;
@@ -410,8 +428,52 @@ PetscReal RBF::EvalDer(Vec f, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz)
   VecRestoreArray(f, &array) >> ablate::checkError;
 
   return val;
-
 }
+
+
+
+
+//// Return the requested derivative
+//// f - Vector containing the data
+//// c - Location to evaluate at
+//// dx, dy, dz - The derivatives
+//PetscReal RBF::EvalDer(ablate::domain::Field field, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz){
+
+//This should change the Vec to a FieldID. Then use DMPlexPointGlobalFieldRef/Read to get the values
+
+
+//  PetscInt  derID = -1, nDer = RBF::nDer, *dxyz = RBF::dxyz;
+//  PetscReal val = 0.0, *array;
+
+//  // Search for the particular index. Probably need to do something different in the future to avoid re-doing the same calculation many times
+//  while ((dxyz[++derID*3 + 0] != dx || dxyz[derID*3 + 1] != dy || dxyz[derID*3 + 2] != dz) && derID<nDer){ }
+
+//  if (derID==nDer) {
+//    throw std::invalid_argument("Derivative of (" + std::to_string(dx) + ", " + std::to_string(dy) + ", " + std::to_string(dz) + ") is not setup.");
+//  }
+
+//  // If the stencil hasn't been setup yet do so
+//  if (RBF::nStencil[c] < 1) {
+//    RBF::SetupDerivativeStencils(c);
+//  }
+
+//  PetscReal *wt = RBF::stencilWeights[c];
+//  PetscInt  cStart = RBF::cStart, nStencil = RBF::nStencil[c], *lst = RBF::stencilList[c];
+
+//  VecGetArray(f, &array) >> ablate::checkError;
+
+
+//  for (PetscInt i = 0; i < nStencil; ++i) {
+//    val += wt[i*nDer + derID]*array[lst[i] - cStart];
+//  }
+
+//  VecRestoreArray(f, &array) >> ablate::checkError;
+
+//  return val;
+
+//}
+
+
 /************ End Derivative Code **********************/
 
 

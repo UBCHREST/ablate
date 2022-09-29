@@ -7,7 +7,7 @@ void LevelSetField::Normal2D(PetscInt c, PetscScalar *n) {
 
   PetscReal             cx, cy, g;
   Vec                   phi = LevelSetField::phi;
-  std::shared_ptr<RBF>  rbf = LevelSetField::rbf;
+  std::shared_ptr<ablate::radialBasis::RBF>  rbf = LevelSetField::rbf;
 
   cx = rbf->EvalDer(phi, c, 1, 0, 0);
   cy = rbf->EvalDer(phi, c, 0, 1, 0);
@@ -23,7 +23,7 @@ void LevelSetField::Normal3D(PetscInt c, PetscReal *n) {
 
   PetscReal             cx, cy, cz, g;
   Vec                   phi = LevelSetField::phi;
-  std::shared_ptr<RBF>  rbf = LevelSetField::rbf;
+  std::shared_ptr<ablate::radialBasis::RBF>  rbf = LevelSetField::rbf;
 
   cx = rbf->EvalDer(phi, c, 1, 0, 0);
   cy = rbf->EvalDer(phi, c, 0, 1, 0);
@@ -40,7 +40,7 @@ PetscReal LevelSetField::Curvature2D(PetscInt c) {
   PetscReal             k = 0.0;
   PetscReal             cx, cy, cxx, cyy, cxy;
   Vec                   phi = LevelSetField::phi;
-  std::shared_ptr<RBF>  rbf = LevelSetField::rbf;
+  std::shared_ptr<ablate::radialBasis::RBF>  rbf = LevelSetField::rbf;
 
   cx = rbf->EvalDer(phi, c, 1, 0, 0);
   cy = rbf->EvalDer(phi, c, 0, 1, 0);
@@ -60,7 +60,7 @@ PetscReal LevelSetField::Curvature3D(PetscInt c) {
   PetscReal             cxx, cyy, czz;
   PetscReal             cxy, cxz, cyz;
   Vec                   phi = LevelSetField::phi;
-  std::shared_ptr<RBF>  rbf = LevelSetField::rbf;
+  std::shared_ptr<ablate::radialBasis::RBF>  rbf = LevelSetField::rbf;
 
   cx = rbf->EvalDer(phi, c, 1, 0, 0);
   cy = rbf->EvalDer(phi, c, 0, 1, 0);
@@ -102,7 +102,7 @@ LevelSetField::LevelSetField(std::shared_ptr<domain::Region> region) : region(re
 
 
 
-LevelSetField::LevelSetField(std::shared_ptr<RBF> rbf, LevelSetField::levelSetShape shape) {
+LevelSetField::LevelSetField(std::shared_ptr<ablate::radialBasis::RBF> rbf, LevelSetField::levelSetShape shape) {
 
   LevelSetField::rbf = rbf;
   LevelSetField::dm = rbf->GetDM();
@@ -242,7 +242,7 @@ std::vector<std::shared_ptr<ablate::domain::FieldDescription>> LevelSetField::Ge
 }
 
 PetscReal LevelSetField::Interpolate(PetscScalar xyz[3]) {
-  std::shared_ptr<RBF>  rbf = LevelSetField::rbf;
+  std::shared_ptr<ablate::radialBasis::RBF>  rbf = LevelSetField::rbf;
   DMInterpolationInfo   ctx;
   DM                    dm = rbf->GetDM();
   PetscInt              c = -1;
