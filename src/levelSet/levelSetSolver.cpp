@@ -6,13 +6,6 @@
 using namespace ablate::levelSet;
 
 
-template <typename Enumeration>
-constexpr auto as_integer(Enumeration const value)
-    -> typename std::underlying_type<Enumeration>::type
-{
-    static_assert(std::is_enum<Enumeration>::value, "parameter is not of type enum or enum class");
-    return static_cast<typename std::underlying_type<Enumeration>::type>(value);
-}
 
 //ablate::levelSet::LevelSetSolver::LevelSetSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options)
 //    : Solver(std::move(solverId), std::move(region), std::move(options)) {}
@@ -63,6 +56,10 @@ void LevelSetSolver::Setup() {
     throw std::runtime_error("ablate::levelSet::LevelSetSolver has not been tested with externally defined RBFs. In particular the derivatives required are set via SetDerivatives rather than a RBF setup function. This needs to be adjusted in the future.");
   }
 
+
+
+printf("All Done!\n");
+PetscFinalize();
 
   // Save the dimension
   LevelSetSolver::dim = subDomain->GetDimensions();

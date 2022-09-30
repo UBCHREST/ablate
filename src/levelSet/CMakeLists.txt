@@ -6,6 +6,8 @@ target_sources(ablateLibrary
         levelSetField.cpp
         rbf.hpp
         rbf.cpp
+        rbfV2.hpp
+        rbfV2.cpp
         levelSetSolver.hpp
         levelSetSolver.cpp
         )

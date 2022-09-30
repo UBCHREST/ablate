@@ -15,7 +15,7 @@
 namespace ablate::levelSet {
 
 
-class LevelSetSolver  : public ablate::solver::Solver {
+class LevelSetSolver : public ablate::solver::Solver {
   private:
 //    const ablate::RBF::RBFType rbfType = ablate::RBF::RBFType::MQ;
 

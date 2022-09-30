@@ -8,14 +8,16 @@
 #include <petscdmplex.h>
 #include <petscksp.h>
 #include "domain/domain.hpp"
-#include "solver/solver.hpp"
+#include "domain/subDomain.hpp"
 #include "lsSupport.hpp"
 
 
 namespace ablate::radialBasis {
 
-class RBF : public ablate::solver::Solver {
+class RBF {
   private:
+
+//    ablate::domain::SubDomain subDomain;
 
     PetscInt  dim = -1;                 // Dimension of the DM
     PetscInt  p = -1;                   // The supplementary polynomial order
@@ -134,7 +136,7 @@ class GA: public RBF {
 
 std::istream& operator>>(std::istream& is, RBF::RBFType& v);
 
-}  // namespace ablate::levelSet
+}  // namespace ablate::radialBasis
 
 
 

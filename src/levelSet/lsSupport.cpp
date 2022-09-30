@@ -1,6 +1,8 @@
 #include "lsSupport.hpp"
 #include <petsc/private/vecimpl.h>
 
+
+
 // Return all cells which share an vertex or edge/face with a center cell
 // dm - The mesh
 // p - The cell to use
