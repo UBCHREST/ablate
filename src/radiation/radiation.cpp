@@ -340,7 +340,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
              * */
 
             /** Check that the particle is in a valid region */
-            if ((nFound > -1 && cell[ip].index >= 0 && subDomain.InRegion(cell[ip].index)) || stepcount == 0) {
+            if ((nFound > -1 && cell[ip].index >= 0 && subDomain.InRegion(cell[ip].index)) || (stepcount == 0 && !surface)) {
                 index = (stepcount == 0 && !surface) ? identifier[ipart].iCell
                                                      : cell[ip].index;  //!< If this is a surface implementation, then the search particle should never actually enter the boundary cell
 
