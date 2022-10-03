@@ -643,8 +643,9 @@ PetscReal ablate::radiation::Radiation::FaceIntersect(PetscInt ip, Virtualcoord*
     }
 }
 
-// TODO: Get loss cell here
-// index = iCell;
+PetscInt ablate::radiation::Radiation::GetLossCell() {
+  return iCell;
+}
 
 PetscReal ablate::radiation::Radiation::SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscFVFaceGeom* faceGeom, PetscInt iCell, PetscInt nphi, PetscInt ntheta) { return 1.0; }
 
