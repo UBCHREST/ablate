@@ -31,7 +31,7 @@ class VolumeRadiation : public Radiation, public solver::CellSolver, public solv
      * @param options other options
      */
     VolumeRadiation(const std::string& solverId1, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
-                    std::shared_ptr<io::interval::Interval> interval, const std::shared_ptr<parameters::Parameters>& options1,
+                    std::shared_ptr<io::interval::Interval> interval, bool raySharing, const std::shared_ptr<parameters::Parameters>& options1,
                     std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<monitors::logs::Log> unnamed1);
 
     ~VolumeRadiation();

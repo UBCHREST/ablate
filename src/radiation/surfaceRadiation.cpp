@@ -103,16 +103,19 @@ PetscReal ablate::radiation::SurfaceRadiation::SurfaceComponent(DM faceDM, const
     return ldotn;
 }
 
-// TODO: Get loss cell here
-// losses = 0.5; //!< Cut the losses in half if this is a surface implementation
-// PetscInt numberNeighborCells;
-// const PetscInt* neighborCells;
-//
-// DMPlexGetSupportSize(solDm, iCell, &numberNeighborCells) >> ablate::checkError;  //!< Get the cells on each side of this face to check for boundary cells
-// DMPlexGetSupport(solDm, iCell, &neighborCells) >> ablate::checkError;
-// for (PetscInt n = 0; n < numberNeighborCells; n++) {
-//     PetscInt cell = neighborCells[n];  //!< Contains the cell indexes of the neighbor cells
-//     if (fieldBoundary->InRegion(fieldBoundary, solDm, cell)) {
-//         index = cell;
-//     }
-// }
+PetscInt ablate::radiation::SurfaceRadiation::GetLossCell(PetscInt iCell, PetscReal& losses, DM& solDm) {
+    losses = 0.5;  //!< Cut the losses in half if this is a surface implementation
+    PetscInt numberNeighborCells;
+    const PetscInt* neighborCells;
+    PetscInt index = -1;
+
+    DMPlexGetSupportSize(solDm, iCell, &numberNeighborCells) >> ablate::checkError;  //!< Get the cells on each side of this face to check for boundary cells
+    DMPlexGetSupport(solDm, iCell, &neighborCells) >> ablate::checkError;
+    for (PetscInt n = 0; n < numberNeighborCells; n++) {
+        PetscInt cell = neighborCells[n];  //!< Contains the cell indexes of the neighbor cells
+        if (fieldBoundary->InRegion(fieldBoundary, solDm, cell)) {
+            index = cell;
+        }
+    }
+    return index;
+}

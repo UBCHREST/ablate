@@ -25,7 +25,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
               std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> = {});
 
-    ~Radiation();
+    virtual ~Radiation();
 
     /** Carriers are attached to the solve particles and bring ray information from the local segments to the origin cells
      * They are transported directly from the segment to the origin. They carry only the values that the Segment computes and not the spatial information necessary to  */
@@ -58,7 +58,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     /**
      * @param cellRange The range of cells for which rays are initialized
      */
-    void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
+    virtual void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
     //    void Initialize1D(const solver::Range &cellRange);
     static PetscReal ReallySolveParallelPlates(PetscReal z);
@@ -77,9 +77,9 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     /// Class Methods
     void Solve(Vec solVec, ablate::domain::Field temperatureField, Vec aux);
 
-    void ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray);
-    PetscReal SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscFVFaceGeom* faceGeom, PetscInt iCell, PetscInt nphi, PetscInt ntheta); //!< Dummy function that doesn't do anything unless it is overridden by the surface implementation
-    PetscInt GetLossCell(PetscInt iCell);
+    virtual void ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray, PetscInt stepcount);
+    virtual PetscReal SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscFVFaceGeom* faceGeom, PetscInt iCell, PetscInt nphi, PetscInt ntheta); //!< Dummy function that doesn't do anything unless it is overridden by the surface implementation
+    virtual PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM& solDm);
     
     //    const std::map<PetscInt, Origin>& Solve1D(Vec solVec);
 
