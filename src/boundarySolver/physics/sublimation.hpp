@@ -42,7 +42,7 @@ class Sublimation : public BoundaryProcess {
     /**
      * the radiation solver for surface heat flux calculation
      */
-    std::shared_ptr<ablate::radiation::SurfaceRadiation> radiation;
+    std::shared_ptr<ablate::radiation::Radiation> radiation;
 
     /**
      * store the effectiveConductivity function
@@ -83,7 +83,7 @@ class Sublimation : public BoundaryProcess {
     explicit Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
                          const std::shared_ptr<ablate::mathFunctions::FieldFunction> & = {}, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {},
                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {}, bool diffusionFlame = false,
-                         std::shared_ptr<ablate::radiation::SurfaceRadiation> radiationIn = {}, std::shared_ptr<io::interval::Interval> intervalIn = {});
+                         std::shared_ptr<ablate::radiation::Radiation> radiationIn = {}, std::shared_ptr<io::interval::Interval> intervalIn = {});
 
     void Setup(ablate::boundarySolver::BoundarySolver &bSolver) override;
     void Initialize(ablate::boundarySolver::BoundarySolver &bSolver) override;

@@ -1,5 +1,19 @@
 #include "surfaceRadiation.hpp"
 
+ablate::radiation::SurfaceRadiation::SurfaceRadiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
+                                                            std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
+    : Radiation(solverId, region, fieldBoundary, raynumber, radiationModelIn, log) {
+    nTheta = raynumber;    //!< The number of angles to solve with, given by user input
+    nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
+}
+
+ablate::radiation::SurfaceRadiation::~SurfaceRadiation() {
+    if (radsolve) DMDestroy(&radsolve) >> checkError;  //!< Destroy the radiation particle swarm
+    VecDestroy(&faceGeomVec) >> checkError;
+    VecDestroy(&cellGeomVec) >> checkError;
+}
+
+
 void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) { /** Declare some information associated with the field declarations */
     PetscReal* coord;                                                                                                        //!< Pointer to the coordinate field information
     struct Virtualcoord* virtualcoord;                                                                                       //!< Pointer to the primary (virtual) coordinate field information
@@ -119,3 +133,9 @@ PetscInt ablate::radiation::SurfaceRadiation::GetLossCell(PetscInt iCell, PetscR
     }
     return index;
 }
+
+#include "registrar.hpp"
+REGISTER(ablate::radiation::Radiation, ablate::radiation::SurfaceRadiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
+                 ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(ablate::domain::Region, "fieldBoundary", "boundary of the radiation region"),
+                 ARG(int, "rays", "number of rays used by the solver"), ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"),
+                 OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

@@ -1,5 +1,18 @@
 #include "raySharingRadiation.hpp"
 
+ablate::radiation::RaySharingRadiation::RaySharingRadiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
+                                        std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
+    : Radiation(solverId, region, fieldBoundary, raynumber, radiationModelIn, log) {
+    nTheta = raynumber;    //!< The number of angles to solve with, given by user input
+    nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
+}
+
+ablate::radiation::RaySharingRadiation::~RaySharingRadiation() {
+    if (radsolve) DMDestroy(&radsolve) >> checkError;  //!< Destroy the radiation particle swarm
+    VecDestroy(&faceGeomVec) >> checkError;
+    VecDestroy(&cellGeomVec) >> checkError;
+}
+
 void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray, PetscInt stepcount) {
     PetscInt npoints = 0;
     PetscInt nglobalpoints = 0;
@@ -33,9 +46,8 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
     PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell) >> checkError;  //!< Using this to get the petsc int cell number from the struct (SF)
 
     for (PetscInt ip = 0; ip < npoints; ip++) {
-        ipart++;                                                                         //!< USE IP TO DEAL WITH DMLOCATE POINTS, USE IPART TO DEAL WITH PARTICLES
-        if (nFound > -1 && cell[ip].index >= 0 && subDomain.InRegion(cell[ip].index)) {  // TODO: How the carrier particles are created will depend on whether there is ray sharing or not. Make a
-                                                                                         // method for the creation of carrier particles. Add an override function in the ray sharing implementation.
+        ipart++;  //!< USE IP TO DEAL WITH DMLOCATE POINTS, USE IPART TO DEAL WITH PARTICLES
+        if (nFound > -1 && cell[ip].index >= 0 && subDomain.InRegion(cell[ip].index)) {
             index = cell[ip].index;  //!< If this is a surface implementation, then the search particle should never actually enter the boundary cell
 
             /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
@@ -142,3 +154,9 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
     DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
     DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 }
+
+#include "registrar.hpp"
+REGISTER(ablate::radiation::Radiation, ablate::radiation::RaySharingRadiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
+                 ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(ablate::domain::Region, "fieldBoundary", "boundary of the radiation region"),
+                 ARG(int, "rays", "number of rays used by the solver"), ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"),
+                 OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

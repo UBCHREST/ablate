@@ -11,7 +11,7 @@ using fp = ablate::finiteVolume::CompressibleFlowFields;
 ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
                                                           const std::shared_ptr<ablate::mathFunctions::FieldFunction> &massFractions, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux,
                                                           std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling, bool diffusionFlame,
-                                                          std::shared_ptr<ablate::radiation::SurfaceRadiation> radiationIn, std::shared_ptr<io::interval::Interval> intervalIn)
+                                                          std::shared_ptr<ablate::radiation::Radiation> radiationIn, std::shared_ptr<io::interval::Interval> intervalIn)
     : latentHeatOfFusion(latentHeatOfFusion),
       transportModel(std::move(transportModel)),
       eos(std::move(eos)),
@@ -386,5 +386,5 @@ REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::physic
          OPT(ablate::mathFunctions::MathFunction, "additionalHeatFlux", "additional normal heat flux into the solid function"),
          OPT(ablate::finiteVolume::processes::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"),
          OPT(bool, "diffusionFlame", "disables contribution to the momentum equation. Should be true when advection is not solved. (Default is false)"),
-         OPT(ablate::radiation::SurfaceRadiation, "radiation", "radiation instance for the sublimation solver to calculate heat flux"),
+         OPT(ablate::radiation::Radiation, "radiation", "radiation instance for the sublimation solver to calculate heat flux"),
          OPT(ablate::io::interval::Interval, "radiationInterval", "number of time steps between the radiation solves"));
