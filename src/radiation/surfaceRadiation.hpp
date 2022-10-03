@@ -9,7 +9,7 @@ namespace ablate::radiation {
 class SurfaceRadiation : public ablate::radiation::Radiation {
    public:
     SurfaceRadiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
-                        std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> = {});
+                     std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> = {});
     ~SurfaceRadiation();
 
     void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) override;

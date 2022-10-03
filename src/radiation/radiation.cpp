@@ -671,7 +671,7 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
         ipart++;  //!< USE IP TO DEAL WITH DMLOCATE POINTS, USE IPART TO DEAL WITH PARTICLES
                   /** Check that the particle is in a valid region */
         if (nFound > -1 && cell[ip].index >= 0 && subDomain.InRegion(cell[ip].index)) {
-            index = (stepcount == 0) ? identifier[ipart].iCell : cell[ip].index;
+            index = cell[ip].index;
 
             /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
              * Hash the identifier into a key value that can be used in the map

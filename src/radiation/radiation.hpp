@@ -78,9 +78,10 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     void Solve(Vec solVec, ablate::domain::Field temperatureField, Vec aux);
 
     virtual void ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray, PetscInt stepcount);
-    virtual PetscReal SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscFVFaceGeom* faceGeom, PetscInt iCell, PetscInt nphi, PetscInt ntheta); //!< Dummy function that doesn't do anything unless it is overridden by the surface implementation
+    virtual PetscReal SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscFVFaceGeom* faceGeom, PetscInt iCell, PetscInt nphi,
+                                       PetscInt ntheta);  //!< Dummy function that doesn't do anything unless it is overridden by the surface implementation
     virtual PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM& solDm);
-    
+
     //    const std::map<PetscInt, Origin>& Solve1D(Vec solVec);
 
    protected:
@@ -96,8 +97,8 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     struct Segment {
         std::vector<PetscInt> cells;  //!< Stores the cell indices of the segment locally.
         std::vector<PetscReal> h;     //!< Stores the space steps of the segment locally.
-        PetscReal Ij = 0;    //!< Black body source for the segment. Make sure that this is reset every solve after the value has been transported.
-        PetscReal Krad = 1;  //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
+        PetscReal Ij = 0;             //!< Black body source for the segment. Make sure that this is reset every solve after the value has been transported.
+        PetscReal Krad = 1;           //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
         PetscReal I0 = 0;
     };
 
@@ -153,7 +154,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
 
     PetscMPIInt numRanks = 0;  //!< The number of the ranks that the simulation contains. This will be used to support global indexing.
 
-//    bool surface = false;  //!< Determines whether or not the radiation solver will be treated as a surface or volume solver
+    //    bool surface = false;  //!< Determines whether or not the radiation solver will be treated as a surface or volume solver
 
     /// Class inputs and Variables
     PetscInt dim = 0;  //!< Number of dimensions that the domain exists within
@@ -171,7 +172,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
     const std::shared_ptr<domain::Region> fieldBoundary;  //!< Hold the region used to define the boundary faces
     const std::shared_ptr<ablate::monitors::logs::Log> log = nullptr;
-
 };
 
 }  // namespace ablate::radiation
