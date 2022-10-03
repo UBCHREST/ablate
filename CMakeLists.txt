@@ -38,7 +38,7 @@ if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 endif ()
 
 # Create the library for ablate
-add_library(ablateLibrary SHARED)
+add_library(ablateLibrary SHARED src/radiation/surfaceRadiation.cpp src/radiation/surfaceRadiation.hpp src/radiation/raySharingRadiation.cpp src/radiation/raySharingRadiation.hpp src/radiation/oneDimRadiation.cpp src/radiation/oneDimRadiation.hpp)
 
 # Load in the subdirectories for the ablate library
 add_subdirectory(src)

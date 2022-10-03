@@ -47,12 +47,13 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     };
 
     std::map<PetscInt, Origin> origin;
+    std::map<std::string, bool> presence;
 
     /** Returns the black body intensity for a given temperature and emissivity */
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
 
     /** SubDomain Register and Setup **/
-    void Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain, bool surfaceIn);
+    void Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
     /**
      * @param cellRange The range of cells for which rays are initialized
@@ -75,6 +76,9 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
 
     /// Class Methods
     void Solve(Vec solVec, ablate::domain::Field temperatureField, Vec aux);
+
+    void ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray);
+    PetscReal SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscFVFaceGeom* faceGeom, PetscInt iCell, PetscInt nphi, PetscInt ntheta); //!< Dummy function that doesn't do anything unless it is overridden by the surface implementation
 
     //    const std::map<PetscInt, Origin>& Solve1D(Vec solVec);
 
@@ -128,13 +132,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      */
     PetscReal FaceIntersect(PetscInt ip, Virtualcoord* virtualcoord, PetscFVFaceGeom* face) const;  //!< Returns the distance away from a virtual coordinate at which its path intersects a line.
 
-    /**
-     * In the case that the radiation solver is being used for surface flux calculations,
-     * the particles that are not travelling outward from the face must be deleted.
-     * Only a hemisphere of rays is required.
-     * */
-    void InitializationConvertSurface(ablate::domain::SubDomain& subDomain);
-
     /** Update the coordinates of the particle using the virtual coordinates
      * Moves the particle in physical space instead of only updating the virtual coordinates
      * This function must be run on every updated particle before swarm migrate is used */
@@ -155,7 +152,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
 
     PetscMPIInt numRanks = 0;  //!< The number of the ranks that the simulation contains. This will be used to support global indexing.
 
-    bool surface = false;  //!< Determines whether or not the radiation solver will be treated as a surface or volume solver
+//    bool surface = false;  //!< Determines whether or not the radiation solver will be treated as a surface or volume solver
 
     /// Class inputs and Variables
     PetscInt dim = 0;  //!< Number of dimensions that the domain exists within
@@ -173,6 +170,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
     const std::shared_ptr<domain::Region> fieldBoundary;  //!< Hold the region used to define the boundary faces
     const std::shared_ptr<ablate::monitors::logs::Log> log = nullptr;
+
 };
 
 }  // namespace ablate::radiation
