@@ -79,7 +79,8 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
 
     void ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray);
     PetscReal SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscFVFaceGeom* faceGeom, PetscInt iCell, PetscInt nphi, PetscInt ntheta); //!< Dummy function that doesn't do anything unless it is overridden by the surface implementation
-
+    PetscInt GetLossCell(PetscInt iCell);
+    
     //    const std::map<PetscInt, Origin>& Solve1D(Vec solVec);
 
    protected:
