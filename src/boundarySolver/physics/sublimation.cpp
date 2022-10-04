@@ -2,7 +2,6 @@
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "io/interval/fixedInterval.hpp"
-#include "radiation/radiation.hpp"
 #include "solver/dynamicRange.hpp"
 #include "utilities/mathUtilities.hpp"
 

@@ -60,19 +60,11 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      */
     virtual void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
-    //    void Initialize1D(const solver::Range &cellRange);
-    static PetscReal ReallySolveParallelPlates(PetscReal z);
-    static PetscReal EInteg(int order, double x);
-    static PetscReal CSimp(PetscReal a, PetscReal b, std::vector<double>& f);
     static PetscReal Temperature(PetscReal x);
 
-    /** Get the subdomain */
-    //    void Register(std::shared_ptr<ablate::domain::SubDomain>);
     inline PetscReal GetIntensity(PetscInt iCell) {  //!< Function to give other classes access to the intensity
         return origin[iCell].intensity;
     }
-
-    //    std::shared_ptr<ablate::domain::SubDomain> subDomain;  //!< use the subDomain to setup the problem
 
     /// Class Methods
     void Solve(Vec solVec, ablate::domain::Field temperatureField, Vec aux);
@@ -81,8 +73,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     virtual PetscReal SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscFVFaceGeom* faceGeom, PetscInt iCell, PetscInt nphi,
                                        PetscInt ntheta);  //!< Dummy function that doesn't do anything unless it is overridden by the surface implementation
     virtual PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM& solDm);
-
-    //    const std::map<PetscInt, Origin>& Solve1D(Vec solVec);
 
    protected:
     DM radsolve{};   //!< DM associated with the radiation particles
@@ -153,8 +143,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     eos::ThermodynamicTemperatureFunction absorptivityFunction;
 
     PetscMPIInt numRanks = 0;  //!< The number of the ranks that the simulation contains. This will be used to support global indexing.
-
-    //    bool surface = false;  //!< Determines whether or not the radiation solver will be treated as a surface or volume solver
 
     /// Class inputs and Variables
     PetscInt dim = 0;  //!< Number of dimensions that the domain exists within

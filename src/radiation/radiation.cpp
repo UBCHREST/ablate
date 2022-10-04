@@ -523,9 +523,9 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                 } else {
                     theta = (((double)nphi) / (double)nPhi) * 2 * ablate::utilities::Constants::pi;
                 }
-                PetscReal ldotn = 1;  //!< If the perpendicular component is not being computed then including this will have no effect.
 
-                ldotn = SurfaceComponent(faceDM, faceGeomArray, faceGeom, iCell, nphi, ntheta);  //!< If computing surface flux, get the perpendicular component here and multiply the result by it
+                PetscReal ldotn =
+                    SurfaceComponent(faceDM, faceGeomArray, faceGeom, iCell, nphi, ntheta);  //!< If computing surface flux, get the perpendicular component here and multiply the result by it
 
                 origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * abs(sin(theta)) * dTheta * dPhi * ldotn;  //!< Final ray calculation
             }
@@ -568,13 +568,12 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
 
     for (auto& [iCell, o] : origin) {  //!< Iterate through the cells that are stored in the origin
         /** Gets the temperature from the cell index specified */
-        PetscInt index = -1;  //!< Index value for the losses temperature reading
-                              /** In the case of a surface implementation, the temperature for the losses will be the temperature of the boundary cell that the face is attached to.
-                               * In the case of a volume implementation, the temperature of the losses will be the temperature of the volumetric origin cell.
-                               * This distinction must be made because the temperature of faces is undefined.
-                               * */
+        /** In the case of a surface implementation, the temperature for the losses will be the temperature of the boundary cell that the face is attached to.
+         * In the case of a volume implementation, the temperature of the losses will be the temperature of the volumetric origin cell.
+         * This distinction must be made because the temperature of faces is undefined.
+         * */
         PetscReal losses = 1;
-        index = GetLossCell(iCell, losses, solDm);  //!< Get the cell that the losses should be calculated with
+        PetscInt index = GetLossCell(iCell, losses, solDm);  //!< Get the cell that the losses should be calculated with
         DMPlexPointLocalFieldRead(auxDm, index, temperatureField.id, auxArray, &temperature);
         losses *= 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
         if (log) {

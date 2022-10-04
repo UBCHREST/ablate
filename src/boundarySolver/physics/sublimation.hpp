@@ -8,7 +8,6 @@
 #include "finiteVolume/processes/pressureGradientScaling.hpp"
 #include "io/interval/interval.hpp"
 #include "radiation/radiation.hpp"
-#include "radiation/surfaceRadiation.hpp"
 namespace ablate::boundarySolver::physics {
 
 /**
