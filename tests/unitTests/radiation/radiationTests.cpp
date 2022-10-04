@@ -203,8 +203,10 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
         // Create an instance of radiation
         auto radiationPropertiesModel = std::make_shared<ablate::eos::radiationProperties::Constant>(1.0);
-        auto radiationBaseSharing = std::make_shared<ablate::radiation::RaySharingRadiation>("radiationBaseSharing", ablate::domain::Region::ENTIREDOMAIN, ablate::domain::Region::ENTIREDOMAIN, 15, radiationPropertiesModel, nullptr);
-        auto radiationBase = std::make_shared<ablate::radiation::Radiation>("radiationBase", ablate::domain::Region::ENTIREDOMAIN, ablate::domain::Region::ENTIREDOMAIN, 15, radiationPropertiesModel, nullptr);
+        auto radiationBaseSharing = std::make_shared<ablate::radiation::RaySharingRadiation>(
+            "radiationBaseSharing", ablate::domain::Region::ENTIREDOMAIN, ablate::domain::Region::ENTIREDOMAIN, 15, radiationPropertiesModel, nullptr);
+        auto radiationBase =
+            std::make_shared<ablate::radiation::Radiation>("radiationBase", ablate::domain::Region::ENTIREDOMAIN, ablate::domain::Region::ENTIREDOMAIN, 15, radiationPropertiesModel, nullptr);
         auto radiationModel = GetParam().sharing ? radiationBaseSharing : radiationBase;
         auto radiation = std::make_shared<ablate::radiation::VolumeRadiation>("radiation", ablate::domain::Region::ENTIREDOMAIN, nullptr, radiationModel, nullptr, nullptr);
 
