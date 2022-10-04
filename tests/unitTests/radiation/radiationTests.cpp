@@ -15,6 +15,7 @@
 #include "monitors/timeStepMonitor.hpp"
 #include "parameters/mapParameters.hpp"
 #include "radiation/radiation.hpp"
+#include "radiation/raySharingRadiation.hpp"
 #include "radiation/volumeRadiation.hpp"
 #include "utilities/petscUtilities.hpp"
 
@@ -25,6 +26,7 @@ struct RadiationTestParameters {
     std::vector<double> meshEnd;
     std::shared_ptr<ablate::mathFunctions::MathFunction> temperatureField;
     std::shared_ptr<ablate::mathFunctions::MathFunction> expectedResult;
+    bool sharing;
 };
 
 class RadiationTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<RadiationTestParameters> {
@@ -200,9 +202,11 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         auto timeStepper = ablate::solver::TimeStepper("timeStepper", domain, {{"ts_max_steps", "0"}}, {}, {initialConditionEuler});
 
         // Create an instance of radiation
-        auto radiationModel = std::make_shared<ablate::eos::radiationProperties::Constant>(1.0);
-        auto radiationBase = std::make_shared<ablate::radiation::Radiation>("radiationBase", ablate::domain::Region::ENTIREDOMAIN, ablate::domain::Region::ENTIREDOMAIN, 15, radiationModel, nullptr);
-        auto radiation = std::make_shared<ablate::radiation::VolumeRadiation>("radiation", ablate::domain::Region::ENTIREDOMAIN, nullptr, radiationBase, nullptr, nullptr);
+        auto radiationPropertiesModel = std::make_shared<ablate::eos::radiationProperties::Constant>(1.0);
+        auto radiationBaseSharing = std::make_shared<ablate::radiation::RaySharingRadiation>("radiationBaseSharing", ablate::domain::Region::ENTIREDOMAIN, ablate::domain::Region::ENTIREDOMAIN, 15, radiationPropertiesModel, nullptr);
+        auto radiationBase = std::make_shared<ablate::radiation::Radiation>("radiationBase", ablate::domain::Region::ENTIREDOMAIN, ablate::domain::Region::ENTIREDOMAIN, 15, radiationPropertiesModel, nullptr);
+        auto radiationModel = GetParam().sharing ? radiationBaseSharing : radiationBase;
+        auto radiation = std::make_shared<ablate::radiation::VolumeRadiation>("radiation", ablate::domain::Region::ENTIREDOMAIN, nullptr, radiationModel, nullptr, nullptr);
 
         // register the flowSolver with the timeStepper
         timeStepper.Register(radiation, {std::make_shared<ablate::monitors::TimeStepMonitor>()});
@@ -289,17 +293,27 @@ INSTANTIATE_TEST_SUITE_P(RadiationTests, RadiationTestFixture,
                                                                    .meshStart = {-0.5, -0.0105},
                                                                    .meshEnd = {0.5, 0.0105},
                                                                    .temperatureField = ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)"),
-                                                                   .expectedResult = ablate::mathFunctions::Create("x + y")},
+                                                                   .expectedResult = ablate::mathFunctions::Create("x + y"),
+                                                                   .sharing = false},
                                          (RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature 1.1", .nproc = 1},
                                                                    .meshFaces = {3, 20},
                                                                    .meshStart = {-0.5, -0.0105},
                                                                    .meshEnd = {0.5, 0.0105},
                                                                    .temperatureField = ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)"),
-                                                                   .expectedResult = ablate::mathFunctions::Create("x + y")},
+                                                                   .expectedResult = ablate::mathFunctions::Create("x + y"),
+                                                                   .sharing = false},
                                          (RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature 2 proc.", .nproc = 2},
                                                                    .meshFaces = {3, 20},
                                                                    .meshStart = {-0.5, -0.0105},
                                                                    .meshEnd = {0.5, 0.0105},
                                                                    .temperatureField = ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)"),
-                                                                   .expectedResult = ablate::mathFunctions::Create("x + y")}),
+                                                                   .expectedResult = ablate::mathFunctions::Create("x + y"),
+                                                                   .sharing = false},
+                                         (RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature 2 proc. sharing", .nproc = 2},
+                                                                   .meshFaces = {3, 20},
+                                                                   .meshStart = {-0.5, -0.0105},
+                                                                   .meshEnd = {0.5, 0.0105},
+                                                                   .temperatureField = ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)"),
+                                                                   .expectedResult = ablate::mathFunctions::Create("x + y"),
+                                                                   .sharing = true}),
                          [](const testing::TestParamInfo<RadiationTestParameters>& info) { return info.param.mpiTestParameter.getTestName(); });

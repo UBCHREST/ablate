@@ -524,9 +524,8 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                 } else {
                     theta = (((double)nphi) / (double)nPhi) * 2 * ablate::utilities::Constants::pi;
                 }
-
-                PetscReal ldotn =
-                    SurfaceComponent(faceDM, faceGeomArray, faceGeom, iCell, nphi, ntheta);  //!< If computing surface flux, get the perpendicular component here and multiply the result by it
+                DMPlexPointLocalRead(faceDM, iCell, faceGeomArray, &faceGeom) >> checkError;
+                PetscReal ldotn = SurfaceComponent(faceDM, faceGeom, iCell, nphi, ntheta);  //!< If surface, get the perpendicular component here and multiply the result by it
 
                 origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * abs(sin(theta)) * dTheta * dPhi * ldotn;  //!< Final ray calculation
             }
@@ -632,7 +631,7 @@ PetscReal ablate::radiation::Radiation::FaceIntersect(PetscInt ip, Virtualcoord*
 
 PetscInt ablate::radiation::Radiation::GetLossCell(PetscInt iCell, PetscReal& losses, DM& solDm) { return iCell; }
 
-PetscReal ablate::radiation::Radiation::SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscFVFaceGeom* faceGeom, PetscInt iCell, PetscInt nphi, PetscInt ntheta) { return 1.0; }
+PetscReal ablate::radiation::Radiation::SurfaceComponent(DM faceDM, PetscFVFaceGeom* faceGeom, PetscInt iCell, PetscInt nphi, PetscInt ntheta) { return 1.0; }
 
 void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray,
                                                 PetscInt stepcount) { /** Check that the particle is in a valid region */
