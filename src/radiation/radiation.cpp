@@ -384,7 +384,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
             If the ray originates from the walls, then set the initial ray intensity to the wall temperature, etc.
          */
         /** For each domain in the ray (The rays vector will have an added index, splitting every x points) */
-        PetscInt numPoints = static_cast<int>(segment.cells.size());
+        PetscInt numPoints = static_cast<PetscInt>(segment.cells.size());
 
         if (numPoints > 0) {
             for (PetscInt n = 0; n < numPoints; n++) {
@@ -413,9 +413,10 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     // This avoids solving any redundant rays, and also avoids changing the logic too much.
     // Here we actually want to iterate through all particles.
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
-        carrier[ipart].Ij = rays[Key(&access[ipart])].Ij;
-        carrier[ipart].Krad = rays[Key(&access[ipart])].Krad;
-        carrier[ipart].I0 = rays[Key(&access[ipart])].I0;
+        std::string key = Key(&access[ipart]);
+        carrier[ipart].Ij = rays[key].Ij;
+        carrier[ipart].Krad = rays[key].Krad;
+        carrier[ipart].I0 = rays[key].I0;
     }
 
     /** Restore the fields associated with the particles after all of the particles have been stepped */
@@ -579,7 +580,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         if (log) {
             PetscReal centroid[3];
             DMPlexComputeCellGeometryFVM(cellDM, iCell, nullptr, centroid, nullptr) >> checkError;  //!< Reads the cell location from the current cell
-            printf("%f %f %f %f %f %f %f\n", centroid[0], centroid[1], centroid[2], origin[iCell].intensity, losses, 0.0, *temperature);
+            printf("%f %f %f %f %f %f\n", centroid[0], centroid[1], centroid[2], origin[iCell].intensity, losses, *temperature);
         }
         origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
     }

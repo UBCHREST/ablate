@@ -47,7 +47,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     };
 
     std::map<PetscInt, Origin> origin;
-    std::map<std::string, bool> presence;
+    std::map<std::string, bool> presence; //!< Map to track the local presence of search particles during the initialization
 
     /** Returns the black body intensity for a given temperature and emissivity */
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
@@ -60,8 +60,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      */
     virtual void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
-    static PetscReal Temperature(PetscReal x);
-
     inline PetscReal GetIntensity(PetscInt iCell) {  //!< Function to give other classes access to the intensity
         return origin[iCell].intensity;
     }
@@ -69,10 +67,10 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     /// Class Methods
     void Solve(Vec solVec, ablate::domain::Field temperatureField, Vec aux);
 
-    virtual void ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray, PetscInt stepcount);
+    virtual void ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray, PetscInt stepcount); //!< Routine to move the particle one step
     virtual PetscReal SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscFVFaceGeom* faceGeom, PetscInt iCell, PetscInt nphi,
                                        PetscInt ntheta);  //!< Dummy function that doesn't do anything unless it is overridden by the surface implementation
-    virtual PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM& solDm);
+    virtual PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM& solDm); //!< Get the index of the cell which the losses should be calculated from
 
    protected:
     DM radsolve{};   //!< DM associated with the radiation particles
@@ -111,7 +109,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
         PetscReal xdir;
         PetscReal ydir;
         PetscReal zdir;
-        //        PetscInt current;
         PetscReal hhere;
     };
 

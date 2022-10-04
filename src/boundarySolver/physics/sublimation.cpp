@@ -37,7 +37,7 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
     // Register an optional output function
     bSolver.RegisterFunction(SublimationOutputFunction,
                              this,
-                             {"conduction", "extraRad", "regressionMassFlux"},
+                             {"conduction", "extraRad", "regressionMassFlux", "radiation"},
                              inputFields,
                              {finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
                              BoundarySolver::BoundarySourceType::Face);
