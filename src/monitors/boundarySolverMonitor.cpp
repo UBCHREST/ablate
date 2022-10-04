@@ -137,7 +137,7 @@ void ablate::monitors::BoundarySolverMonitor::Save(PetscViewer viewer, PetscInt 
     ISGetIndices(faceIs, &faceToBoundary) >> checkError;
 
     // Copy over the values that are in the globalFaceVec.  We may skip some local ghost values
-    if(localBoundaryArray && localFaceArray) {
+    if (localBoundaryArray && localFaceArray) {
         for (PetscInt facePt = cStart; facePt < cEnd; ++facePt) {
             PetscInt boundaryPt = faceToBoundary[facePt];
 
