@@ -137,16 +137,18 @@ void ablate::monitors::BoundarySolverMonitor::Save(PetscViewer viewer, PetscInt 
     ISGetIndices(faceIs, &faceToBoundary) >> checkError;
 
     // Copy over the values that are in the globalFaceVec.  We may skip some local ghost values
-    for (PetscInt facePt = cStart; facePt < cEnd; ++facePt) {
-        PetscInt boundaryPt = faceToBoundary[facePt];
+    if (localBoundaryArray && localFaceArray) {
+        for (PetscInt facePt = cStart; facePt < cEnd; ++facePt) {
+            PetscInt boundaryPt = faceToBoundary[facePt];
 
-        const PetscScalar* localBoundaryData;
-        PetscScalar* globalFaceData;
+            const PetscScalar* localBoundaryData = nullptr;
+            PetscScalar* globalFaceData = nullptr;
 
-        DMPlexPointLocalRead(boundaryDm, boundaryPt, localBoundaryArray, &localBoundaryData) >> checkError;
-        DMPlexPointLocalRef(faceDm, facePt, localFaceArray, &globalFaceData) >> checkError;
-        if (globalFaceData && localBoundaryData) {
-            PetscArraycpy(globalFaceData, localBoundaryData, dataSize) >> checkError;
+            DMPlexPointLocalRead(boundaryDm, boundaryPt, localBoundaryArray, &localBoundaryData) >> checkError;
+            DMPlexPointLocalRef(faceDm, facePt, localFaceArray, &globalFaceData) >> checkError;
+            if (globalFaceData && localBoundaryData) {
+                PetscArraycpy(globalFaceData, localBoundaryData, dataSize) >> checkError;
+            }
         }
     }
 
