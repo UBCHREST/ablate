@@ -101,8 +101,9 @@ void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRa
     ablate::radiation::Radiation::Initialize(cellRange, subDomain);
 }
 
-PetscReal ablate::radiation::SurfaceRadiation::SurfaceComponent(DM faceDM, PetscFVFaceGeom* faceGeom, PetscInt iCell, PetscInt nphi, PetscInt ntheta) {
-
+PetscReal ablate::radiation::SurfaceRadiation::SurfaceComponent(DM* faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi, PetscInt ntheta) {
+    PetscFVFaceGeom* faceGeom;
+    DMPlexPointLocalRead(*(faceDM), iCell, faceGeomArray, &faceGeom) >> checkError;
     /** Now that we are iterating over every ray identifier in this local domain, we can get all of the particles that are associated with this ray.
      * We will need to sort the rays in order of domain segment. We need to start at the end of the ray and go towards the beginning of the ray. */
     PetscReal faceNormNormalized = sqrt((faceGeom->normal[0] * faceGeom->normal[0]) + (faceGeom->normal[1] * faceGeom->normal[1]) + (faceGeom->normal[2] * faceGeom->normal[2]));
