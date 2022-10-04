@@ -20,6 +20,7 @@ class TurbFlowStats : public FieldMonitor {
     const std::shared_ptr<ablate::eos::EOS> eos;
     const std::shared_ptr<io::interval::Interval> interval;
     ttf densityFunc;
+    PetscInt step;
 
     static PetscErrorCode MonitorTurbFlowStats(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx);
 
