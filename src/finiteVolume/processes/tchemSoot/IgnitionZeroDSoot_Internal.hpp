@@ -21,6 +21,7 @@ Sandia National Laboratories, Livermore, CA, USA
 #include "IgnitionZeroDSoot.hpp"
 #include "IgnitionZeroDSoot_Implemenatation.hpp"
 #include "TChem_Util.hpp"
+#include "eos/tChemSoot/densityFcn.hpp"
 
 /// tadv - an input structure for time marching
 /// state (nSpec+5) - initial condition of the state vector
@@ -46,6 +47,10 @@ namespace ablate::finiteVolume::processes::tchemSoot {
                             const Tines::value_type_2d_view<real_type, DeviceType>& fac,
                             const Tines::value_type_1d_view<time_advance_type, DeviceType>& tadv,
                             const Tines::value_type_2d_view<real_type, DeviceType>& state,
+                            const Tines::value_type_1d_view<real_type, DeviceType>& HF,
+                            const Tines::value_type_2d_view<real_type, DeviceType>& Hi_Scratch,
+                            const Tines::value_type_2d_view<real_type, DeviceType>& cp_gas_scratch,
+                            const Tines::value_type_1d_view<real_type, DeviceType>& IntEnergy,
                             /// output
                             const Tines::value_type_1d_view<real_type, DeviceType>& t_out,
                             const Tines::value_type_1d_view<real_type, DeviceType>& dt_out,
@@ -75,18 +80,17 @@ namespace ablate::finiteVolume::processes::tchemSoot {
             const RealType0DViewType t_out_at_i = Kokkos::subview(t_out, i);
             if (t_out_at_i() < t_end) {
               const RealType1DViewType state_at_i = Kokkos::subview(state, i, Kokkos::ALL());
-              const RealType1DViewType state_out_at_i_Gas = Kokkos::subview(state_out,i,std::make_pair(0,3+kmcd_at_i.nSpec));
               const RealType1DViewType state_out_at_i = Kokkos::subview(state_out, i, Kokkos::ALL());
               const RealType1DViewType fac_at_i = Kokkos::subview(fac, i, Kokkos::ALL());
+              const RealType0DViewType IntEnergy_at_i = Kokkos::subview(IntEnergy,i);
+              const RealType1DViewType Hi_scratch_at_i = Kokkos::subview(Hi_Scratch,i, Kokkos::ALL());
+              const RealType1DViewType cp_gas_scratch_at_i = Kokkos::subview(cp_gas_scratch,i,Kokkos::ALL());
+
 
               const RealType0DViewType dt_out_at_i = Kokkos::subview(dt_out, i);
               Scratch<RealType1DViewType> work(member.team_scratch(level),
                                                per_team_extent);
-              //can create subview here or just keep going
-//              Impl::StateVector<RealType1DViewType> sv_at_i(kmcd_at_i.nSpec, state_at_i);
-              Impl::StateVector<RealType1DViewType> sv_out_at_i(kmcd_at_i.nSpec, state_out_at_i_Gas);
-//              TCHEM_CHECK_ERROR(!sv_at_i.isValid(), "Error: input state vector is not valid");
-              TCHEM_CHECK_ERROR(!sv_out_at_i.isValid(), "Error: input state vector is not valid");
+
               {
                 const ordinal_type jacobian_interval = tadv_at_i._jacobian_interval;
                 const ordinal_type max_num_newton_iterations = tadv_at_i._max_num_newton_iterations;
@@ -100,20 +104,20 @@ namespace ablate::finiteVolume::processes::tchemSoot {
 
                 const auto temperature = state_at_i(2);
                 const auto pressure = state_at_i(1);
-//                const auto Ys = sv_at_i.MassFractions();
-//                using range_type = Kokkos::pair<ordinal_type, ordinal_type>;
-//                const auto Ys = Kokkos::subview(state_at_i, 0, range_type(3, 3 + kmcd_at_i.nSpec));
+                const auto totalDensity = state_at_i(0);
                 const auto YCarbon = state_at_i(3+kmcd_at_i.nSpec);
                 const auto SootNumberDensity = state_at_i(4+kmcd_at_i.nSpec);
 
-                const RealType0DViewType temperature_out(sv_out_at_i.TemperaturePtr());
-                const RealType0DViewType pressure_out(sv_out_at_i.PressurePtr());
-                const RealType0DViewType density_out(sv_out_at_i.DensityPtr());
+                const RealType0DViewType temperature_out(&state_out_at_i(2));
+                const RealType0DViewType pressure_out(&state_out_at_i(1));
+                const RealType0DViewType density_out(&state_out_at_i(0));
                 const RealType0DViewType YCarbon_out(&state_out_at_i(3+kmcd_at_i.nSpec));
                 const RealType0DViewType SootNumberDensity_out(&state_out_at_i(4+kmcd_at_i.nSpec));
-                const RealType1DViewType Ys_out= sv_out_at_i.MassFractions();
+                const RealType1DViewType Ys_out= Kokkos::subview(state_out_at_i, std::make_pair(3, 3 +kmcd_at_i.nSpec) );//species part of state out
 
-                const ordinal_type m = kmcd_at_i.nSpec + 3; //Changed this, this should be number of vars in source term?
+
+                //Problem Work Variables, m -> dependent variable length
+                const ordinal_type m = kmcd_at_i.nSpec + 3; //Source terms/dependent variables are just the temperature, species and Ndd
                 auto wptr = work.data();
                 const RealType1DViewType vals(wptr, m);
                 wptr += m;
@@ -127,8 +131,8 @@ namespace ablate::finiteVolume::processes::tchemSoot {
                 Kokkos::parallel_for
                   (Kokkos::TeamVectorRange(member, m),
                    [&](const ordinal_type& i) {
-                     vals(i) = (i == 0 ? temperature :
-                                (i < kmcd_at_i.nSpec +1 ? state_at_i(i+2) :
+                     vals(i) = (i ==0 ? temperature :
+                                (i < kmcd_at_i.nSpec+1 ? state_at_i(i+2) :
                                 (i == kmcd_at_i.nSpec+1 ? YCarbon : SootNumberDensity) ) );
                    });
                 member.team_barrier();
@@ -147,6 +151,11 @@ namespace ablate::finiteVolume::processes::tchemSoot {
                                 t_beg,
                                 t_end,
                                 pressure,
+                                totalDensity,
+                                IntEnergy_at_i,
+                                HF,
+                                Hi_scratch_at_i,
+                                cp_gas_scratch_at_i,
                                 vals,
                                 t_out_at_i,
                                 dt_out_at_i,
@@ -160,22 +169,33 @@ namespace ablate::finiteVolume::processes::tchemSoot {
                 Kokkos::parallel_for
                   (Kokkos::TeamVectorRange(member, m),
                    [&](const ordinal_type& i) {
-                     if (i == 0)
-                       temperature_out() = vals(0);
-                     else if (i < kmcd_at_i.nSpec +1)
-                       Ys_out(i - 1) = vals(i);
-                     else if (i == kmcd_at_i.nSpec + 1)
-                         YCarbon_out() = vals(i);
-                     else
-                         SootNumberDensity_out() = vals(i);
+                    if (i > 0) {
+                        if (i < kmcd_at_i.nSpec + 1)
+                            Ys_out(i - 1) = vals(i);
+                        else if (i == kmcd_at_i.nSpec+1)
+                            YCarbon_out() = vals(i);
+                        else
+                            SootNumberDensity_out() = vals(i);
+                    }
                    });
 
+                //Get the temperature Out
+                const real_type_1d_view_type gas_StateVector=  real_type_1d_view_type("GaseousSpecies",kmcd_at_i.nSpec+3);
+                //Can either calculate density straight from constant pressure, and current gas state, or could use the assumption that the total density is constant and back it out from Yc
+                //First attempt is use total density
+                gas_StateVector(0) = (1-YCarbon_out())/(1/totalDensity-YCarbon_out()/ablate::eos::TChemSoot::solidCarbonDensity); //gaseous density
+                gas_StateVector(1) = pressure; //keep as same pressure for now
+                gas_StateVector(2) = temperature; //temporary temperature Guess
+                for(int sp =0; sp < kmcd_at_i.nSpec; sp++) { //scale total mass fractions to gas mass fractions
+                    gas_StateVector(sp+3) = Ys_out(sp)/(1-YCarbon_out());
+                }
+                const TChem::Impl::StateVector gas_SV(kmcd_at_i.nSpec,gas_StateVector);
+                temperature_out() = ablate::eos::tChemSoot::impl::TemperatureFcn<real_type,device_type>::team_invoke_fromTotEnergy(member,gas_SV,YCarbon_out(),IntEnergy_at_i,Hi_scratch_at_i,cp_gas_scratch_at_i,kmcd_at_i);
+//                temperature_out() = vals(0);
                 member.team_barrier();
-                //Calculate the new density based on new state
-                //TODO:: This might have to be changed, have to think about how we're solving this
-                density_out() = Impl::RhoMixMs<real_type,DeviceType>
-                  ::team_invoke(member, temperature_out(),
-                                pressure_out(), Ys_out, kmcd_at_i);
+                //Density out should be the same, it is the major assumption, even though pressure is also kept constant..
+                density_out() = totalDensity;
+//                density_out() = ablate::eos::tChemSoot::impl::densityFcn<real_type,device_type>::team_invoke(member,state_out_at_i,kmcd_at_i); //TODO:: Make sure this isn't changing....
                 member.team_barrier();
               }
             }

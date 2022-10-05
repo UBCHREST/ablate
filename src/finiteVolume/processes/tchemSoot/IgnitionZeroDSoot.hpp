@@ -39,7 +39,8 @@ namespace ablate::finiteVolume::processes::tchemSoot {
         using problem_type = IgnitionZeroD_ProblemSoot<real_type,device_type>;
         const ordinal_type m = problem_type::getNumberOfEquations(kmcd) + ordinal_type(1);
         ordinal_type work_size(0);
-        work_size = IgnitionZeroDSootImplementation::getWorkSpaceSize(kmcd);//TODO::SWITCH THIS WHEN CLASS STRUCTURE BETTER
+        work_size = IgnitionZeroDSootImplementation::getWorkSpaceSize(kmcd);
+
         return work_size + m;
       }
 
@@ -58,6 +59,10 @@ namespace ablate::finiteVolume::processes::tchemSoot {
         const real_type_2d_view& fac,
         const time_advance_type_1d_view& tadv,
         const real_type_2d_view& state,
+        const real_type_1d_view& HF,
+        const real_type_2d_view_host& Hi_Scratch,
+        const real_type_2d_view_host& cp_gas_scratch,
+        const real_type_1d_view& IntEnergy,
         /// output
         const real_type_1d_view& t_out,
         const real_type_1d_view& dt_out,
@@ -74,6 +79,10 @@ namespace ablate::finiteVolume::processes::tchemSoot {
         const real_type_2d_view_host& fac,
         const time_advance_type_1d_view_host& tadv,
         const real_type_2d_view_host& state,
+        const real_type_1d_view& HF,
+        const real_type_2d_view_host& Hi_Scratch,
+        const real_type_2d_view_host& cp_gas_scratch,
+        const real_type_1d_view& IntEnergy,
         /// output
         const real_type_1d_view_host& t_out,
         const real_type_1d_view_host& dt_out,

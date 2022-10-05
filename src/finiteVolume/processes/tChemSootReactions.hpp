@@ -1,7 +1,7 @@
 #ifndef ABLATELIBRARY_TCHEMSOOTREACTIONS_HPP
 #define ABLATELIBRARY_TCHEMSOOTREACTIONS_HPP
 
-#include <eos/tChem.hpp>
+#include <eos/tChemSoot.hpp>
 #include "process.hpp"
 
 namespace tChemLib = TChem;
@@ -13,6 +13,7 @@ class TChemSootReactions : public Process {
     //Quick Set Of carbon IC is 0
     double YCarbon = 0;
     double SootNumberDensity = 0;
+    double T = 0;
     //Locations of CarbonMass and Soot number density in EV
     int CarbonMass_ind;
     int SootNumberDensity_ind;
@@ -35,7 +36,7 @@ class TChemSootReactions : public Process {
     int maxAttempts = 4;
 
     // eos of state variables
-    std::shared_ptr<eos::TChem> eos;
+    std::shared_ptr<eos::TChemSoot> eos;
     const size_t numberSpecies;
 
     // tchem memory storage on host/device.  These will be sized for the number of active nodes in the domain
@@ -52,7 +53,10 @@ class TChemSootReactions : public Process {
     // store host/device memory for computing state
     real_type_1d_view internalEnergyRefDevice;
     real_type_1d_view_host internalEnergyRefHost;
+    real_type_1d_view totInternalEnergyRefDevice;
+    real_type_1d_view_host totInternalEnergyRefHost;
     real_type_2d_view perSpeciesScratchDevice;
+    real_type_2d_view perGasSpeciesScratchDevice;
 
     // store the source terms (density* energy + density*species)
     real_type_2d_view_host sourceTermsHost;

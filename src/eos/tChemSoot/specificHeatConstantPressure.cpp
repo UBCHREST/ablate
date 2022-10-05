@@ -1,0 +1,69 @@
+#include "specificHeatConstantPressure.hpp"
+#include "TChem_Impl_CpMixMs.hpp"
+#include "TChem_Impl_MolarWeights.hpp"
+#include "eos/tChemSoot.hpp"
+
+namespace tChemLib = TChem;
+namespace ablate::eos::tChemSoot::impl {
+
+template <typename PolicyType, typename DeviceType>
+void SpecificHeatConstantPressure_TemplateRun(const std::string& profile_name,
+                          /// team size setting
+                          const PolicyType& policy, const Tines::value_type_2d_view<real_type, DeviceType>& state, const Tines::value_type_1d_view<real_type, DeviceType>& CpMix,
+                                              const KineticModelConstData<DeviceType>& kmcd) {
+
+    Kokkos::Profiling::pushRegion(profile_name);
+    using policy_type = PolicyType;
+    using device_type = DeviceType;
+
+    using real_type_1d_view_type = Tines::value_type_1d_view<real_type, device_type>;
+    using real_type_0d_view_type = Tines::value_type_0d_view<real_type, device_type>;
+
+    const ordinal_type level = 1;
+    const ordinal_type per_team_extent = SpeedOfSound::getWorkSpaceSize(kmcd.nSpec);
+
+    Kokkos::parallel_for(
+        profile_name, policy, KOKKOS_LAMBDA(const typename policy_type::member_type& member) {
+            const ordinal_type i = member.league_rank();
+            const real_type_1d_view_type state_at_i = Kokkos::subview(state, i, Kokkos::ALL());
+
+            //Need to scale Yi appropriately
+            real_type_1d_view_type state_at_i_gas = real_type_1d_view_type("Gaseous",TChem::Impl::getStateVectorSize(kmcd.nSpec));
+            ablate::eos::TChemSoot::SplitYiState(state_at_i,state_at_i_gas,kmcd);
+            //Get the Gaseous State Vector
+            const Impl::StateVector<real_type_1d_view_type> sv_at_i(kmcd.nSpec, state_at_i_gas);
+
+            const real_type_0d_view_type CpMix_at_i = Kokkos::subview(CpMix, i);
+
+            Scratch<real_type_1d_view_type> work(member.team_scratch(level), per_team_extent);
+            auto cpks = real_type_1d_view_type((real_type*)work.data(), kmcd.nSpec);
+
+            TCHEM_CHECK_ERROR(!sv_at_i.isValid(), "Error: input state vector is not valid");
+            {
+                const real_type t = sv_at_i.Temperature();
+                const real_type_1d_view_type ys = sv_at_i.MassFractions();
+                const real_type Yc = state_at_i(kmcd.nSpec+3);
+                // compute cp_gas
+                auto cp_gas = tChemLib::Impl::CpMixMs<real_type, device_type>::team_invoke(member, t, ys, cpks, kmcd);
+                auto cp_Soot = ablate::eos::TChemSoot::CarbonCp_R(t)*kmcd.Runiv/ablate::eos::TChemSoot::solidCarbonDensity;
+                CpMix_at_i() = (1-Yc)*cp_gas + Yc*cp_Soot;
+            }
+        });
+    Kokkos::Profiling::popRegion();
+}
+
+}  // namespace ablate::eos::tChem::impl
+
+[[maybe_unused]] void ablate::eos::tChemSoot::SpecificHeatConstantPressure::runDeviceBatch(typename UseThisTeamPolicy<exec_space>::type& policy,
+                                                                                           const ablate::eos::tChemSoot::SpecificHeatConstantPressure::real_type_2d_view_type& state,
+                                                                                           const ablate::eos::tChemSoot::SpecificHeatConstantPressure::real_type_1d_view_type& CpMix,
+                                                                                           const ablate::eos::tChemSoot::SpecificHeatConstantPressure::kinetic_model_type& kmcd) {
+    ablate::eos::tChemSoot::impl::SpecificHeatConstantPressure_TemplateRun("ablate::eos::tChemSoot::SpecificHeatConstantPressure", policy, state, CpMix, kmcd);
+}
+
+[[maybe_unused]] void ablate::eos::tChemSoot::SpecificHeatConstantPressure::runHostBatch(typename UseThisTeamPolicy<host_exec_space>::type& policy,
+                                                                                         const ablate::eos::tChemSoot::SpecificHeatConstantPressure::real_type_2d_view_host_type& state,
+                                                                                         const ablate::eos::tChemSoot::SpecificHeatConstantPressure::real_type_1d_view_host_type& CpMix,
+                                                                                         const ablate::eos::tChemSoot::SpecificHeatConstantPressure::kinetic_model_host_type& kmcd) {
+    ablate::eos::tChemSoot::impl::SpecificHeatConstantPressure_TemplateRun("ablate::eos::tChemSoot::SpecificHeatConstantPressure", policy, state, CpMix, kmcd);
+}

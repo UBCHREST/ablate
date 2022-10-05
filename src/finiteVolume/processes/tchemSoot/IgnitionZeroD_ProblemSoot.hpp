@@ -27,6 +27,8 @@ Sandia National Laboratories, Livermore, CA, USA
 #include "TChem_Impl_SourceTerm.hpp"
 #include "TChem_Impl_JacobianReduced.hpp"
 #include "Soot7StepReactionModel.hpp"
+#include "eos/tChemSoot/temperatureFcn.hpp"
+#include "TChem_Util.hpp"
 
 
 namespace ablate::finiteVolume::processes::tchemSoot {
@@ -43,13 +45,20 @@ namespace ablate::finiteVolume::processes::tchemSoot {
         real_type_1d_view_type _fac;
         kinetic_model_type _kmcd;
         real_type _p;
+        real_type _densityTot;
+        real_type_0d_view_type  _intEnergy;
+        real_type_1d_view_type _hi_ref;
+        real_type_1d_view_type _hi_Scratch;
+        real_type_1d_view_type cp_gas_Scratch;
 
         KOKKOS_DEFAULTED_FUNCTION
         IgnitionZeroD_ProblemSoot() = default;
 
         KOKKOS_INLINE_FUNCTION
         static ordinal_type getNumberOfTimeODEs(const kinetic_model_type& kmcd) {
-            return kmcd.nSpec + 3;  // Changed by 2 to include Carbon and NDD, maybe change problem to +2 and do constant energy as well
+            // All species plus Soot and NDD, and Temperature. Temperature actually solved from current internal energy, but need to carry it forward as the source function call still requires the scratch space
+            // Since it doesn't know we aren't solving for it
+            return kmcd.nSpec + 3;
         }
 
         KOKKOS_INLINE_FUNCTION
@@ -74,13 +83,13 @@ namespace ablate::finiteVolume::processes::tchemSoot {
         static ordinal_type getWorkSpaceSize(const kinetic_model_type& kmcd) {
             const ordinal_type src_workspace_size = TChem::Impl::SourceTerm<real_type, device_type>::getWorkSpaceSize(kmcd);
             const ordinal_type jac_workspace_size = TChem::Impl::JacobianReduced::getWorkSpaceSize(kmcd);
-            const ordinal_type workspace_size_analitical_jacobian = (jac_workspace_size > src_workspace_size ? jac_workspace_size : src_workspace_size);
+            const ordinal_type workspace_size_analytical_jacobian = (jac_workspace_size > src_workspace_size ? jac_workspace_size : src_workspace_size);
 
             const ordinal_type m = getNumberOfEquations(kmcd);
             const ordinal_type workspace_size_sacado_numerical_jacobian = src_workspace_size + 2 * m * ats<real_type>::sacadoStorageCapacity();
 
             const ordinal_type workspace_size =
-                (workspace_size_analitical_jacobian > workspace_size_sacado_numerical_jacobian ? workspace_size_analitical_jacobian : workspace_size_sacado_numerical_jacobian);
+                (workspace_size_analytical_jacobian > workspace_size_sacado_numerical_jacobian ? workspace_size_analytical_jacobian : workspace_size_sacado_numerical_jacobian);
 
             return workspace_size;
         }
@@ -95,16 +104,31 @@ namespace ablate::finiteVolume::processes::tchemSoot {
         // MAIN CALL THAT PROBABLY NEEDS TO BE CHANGED, should be able to reuse SourceTerm
         template <typename MemberType>
         KOKKOS_INLINE_FUNCTION void computeFunction(const MemberType& member, const real_type_1d_view_type& x, const real_type_1d_view_type& f) const {
-            const real_type t = x(0);
-            //If this is the total Mass fraction, Need to copy and scale the below to be the mass fraction of the gas TODO::
-            const real_type_1d_view_type Ys(&x(1), _kmcd.nSpec);
+            //Convert total mass fractions to gas mass fractions, and pull out YCarbon for temperature calculation!
+            const real_type_1d_view_type gas_StateVector=  real_type_1d_view_type("GaseousSpecies",_kmcd.nSpec+3);
+            real_type Ycarbon = x(_kmcd.nSpec+1);
+            //Can either calculate density straight from constant pressure, and current gas state, or could use the assumption that the total density is constant and back it out from Yc
+            //First attempt is use total density
+            gas_StateVector(0) = (1-Ycarbon)/(1/_densityTot-Ycarbon/ablate::eos::TChemSoot::solidCarbonDensity); //gaseous density
+            gas_StateVector(1) = _p; //pressure
+            gas_StateVector(2) = x(0); //Old temperature is new temps initial guess
+            for(int i =0; i < _kmcd.nSpec; i++) {
+                gas_StateVector(i+3) = x(i+1)/(1-Ycarbon);
+            }
+            const TChem::Impl::StateVector gas_SV(_kmcd.nSpec,gas_StateVector);
+
+            //First step calculate temperature from current state values (//think we might be able to use work as the scratch
+            const real_type Temperature = ablate::eos::tChemSoot::impl::TemperatureFcn<real_type,device_type>::team_invoke_fromTotEnergy(member,gas_SV,Ycarbon,_intEnergy,_hi_Scratch,cp_gas_Scratch,_kmcd);
+            x(0) = Temperature;// set the temperature variable
+//            const real_type Temperature = x(0);
             //Make sure to pass in Temperature, and Y_s (Gas definition, mass of species i/total mass of gaseous part), this will report the correct sources.
             //These gas sources then need to be multiplied by the correct ration of volume of gas/ total volume = 1-f_v
-            //The density is calculated inside below and thus will be the gas density (per unit volume of gas !!0 and thus will return the correct values
-            Impl::SourceTerm<real_type, device_type>::team_invoke(member, t, _p, Ys, f, _work, _kmcd);
 
-            //Now add in the correct source terms due to the soot reaction rates here!
-            Soot7StepReactionModel::UpdateSourceWithSootMechanismRates<device_type>(x,f,_kmcd);
+            //The density is calculated inside below and thus will be the gas density (per unit volume of gas !!0 and thus will return the correct values
+            Impl::SourceTerm<real_type, device_type>::team_invoke(member, Temperature, _p, gas_SV.MassFractions(), f, _work, _kmcd);
+
+            //Now add in the correct source terms due to the soot reaction rates here (Also Adjusts it for SVF and zero's out the energy source)!
+            Soot7StepReactionModel::UpdateSourceWithSootMechanismRates<device_type>(x,f,_densityTot,_kmcd);
             //Now the challenge of above is making sure the correct temperature update is being performed....
 
             member.team_barrier();

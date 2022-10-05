@@ -76,6 +76,11 @@ namespace ablate::finiteVolume::processes::tchemSoot {
             const real_type& t_end,
             /// input (initial condition)
             const real_type& pressure,      /// pressure
+            const real_type& TotalDensity, ///Total Density
+            const real_type_0d_view_type & IntEnergy, ///Internal Sensible Energy
+            const real_type_1d_view_type& h_formation_ref, ///reference heats of formation
+            const real_type_1d_view_type& hi_scratch, /// scratch enthalpy vector
+            const real_type_1d_view_type& cp_gas_scratch, /// Specific heats of the gas scratch variable
             const real_type_1d_view_type& vals, /// Temperature, mass fraction (kmcd.nSpec), Carbon Mass Fraction, Soot Number density
             /// output (final output conditions)
             const real_type_0d_view_type& t_out,
@@ -87,7 +92,9 @@ namespace ablate::finiteVolume::processes::tchemSoot {
             /// const input from kinetic model
             const kinetic_model_type& kmcd)
         {
-
+            //Remember values coming in are the total mass fraction values, and Things We'll need to scale sources are :
+            //  a. The volume fraction of gas, i.e. (1-fv)
+            //  b. The Soot Reaction adjusters...
             const ordinal_type problem_workspace_size = problem_type::getWorkSpaceSize(kmcd); //stuff in this function might have to get changed
             problem_type problem;
             problem._kmcd = kmcd;
@@ -108,10 +115,15 @@ namespace ablate::finiteVolume::processes::tchemSoot {
             auto tw = real_type_1d_view_type(wptr, workspace_extent - workspace_used);
 
             /// initialize problem
-            problem._p = pressure; // pressure
+            problem._p = pressure; // pressure (not changing over time)
+            problem._densityTot = TotalDensity; //Total Density (Also assumed constant over time)
             problem._work = pw;    // problem workspace array
             problem._kmcd = kmcd;  // kinetic model
-            problem._fac = fac;
+            problem._fac = fac; // Currently Unclear what this is :
+            problem._intEnergy = IntEnergy;
+            problem._hi_ref = h_formation_ref;
+            problem._hi_Scratch = hi_scratch;
+            problem.cp_gas_Scratch = cp_gas_scratch;
 
             const ordinal_type r_val =
               time_integrator_type::invoke(  member,
@@ -161,6 +173,11 @@ namespace ablate::finiteVolume::processes::tchemSoot {
             const real_type& t_end,
             /// input (initial condition)
             const real_type& pressure,      /// pressure
+            const real_type& TotalDensity, ///Total Density
+            const real_type_0d_view_type& InternalSensibleEnergy, /// Internal Sensible Energy
+            const real_type_1d_view_type& HeatsOfFormation, /// species heats of formation
+            const real_type_1d_view_type& hi_scratch, /// Scratch Enthalpy Vector
+            const real_type_1d_view_type& cp_gas_scratch, ///Scratch cp_gas vector
             const real_type_1d_view_type& vals, /// temperature, mass fractions,carbon mass fraction, Soot number density
             /// output (final output conditions)
             const real_type_0d_view_type& t_out,
@@ -186,6 +203,11 @@ namespace ablate::finiteVolume::processes::tchemSoot {
                                t_beg,
                                t_end,
                                pressure,
+                               TotalDensity,
+                               InternalSensibleEnergy,
+                               HeatsOfFormation,
+                               hi_scratch,
+                               cp_gas_scratch,
                                vals,
                                t_out,
                                dt_out,

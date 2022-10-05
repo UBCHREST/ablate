@@ -1,17 +1,19 @@
 #include "tChemSootReactions.hpp"
 #include <TChem_EnthalpyMass.hpp>
-#include "finiteVolume/processes/tchemSoot/Soot7StepReactionModel.hpp"
-#include "finiteVolume/processes/tchemSoot/IgnitionZeroD_ProblemSoot.hpp"
-#include "finiteVolume/processes/tchemSoot/IgnitionZeroDSoot.hpp"
+#include "eos/tChemSoot.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "finiteVolume/processes/tchemSoot/IgnitionZeroDSoot.hpp"
+#include "finiteVolume/processes/tchemSoot/IgnitionZeroD_ProblemSoot.hpp"
+#include "finiteVolume/processes/tchemSoot/Soot7StepReactionModel.hpp"
 #include "utilities/petscError.hpp"
 #include "utilities/vectorUtilities.hpp"
 
 ablate::finiteVolume::processes::TChemSootReactions::TChemSootReactions(const std::shared_ptr<eos::EOS>& eosIn, const std::shared_ptr<ablate::parameters::Parameters>& options)
-    : eos(std::dynamic_pointer_cast<eos::TChem>(eosIn)), numberSpecies(eosIn->GetSpecies().size()) {
+    : eos(std::dynamic_pointer_cast<eos::TChemSoot>(eosIn)), numberSpecies(eosIn->GetSpecies().size()) {
+    //Understand numberSpecies is species of the gas mechanism + C(s) (i.e Soot), C(s) should be the species in the first index of all vectors
     // make sure that the eos is set
-    if (!std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
-        throw std::invalid_argument("ablate::finiteVolume::processes::TChemSootReactions only accepts EOS of type eos::TChem");
+    if (!std::dynamic_pointer_cast<eos::TChemSoot>(eosIn)) {
+        throw std::invalid_argument("ablate::finiteVolume::processes::TChemSootReactions only accepts EOS of type eos::TChemSoot");
     }
 
     // Make sure the massFractionBounds are valid
@@ -52,7 +54,7 @@ void ablate::finiteVolume::processes::TChemSootReactions::Initialize(ablate::fin
 
     // compute the required state dimension
     auto kineticModelGasConstData = TChem::createGasKineticModelConstData<typename Tines::UseThisDevice<host_exec_space>::type>(eos->GetKineticModelData());
-    const ordinal_type stateVecDim = TChem::Impl::getStateVectorSize(kineticModelGasConstData.nSpec)+2; //2 extra for Carbon and Ndd
+    const ordinal_type stateVecDim = TChem::Impl::getStateVectorSize(kineticModelGasConstData.nSpec)+2; //2 extra for Carbon and Ndd (Kinetic Model Species is only gas species)
 
     // allocate the tChem memory
     stateHost = real_type_2d_view_host("stateVectorDevices", numberCells, stateVecDim);
@@ -60,9 +62,12 @@ void ablate::finiteVolume::processes::TChemSootReactions::Initialize(ablate::fin
     endStateDevice = real_type_2d_view("stateVectorDevicesEnd", numberCells, stateVecDim);
     internalEnergyRefHost = real_type_1d_view_host("internalEnergyRefHost", numberCells);
     internalEnergyRefDevice = Kokkos::create_mirror(internalEnergyRefHost);
+    totInternalEnergyRefHost = real_type_1d_view_host("totinternalEnergyRefHost", numberCells);
+    totInternalEnergyRefDevice = Kokkos::create_mirror(totInternalEnergyRefHost);
     sourceTermsHost = real_type_2d_view_host("sourceTermsHost", numberCells, kineticModelGasConstData.nSpec + 3); //Two Extra Source terms for Ndd and Ycarbon
     sourceTermsDevice = Kokkos::create_mirror(sourceTermsHost);
-    perSpeciesScratchDevice = real_type_2d_view("perSpeciesScratchDevice", numberCells, kineticModelGasConstData.nSpec);
+    perSpeciesScratchDevice = real_type_2d_view("perSpeciesScratchDevice", numberCells, kineticModelGasConstData.nSpec+1);
+    perGasSpeciesScratchDevice = real_type_2d_view("perGasSpeciesScratchDevice", numberCells, kineticModelGasConstData.nSpec);
     timeViewDevice = real_type_1d_view("time", numberCells);
     dtViewDevice = real_type_1d_view("delta time", numberCells);
 
@@ -110,16 +115,14 @@ void ablate::finiteVolume::processes::TChemSootReactions::Initialize(ablate::fin
     kineticModelDataClone = eos->GetKineticModelData().clone(numberCells);
     kineticModelGasConstDataDevices = TChem::createGasKineticModelConstData<typename Tines::UseThisDevice<exec_space>::type>(kineticModelDataClone);
     //Let the Soot reaction rate calculator know where the specific species will be located
-    ablate::finiteVolume::processes::tchemSoot::Soot7StepReactionModel::UpdateSpeciesSpecificIndices<typename Tines::UseThisDevice<exec_space>::type>(kineticModelGasConstData);
+    ablate::finiteVolume::processes::tchemSoot::Soot7StepReactionModel::UpdateSpeciesSpecificIndices<typename Tines::UseThisDevice<exec_space>::type>(eos->GetSpecies());
 
-    //Determine where in the extra variable array the CarbonSoid and Soot Number Density is
+    //Determine where in the extra variable array the Soot Number Density is
     const std::vector<std::string> flowEVComponents = flow.GetSubDomain().GetField("densityEV").components;
-    auto Cidx = std::find(flowEVComponents.begin(),flowEVComponents.end(),"YCarbonSolid")-flowEVComponents.begin();
     auto Nidx = std::find(flowEVComponents.begin(),flowEVComponents.end(),"SootNumberDensity_Mass")-flowEVComponents.begin();
-    if( ( Cidx >= (int)flowEVComponents.size() ) || ( Nidx >= (int)flowEVComponents.size() )){
-        throw std::invalid_argument("ablate::finiteVolume::processes::TChemSootReactions must include the extra variables: YCarbonSolid, SootNumberDensity_Mass!");
+    if( Nidx >= (int)flowEVComponents.size() ){
+        throw std::invalid_argument("ablate::finiteVolume::processes::TChemSootReactions must include the extra variable: SootNumberDensity_Mass!");
     }
-    this->CarbonMass_ind = Cidx;
     this->SootNumberDensity_ind = Nidx;
 }
 
@@ -166,9 +169,11 @@ PetscErrorCode ablate::finiteVolume::processes::TChemSootReactions::ChemistryFlo
     const PetscScalar* flowArray;
     PetscCall(VecGetArrayRead(globFlowVec, &flowArray));
 
-    // Use a parallel for loop to load up the tChem state
+    // Use a parallel for computing the source term
+    auto enthalpyOfFormation = eos->GetEnthalpyOfFormation();
     Kokkos::parallel_for(
         "stateLoadHost", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const auto i) {
+            PetscReal HOFSum = 0;
             // get the host data from the petsc field
             const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
             const std::size_t chemIndex = i - cellRange.start;
@@ -189,60 +194,73 @@ PetscErrorCode ablate::finiteVolume::processes::TChemSootReactions::ChemistryFlo
 
             // get the current state at I
             auto density = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHO];
-            state_at_i(0) = density;//Density
+            state_at_i(0) = density;//Total Mixture Density
             state_at_i(2) = 300.0;//Temperature
-            this->YCarbon = PetscMax(0.0, flowEVField[this->CarbonMass_ind]/density);
+
+            this->YCarbon = PetscMax(0.0, flowDensityField[0] / density);
             this->SootNumberDensity = PetscMax(0.0, flowEVField[this->SootNumberDensity_ind]/density);
-            state_at_i(3+this->numberSpecies) = this->YCarbon;
-            state_at_i(4+this->numberSpecies) = this->SootNumberDensity;
-            //species updates
-//            auto ys = stateVector.MassFractions();
-            real_type yiSum = 0.0;
-            for (ordinal_type s = 0; s < (int) this->numberSpecies-1; s++) {
-                state_at_i[s+3] = PetscMax(0.0, flowDensityField[s] / density);
-                state_at_i[s+3] = PetscMin(1.0, state_at_i[s+3]);
-                yiSum += state_at_i[s+3];
+            state_at_i(2+this->numberSpecies) = this->YCarbon;
+            state_at_i(3+this->numberSpecies) = this->SootNumberDensity;
+
+            //Start at index 1, because index 0 is reserved for C(s), Eventually make this its own index that can be changed and resolved but not atm. TODO::
+            real_type yiSum = this->YCarbon;
+            for (ordinal_type s = 1; s < (int) this->numberSpecies-1; s++) {
+                state_at_i[s+2] = PetscMax(0.0, flowDensityField[s] / density);
+                state_at_i[s+2] = PetscMin(1.0, state_at_i[s+2]);
+                yiSum += state_at_i[s+2];
+                HOFSum += state_at_i[s+2]*enthalpyOfFormation[s];
             }
+            HOFSum += this->YCarbon*enthalpyOfFormation[0];
             if (yiSum > 1.0) {
-                for (PetscInt s = 0; s < (int) this->numberSpecies - 1; s++) {
+                //Normalize all values, include the carbon solid mass fraction
+                for (PetscInt s = 1; s < (int) this->numberSpecies - 1; s++) {
                     // Limit the bounds
-                    state_at_i[s+3] /= yiSum;
+                    state_at_i[s+2] /= yiSum;
                 }
-                state_at_i[3+this->numberSpecies-1] = 0.0;
+                state_at_i[3+this->numberSpecies - 1] /= yiSum; //YC(s)
+                state_at_i[2+this->numberSpecies-1] = 0.0; //Dilute Species
+                HOFSum /= yiSum;
             } else {
-                state_at_i[3+this->numberSpecies - 1] = 1.0 - yiSum;
+                state_at_i[2+this->numberSpecies - 1] = 1.0 - yiSum; //Dilute Species
+                HOFSum += state_at_i[2+this->numberSpecies-1] * enthalpyOfFormation[this->numberSpecies-1]; //dilute species contribution
             }
+
 
             // Compute the internal energy from total ener
             PetscReal speedSquare = 0.0;
             for (PetscInt d = 0; d < dim; d++) {
-                speedSquare += PetscSqr(eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density);
+                speedSquare += PetscSqr(eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density); //KE summation
             }
 
             // compute the internal energy needed to compute temperature
-            internalEnergyRefHost[chemIndex] = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
+            internalEnergyRefHost[chemIndex] = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare; //Etot - KE
+            totInternalEnergyRefHost[chemIndex] = internalEnergyRefHost[chemIndex] + HOFSum;
         });
 
     // copy from host to device
     Kokkos::deep_copy(internalEnergyRefDevice, internalEnergyRefHost);
+    Kokkos::deep_copy(totInternalEnergyRefDevice, totInternalEnergyRefHost);
     Kokkos::deep_copy(stateDevice, stateHost);
+
     //For now we will pass in subviews to temperature and pressure that don't see the carbon mass fraction and Ndd
-    auto stateDeviceGas = Kokkos::subview(stateDevice, Kokkos::ALL(),std::make_pair(0,(int)this->numberSpecies+2) );
+//    auto stateDeviceGas = Kokkos::subview(stateDevice, Kokkos::ALL(),std::make_pair(0,(int)this->numberSpecies+2) );
 
 
-    // setup the enthalpy, temperature, pressure, chemistry function policies
+    // setup the temperature, pressure, chemistry function policies
     auto temperatureFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(TChem::exec_space(), numberCells, Kokkos::AUTO());
     temperatureFunctionPolicy.set_scratch_size(1,
-                                               Kokkos::PerTeam(TChem::Scratch<real_type_1d_view>::shmem_size(ablate::eos::tChem::Temperature::getWorkSpaceSize(kineticModelGasConstDataDevice.nSpec))));
+                                               Kokkos::PerTeam(TChem::Scratch<real_type_1d_view>::shmem_size(ablate::eos::tChemSoot::Temperature::getWorkSpaceSize(kineticModelGasConstDataDevice.nSpec))));
     auto pressureFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(TChem::exec_space(), numberCells, Kokkos::AUTO());
-    pressureFunctionPolicy.set_scratch_size(1, Kokkos::PerTeam(TChem::Scratch<real_type_1d_view>::shmem_size(ablate::eos::tChem::Pressure::getWorkSpaceSize(kineticModelGasConstDataDevice.nSpec))));
+    pressureFunctionPolicy.set_scratch_size(1, Kokkos::PerTeam(TChem::Scratch<real_type_1d_view>::shmem_size(ablate::eos::tChemSoot::Pressure::getWorkSpaceSize(kineticModelGasConstDataDevice.nSpec))));
 
     // Compute temperature into the state field in the device
-    ablate::eos::tChem::Temperature::runDeviceBatch(
-        temperatureFunctionPolicy, stateDeviceGas, internalEnergyRefDevice, perSpeciesScratchDevice, eos->GetEnthalpyOfFormation(), kineticModelGasConstDataDevice);
+    ablate::eos::tChemSoot::Temperature::runDeviceBatch(
+        temperatureFunctionPolicy, stateDevice, internalEnergyRefDevice, perSpeciesScratchDevice, eos->GetEnthalpyOfFormation(), kineticModelGasConstDataDevice);
 
     // Compute the pressure into the state field in the device
-    ablate::eos::tChem::Pressure::runDeviceBatch(pressureFunctionPolicy, stateDeviceGas, kineticModelGasConstDataDevice);
+    ablate::eos::tChemSoot::Pressure::runDeviceBatch(pressureFunctionPolicy, stateDevice, kineticModelGasConstDataDevice);
+
+
 
     double minimumPressure = 0;
     for (int attempt = 0; (attempt < maxAttempts) && minimumPressure == 0; ++attempt) {
@@ -258,11 +276,15 @@ PetscErrorCode ablate::finiteVolume::processes::TChemSootReactions::ChemistryFlo
             });
 
         auto chemistryFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(TChem::exec_space(), numberCells, Kokkos::AUTO());
-        chemistryFunctionPolicy.set_scratch_size(1, Kokkos::PerTeam(TChem::Scratch<real_type_1d_view>::shmem_size(ablate::finiteVolume::processes::tchemSoot::IgnitionZeroDSoot::getWorkSpaceSize(kineticModelGasConstDataDevice))));
+        chemistryFunctionPolicy.set_scratch_size(1, Kokkos::PerTeam(TChem::Scratch<real_type_1d_view>::shmem_size
+                                                                    (ablate::finiteVolume::processes::tchemSoot::IgnitionZeroDSoot::getWorkSpaceSize(kineticModelGasConstDataDevice))));
+
+        //TODO:: REMOVE BELOW PRINT
+        std::cout << ", Int energy = " << totInternalEnergyRefHost(0) << std::endl;
 
         // assume a constant pressure zero D reaction for each cell
         ablate::finiteVolume::processes::tchemSoot::IgnitionZeroDSoot::runDeviceBatch(
-            chemistryFunctionPolicy, tolNewtonDevice, tolTimeDevice, facDevice, timeAdvanceDevice, stateDevice, timeViewDevice, dtViewDevice, endStateDevice, kineticModelGasConstDataDevices);
+            chemistryFunctionPolicy, tolNewtonDevice, tolTimeDevice, facDevice, timeAdvanceDevice, stateDevice, enthalpyOfFormation,perSpeciesScratchDevice,perGasSpeciesScratchDevice, totInternalEnergyRefDevice, timeViewDevice, dtViewDevice, endStateDevice, kineticModelGasConstDataDevices);
 
         // check the output pressure, if it is zero the integration failed
         Kokkos::parallel_reduce(
@@ -280,8 +302,6 @@ PetscErrorCode ablate::finiteVolume::processes::TChemSootReactions::ChemistryFlo
             Kokkos::Min<double>(minimumPressure));
     }
 
-    // Use a parallel for computing the source term
-    auto enthalpyOfFormation = eos->GetEnthalpyOfFormation();
     Kokkos::parallel_for(
         "sourceTermCompute", Kokkos::RangePolicy<typename tChemLib::exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const auto i) {
             // get the host data from the petsc field
@@ -296,9 +316,9 @@ PetscErrorCode ablate::finiteVolume::processes::TChemSootReactions::ChemistryFlo
             const auto endStateAtI = Kokkos::subview(endStateDevice, chemIndex, Kokkos::ALL());
 //            Impl::StateVector<real_type_1d_view> endStateVector(kineticModelGasConstDataDevice.nSpec, endStateAtI);
 //            const auto ye = endStateVector.MassFractions();
-            this->YCarbon = endStateAtI(3+this->numberSpecies);
-            this->SootNumberDensity = endStateAtI(4+this->numberSpecies);
-
+            this->YCarbon = endStateAtI(2+this->numberSpecies);
+            this->SootNumberDensity = endStateAtI(3+this->numberSpecies);
+            T = endStateAtI(2);
 
             // get the source term at this chemIndex
             const auto sourceTermAtI = Kokkos::subview(sourceTermsDevice, chemIndex, Kokkos::ALL());
@@ -308,17 +328,13 @@ PetscErrorCode ablate::finiteVolume::processes::TChemSootReactions::ChemistryFlo
                 // compute the source term from the change in the heat of formation
                 sourceTermAtI(0) = 0.0;
                 for (ordinal_type s = 0; s < (int)this->numberSpecies; s++) {
-                    sourceTermAtI(0) += (stateAtI(3+s) - endStateAtI(3+s)) * enthalpyOfFormation(s);
+                    sourceTermAtI(0) += (stateAtI(3+s) - endStateAtI(3+s)) * enthalpyOfFormation(s+1);
                 }
 
-                for (ordinal_type s = 0; s < (int)this->numberSpecies; ++s) {
+                for (ordinal_type s = 0; s < (int)this->numberSpecies+1; ++s) { //include Ndd and C(s)
                     // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
                     sourceTermAtI(s + 1) = endStateAtI(3+s) - stateAtI(3+s);
                 }
-                //CarbonMassFraction
-                sourceTermAtI(this->numberSpecies+1) = endStateAtI(this->numberSpecies+3) - stateAtI(this->numberSpecies+3);
-                //Soot Number Density
-                sourceTermAtI(this->numberSpecies+2) = endStateAtI(this->numberSpecies+4) - stateAtI(this->numberSpecies+4);
 
                 // Now scale everything by density/dt
                 for (std::size_t j = 0; j < sourceTermAtI.extent(0); ++j) {
@@ -328,11 +344,9 @@ PetscErrorCode ablate::finiteVolume::processes::TChemSootReactions::ChemistryFlo
             } else {
                 // set to zero
                 sourceTermAtI(0) = 0.0;
-                for (ordinal_type s = 0; s < (int)this->numberSpecies; ++s) {
+                for (ordinal_type s = 0; s < (int)this->numberSpecies+1; ++s) { //include Ndd and C(s)
                     sourceTermAtI(s + 1) = 0.0;
                 }
-                sourceTermAtI(this->numberSpecies+1) =0; //Carbon Solid mass Fraction
-                sourceTermAtI(this->numberSpecies+2) = 0;// Soot Number density mass fraction
 
                 // compute the cell centroid
                 PetscReal centroid[3];
@@ -355,7 +369,8 @@ PetscErrorCode ablate::finiteVolume::processes::TChemSootReactions::ChemistryFlo
     // copy the updated state back to host
     Kokkos::deep_copy(sourceTermsHost, sourceTermsDevice);
     this->counter++;
-    std::cout << "After Timestep: " << this->counter << ", at time: " << time+dt <<"!, YC= " << this->YCarbon << ", SND = "<< this->SootNumberDensity << std::endl;
+    std::cout << "After Timestep: " << this->counter << ", at time: " << time+dt <<"!, YC= " << this->YCarbon << ", SND = "<< this->SootNumberDensity <<
+        ", T = "  << T;
     // clean up
     solver.RestoreRange(cellRange);
     PetscFunctionReturn(0);
@@ -397,11 +412,14 @@ PetscErrorCode ablate::finiteVolume::processes::TChemSootReactions::AddChemistry
             const auto sourceAtI = Kokkos::subview(process->sourceTermsHost, chemIndex, Kokkos::ALL());
 
             eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] += sourceAtI[0];
-            for (std::size_t sp = 0; sp < process->numberSpecies; sp++) {
-                densityYiSource[sp] += sourceAtI(sp + 1);
+            //C(s) is the first density Yi Source, add it's value outside loop
+            densityYiSource[0] += sourceAtI(process->numberSpecies);
+            //Add in the rest of the species sources
+            for (std::size_t sp = 1; sp < process->numberSpecies; sp++) {
+                densityYiSource[sp] += sourceAtI(sp);
             }
-            densityEVSource[process->CarbonMass_ind] += sourceAtI(process->numberSpecies+1);
-            densityEVSource[process->SootNumberDensity_ind] += sourceAtI(process->numberSpecies+2);
+            //Add the Soot number density source here
+            densityEVSource[process->SootNumberDensity_ind] += sourceAtI(process->numberSpecies+1);
         });
 
     // cleanup
