@@ -46,7 +46,7 @@ class FieldMonitor : public Monitor, public io::Serializable {
      * @param sequenceNumber
      * @param time
      */
-    virtual void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 
     /**
      * Restore the state from the PetscViewer
@@ -54,7 +54,7 @@ class FieldMonitor : public Monitor, public io::Serializable {
      * @param sequenceNumber
      * @param time
      */
-    virtual void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 };
 
 }  // namespace ablate::monitors
