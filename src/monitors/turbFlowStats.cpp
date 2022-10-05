@@ -192,6 +192,22 @@ void ablate::monitors::TurbFlowStats::Register(std::shared_ptr<ablate::solver::S
     densityFunc = eos->GetThermodynamicFunction(tp::Density, this->GetSolver()->GetSubDomain().GetFields(fLoc::SOL));
 }
 
+void ablate::monitors::TurbFlowStats::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    // Perform the principal save
+    ablate::monitors::FieldMonitor::Save(viewer, sequenceNumber, time);
+
+    // Save the step number
+    ablate::io::Serializable::SaveKeyValue(viewer, "step", step);
+}
+
+void ablate::monitors::TurbFlowStats::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    // Perform the principal restore
+    ablate::monitors::FieldMonitor::Restore(viewer, sequenceNumber, time);
+
+    // Restore the step number
+    ablate::io::Serializable::RestoreKeyValue(viewer, "step", step);
+}
+
 #include <registrar.hpp>
 REGISTER(ablate::monitors::Monitor, ablate::monitors::TurbFlowStats, "Computes turbulent flow statistics", ARG(std::vector<std::string>, "fields", "The name of the field"),
          ARG(ablate::eos::EOS, "eos", "The equation of state"), OPT(ablate::io::interval::Interval, "interval", "The monitor output interval"));
