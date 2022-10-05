@@ -2,7 +2,6 @@
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "io/interval/fixedInterval.hpp"
-#include "radiation/radiation.hpp"
 #include "solver/dynamicRange.hpp"
 #include "utilities/mathUtilities.hpp"
 
@@ -89,7 +88,7 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
         for (PetscInt i = 0; i < static_cast<int>(bSolver.GetBoundaryGeometry().size()); i++) {
             faceRange.Add(bSolver.GetBoundaryGeometry()[i].geometry.faceId);  //!< Add each ID to the range that the radiation solver will use
         }
-        radiation->Setup(faceRange.GetRange(), bSolver.GetSubDomain(), true);
+        radiation->Setup(faceRange.GetRange(), bSolver.GetSubDomain());
         radiation->Initialize(faceRange.GetRange(), bSolver.GetSubDomain());  //!< Pass the non-dynamic range into the radiation solver
 
         bSolver.RegisterPreStep([this](auto ts, auto &solver) { SublimationPreStep(ts, solver); });
