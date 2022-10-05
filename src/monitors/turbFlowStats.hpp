@@ -20,6 +20,7 @@ class TurbFlowStats : public FieldMonitor {
     const std::shared_ptr<ablate::eos::EOS> eos;
     const std::shared_ptr<io::interval::Interval> interval;
     ttf densityFunc;
+    PetscInt step;
 
     static PetscErrorCode MonitorTurbFlowStats(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx);
 
@@ -27,6 +28,9 @@ class TurbFlowStats : public FieldMonitor {
     explicit TurbFlowStats(const std::vector<std::string> nameIn, const std::shared_ptr<ablate::eos::EOS> eosIn, std::shared_ptr<io::interval::Interval> intervalIn = {});
     PetscMonitorFunction GetPetscFunction() override { return MonitorTurbFlowStats; }
     void Register(std::shared_ptr<ablate::solver::Solver> solverIn) override;
+
+    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 };
 
 }  // namespace ablate::monitors
