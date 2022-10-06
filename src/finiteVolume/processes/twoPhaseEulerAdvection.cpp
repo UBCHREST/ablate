@@ -1081,6 +1081,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffe
     };
     SNESSetFunction(snes, r, FormFunctionStiff, &decodeDataStruct);
     SNESSetJacobian(snes, J, J, FormJacobianStiff, &decodeDataStruct);
+    SNESSetTolerances(snes, 1E-8, 1E-12, 1E-8, 100, 1000); // refine relative tolerance for more accurate pressure value
     SNESSetFromOptions(snes);
     SNESSolve(snes, NULL, x);
 
