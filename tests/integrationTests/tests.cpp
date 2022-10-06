@@ -13,6 +13,11 @@ INSTANTIATE_TEST_SUITE_P(
                            .expectedOutputFile = "outputs/compressibleFlow/compressibleFlowVortex.txt",
                            .arguments = "",
                            .expectedFiles{{"outputs/compressibleFlow/compressibleFlowVortex/domain.xmf", "domain.xmf"}}},
+        (MpiTestParameter){.testName = "inputs/compressibleFlow/lesIsotropicTurbulence.yaml",
+                           .nproc = 1,
+                           .expectedOutputFile = "outputs/compressibleFlow/lesIsotropicTurbulence.txt",
+                           .arguments = "",
+                           .expectedFiles{{"outputs/compressibleFlow/lesIsotropicTurbulence/domain.xmf", "domain.xmf"}}},
         (MpiTestParameter){
             .testName = "inputs/compressibleFlow/customCouetteCompressibleFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleFlow/customCouetteCompressibleFlow.txt", .arguments = ""},
         (MpiTestParameter){.testName = "inputs/compressibleFlow/extraVariableTransport.yaml",
