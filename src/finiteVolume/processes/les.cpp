@@ -167,7 +167,7 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesEvFlux(PetscInt dim, con
     for (PetscInt ev = 0; ev < flowParameters->numberEV; ++ev) {
         flux[ev] = 0;
         for (PetscInt d = 0; d < dim; ++d) {
-            PetscReal lesEvFlux_0;
+            PetscReal lesEvFlux_0 = 0;
             PetscReal lesEvFlux_1;
             PetscReal lesEvFlux;
 
