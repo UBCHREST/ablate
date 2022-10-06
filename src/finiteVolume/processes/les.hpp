@@ -29,7 +29,6 @@ class LES : public FlowProcess {
     inline const static PetscReal prT = 1.00;
 
     DiffusionData diffusionData;
-    PetscInt numberSpecies;
 
    public:
     explicit LES(std::string tke);
