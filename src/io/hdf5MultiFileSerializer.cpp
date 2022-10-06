@@ -19,6 +19,14 @@ ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer(std::shared_ptr<abl
         dt = yaml["dt"].as<PetscReal>();
         timeStep = yaml["timeStep"].as<PetscInt>();
         sequenceNumber = yaml["sequenceNumber"].as<PetscInt>();
+
+        // check for restart info warning
+        auto version = yaml["version"];
+        if (version.IsDefined()) {
+            if (version.as<std::string>() != environment::RunEnvironment::GetVersion()) {
+                std::cout << "Warning: Restarting simulation using a different version of ABLATE " << version.as<std::string>() << " vs. " << environment::RunEnvironment::GetVersion();
+            }
+        }
     } else {
         resumed = false;
         time = NAN;
@@ -159,6 +167,7 @@ PetscErrorCode ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializerSaveS
 }
 
 void ablate::io::Hdf5MultiFileSerializer::SaveMetadata(TS ts) const {
+    PetscFunctionBeginUser;
     YAML::Emitter out;
     out << YAML::BeginMap;
     out << YAML::Key << "time";
@@ -169,6 +178,8 @@ void ablate::io::Hdf5MultiFileSerializer::SaveMetadata(TS ts) const {
     out << YAML::Value << timeStep;
     out << YAML::Key << "sequenceNumber";
     out << YAML::Value << sequenceNumber;
+    out << YAML::Key << "version";
+    out << YAML::Value << std::string(environment::RunEnvironment::GetVersion());
     out << YAML::EndMap;
 
     int rank;
@@ -180,6 +191,7 @@ void ablate::io::Hdf5MultiFileSerializer::SaveMetadata(TS ts) const {
         restartFile << out.c_str();
         restartFile.close();
     }
+    PetscFunctionReturnVoid();
 }
 
 void ablate::io::Hdf5MultiFileSerializer::RestoreTS(TS ts) {

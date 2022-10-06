@@ -8,7 +8,16 @@ namespace ablate::boundarySolver {
 class BoundaryProcess {
    public:
     virtual ~BoundaryProcess() = default;
-    virtual void Initialize(ablate::boundarySolver::BoundarySolver& bSolver) = 0;
+    /**
+     * Setup up all functions not dependent upon the mesh
+     * @param fv
+     */
+    virtual void Setup(ablate::boundarySolver::BoundarySolver& fv) = 0;
+    /**
+     * Set up mesh dependent initialization
+     * @param fv
+     */
+    virtual void Initialize(ablate::boundarySolver::BoundarySolver& fv){};
 };
 
 }  // namespace ablate::boundarySolver

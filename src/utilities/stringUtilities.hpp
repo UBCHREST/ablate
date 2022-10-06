@@ -39,6 +39,14 @@ class StringUtilities {
         return strcopy;
     }
 
+    /**
+     * Check to see if subStr is in the str
+     * @param str
+     * @param substr
+     * @return
+     */
+    static inline bool Contains(const std::string_view& str, const std::string_view& subTtr) { return str.find(subTtr) != str.npos; }
+
    private:
     StringUtilities() = delete;
 };

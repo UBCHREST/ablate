@@ -79,11 +79,16 @@ solvers:
       - !ablate::boundarySolver::lodi::Inlet
         eos: *eos
   - !ablate::radiation::VolumeRadiation
-    id: radiation
+    id: radiationSolver
     region:
       name: interiorCells
-    fieldBoundary:
-      name: boundaryFaces
-    rays: 5
-    properties: !ablate::eos::radiationProperties::Constant
-      absorptivity: 1
+    interval: 1
+    radiation: !ablate::radiation::Radiation
+      id: radiation
+      region:
+        name: interiorCells
+      fieldBoundary:
+        name: boundaryCells
+      rays: 5
+      properties: !ablate::eos::radiationProperties::Constant
+        absorptivity: 1

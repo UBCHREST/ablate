@@ -40,7 +40,7 @@ static void FillDensityMassFraction(const ablate::domain::Field& densityYiField,
 struct TChemCreateAndViewParameters {
     std::filesystem::path mechFile;
     std::filesystem::path thermoFile;
-    std::string expectedView;
+    std::string expectedViewStart;
 };
 
 class TChemCreateAndViewFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemCreateAndViewParameters> {};
@@ -56,15 +56,19 @@ TEST_P(TChemCreateAndViewFixture, ShouldCreateAndView) {
 
     // assert the output is as expected
     auto outputString = outputStream.str();
-    ASSERT_EQ(outputString, GetParam().expectedView);
+
+    // only check the start because the kokkos details may change on each machine
+    bool startsWith = outputString.rfind(GetParam().expectedViewStart, 0) == 0;
+
+    ASSERT_TRUE(startsWith) << "Should start with expected string. ";
 }
 
 INSTANTIATE_TEST_SUITE_P(
     TChemTests, TChemCreateAndViewFixture,
     testing::Values((TChemCreateAndViewParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                    .thermoFile = "inputs/eos/thermo30.dat",
-                                                   .expectedView = "EOS: TChem\n\tmechFile: \"inputs/eos/grimech30.dat\"\n\tthermoFile: \"inputs/eos/thermo30.dat\"\n\tnumberSpecies: 53\n"},
-                    (TChemCreateAndViewParameters){.mechFile = "inputs/eos/gri30.yaml", .expectedView = "EOS: TChem\n\tmechFile: \"inputs/eos/gri30.yaml\"\n\tnumberSpecies: 53\n"}),
+                                                   .expectedViewStart = "EOS: TChem\n\tmechFile: \"inputs/eos/grimech30.dat\"\n\tthermoFile: \"inputs/eos/thermo30.dat\"\n\tnumberSpecies: 53\n"},
+                    (TChemCreateAndViewParameters){.mechFile = "inputs/eos/gri30.yaml", .expectedViewStart = "EOS: TChem\n\tmechFile: \"inputs/eos/gri30.yaml\"\n\tnumberSpecies: 53\n"}),
     [](const testing::TestParamInfo<TChemCreateAndViewParameters>& info) {
         return testingResources::PetscTestFixture::SanitizeTestName(info.param.mechFile.string() + "_" + info.param.thermoFile.string());
     });
@@ -499,9 +503,9 @@ TEST_P(TChemFieldFunctionTestFixture, ShouldComputeField) {
 
     // act
     auto stateEulerFunction = eos->GetFieldFunctionFunction("euler", params.property1, params.property2);
-    stateEulerFunction(params.property1Value, params.property2Value, params.velocity.size(), params.velocity.data(), yi.data(), actualEulerValue.data());
+    stateEulerFunction(params.property1Value, params.property2Value, (PetscInt)params.velocity.size(), params.velocity.data(), yi.data(), actualEulerValue.data());
     auto stateDensityYiFunction = eos->GetFieldFunctionFunction("densityYi", params.property1, params.property2);
-    stateDensityYiFunction(params.property1Value, params.property2Value, params.velocity.size(), params.velocity.data(), yi.data(), actualDensityYiValue.data());
+    stateDensityYiFunction(params.property1Value, params.property2Value, (PetscInt)params.velocity.size(), params.velocity.data(), yi.data(), actualDensityYiValue.data());
 
     // assert
     for (std::size_t c = 0; c < params.expectedEulerValue.size(); c++) {
@@ -680,3 +684,156 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemFieldFunctionTestFixture,
                              return std::to_string(info.index) + "_from_" + std::string(to_string(info.param.property1)) + "_" + std::string(to_string(info.param.property2)) + "_with_" +
                                     info.param.mechFile.stem().string();
                          });
+
+struct TCElementTestParameters {
+    std::filesystem::path mechFile;
+    std::filesystem::path thermoFile;
+    std::map<std::string, double> expectedElementInformation;
+};
+
+class TCElementTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TCElementTestParameters> {};
+
+TEST_P(TCElementTestFixture, ShouldDetermineElements) {
+    // arrange
+    auto eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
+
+    // get the test params
+    const auto& params = GetParam();
+
+    // act
+    auto elementInformation = eos->GetElementInformation();
+
+    // assert
+    ASSERT_EQ(params.expectedElementInformation, elementInformation);
+}
+
+INSTANTIATE_TEST_SUITE_P(TChemTests, TCElementTestFixture,
+                         testing::Values(
+                             (TCElementTestParameters){
+                                 .mechFile = "inputs/eos/grimech30.dat",
+                                 .thermoFile = "inputs/eos/thermo30.dat",
+                                 .expectedElementInformation = {{"AR", 39.948}, {"C", 12.01115}, {"H", 1.00797}, {"N", 14.0067}, {"O", 15.9994}},
+                             },
+                             (TCElementTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                                                       .expectedElementInformation = {{"AR", 39.948}, {"C", 12.01115}, {"H", 1.00797}, {"N", 14.0067}, {"O", 15.9994}}}),
+                         [](const testing::TestParamInfo<TCElementTestParameters>& info) { return TCElementTestFixture::SanitizeTestName(info.param.mechFile.string()); });
+
+struct TCSpeciesInformationTestParameters {
+    std::filesystem::path mechFile;
+    std::filesystem::path thermoFile;
+    std::map<std::string, double> expectedSpeciesMolecularMass;
+    std::map<std::string, std::map<std::string, int>> expectedSpeciesElementInformation;
+};
+
+class TCSpeciesInformationTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TCSpeciesInformationTestParameters> {};
+
+TEST_P(TCSpeciesInformationTestFixture, ShouldDetermineSpeciesElementInformation) {
+    // arrange
+    auto eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
+
+    // get the test params
+    const auto& params = GetParam();
+
+    // act
+    auto speciesElementInformation = eos->GetSpeciesElementalInformation();
+
+    // assert
+    ASSERT_EQ(params.expectedSpeciesElementInformation, speciesElementInformation);
+}
+
+TEST_P(TCSpeciesInformationTestFixture, ShouldDetermineSpeciesMolecularMass) {
+    // arrange
+    auto eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
+
+    // get the test params
+    const auto& params = GetParam();
+
+    // act
+    auto molecularMass = eos->GetSpeciesMolecularMass();
+
+    // assert
+    ASSERT_EQ(params.expectedSpeciesMolecularMass.size(), molecularMass.size()) << "the number of species should be correct";
+    for (const auto& [species, mw] : params.expectedSpeciesMolecularMass) {
+        EXPECT_NEAR(mw, molecularMass[species], 1E-2) << "the mw for " << species << " should be correct";
+    }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    TChemTests, TCSpeciesInformationTestFixture,
+    testing::Values(
+        (TCSpeciesInformationTestParameters){
+            .mechFile = "inputs/eos/grimech30.dat",
+            .thermoFile = "inputs/eos/thermo30.dat",
+            .expectedSpeciesMolecularMass = {{"AR", 39.948},     {"C", 12.0112},    {"C2H", 25.0303},   {"C2H2", 26.0382},  {"C2H3", 27.0462},   {"C2H4", 28.0542},   {"C2H5", 29.0622},
+                                             {"C2H6", 30.0701},  {"C3H7", 43.0892}, {"C3H8", 44.0972},  {"CH", 13.0191},    {"CH2", 14.0271},    {"CH2(S)", 14.0271}, {"CH2CHO", 43.0456},
+                                             {"CH2CO", 42.0376}, {"CH2O", 30.0265}, {"CH2OH", 31.0345}, {"CH3", 15.0351},   {"CH3CHO", 44.0536}, {"CH3O", 31.0345},   {"CH3OH", 32.0424},
+                                             {"CH4", 16.043},    {"CN", 26.0179},   {"CO", 28.0106},    {"CO2", 44.01},     {"H", 1.00797},      {"H2", 2.01594},     {"H2CN", 28.0338},
+                                             {"H2O", 18.0153},   {"H2O2", 34.0147}, {"HCCO", 41.0297},  {"HCCOH", 42.0376}, {"HCN", 27.0258},    {"HCNN", 41.0325},   {"HCNO", 43.0252},
+                                             {"HCO", 29.0185},   {"HNCO", 43.0252}, {"HNO", 31.0141},   {"HO2", 33.0068},   {"HOCN", 43.0252},   {"N", 14.0067},      {"N2", 28.0134},
+                                             {"N2O", 44.0128},   {"NCO", 42.0173},  {"NH", 15.0147},    {"NH2", 16.0226},   {"NH3", 17.0306},    {"NNH", 29.0214},    {"NO", 30.0061},
+                                             {"NO2", 46.0055},   {"O", 15.9994},    {"O2", 31.9988},    {"OH", 17.0074}},
+            .expectedSpeciesElementInformation = {{"AR", {{"AR", 1}, {"C", 0}, {"H", 0}, {"N", 0}, {"O", 0}}},     {"C", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 0}, {"O", 0}}},
+                                                  {"C2H", {{"AR", 0}, {"C", 2}, {"H", 1}, {"N", 0}, {"O", 0}}},    {"C2H2", {{"AR", 0}, {"C", 2}, {"H", 2}, {"N", 0}, {"O", 0}}},
+                                                  {"C2H3", {{"AR", 0}, {"C", 2}, {"H", 3}, {"N", 0}, {"O", 0}}},   {"C2H4", {{"AR", 0}, {"C", 2}, {"H", 4}, {"N", 0}, {"O", 0}}},
+                                                  {"C2H5", {{"AR", 0}, {"C", 2}, {"H", 5}, {"N", 0}, {"O", 0}}},   {"C2H6", {{"AR", 0}, {"C", 2}, {"H", 6}, {"N", 0}, {"O", 0}}},
+                                                  {"C3H7", {{"AR", 0}, {"C", 3}, {"H", 7}, {"N", 0}, {"O", 0}}},   {"C3H8", {{"AR", 0}, {"C", 3}, {"H", 8}, {"N", 0}, {"O", 0}}},
+                                                  {"CH", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 0}, {"O", 0}}},     {"CH2", {{"AR", 0}, {"C", 1}, {"H", 2}, {"N", 0}, {"O", 0}}},
+                                                  {"CH2(S)", {{"AR", 0}, {"C", 1}, {"H", 2}, {"N", 0}, {"O", 0}}}, {"CH2CHO", {{"AR", 0}, {"C", 2}, {"H", 3}, {"N", 0}, {"O", 1}}},
+                                                  {"CH2CO", {{"AR", 0}, {"C", 2}, {"H", 2}, {"N", 0}, {"O", 1}}},  {"CH2O", {{"AR", 0}, {"C", 1}, {"H", 2}, {"N", 0}, {"O", 1}}},
+                                                  {"CH2OH", {{"AR", 0}, {"C", 1}, {"H", 3}, {"N", 0}, {"O", 1}}},  {"CH3", {{"AR", 0}, {"C", 1}, {"H", 3}, {"N", 0}, {"O", 0}}},
+                                                  {"CH3CHO", {{"AR", 0}, {"C", 2}, {"H", 4}, {"N", 0}, {"O", 1}}}, {"CH3O", {{"AR", 0}, {"C", 1}, {"H", 3}, {"N", 0}, {"O", 1}}},
+                                                  {"CH3OH", {{"AR", 0}, {"C", 1}, {"H", 4}, {"N", 0}, {"O", 1}}},  {"CH4", {{"AR", 0}, {"C", 1}, {"H", 4}, {"N", 0}, {"O", 0}}},
+                                                  {"CN", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 1}, {"O", 0}}},     {"CO", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 0}, {"O", 1}}},
+                                                  {"CO2", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 0}, {"O", 2}}},    {"H", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 0}, {"O", 0}}},
+                                                  {"H2", {{"AR", 0}, {"C", 0}, {"H", 2}, {"N", 0}, {"O", 0}}},     {"H2CN", {{"AR", 0}, {"C", 1}, {"H", 2}, {"N", 1}, {"O", 0}}},
+                                                  {"H2O", {{"AR", 0}, {"C", 0}, {"H", 2}, {"N", 0}, {"O", 1}}},    {"H2O2", {{"AR", 0}, {"C", 0}, {"H", 2}, {"N", 0}, {"O", 2}}},
+                                                  {"HCCO", {{"AR", 0}, {"C", 2}, {"H", 1}, {"N", 0}, {"O", 1}}},   {"HCCOH", {{"AR", 0}, {"C", 2}, {"H", 2}, {"N", 0}, {"O", 1}}},
+                                                  {"HCN", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 1}, {"O", 0}}},    {"HCNN", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 2}, {"O", 0}}},
+                                                  {"HCNO", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 1}, {"O", 1}}},   {"HCO", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 0}, {"O", 1}}},
+                                                  {"HNCO", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 1}, {"O", 1}}},   {"HNO", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 1}, {"O", 1}}},
+                                                  {"HO2", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 0}, {"O", 2}}},    {"HOCN", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 1}, {"O", 1}}},
+                                                  {"N", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 1}, {"O", 0}}},      {"N2", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 2}, {"O", 0}}},
+                                                  {"N2O", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 2}, {"O", 1}}},    {"NCO", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 1}, {"O", 1}}},
+                                                  {"NH", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 1}, {"O", 0}}},     {"NH2", {{"AR", 0}, {"C", 0}, {"H", 2}, {"N", 1}, {"O", 0}}},
+                                                  {"NH3", {{"AR", 0}, {"C", 0}, {"H", 3}, {"N", 1}, {"O", 0}}},    {"NNH", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 2}, {"O", 0}}},
+                                                  {"NO", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 1}, {"O", 1}}},     {"NO2", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 1}, {"O", 2}}},
+                                                  {"O", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 0}, {"O", 1}}},      {"O2", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 0}, {"O", 2}}},
+                                                  {"OH", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 0}, {"O", 1}}}}},
+        (TCSpeciesInformationTestParameters){
+            .mechFile = "inputs/eos/gri30.yaml",
+            .expectedSpeciesMolecularMass = {{"AR", 39.948},     {"C", 12.0112},    {"C2H", 25.0303},   {"C2H2", 26.0382},  {"C2H3", 27.0462},   {"C2H4", 28.0542},   {"C2H5", 29.0622},
+                                             {"C2H6", 30.0701},  {"C3H7", 43.0892}, {"C3H8", 44.0972},  {"CH", 13.0191},    {"CH2", 14.0271},    {"CH2(S)", 14.0271}, {"CH2CHO", 43.0456},
+                                             {"CH2CO", 42.0376}, {"CH2O", 30.0265}, {"CH2OH", 31.0345}, {"CH3", 15.0351},   {"CH3CHO", 44.0536}, {"CH3O", 31.0345},   {"CH3OH", 32.0424},
+                                             {"CH4", 16.043},    {"CN", 26.0179},   {"CO", 28.0106},    {"CO2", 44.01},     {"H", 1.00797},      {"H2", 2.01594},     {"H2CN", 28.0338},
+                                             {"H2O", 18.0153},   {"H2O2", 34.0147}, {"HCCO", 41.0297},  {"HCCOH", 42.0376}, {"HCN", 27.0258},    {"HCNN", 41.0325},   {"HCNO", 43.0252},
+                                             {"HCO", 29.0185},   {"HNCO", 43.0252}, {"HNO", 31.0141},   {"HO2", 33.0068},   {"HOCN", 43.0252},   {"N", 14.0067},      {"N2", 28.0134},
+                                             {"N2O", 44.0128},   {"NCO", 42.0173},  {"NH", 15.0147},    {"NH2", 16.0226},   {"NH3", 17.0306},    {"NNH", 29.0214},    {"NO", 30.0061},
+                                             {"NO2", 46.0055},   {"O", 15.9994},    {"O2", 31.9988},    {"OH", 17.0074}},
+            .expectedSpeciesElementInformation = {{"AR", {{"AR", 1}, {"C", 0}, {"H", 0}, {"N", 0}, {"O", 0}}},     {"C", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 0}, {"O", 0}}},
+                                                  {"C2H", {{"AR", 0}, {"C", 2}, {"H", 1}, {"N", 0}, {"O", 0}}},    {"C2H2", {{"AR", 0}, {"C", 2}, {"H", 2}, {"N", 0}, {"O", 0}}},
+                                                  {"C2H3", {{"AR", 0}, {"C", 2}, {"H", 3}, {"N", 0}, {"O", 0}}},   {"C2H4", {{"AR", 0}, {"C", 2}, {"H", 4}, {"N", 0}, {"O", 0}}},
+                                                  {"C2H5", {{"AR", 0}, {"C", 2}, {"H", 5}, {"N", 0}, {"O", 0}}},   {"C2H6", {{"AR", 0}, {"C", 2}, {"H", 6}, {"N", 0}, {"O", 0}}},
+                                                  {"C3H7", {{"AR", 0}, {"C", 3}, {"H", 7}, {"N", 0}, {"O", 0}}},   {"C3H8", {{"AR", 0}, {"C", 3}, {"H", 8}, {"N", 0}, {"O", 0}}},
+                                                  {"CH", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 0}, {"O", 0}}},     {"CH2", {{"AR", 0}, {"C", 1}, {"H", 2}, {"N", 0}, {"O", 0}}},
+                                                  {"CH2(S)", {{"AR", 0}, {"C", 1}, {"H", 2}, {"N", 0}, {"O", 0}}}, {"CH2CHO", {{"AR", 0}, {"C", 2}, {"H", 3}, {"N", 0}, {"O", 1}}},
+                                                  {"CH2CO", {{"AR", 0}, {"C", 2}, {"H", 2}, {"N", 0}, {"O", 1}}},  {"CH2O", {{"AR", 0}, {"C", 1}, {"H", 2}, {"N", 0}, {"O", 1}}},
+                                                  {"CH2OH", {{"AR", 0}, {"C", 1}, {"H", 3}, {"N", 0}, {"O", 1}}},  {"CH3", {{"AR", 0}, {"C", 1}, {"H", 3}, {"N", 0}, {"O", 0}}},
+                                                  {"CH3CHO", {{"AR", 0}, {"C", 2}, {"H", 4}, {"N", 0}, {"O", 1}}}, {"CH3O", {{"AR", 0}, {"C", 1}, {"H", 3}, {"N", 0}, {"O", 1}}},
+                                                  {"CH3OH", {{"AR", 0}, {"C", 1}, {"H", 4}, {"N", 0}, {"O", 1}}},  {"CH4", {{"AR", 0}, {"C", 1}, {"H", 4}, {"N", 0}, {"O", 0}}},
+                                                  {"CN", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 1}, {"O", 0}}},     {"CO", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 0}, {"O", 1}}},
+                                                  {"CO2", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 0}, {"O", 2}}},    {"H", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 0}, {"O", 0}}},
+                                                  {"H2", {{"AR", 0}, {"C", 0}, {"H", 2}, {"N", 0}, {"O", 0}}},     {"H2CN", {{"AR", 0}, {"C", 1}, {"H", 2}, {"N", 1}, {"O", 0}}},
+                                                  {"H2O", {{"AR", 0}, {"C", 0}, {"H", 2}, {"N", 0}, {"O", 1}}},    {"H2O2", {{"AR", 0}, {"C", 0}, {"H", 2}, {"N", 0}, {"O", 2}}},
+                                                  {"HCCO", {{"AR", 0}, {"C", 2}, {"H", 1}, {"N", 0}, {"O", 1}}},   {"HCCOH", {{"AR", 0}, {"C", 2}, {"H", 2}, {"N", 0}, {"O", 1}}},
+                                                  {"HCN", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 1}, {"O", 0}}},    {"HCNN", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 2}, {"O", 0}}},
+                                                  {"HCNO", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 1}, {"O", 1}}},   {"HCO", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 0}, {"O", 1}}},
+                                                  {"HNCO", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 1}, {"O", 1}}},   {"HNO", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 1}, {"O", 1}}},
+                                                  {"HO2", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 0}, {"O", 2}}},    {"HOCN", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 1}, {"O", 1}}},
+                                                  {"N", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 1}, {"O", 0}}},      {"N2", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 2}, {"O", 0}}},
+                                                  {"N2O", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 2}, {"O", 1}}},    {"NCO", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 1}, {"O", 1}}},
+                                                  {"NH", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 1}, {"O", 0}}},     {"NH2", {{"AR", 0}, {"C", 0}, {"H", 2}, {"N", 1}, {"O", 0}}},
+                                                  {"NH3", {{"AR", 0}, {"C", 0}, {"H", 3}, {"N", 1}, {"O", 0}}},    {"NNH", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 2}, {"O", 0}}},
+                                                  {"NO", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 1}, {"O", 1}}},     {"NO2", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 1}, {"O", 2}}},
+                                                  {"O", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 0}, {"O", 1}}},      {"O2", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 0}, {"O", 2}}},
+                                                  {"OH", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 0}, {"O", 1}}}}}),
+    [](const testing::TestParamInfo<TCSpeciesInformationTestParameters>& info) { return TCElementTestFixture::SanitizeTestName(info.param.mechFile.string()); });

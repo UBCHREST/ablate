@@ -105,7 +105,7 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(const PetscInt sOff[],
     }
 }
 
-void ablate::boundarySolver::lodi::LODIBoundary::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
+void ablate::boundarySolver::lodi::LODIBoundary::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
     // Compute the number of equations that need to be solved
     dims = bSolver.GetSubDomain().GetDimensions();
     if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::EULER_FIELD)) {
@@ -152,10 +152,10 @@ void ablate::boundarySolver::lodi::LODIBoundary::Initialize(ablate::boundarySolv
     }
 
     // Call Initialize to setup the other needed vars
-    Initialize(dims, nEqs, nSpecEqs, nEvEqs, bSolver.GetSubDomain().GetFields());
+    Setup(dims, nEqs, nSpecEqs, nEvEqs, bSolver.GetSubDomain().GetFields());
 }
 
-void ablate::boundarySolver::lodi::LODIBoundary::Initialize(PetscInt dimsIn, PetscInt nEqsIn, PetscInt nSpecEqsIn, PetscInt nEvEqsIn, const std::vector<domain::Field> &fields) {
+void ablate::boundarySolver::lodi::LODIBoundary::Setup(PetscInt dimsIn, PetscInt nEqsIn, PetscInt nSpecEqsIn, PetscInt nEvEqsIn, const std::vector<domain::Field> &fields) {
     dims = dimsIn;
     nEqs = nEqsIn;
     nSpecEqs = nSpecEqsIn;

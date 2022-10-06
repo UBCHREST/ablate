@@ -9,8 +9,8 @@ ablate::boundarySolver::lodi::Inlet::Inlet(std::shared_ptr<eos::EOS> eos, std::s
                                            std::shared_ptr<ablate::mathFunctions::MathFunction> prescribedVelocity)
     : LODIBoundary(std::move(eos), std::move(pressureGradientScaling)), prescribedVelocity(std::move(prescribedVelocity)) {}
 
-void ablate::boundarySolver::lodi::Inlet::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
-    ablate::boundarySolver::lodi::LODIBoundary::Initialize(bSolver);
+void ablate::boundarySolver::lodi::Inlet::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
+    ablate::boundarySolver::lodi::LODIBoundary::Setup(bSolver);
 
     bSolver.RegisterFunction(InletFunction, this, fieldNames, fieldNames, {});
 

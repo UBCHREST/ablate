@@ -7,8 +7,8 @@ using fp = ablate::finiteVolume::CompressibleFlowFields;
 ablate::boundarySolver::lodi::IsothermalWall::IsothermalWall(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling)
     : LODIBoundary(std::move(eos), std::move(pressureGradientScaling)) {}
 
-void ablate::boundarySolver::lodi::IsothermalWall::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
-    ablate::boundarySolver::lodi::LODIBoundary::Initialize(bSolver);
+void ablate::boundarySolver::lodi::IsothermalWall::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
+    ablate::boundarySolver::lodi::LODIBoundary::Setup(bSolver);
     bSolver.RegisterFunction(IsothermalWallFunction, this, fieldNames, fieldNames, {});
 
     if (nSpecEqs) {

@@ -67,7 +67,7 @@ TEST_P(OpenBoundaryTestFixture, ShouldComputeCorrectSourceTerm) {
     // create the boundary
     std::shared_ptr<ablate::boundarySolver::lodi::LODIBoundary> boundary =
         std::make_shared<ablate::boundarySolver::lodi::OpenBoundary>(mockEOS, GetParam().reflectFactor, GetParam().referencePressure, GetParam().maxAcousticsLength, params.getPgs());
-    boundary->Initialize(params.dim, params.nEqs, params.nSpecEqs, params.nEvEqs, params.fields);
+    boundary->Setup(params.dim, params.nEqs, params.nSpecEqs, params.nEvEqs, params.fields);
 
     PetscInt uOff[3] = {0, params.dim + 2, params.dim + 2 + params.nSpecEqs};
     PetscInt aOff[1] = {0};
