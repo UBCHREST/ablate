@@ -305,5 +305,5 @@ INSTANTIATE_TEST_SUITE_P(
                                                           .expectedMG = 0.0,
                                                           .expectedML = 0.0,
                                                           .expectedPressure = 100000.0,
-                                                          .expectedAlpha = 1.0}),
+                                                          .expectedAlpha = 0.0}),
     [](const testing::TestParamInfo<TwoPhaseEulerAdvectionTestDecodeStateParameters>& info) { return std::to_string(info.index); });
