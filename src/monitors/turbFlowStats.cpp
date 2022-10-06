@@ -11,7 +11,9 @@ using Constant = ablate::utilities::Constants;
 typedef ablate::solver::Range Range;
 
 ablate::monitors::TurbFlowStats::TurbFlowStats(const std::vector<std::string> nameIn, const std::shared_ptr<ablate::eos::EOS> eosIn, std::shared_ptr<io::interval::Interval> intervalIn)
-    : fieldNames(nameIn), eos(eosIn), interval(intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>()) {}
+    : fieldNames(nameIn), eos(eosIn), interval(intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>()) {
+    step = 0;
+}
 
 PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
     PetscFunctionBeginUser;
@@ -21,6 +23,9 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
     auto monitor = (ablate::monitors::TurbFlowStats*)ctx;
 
     if (monitor->interval->Check(PetscObjectComm((PetscObject)ts), step, crtime)) {
+        // Increment the number of steps taken so far
+        monitor->step += 1;
+
         // Extract all fields to be monitored
         std::vector<Vec> vec(monitor->fieldNames.size(), nullptr);
         std::vector<IS> vecIS(monitor->fieldNames.size(), nullptr);
@@ -120,8 +125,8 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
                         monitorPt[offset + SectionLabels::sumSqr] += fieldPt[p] * fieldPt[p];
                         monitorPt[offset + SectionLabels::favreAvg] =
                             monitorPt[offset + SectionLabels::densityDtMult] / (monitorPt[monitorFields[FieldPlacements::densityDtSum].offset] + Constant::tiny);
-                        monitorPt[offset + SectionLabels::rms] =
-                            PetscSqrtReal(monitorPt[offset + SectionLabels::sumSqr] / (step + Constant::tiny) - PetscPowReal(monitorPt[offset + SectionLabels::sum] / (step + Constant::tiny), 2));
+                        monitorPt[offset + SectionLabels::rms] = PetscSqrtReal(monitorPt[offset + SectionLabels::sumSqr] / (monitor->step + Constant::tiny) -
+                                                                               PetscPowReal(monitorPt[offset + SectionLabels::sum] / (monitor->step + Constant::tiny), 2));
                         monitorPt[offset + SectionLabels::mRms] =
                             PetscSqrtReal(monitorPt[offset + SectionLabels::densitySqr] / (monitorPt[monitorFields[FieldPlacements::densitySum].offset] + Constant::tiny) -
                                           PetscPowReal(monitorPt[offset + SectionLabels::densityMult] / (monitorPt[monitorFields[FieldPlacements::densitySum].offset] + Constant::tiny), 2));
@@ -185,6 +190,22 @@ void ablate::monitors::TurbFlowStats::Register(std::shared_ptr<ablate::solver::S
 
     // Get the density thermodynamic function
     densityFunc = eos->GetThermodynamicFunction(tp::Density, this->GetSolver()->GetSubDomain().GetFields(fLoc::SOL));
+}
+
+void ablate::monitors::TurbFlowStats::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    // Perform the principal save
+    ablate::monitors::FieldMonitor::Save(viewer, sequenceNumber, time);
+
+    // Save the step number
+    ablate::io::Serializable::SaveKeyValue(viewer, "step", step);
+}
+
+void ablate::monitors::TurbFlowStats::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    // Perform the principal restore
+    ablate::monitors::FieldMonitor::Restore(viewer, sequenceNumber, time);
+
+    // Restore the step number
+    ablate::io::Serializable::RestoreKeyValue(viewer, "step", step);
 }
 
 #include <registrar.hpp>

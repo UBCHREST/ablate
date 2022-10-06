@@ -25,7 +25,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
               std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> = {});
 
-    ~Radiation();
+    virtual ~Radiation();
 
     /** Carriers are attached to the solve particles and bring ray information from the local segments to the origin cells
      * They are transported directly from the segment to the origin. They carry only the values that the Segment computes and not the spatial information necessary to  */
@@ -47,25 +47,30 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     };
 
     std::map<PetscInt, Origin> origin;
+    std::map<std::string, bool> presence;  //!< Map to track the local presence of search particles during the initialization
 
     /** Returns the black body intensity for a given temperature and emissivity */
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
 
     /** SubDomain Register and Setup **/
-    void Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain, bool surfaceIn);
+    void Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
     /**
      * @param cellRange The range of cells for which rays are initialized
      */
-    void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
+    virtual void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
-    /** Get the subdomain */
     inline PetscReal GetIntensity(PetscInt iCell) {  //!< Function to give other classes access to the intensity
         return origin[iCell].intensity;
     }
 
     /// Class Methods
     void Solve(Vec solVec, ablate::domain::Field temperatureField, Vec aux);
+
+    virtual void ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray, PetscInt stepcount);  //!< Routine to move the particle one step
+    virtual PetscReal SurfaceComponent(DM* faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi,
+                                       PetscInt ntheta);                         //!< Dummy function that doesn't do anything unless it is overridden by the surface implementation
+    virtual PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM& solDm);  //!< Get the index of the cell which the losses should be calculated from
 
    protected:
     DM radsolve{};   //!< DM associated with the radiation particles
@@ -80,6 +85,9 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     struct Segment {
         std::vector<PetscInt> cells;  //!< Stores the cell indices of the segment locally.
         std::vector<PetscReal> h;     //!< Stores the space steps of the segment locally.
+        PetscReal Ij = 0;             //!< Black body source for the segment. Make sure that this is reset every solve after the value has been transported.
+        PetscReal Krad = 1;           //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
+        PetscReal I0 = 0;
     };
 
     /** Identifiers are carrying by both the search and solve particles in order to associate them with their origins and ray segments
@@ -101,7 +109,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
         PetscReal xdir;
         PetscReal ydir;
         PetscReal zdir;
-        //        PetscInt current;
         PetscReal hhere;
     };
 
@@ -113,13 +120,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      * @param face the struct containing information about a cell face
      */
     PetscReal FaceIntersect(PetscInt ip, Virtualcoord* virtualcoord, PetscFVFaceGeom* face) const;  //!< Returns the distance away from a virtual coordinate at which its path intersects a line.
-
-    /**
-     * In the case that the radiation solver is being used for surface flux calculations,
-     * the particles that are not travelling outward from the face must be deleted.
-     * Only a hemisphere of rays is required.
-     * */
-    void InitializationConvertSurface(ablate::domain::SubDomain& subDomain);
 
     /** Update the coordinates of the particle using the virtual coordinates
      * Moves the particle in physical space instead of only updating the virtual coordinates
@@ -140,8 +140,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     eos::ThermodynamicTemperatureFunction absorptivityFunction;
 
     PetscMPIInt numRanks = 0;  //!< The number of the ranks that the simulation contains. This will be used to support global indexing.
-
-    bool surface = false;  //!< Determines whether or not the radiation solver will be treated as a surface or volume solver
 
     /// Class inputs and Variables
     PetscInt dim = 0;  //!< Number of dimensions that the domain exists within
