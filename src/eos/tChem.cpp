@@ -58,7 +58,6 @@ ablate::eos::TChem::TChem(std::filesystem::path mechanismFileIn, std::filesystem
 
         // set reference information
         stateHost.Temperature() = TREF;
-        stateHost.MassFractions()() = 0.0;
         Kokkos::deep_copy(stateDevice, stateHostView);
 
         // size up the other scratch information
@@ -140,8 +139,8 @@ void ablate::eos::TChem::View(std::ostream &stream) const {
         stream << "\tthermoFile: " << thermoFile << std::endl;
     }
     stream << "\tnumberSpecies: " << species.size() << std::endl;
-    tChemLib::exec_space::print_configuration(stream, true);
-    tChemLib::host_exec_space::print_configuration(stream, true);
+    tChemLib::exec_space().print_configuration(stream, true);
+    tChemLib::host_exec_space().print_configuration(stream, true);
 }
 
 PetscErrorCode ablate::eos::TChem::DensityFunction(const PetscReal *conserved, PetscReal *density, void *ctx) {
@@ -532,7 +531,7 @@ ablate::eos::FieldFunction ablate::eos::TChem::GetFieldFunctionFunction(const st
                 // fill most of the host
                 stateHost.Temperature() = 300;  // init guess
                 stateHost.Pressure() = pressure;
-                internalEnergy() = sensibleInternalEnergy;
+                internalEnergy(0) = sensibleInternalEnergy;
                 auto yiHost = stateHost.MassFractions();
                 Kokkos::parallel_for(
                     "tp init", policy, KOKKOS_LAMBDA(const host_type &member) {
@@ -540,10 +539,10 @@ ablate::eos::FieldFunction ablate::eos::TChem::GetFieldFunctionFunction(const st
                         Kokkos::parallel_for(Tines::RangeFactory<real_type>::TeamVectorRange(member, kineticsModelDataHost.nSpec), [&](const ordinal_type &i) { yiHost[i] = yi[i]; });
 
                         // compute the mw of the mix
-                        mwMix() = tChemLib::Impl::MolarWeights<real_type, host_device_type>::team_invoke(member, yiHost, kineticsModelDataHost);
+                        mwMix(0) = tChemLib::Impl::MolarWeights<real_type, host_device_type>::team_invoke(member, yiHost, kineticsModelDataHost);
                     });
 
-                double R = kineticsModelDataHost.Runiv / mwMix();
+                double R = kineticsModelDataHost.Runiv / mwMix(0);
 
                 // compute the temperature
                 eos::tChem::Temperature::runHostBatch(policy, stateHostView, internalEnergy, enthalpy, enthalpyReference, kineticsModelDataHost);
@@ -645,7 +644,7 @@ ablate::eos::FieldFunction ablate::eos::TChem::GetFieldFunctionFunction(const st
                 // fill most of the host
                 stateHost.Temperature() = 300;  // init guess
                 stateHost.Pressure() = pressure;
-                internalEnergy() = sensibleInternalEnergy;
+                internalEnergy(0) = sensibleInternalEnergy;
                 auto yiHost = stateHost.MassFractions();
                 Kokkos::parallel_for(
                     policy, KOKKOS_LAMBDA(const host_type &member) {
@@ -653,10 +652,10 @@ ablate::eos::FieldFunction ablate::eos::TChem::GetFieldFunctionFunction(const st
                         Kokkos::parallel_for(Tines::RangeFactory<real_type>::TeamVectorRange(member, kineticsModelDataHost.nSpec), [&](const ordinal_type &i) { yiHost[i] = yi[i]; });
 
                         // compute the mw of the mix
-                        mwMix() = tChemLib::Impl::MolarWeights<real_type, host_device_type>::team_invoke(member, yiHost, kineticsModelDataHost);
+                        mwMix(0) = tChemLib::Impl::MolarWeights<real_type, host_device_type>::team_invoke(member, yiHost, kineticsModelDataHost);
                     });
 
-                double R = kineticsModelDataHost.Runiv / mwMix();
+                double R = kineticsModelDataHost.Runiv / mwMix(0);
 
                 // compute the temperature
                 eos::tChem::Temperature::runHostBatch(policy, stateHostView, internalEnergy, enthalpy, enthalpyReference, kineticsModelDataHost);

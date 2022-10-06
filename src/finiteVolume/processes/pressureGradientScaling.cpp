@@ -162,47 +162,11 @@ void ablate::finiteVolume::processes::PressureGradientScaling::Setup(ablate::fin
 
 void ablate::finiteVolume::processes::PressureGradientScaling::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
     PetscFunctionBeginUser;
-    // Use time stepping.
-    PetscMPIInt rank;
-    MPI_Comm_rank(PetscObjectComm((PetscObject)viewer), &rank) >> checkMpiError;
-
-    // create a very simple vector
-    Vec pgsAlphaVec;
-    VecCreateMPI(PetscObjectComm((PetscObject)viewer), rank == 0 ? 1 : 0, 1, &pgsAlphaVec) >> checkError;
-    PetscObjectSetName((PetscObject)pgsAlphaVec, "pressureGradientScalingAlpha") >> checkError;
-    if (rank == 0) {
-        PetscInt globOwnership = 0;
-        VecSetValues(pgsAlphaVec, 1, &globOwnership, &alpha, INSERT_VALUES) >> checkError;
-    }
-    VecAssemblyBegin(pgsAlphaVec) >> checkError;
-    VecAssemblyEnd(pgsAlphaVec) >> checkError;
-    VecView(pgsAlphaVec, viewer);
-    VecDestroy(&pgsAlphaVec) >> checkError;
+    SaveKeyValue(viewer, "pressureGradientScalingAlpha", alpha);
     PetscFunctionReturnVoid();
 }
 
-void ablate::finiteVolume::processes::PressureGradientScaling::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
-    int rank;
-    MPI_Comm_rank(PetscObjectComm((PetscObject)viewer), &rank) >> checkMpiError;
-
-    // load in the old alpha
-    Vec pgsAlphaVec;
-    VecCreateMPI(PetscObjectComm((PetscObject)viewer), rank == 0 ? 1 : 0, 1, &pgsAlphaVec) >> checkError;
-    PetscObjectSetName((PetscObject)pgsAlphaVec, "pressureGradientScalingAlpha") >> checkError;
-    VecLoad(pgsAlphaVec, viewer) >> checkError;
-
-    // Load in alpha
-    if (rank == 0) {
-        PetscScalar alphaScalar;
-        PetscInt index[1] = {0};
-        VecGetValues(pgsAlphaVec, 1, index, &alphaScalar) >> checkError;
-        alpha = (PetscReal)alphaScalar;
-    }
-
-    // Broadcast everywhere
-    MPI_Bcast(&alpha, 1, MPIU_REAL, 0, PetscObjectComm((PetscObject)viewer)) >> checkMpiError;
-    VecDestroy(&pgsAlphaVec) >> checkError;
-}
+void ablate::finiteVolume::processes::PressureGradientScaling::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) { RestoreKeyValue(viewer, "pressureGradientScalingAlpha", alpha); }
 
 #include "registrar.hpp"
 REGISTER_DEFAULT(ablate::finiteVolume::processes::PressureGradientScaling, ablate::finiteVolume::processes::PressureGradientScaling,

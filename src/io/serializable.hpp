@@ -38,6 +38,50 @@ class Serializable {
      * @param time
      */
     virtual void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) = 0;
+
+   protected:
+    /**
+     * helper function to save PetscScalar to a PetscViewer. It is assumed to be the same value across all mpi ranks
+     * @param viewer
+     * @param name
+     * @param value
+     */
+    static void SaveKeyValue(PetscViewer viewer, const char* name, PetscScalar value);
+
+    /**
+     * helper function to restore PetscScalar to a PetscViewer. The same value is returned on all mpi ranks
+     * @param viewer
+     * @param name
+     * @param value
+     */
+    static void RestoreKeyValue(PetscViewer viewer, const char* name, PetscScalar& value);
+
+    /**
+     * Helper function to save a single key/value pair to the PetscViewer.  It is assumed to be the same value across all mpi ranks
+     * @tparam T
+     * @param viewer
+     * @param name
+     * @param value
+     */
+    template <class T>
+    static inline void SaveKeyValue(PetscViewer viewer, const char* name, T value) {
+        auto tempValue = (PetscScalar)value;
+        SaveKeyValue(viewer, name, tempValue);
+    }
+
+    /**
+     * Helper function to save a restore key/value pair to the PetscViewer.  It is assumed to be the same value across all mpi ranks
+     * @tparam T
+     * @param viewer
+     * @param name
+     * @param value
+     */
+    template <class T>
+    static inline void RestoreKeyValue(PetscViewer viewer, const char* name, T& value) {
+        PetscScalar tempValue = {};
+        RestoreKeyValue(viewer, name, tempValue);
+        value = (T)tempValue;
+    }
 };
 }  // namespace ablate::io
 
