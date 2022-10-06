@@ -36,7 +36,6 @@ std::istream& ablate::radialBasisV2::operator>>(std::istream& is, ablate::radial
 using namespace ablate::radialBasisV2;
 
 
-
 // Distance between two points
 static PetscReal DistanceSquared(PetscInt dim, PetscReal x[], PetscReal y[]){
   PetscReal r = 0.0;
@@ -288,111 +287,6 @@ static PetscReal gaDer(const PetscInt dim, PetscReal x[], PetscInt dx, PetscInt 
   return r;
 }
 /************ End Gaussian **********************/
-
-RBF::RBF(std::string solverId, std::shared_ptr<ablate::domain::Region> region, std::shared_ptr<ablate::parameters::Parameters> options,
-  ablate::radialBasisV2::RBFType rbfType,
-  PetscInt polyOrder,
-  PetscReal rbfParam) :
-    Solver(solverId, region, options),
-    rbfType(rbfType),
-    polyOrder(polyOrder == 0 ? __RBF_DEFAULT_POLYORDER : polyOrder),
-    rbfParam(rbfParam == 0 ? __RBF_DEFAULT_PARAM : rbfParam) { }
-
-
-// This is done once
-void RBF::Setup() {
-
-  // Set the value and derivative functions
-  switch (rbfType) {
-    case RBFType::ga:
-      RBFVal = &gaVal;
-      RBFDer = &gaDer;
-      break;
-    case RBFType::imq:
-      RBFVal = &imqVal;
-      RBFDer = &imqDer;
-      break;
-    case RBFType::mq:
-      RBFVal = &mqVal;
-      RBFDer = &mqDer;
-      break;
-    case RBFType::phs:
-      RBFVal = &phsVal;
-      RBFDer = &phsDer;
-      break;
-    default:
-      throw std::runtime_error("ablate::radialBasisV2::RBF has been passed an unknown type.");
-  }
-
-  const PetscInt dim = subDomain->GetDimensions();
-
-
-  // The number of polynomial values is (p+2)(p+1)/2 in 2D and (p+3)(p+2)(p+1)/6 in 3D
-  PetscInt p = RBF::polyOrder;
-  if (dim == 2) {
-    RBF::nPoly = (p+2)*(p+1)/2;
-  } else {
-    RBF::nPoly = (p+3)*(p+2)*(p+1)/6;
-  }
-
-  // Set the minimum number of cells to get compute the RBF matrix
-  RBF::minNumberCells = (PetscInt)floor(2*(RBF::nPoly));
-
-  // Now setup the derivatives required for curvature/normal calculations. This should probably move over to user-option
-  PetscInt nDer = 0;
-  PetscInt dx[10], dy[10], dz[10];
-
-
-  nDer = ( dim == 2 ) ? 5 : 10;
-  PetscInt i = 0;
-  dx[i] = 1; dy[i] = 0; dz[i++] = 0;
-  dx[i] = 0; dy[i] = 1; dz[i++] = 0;
-  dx[i] = 2; dy[i] = 0; dz[i++] = 0;
-  dx[i] = 0; dy[i] = 2; dz[i++] = 0;
-  dx[i] = 1; dy[i] = 1; dz[i++] = 0;
-  if( dim == 3) {
-    dx[i] = 0; dy[i] = 0; dz[i++] = 1;
-    dx[i] = 0; dy[i] = 0; dz[i++] = 2;
-    dx[i] = 1; dy[i] = 0; dz[i++] = 1;
-    dx[i] = 0; dy[i] = 1; dz[i++] = 1;
-    dx[i] = 1; dy[i] = 1; dz[i++] = 1;
-  }
-  SetDerivatives(nDer, dx, dy, dz);
-
-  // Let the RBF know that there will also be interpolation. This should probably move over to user-option
-  SetInterpolation(PETSC_TRUE);
-
-
-}
-
-void RBF::Initialize() {
-
-  // If this is called due to a grid change then release the old memory
-  for (PetscInt c = 0; c < RBF::nCells; ++c ){
-    PetscFree(RBF::stencilList[c]);
-    if(RBF::RBFMatrix[c]) MatDestroy(&(RBF::RBFMatrix[c]));
-    PetscFree(RBF::stencilXLocs[c]);
-  }
-  PetscFree4(RBF::nStencil, RBF::stencilList, RBF::RBFMatrix, RBF::stencilXLocs) >> ablate::checkError;
-
-
-  ablate::solver::Range cellRange;
-  GetCellRange(cellRange);
-
-  // Both interpolation and derivatives need the list of points
-  RBF::nCells = cellRange.end - cellRange.start;
-  PetscMalloc4(RBF::nCells, &(RBF::nStencil), RBF::nCells, &(RBF::stencilList), RBF::nCells, &(RBF::RBFMatrix), RBF::nCells, &(RBF::stencilXLocs)) >> ablate::checkError;
-
-  for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
-    RBF::nStencil[c] = -1;
-    RBF::stencilList[c] = nullptr;
-
-    RBF::RBFMatrix[c] = nullptr;
-    RBF::stencilXLocs[c] = nullptr;
-  }
-
-  RestoreRange(cellRange);
-}
 
 static PetscInt fac[11] =  {1,1,2,6,24,120,720,5040,40320,362880,3628800}; // Pre-computed factorials
 
@@ -814,8 +708,139 @@ PetscReal RBF::Interpolate(ablate::domain::Field field, PetscInt c, PetscReal xE
 /************ End Interpolation Code **********************/
 
 
+/************ Constructor, Setup, Registration, and Initialization Code **********************/
+
+RBF::RBF(std::string solverId, std::shared_ptr<ablate::domain::Region> region, std::shared_ptr<ablate::parameters::Parameters> options,
+  ablate::radialBasisV2::RBFType rbfType,
+  PetscInt polyOrder,
+  PetscReal rbfParam) :
+    ablate::solver::Solver(solverId, region, options),
+    rbfType(rbfType),
+    polyOrder(polyOrder == 0 ? __RBF_DEFAULT_POLYORDER : polyOrder),
+    rbfParam(rbfParam == 0 ? __RBF_DEFAULT_PARAM : rbfParam) { }
+
+RBF::~RBF() {}
+
+
+// This is done once
+void RBF::Setup() {
+
+  // Set the value and derivative functions
+  switch (rbfType) {
+    case RBFType::ga:
+      RBFVal = &gaVal;
+      RBFDer = &gaDer;
+      break;
+    case RBFType::imq:
+      RBFVal = &imqVal;
+      RBFDer = &imqDer;
+      break;
+    case RBFType::mq:
+      RBFVal = &mqVal;
+      RBFDer = &mqDer;
+      break;
+    case RBFType::phs:
+      RBFVal = &phsVal;
+      RBFDer = &phsDer;
+      break;
+    default:
+      throw std::runtime_error("ablate::radialBasisV2::RBF has been passed an unknown type.");
+  }
+
+  const PetscInt dim = subDomain->GetDimensions();
+
+
+  // The number of polynomial values is (p+2)(p+1)/2 in 2D and (p+3)(p+2)(p+1)/6 in 3D
+  PetscInt p = RBF::polyOrder;
+  if (dim == 2) {
+    RBF::nPoly = (p+2)*(p+1)/2;
+  } else {
+    RBF::nPoly = (p+3)*(p+2)*(p+1)/6;
+  }
+
+  // Set the minimum number of cells to get compute the RBF matrix
+  RBF::minNumberCells = (PetscInt)floor(2*(RBF::nPoly));
+
+  // Now setup the derivatives required for curvature/normal calculations. This should probably move over to user-option
+  PetscInt nDer = 0;
+  PetscInt dx[10], dy[10], dz[10];
+
+
+  nDer = ( dim == 2 ) ? 5 : 10;
+  PetscInt i = 0;
+  dx[i] = 1; dy[i] = 0; dz[i++] = 0;
+  dx[i] = 0; dy[i] = 1; dz[i++] = 0;
+  dx[i] = 2; dy[i] = 0; dz[i++] = 0;
+  dx[i] = 0; dy[i] = 2; dz[i++] = 0;
+  dx[i] = 1; dy[i] = 1; dz[i++] = 0;
+  if( dim == 3) {
+    dx[i] = 0; dy[i] = 0; dz[i++] = 1;
+    dx[i] = 0; dy[i] = 0; dz[i++] = 2;
+    dx[i] = 1; dy[i] = 0; dz[i++] = 1;
+    dx[i] = 0; dy[i] = 1; dz[i++] = 1;
+    dx[i] = 1; dy[i] = 1; dz[i++] = 1;
+  }
+  SetDerivatives(nDer, dx, dy, dz);
+
+  // Let the RBF know that there will also be interpolation. This should probably move over to user-option
+  SetInterpolation(PETSC_TRUE);
+
+
+}
+
+void RBF::Initialize() {
+
+  // If this is called due to a grid change then release the old memory
+  for (PetscInt c = 0; c < RBF::nCells; ++c ){
+    PetscFree(RBF::stencilList[c]);
+    if(RBF::RBFMatrix[c]) MatDestroy(&(RBF::RBFMatrix[c]));
+    PetscFree(RBF::stencilXLocs[c]);
+  }
+  PetscFree4(RBF::nStencil, RBF::stencilList, RBF::RBFMatrix, RBF::stencilXLocs) >> ablate::checkError;
+
+
+  ablate::solver::Range cellRange;
+  GetCellRange(cellRange);
+
+  // Both interpolation and derivatives need the list of points
+  RBF::nCells = cellRange.end - cellRange.start;
+  PetscMalloc4(RBF::nCells, &(RBF::nStencil), RBF::nCells, &(RBF::stencilList), RBF::nCells, &(RBF::RBFMatrix), RBF::nCells, &(RBF::stencilXLocs)) >> ablate::checkError;
+
+  for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+    RBF::nStencil[c] = -1;
+    RBF::stencilList[c] = nullptr;
+
+    RBF::RBFMatrix[c] = nullptr;
+    RBF::stencilXLocs[c] = nullptr;
+  }
+
+  RestoreRange(cellRange);
+}
+
+void RBF::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) { ablate::solver::Solver::Register(subDomain); }
+
+
+//void ablate::radiation::VolumeRadiation::Setup() {
+//    ablate::solver::CellSolver::Setup();
+//    ablate::radiation::Radiation::Setup();
+//}
+
+//void ablate::radiation::VolumeRadiation::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
+//    ablate::solver::Solver::Register(subDomain);
+//    ablate::radiation::Radiation::Register(subDomain);
+//}
+
+//void ablate::radiation::VolumeRadiation::Initialize() {
+//    solver::Range cellRange;
+//    GetCellRange(cellRange);  //!< Gets the cell range that should be applied to the radiation solver
+
+//    ablate::radiation::Radiation::Initialize(cellRange);  //!< Get the range of cells that the solver occupies in order for the radiation solver to give energy to the finite volume
+
+//    RestoreRange(cellRange);
+//}
+
 #include "registrar.hpp"
-REGISTER_DEFAULT(ablate::solver::Solver, ablate::radialBasisV2::RBF, "Radial Basis Function",
+REGISTER(ablate::solver::Solver, ablate::radialBasisV2::RBF, "Radial Basis Function",
          ARG(std::string, "id", "The name of the RBF."),
          OPT(ablate::domain::Region, "region", "The region to apply this solver.  Default is entire domain."),
          OPT(ablate::parameters::Parameters, "options", "The options passed to PETSC."),

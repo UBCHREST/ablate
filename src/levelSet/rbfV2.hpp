@@ -63,10 +63,14 @@ class RBF : public ablate::solver::Solver {
       PetscInt rbfOrder,
       PetscReal rbfParam);
 
+    ~RBF();
+
 
     /** SubDomain Register and Setup **/
-    void Setup() override;
-    void Initialize() override;
+    void Initialize();
+    void Setup();
+    void Register(std::shared_ptr<ablate::domain::SubDomain> subDomain);
+
 
     // Derivative stuff
     void SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVertices);
