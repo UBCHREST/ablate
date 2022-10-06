@@ -78,6 +78,9 @@ void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRa
                 index = bcell;
             }
         }
+
+        if (index == -1) throw std::invalid_argument("\nSurfaceRadiation must be given the same boundary cell region as its boundary solver!\n"); //!< Throw an error if the boundary region is incorrect
+
         //!< If the particles that were just created are sitting in the boundary cell of the face that they belong to, delete them
         if (index == cell[ipart].index) {  //!< If the particle location index and boundary cell index are the same, then they should be deleted
             DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
