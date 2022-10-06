@@ -1,9 +1,9 @@
 #include "runEnvironment.hpp"
 #include <mpi.h>
 #include <chrono>
-#include <iostream>
 #include <regex>
 #include <string>
+#include "version.h"
 
 ablate::environment::RunEnvironment::RunEnvironment() : outputDirectory(), title("") {}
 
@@ -83,3 +83,5 @@ void ablate::environment::RunEnvironment::Finalize() {
 void ablate::environment::RunEnvironment::Setup() { environment::RunEnvironment::runEnvironment = std::unique_ptr<environment::RunEnvironment>(new environment::RunEnvironment()); }
 
 void ablate::environment::RunEnvironment::ExpandVariables(std::string& value) const { value = std::regex_replace(value, OutputDirectoryVariable, GetOutputDirectory().string()); }
+
+std::string_view ablate::environment::RunEnvironment::GetVersion() { return std::string_view(ABLATE_VERSION); }
