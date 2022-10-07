@@ -381,7 +381,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                                         //!< particles then pass out of initialization.
         /** Each ray is born here. They begin at the far field temperature.
             Initial ray intensity should be set based on which boundary it is coming from.
-            If the ray originates from the walls, then set the initial ray intensity to the wall temperature, etc.
+            Set the initial ray intensity to the wall temperature, etc.
          */
         /** For each domain in the ray (The rays vector will have an added index, splitting every x points) */
         PetscInt numPoints = static_cast<PetscInt>(segment.cells.size());

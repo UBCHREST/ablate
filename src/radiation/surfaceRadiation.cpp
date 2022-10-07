@@ -132,7 +132,7 @@ PetscInt ablate::radiation::SurfaceRadiation::GetLossCell(PetscInt iCell, PetscR
     for (PetscInt n = 0; n < numberNeighborCells; n++) {
         PetscInt cell = neighborCells[n];  //!< Contains the cell indexes of the neighbor cells
         if (fieldBoundary->InRegion(fieldBoundary, *(solDm), cell)) {
-            index = cell;
+            index = cell; //!< Take the index of the cell that is a boundary cell.
         }
     }
     if (index == -1) throw std::runtime_error("I don't know what's going on");
