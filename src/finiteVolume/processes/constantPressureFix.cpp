@@ -51,24 +51,26 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
             DMPlexPointGlobalRead(dm, cell, solutionArray, &conservedValues);
 
             // Get the original density
-            PetscReal originalDensity;
-            densityFunction.function(conservedValues, &originalDensity, densityFunction.context.get()) >> checkError;
+            if (conservedValues) {
+                PetscReal originalDensity;
+                densityFunction.function(conservedValues, &originalDensity, densityFunction.context.get()) >> checkError;
 
-            // compute the current sensibleInternalEnergy
-            PetscReal internalSensibleEnergy;
-            internalSensibleEnergyFunction.function(conservedValues, &internalSensibleEnergy, internalSensibleEnergyFunction.context.get()) >> checkError;
+                // compute the current sensibleInternalEnergy
+                PetscReal internalSensibleEnergy;
+                internalSensibleEnergyFunction.function(conservedValues, &internalSensibleEnergy, internalSensibleEnergyFunction.context.get()) >> checkError;
 
-            // compute the current velocity and species (if provided)
-            for (PetscInt n = 0; n < dim; n++) {
-                velocityScratch[n] = conservedValues[eulerId.offset + finiteVolume::CompressibleFlowFields::RHOU + n] / originalDensity;
+                // compute the current velocity and species (if provided)
+                for (PetscInt n = 0; n < dim; n++) {
+                    velocityScratch[n] = conservedValues[eulerId.offset + finiteVolume::CompressibleFlowFields::RHOU + n] / originalDensity;
+                }
+                for (PetscInt s = 0; s < numberSpecies; s++) {
+                    yiScratch[s] = conservedValues[densityYiOffset + s] / originalDensity;
+                }
+
+                // use the eos to compute the new conserved forms based upon the current internal energy, velocity, yi and a constant pressure
+                eulerFromEnergyAndPressure(internalSensibleEnergy, pressure, dim, velocityScratch, yiScratch.data(), conservedValues + eulerId.offset);
+                densityYiFromEnergyAndPressure(internalSensibleEnergy, pressure, dim, velocityScratch, yiScratch.data(), conservedValues + densityYiOffset);
             }
-            for (PetscInt s = 0; s < numberSpecies; s++) {
-                yiScratch[s] = conservedValues[densityYiOffset + s] / originalDensity;
-            }
-
-            // use the eos to compute the new conserved forms based upon the current internal energy, velocity, yi and a constant pressure
-            eulerFromEnergyAndPressure(internalSensibleEnergy, pressure, dim, velocityScratch, yiScratch.data(), conservedValues + eulerId.offset);
-            densityYiFromEnergyAndPressure(internalSensibleEnergy, pressure, dim, velocityScratch, yiScratch.data(), conservedValues + densityYiOffset);
         }
 
         // cleanup
