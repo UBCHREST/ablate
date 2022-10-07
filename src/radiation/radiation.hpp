@@ -70,7 +70,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     virtual void ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray, PetscInt stepcount);  //!< Routine to move the particle one step
     virtual PetscReal SurfaceComponent(DM* faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi,
                                        PetscInt ntheta);                         //!< Dummy function that doesn't do anything unless it is overridden by the surface implementation
-    virtual PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM& solDm);  //!< Get the index of the cell which the losses should be calculated from
+    virtual PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM* solDm);  //!< Get the index of the cell which the losses should be calculated from
 
    protected:
     DM radsolve{};   //!< DM associated with the radiation particles

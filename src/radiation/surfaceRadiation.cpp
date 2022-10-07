@@ -79,7 +79,7 @@ void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRa
             }
         }
 
-        if (index == -1) throw std::invalid_argument("\nSurfaceRadiation must be given the same boundary cell region as its boundary solver!\n"); //!< Throw an error if the boundary region is incorrect
+        if (index == -1) throw std::invalid_argument("SurfaceRadiation must be given the same boundary cell region as its boundary solver!"); //!< Throw an error if the boundary region is incorrect
 
         //!< If the particles that were just created are sitting in the boundary cell of the face that they belong to, delete them
         if (index == cell[ipart].index) {  //!< If the particle location index and boundary cell index are the same, then they should be deleted
@@ -121,20 +121,21 @@ PetscReal ablate::radiation::SurfaceRadiation::SurfaceComponent(DM* faceDM, cons
     return ldotn;
 }
 
-PetscInt ablate::radiation::SurfaceRadiation::GetLossCell(PetscInt iCell, PetscReal& losses, DM& solDm) {
+PetscInt ablate::radiation::SurfaceRadiation::GetLossCell(PetscInt iCell, PetscReal& losses, DM* solDm) {
     losses = 0.5;  //!< Cut the losses in half if this is a surface implementation
     PetscInt numberNeighborCells;
     const PetscInt* neighborCells;
     PetscInt index = -1;
 
-    DMPlexGetSupportSize(solDm, iCell, &numberNeighborCells) >> ablate::checkError;  //!< Get the cells on each side of this face to check for boundary cells
-    DMPlexGetSupport(solDm, iCell, &neighborCells) >> ablate::checkError;
+    DMPlexGetSupportSize(*(solDm), iCell, &numberNeighborCells) >> ablate::checkError;  //!< Get the cells on each side of this face to check for boundary cells
+    DMPlexGetSupport(*(solDm), iCell, &neighborCells) >> ablate::checkError;
     for (PetscInt n = 0; n < numberNeighborCells; n++) {
         PetscInt cell = neighborCells[n];  //!< Contains the cell indexes of the neighbor cells
-        if (fieldBoundary->InRegion(fieldBoundary, solDm, cell)) {
+        if (fieldBoundary->InRegion(fieldBoundary, *(solDm), cell)) {
             index = cell;
         }
     }
+    if (index == -1) throw std::runtime_error("I don't know what's going on");
     return index;
 }
 

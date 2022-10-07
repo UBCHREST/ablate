@@ -14,7 +14,7 @@ class SurfaceRadiation : public ablate::radiation::Radiation {
 
     void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) override;
     PetscReal SurfaceComponent(DM* faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi, PetscInt ntheta) override;
-    PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM& solDm) override;
+    PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM* solDm) override;
 };
 }  // namespace ablate::radiation
 #endif  // ABLATELIBRARY_SURFACERADIATION_HPP
