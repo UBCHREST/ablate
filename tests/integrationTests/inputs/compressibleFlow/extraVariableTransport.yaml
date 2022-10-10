@@ -17,13 +17,13 @@ timestepper:
   arguments:
     ts_type: rk
     ts_adapt_type: none
-    ts_max_steps: 20
+    ts_max_steps: 1
   # the domain/mesh must be specified at the start of a simulation
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
     faces: [ 12, 12 ]
     lower: [ 0, 0 ]
-    upper: [ 1, 1 ]
+    upper: [ .5, .1 ]
     boundary: [ "NONE", "NONE" ]
     simplex: false
 
@@ -42,7 +42,9 @@ timestepper:
             gamma: 1.4
             Rgas: 287
         # the CompressibleFlowFields class can take extraVariable arguments.  This defines the conserved and non-conserved field for each component
-        extraVariables: ["ev1", "ev2"]
+        extraVariables: ["ev1", "ev2","ev3"]
+        species: [ N2, H2O, O2 ]
+
   initialization:
     # the ablate::finiteVolume::fieldFunctions::Euler helper can define the "euler" field (rho, rhoE, rhoU, rhoV) from more common inputs
     - !ablate::finiteVolume::fieldFunctions::Euler
@@ -52,6 +54,20 @@ timestepper:
         temperature: "300"
         pressure: "101325.0"
         velocity: "25., 25"
+        # individual mass fractions must be passed to the flow field state to compute density, energy, etc.
+        massFractions: !ablate::finiteVolume::fieldFunctions::MassFractions
+          &massFractions
+          eos: *eos
+          values:
+            - fieldName: N2
+              field: "x > .1 ? .2 : 1.0"
+            - fieldName: H2O
+              field: " x> .1 ? .3 :0"
+            - fieldName: O2
+              field: " x > .1 ? .5 : 0"
+    # the same state can be used to internalize the DensityMassFractions field from density and mass fractions
+    - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
+      state: *flowFieldState
     # the density*ev field must be specified. The DensityExtraVariables class helps by computing density and each ev value using the specified list functions
     - !ablate::finiteVolume::fieldFunctions::DensityExtraVariables
       &densityEVFlowFieldState
@@ -59,13 +75,15 @@ timestepper:
       # a list of functions used to describe the extra variable initialization
       functions:
         - .25 # ev1 is set to a constant value of 0.25
-        - !ablate::mathFunctions::geom::Sphere
-          # the sphere methFunction can be used to specify ev2 with a different number inside (1.5) and outside (0, by default)
-          center: [ .25, .25 ]
-          radius: .25
-          insideValues:  1.5
+        - .1
+        - .004
+        #- !ablate::mathFunctions::geom::Sphere
+         # the sphere methFunction can be used to specify ev2 with a different number inside (1.5) and outside (0, by default)
+         # center: [ .25, .25 ]
+         # radius: .25
+         # insideValues:  1.5 */
 
-# this problem uses a single solver (!ablate::finiteVolume::CompressibleFlowSolver)
+# this problem uses a single solver (!ablate::finiteVolume::LesCompressibleFlowSolver)
 solver: !ablate::finiteVolume::CompressibleFlowSolver
   id: evExample
   parameters:
@@ -86,14 +104,12 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
 
   additionalProcesses:
     # the ArbitrarySource process was added to define a region of additional ev source
-    - !ablate::finiteVolume::processes::ArbitrarySource
-      densityEV:
-        !ablate::mathFunctions::geom::Sphere
-        radius: .1
-        center: [0.75, 0.75]
-        insideValues: "0.0, 100" # inside the sphere the ev1 gets no extra source while ev2 gets 100
+    - !ablate::finiteVolume::processes::LES
+      tke: ev3
+      eos: *eos
 
-  # using constant boundary condition values on all sides with the specified values for euler and densityFlow based upon the previous boundary values
+
+     # using constant boundary condition values on all sides with the specified values for euler and densityFlow based upon the previous boundary values
   boundaryConditions:
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "walls"
@@ -103,7 +119,10 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
       boundaryName: "walls"
       labelIds: [ 1, 2, 3, 4 ]
       boundaryValue: *densityEVFlowFieldState
-
+    - !ablate::finiteVolume::boundaryConditions::EssentialGhost
+      boundaryName: "walls"
+      labelIds: [ 1, 2, 3, 4 ]
+      boundaryValue: *massFractions
   monitors:
     # output the time and dt at each time step
     - !ablate::monitors::TimeStepMonitor
@@ -129,3 +148,24 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
         number: 3
       bufferSize: 10
       variables: [ velocity, densityEV, ev, euler ]  # these fields will be saved to a text file at the specified locations
+
+        velocity: !ablate::mathFunctions::ParsedSeries
+          upperBound: 5000
+          lowerBound: 1
+          formula: 2 * sqrt(alpha * exp(-2 * ((kappa_o + (3.14/delta - kappa_o) * (i - 1)  / n) / kappa_eta) ^ 2) * (uPrime^2 / kappa_e) * ((kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n)/ kappa_e) ^ 4 / (1* (1 + ((kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n) / kappa_e) )^ (17/6))) * cos( (kappa_o + (3.14/delta - kappa_o) * (i - 1)  / n) * (2/delta)*sin(.5* (kappa_o + (3.14/delta - kappa_o) * (i - 1)  / n)* delta*sin( acos(rand(-1,1))) * cos(rand(0,2*3.14)) )* x + (rand(-3.14/2,3.14/2))),  2 * sqrt(alpha * exp(-2 * ((kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n) / kappa_eta) ^ 2) * (uPrime^2 / kappa_e) * ((kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n)/ kappa_e) ^ 4 / (1* (1 + ((kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n) / kappa_e) )^ (17/6))) * cos( (kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n) * (2/delta)*sin(.5* (kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n)* delta*sin( acos(rand(-1,1))) * sin(rand(0,2*3.14)) )* y + (rand(-3.14/2,3.14/2))),  2 * sqrt(alpha * exp(-2 * ((kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n) / kappa_eta) ^ 2) * (uPrime^2 / kappa_e) * ((kappa_o + (3.14/delta - kappa_o) * (i - 1)  / n)/ kappa_e) ^ 4 / (1* (1 + ((kappa_o + (3.14/delta - kappa_o) * (i - 1)  / n) / kappa_e) )^ (17/6))) * cos( (kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n) * (2/delta)*sin(.5* (kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n)* delta*cos( acos(rand(-1,1))) )* z + (rand(-3.14/2,3.14/2)))
+          constants:
+            n: 5000
+            alpha: 1.453
+            delta: 2*3.14*9/100/8
+            kappa_eta: 0.8573*5624
+            uPrime: 0.25
+            kappa_e: 40 * sqrt(5 / 12)
+            kappa_o: 100/9
+            kappa_max: 3.14/delta
+            HI: 1
+            LO: -1
+            HI1: 2*pi
+            LO1: 0
+            HI2: pi/2
+            LO2: -pi/2
+            formula: 2 * sqrt(1.453 * exp(-2 * (((100/9) + (3.14/(2*3.14*9/100/8) - (100/9)) * (i - 1)  / 5000) / 4819) ^ 2) * (.25^2 / 25.82) * (((100/9)+ (3.14/(2*3.14*9/100/8)- (100/9)) * (i - 1)  / 5000)/ 25.82) ^ 4 / (1* (1 + (((100/9) + (3.14/(2*3.14*9/100/8)- (100/9)) * (i - 1)  / 5000) / 25.82) )^ (17/6)))* cos( ((100/9) + (3.14/(2*3.14*9/100/8) - (100/9)) * (i - 1)  / 5000) * (2/(2*3.14*9/100/8))*sin(.5* ((100/9) + (3.14/(2*3.14*9/100/8) - (100/9)) * (i - 1)  / 5000)* (2*3.14*9/100/8)*sin( acos(pRand(-1,1))) * cos(rand(0,2*3.14)) )* x + (rand(-3.14/2,3.14/2))),  2 * sqrt(1.453 * exp(-2 * (((100/9) + (3.14/(2*3.14*9/100/8) - (100/9)) * (i - 1)  / 5000) / 4819) ^ 2) * (.25^2 / 25.82) * (((100/9)+ (3.14/(2*3.14*9/100/8)- (100/9)) * (i - 1)  / 5000)/ 25.82) ^ 4 / (1* (1 + (((100/9) + (3.14/(2*3.14*9/100/8)- (100/9)) * (i - 1)  / 5000) / 25.82) )^ (17/6)))* cos( ((100/9) + (3.14/(2*3.14*9/100/8) - (100/9)) * (i - 1)  / 5000) * (2/(2*3.14*9/100/8))*sin(.5* ((100/9) + (3.14/(2*3.14*9/100/8) - (100/9)) * (i - 1)  / 5000)* (2*3.14*9/100/8)*sin( acos(pRand(-1,1))) * sin(rand(0,2*3.14)) )* y + (rand(-3.14/2,3.14/2)))
