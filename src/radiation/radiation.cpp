@@ -447,9 +447,11 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
 
     /** Iterate through the particles and offload the information to their associated origin cell struct. */
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
-        origin[identifier[ipart].iCell].handler[Key(&identifier[ipart])].Krad = carrier[ipart].Krad;
-        origin[identifier[ipart].iCell].handler[Key(&identifier[ipart])].Ij = carrier[ipart].Ij;
-        origin[identifier[ipart].iCell].handler[Key(&identifier[ipart])].I0 = carrier[ipart].I0;
+        if (identifier[ipart].origin == rank) {
+            origin[identifier[ipart].iCell].handler[Key(&identifier[ipart])].Krad = carrier[ipart].Krad;
+            origin[identifier[ipart].iCell].handler[Key(&identifier[ipart])].Ij = carrier[ipart].Ij;
+            origin[identifier[ipart].iCell].handler[Key(&identifier[ipart])].I0 = carrier[ipart].I0;
+        }
     }
 
     /** ********************************************************************************************************************************
@@ -571,14 +573,14 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
          * This distinction must be made because the temperature of faces is undefined.
          * */
         PetscReal losses = 1;
-        PetscInt index = GetLossCell(iCell, losses, &faceDM, &cellDM);  //!< Get the cell that the losses should be calculated with
+        PetscInt index = GetLossCell(iCell, losses, faceDM, cellDM);  //!< Get the cell that the losses should be calculated with
         DMPlexPointLocalFieldRead(auxDm, index, temperatureField.id, auxArray, &temperature);
         losses *= 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
-        //        if (log) {
-        //            PetscReal centroid[3];
-        //            DMPlexComputeCellGeometryFVM(solDm, index, nullptr, centroid, nullptr) >> checkError;  //!< Reads the cell location from the current cell
-        //            printf("%f %f %f %f %f %f\n", centroid[0], centroid[1], centroid[2], origin[iCell].intensity, losses, *temperature);
-        //        }
+        if (log) {
+            PetscReal centroid[3];
+            DMPlexComputeCellGeometryFVM(solDm, index, nullptr, centroid, nullptr) >> checkError;  //!< Reads the cell location from the current cell
+            printf("%f %f %f %f %f %f\n", centroid[0], centroid[1], centroid[2], origin[iCell].intensity, losses, *temperature);
+        }
         origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
     }
 
@@ -627,7 +629,7 @@ PetscReal ablate::radiation::Radiation::FaceIntersect(PetscInt ip, Virtualcoord*
     }
 }
 
-PetscInt ablate::radiation::Radiation::GetLossCell(PetscInt iCell, PetscReal& losses, DM* solDm, DM* pPDm) { return iCell; }
+PetscInt ablate::radiation::Radiation::GetLossCell(PetscInt iCell, PetscReal& losses, DM solDm, DM pPDm) { return iCell; }
 
 PetscReal ablate::radiation::Radiation::SurfaceComponent(DM* faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi, PetscInt ntheta) { return 1.0; }
 
