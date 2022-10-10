@@ -10,11 +10,8 @@ struct lesEvSourceTestParameters {
     PetscInt tke_ev;
     PetscInt numberEv;
     std::vector<PetscReal> gradVel;
-
     std::vector<PetscReal> EVs;
-
     std::vector<PetscReal> Grad;
-
     std::vector<PetscReal> expectedFlux;
 };
 
@@ -23,14 +20,13 @@ class lesEvSourceTestFixture : public testingResources::PetscTestFixture, public
 TEST_P(lesEvSourceTestFixture, ShouldComputeCorrectFlux) {
     // arrange
     const auto &params = GetParam();
-
     ablate::finiteVolume::processes::LES::DiffusionData flowParam;
     flowParam.numberEV = params.numberEv;
-
     flowParam.tke_ev = params.tke_ev;
 
     PetscFVFaceGeom faceGeom{};
     std::copy(std::begin(params.area), std::end(params.area), faceGeom.normal);
+
     PetscInt uOff[1] = {0};
     PetscInt aOff[1] = {0};
     PetscInt aOff_x[2] = {1};
@@ -64,9 +60,7 @@ struct lesSpeciesSourceTestParameters {
     PetscInt tke_ev;
     std::vector<PetscReal> EVs;
     PetscInt numberSpecies;
-
     std::vector<PetscReal> Grad;
-
     std::vector<PetscReal> expectedFlux;
 };
 
@@ -75,9 +69,7 @@ class lesSpeciesSourceTestFixture : public testingResources::PetscTestFixture, p
 TEST_P(lesSpeciesSourceTestFixture, ShouldComputeCorrectFlux) {
     // arrange
     const auto &params = GetParam();
-
     ablate::finiteVolume::processes::LES::DiffusionData flowParam;
-
     flowParam.tke_ev = params.tke_ev;
     flowParam.numberSpecies = params.numberSpecies;
 
