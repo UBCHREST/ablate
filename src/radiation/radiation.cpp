@@ -571,7 +571,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
          * This distinction must be made because the temperature of faces is undefined.
          * */
         PetscReal losses = 1;
-        PetscInt index = GetLossCell(iCell, losses, &solDm);  //!< Get the cell that the losses should be calculated with
+        PetscInt index = GetLossCell(iCell, losses, &faceDM, &cellDM);  //!< Get the cell that the losses should be calculated with
         DMPlexPointLocalFieldRead(auxDm, index, temperatureField.id, auxArray, &temperature);
         losses *= 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
         //        if (log) {
@@ -627,7 +627,7 @@ PetscReal ablate::radiation::Radiation::FaceIntersect(PetscInt ip, Virtualcoord*
     }
 }
 
-PetscInt ablate::radiation::Radiation::GetLossCell(PetscInt iCell, PetscReal& losses, DM* solDm) { return iCell; }
+PetscInt ablate::radiation::Radiation::GetLossCell(PetscInt iCell, PetscReal& losses, DM* solDm, DM* pPDm) { return iCell; }
 
 PetscReal ablate::radiation::Radiation::SurfaceComponent(DM* faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi, PetscInt ntheta) { return 1.0; }
 
