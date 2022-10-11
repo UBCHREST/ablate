@@ -22,7 +22,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      * @param rayNumber
      * @param options other options
      */
-    Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
+    Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber,
               std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> = {});
 
     virtual ~Radiation();
@@ -71,6 +71,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     virtual PetscReal SurfaceComponent(DM* faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi,
                                        PetscInt ntheta);                         //!< Dummy function that doesn't do anything unless it is overridden by the surface implementation
     virtual PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM solDm, DM pPDm);  //!< Get the index of the cell which the losses should be calculated from
+    virtual void GetFuelEmissivity(double& kappa);
 
    protected:
     DM radsolve{};   //!< DM associated with the radiation particles

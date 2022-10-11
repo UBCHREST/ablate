@@ -1,9 +1,8 @@
 #include "surfaceRadiation.hpp"
 
-ablate::radiation::SurfaceRadiation::SurfaceRadiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary,
-                                                      const PetscInt raynumber, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
-                                                      std::shared_ptr<ablate::monitors::logs::Log> log)
-    : Radiation(solverId, region, fieldBoundary, raynumber, radiationModelIn, log) {
+ablate::radiation::SurfaceRadiation::SurfaceRadiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber,
+                                                      std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
+    : Radiation(solverId, region, raynumber, radiationModelIn, log) {
     nTheta = raynumber;    //!< The number of angles to solve with, given by user input
     nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
 }
@@ -74,12 +73,12 @@ void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRa
         PetscInt index = -1;  //!< Index value to compare the Locate Points result against.
         for (PetscInt n = 0; n < numberNeighborCells; n++) {
             PetscInt bcell = neighborCells[n];  //!< Contains the cell indexes of the neighbor cells
-            if (fieldBoundary->InRegion(fieldBoundary, subDomain.GetDM(), bcell)) {
+            if (!(region->InRegion(region, subDomain.GetDM(), bcell))) {
                 index = bcell;
             }
         }
 
-        if (index == -1) throw std::invalid_argument("SurfaceRadiation must be given the same boundary cell region as its boundary solver!");  //!< Throw an error if the boundary region is incorrect
+        if (index == -1) throw std::invalid_argument("SurfaceRadiation must be given an internal region adjacent to its boundary faces!");  //!< Throw an error if the boundary region is incorrect
 
         //!< If the particles that were just created are sitting in the boundary cell of the face that they belong to, delete them
         if (index == cell[ipart].index) {  //!< If the particle location index and boundary cell index are the same, then they should be deleted
@@ -131,16 +130,17 @@ PetscInt ablate::radiation::SurfaceRadiation::GetLossCell(PetscInt iCell, PetscR
     DMPlexGetSupport(faceDm, iCell, &neighborCells) >> ablate::checkError;
     for (PetscInt n = 0; n < numberNeighborCells; n++) {
         PetscInt cell = neighborCells[n];  //!< Contains the cell indexes of the neighbor cells
-        if (fieldBoundary->InRegion(fieldBoundary, cellDm, cell)) {
+        if (!(region->InRegion(region, cellDm, cell))) {
             index = cell;  //!< Take the index of the cell that is a boundary cell.
         }
     }
-    if (index == -1) throw std::runtime_error("I don't know what's going on");
+    if (index == -1) throw std::runtime_error("Loss cell error!");
     return index;
 }
 
+void ablate::radiation::SurfaceRadiation::GetFuelEmissivity(double& kappa) { kappa = 1; }
+
 #include "registrar.hpp"
 REGISTER(ablate::radiation::Radiation, ablate::radiation::SurfaceRadiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
-         ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(ablate::domain::Region, "fieldBoundary", "boundary of the radiation region"),
-         ARG(int, "rays", "number of rays used by the solver"), ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"),
-         OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
+         ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(int, "rays", "number of rays used by the solver"),
+         ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
