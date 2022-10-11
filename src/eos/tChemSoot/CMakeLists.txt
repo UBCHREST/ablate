@@ -13,7 +13,6 @@ target_sources(ablateLibrary
         temperatureFcn.hpp
         sensibleInternalEnergy.hpp
         sensibleInternalEnergyFcn.hpp
-        totalInternalEnergyFcn.hpp
         pressure.hpp
         sensibleEnthalpy.hpp
         speedOfSound.hpp

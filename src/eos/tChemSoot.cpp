@@ -453,15 +453,15 @@ PetscErrorCode ablate::eos::TChemSoot::SpeciesSensibleEnthalpyTemperatureFunctio
 
 
 
-void ablate::eos::TChemSoot::FillWorkingVectorFromDensityMassFractions(double density, double temperature, const double *densityYi, const real_type_1d_view_host &totalStateVector,int totNumSpec) {
+void ablate::eos::TChemSoot::FillWorkingVectorFromDensityMassFractions(double &density, double &temperature, const double *densityYi, const real_type_1d_view_host &totalStateVector,const int &totNumSpec) {
     //As a Reminder StateVector Assumed to follow -> {total Density, Pressure, Temperature, Total SpeciesMass Fraction of Gas states, Carbon Mass Fraction, Ndd}
     totalStateVector(2) = temperature;
     totalStateVector(0) = density;
     totalStateVector(1) = NAN; //Pressure set to NAN
     //Ignore the First species as it is the carbon solid species
-    real_type yiSum = densityYi[totNumSpec+2]/ density;
-    totalStateVector[totNumSpec+2] = yiSum;
-    for (ordinal_type s = 0; s < totNumSpec-2; s++) {
+    real_type yiSum = densityYi[0]/ density;//start with carbon value
+    totalStateVector[totNumSpec+2] = yiSum;//carbon index is 3+kmcd_numspecies = 2+totNumSpecies
+    for (ordinal_type s = 0; s < totNumSpec-2; s++) { // Dilute species is totNumSpec -1 in density Yi, and 3+totNumSpec-2 in totalState vector
         totalStateVector[3+s] = PetscMax(0.0, densityYi[s+1] / density);
         totalStateVector[3+s] = PetscMin(1.0, totalStateVector[3+s]);
         yiSum += totalStateVector[3+s];
@@ -471,7 +471,7 @@ void ablate::eos::TChemSoot::FillWorkingVectorFromDensityMassFractions(double de
             // Limit the bounds
             totalStateVector[3+s] /= yiSum;
         }
-        totalStateVector[2+totNumSpec] /= yiSum;
+        totalStateVector[2+totNumSpec] /= yiSum; // have to do carbon out of the loop since it jumps the dilute last species in statevector
         totalStateVector[2+totNumSpec-1] = 0.0; //Set dilute species to 0
     } else {
         totalStateVector[2+totNumSpec-1] = 1.0 - yiSum; //Set dilute species to 1-YiSum

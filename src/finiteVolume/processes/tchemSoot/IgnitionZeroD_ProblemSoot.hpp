@@ -44,9 +44,7 @@ namespace ablate::finiteVolume::processes::tchemSoot {
         real_type_1d_view_type _work_cvode;
         real_type_1d_view_type _fac;
         kinetic_model_type _kmcd;
-        real_type _p;
-        real_type _densityTot;
-        real_type_0d_view_type  _intEnergy;
+        real_type _densityTot; //Total density should be constant
         real_type_1d_view_type _hi_ref;
         real_type_1d_view_type _hi_Scratch;
         real_type_1d_view_type cp_gas_Scratch;
@@ -104,34 +102,31 @@ namespace ablate::finiteVolume::processes::tchemSoot {
         // MAIN CALL THAT PROBABLY NEEDS TO BE CHANGED, should be able to reuse SourceTerm
         template <typename MemberType>
         KOKKOS_INLINE_FUNCTION void computeFunction(const MemberType& member, const real_type_1d_view_type& x, const real_type_1d_view_type& f) const {
-            //Convert total mass fractions to gas mass fractions, and pull out YCarbon for temperature calculation!
+            //For soot reaction help, just make sure the carbon and Ndd arent negative, could cause problems in ode stiffness but most likely wont
+            x(_kmcd.nSpec+1) = PetscMax(x(_kmcd.nSpec+1),0); //YCarbon
+            x(_kmcd.nSpec+2) = PetscMax(x(_kmcd.nSpec+2),0); //Ndd
+
+            //Convert total mass fractions to gas mass fractions, and pull out YCarbon and Nd for temperature calculation!
             const real_type_1d_view_type gas_StateVector=  real_type_1d_view_type("GaseousSpecies",_kmcd.nSpec+3);
-            real_type Ycarbon = x(_kmcd.nSpec+1);
-            //Can either calculate density straight from constant pressure, and current gas state, or could use the assumption that the total density is constant and back it out from Yc
-            //First attempt is use total density
+            real_type Ycarbon = PetscMax(x(_kmcd.nSpec+1),0);
+            real_type Nd = PetscMax(x(_kmcd.nSpec+2),0) * ablate::eos::TChemSoot::NddScaling;
+
+            // Calculate gas density based on total density is constant and back it out from Yc
             gas_StateVector(0) = (1-Ycarbon)/(1/_densityTot-Ycarbon/ablate::eos::TChemSoot::solidCarbonDensity); //gaseous density
-            gas_StateVector(1) = _p; //pressure
-            gas_StateVector(2) = x(0); //Old temperature is new temps initial guess
+            gas_StateVector(2) = x(0);// temperature
             for(int i =0; i < _kmcd.nSpec; i++) {
                 gas_StateVector(i+3) = x(i+1)/(1-Ycarbon);
             }
             const TChem::Impl::StateVector gas_SV(_kmcd.nSpec,gas_StateVector);
 
-            //First step calculate temperature from current state values (//think we might be able to use work as the scratch
-            const real_type Temperature = ablate::eos::tChemSoot::impl::TemperatureFcn<real_type,device_type>::team_invoke_fromTotEnergy(member,gas_SV,Ycarbon,_intEnergy,_hi_Scratch,cp_gas_Scratch,_kmcd);
-            x(0) = Temperature;// set the temperature variable
-//            const real_type Temperature = x(0);
-            //Make sure to pass in Temperature, and Y_s (Gas definition, mass of species i/total mass of gaseous part), this will report the correct sources.
-            //These gas sources then need to be multiplied by the correct ration of volume of gas/ total volume = 1-f_v
+            //CalculatePressure based on density of the gas and temperature
+            gas_SV.Pressure() = ablate::eos::tChem::impl::pressureFcn<real_type,DeviceType>::team_invoke(member, gas_SV,_kmcd);
 
             //The density is calculated inside below and thus will be the gas density (per unit volume of gas !!0 and thus will return the correct values
-            Impl::SourceTerm<real_type, device_type>::team_invoke(member, Temperature, _p, gas_SV.MassFractions(), f, _work, _kmcd);
+            Impl::SourceTerm<real_type, device_type>::team_invoke(member, gas_SV.Temperature(), gas_SV.Pressure(), gas_SV.MassFractions(), f, _work, _kmcd);
 
-            //Now add in the correct source terms due to the soot reaction rates here (Also Adjusts it for SVF and zero's out the energy source)!
-            Soot7StepReactionModel::UpdateSourceWithSootMechanismRates<device_type>(x,f,_densityTot,_kmcd);
-            //Now the challenge of above is making sure the correct temperature update is being performed....
-
-            member.team_barrier();
+            //Now add in the correct source terms due to the soot reaction rates here (Also Adjusts it for SVF!)
+            Soot7StepReactionModel::UpdateSourceWithSootMechanismRatesTemperature<device_type>(member,f,Ycarbon,Nd,gas_SV,_densityTot,cp_gas_Scratch,_hi_Scratch,_kmcd);
         }
 
         /// this one is used in time integration nonlinear solve
@@ -180,15 +175,15 @@ namespace ablate::finiteVolume::processes::tchemSoot {
             member.team_barrier();
         }
 
-        template<typename MemberType>
-        KOKKOS_INLINE_FUNCTION void computeAnalyticalJacobian(const MemberType& member,
-                                                              const real_type_1d_view_type& x,
-                                                              const real_type_2d_view_type& J) const {
-            const real_type t = x(0);
-            const real_type_1d_view_type Ys(&x(1), _kmcd.nSpec);
-            Impl::JacobianReduced::team_invoke(member, t, _p, Ys, J, _work, _kmcd);
-            member.team_barrier();
-        }
+//        template<typename MemberType>
+//        KOKKOS_INLINE_FUNCTION void computeAnalyticalJacobian(const MemberType& member,
+//                                                              const real_type_1d_view_type& x,
+//                                                              const real_type_2d_view_type& J) const {
+//            const real_type t = x(0);
+//            const real_type_1d_view_type Ys(&x(1), _kmcd.nSpec);
+//           Impl::JacobianReduced::team_invoke(member, t, _p, Ys, J, _work, _kmcd);
+//            member.team_barrier();
+//        }
     };
 }
 #endif

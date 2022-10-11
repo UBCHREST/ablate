@@ -75,9 +75,7 @@ namespace ablate::finiteVolume::processes::tchemSoot {
             const real_type& t_beg,
             const real_type& t_end,
             /// input (initial condition)
-            const real_type& pressure,      /// pressure
             const real_type& TotalDensity, ///Total Density
-            const real_type_0d_view_type & IntEnergy, ///Internal Sensible Energy
             const real_type_1d_view_type& h_formation_ref, ///reference heats of formation
             const real_type_1d_view_type& hi_scratch, /// scratch enthalpy vector
             const real_type_1d_view_type& cp_gas_scratch, /// Specific heats of the gas scratch variable
@@ -115,12 +113,10 @@ namespace ablate::finiteVolume::processes::tchemSoot {
             auto tw = real_type_1d_view_type(wptr, workspace_extent - workspace_used);
 
             /// initialize problem
-            problem._p = pressure; // pressure (not changing over time)
             problem._densityTot = TotalDensity; //Total Density (Also assumed constant over time)
             problem._work = pw;    // problem workspace array
             problem._kmcd = kmcd;  // kinetic model
             problem._fac = fac; // Currently Unclear what this is :
-            problem._intEnergy = IntEnergy;
             problem._hi_ref = h_formation_ref;
             problem._hi_Scratch = hi_scratch;
             problem.cp_gas_Scratch = cp_gas_scratch;
@@ -148,7 +144,8 @@ namespace ablate::finiteVolume::processes::tchemSoot {
             Kokkos::single(Kokkos::PerTeam(member), [=]() {
               const real_type zero(0);
               if (r_val == 0) {
-                pressure_out() = pressure;
+                  //If it is a success set value to one to signal to recalculate it later on
+                pressure_out() = 1;
               } else {
                 pressure_out() = zero;
               }
@@ -172,9 +169,7 @@ namespace ablate::finiteVolume::processes::tchemSoot {
             const real_type& t_beg,
             const real_type& t_end,
             /// input (initial condition)
-            const real_type& pressure,      /// pressure
             const real_type& TotalDensity, ///Total Density
-            const real_type_0d_view_type& InternalSensibleEnergy, /// Internal Sensible Energy
             const real_type_1d_view_type& HeatsOfFormation, /// species heats of formation
             const real_type_1d_view_type& hi_scratch, /// Scratch Enthalpy Vector
             const real_type_1d_view_type& cp_gas_scratch, ///Scratch cp_gas vector
@@ -202,9 +197,7 @@ namespace ablate::finiteVolume::processes::tchemSoot {
                                dt_max,
                                t_beg,
                                t_end,
-                               pressure,
                                TotalDensity,
-                               InternalSensibleEnergy,
                                HeatsOfFormation,
                                hi_scratch,
                                cp_gas_scratch,

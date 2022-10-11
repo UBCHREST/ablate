@@ -41,7 +41,7 @@ void SpecificHeatConstantVolume_TemplateRun(const std::string& profile_name,
 
             TCHEM_CHECK_ERROR(!sv_at_i.isValid(), "Error: input state vector is not valid");
             {
-                const real_type t = sv_at_i.Temperature();
+                real_type t = sv_at_i.Temperature();
                 const real_type_1d_view_type ys = sv_at_i.MassFractions();
                 const real_type Yc = state_at_i(kmcd.nSpec+3);
                 // compute cv_gas

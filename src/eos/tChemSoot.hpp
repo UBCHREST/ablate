@@ -230,7 +230,7 @@ class TChemSoot : public EOS {
      * @param numSpec
      * @param yi
      */
-    static void FillWorkingVectorFromDensityMassFractions(double density, double temperature, const double* densityYi, const real_type_1d_view_host & stateVector, int totNumSpec);
+    static void FillWorkingVectorFromDensityMassFractions(double &density, double &temperature, const double* densityYi, const real_type_1d_view_host & stateVector, const int &totNumSpec);
 
    public:
     // Private static helper functions
@@ -239,13 +239,15 @@ class TChemSoot : public EOS {
     inline const static double solidCarbonDensity = 2000;
     //! Molecular Weight of Carbon
     inline static const double MWCarbon = 12.0107;
+    //! Scaling term for Ndd going into the Tines ODE Solver
+    inline static double NddScaling = 1e20;
 
     //Helper Function to split the total state vector into an appropriate gaseous state vector
     //Currently assumes all species were already normalized
 
     template <typename device_type, typename real_1d_viewType>
     inline static
-    void SplitYiState(const real_1d_viewType totalState, real_1d_viewType gaseousState, const KineticModelConstData<device_type>& kmcd)
+    void SplitYiState(const real_1d_viewType& totalState, real_1d_viewType& gaseousState, const KineticModelConstData<device_type>& kmcd)
     {
         double Yc = totalState(3+kmcd.nSpec);
         gaseousState(1) = totalState(1); //Pressure
@@ -259,6 +261,8 @@ class TChemSoot : public EOS {
 
     //New stuff
    private:
+
+    //Graphite date
     inline
     static const std::vector<real_type> CS_Nasa7TLow = { -3.108720720e-01, 4.403536860e-03, 1.903941180e-06,-6.385469660e-09, 2.989642480e-12,
                            -1.086507940e+02, 1.113829530e+00 };
@@ -266,7 +270,7 @@ class TChemSoot : public EOS {
     static const std::vector<real_type> CS_Nasa7THigh = { 1.455718290e+00, 1.717022160e-03,-6.975627860e-07, 1.352770320e-10,-9.675906520e-15,
                             -6.951388140e+02,-8.525830330e+00 };
    public:
-    inline static real_type CarbonEnthalpy_R_T(real_type Temp) {
+    inline static real_type CarbonEnthalpy_R_T(const real_type &Temp) {
         if ( (Temp < 200.) ) {
             double t200 = CS_Nasa7TLow.at(5) / 200. + CS_Nasa7TLow.at(0) + 200. * (CS_Nasa7TLow.at(1) / 2. +
                                                                                  200. * (CS_Nasa7TLow.at(2) / 3. + 200. * (CS_Nasa7TLow.at(3) / 4. +
@@ -295,7 +299,7 @@ class TChemSoot : public EOS {
         }
     }
 
-    inline static double CarbonCp_R(double Temp) {
+    inline static double CarbonCp_R(const double &Temp) {
         if ( Temp < 200 ) {
             double t200 = CS_Nasa7TLow.at(0) + 200. * (CS_Nasa7TLow.at(1) + 200. * (CS_Nasa7TLow.at(2) + 200. * (CS_Nasa7TLow.at(3) + 200. * CS_Nasa7TLow.at(4))));
             double t300 = CS_Nasa7TLow.at(0) + 300. * (CS_Nasa7TLow.at(1) + 300. * (CS_Nasa7TLow.at(2) + 300. * (CS_Nasa7TLow.at(3) + 300. * CS_Nasa7TLow.at(4))));

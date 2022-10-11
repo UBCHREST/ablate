@@ -13,6 +13,7 @@ class TChemSootReactions : public Process {
     //Quick Set Of carbon IC is 0
     double YCarbon = 0;
     double SootNumberDensity = 0;
+    double InSootNumberDensity = 0;
     double T = 0;
     //Locations of CarbonMass and Soot number density in EV
     int CarbonMass_ind;
@@ -28,7 +29,7 @@ class TChemSootReactions : public Process {
     double relToleranceTime = 1.0E-4;
     double absToleranceTime = 1.0E-8;
     double relToleranceNewton = 1.0E-6;
-    double absToleranceNewton = 1.0E-10;
+    double absToleranceNewton = 1.0E-12;
 
     int maxNumNewtonIterations = 100;
     int numTimeIterationsPerInterval = 100000;

@@ -199,8 +199,9 @@ PetscErrorCode ablate::finiteVolume::processes::TChemSootReactions::ChemistryFlo
 
             this->YCarbon = PetscMax(0.0, flowDensityField[0] / density);
             this->SootNumberDensity = PetscMax(0.0, flowEVField[this->SootNumberDensity_ind]/density);
+            this->InSootNumberDensity = this->SootNumberDensity;
             state_at_i(2+this->numberSpecies) = this->YCarbon;
-            state_at_i(3+this->numberSpecies) = this->SootNumberDensity;
+            state_at_i(3+this->numberSpecies) = this->SootNumberDensity/ablate::eos::TChemSoot::NddScaling;// in the ODE solver, trying to run with a scaled NDD
 
             //Start at index 1, because index 0 is reserved for C(s), Eventually make this its own index that can be changed and resolved but not atm. TODO::
             real_type yiSum = this->YCarbon;
@@ -213,16 +214,15 @@ PetscErrorCode ablate::finiteVolume::processes::TChemSootReactions::ChemistryFlo
             HOFSum += this->YCarbon*enthalpyOfFormation[0];
             if (yiSum > 1.0) {
                 //Normalize all values, include the carbon solid mass fraction
-                for (PetscInt s = 1; s < (int) this->numberSpecies - 1; s++) {
+                for (PetscInt s = 0; s < (int) this->numberSpecies ; s++) {
                     // Limit the bounds
-                    state_at_i[s+2] /= yiSum;
+                    state_at_i[s+3] /= yiSum;
                 }
-                state_at_i[3+this->numberSpecies - 1] /= yiSum; //YC(s)
                 state_at_i[2+this->numberSpecies-1] = 0.0; //Dilute Species
                 HOFSum /= yiSum;
             } else {
-                state_at_i[2+this->numberSpecies - 1] = 1.0 - yiSum; //Dilute Species
-                HOFSum += state_at_i[2+this->numberSpecies-1] * enthalpyOfFormation[this->numberSpecies-1]; //dilute species contribution
+                state_at_i[3+this->numberSpecies - 2] = 1.0 - yiSum; //Dilute Species
+                HOFSum += state_at_i[3+this->numberSpecies-2] * enthalpyOfFormation[this->numberSpecies-1]; //dilute species contribution
             }
 
 
@@ -241,10 +241,6 @@ PetscErrorCode ablate::finiteVolume::processes::TChemSootReactions::ChemistryFlo
     Kokkos::deep_copy(internalEnergyRefDevice, internalEnergyRefHost);
     Kokkos::deep_copy(totInternalEnergyRefDevice, totInternalEnergyRefHost);
     Kokkos::deep_copy(stateDevice, stateHost);
-
-    //For now we will pass in subviews to temperature and pressure that don't see the carbon mass fraction and Ndd
-//    auto stateDeviceGas = Kokkos::subview(stateDevice, Kokkos::ALL(),std::make_pair(0,(int)this->numberSpecies+2) );
-
 
     // setup the temperature, pressure, chemistry function policies
     auto temperatureFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(TChem::exec_space(), numberCells, Kokkos::AUTO());
@@ -284,7 +280,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemSootReactions::ChemistryFlo
 
         // assume a constant pressure zero D reaction for each cell
         ablate::finiteVolume::processes::tchemSoot::IgnitionZeroDSoot::runDeviceBatch(
-            chemistryFunctionPolicy, tolNewtonDevice, tolTimeDevice, facDevice, timeAdvanceDevice, stateDevice, enthalpyOfFormation,perSpeciesScratchDevice,perGasSpeciesScratchDevice, totInternalEnergyRefDevice, timeViewDevice, dtViewDevice, endStateDevice, kineticModelGasConstDataDevices);
+            chemistryFunctionPolicy, tolNewtonDevice, tolTimeDevice, facDevice, timeAdvanceDevice, stateDevice, enthalpyOfFormation,perSpeciesScratchDevice,perGasSpeciesScratchDevice, timeViewDevice, dtViewDevice, endStateDevice, kineticModelGasConstDataDevices);
 
         // check the output pressure, if it is zero the integration failed
         Kokkos::parallel_reduce(
@@ -317,7 +313,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemSootReactions::ChemistryFlo
 //            Impl::StateVector<real_type_1d_view> endStateVector(kineticModelGasConstDataDevice.nSpec, endStateAtI);
 //            const auto ye = endStateVector.MassFractions();
             this->YCarbon = endStateAtI(2+this->numberSpecies);
-            this->SootNumberDensity = endStateAtI(3+this->numberSpecies);
+            this->SootNumberDensity = endStateAtI(3+this->numberSpecies)*ablate::eos::TChemSoot::NddScaling;
             T = endStateAtI(2);
 
             // get the source term at this chemIndex
@@ -325,17 +321,20 @@ PetscErrorCode ablate::finiteVolume::processes::TChemSootReactions::ChemistryFlo
 
             // the IgnitionZeroD::runDeviceBatch sets the pressure to zero if it does not converge
             if (endStateAtI(1) > 0) {
-                // compute the source term from the change in the heat of formation
+                // compute the source term from the change in the heat of formation (without soot)
                 sourceTermAtI(0) = 0.0;
-                for (ordinal_type s = 0; s < (int)this->numberSpecies; s++) {
+                for (ordinal_type s = 0; s < (int)this->numberSpecies-1; s++) {
                     sourceTermAtI(0) += (stateAtI(3+s) - endStateAtI(3+s)) * enthalpyOfFormation(s+1);
                 }
+                //add in source term due to change in carbon
+                sourceTermAtI(0) += (stateAtI(3+this->numberSpecies-1) - endStateAtI(3+this->numberSpecies-1)) * enthalpyOfFormation(0);
 
                 for (ordinal_type s = 0; s < (int)this->numberSpecies+1; ++s) { //include Ndd and C(s)
                     // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
                     sourceTermAtI(s + 1) = endStateAtI(3+s) - stateAtI(3+s);
                 }
-
+                //Need to scale the Ndd source on this side..
+                sourceTermAtI(this->numberSpecies+1) *= ablate::eos::TChemSoot::NddScaling;
                 // Now scale everything by density/dt
                 for (std::size_t j = 0; j < sourceTermAtI.extent(0); ++j) {
                     // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
@@ -368,9 +367,11 @@ PetscErrorCode ablate::finiteVolume::processes::TChemSootReactions::ChemistryFlo
 
     // copy the updated state back to host
     Kokkos::deep_copy(sourceTermsHost, sourceTermsDevice);
+
     this->counter++;
     std::cout << "After Timestep: " << this->counter << ", at time: " << time+dt <<"!, YC= " << this->YCarbon << ", SND = "<< this->SootNumberDensity <<
-        ", T = "  << T;
+        ", T = "  << T << ", SNDInput = " << this->InSootNumberDensity;
+
     // clean up
     solver.RestoreRange(cellRange);
     PetscFunctionReturn(0);

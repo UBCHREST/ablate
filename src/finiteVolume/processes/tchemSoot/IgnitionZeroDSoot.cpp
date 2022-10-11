@@ -51,7 +51,6 @@ namespace ablate::finiteVolume::processes::tchemSoot {
         const real_type_1d_view& HF,
         const real_type_2d_view& Hi_Scratch,
         const real_type_2d_view& cp_gas_scratch,
-        const real_type_1d_view& IntEnergy,
         /// output
         const real_type_1d_view& t_out,
         const real_type_1d_view& dt_out,
@@ -73,7 +72,6 @@ namespace ablate::finiteVolume::processes::tchemSoot {
             HF,
             Hi_Scratch,
             cp_gas_scratch,
-            IntEnergy,
             t_out,
             dt_out,
             state_out,
@@ -92,7 +90,6 @@ namespace ablate::finiteVolume::processes::tchemSoot {
                               const real_type_1d_view_host& HF,
                               const real_type_2d_view_host& Hi_Scratch,
                               const real_type_2d_view_host& cp_gas_scratch,
-                              const real_type_1d_view_host& IntEnergy,
                               /// output
                               const real_type_1d_view_host& t_out,
                               const real_type_1d_view_host& dt_out,
@@ -113,7 +110,6 @@ namespace ablate::finiteVolume::processes::tchemSoot {
         HF,
         Hi_Scratch,
         cp_gas_scratch,
-        IntEnergy,
         t_out,
         dt_out,
         state_out,

@@ -50,7 +50,6 @@ namespace ablate::finiteVolume::processes::tchemSoot {
                             const Tines::value_type_1d_view<real_type, DeviceType>& HF,
                             const Tines::value_type_2d_view<real_type, DeviceType>& Hi_Scratch,
                             const Tines::value_type_2d_view<real_type, DeviceType>& cp_gas_scratch,
-                            const Tines::value_type_1d_view<real_type, DeviceType>& IntEnergy,
                             /// output
                             const Tines::value_type_1d_view<real_type, DeviceType>& t_out,
                             const Tines::value_type_1d_view<real_type, DeviceType>& dt_out,
@@ -82,7 +81,6 @@ namespace ablate::finiteVolume::processes::tchemSoot {
               const RealType1DViewType state_at_i = Kokkos::subview(state, i, Kokkos::ALL());
               const RealType1DViewType state_out_at_i = Kokkos::subview(state_out, i, Kokkos::ALL());
               const RealType1DViewType fac_at_i = Kokkos::subview(fac, i, Kokkos::ALL());
-              const RealType0DViewType IntEnergy_at_i = Kokkos::subview(IntEnergy,i);
               const RealType1DViewType Hi_scratch_at_i = Kokkos::subview(Hi_Scratch,i, Kokkos::ALL());
               const RealType1DViewType cp_gas_scratch_at_i = Kokkos::subview(cp_gas_scratch,i,Kokkos::ALL());
 
@@ -103,7 +101,6 @@ namespace ablate::finiteVolume::processes::tchemSoot {
                 const real_type t_beg = tadv_at_i._tbeg;
 
                 const auto temperature = state_at_i(2);
-                const auto pressure = state_at_i(1);
                 const auto totalDensity = state_at_i(0);
                 const auto YCarbon = state_at_i(3+kmcd_at_i.nSpec);
                 const auto SootNumberDensity = state_at_i(4+kmcd_at_i.nSpec);
@@ -150,9 +147,7 @@ namespace ablate::finiteVolume::processes::tchemSoot {
                                 dt_max,
                                 t_beg,
                                 t_end,
-                                pressure,
                                 totalDensity,
-                                IntEnergy_at_i,
                                 HF,
                                 Hi_scratch_at_i,
                                 cp_gas_scratch_at_i,
@@ -165,37 +160,47 @@ namespace ablate::finiteVolume::processes::tchemSoot {
                                 kmcd_at_i);
 
                 member.team_barrier();
-                //save the new values to the out variables
+                //Normalization routine of mass fractions if wanted
+                YCarbon_out() = PetscMax(vals(kmcd_at_i.nSpec+1),0);
+                SootNumberDensity_out() = PetscMax(vals(kmcd_at_i.nSpec+2),0);
+                double sum = YCarbon_out();
                 Kokkos::parallel_for
-                  (Kokkos::TeamVectorRange(member, m),
-                   [&](const ordinal_type& i) {
-                    if (i > 0) {
-                        if (i < kmcd_at_i.nSpec + 1)
-                            Ys_out(i - 1) = vals(i);
-                        else if (i == kmcd_at_i.nSpec+1)
-                            YCarbon_out() = vals(i);
-                        else
-                            SootNumberDensity_out() = vals(i);
-                    }
-                   });
+                    (Kokkos::TeamVectorRange(member,kmcd_at_i.nSpec-1), [&](const ordinal_type& i) {
+                                Ys_out(i) = PetscMax(vals(i+1),0);
+                                sum+= Ys_out(i);
+                        }
+                    );
+                if(sum > 1) {
+                    YCarbon_out() /= sum;
+                    Kokkos::parallel_for(
+                        Kokkos::TeamVectorRange(member,kmcd_at_i.nSpec-1), [&] (const ordinal_type& i) {
+                            Ys_out(i) /= sum;
+                        });
+                    Ys_out(kmcd_at_i.nSpec-1) = 0;
+                }
+                else Ys_out(kmcd_at_i.nSpec-1) = 1- sum;
 
-                //Get the temperature Out
+
+                //Get the temperature Out and pressure out
                 const real_type_1d_view_type gas_StateVector=  real_type_1d_view_type("GaseousSpecies",kmcd_at_i.nSpec+3);
                 //Can either calculate density straight from constant pressure, and current gas state, or could use the assumption that the total density is constant and back it out from Yc
                 //First attempt is use total density
                 gas_StateVector(0) = (1-YCarbon_out())/(1/totalDensity-YCarbon_out()/ablate::eos::TChemSoot::solidCarbonDensity); //gaseous density
-                gas_StateVector(1) = pressure; //keep as same pressure for now
+                gas_StateVector(1) = 0; //Temperary pressure value for now
                 gas_StateVector(2) = temperature; //temporary temperature Guess
                 for(int sp =0; sp < kmcd_at_i.nSpec; sp++) { //scale total mass fractions to gas mass fractions
                     gas_StateVector(sp+3) = Ys_out(sp)/(1-YCarbon_out());
                 }
                 const TChem::Impl::StateVector gas_SV(kmcd_at_i.nSpec,gas_StateVector);
-                temperature_out() = ablate::eos::tChemSoot::impl::TemperatureFcn<real_type,device_type>::team_invoke_fromTotEnergy(member,gas_SV,YCarbon_out(),IntEnergy_at_i,Hi_scratch_at_i,cp_gas_scratch_at_i,kmcd_at_i);
-//                temperature_out() = vals(0);
-                member.team_barrier();
-                //Density out should be the same, it is the major assumption, even though pressure is also kept constant..
-                density_out() = totalDensity;
-//                density_out() = ablate::eos::tChemSoot::impl::densityFcn<real_type,device_type>::team_invoke(member,state_out_at_i,kmcd_at_i); //TODO:: Make sure this isn't changing....
+
+                //Calcuulate actual Pressure first, only if pressure_out != 0 (if it failed, no point in calculating anything
+                if(pressure_out() != 0) {
+                    temperature_out() = vals(0);
+                    pressure_out() = ablate::eos::tChem::impl::pressureFcn<real_type,DeviceType>::team_invoke(member, gas_SV,kmcd_at_i);
+                    gas_SV.Pressure() = pressure_out();
+                    //Density out should be the same, it is the major assumption
+                    density_out() = totalDensity;
+                }
                 member.team_barrier();
               }
             }
