@@ -432,14 +432,13 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         }
     }
 
-    // In a second loop, get carrier particles and set their values equal to the values of the carriers of the access identifiers
-    // This avoids solving any redundant rays, and also avoids changing the logic too much.
-    // Here we actually want to iterate through all particles.
+    //!< In a second loop, get carrier particles and set their values equal to the values of the carriers of the access identifiers
+    //!< This avoids solving any redundant rays, and also avoids changing the logic too much.
+    //!< Here we actually want to iterate through all particles.
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
-        std::string key = Key(&access[ipart]);
-        carrier[ipart].Ij = rays[key].Ij;
-        carrier[ipart].Krad = rays[key].Krad;
-        carrier[ipart].I0 = rays[key].I0;
+        carrier[ipart].Ij = rays[Key(&access[ipart])].Ij;
+        carrier[ipart].Krad = rays[Key(&access[ipart])].Krad;
+        carrier[ipart].I0 = rays[Key(&access[ipart])].I0;
     }
 
     /** Restore the fields associated with the particles after all of the particles have been stepped */
@@ -536,8 +535,6 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                      * The sin(theta) is a result of the polar coordinate discretization.
                      * In the parallel form at the end of each ray, the absorption of the initial ray and the absorption of the black body source are computed individually at the end.
                      * */
-                    /** Parallel things are here
-                     * Meaning that the variables required for the parallelizable analytical solution will be declared here */
                     origin[iCell].Isource += origin[iCell].handler[Key(&loopid)].Ij * origin[iCell].Kradd;  //!< Add the black body radiation transmitted through the domain to the source term
                     origin[iCell].Kradd *= origin[iCell].handler[Key(&loopid)].Krad;                        //!< Add the absorption for this domain to the total absorption of the ray
                     loopid.nsegment++;                                                                      //!< Decrement the segment number to move to the next closer segment in the ray.
