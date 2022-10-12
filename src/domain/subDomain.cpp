@@ -3,6 +3,8 @@
 #include <sstream>
 #include <utilities/petscError.hpp>
 #include "utilities/mpiError.hpp"
+#include "levelSet/rbfV2.hpp"
+
 
 ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const std::vector<std::shared_ptr<FieldDescription>>& allAuxFields)
     : domain(domainIn),
@@ -106,6 +108,7 @@ ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const 
             offset += newAuxField.numberComponents;
         }
     }
+
 }
 
 ablate::domain::SubDomain::~SubDomain() {
@@ -860,4 +863,13 @@ void ablate::domain::SubDomain::CreateEmptySubDM(DM* inDM, std::shared_ptr<domai
     } else {
         DMClone(GetDM(), inDM);
     }
+}
+
+
+// Create a new RBF for the given region, if required.
+void ablate::domain::SubDomain::SetupRBF(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
+  if (!(subDomain->rbf)) {
+    printf("Yuppers\n");
+    subDomain->rbf = std::make_shared<ablate::radialBasisV2::RBF>(subDomain);
+  }
 }

@@ -8,7 +8,7 @@
 #include "domain/domain.hpp"
 #include "solver/solver.hpp"
 #include "solver/timeStepper.hpp"
-#include "rbf.hpp"
+#include "rbfV2.hpp"
 
 //ablate::solver::Solver::Solver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options)
 
@@ -21,14 +21,6 @@ class LevelSetSolver : public ablate::solver::Solver {
 
     void Reinitialize(TS ts, ablate::solver::Solver &solver);
 
-    // The RBF to be used for derivatives
-    std::shared_ptr<ablate::radialBasis::RBF> rbf = nullptr;
-
-    // These can be set in the YAML file. If the rbf is not provided then it is created using these values
-    const ablate::radialBasis::RBF::RBFType rbfType;
-    const PetscInt rbfOrder = -1;
-    const PetscReal rbfParam = -1;
-
     PetscInt dim;
 
 
@@ -39,7 +31,7 @@ class LevelSetSolver : public ablate::solver::Solver {
     void Normal3D(PetscInt c, PetscReal *n);
 
 
-    const ablate::domain::Field *lsField;
+    const ablate::domain::Field *lsField = NULL;
 
   public:
 
@@ -48,11 +40,7 @@ class LevelSetSolver : public ablate::solver::Solver {
     LevelSetSolver(
       std::string solverId,
       std::shared_ptr<ablate::domain::Region>,
-      std::shared_ptr<ablate::parameters::Parameters> options,
-      std::shared_ptr<ablate::radialBasis::RBF> rbf,
-      ablate::radialBasis::RBF::RBFType rbfType,
-      PetscInt rbfOrder,
-      PetscReal rbfParam);
+      std::shared_ptr<ablate::parameters::Parameters> options);
 
 
     /** SubDomain Register and Setup **/

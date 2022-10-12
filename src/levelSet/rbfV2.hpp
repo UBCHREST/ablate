@@ -3,10 +3,15 @@
 #include <petsc.h>
 #include <string>
 #include <vector>
+#include <domain/region.hpp>
+#include "solver/range.hpp"
 #include "domain/domain.hpp"
+#include "domain/subDomain.hpp"
 #include "solver/solver.hpp"
 #include "solver/timeStepper.hpp"
 #include "lsSupport.hpp"
+
+
 
 #define __RBF_DEFAULT_POLYORDER 4
 #define __RBF_DEFAULT_PARAM 0.1
@@ -15,9 +20,13 @@ namespace ablate::radialBasisV2 {
 
 enum class RBFType { mq, phs, imq, ga };
 
-class RBF : public ablate::solver::Solver {
+class RBF {
 
   private:
+
+
+    const std::shared_ptr<ablate::domain::SubDomain> subDomain;
+
 
     // Radial Basis Function type and parameters
     const ablate::radialBasisV2::RBFType rbfType = ablate::radialBasisV2::RBFType::mq;
@@ -49,19 +58,19 @@ class RBF : public ablate::solver::Solver {
     PetscBool hasInterpolation = PETSC_FALSE;
     Mat *RBFMatrix = nullptr;
 
-
     // Compute the LU-decomposition of the augmented RBF matrix given a cell list.
     void Matrix(const PetscInt c, PetscReal **x, Mat *LUA);
 
+
+
   public:
 
-    RBF(
-      std::string solverId,
-      std::shared_ptr<ablate::domain::Region>,
-      std::shared_ptr<ablate::parameters::Parameters> options,
+    RBF(std::shared_ptr<ablate::domain::SubDomain> subDomain,
       ablate::radialBasisV2::RBFType rbfType,
       PetscInt rbfOrder,
       PetscReal rbfParam);
+
+    RBF(std::shared_ptr<ablate::domain::SubDomain> subDomain);
 
     ~RBF();
 
@@ -75,12 +84,12 @@ class RBF : public ablate::solver::Solver {
     // Derivative stuff
     void SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVertices);
     void SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]);
-    PetscReal EvalDer(ablate::domain::Field field, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz);  // Evaluate a derivative
+    PetscReal EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz);  // Evaluate a derivative
     void SetupDerivativeStencils();   // Setup all derivative stencils. Useful if someone wants to remove setup cost when testing
 
     // Interpolation stuff
     void SetInterpolation(PetscBool hasInterpolation);
-    PetscReal Interpolate(ablate::domain::Field field, PetscInt c, PetscReal xEval[3]);
+    PetscReal Interpolate(const ablate::domain::Field *field, PetscInt c, PetscReal xEval[3]);
 
 
 
