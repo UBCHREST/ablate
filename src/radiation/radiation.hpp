@@ -22,8 +22,8 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      * @param rayNumber
      * @param options other options
      */
-    Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber,
-              std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> = {});
+    Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
+              std::shared_ptr<ablate::monitors::logs::Log> = {});
 
     virtual ~Radiation();
 
@@ -69,7 +69,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
 
     virtual void ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray);  //!< Routine to move the particle one step
     virtual PetscReal SurfaceComponent(DM* faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi,
-                                       PetscInt ntheta);                         //!< Dummy function that doesn't do anything unless it is overridden by the surface implementation
+                                       PetscInt ntheta);                                 //!< Dummy function that doesn't do anything unless it is overridden by the surface implementation
     virtual PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM solDm, DM pPDm);  //!< Get the index of the cell which the losses should be calculated from
     virtual void GetFuelEmissivity(double& kappa);
 

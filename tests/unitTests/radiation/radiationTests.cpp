@@ -295,8 +295,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .expectedResult = ablate::mathFunctions::Create("x + y"),
                                               .radiationFactory =
                                                   [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
-                                                      return std::make_shared<ablate::radiation::Radiation>(
-                                                          "radiationBase", ablate::domain::Region::ENTIREDOMAIN, 15, radiationModelIn, nullptr);
+                                                      return std::make_shared<ablate::radiation::Radiation>("radiationBase", ablate::domain::Region::ENTIREDOMAIN, 15, radiationModelIn, nullptr);
                                                   }},
                     (RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature 1.1", .nproc = 1},
                                               .meshFaces = {3, 20},
@@ -306,8 +305,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .expectedResult = ablate::mathFunctions::Create("x + y"),
                                               .radiationFactory =
                                                   [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
-                                                      return std::make_shared<ablate::radiation::Radiation>(
-                                                          "radiationBase", ablate::domain::Region::ENTIREDOMAIN, 15, radiationModelIn, nullptr);
+                                                      return std::make_shared<ablate::radiation::Radiation>("radiationBase", ablate::domain::Region::ENTIREDOMAIN, 15, radiationModelIn, nullptr);
                                                   }},
                     (RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature 2 proc.", .nproc = 2},
                                               .meshFaces = {3, 20},
@@ -317,8 +315,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .expectedResult = ablate::mathFunctions::Create("x + y"),
                                               .radiationFactory =
                                                   [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
-                                                      return std::make_shared<ablate::radiation::Radiation>(
-                                                          "radiationBase", ablate::domain::Region::ENTIREDOMAIN, 15, radiationModelIn, nullptr);
+                                                      return std::make_shared<ablate::radiation::Radiation>("radiationBase", ablate::domain::Region::ENTIREDOMAIN, 15, radiationModelIn, nullptr);
                                                   }},
                     (RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature 2 proc. sharing", .nproc = 2},
                                               .meshFaces = {3, 20},
