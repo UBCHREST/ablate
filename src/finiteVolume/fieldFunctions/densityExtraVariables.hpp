@@ -15,7 +15,8 @@ class DensityExtraVariables : public ablate::mathFunctions::FieldFunction {
     static PetscErrorCode ComputeDensityEvFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
 
    public:
-    explicit DensityExtraVariables(std::shared_ptr<ablate::finiteVolume::fieldFunctions::CompressibleFlowState> flowState, std::vector<std::shared_ptr<mathFunctions::MathFunction>> evFunctions);
+    explicit DensityExtraVariables(std::shared_ptr<ablate::finiteVolume::fieldFunctions::CompressibleFlowState> flowState, std::vector<std::shared_ptr<mathFunctions::MathFunction>> evFunctions,
+                                   std::shared_ptr<ablate::domain::Region> region = {});
 };
 
 }  // namespace ablate::finiteVolume::fieldFunctions
