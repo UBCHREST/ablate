@@ -11,7 +11,7 @@ class RaySharingRadiation : public ablate::radiation::Radiation {
                         std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> = {});
     ~RaySharingRadiation();
 
-    void ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray, PetscInt stepcount) override;
+    void ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray) override;
 };
 }  // namespace ablate::radiation
 #endif  // ABLATELIBRARY_RAYSHARINGRADIATION_HPP

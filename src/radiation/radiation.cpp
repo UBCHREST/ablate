@@ -225,7 +225,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
          * */
         DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
         DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
-        ParticleStep(subDomain, cellSF, faceDM, faceGeomArray, stepcount);
+        ParticleStep(subDomain, cellSF, faceDM, faceGeomArray);
         DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
         DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
@@ -250,7 +250,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
              * Therefore, after each step (where the particle location is fed in) check for whether the cell is still within the interior region.
              * If it is not (if it's in a boundary cell) then it should be deleted here.
              * */
-            if (!(region->InRegion(region, subDomain.GetDM(), cell[ipart].index))) {
+            if (!(region->InRegion(region, subDomain.GetDM(), cell[ip].index))) {
                 DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
                 DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
                 DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
@@ -657,8 +657,7 @@ void ablate::radiation::Radiation::GetFuelEmissivity(double& kappa) {}
 
 PetscReal ablate::radiation::Radiation::SurfaceComponent(DM* faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi, PetscInt ntheta) { return 1.0; }
 
-void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray,
-                                                PetscInt stepcount) { /** Check that the particle is in a valid region */
+void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray) { /** Check that the particle is in a valid region */
     PetscInt npoints = 0;
     PetscInt nglobalpoints = 0;
     PetscInt nsolvepoints = 0;  //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
