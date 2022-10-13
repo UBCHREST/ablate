@@ -16,11 +16,13 @@
 #define __RBF_DEFAULT_POLYORDER 4
 #define __RBF_DEFAULT_PARAM 0.1
 
-namespace ablate::radialBasisV2 {
+namespace ablate::domain {
 
-enum class RBFType { mq, phs, imq, ga };
 
 class RBF {
+
+  public:
+    enum class RBFType { mq, phs, imq, ga };
 
   private:
 
@@ -29,7 +31,7 @@ class RBF {
 
 
     // Radial Basis Function type and parameters
-    const ablate::radialBasisV2::RBFType rbfType = ablate::radialBasisV2::RBFType::mq;
+    const RBFType rbfType = RBFType::mq;
     const PetscInt polyOrder = 4;
     const PetscReal rbfParam = 0.1;
 
@@ -65,8 +67,10 @@ class RBF {
 
   public:
 
+
+
     RBF(std::shared_ptr<ablate::domain::SubDomain> subDomain,
-      ablate::radialBasisV2::RBFType rbfType,
+      RBFType rbfType,
       PetscInt rbfOrder,
       PetscReal rbfParam);
 
@@ -99,8 +103,8 @@ class RBF {
 
 
 
-std::istream& operator>>(std::istream& is, ablate::radialBasisV2::RBFType& v);
+std::istream& operator>>(std::istream& is, ablate::domain::RBF::RBFType& v);
 
-}
+}  // namespace ablate::domain
 
 #endif  // ABLATELIBRARY_LEVELSETSOLVER_HPP

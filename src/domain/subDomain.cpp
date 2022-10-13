@@ -869,6 +869,6 @@ void ablate::domain::SubDomain::CreateEmptySubDM(DM* inDM, std::shared_ptr<domai
 // Create a new RBF for the given region, if required.
 void ablate::domain::SubDomain::SetupRBF(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
   if (!(subDomain->rbf)) {
-    subDomain->rbf = std::make_shared<ablate::radialBasisV2::RBF>(subDomain, ablate::radialBasisV2::RBFType::mq, 0, 0.0);
+    subDomain->rbf = std::make_shared<ablate::domain::RBF>(subDomain, ablate::domain::RBF::RBFType::mq, 0, 0.0);
   }
 }

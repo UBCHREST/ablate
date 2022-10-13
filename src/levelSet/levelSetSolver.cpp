@@ -47,7 +47,7 @@ void LevelSetSolver::Initialize() {
 void LevelSetSolver::Normal2D(PetscInt c, PetscScalar *n) {
 
   PetscReal   cx = 0.0, cy = 0.0, g = 0.0;
-  std::shared_ptr<ablate::radialBasisV2::RBF> rbf = subDomain->GetRBF();
+  std::shared_ptr<ablate::domain::RBF> rbf = subDomain->GetRBF();
 
   cx = rbf->EvalDer(LevelSetSolver::lsField, c, 1, 0, 0);
   cy = rbf->EvalDer(LevelSetSolver::lsField, c, 0, 1, 0);
@@ -62,7 +62,7 @@ void LevelSetSolver::Normal2D(PetscInt c, PetscScalar *n) {
 void LevelSetSolver::Normal3D(PetscInt c, PetscReal *n) {
 
   PetscReal   cx = 0.0, cy = 0.0, cz = 0.0, g = 0.0;
-  std::shared_ptr<ablate::radialBasisV2::RBF> rbf = subDomain->GetRBF();
+  std::shared_ptr<ablate::domain::RBF> rbf = subDomain->GetRBF();
 
   cx = rbf->EvalDer(LevelSetSolver::lsField, c, 1, 0, 0);
   cy = rbf->EvalDer(LevelSetSolver::lsField, c, 0, 1, 0);
@@ -78,7 +78,7 @@ PetscReal LevelSetSolver::Curvature2D(PetscInt c) {
 
   PetscReal k = 0.0;
   PetscReal cx, cy, cxx, cyy, cxy;
-  std::shared_ptr<ablate::radialBasisV2::RBF> rbf = subDomain->GetRBF();
+  std::shared_ptr<ablate::domain::RBF> rbf = subDomain->GetRBF();
 
   cx = rbf->EvalDer(LevelSetSolver::lsField, c, 1, 0, 0);
   cy = rbf->EvalDer(LevelSetSolver::lsField, c, 0, 1, 0);
@@ -97,7 +97,7 @@ PetscReal LevelSetSolver::Curvature3D(PetscInt c) {
   PetscReal cx, cy, cz;
   PetscReal cxx, cyy, czz;
   PetscReal cxy, cxz, cyz;
-  std::shared_ptr<ablate::radialBasisV2::RBF> rbf = subDomain->GetRBF();
+  std::shared_ptr<ablate::domain::RBF> rbf = subDomain->GetRBF();
 
   cx = rbf->EvalDer(LevelSetSolver::lsField, c, 1, 0, 0);
   cy = rbf->EvalDer(LevelSetSolver::lsField, c, 0, 1, 0);
