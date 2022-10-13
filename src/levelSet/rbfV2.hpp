@@ -70,7 +70,7 @@ class RBF {
       PetscInt rbfOrder,
       PetscReal rbfParam);
 
-    RBF(std::shared_ptr<ablate::domain::SubDomain> subDomain);
+//    RBF(std::shared_ptr<ablate::domain::SubDomain> subDomain);
 
     ~RBF();
 
@@ -78,7 +78,7 @@ class RBF {
     /** SubDomain Register and Setup **/
     void Initialize();
     void Setup();
-    void Register(std::shared_ptr<ablate::domain::SubDomain> subDomain);
+    void Register();
 
 
     // Derivative stuff

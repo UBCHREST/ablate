@@ -32,7 +32,7 @@ std::istream& ablate::radialBasisV2::operator>>(std::istream& is, ablate::radial
 }
 
 
-using namespace ablate::radialBasisV2;
+//using namespace ablate::radialBasisV2;
 
 
 // Distance between two points
@@ -294,13 +294,13 @@ static PetscInt fac[11] =  {1,1,2,6,24,120,720,5040,40320,362880,3628800}; // Pr
 // c - Location in cellRange
 // xCenters - Shifted centers of all the cells (output)
 // A - The LU-factorization of the augmented RBF matrix (output)
-void RBF::Matrix(const PetscInt c, PetscReal **xCenters, Mat *LUA) {
+void ablate::radialBasisV2::RBF::Matrix(const PetscInt c, PetscReal **xCenters, Mat *LUA) {
 
   PetscInt              i, j, d, px, py, pz, matSize;
   PetscInt              nCells, *list;
   const PetscInt        dim = subDomain->GetDimensions();
-  const PetscInt        nPoly = RBF::nPoly, p = RBF::polyOrder, p1 = p + 1;
-  const PetscReal       param = RBF::rbfParam;
+  const PetscInt        nPoly = ablate::radialBasisV2::RBF::nPoly, p = ablate::radialBasisV2::RBF::polyOrder, p1 = p + 1;
+  const PetscReal       param = ablate::radialBasisV2::RBF::rbfParam;
   Mat                   A;
   PetscReal             *x, *vals;
   PetscReal             x0[dim];        // Center of the cell of interest
@@ -308,9 +308,9 @@ void RBF::Matrix(const PetscInt c, PetscReal **xCenters, Mat *LUA) {
   const DM              dm = subDomain->GetSubDM();
 
   // Get the list of neighbor cells
-  DMPlexGetNeighborCells(dm, c, -1, -1.0, RBF::minNumberCells, RBF::useVertices, &nCells, &list);
-  RBF::nStencil[c] = nCells;
-  RBF::stencilList[c] = list;
+  DMPlexGetNeighborCells(dm, c, -1, -1.0, ablate::radialBasisV2::RBF::minNumberCells, ablate::radialBasisV2::RBF::useVertices, &nCells, &list);
+  ablate::radialBasisV2::RBF::nStencil[c] = nCells;
+  ablate::radialBasisV2::RBF::stencilList[c] = list;
 
   PetscMalloc1(nCells*dim*p1, &xp) >> ablate::checkError;
 
@@ -340,7 +340,7 @@ void RBF::Matrix(const PetscInt c, PetscReal **xCenters, Mat *LUA) {
 
   // Create the matrix
   MatCreateSeqDense(PETSC_COMM_SELF, matSize, matSize, NULL, &A) >> ablate::checkError;
-  PetscObjectSetName((PetscObject)A,"ablate::radialBasisV2::RBF::A") >> ablate::checkError;
+  PetscObjectSetName((PetscObject)A,"ablate::radialBasisV2::ablate::radialBasisV2::RBF::A") >> ablate::checkError;
   MatZeroEntries(A) >> ablate::checkError;
   MatSetOption(A, MAT_SYMMETRIC, PETSC_TRUE) >> ablate::checkError;
 
@@ -378,7 +378,7 @@ void RBF::Matrix(const PetscInt c, PetscReal **xCenters, Mat *LUA) {
     }
   }
   MatDenseRestoreArrayWrite(A, &vals) >> ablate::checkError;
-  MatViewFromOptions(A,NULL,"-ablate::radialBasisV2::RBF::A_view") >> ablate::checkError;
+  MatViewFromOptions(A,NULL,"-ablate::radialBasisV2::ablate::radialBasisV2::RBF::A_view") >> ablate::checkError;
 
   // Factor the matrix
   MatLUFactor(A, NULL, NULL, NULL) >> ablate::checkError;
@@ -398,7 +398,7 @@ void RBF::Matrix(const PetscInt c, PetscReal **xCenters, Mat *LUA) {
 // Set the derivatives to use
 // nDer - Number of derivatives to set
 // dx, dy, dz - Lists of length nDer indicating the derivatives
-void RBF::SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVertices){
+void ablate::radialBasisV2::RBF::SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVertices){
 
   if (nDer > 0) {
 
@@ -407,21 +407,21 @@ void RBF::SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt d
     DMPlexGetHeightStratum(subDomain->GetDM(), 0, &cStart, &cEnd) >> ablate::checkError;       // Range of cells
     n = cEnd - cStart;
 
-    RBF::hasDerivativeInformation = PETSC_TRUE;
-    RBF::useVertices = useVertices;
-    RBF::nDer = nDer;
+    ablate::radialBasisV2::RBF::hasDerivativeInformation = PETSC_TRUE;
+    ablate::radialBasisV2::RBF::useVertices = useVertices;
+    ablate::radialBasisV2::RBF::nDer = nDer;
 
-    PetscMalloc2(n, &(RBF::stencilWeights), 3*nDer, &(RBF::dxyz)) >> ablate::checkError;
+    PetscMalloc2(n, &(ablate::radialBasisV2::RBF::stencilWeights), 3*nDer, &(ablate::radialBasisV2::RBF::dxyz)) >> ablate::checkError;
 
     for (PetscInt c = cStart; c < cEnd; ++c) {
-      RBF::stencilWeights[c] = nullptr;
+      ablate::radialBasisV2::RBF::stencilWeights[c] = nullptr;
     }
 
     // Store the derivatives
     for (PetscInt i = 0; i < nDer; ++i) {
-      RBF::dxyz[i*3 + 0] = dx[i];
-      RBF::dxyz[i*3 + 1] = dy[i];
-      RBF::dxyz[i*3 + 2] = dz[i];
+      ablate::radialBasisV2::RBF::dxyz[i*3 + 0] = dx[i];
+      ablate::radialBasisV2::RBF::dxyz[i*3 + 1] = dy[i];
+      ablate::radialBasisV2::RBF::dxyz[i*3 + 2] = dz[i];
     }
 
   }
@@ -430,8 +430,8 @@ void RBF::SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt d
 }
 
 // Set derivatives, defaulting to using vertices
-void RBF::SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]){
-  RBF::SetDerivatives(nDer, dx, dy, dz, PETSC_TRUE);
+void ablate::radialBasisV2::RBF::SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]){
+  ablate::radialBasisV2::RBF::SetDerivatives(nDer, dx, dy, dz, PETSC_TRUE);
 }
 
 
@@ -439,28 +439,28 @@ void RBF::SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt d
 
 // Compute the RBF weights at the cell center of p using a cell-list
 // c - The center cell in cellRange ordering
-void RBF::SetupDerivativeStencils(PetscInt c) {
+void ablate::radialBasisV2::RBF::SetupDerivativeStencils(PetscInt c) {
 
-  Mat       A = RBF::RBFMatrix[c], B = nullptr;
+  Mat       A = ablate::radialBasisV2::RBF::RBFMatrix[c], B = nullptr;
   PetscReal *x = nullptr;   // Shifted cell-centers of the neigbor list
   // This also computes nStencil[c]
   if (A == nullptr) {
-    RBF::Matrix(c, &x, &A);
+    ablate::radialBasisV2::RBF::Matrix(c, &x, &A);
   }
 
   PetscInt    dim = subDomain->GetDimensions();
-  PetscInt    nCells = RBF::nStencil[c];
-  PetscInt    matSize = nCells + RBF::nPoly;
-  PetscInt    nDer = RBF::nDer;
-  PetscInt    *dxyz = RBF::dxyz;
-  const PetscReal param = RBF::rbfParam;
+  PetscInt    nCells = ablate::radialBasisV2::RBF::nStencil[c];
+  PetscInt    matSize = nCells + ablate::radialBasisV2::RBF::nPoly;
+  PetscInt    nDer = ablate::radialBasisV2::RBF::nDer;
+  PetscInt    *dxyz = ablate::radialBasisV2::RBF::dxyz;
+  const PetscReal param = ablate::radialBasisV2::RBF::rbfParam;
   PetscInt    i, j;
-  PetscInt    px, py, pz, p1 = RBF::polyOrder+1;
+  PetscInt    px, py, pz, p1 = ablate::radialBasisV2::RBF::polyOrder+1;
   PetscScalar *vals = nullptr;
 
   //Create the RHS
   MatCreateSeqDense(PETSC_COMM_SELF, matSize, nDer, NULL, &B) >> ablate::checkError;
-  PetscObjectSetName((PetscObject)B,"ablate::radialBasis::RBF::rhs") >> ablate::checkError;
+  PetscObjectSetName((PetscObject)B,"ablate::radialBasis::ablate::radialBasisV2::RBF::rhs") >> ablate::checkError;
   MatZeroEntries(B) >> ablate::checkError;
   MatDenseGetArrayWrite(B, &vals) >> ablate::checkError;
 
@@ -503,15 +503,15 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
 
   MatDenseRestoreArrayWrite(B, &vals) >> ablate::checkError;
 
-  MatViewFromOptions(B,NULL,"-ablate::radialBasis::RBF::rhs_view") >> ablate::checkError;
+  MatViewFromOptions(B,NULL,"-ablate::radialBasis::ablate::radialBasisV2::RBF::rhs_view") >> ablate::checkError;
 
   MatMatSolve(A, B, B) >> ablate::checkError;
 
-  MatViewFromOptions(B,NULL,"-ablate::radialBasis::RBF::sol_view") >> ablate::checkError;
+  MatViewFromOptions(B,NULL,"-ablate::radialBasis::ablate::radialBasisV2::RBF::sol_view") >> ablate::checkError;
 
   // Now populate the output
-  PetscMalloc1(nDer*nCells, &(RBF::stencilWeights[c])) >> ablate::checkError;
-  PetscReal *wt = RBF::stencilWeights[c];
+  PetscMalloc1(nDer*nCells, &(ablate::radialBasisV2::RBF::stencilWeights[c])) >> ablate::checkError;
+  PetscReal *wt = ablate::radialBasisV2::RBF::stencilWeights[c];
   MatDenseGetArrayWrite(B, &vals) >> ablate::checkError;
   for (i = 0; i < nCells; ++i) {
     for (j = 0; j < nDer; ++j) {
@@ -520,9 +520,9 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
   }
   MatDenseGetArrayWrite(B, &vals) >> ablate::checkError;
 
-  if (RBF::hasInterpolation) {
-    RBF::RBFMatrix[c] = A;
-    RBF::stencilXLocs[c] = x;
+  if (ablate::radialBasisV2::RBF::hasInterpolation) {
+    ablate::radialBasisV2::RBF::RBFMatrix[c] = A;
+    ablate::radialBasisV2::RBF::stencilXLocs[c] = x;
   }
   else {
     MatDestroy(&A) >> ablate::checkError;
@@ -534,12 +534,12 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
 
 
 
-void RBF::SetupDerivativeStencils() {
+void ablate::radialBasisV2::RBF::SetupDerivativeStencils() {
   PetscInt cStart, cEnd, c;
   DMPlexGetHeightStratum(subDomain->GetDM(), 0, &cStart, &cEnd) >> ablate::checkError;       // Range of cells
 
   for (c = cStart; c < cEnd; ++c) {
-    RBF::SetupDerivativeStencils(c);
+    ablate::radialBasisV2::RBF::SetupDerivativeStencils(c);
   }
 
 }
@@ -550,9 +550,9 @@ void RBF::SetupDerivativeStencils() {
 // field - The field to take the derivative of
 // c - The location in ablate::solver::Range
 // dx, dy, dz - The derivatives
-PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz){
+PetscReal ablate::radialBasisV2::RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz){
 
-  PetscInt  derID = -1, nDer = RBF::nDer, *dxyz = RBF::dxyz;
+  PetscInt  derID = -1, nDer = ablate::radialBasisV2::RBF::nDer, *dxyz = ablate::radialBasisV2::RBF::dxyz;
   // Search for the particular index. Probably need to do something different in the future to avoid re-doing the same calculation many times
   while ((dxyz[++derID*3 + 0] != dx || dxyz[derID*3 + 1] != dy || dxyz[derID*3 + 2] != dz) && derID<nDer){ }
 
@@ -561,12 +561,12 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt 
   }
 
   // If the stencil hasn't been setup yet do so
-  if (RBF::nStencil[c] < 1) {
-    RBF::SetupDerivativeStencils(c);
+  if (ablate::radialBasisV2::RBF::nStencil[c] < 1) {
+    ablate::radialBasisV2::RBF::SetupDerivativeStencils(c);
   }
 
-  PetscReal         *wt = RBF::stencilWeights[c];
-  PetscInt          nStencil = RBF::nStencil[c], *lst = RBF::stencilList[c];
+  PetscReal         *wt = ablate::radialBasisV2::RBF::stencilWeights[c];
+  PetscInt          nStencil = ablate::radialBasisV2::RBF::nStencil[c], *lst = ablate::radialBasisV2::RBF::stencilList[c];
   Vec               vec = subDomain->GetVec(*field);
   DM                dm  = subDomain->GetFieldDM(*field);
   PetscScalar       val = 0.0, f;
@@ -592,8 +592,8 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt 
 
 /************ Begin Interpolation Code **********************/
 
-void RBF::SetInterpolation(PetscBool hasInterpolation) {
-  RBF::hasInterpolation = hasInterpolation;
+void ablate::radialBasisV2::RBF::SetInterpolation(PetscBool hasInterpolation) {
+  ablate::radialBasisV2::RBF::hasInterpolation = hasInterpolation;
 }
 
 
@@ -602,26 +602,26 @@ void RBF::SetInterpolation(PetscBool hasInterpolation) {
 // field - The field to interpolate
 // c - The location in ablate::solver::Range
 // xEval - The location to interpolate at
-PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscInt c, PetscReal xEval[3]) {
+PetscReal ablate::radialBasisV2::RBF::Interpolate(const ablate::domain::Field *field, PetscInt c, PetscReal xEval[3]) {
 
-  Mat         A = RBF::RBFMatrix[c];
+  Mat         A = ablate::radialBasisV2::RBF::RBFMatrix[c];
   Vec         weights, rhs;
   PetscInt    nCells, *lst;
   PetscInt    i;
   PetscScalar *vals;
   const PetscScalar *fvals;
-  PetscReal   *x = RBF::stencilXLocs[c], x0[3];
+  PetscReal   *x = ablate::radialBasisV2::RBF::stencilXLocs[c], x0[3];
   Vec         f = subDomain->GetVec(*field);
   DM          dm  = subDomain->GetFieldDM(*field);
 
   if (A == nullptr) {
-    RBF::Matrix(c, &x, &A);
-    RBF::RBFMatrix[c] = A;
-    RBF::stencilXLocs[c] = x;
+    ablate::radialBasisV2::RBF::Matrix(c, &x, &A);
+    ablate::radialBasisV2::RBF::RBFMatrix[c] = A;
+    ablate::radialBasisV2::RBF::stencilXLocs[c] = x;
   }
 
-  nCells = RBF::nStencil[c];
-  lst = RBF::stencilList[c];
+  nCells = ablate::radialBasisV2::RBF::nStencil[c];
+  lst = ablate::radialBasisV2::RBF::stencilList[c];
 
   MatCreateVecs(A, &weights, &rhs) >> ablate::checkError;
   VecZeroEntries(weights) >> ablate::checkError;
@@ -645,10 +645,10 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscInt c, Petsc
   // Get the cell center
   DMPlexComputeCellGeometryFVM(dm, c, NULL, x0, NULL) >> ablate::checkError;
 
-  PetscInt p1 = RBF::polyOrder + 1, dim = subDomain->GetDimensions();
+  PetscInt p1 = ablate::radialBasisV2::RBF::polyOrder + 1, dim = subDomain->GetDimensions();
   PetscInt px, py, pz;
   PetscReal *xp;
-  const PetscReal param = RBF::rbfParam;
+  const PetscReal param = ablate::radialBasisV2::RBF::rbfParam;
   PetscMalloc1(dim*p1, &xp) >> ablate::checkError;
 
   for (PetscInt d = 0; d < dim; ++d) {
@@ -699,7 +699,7 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscInt c, Petsc
 
 /************ Constructor, Setup, Registration, and Initialization Code **********************/
 
-RBF::RBF(
+ablate::radialBasisV2::RBF::RBF(
   std::shared_ptr<ablate::domain::SubDomain> subDomain,
   ablate::radialBasisV2::RBFType rbfType,
   PetscInt polyOrder,
@@ -710,24 +710,24 @@ RBF::RBF(
     rbfParam(rbfParam == 0 ? __RBF_DEFAULT_PARAM : rbfParam)
     {
 
-      RBF::Setup();
+      ablate::radialBasisV2::RBF::Setup();
 
     }
 
 
 // With default values
-RBF::RBF(
-  std::shared_ptr<ablate::domain::SubDomain> subDomain) :
-    subDomain(subDomain),
-    rbfType(stringToRBFType.at("")),
-    polyOrder(__RBF_DEFAULT_POLYORDER),
-    rbfParam(__RBF_DEFAULT_PARAM) { }
+//ablate::radialBasisV2::RBF::RBF(
+//  std::shared_ptr<ablate::domain::SubDomain> subDomain) :
+//    subDomain(subDomain),
+//    rbfType(stringToRBFType.at("")),
+//    polyOrder(__RBF_DEFAULT_POLYORDER),
+//    rbfParam(__RBF_DEFAULT_PARAM) { }
 
-RBF::~RBF() {}
+ablate::radialBasisV2::RBF::~RBF() {}
 
 
 // This is done once
-void RBF::Setup() {
+void ablate::radialBasisV2::RBF::Setup() {
 
   // Set the value and derivative functions
   switch (rbfType) {
@@ -756,15 +756,15 @@ void RBF::Setup() {
 
 
   // The number of polynomial values is (p+2)(p+1)/2 in 2D and (p+3)(p+2)(p+1)/6 in 3D
-  PetscInt p = RBF::polyOrder;
+  PetscInt p = ablate::radialBasisV2::RBF::polyOrder;
   if (dim == 2) {
-    RBF::nPoly = (p+2)*(p+1)/2;
+    ablate::radialBasisV2::RBF::nPoly = (p+2)*(p+1)/2;
   } else {
-    RBF::nPoly = (p+3)*(p+2)*(p+1)/6;
+    ablate::radialBasisV2::RBF::nPoly = (p+3)*(p+2)*(p+1)/6;
   }
 
   // Set the minimum number of cells to get compute the RBF matrix
-  RBF::minNumberCells = (PetscInt)floor(2*(RBF::nPoly));
+  ablate::radialBasisV2::RBF::minNumberCells = (PetscInt)floor(2*(ablate::radialBasisV2::RBF::nPoly));
 
   // Now setup the derivatives required for curvature/normal calculations. This should probably move over to user-option
   PetscInt nDer = 0;
@@ -794,46 +794,45 @@ void RBF::Setup() {
   // The number of cells in the DM
   PetscInt cStart, cEnd;
   DMPlexGetHeightStratum(subDomain->GetDM(), 0, &cStart, &cEnd) >> ablate::checkError;       // Range of cells
-  RBF::nCells = cEnd - cStart;
+  ablate::radialBasisV2::RBF::nCells = cEnd - cStart;
 
 
 }
 
-void RBF::Initialize() {
+void ablate::radialBasisV2::RBF::Initialize() {
 
   // If this is called due to a grid change then release the old memory
-  for (PetscInt c = 0; c < RBF::nCells; ++c ){
-    PetscFree(RBF::stencilList[c]);
-    if(RBF::RBFMatrix[c]) MatDestroy(&(RBF::RBFMatrix[c]));
-    PetscFree(RBF::stencilXLocs[c]);
+  for (PetscInt c = 0; c < ablate::radialBasisV2::RBF::nCells; ++c ){
+    PetscFree(ablate::radialBasisV2::RBF::stencilList[c]);
+    if(ablate::radialBasisV2::RBF::RBFMatrix[c]) MatDestroy(&(ablate::radialBasisV2::RBF::RBFMatrix[c]));
+    PetscFree(ablate::radialBasisV2::RBF::stencilXLocs[c]);
   }
-  PetscFree4(RBF::nStencil, RBF::stencilList, RBF::RBFMatrix, RBF::stencilXLocs) >> ablate::checkError;
+  PetscFree4(ablate::radialBasisV2::RBF::nStencil, ablate::radialBasisV2::RBF::stencilList, ablate::radialBasisV2::RBF::RBFMatrix, ablate::radialBasisV2::RBF::stencilXLocs) >> ablate::checkError;
 
   PetscInt cStart, cEnd;
   DMPlexGetHeightStratum(subDomain->GetDM(), 0, &cStart, &cEnd) >> ablate::checkError;       // Range of cells
 
   // Both interpolation and derivatives need the list of points
-  RBF::nCells = cEnd - cStart;
-  PetscMalloc4(RBF::nCells, &(RBF::nStencil), RBF::nCells, &(RBF::stencilList), RBF::nCells, &(RBF::RBFMatrix), RBF::nCells, &(RBF::stencilXLocs)) >> ablate::checkError;
+  ablate::radialBasisV2::RBF::nCells = cEnd - cStart;
+  PetscMalloc4(ablate::radialBasisV2::RBF::nCells, &(ablate::radialBasisV2::RBF::nStencil), ablate::radialBasisV2::RBF::nCells, &(ablate::radialBasisV2::RBF::stencilList), ablate::radialBasisV2::RBF::nCells, &(ablate::radialBasisV2::RBF::RBFMatrix), ablate::radialBasisV2::RBF::nCells, &(ablate::radialBasisV2::RBF::stencilXLocs)) >> ablate::checkError;
 
   for (PetscInt c = cStart; c < cEnd; ++c) {
-    RBF::nStencil[c] = -1;
-    RBF::stencilList[c] = nullptr;
+    ablate::radialBasisV2::RBF::nStencil[c] = -1;
+    ablate::radialBasisV2::RBF::stencilList[c] = nullptr;
 
-    RBF::RBFMatrix[c] = nullptr;
-    RBF::stencilXLocs[c] = nullptr;
+    ablate::radialBasisV2::RBF::RBFMatrix[c] = nullptr;
+    ablate::radialBasisV2::RBF::stencilXLocs[c] = nullptr;
   }
 
 }
 
-//void RBF::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) { ablate::solver::Solver::Register(subDomain); }
+void ablate::radialBasisV2::RBF::Register() {  }
 
 
-//#include "registrar.hpp"
-//REGISTER(ablate::radialBasisV2::RBF, ablate::radialBasisV2::RBF, "Radial Basis Function",
-//         ARG(std::shared_ptr<ablate::domain::SubDomain> , "subDomain", "The sub-domain to use."),
-//         OPT(EnumWrapper<ablate::radialBasisV2::RBFType>, "rbfType", "Type of RBF. Default is MQ."),
-//         OPT(PetscInt, "polyOrder", "Order of the augmenting RBF polynomial. Must be >= 1. Default is 4."),
-//         OPT(PetscReal, "rbfParam", "Parameter required for the particular RBF. Default is 0.1.")
-//         );
-
+#include "registrar.hpp"
+REGISTER(ablate::radialBasisV2::RBF, ablate::radialBasisV2::RBF, "Radial Basis Function",
+         ARG(ablate::domain::SubDomain , "subDomain", "The sub-domain to use."),
+         OPT(EnumWrapper<ablate::radialBasisV2::RBFType>, "rbfType", "Type of RBF. Default is MQ."),
+         OPT(PetscInt, "polyOrder", "Order of the augmenting RBF polynomial. Must be >= 1. Default is 4."),
+         OPT(PetscReal, "rbfParam", "Parameter required for the particular RBF. Default is 0.1.")
+         );
