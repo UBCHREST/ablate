@@ -63,31 +63,19 @@ void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRa
     const PetscSFNode* cell = nullptr;
     PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell) >> checkError;  //!< Using this to get the petsc int cell number from the struct (SF)
 
-    PetscInt numberNeighborCells;
-    const PetscInt* neighborCells;
-
     /** Delete all of the particles that were transported to their origin domains -> Delete if the particle has travelled to get here and isn't native */
-    for (PetscInt ipart = 0; ipart < npoints; ipart++) {
-        DMPlexGetSupportSize(subDomain.GetDM(), identifier[ipart].iCell, &numberNeighborCells) >> ablate::checkError;  //!< Get the cells on each side of this face to check for boundary cells
-        DMPlexGetSupport(subDomain.GetDM(), identifier[ipart].iCell, &neighborCells) >> ablate::checkError;
-        PetscInt index = -1;  //!< Index value to compare the Locate Points result against.
-        for (PetscInt n = 0; n < numberNeighborCells; n++) {
-            PetscInt bcell = neighborCells[n];  //!< Contains the cell indexes of the neighbor cells
-            if (!(region->InRegion(region, subDomain.GetDM(), bcell))) {
-                index = bcell;
-            }
-        }
-
-        if (index == -1) throw std::invalid_argument("SurfaceRadiation must be given an internal region adjacent to its boundary faces!");  //!< Throw an error if the boundary region is incorrect
+    PetscInt ipart = -1;
+    for (PetscInt ip = 0; ip < nFound; ip++) {
+        ipart++;
 
         //!< If the particles that were just created are sitting in the boundary cell of the face that they belong to, delete them
-        if (index == cell[ipart].index) {  //!< If the particle location index and boundary cell index are the same, then they should be deleted
+        if (!(region->InRegion(region, subDomain.GetDM(), cell[ip].index))) {  //!< If the particle location index and boundary cell index are the same, then they should be deleted
+
             DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
             DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
             DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
-            DMSwarmRemovePointAtIndex(radsearch, ipart);             //!< Delete the particle!
-            DMSwarmGetLocalSize(radsearch, &npoints) >> checkError;  //!< Recalculate the number of particles that are in the domain
+            DMSwarmRemovePointAtIndex(radsearch, ipart);  //!< Delete the particle!
 
             DMSwarmGetField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
             DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;

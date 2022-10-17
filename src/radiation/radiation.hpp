@@ -156,7 +156,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     std::basic_string<char>&& solverId;
     const std::shared_ptr<domain::Region> region;
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
-    const std::shared_ptr<domain::Region> fieldBoundary;  //!< Hold the region used to define the boundary faces
     const std::shared_ptr<ablate::monitors::logs::Log> log = nullptr;
 };
 

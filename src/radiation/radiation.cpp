@@ -125,9 +125,9 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
                 virtualcoord[ipart].zdir = (cos(theta));             //!< z component conversion from spherical coordinates, adding the position of the current cell
 
                 /** Get the particle coordinate field and write the cellGeom->centroid[xyz] into it */
-                virtualcoord[ipart].x = centroid[0] + (virtualcoord[ipart].xdir * 0.001 * minCellRadius);  //!< Offset from the centroid slightly so they sit in a cell if they are on its face.
-                virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 0.001 * minCellRadius);
-                virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 0.001 * minCellRadius);
+                virtualcoord[ipart].x = centroid[0] + (virtualcoord[ipart].xdir * 0.1 * minCellRadius);  //!< Offset from the centroid slightly so they sit in a cell if they are on its face.
+                virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 0.1 * minCellRadius);
+                virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 0.1 * minCellRadius);
 
                 /** Update the physical coordinate field so that the real particle location can be updated. */
                 UpdateCoordinates(ipart, virtualcoord, coord);
@@ -216,7 +216,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
             i[2] += dim;
         }
 
-        /** Loop through points to try to get the cell that is sitting on that point*/
+        /** Loop through points to try to get the cell that is sitting on that point */
         PetscSF cellSF = nullptr;  //!< PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
         DMLocatePoints(subDomain.GetDM(), intersect, DM_POINTLOCATION_NONE, &cellSF) >> checkError;  //!< Call DMLocatePoints here, all of the processes have to call it at once.
 
@@ -250,6 +250,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
              * Therefore, after each step (where the particle location is fed in) check for whether the cell is still within the interior region.
              * If it is not (if it's in a boundary cell) then it should be deleted here.
              * */
+            // TODO: There are rays going all the way through the boundary region when they should only pass through the flow region. Why are they not being deleted?
             if (!(region->InRegion(region, subDomain.GetDM(), cell[ip].index))) {
                 DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
                 DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
@@ -419,9 +420,17 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                 */
                 DMPlexPointLocalFieldRead(auxDm, segment.cells[n], temperatureField.id, auxArray, &temperature);
                 DMPlexPointLocalRead(solDm, segment.cells[n], solArray, &sol);
+
+                //                PetscReal centroid[3];
+                //                if (*temperature == 0) {
+                //                    DMPlexComputeCellGeometryFVM(solDm, segment.cells[n], nullptr, centroid, nullptr) >> checkError;
+                //                    bool inRegion = (region->InRegion(region, solDm, segment.cells[n]));
+                //                    bool lastPoint = (n == numPoints - 1);
+                //                    printf("%f %f %f %i %i\n", centroid[0], centroid[1], centroid[3], inRegion, lastPoint);
+                //                }
+
                 /** Input absorptivity (kappa) values from model here. */
                 absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
-
                 segment.Ij += FlameIntensity(1 - exp(-kappa * segment.h[n]), *temperature) * segment.Krad;
                 segment.Krad *= exp(-kappa * segment.h[n]);  //!< Compute the total absorption for this domain
 
@@ -692,6 +701,14 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
     for (PetscInt ip = 0; ip < npoints; ip++) {
         ipart++;  //!< USE IP TO DEAL WITH DMLOCATE POINTS, USE IPART TO DEAL WITH PARTICLES
                   /** Check that the particle is in a valid region */
+                  // check to see if there is a ghost label
+        DMLabel ghostLabel;
+        DMGetLabel(subDomain.GetDM(), "ghost", &ghostLabel) >> checkError;
+        PetscInt ghost = -1;
+        if (ghostLabel) {
+            DMLabelGetValue(ghostLabel, cell[ip].index, &ghost);
+        }
+
         if (nFound > -1 && cell[ip].index >= 0 && subDomain.InRegion(cell[ip].index)) {
             index = cell[ip].index;
 
@@ -769,7 +786,8 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
             virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
             rays[Key(&identifier[ipart])].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
         } else {
-            virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
+            //            virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
+            throw std::runtime_error("The particle location is invalid!");
         }
     }
     DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
