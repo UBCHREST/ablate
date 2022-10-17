@@ -51,7 +51,7 @@ void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRa
         i[2] += dim;
     }
 
-    /** Loop through points to try to get the cell that is sitting on that point*/
+    /** Loop through points to try to get the cell that is sitting on that point */
     PetscSF cellSF = nullptr;  //!< PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
     DMLocatePoints(subDomain.GetDM(), intersect, DM_POINTLOCATION_NONE, &cellSF) >> checkError;  //!< Call DMLocatePoints here, all of the processes have to call it at once.
 
@@ -63,19 +63,26 @@ void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRa
     const PetscSFNode* cell = nullptr;
     PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell) >> checkError;  //!< Using this to get the petsc int cell number from the struct (SF)
 
-    /** Delete all of the particles that were transported to their origin domains -> Delete if the particle has travelled to get here and isn't native */
-    PetscInt ipart = -1;
-    for (PetscInt ip = 0; ip < nFound; ip++) {
-        ipart++;
+    // TODO: Iterate through the output of DMLocate points and put it into a field associated with the search particles.
 
+    PetscScalar* things;
+    VecGetArray(intersect, &things);
+
+    /** Delete all of the particles that were transported to their origin domains -> Delete if the particle has travelled to get here and isn't native */
+    PetscInt ip = -1;
+    for (PetscInt ipart = 0; ipart < npoints; ipart++) {
+        ip++;
+        printf("%f %f\n", coord[ipart], things[ip]);
         //!< If the particles that were just created are sitting in the boundary cell of the face that they belong to, delete them
         if (!(region->InRegion(region, subDomain.GetDM(), cell[ip].index))) {  //!< If the particle location index and boundary cell index are the same, then they should be deleted
+            // TODO: Compare against the field with the DMLocatePoints output instead of the output itself. This might be a little memory inefficient.
 
             DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
             DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
             DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
             DMSwarmRemovePointAtIndex(radsearch, ipart);  //!< Delete the particle!
+            DMSwarmGetLocalSize(radsearch, &npoints);
 
             DMSwarmGetField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
             DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
@@ -88,6 +95,10 @@ void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRa
     DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
     DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
     DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+
+    /** Cleanup */
+    VecDestroy(&intersect) >> checkError;   //!< Return the vector to PETSc
+    PetscSFDestroy(&cellSF) >> checkError;  //!< Return the stuff to PETSc
 
     ablate::radiation::Radiation::Initialize(cellRange, subDomain);
 }
