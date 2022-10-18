@@ -13,7 +13,7 @@ class SurfaceRadiation : public ablate::radiation::Radiation {
     ~SurfaceRadiation();
 
     void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) override;
-    PetscReal SurfaceComponent(DM* faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi, PetscInt ntheta) override;
+    PetscReal SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi, PetscInt ntheta) override;
     PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM solDm, DM pPDm) override;
     void GetFuelEmissivity(double& kappa) override;
 };

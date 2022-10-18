@@ -63,20 +63,19 @@ void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRa
     const PetscSFNode* cell = nullptr;
     PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell) >> checkError;  //!< Using this to get the petsc int cell number from the struct (SF)
 
-    // TODO: Iterate through the output of DMLocate points and put it into a field associated with the search particles.
+    //!< Iterate through the output of DMLocate points and put it into a field associated with the search particles.
+    for (PetscInt ipart = 0; ipart < nFound; ipart++) {
+        virtualcoord[ipart].ihere = cell[ipart].index; //!< Write the DMLocatePoints output to a field value so the information is not affected by rearrangement.
+    }
 
-    PetscScalar* things;
-    VecGetArray(intersect, &things);
+    /** Cleanup */
+    VecDestroy(&intersect) >> checkError;   //!< Return the vector to PETSc
+    PetscSFDestroy(&cellSF) >> checkError;  //!< Return the stuff to PETSc
 
-    /** Delete all of the particles that were transported to their origin domains -> Delete if the particle has travelled to get here and isn't native */
-    PetscInt ip = -1;
+    /**  */
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
-        ip++;
-        printf("%f %f\n", coord[ipart], things[ip]);
         //!< If the particles that were just created are sitting in the boundary cell of the face that they belong to, delete them
-        if (!(region->InRegion(region, subDomain.GetDM(), cell[ip].index))) {  //!< If the particle location index and boundary cell index are the same, then they should be deleted
-            // TODO: Compare against the field with the DMLocatePoints output instead of the output itself. This might be a little memory inefficient.
-
+        if (!(region->InRegion(region, subDomain.GetDM(), virtualcoord[ipart].ihere))) {  //!< If the particle location index and boundary cell index are the same, then they should be deleted
             DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
             DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
             DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
@@ -96,16 +95,12 @@ void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRa
     DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
     DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
-    /** Cleanup */
-    VecDestroy(&intersect) >> checkError;   //!< Return the vector to PETSc
-    PetscSFDestroy(&cellSF) >> checkError;  //!< Return the stuff to PETSc
-
     ablate::radiation::Radiation::Initialize(cellRange, subDomain);
 }
 
-PetscReal ablate::radiation::SurfaceRadiation::SurfaceComponent(DM* faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi, PetscInt ntheta) {
+PetscReal ablate::radiation::SurfaceRadiation::SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi, PetscInt ntheta) {
     PetscFVFaceGeom* faceGeom;
-    DMPlexPointLocalRead(*(faceDM), iCell, faceGeomArray, &faceGeom) >> checkError;
+    DMPlexPointLocalRead(faceDM, iCell, faceGeomArray, &faceGeom) >> checkError;
     /** Now that we are iterating over every ray identifier in this local domain, we can get all of the particles that are associated with this ray.
      * We will need to sort the rays in order of domain segment. We need to start at the end of the ray and go towards the beginning of the ray. */
     PetscReal faceNormNormalized = sqrt((faceGeom->normal[0] * faceGeom->normal[0]) + (faceGeom->normal[1] * faceGeom->normal[1]) + (faceGeom->normal[2] * faceGeom->normal[2]));

@@ -13,11 +13,10 @@ ablate::radiation::RaySharingRadiation::~RaySharingRadiation() {
     VecDestroy(&cellGeomVec) >> checkError;
 }
 
-void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray) {
+void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray) {
     PetscInt npoints = 0;
     PetscInt nglobalpoints = 0;
     PetscInt nsolvepoints = 0;  //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
-    PetscInt ipart = -1;
 
     DMSwarmGetLocalSize(radsearch, &npoints) >> checkError;
     DMSwarmGetSize(radsearch, &nglobalpoints) >> checkError;
@@ -40,15 +39,9 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
     DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
     DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
-    PetscInt nFound;
-    const PetscInt* point = nullptr;
-    const PetscSFNode* cell = nullptr;
-    PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell) >> checkError;  //!< Using this to get the petsc int cell number from the struct (SF)
-
-    for (PetscInt ip = 0; ip < npoints; ip++) {
-        ipart++;  //!< USE IP TO DEAL WITH DMLOCATE POINTS, USE IPART TO DEAL WITH PARTICLES
-        if (nFound > -1 && cell[ip].index >= 0 && subDomain.InRegion(cell[ip].index)) {
-            index = cell[ip].index;
+    for (PetscInt ipart = 0; ipart < npoints; ipart++) {
+        if (virtualcoord[ipart].ihere >= 0 && subDomain.InRegion(virtualcoord[ipart].ihere)) {
+            index = virtualcoord[ipart].ihere;
 
             /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
              * Hash the identifier into a key value that can be used in the map
