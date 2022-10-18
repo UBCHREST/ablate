@@ -39,6 +39,7 @@ class TwoPhaseEulerAdvection : public Process {
     static PetscErrorCode FormFunctionStiff(SNES snes, Vec x, Vec F, void *ctx);
     static PetscErrorCode FormJacobianStiff(SNES snes, Vec x, Mat J, Mat P, void *ctx);
 
+    PetscErrorCode MultiphaseFlowPreStage(TS flowTs, ablate::solver::Solver &flow, PetscReal stagetime);
     /**
      * General two phase decoder interface
      */
