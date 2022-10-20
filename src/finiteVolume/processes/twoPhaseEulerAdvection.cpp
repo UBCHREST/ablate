@@ -237,17 +237,19 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Multipha
      PetscInt dim;
      PetscCall(DMGetDimension(fvSolver.GetSubDomain().GetDM(), &dim));
      const auto& flowEulerId = fvSolver.GetSubDomain().GetField("euler").id; // constant instead of string for euler
+     auto& vfEulerId = fvSolver.GetSubDomain().GetField("volumeFraction").id;
      DM dm = fvSolver.GetSubDomain().GetDM();
      Vec globFlowVec;
      PetscCall(TSGetSolution(flowTs, &globFlowVec));
 //     const auto& flowVFId = fvSolver.GetSubDomain().GetField("densityVF").id;
 
-     // // geometry stuff for normal, breaks other stuff
-//     const PetscScalar* faceGeomArray;
-//     Vec cellGeomVec, faceGeomVec;
-//     DMPlexComputeGeometryFVM(dm, &cellGeomVec, &faceGeomVec) >> checkError;
-//     VecGetDM(faceGeomVec, &dm) >> checkError;
-//     VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+//      // geometry stuff for normal, breaks other stuff
+//     DM faceDM;
+     const PetscScalar* faceGeomArray;
+     Vec cellGeomVec, faceGeomVec;
+     DMPlexComputeGeometryFVM(dm, &cellGeomVec, &faceGeomVec) >> checkError;
+//     VecGetDM(faceGeomVec, &faceDM) >> checkError;
+     VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
 
      const PetscScalar* flowArray;
      PetscCall(VecGetArrayRead(globFlowVec, &flowArray));
@@ -262,48 +264,58 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Multipha
          for (PetscInt d = 0; d< dim; d++) {
              velocity[d] = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density;
          }
-         PetscReal norm[3];
-         const PetscInt* uOff = 0;
-//         PetscFVFaceGeom* fg;
-//         DMPlexPointLocalRead(*(dm), i, faceGeomArray, &fg) >> checkError;
-//         PetscReal norm[3];
-//         NormVector(dim, fg->normal, norm);
 
-         // Decode left and right states
-//         PetscReal density;
-         PetscReal densityG;
-         PetscReal densityL;
-         PetscReal normalVelocity;  // uniform velocity in cell
-//         PetscReal velocity[3];
-         PetscReal internalEnergy;
-         PetscReal internalEnergyG;
-         PetscReal internalEnergyL;
-         PetscReal aG;
-         PetscReal aL;
-         PetscReal MG;
-         PetscReal ML;
-         PetscReal p;  // pressure equilibrium
-         PetscReal t;
-         PetscReal alpha;
-         twoPhaseEulerAdvection->decoder->DecodeTwoPhaseEulerState(dim,
-                                           uOff,
-                                           eulerField,
-                                           norm,
-                                           &density,
-                                           &densityG,
-                                           &densityL,
-                                           &normalVelocity,
-                                           velocity,
-                                           &internalEnergy,
-                                           &internalEnergyG,
-                                           &internalEnergyL,
-                                           &aG,
-                                           &aL,
-                                           &MG,
-                                           &ML,
-                                           &p,
-                                           &t,
-                                           &alpha);
+         // need uOff
+
+         // get face normal
+         PetscFVFaceGeom* fg;
+         DMPlexPointLocalRead(dm, cell, faceGeomArray, &fg) >> checkError;
+         PetscReal norm[3];
+         NormVector(dim, fg->normal, norm);
+         //
+//         // For cell center, the norm is unity
+//         PetscReal norm[3];
+//         norm[0] = 1;
+//         norm[1] = 1;
+//         norm[2] = 1;
+
+//         // Decode state
+////         PetscReal density;
+//         PetscReal densityG;
+//         PetscReal densityL;
+//         PetscReal normalVelocity;  // uniform velocity in cell
+////         PetscReal velocity[3];
+//         PetscReal internalEnergy;
+//         PetscReal internalEnergyG;
+//         PetscReal internalEnergyL;
+//         PetscReal aG;
+//         PetscReal aL;
+//         PetscReal MG;
+//         PetscReal ML;
+//         PetscReal p;  // pressure equilibrium
+//         PetscReal t;
+//         PetscReal alpha;
+//         twoPhaseEulerAdvection->decoder->DecodeTwoPhaseEulerState(dim,
+//                                           uOff,
+//                                           eulerField,
+//                                           norm,
+//                                           &density,
+//                                           &densityG,
+//                                           &densityL,
+//                                           &normalVelocity,
+//                                           velocity,
+//                                           &internalEnergy,
+//                                           &internalEnergyG,
+//                                           &internalEnergyL,
+//                                           &aG,
+//                                           &aL,
+//                                           &MG,
+//                                           &ML,
+//                                           &p,
+//                                           &t,
+//                                           &alpha);
+//         PetscScalar* vfField = nullptr;
+//         DMPlexPointLocalFieldRef(dm, cell, vfEulerId, flowArray, &vfField) >> checkError;
      }
 
 //
