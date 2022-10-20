@@ -229,19 +229,84 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Setup(ablate::fini
 }
 PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::MultiphaseFlowPreStage(TS flowTs, ablate::solver::Solver& solver, PetscReal stagetime) {
      PetscFunctionBegin;
-
     // ** Put decode call here to calculate alpha and add to conserved variables ** //
+
      const auto& fvSolver = dynamic_cast<ablate::finiteVolume::FiniteVolumeSolver&>(solver);
      solver::Range cellRange;
-     const auto& flowEulerId = fvSolver.GetSubDomain().GetField("euler").id;
+     fvSolver.GetCellRangeWithoutGhost(cellRange);
+     PetscInt dim;
+     PetscCall(DMGetDimension(fvSolver.GetSubDomain().GetDM(), &dim));
+     const auto& flowEulerId = fvSolver.GetSubDomain().GetField("euler").id; // constant instead of string for euler
      DM dm = fvSolver.GetSubDomain().GetDM();
+     Vec globFlowVec;
+     PetscCall(TSGetSolution(flowTs, &globFlowVec));
 //     const auto& flowVFId = fvSolver.GetSubDomain().GetField("densityVF").id;
-     PetscInt i = 10;
+
+     // // geometry stuff for normal, breaks other stuff
+//     const PetscScalar* faceGeomArray;
+//     Vec cellGeomVec, faceGeomVec;
+//     DMPlexComputeGeometryFVM(dm, &cellGeomVec, &faceGeomVec) >> checkError;
+//     VecGetDM(faceGeomVec, &dm) >> checkError;
+//     VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+
      const PetscScalar* flowArray;
-     const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
-     const PetscScalar* eulerField = nullptr;
-     DMPlexPointLocalFieldRead(dm, cell, flowEulerId, flowArray, &eulerField) >> checkError;
-//     auto density = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHO];
+     PetscCall(VecGetArrayRead(globFlowVec, &flowArray));
+
+     for (PetscInt i = cellRange.start; i < cellRange.end; ++i){
+         const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
+         const PetscScalar* eulerField = nullptr; // not const if modifying value
+         DMPlexPointLocalFieldRead(dm, cell, flowEulerId, flowArray, &eulerField) >> checkError; // to write -read or ref
+         auto density = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHO];
+//         auto totalEnergy = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOE] / density;
+         PetscReal velocity[3];
+         for (PetscInt d = 0; d< dim; d++) {
+             velocity[d] = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density;
+         }
+         PetscReal norm[3];
+         const PetscInt* uOff = 0;
+//         PetscFVFaceGeom* fg;
+//         DMPlexPointLocalRead(*(dm), i, faceGeomArray, &fg) >> checkError;
+//         PetscReal norm[3];
+//         NormVector(dim, fg->normal, norm);
+
+         // Decode left and right states
+//         PetscReal density;
+         PetscReal densityG;
+         PetscReal densityL;
+         PetscReal normalVelocity;  // uniform velocity in cell
+//         PetscReal velocity[3];
+         PetscReal internalEnergy;
+         PetscReal internalEnergyG;
+         PetscReal internalEnergyL;
+         PetscReal aG;
+         PetscReal aL;
+         PetscReal MG;
+         PetscReal ML;
+         PetscReal p;  // pressure equilibrium
+         PetscReal t;
+         PetscReal alpha;
+         twoPhaseEulerAdvection->decoder->DecodeTwoPhaseEulerState(dim,
+                                           uOff,
+                                           eulerField,
+                                           norm,
+                                           &density,
+                                           &densityG,
+                                           &densityL,
+                                           &normalVelocity,
+                                           velocity,
+                                           &internalEnergy,
+                                           &internalEnergyG,
+                                           &internalEnergyL,
+                                           &aG,
+                                           &aL,
+                                           &MG,
+                                           &ML,
+                                           &p,
+                                           &t,
+                                           &alpha);
+     }
+
+//
 
 
     PetscFunctionReturn(0);
