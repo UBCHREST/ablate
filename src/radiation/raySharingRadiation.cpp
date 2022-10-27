@@ -81,11 +81,13 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
                 if (access[newpoint].origin != identifier[ipart].origin) {
                     PetscReal centroid[3];
                     PetscInt numPoints = static_cast<PetscInt>(rays[Key(&access[newpoint])].cells.size());
-                    DMPlexComputeCellGeometryFVM(subDomain.GetDM(), rays[Key(&access[newpoint])].cells[numPoints - 1], nullptr, centroid, nullptr) >>
-                        checkError;                                                                        //!< Get the cell center of the last cell in the ray segment
-                    virtualcoord[ipart].x = centroid[0] + (virtualcoord[ipart].xdir * 2 * minCellRadius);  //!< Offset from the centroid slightly so they sit in a cell if they are on its face.
-                    virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 2 * minCellRadius);
-                    virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 2 * minCellRadius);
+                    if (numPoints != 0) {
+                        DMPlexComputeCellGeometryFVM(subDomain.GetDM(), rays[Key(&access[newpoint])].cells[numPoints - 1], nullptr, centroid, nullptr) >>
+                            checkError;                                                                        //!< Get the cell center of the last cell in the ray segment
+                        virtualcoord[ipart].x = centroid[0] + (virtualcoord[ipart].xdir * 2 * minCellRadius);  //!< Offset from the centroid slightly so they sit in a cell if they are on its face.
+                        virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 2 * minCellRadius);
+                        virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 2 * minCellRadius);
+                    }
                 }
 
                 DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&solveidentifier) >> checkError;  //!< The fields must be returned so that the swarm can be updated correctly?
