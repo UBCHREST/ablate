@@ -4,8 +4,9 @@
 #include "mathFunctions/functionPointer.hpp"
 
 ablate::finiteVolume::fieldFunctions::DensityExtraVariables::DensityExtraVariables(std::shared_ptr<ablate::finiteVolume::fieldFunctions::CompressibleFlowState> flowStateIn,
-                                                                                   std::vector<std::shared_ptr<mathFunctions::MathFunction>> evFunctions)
-    : ablate::mathFunctions::FieldFunction(CompressibleFlowFields::DENSITY_EV_FIELD, std::make_shared<ablate::mathFunctions::FunctionPointer>(ComputeDensityEvFunction, this)),
+                                                                                   std::vector<std::shared_ptr<mathFunctions::MathFunction>> evFunctions,
+                                                                                   std::shared_ptr<ablate::domain::Region> region)
+    : ablate::mathFunctions::FieldFunction(CompressibleFlowFields::DENSITY_EV_FIELD, std::make_shared<ablate::mathFunctions::FunctionPointer>(ComputeDensityEvFunction, this), {}, region),
       eulerFunction(flowStateIn->GetFieldFunction("euler")),
       evFunctions(evFunctions) {}
 
@@ -32,4 +33,4 @@ PetscErrorCode ablate::finiteVolume::fieldFunctions::DensityExtraVariables::Comp
 REGISTER(ablate::mathFunctions::FieldFunction, ablate::finiteVolume::fieldFunctions::DensityExtraVariables,
          "initializes the densityEV conserved field variables based upon a CompressibleFlowState and specified EV",
          ARG(ablate::finiteVolume::fieldFunctions::CompressibleFlowState, "state", "The CompressibleFlowState used to initialize"),
-         ARG(std::vector<ablate::mathFunctions::MathFunction>, "functions", "The EV values in order"));
+         ARG(std::vector<ablate::mathFunctions::MathFunction>, "functions", "The EV values in order"), OPT(ablate::domain::Region, "region", "A subset of the domain to apply the field function"));
