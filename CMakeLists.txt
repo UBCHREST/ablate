@@ -16,7 +16,7 @@ if (NOT DEFINED CMAKE_CXX_COMPILER)
 endif ()
 
 # Set the project details
-project(ablateLibrary VERSION 0.9.55)
+project(ablateLibrary VERSION 0.9.54)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED IMPORTED_TARGET GLOBAL PETSc)
