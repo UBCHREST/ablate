@@ -46,7 +46,7 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
      * */
 
     if (log) StartEvent("Radiation Initialization");
-    if (log) PetscPrintf(subDomain.GetComm(), "Starting Initialize\n");
+    if (log) log->Printf("Starting Initialize\n");
 
     DMPlexGetMinRadius(subDomain.GetDM(), &minCellRadius) >> checkError;
 
@@ -125,9 +125,9 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
                 virtualcoord[ipart].zdir = (cos(theta));             //!< z component conversion from spherical coordinates, adding the position of the current cell
 
                 /** Get the particle coordinate field and write the cellGeom->centroid[xyz] into it */
-                virtualcoord[ipart].x = centroid[0] + (virtualcoord[ipart].xdir * 0.001 * minCellRadius);  //!< Offset from the centroid slightly so they sit in a cell if they are on its face.
-                virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 0.001 * minCellRadius);
-                virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 0.001 * minCellRadius);
+                virtualcoord[ipart].x = centroid[0] + (virtualcoord[ipart].xdir * 0.1 * minCellRadius);  //!< Offset from the centroid slightly so they sit in a cell if they are on its face.
+                virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 0.1 * minCellRadius);
+                virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 0.1 * minCellRadius);
 
                 /** Update the physical coordinate field so that the real particle location can be updated. */
                 UpdateCoordinates(ipart, virtualcoord, coord);
@@ -153,7 +153,7 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
     DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
     if (log) {
-        PetscPrintf(subDomain.GetComm(), "Particles Setup\n");
+        log->Printf("Particles Setup\n");
     }
 }
 
@@ -216,62 +216,59 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
             i[2] += dim;
         }
 
-        /** Loop through points to try to get the cell that is sitting on that point*/
+        /** Loop through points to try to get the cell that is sitting on that point */
         PetscSF cellSF = nullptr;  //!< PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
         DMLocatePoints(subDomain.GetDM(), intersect, DM_POINTLOCATION_NONE, &cellSF) >> checkError;  //!< Call DMLocatePoints here, all of the processes have to call it at once.
 
-        /** An array that maps each point to its containing cell can be obtained with the below
-         * We want to get a PetscInt index out of the DMLocatePoints function (cell[n].index)
-         * */
-        DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
-        DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
-        ParticleStep(subDomain, cellSF, faceDM, faceGeomArray);
-        DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
-        DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
-
+        //!< Iterate through the output of DMLocate points and put it into a field associated with the search particles.
         /** Use the SF cell indices to decide whether particles should be destroyed (when they enter boundary cells) */
         PetscInt nFound;
         const PetscInt* point = nullptr;
         const PetscSFNode* cell = nullptr;
         PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell) >> checkError;  //!< Using this to get the petsc int cell number from the struct (SF)
 
-        PetscInt ipart = -1;
-        for (PetscInt ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
-            ipart++;                                 //!< USE IP TO DEAL WITH DMLOCATE POINTS, USE IPART TO DEAL WITH PARTICLES
+        //!< Iterate through the output of DMLocate points and put it into a field associated with the search particles.
+        for (PetscInt ipart = 0; ipart < nFound; ipart++) {
+            virtualcoord[ipart].ihere = cell[ipart].index;  //!< Write the DMLocatePoints output to a field value so the information is not affected by rearrangement.
+        }
+
+        /** Cleanup from DMLocatePoints */
+        VecDestroy(&intersect) >> checkError;   //!< Return the vector to PETSc
+        PetscSFDestroy(&cellSF) >> checkError;  //!< Return the stuff to PETSc
+
+        /** An array that maps each point to its containing cell can be obtained with the below
+         * We want to get a PetscInt index out of the DMLocatePoints function (cell[n].index)
+         * */
+        DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
+        DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+        DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+        ParticleStep(subDomain, faceDM, faceGeomArray);
+        DMSwarmGetField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
+        DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+        DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+
+        for (PetscInt ipart = 0; ipart < npoints; ipart++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
 
             /** IF THE CELL NUMBER IS RETURNED NEGATIVE, THEN WE HAVE REACHED THE BOUNDARY OF THE DOMAIN >> This exits the loop
              * This function returns multiple values if multiple points are input to it
-             * Make sure that whatever cell is returned is in the stencil set (and not outside of the radiation domain)
+             * Make sure that whatever cell is returned is in the radiation domain
              * Assemble a vector of vectors etc associated with each cell index, angular coordinate, and space step?
              * The boundary has been reached if any of these conditions don't hold
              * */
 
-            /** Step 3.25: The cells need to be removed if they are inside a boundary cell.
+            /** Step 3.5: The cells need to be removed if they are inside a boundary cell.
              * Therefore, after each step (where the particle location is fed in) check for whether the cell is still within the interior region.
              * If it is not (if it's in a boundary cell) then it should be deleted here.
-             * */
-            if (!(region->InRegion(region, subDomain.GetDM(), cell[ip].index))) {
-                DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
-                DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
-                DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
-
-                DMSwarmRemovePointAtIndex(radsearch, ipart);  //!< Delete the particle!
-
-                DMSwarmGetField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
-                DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
-                DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
-                ipart--;  //!< Check the point replacing the one that was deleted
-            }
-
-            /** Step 3.5: Condition for one dimensional domains to avoid infinite rays perpendicular to the x-axis
+             * Condition for one dimensional domains to avoid infinite rays perpendicular to the x-axis
              * If the domain is 1D and the x-direction of the particle is zero then delete the particle here
              * */
-            else if ((dim == 1) && (abs(virtualcoord[ipart].xdir) < 0.0000001)) {
+            if ((!(region->InRegion(region, subDomain.GetDM(), virtualcoord[ipart].ihere))) || ((dim == 1) && (abs(virtualcoord[ipart].xdir) < 0.0000001))) {
                 DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
                 DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
                 DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
                 DMSwarmRemovePointAtIndex(radsearch, ipart);  //!< Delete the particle!
+                DMSwarmGetLocalSize(radsearch, &npoints);
 
                 DMSwarmGetField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
                 DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
@@ -314,11 +311,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
         DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
         DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
-        /** Cleanup */
-        VecDestroy(&intersect) >> checkError;   //!< Return the vector to PETSc
-        PetscSFDestroy(&cellSF) >> checkError;  //!< Return the stuff to PETSc
-
-        if (log) PetscPrintf(subDomain.GetComm(), "Migrate ...");
+        if (log) log->Printf("Migrate ...");
 
         /** DMSwarm Migrate to move the ray search particle into the next domain if it has crossed. If it no longer appears in this domain then end the ray segment. */
         DMSwarmMigrate(radsearch, PETSC_TRUE) >> checkError;  //!< Migrate the search particles and remove the particles that have left the domain space.
@@ -327,7 +320,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
         DMSwarmGetLocalSize(radsearch, &npoints) >> checkError;   //!< Update the loop condition. Recalculate the number of particles that are in the domain.
 
         if (log) {
-            PetscPrintf(subDomain.GetComm(), " Global Steps: %" PetscInt_FMT "    Global Points: %" PetscInt_FMT "\n", stepcount, nglobalpoints);
+            log->Printf(" Global Steps: %" PetscInt_FMT "    Global Points: %" PetscInt_FMT "\n", stepcount, nglobalpoints);
         }
         stepcount++;
     }
@@ -419,9 +412,9 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                 */
                 DMPlexPointLocalFieldRead(auxDm, segment.cells[n], temperatureField.id, auxArray, &temperature);
                 DMPlexPointLocalRead(solDm, segment.cells[n], solArray, &sol);
+
                 /** Input absorptivity (kappa) values from model here. */
                 absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
-
                 segment.Ij += FlameIntensity(1 - exp(-kappa * segment.h[n]), *temperature) * segment.Krad;
                 segment.Krad *= exp(-kappa * segment.h[n]);  //!< Compute the total absorption for this domain
 
@@ -545,7 +538,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                 } else {
                     theta = (((double)nphi) / (double)nPhi) * 2 * ablate::utilities::Constants::pi;
                 }
-                PetscReal ldotn = SurfaceComponent(&faceDM, faceGeomArray, iCell, nphi, ntheta);  //!< If surface, get the perpendicular component here and multiply the result by it
+                PetscReal ldotn = SurfaceComponent(faceDM, faceGeomArray, iCell, nphi, ntheta);  //!< If surface, get the perpendicular component here and multiply the result by it
 
                 origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * abs(sin(theta)) * dTheta * dPhi * ldotn;  //!< Final ray calculation
             }
@@ -579,12 +572,10 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
 
     DM cellDM;
     const PetscScalar* cellGeomArray;
+    VecGetDM(cellGeomVec, &cellDM) >> checkError;
+    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
 
-    if (log) {
-        VecGetDM(cellGeomVec, &cellDM) >> checkError;
-        VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-        printf("x           y           z           G           L           T\n");  //!< Line labelling the log outputs for readability
-    }
+    if (log) log->Printf("x           y           z           G           L           T\n");  //!< Line labelling the log outputs for readability
 
     for (auto& [iCell, o] : origin) {  //!< Iterate through the cells that are stored in the origin
         /** Gets the temperature from the cell index specified */
@@ -596,12 +587,12 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         PetscInt index = GetLossCell(iCell, losses, faceDM, cellDM);  //!< Get the cell that the losses should be calculated with
         DMPlexPointLocalFieldRead(auxDm, index, temperatureField.id, auxArray, &temperature);
         absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
-        GetFuelEmissivity(kappa);
+        GetFuelEmissivity(kappa);  //!< Adjusts the losses based on the material from which the radiation is emitted.
         losses *= 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
         if (log) {
             PetscReal centroid[3];
             DMPlexComputeCellGeometryFVM(solDm, index, nullptr, centroid, nullptr) >> checkError;  //!< Reads the cell location from the current cell
-            printf("%f %f %f %f %f %f\n", centroid[0], centroid[1], centroid[2], origin[iCell].intensity, losses, *temperature);
+            log->Printf("%f %f %f %f %f %f\n", centroid[0], centroid[1], centroid[2], origin[iCell].intensity, losses, *temperature);
         }
         origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
     }
@@ -610,10 +601,10 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     VecRestoreArrayRead(solVec, &solArray);
     VecRestoreArrayRead(auxVec, &auxArray);
     VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
 
     if (log) {
         EndEvent();
-        VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
     }
 }
 
@@ -655,9 +646,9 @@ PetscInt ablate::radiation::Radiation::GetLossCell(PetscInt iCell, PetscReal& lo
 
 void ablate::radiation::Radiation::GetFuelEmissivity(double& kappa) {}
 
-PetscReal ablate::radiation::Radiation::SurfaceComponent(DM* faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi, PetscInt ntheta) { return 1.0; }
+PetscReal ablate::radiation::Radiation::SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi, PetscInt ntheta) { return 1.0; }
 
-void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray) { /** Check that the particle is in a valid region */
+void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray) { /** Check that the particle is in a valid region */
     PetscInt npoints = 0;
     PetscInt nglobalpoints = 0;
     PetscInt nsolvepoints = 0;  //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
@@ -684,24 +675,22 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
     DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
     DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
-    PetscInt nFound;
-    const PetscInt* point = nullptr;
-    const PetscSFNode* cell = nullptr;
-    PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell) >> checkError;  //!< Using this to get the petsc int cell number from the struct (SF)
-
     for (PetscInt ip = 0; ip < npoints; ip++) {
         ipart++;  //!< USE IP TO DEAL WITH DMLOCATE POINTS, USE IPART TO DEAL WITH PARTICLES
                   /** Check that the particle is in a valid region */
-        if (nFound > -1 && cell[ip].index >= 0 && subDomain.InRegion(cell[ip].index)) {
-            index = cell[ip].index;
+
+        //!< Compare against the field with the DMLocatePoints output instead of the output itself. This might be a little memory inefficient.
+        if (virtualcoord[ipart].ihere >= 0 && subDomain.InRegion(virtualcoord[ipart].ihere)) {
+            index = virtualcoord[ipart].ihere;
 
             /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
              * Hash the identifier into a key value that can be used in the map
              * We should only iterate the identifier of the search particle (/ add a solver particle) if the point is valid in the domain and is being used
              * */
-            if (rays.count(Key(&identifier[ipart])) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
-                identifier[ipart].nsegment++;                //!< The particle has passed through another domain!
-                DMSwarmAddPoint(radsolve) >> checkError;     //!< Another solve particle is added here because the search particle has entered a new domain
+            if (presence.count(Key(&identifier[ipart])) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
+                identifier[ipart].nsegment++;                    //!< The particle has passed through another domain!
+                presence[Key(&identifier[ipart])] = true;
+                DMSwarmAddPoint(radsolve) >> checkError;  //!< Another solve particle is added here because the search particle has entered a new domain
 
                 DMSwarmGetLocalSize(radsolve,
                                     &nsolvepoints) >>
