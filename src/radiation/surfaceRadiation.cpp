@@ -65,7 +65,7 @@ void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRa
 
     //!< Iterate through the output of DMLocate points and put it into a field associated with the search particles.
     for (PetscInt ipart = 0; ipart < nFound; ipart++) {
-        virtualcoord[ipart].ihere = cell[ipart].index; //!< Write the DMLocatePoints output to a field value so the information is not affected by rearrangement.
+        virtualcoord[ipart].ihere = cell[ipart].index;  //!< Write the DMLocatePoints output to a field value so the information is not affected by rearrangement.
     }
 
     /** Cleanup */

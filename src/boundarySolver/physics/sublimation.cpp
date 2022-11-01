@@ -10,7 +10,7 @@ using fp = ablate::finiteVolume::CompressibleFlowFields;
 ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
                                                           const std::shared_ptr<ablate::mathFunctions::FieldFunction> &massFractions, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux,
                                                           std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling, bool diffusionFlame,
-                                                          std::shared_ptr<ablate::radiation::Radiation> radiationIn, const std::shared_ptr<io::interval::Interval>& intervalIn)
+                                                          std::shared_ptr<ablate::radiation::Radiation> radiationIn, const std::shared_ptr<io::interval::Interval> &intervalIn)
     : latentHeatOfFusion(latentHeatOfFusion),
       transportModel(std::move(transportModel)),
       eos(std::move(eos)),
@@ -85,7 +85,7 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
     if (radiation) {
         //!< Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solver.
         solver::DynamicRange faceRange;
-        for (const auto & i : bSolver.GetBoundaryGeometry()) {
+        for (const auto &i : bSolver.GetBoundaryGeometry()) {
             faceRange.Add(i.geometry.faceId);  //!< Add each ID to the range that the radiation solver will use
         }
         radiation->Setup(faceRange.GetRange(), bSolver.GetSubDomain());
