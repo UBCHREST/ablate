@@ -62,7 +62,7 @@ TEST_P(TwoPhaseEulerAdvectionTestDecodeStateFixture, ShouldDecodeState) {
     PetscReal alpha;
 
     // compute offsets
-    PetscInt uOff[2] = {2 + params.dim /*densityYi*/, 0 /*euler*/};
+    PetscInt uOff[3] = {3 + params.dim /*alpha*/, 2 + params.dim /*rho1alpha1*/, 0 /*euler*/};
 
     // Create a two phase decoder
     auto decoder = finiteVolume::processes::TwoPhaseEulerAdvection::CreateTwoPhaseDecoder(params.dim, eosGas, eosLiquid);

@@ -261,9 +261,9 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Multipha
 
         // reproducing uOff
         PetscInt uOff[3];
-        uOff[0] = 4;  // alpha
-        uOff[1] = 3;  // rho1alpha1
-        uOff[2] = 0;  // euler
+        uOff[0] = 3 + dim;  // alpha
+        uOff[1] = 2 + dim;  // rho1alpha1
+        uOff[2] = 0;        // euler
 
         // For cell center, the norm is unity
         PetscReal norm[3];
