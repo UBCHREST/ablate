@@ -32,7 +32,6 @@ timestepper:
         region:
           name: domain
       - name: volumeFraction
-        location: AUX
         type: FVM
         region:
           name: domain
@@ -50,6 +49,9 @@ timestepper:
         0.0
     - &3
       fieldName: densityVF
+      field: "0.0"
+    - &5
+      fieldName: volumeFraction
       field: "0.0"
 solvers:
   - !<!ablate::finiteVolume::FiniteVolumeSolver>

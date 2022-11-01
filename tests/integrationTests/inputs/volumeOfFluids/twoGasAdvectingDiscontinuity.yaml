@@ -17,8 +17,8 @@ timestepper:
     upper: [ 10 ]
     boundary: [ NONE ]
     modifiers:
-      - !<!ablate::domain::modifiers::GhostBoundaryCells> ""
       - !<!ablate::domain::modifiers::DistributeWithGhostCells> ""
+      - !<!ablate::domain::modifiers::GhostBoundaryCells> ""
     fields:
       - !<!ablate::finiteVolume::CompressibleFlowFields>
         eos: !<!ablate::eos::PerfectGas>
@@ -28,7 +28,6 @@ timestepper:
       - name: densityVF
         type: FVM
       - name: volumeFraction
-        location: AUX
         type: FVM
       - name: pressure
         location: AUX
@@ -44,6 +43,9 @@ timestepper:
     - &3
       fieldName: densityVF
       field: " x < 5.0 ? 0.0 : 1.601563125610596 "
+    - &5
+      fieldName: volumeFraction
+      field: " x < 5.0 ? 0.0 : 1.0 "
   exactSolution:
     - fieldName: "euler" # T=300K, v=100m/s, p=100,000Pa
       field: >-
@@ -52,12 +54,12 @@ timestepper:
         x < 2.0 ? -116.14401858304298 : -160.1563125610596
     - fieldName: densityVF
       field: " x < 2.0 ? 0.0 : 1.601563125610596 "
+    - fieldName: volumeFraction
+      field: " x < 2.0 ? 0.0 : 1.0 "
 solver: !<!ablate::finiteVolume::FiniteVolumeSolver>
   id: SOD Problem
   processes:
     - !<!ablate::finiteVolume::processes::TwoPhaseEulerAdvection>
-      parameters:
-        g: [ 0.0, 0.0, 0.0 ]
       eosGas: !<!ablate::eos::PerfectGas> &4
         parameters: # argon
           gamma: 1.66
@@ -87,6 +89,10 @@ solver: !<!ablate::finiteVolume::FiniteVolumeSolver>
       boundaryName: vf walls
       labelIds: [ 1, 2 ]
       boundaryValue: *3
+    - !<!ablate::finiteVolume::boundaryConditions::EssentialGhost>
+      boundaryName: alpha walls
+      labelIds: [ 1, 2 ]
+      boundaryValue: *5
   monitors:
     - !<!ablate::monitors::TimeStepMonitor> ""
     - !<!ablate::monitors::CurveMonitor>

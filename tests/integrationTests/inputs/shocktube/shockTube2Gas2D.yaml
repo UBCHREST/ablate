@@ -32,7 +32,6 @@ timestepper:
       - name: densityVF
         type: FVM
       - name: volumeFraction
-        location: AUX
         type: FVM
       - name: pressure
         location: AUX
@@ -48,12 +47,13 @@ timestepper:
     - &3
       fieldName: densityVF
       field: "x < 0.5 ? 0.0 : 0.125"
+    - &5
+      fieldName: volumeFraction
+      field: "x < 0.5 ? 0.0 : 1.0"
 solver: !ablate::finiteVolume::FiniteVolumeSolver
   id: SOD Problem
   processes:
     - !ablate::finiteVolume::processes::TwoPhaseEulerAdvection
-      parameters:
-        g: [0.0, 0.0, 0.0]
       eosGas: !ablate::eos::PerfectGas &4
         parameters: # air
           gamma: 1.4
@@ -84,6 +84,10 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
       boundaryName: "vf walls"
       labelIds: [2, 4]
       boundaryValue: *3
+    - !ablate::finiteVolume::boundaryConditions::EssentialGhost
+      boundaryName: "alpha walls"
+      labelIds: [2, 4]
+      boundaryValue: *5
 
   monitors:
     - !ablate::monitors::TimeStepMonitor

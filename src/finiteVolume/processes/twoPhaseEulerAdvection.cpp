@@ -227,89 +227,72 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Setup(ablate::fini
         flow.RegisterAuxFieldUpdate(UpdateAuxPressureField2Gas, this, std::vector<std::string>{"pressure"}, {"volumeFraction", "densityVF", "euler"});
     }
 }
-PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::MultiphaseFlowPreStage(TS flowTs, ablate::solver::Solver& solver, PetscReal stagetime) {
-     PetscFunctionBegin;
-     // Get flow field data
-     const auto& fvSolver = dynamic_cast<ablate::finiteVolume::FiniteVolumeSolver&>(solver);
-     solver::Range cellRange;
-     fvSolver.GetCellRangeWithoutGhost(cellRange);
-     PetscInt dim;
-     PetscCall(DMGetDimension(fvSolver.GetSubDomain().GetDM(), &dim));
-     const auto& flowEulerId = fvSolver.GetSubDomain().GetField("euler").id; // constant instead of string for euler
-     auto& vfEulerId = fvSolver.GetSubDomain().GetField("volumeFraction").id;
-     DM dm = fvSolver.GetSubDomain().GetDM();
-     Vec globFlowVec;
-     PetscCall(TSGetSolution(flowTs, &globFlowVec));
+PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::MultiphaseFlowPreStage(TS flowTs, ablate::solver::Solver &solver, PetscReal stagetime) {
+    PetscFunctionBegin;
+    // Get flow field data
+    const auto &fvSolver = dynamic_cast<ablate::finiteVolume::FiniteVolumeSolver &>(solver);
+    solver::Range cellRange;
+    fvSolver.GetCellRangeWithoutGhost(cellRange);
+    PetscInt dim;
+    PetscCall(DMGetDimension(fvSolver.GetSubDomain().GetDM(), &dim));
+    const auto &flowEulerId = fvSolver.GetSubDomain().GetField("euler").id;  // constant instead of string for euler
+    auto &vfEulerId = fvSolver.GetSubDomain().GetField("volumeFraction").id;
+    DM dm = fvSolver.GetSubDomain().GetDM();
+    Vec globFlowVec;
+    PetscCall(TSGetSolution(flowTs, &globFlowVec));
 
-     const PetscScalar* flowArray;
-     PetscScalar* flowArrayV2;
-     PetscCall(VecGetArrayRead(globFlowVec, &flowArray));
-     PetscCall(VecGetArray(globFlowVec, &flowArrayV2));
+    const PetscScalar *flowArray;
+    PetscScalar *flowArrayV2;
+    PetscCall(VecGetArrayRead(globFlowVec, &flowArray));
+    PetscCall(VecGetArray(globFlowVec, &flowArrayV2));
 
-     for (PetscInt i = cellRange.start; i < cellRange.end; ++i){
-         const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
-         const PetscScalar* eulerField = nullptr; // not const if modifying value
-         DMPlexPointLocalFieldRead(dm, cell, flowEulerId, flowArray, &eulerField) >> checkError; // to write -read or ref
-         auto density = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHO];
-         PetscReal velocity[3];
-         for (PetscInt d = 0; d< dim; d++) {
-             velocity[d] = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density;
-         }
+    for (PetscInt i = cellRange.start; i < cellRange.end; ++i) {
+        const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
+        const PetscScalar *eulerField = nullptr;                                                 // not const if modifying value
+        DMPlexPointLocalFieldRead(dm, cell, flowEulerId, flowArray, &eulerField) >> checkError;  // to write -read or ref
+        auto density = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHO];
+        PetscReal velocity[3];
+        for (PetscInt d = 0; d < dim; d++) {
+            velocity[d] = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density;
+        }
 
-         PetscScalar* vfField = nullptr;
-         DMPlexPointLocalFieldRef(dm, cell, vfEulerId, flowArrayV2, &vfField) >> checkError;
+        PetscScalar *vfField = nullptr;
+        DMPlexPointLocalFieldRef(dm, cell, vfEulerId, flowArrayV2, &vfField) >> checkError;
 
-         // reproducing uOff
-         PetscInt uOff[3];
-         uOff[0] = 4; // alpha
-         uOff[1] = 3; // rho1alpha1
-         uOff[2] = 0; // euler
+        // reproducing uOff
+        PetscInt uOff[3];
+        uOff[0] = 4;  // alpha
+        uOff[1] = 3;  // rho1alpha1
+        uOff[2] = 0;  // euler
 
-         // For cell center, the norm is unity
-         PetscReal norm[3];
-         norm[0] = 1;
-         norm[1] = 1;
-         norm[2] = 1;
+        // For cell center, the norm is unity
+        PetscReal norm[3];
+        norm[0] = 1;
+        norm[1] = 1;
+        norm[2] = 1;
 
-         // Decode state
-//         PetscReal density;
-         PetscReal densityG;
-         PetscReal densityL;
-         PetscReal normalVelocity;  // uniform velocity in cell
-//         PetscReal velocity[3];
-         PetscReal internalEnergy;
-         PetscReal internalEnergyG;
-         PetscReal internalEnergyL;
-         PetscReal aG;
-         PetscReal aL;
-         PetscReal MG;
-         PetscReal ML;
-         PetscReal p;  // pressure equilibrium
-         PetscReal t;
-         PetscReal alpha;
-         decoder->DecodeTwoPhaseEulerState(dim,
-                                           uOff,
-                                           eulerField,
-                                           norm,
-                                           &density,
-                                           &densityG,
-                                           &densityL,
-                                           &normalVelocity,
-                                           velocity,
-                                           &internalEnergy,
-                                           &internalEnergyG,
-                                           &internalEnergyL,
-                                           &aG,
-                                           &aL,
-                                           &MG,
-                                           &ML,
-                                           &p,
-                                           &t,
-                                           &alpha);
-         vfField[0] = alpha; // sets volumeFraction field, does every iteration of time step (euler=1, rk=4)
-     }
-
-
+        // Decode state
+        //         PetscReal density;
+        PetscReal densityG;
+        PetscReal densityL;
+        PetscReal normalVelocity;  // uniform velocity in cell
+                                   //         PetscReal velocity[3];
+        PetscReal internalEnergy;
+        PetscReal internalEnergyG;
+        PetscReal internalEnergyL;
+        PetscReal aG;
+        PetscReal aL;
+        PetscReal MG;
+        PetscReal ML;
+        PetscReal p;  // pressure equilibrium
+        PetscReal t;
+        PetscReal alpha;
+        decoder->DecodeTwoPhaseEulerState(
+            dim, uOff, eulerField, norm, &density, &densityG, &densityL, &normalVelocity, velocity, &internalEnergy, &internalEnergyG, &internalEnergyL, &aG, &aL, &MG, &ML, &p, &t, &alpha);
+        vfField[0] = alpha;  // sets volumeFraction field, does every iteration of time step (euler=1, rk=4)
+    }
+    // clean up
+    fvSolver.RestoreRange(cellRange);
     PetscFunctionReturn(0);
 }
 
