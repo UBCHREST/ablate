@@ -54,7 +54,7 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootMeanAbs
     }
 
     /** Get the offsets that locate the position of the solid carbon field. */
-    auto Coffset = GetFieldComponentOffset("C_solid", *densityYiField);
+    auto Coffset = GetFieldComponentOffset("c_solid", *densityYiField);
 
     if (Coffset == -1) {
         throw std::invalid_argument("Soot absorption model requires solid carbon.\n The Constant class allows the absorptivity of the medium to be set manually.");
@@ -85,7 +85,7 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
     }
 
     /** Get the offsets that locate the position of the solid carbon field. */
-    auto Coffset = GetFieldComponentOffset("C_solid", *densityYiField);
+    auto Coffset = GetFieldComponentOffset("c_solid", *densityYiField);
 
     if (Coffset == -1) {
         throw std::invalid_argument("Soot absorption model requires solid carbon.\n The Constant class allows the absorptivity of the medium to be set manually.");
