@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.18.4)
 find_package(PkgConfig REQUIRED)
 
-message("CMAKE_C_COMPILER " ${CMAKE_C_COMPILER})
-
 # Check if a C compiler is explicitly stated
 if (NOT DEFINED CMAKE_C_COMPILER)
     # Set the compilers based upon the PETSc package
