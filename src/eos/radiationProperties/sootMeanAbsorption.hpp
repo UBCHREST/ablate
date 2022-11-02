@@ -10,7 +10,7 @@ namespace ablate::eos::radiationProperties {
 class SootMeanAbsorption : public RadiationModel {
    private:
     struct FunctionContext {
-        PetscInt densityYiCOffset;
+        PetscInt densityEVCOffset;
         const ThermodynamicFunction temperatureFunction;
         const ThermodynamicFunction densityFunction;
     };

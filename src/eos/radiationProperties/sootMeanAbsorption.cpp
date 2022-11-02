@@ -14,7 +14,7 @@ PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootFunctio
     ierr = functionContext->densityFunction.function(conserved, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
     CHKERRQ(ierr);
 
-    PetscReal YinC = (functionContext->densityYiCOffset == -1) ? 0 : conserved[functionContext->densityYiCOffset] / density;  //!< Get the mass fraction of carbon here
+    PetscReal YinC = (functionContext->densityEVCOffset == -1) ? 0 : conserved[functionContext->densityEVCOffset] / density;  //!< Get the mass fraction of carbon here
 
     PetscReal fv = density * YinC / rhoC;
 
@@ -33,7 +33,7 @@ PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootTempera
     ierr = functionContext->densityFunction.function(conserved, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
     CHKERRQ(ierr);
 
-    PetscReal YinC = (functionContext->densityYiCOffset == -1) ? 0 : conserved[functionContext->densityYiCOffset] / density;  //!< Get the mass fraction of carbon here
+    PetscReal YinC = (functionContext->densityEVCOffset == -1) ? 0 : conserved[functionContext->densityEVCOffset] / density;  //!< Get the mass fraction of carbon here
 
     PetscReal fv = density * YinC / rhoC;
 
@@ -43,18 +43,18 @@ PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootTempera
 }
 
 ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootMeanAbsorption::GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field> &fields) const {
-    const auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
+    const auto densityEVField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD; });
 
     /** Check if the species exist in this run.
      * If all don't exist, throw an error.
      * If some don't exist, then the values should be set to zero for their mass fractions in all cases.
      * */
-    if (densityYiField == fields.end()) {
+    if (densityEVField == fields.end()) {
         throw std::invalid_argument("Soot absorption model requires the density Yi field.");
     }
 
     /** Get the offsets that locate the position of the solid carbon field. */
-    auto Coffset = GetFieldComponentOffset("c_solid", *densityYiField);
+    auto Coffset = GetFieldComponentOffset("c_solid", *densityEVField);
 
     if (Coffset == -1) {
         throw std::invalid_argument("Soot absorption model requires solid carbon.\n The Constant class allows the absorptivity of the medium to be set manually.");
@@ -64,7 +64,7 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootMeanAbs
         case RadiationProperty::Absorptivity:
             return ThermodynamicFunction{.function = SootFunction,
                                          .context = std::make_shared<FunctionContext>(
-                                             FunctionContext{.densityYiCOffset = Coffset,
+                                             FunctionContext{.densityEVCOffset = Coffset,
                                                              .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
                                                              .densityFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
         default:
@@ -74,18 +74,18 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootMeanAbs
 
 ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::SootMeanAbsorption::GetRadiationPropertiesTemperatureFunction(RadiationProperty property,
                                                                                                                                               const std::vector<domain::Field> &fields) const {
-    const auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
+    const auto densityEVField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD; });
 
     /** Check if the species exist in this run.
      * If all don't exist, throw an error.
      * If some don't exist, then the values should be set to zero for their mass fractions in all cases.
      * */
-    if (densityYiField == fields.end()) {
+    if (densityEVField == fields.end()) {
         throw std::invalid_argument("Soot absorption model requires the density Yi field.");
     }
 
     /** Get the offsets that locate the position of the solid carbon field. */
-    auto Coffset = GetFieldComponentOffset("c_solid", *densityYiField);
+    auto Coffset = GetFieldComponentOffset("c_solid", *densityEVField);
 
     if (Coffset == -1) {
         throw std::invalid_argument("Soot absorption model requires solid carbon.\n The Constant class allows the absorptivity of the medium to be set manually.");
@@ -95,7 +95,7 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
         case RadiationProperty::Absorptivity:
             return ThermodynamicTemperatureFunction{.function = SootTemperatureFunction,
                                                     .context = std::make_shared<FunctionContext>(FunctionContext{
-                                                        .densityYiCOffset = Coffset,
+                                                        .densityEVCOffset = Coffset,
                                                         .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
                                                         .densityFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
         default:
