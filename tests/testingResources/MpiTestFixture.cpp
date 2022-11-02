@@ -15,11 +15,10 @@ const std::string expectedResultDelimiter = std::string("<expects>");
 bool testingResources::MpiTestFixture::inMpiTestRun;
 bool testingResources::MpiTestFixture::keepOutputFile;
 
-
 #if defined(COMPILE_MPI_COMMAND)
-#define STR1(x)  #x
-#define STR(x)  STR1(x)
-std::string testingResources::MpiTestFixture::mpiCommand =  STR(COMPILE_MPI_COMMAND);
+#define STR1(x) #x
+#define STR(x) STR1(x)
+std::string testingResources::MpiTestFixture::mpiCommand = STR(COMPILE_MPI_COMMAND);
 #else
 std::string testingResources::MpiTestFixture::mpiCommand = "mpirun";
 #endif
