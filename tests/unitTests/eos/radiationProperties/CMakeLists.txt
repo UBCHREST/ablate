@@ -3,4 +3,5 @@ target_sources(unitTests
         radiationConstantTests.cpp
         radiationZimmerTests.cpp
         radiationSumTests.cpp
+        radiationSootAbsorptionTests.cpp
         )
