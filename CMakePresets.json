@@ -7,10 +7,10 @@
   },
   "configurePresets": [
     {
-      "name": "clion-ablate-debug",
+      "name": "local-ablate-debug",
       "displayName": "CLion Debug Config",
       "description": "Default build for ABLATE in CLion",
-      "binaryDir": "${sourceDir}/cmake-build-debug-ablate/default",
+      "binaryDir": "${sourceDir}/cmake-build-debug-ablate",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "COMPILE_MPI_COMMAND": "$env{PETSC_DIR}/arch-ablate-debug/bin/mpirun"
@@ -21,10 +21,10 @@
       }
     },
     {
-      "name": "clion-ablate-opt",
+      "name": "local-ablate-opt",
       "displayName": "CLion Opt Config",
       "description": "Default build for ABLATE in CLion",
-      "binaryDir": "${sourceDir}/cmake-build-opt-ablate/default",
+      "binaryDir": "${sourceDir}/cmake-build-opt-ablate",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "COMPILE_MPI_COMMAND": "$env{PETSC_DIR}/arch-ablate-opt/bin/mpirun"
@@ -69,6 +69,30 @@
           "toolchain": "Docker"
         }
       }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "local-ablate-debug",
+      "configurePreset": "local-ablate-debug"
+    },
+    {
+      "name": "local-ablate-opt",
+      "configurePreset": "local-ablate-opt"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "local-ablate-debug",
+      "configurePreset": "local-ablate-debug",
+      "output": {"outputOnFailure": true},
+      "execution": {"noTestsAction": "error", "stopOnFailure": true}
+    },
+    {
+      "name": "local-ablate-opt",
+      "configurePreset": "local-ablate-opt",
+      "output": {"outputOnFailure": true},
+      "execution": {"noTestsAction": "error", "stopOnFailure": true}
     }
   ]
 }
