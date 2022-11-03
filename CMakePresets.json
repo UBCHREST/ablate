@@ -7,12 +7,13 @@
   },
   "configurePresets": [
     {
-      "name": "ablate-debug",
-      "displayName": "Debug Config",
-      "description": "Default build for ABLATE using PETSC",
-      "binaryDir": "${sourceDir}/cmake-build-debug-ablate/default",
+      "name": "local-ablate-debug",
+      "displayName": "CLion Debug Config",
+      "description": "Default build for ABLATE in CLion",
+      "binaryDir": "${sourceDir}/cmake-build-debug-ablate",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Debug",
+        "COMPILE_MPI_COMMAND": "$env{PETSC_DIR}/arch-ablate-debug/bin/mpirun"
       },
       "environment": {
         "PETSC_ARCH": "arch-ablate-debug",
@@ -20,12 +21,13 @@
       }
     },
     {
-      "name": "ablate-opt",
-      "displayName": "Opt Config",
-      "description": "Default build for ABLATE using PETSC",
-      "binaryDir": "${sourceDir}/cmake-build-opt-ablate/default",
+      "name": "local-ablate-opt",
+      "displayName": "CLion Opt Config",
+      "description": "Default build for ABLATE in CLion",
+      "binaryDir": "${sourceDir}/cmake-build-opt-ablate",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "COMPILE_MPI_COMMAND": "$env{PETSC_DIR}/arch-ablate-opt/bin/mpirun"
       },
       "environment": {
         "PETSC_ARCH": "arch-ablate-opt",
@@ -71,20 +73,26 @@
   ],
   "buildPresets": [
     {
-      "name": "ablate-debug",
-      "configurePreset": "ablate-debug"
+      "name": "local-ablate-debug",
+      "configurePreset": "local-ablate-debug"
     },
     {
-      "name": "ablate-opt",
-      "configurePreset": "ablate-opt"
+      "name": "local-ablate-opt",
+      "configurePreset": "local-ablate-opt"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "local-ablate-debug",
+      "configurePreset": "local-ablate-debug",
+      "output": {"outputOnFailure": true},
+      "execution": {"noTestsAction": "error", "stopOnFailure": true}
     },
     {
-      "name": "docker-ablate-debug",
-      "configurePreset": "docker-ablate-debug"
-    },
-    {
-      "name": "docker-ablate-opt",
-      "configurePreset": "docker-ablate-opt"
+      "name": "local-ablate-opt",
+      "configurePreset": "local-ablate-opt",
+      "output": {"outputOnFailure": true},
+      "execution": {"noTestsAction": "error", "stopOnFailure": true}
     }
   ]
 }
