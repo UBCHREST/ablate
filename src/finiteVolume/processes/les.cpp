@@ -4,7 +4,7 @@
 #include "utilities/mathUtilities.hpp"
 #include "utilities/petscError.hpp"
 
-ablate::finiteVolume::processes::LES::LES(std::string tke) : tke(tke) {}
+ablate::finiteVolume::processes::LES::LES(std::string tke) : tke(std::move(tke)) {}
 
 void ablate::finiteVolume::processes::LES::Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) {
     if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::DENSITY_EV_FIELD)) {
@@ -21,7 +21,7 @@ void ablate::finiteVolume::processes::LES::Setup(ablate::finiteVolume::FiniteVol
 
         for (std::size_t ev = 0; ev < extraVariableList.size(); ev++) {
             if (extraVariableList[ev] == tke) {
-                diffusionData.tke_ev = ev;
+                diffusionData.tke_ev = (PetscInt)ev;
             }
         }
         if (diffusionData.tke_ev < 0) {
@@ -76,7 +76,7 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesMomentumFlux(PetscInt di
     ierr = LesViscosity(dim, fg, field + uOff[euler], turbulence, muT);
     CHKERRQ(ierr);
     // Compute the LES stress tensor tau
-    ierr = flowParameters->computeTau->CompressibleFlowComputeStressTensor(dim, muT, gradAux + aOff_x[VEL], tau);
+    ierr = NavierStokesTransport::CompressibleFlowComputeStressTensor(dim, muT, gradAux + aOff_x[VEL], tau);
     CHKERRQ(ierr);
 
     for (PetscInt c = 0; c < dim; ++c) {
@@ -117,7 +117,7 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesEnergyFlux(PetscInt dim,
     // Compute the les stress tensor LESTau
     ierr = LesViscosity(dim, fg, field + uOff[euler], turbulence, muT);
     CHKERRQ(ierr);
-    ierr = flowParameters->computeTau->CompressibleFlowComputeStressTensor(dim, muT, gradAux + aOff_x[VEL], tau);
+    ierr = NavierStokesTransport::CompressibleFlowComputeStressTensor(dim, muT, gradAux + aOff_x[VEL], tau);
     CHKERRQ(ierr);
 
     for (PetscInt d = 0; d < dim; ++d) {
@@ -160,7 +160,7 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesEvFlux(PetscInt dim, con
     CHKERRQ(ierr);
 
     // Compute the LES stress tensor tau
-    ierr = flowParameters->computeTau->CompressibleFlowComputeStressTensor(dim, 1, gradAux + aOff_x[VEL], tau);
+    ierr = NavierStokesTransport::CompressibleFlowComputeStressTensor(dim, 1, gradAux + aOff_x[VEL], tau);
     CHKERRQ(ierr);
     const PetscReal areaMag = utilities::MathUtilities::MagVector(dim, fg->normal);
 
@@ -172,7 +172,7 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesEvFlux(PetscInt dim, con
             PetscReal lesEvFlux;
 
             //  add turbulent diff other ev
-            if (!(ev == flowParameters->tke_ev)) {
+            if (ev != flowParameters->tke_ev) {
                 const int offset = aOff_x[EV_FIELD] + (ev * dim) + d;
                 lesEvFlux = -fg->normal[d] * muT * gradAux[offset] / scT;
             }

@@ -16,14 +16,14 @@ ablate::eos::TChem::TChem(std::filesystem::path mechanismFileIn, std::filesystem
     ablate::utilities::KokkosUtilities::Initialize();
 
     // create/parse the kinetic data
-    // TChem init reads/writes file it can only be done one at a time
-    ablate::utilities::MpiUtilities::RoundRobin(PETSC_COMM_WORLD, [&](int rank) {
-        if (thermoFile.empty()) {
-            kineticsModel = tChemLib::KineticModelData(mechanismFile.string());
-        } else {
-            kineticsModel = tChemLib::KineticModelData(mechanismFile.string(), thermoFile.string());
-        }
-    });
+    if (thermoFile.empty()) {
+        // Create a file to record the output
+
+        kineticsModel = tChemLib::KineticModelData(mechanismFile.string());
+    } else {
+        // TChem init reads/writes file it can only be done one at a time
+        ablate::utilities::MpiUtilities::RoundRobin(PETSC_COMM_WORLD, [&](int rank) { kineticsModel = tChemLib::KineticModelData(mechanismFile.string(), thermoFile.string()); });
+    }
 
     // get the device KineticsModelData
     kineticsModelDataDevice = std::make_shared<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<exec_space>::type>>(

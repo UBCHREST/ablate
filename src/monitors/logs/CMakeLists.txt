@@ -12,4 +12,5 @@ target_sources(ablateLibrary
         streamLog.hpp
         fileLog.hpp
         stdOut.hpp
+        nullLog.hpp
         )
