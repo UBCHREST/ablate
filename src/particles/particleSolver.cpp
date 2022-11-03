@@ -496,6 +496,9 @@ PetscErrorCode ablate::particles::ParticleSolver::ComputeParticleRHS(TS ts, Pets
     // determine if we should cachePointData
     auto cachePointData = particleSolver->processes.size() != 1;
 
+    // Zero out f so that the processes can add do it
+    PetscCall(VecZeroEntries(f));
+
     // Build the needed data structures
     accessors::SwarmAccessor swarmAccessor(cachePointData, particleSolver->swarmDm, particleSolver->fieldsMap, x);
     accessors::RhsAccessor rhsAccessor(cachePointData, particleSolver->fieldsMap, f);

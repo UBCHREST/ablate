@@ -11,7 +11,7 @@ void ablate::particles::processes::Tracer::ComputeRHS(PetscReal time, ablate::pa
     // march over each particle
     const PetscInt np = swarmAccessor.GetNumberParticles();
     for (PetscInt p = 0; p < np; p++) {
-        coordinateRhs.CopyFrom(fluidVelocity[p], p);
+        coordinateRhs.AddFrom(fluidVelocity[p], p);
     }
 }
 
