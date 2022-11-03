@@ -235,7 +235,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Multipha
     fvSolver.GetCellRangeWithoutGhost(cellRange);
     PetscInt dim;
     PetscCall(DMGetDimension(fvSolver.GetSubDomain().GetDM(), &dim));
-    const auto &flowEulerId = fvSolver.GetSubDomain().GetField("euler").id; // need this to get uOff
+    const auto &flowEulerId = fvSolver.GetSubDomain().GetField("euler").id;  // need this to get uOff
     const auto &vfEulerId = fvSolver.GetSubDomain().GetField("volumeFraction").id;
     const auto &rhoAlphaEulerId = fvSolver.GetSubDomain().GetField("densityVF").id;
 
@@ -247,17 +247,17 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Multipha
     PetscCall(VecGetArray(globFlowVec, &flowArray));
 
     // reproducing uOff, based on fieldId
-    PetscInt rhoAlphaId=0, vfId=0;
-    if (rhoAlphaEulerId > flowEulerId){
+    PetscInt rhoAlphaId = 0, vfId = 0;
+    if (rhoAlphaEulerId > flowEulerId) {
         rhoAlphaId = rhoAlphaEulerId + 1 + dim;
     }
-    if (vfEulerId > flowEulerId){
+    if (vfEulerId > flowEulerId) {
         vfId = vfEulerId + 1 + dim;
     }
     PetscInt uOff[3];
-    uOff[0] = vfId;  // = 3 + dim; alpha
-    uOff[1] = rhoAlphaId;  // = 2 + dim; rho1alpha1
-    uOff[2] = flowEulerId;        // = 0; euler
+    uOff[0] = vfId;         // = 3 + dim; alpha
+    uOff[1] = rhoAlphaId;   // = 2 + dim; rho1alpha1
+    uOff[2] = flowEulerId;  // = 0; euler
 
     // For cell center, the norm is unity
     PetscReal norm[3];
