@@ -302,7 +302,7 @@ std::map<std::string, double> ablate::finiteVolume::FiniteVolumeSolver::ComputeP
         double dt = dtFunction.function(ts, *this, dtFunction.context);
         PetscReal dtMinGlobal;
         MPI_Reduce(&dt, &dtMinGlobal, 1, MPIU_REAL, MPI_MIN, 0, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
-        timeSteps[dtFunction.name] = dt;
+        timeSteps[dtFunction.name] = dtMinGlobal;
     }
 
     return timeSteps;

@@ -39,8 +39,8 @@ void ablate::particles::processes::Inertial::ComputeRHS(PetscReal time, ablate::
         // Note: this function assumed that the solution vector order is correct
         tauP = partDens(p) * PetscSqr(partDiam(p)) / (18.0 * muF);  // particle relaxation time
         for (PetscInt n = 0; n < dim; n++) {
-            coordinateRhs(p, n) = partVel(p, n);
-            velocityRhs(p, n) = corFactor * (fluidVel(p, n) - partVel(p, n)) / tauP + gravityField[n] * (1.0 - rhoF / partDens(p));
+            coordinateRhs(p, n) += partVel(p, n);
+            velocityRhs(p, n) += corFactor * (fluidVel(p, n) - partVel(p, n)) / tauP + gravityField[n] * (1.0 - rhoF / partDens(p));
         }
     }
 }
