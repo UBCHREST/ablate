@@ -2,7 +2,7 @@
 environment:
   title: _Moving_2gas_10pts
   tagDirectory: true
-arguments: {}
+arguments: { }
 timestepper:
   name: theMainTimeStepper
   arguments:
@@ -10,18 +10,18 @@ timestepper:
     ts_max_time: 0.001
     ts_dt: 1e-4
     ts_adapt_type: none
-  domain: !<!ablate::domain::BoxMesh>
+  domain: !ablate::domain::BoxMesh
     name: simpleBoxField
     faces: [ 10 ]
     lower: [ 0 ]
     upper: [ 10 ]
     boundary: [ NONE ]
     modifiers:
-      - !<!ablate::domain::modifiers::DistributeWithGhostCells> ""
-      - !<!ablate::domain::modifiers::GhostBoundaryCells> ""
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+      - !ablate::domain::modifiers::GhostBoundaryCells
     fields:
-      - !<!ablate::finiteVolume::CompressibleFlowFields>
-        eos: !<!ablate::eos::PerfectGas>
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas
           parameters:
             gamma: 0
             Rgas: 0
@@ -33,17 +33,16 @@ timestepper:
         location: AUX
         type: FVM
   initialization:
-    - &2
+    - &eulerField
       fieldName: "euler" # T=300K, v=100m/s, p=100,000Pa
       field: >-
         x < 5.0 ? 1.1614401858304297 : 1.601563125610596,
         x < 5.0 ? 255807.2009291522 : 159522.9671432045,
         x < 5.0 ? -116.14401858304298 : -160.1563125610596
-
-    - &3
+    - &rhoAlpha
       fieldName: densityVF
       field: " x < 5.0 ? 0.0 : 1.601563125610596 "
-    - &5
+    - &alpha
       fieldName: volumeFraction
       field: " x < 5.0 ? 0.0 : 1.0 "
   exactSolution:
@@ -56,48 +55,48 @@ timestepper:
       field: " x < 2.0 ? 0.0 : 1.601563125610596 "
     - fieldName: volumeFraction
       field: " x < 2.0 ? 0.0 : 1.0 "
-solver: !<!ablate::finiteVolume::FiniteVolumeSolver>
+solver: !ablate::finiteVolume::FiniteVolumeSolver
   id: SOD Problem
   processes:
-    - !<!ablate::finiteVolume::processes::TwoPhaseEulerAdvection>
-      eosGas: !<!ablate::eos::PerfectGas> &4
+    - !ablate::finiteVolume::processes::TwoPhaseEulerAdvection
+      eosGas: !ablate::eos::PerfectGas &eosArgon
         parameters: # argon
           gamma: 1.66
           Rgas: 208.13
-      eosLiquid: !<!ablate::eos::PerfectGas> &1
+      eosLiquid: !ablate::eos::PerfectGas &eosAir
         parameters: # air
           gamma: 1.4
           Rgas: 287.0
-      fluxCalculatorGasGas: !<!ablate::finiteVolume::fluxCalculator::Riemann2Gas>
-        eosL: *4
-        eosR: *4
-      fluxCalculatorGasLiquid: !<!ablate::finiteVolume::fluxCalculator::Riemann2Gas>
-        eosL: *4
-        eosR: *1
+      fluxCalculatorGasGas: !ablate::finiteVolume::fluxCalculator::Riemann2Gas
+        eosL: *eosArgon
+        eosR: *eosArgon
+      fluxCalculatorGasLiquid: !ablate::finiteVolume::fluxCalculator::Riemann2Gas
+        eosL: *eosArgon
+        eosR: *eosAir
       fluxCalculatorLiquidGas: !ablate::finiteVolume::fluxCalculator::Riemann2Gas
-        eosL: *1
-        eosR: *4
-      fluxCalculatorLiquidLiquid: !<!ablate::finiteVolume::fluxCalculator::Riemann2Gas>
-        eosL: *1
-        eosR: *1
+        eosL: *eosAir
+        eosR: *eosArgon
+      fluxCalculatorLiquidLiquid: !ablate::finiteVolume::fluxCalculator::Riemann2Gas
+        eosL: *eosAir
+        eosR: *eosAir
   boundaryConditions:
-    - !<!ablate::finiteVolume::boundaryConditions::EssentialGhost>
+    - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: air walls euler
       labelIds: [ 1, 2 ]
-      boundaryValue: *2
-    - !<!ablate::finiteVolume::boundaryConditions::EssentialGhost>
+      boundaryValue: *eulerField
+    - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: vf walls
       labelIds: [ 1, 2 ]
-      boundaryValue: *3
-    - !<!ablate::finiteVolume::boundaryConditions::EssentialGhost>
+      boundaryValue: *rhoAlpha
+    - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: alpha walls
       labelIds: [ 1, 2 ]
-      boundaryValue: *5
+      boundaryValue: *alpha
   monitors:
-    - !<!ablate::monitors::TimeStepMonitor> ""
-    - !<!ablate::monitors::CurveMonitor>
+    - !ablate::monitors::TimeStepMonitor
+    - !ablate::monitors::CurveMonitor
       interval: 10
-    - !<!ablate::monitors::SolutionErrorMonitor>
+    - !ablate::monitors::SolutionErrorMonitor
       scope: component
       type: l2_norm
       log: !ablate::monitors::logs::CsvLog

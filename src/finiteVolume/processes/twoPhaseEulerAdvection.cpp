@@ -235,42 +235,45 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Multipha
     fvSolver.GetCellRangeWithoutGhost(cellRange);
     PetscInt dim;
     PetscCall(DMGetDimension(fvSolver.GetSubDomain().GetDM(), &dim));
-    const auto &flowEulerId = fvSolver.GetSubDomain().GetField("euler").id;  // constant instead of string for euler
-    auto &vfEulerId = fvSolver.GetSubDomain().GetField("volumeFraction").id;
+    const auto &flowEulerId = fvSolver.GetSubDomain().GetField("euler").id; // need this to get uOff
+    const auto &vfEulerId = fvSolver.GetSubDomain().GetField("volumeFraction").id;
+    const auto &rhoAlphaEulerId = fvSolver.GetSubDomain().GetField("densityVF").id;
+
     DM dm = fvSolver.GetSubDomain().GetDM();
     Vec globFlowVec;
     PetscCall(TSGetSolution(flowTs, &globFlowVec));
 
-    const PetscScalar *flowArray;
-    PetscScalar *flowArrayV2;
-    PetscCall(VecGetArrayRead(globFlowVec, &flowArray));
-    PetscCall(VecGetArray(globFlowVec, &flowArrayV2));
+    PetscScalar *flowArray;
+    PetscCall(VecGetArray(globFlowVec, &flowArray));
+
+    // reproducing uOff, based on fieldId
+    PetscInt rhoAlphaId=0, vfId=0;
+    if (rhoAlphaEulerId > flowEulerId){
+        rhoAlphaId = rhoAlphaEulerId + 1 + dim;
+    }
+    if (vfEulerId > flowEulerId){
+        vfId = vfEulerId + 1 + dim;
+    }
+    PetscInt uOff[3];
+    uOff[0] = vfId;  // = 3 + dim; alpha
+    uOff[1] = rhoAlphaId;  // = 2 + dim; rho1alpha1
+    uOff[2] = flowEulerId;        // = 0; euler
+
+    // For cell center, the norm is unity
+    PetscReal norm[3];
+    norm[0] = 1;
+    norm[1] = 1;
+    norm[2] = 1;
 
     for (PetscInt i = cellRange.start; i < cellRange.end; ++i) {
         const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
-        const PetscScalar *eulerField = nullptr;                                                 // not const if modifying value
-        DMPlexPointLocalFieldRead(dm, cell, flowEulerId, flowArray, &eulerField) >> checkError;  // to write -read or ref
-        auto density = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHO];
+        PetscScalar *allFields = nullptr;
+        DMPlexPointLocalRef(dm, cell, flowArray, &allFields) >> checkError;
+        auto density = allFields[ablate::finiteVolume::CompressibleFlowFields::RHO];
         PetscReal velocity[3];
         for (PetscInt d = 0; d < dim; d++) {
-            velocity[d] = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density;
+            velocity[d] = allFields[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density;
         }
-
-        PetscScalar *vfField = nullptr;
-        DMPlexPointLocalFieldRef(dm, cell, vfEulerId, flowArrayV2, &vfField) >> checkError;
-
-        // reproducing uOff
-        PetscInt uOff[3];
-        uOff[0] = 3 + dim;  // alpha
-        uOff[1] = 2 + dim;  // rho1alpha1
-        uOff[2] = 0;        // euler
-
-        // For cell center, the norm is unity
-        PetscReal norm[3];
-        norm[0] = 1;
-        norm[1] = 1;
-        norm[2] = 1;
-
         // Decode state
         //         PetscReal density;
         PetscReal densityG;
@@ -288,8 +291,9 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Multipha
         PetscReal t;
         PetscReal alpha;
         decoder->DecodeTwoPhaseEulerState(
-            dim, uOff, eulerField, norm, &density, &densityG, &densityL, &normalVelocity, velocity, &internalEnergy, &internalEnergyG, &internalEnergyL, &aG, &aL, &MG, &ML, &p, &t, &alpha);
-        vfField[0] = alpha;  // sets volumeFraction field, does every iteration of time step (euler=1, rk=4)
+            dim, uOff, allFields, norm, &density, &densityG, &densityL, &normalVelocity, velocity, &internalEnergy, &internalEnergyG, &internalEnergyL, &aG, &aL, &MG, &ML, &p, &t, &alpha);
+        // maybe save other values for use later, would interpolation to the face be the same as calculating at face?
+        allFields[uOff[0]] = alpha;  // sets volumeFraction field, does every iteration of time step (euler=1, rk=4)
     }
     // clean up
     fvSolver.RestoreRange(cellRange);
