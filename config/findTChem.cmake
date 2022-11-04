@@ -12,7 +12,7 @@ elseif (NOT (DEFINED Tines_DIR|CACHE{Tines_DIR}|ENV{Tines_DIR}))
     set(TINES_SUNDIALS_WARNING OFF CACHE BOOL "" FORCE)
 
     FetchContent_Declare(tines
-            GIT_REPOSITORY https://github.com/UBCHREST/Tines.git
+            GIT_REPOSITORY https://github.com/sandialabs/Tines.git
             GIT_TAG main
             SOURCE_SUBDIR src
             )
