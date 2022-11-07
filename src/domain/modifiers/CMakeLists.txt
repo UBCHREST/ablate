@@ -15,6 +15,7 @@ target_sources(ablateLibrary
         completeLabel.cpp
         dmPlexCheck.cpp
         fvmCheck.cpp
+        meshMapper.cpp
 
         PUBLIC
         modifier.hpp
@@ -32,4 +33,5 @@ target_sources(ablateLibrary
         completeLabel.hpp
         dmPlexCheck.hpp
         fvmCheck.hpp
+        meshMapper.hpp
         )
