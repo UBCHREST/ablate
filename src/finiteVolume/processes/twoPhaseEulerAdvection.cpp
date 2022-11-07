@@ -235,9 +235,9 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Multipha
     fvSolver.GetCellRangeWithoutGhost(cellRange);
     PetscInt dim;
     PetscCall(DMGetDimension(fvSolver.GetSubDomain().GetDM(), &dim));
-    const auto &flowEulerId = fvSolver.GetSubDomain().GetField("euler").id;  // need this to get uOff
-    const auto &vfEulerId = fvSolver.GetSubDomain().GetField("volumeFraction").id;
-    const auto &rhoAlphaEulerId = fvSolver.GetSubDomain().GetField("densityVF").id;
+    const auto &eulerOffset = fvSolver.GetSubDomain().GetField(CompressibleFlowFields::EULER_FIELD).offset;  // need this to get uOff
+    const auto &vfOffset = fvSolver.GetSubDomain().GetField("volumeFraction").offset;
+    const auto &rhoAlphaOffset = fvSolver.GetSubDomain().GetField("densityVF").offset;
 
     DM dm = fvSolver.GetSubDomain().GetDM();
     Vec globFlowVec;
@@ -246,18 +246,10 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Multipha
     PetscScalar *flowArray;
     PetscCall(VecGetArray(globFlowVec, &flowArray));
 
-    // reproducing uOff, based on fieldId
-    PetscInt rhoAlphaId = 0, vfId = 0;
-    if (rhoAlphaEulerId > flowEulerId) {
-        rhoAlphaId = rhoAlphaEulerId + 1 + dim;
-    }
-    if (vfEulerId > flowEulerId) {
-        vfId = vfEulerId + 1 + dim;
-    }
     PetscInt uOff[3];
-    uOff[0] = vfId;         // = 3 + dim; alpha
-    uOff[1] = rhoAlphaId;   // = 2 + dim; rho1alpha1
-    uOff[2] = flowEulerId;  // = 0; euler
+    uOff[0] = vfOffset;        // = 3 + dim; alpha
+    uOff[1] = rhoAlphaOffset;  // = 2 + dim; rho1alpha1
+    uOff[2] = eulerOffset;     // = 0; euler
 
     // For cell center, the norm is unity
     PetscReal norm[3];
@@ -768,7 +760,6 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasPerfectG
     // (RHO, RHOE, RHOU, RHOV, RHOW)
     const int EULER_FIELD = 2;
     const int VF_FIELD = 1;
-    // const int ALPHA_FIELD = 0; // new field
 
     // decode
     *density = conservedValues[CompressibleFlowFields::RHO + uOff[EULER_FIELD]];
@@ -883,7 +874,6 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
                                                                                                                       PetscReal *T, PetscReal *alpha) {
     const int EULER_FIELD = 2;
     const int VF_FIELD = 1;
-    // const int ALPHA_FIELD = 0; // new field
 
     // decode
     *density = conservedValues[CompressibleFlowFields::RHO + uOff[EULER_FIELD]];
@@ -1073,7 +1063,6 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffe
                                                                                                                         PetscReal *ML, PetscReal *p, PetscReal *T, PetscReal *alpha) {
     const int EULER_FIELD = 2;
     const int VF_FIELD = 1;
-    // const int ALPHA_FIELD = 0; // new field
 
     // decode
     *density = conservedValues[CompressibleFlowFields::RHO + uOff[EULER_FIELD]];
