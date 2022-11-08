@@ -111,7 +111,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
         PetscReal ydir;
         PetscReal zdir;
         PetscReal hhere;
-        PetscReal ihere;
     };
 
     /// Class Methods
