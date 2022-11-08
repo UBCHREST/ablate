@@ -18,8 +18,8 @@ ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::
 
 ablate::radiation::Radiation::~Radiation() {
     if (radsolve) DMDestroy(&radsolve) >> checkError;  //!< Destroy the radiation particle swarm
-    VecDestroy(&faceGeomVec) >> checkError;
-    VecDestroy(&cellGeomVec) >> checkError;
+    if (faceGeomVec) VecDestroy(&faceGeomVec) >> checkError;
+    if (cellGeomVec) VecDestroy(&cellGeomVec) >> checkError;
 }
 
 /** allows initialization after the subdomain and dm is established */
