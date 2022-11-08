@@ -8,22 +8,23 @@
 #include "eos/tChem/speedOfSound.hpp"
 #include "eos/tChem/temperature.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "monitors/logs/nullLog.hpp"
 #include "utilities/kokkosUtilities.hpp"
 #include "utilities/mpiUtilities.hpp"
 
-ablate::eos::TChem::TChem(std::filesystem::path mechanismFileIn, std::filesystem::path thermoFileIn) : EOS("TChem"), mechanismFile(std::move(mechanismFileIn)), thermoFile(std::move(thermoFileIn)) {
+ablate::eos::TChem::TChem(std::filesystem::path mechanismFileIn, std::filesystem::path thermoFileIn, std::shared_ptr<ablate::monitors::logs::Log> logIn)
+    : EOS("TChem"), mechanismFile(std::move(mechanismFileIn)), thermoFile(std::move(thermoFileIn)), log(logIn ? logIn : std::make_shared<ablate::monitors::logs::NullLog>()) {
     // setup/use Kokkos
     ablate::utilities::KokkosUtilities::Initialize();
 
     // create/parse the kinetic data
-    // TChem init reads/writes file it can only be done one at a time
-    ablate::utilities::MpiUtilities::RoundRobin(PETSC_COMM_WORLD, [&](int rank) {
-        if (thermoFile.empty()) {
-            kineticsModel = tChemLib::KineticModelData(mechanismFile.string());
-        } else {
-            kineticsModel = tChemLib::KineticModelData(mechanismFile.string(), thermoFile.string());
-        }
-    });
+    if (thermoFile.empty()) {
+        // Create a file to record the output
+        kineticsModel = tChemLib::KineticModelData(mechanismFile.string(), log->GetStream(), log->GetStream());
+    } else {
+        // TChem init reads/writes file it can only be done one at a time
+        ablate::utilities::MpiUtilities::RoundRobin(PETSC_COMM_WORLD, [&](int rank) { kineticsModel = tChemLib::KineticModelData(mechanismFile.string(), thermoFile.string()); });
+    }
 
     // get the device KineticsModelData
     kineticsModelDataDevice = std::make_shared<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<exec_space>::type>>(
@@ -738,4 +739,5 @@ std::map<std::string, double> ablate::eos::TChem::GetSpeciesMolecularMass() cons
 
 #include "registrar.hpp"
 REGISTER(ablate::eos::EOS, ablate::eos::TChem, "[TChemV2](https://github.com/sandialabs/TChem) ideal gas eos", ARG(std::filesystem::path, "mechFile", "the mech file (CHEMKIN Format or Cantera Yaml)"),
-         OPT(std::filesystem::path, "thermoFile", "the thermo file (CHEMKIN Format if mech file is CHEMKIN)"));
+         OPT(std::filesystem::path, "thermoFile", "the thermo file (CHEMKIN Format if mech file is CHEMKIN)"),
+         OPT(ablate::monitors::logs::Log, "log", "An optional log for TChem echo output (only used with yaml input)"));

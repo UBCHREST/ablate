@@ -12,7 +12,6 @@ class LES : public FlowProcess {
    public:
     /* store turbulent diffusion  data */
     struct DiffusionData {
-        NavierStokesTransport* computeTau;
         PetscInt numberSpecies;
         PetscInt numberEV;
         PetscInt tke_ev;
@@ -28,7 +27,7 @@ class LES : public FlowProcess {
     inline const static PetscReal scT = 1.00;
     inline const static PetscReal prT = 1.00;
 
-    DiffusionData diffusionData;
+    DiffusionData diffusionData{};
 
    public:
     explicit LES(std::string tke);

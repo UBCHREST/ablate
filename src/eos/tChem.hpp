@@ -11,6 +11,7 @@
 #include "eos/tChem/sensibleInternalEnergy.hpp"
 #include "eos/tChem/speedOfSound.hpp"
 #include "eos/tChem/temperature.hpp"
+#include "monitors/logs/log.hpp"
 #include "utilities/intErrorChecker.hpp"
 
 namespace ablate::eos {
@@ -24,6 +25,9 @@ class TChem : public EOS {
 
     //! the thermoFile may be empty when using yaml input file
     const std::filesystem::path thermoFile;
+
+    //! an optional log file for tchem echo redirection
+    std::shared_ptr<ablate::monitors::logs::Log> log;
 
     /**
      * The kinetic model data
@@ -51,7 +55,7 @@ class TChem : public EOS {
      * @param mechFile
      * @param optionalThermoFile
      */
-    explicit TChem(std::filesystem::path mechanismFile, std::filesystem::path thermoFile = {});
+    explicit TChem(std::filesystem::path mechanismFile, std::filesystem::path thermoFile = {}, std::shared_ptr<ablate::monitors::logs::Log> = {});
 
     /**
      * Single function to produce thermodynamic function for any property based upon the available fields
