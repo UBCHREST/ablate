@@ -16,6 +16,7 @@ target_sources(ablateLibrary
         dmPlexCheck.cpp
         fvmCheck.cpp
         meshMapper.cpp
+        createCoordinateSpace.cpp
 
         PUBLIC
         modifier.hpp
@@ -34,4 +35,5 @@ target_sources(ablateLibrary
         dmPlexCheck.hpp
         fvmCheck.hpp
         meshMapper.hpp
+        createCoordinateSpace.hpp
         )

@@ -1,48 +1,84 @@
 #include "meshMapper.hpp"
+#include <petsc/private/dmpleximpl.h>
 #include "utilities/petscError.hpp"
+
 ablate::domain::modifiers::MeshMapper::MeshMapper(std::shared_ptr<ablate::mathFunctions::MathFunction> mappingFunction) : mappingFunction(mappingFunction) {}
 
 void ablate::domain::modifiers::MeshMapper::Modify(DM& dm) {
-//    // get the coordinate local vector from the dm
-//    Vec coordinateLocalVec;
-//    DMGetCoordinatesLocal(dm, &coordinateLocalVec) >> checkError;
-//
-//    // get the number of dimensions in the coordinate
-//    PetscInt cdim;
-//    DMGetCoordinateDim(dm, &cdim) >> checkError;
-//
-//    // determine the number of points in the coordinate vector
-//    PetscInt np;
-//    VecGetLocalSize(coordinateLocalVec, &np);
-//    np /= cdim;
-//
-//    // store the initial copy of xyz
-//    PetscReal xyz[3];
-//
-//    // Get the petsc function and ctx from the math function
-//    auto petscFunction = mappingFunction->GetPetscFunction();
-//    auto petscCtx = mappingFunction->GetContext();
-//
-//    // Get access to the array for writing
-//    PetscScalar* coords;
-//    VecGetArrayWrite(coordinateLocalVec, &coords);
-//    for (PetscInt p = 0; p < np; ++p) {
-//        // extract the initial x, y, z values
-//        for (PetscInt d = 0; d < cdim; ++d) {
-//            xyz[d] = coords[p * cdim + d];
-//        }
-//
-//        // call the mapping function
-//        petscFunction(cdim, 0.0, xyz, cdim, coords + (p * cdim), petscCtx) >> checkError;
-//    }
-//
-//    VecRestoreArrayWrite(coordinateLocalVec, &coords) >> checkError;
-//    DMSetCoordinatesLocal(dm, coordinateLocalVec) >> checkError;
-//    DMSetCoordinates(dm, NULL) >> checkError;
-//
-//    // Force rebuilding
-//    Vec coordinateGlobalVec;
-//    DMGetCoordinates(dm, &coordinateGlobalVec) >> checkError;
+    // check for a coordinate space
+    DM coordinateDm;
+    DMGetCoordinateDM(dm, &coordinateDm) >> checkError;
+    PetscInt coordinateDim;
+    DMGetCoordinateDim(dm, &coordinateDim) >> checkError;
+    PetscDS coordinateDs;
+    DMGetDS(coordinateDm, &coordinateDs);
+    PetscObject discretization;
+    PetscDSGetDiscretization(coordinateDs, 0, &discretization) >> checkError;
+    PetscClassId discretizationId;
+    PetscObjectGetClassId(discretization, &discretizationId);
+
+    // Get the petsc function and ctx from the math function
+    auto petscFunction = mappingFunction->GetPetscFunction();
+    auto petscCtx = mappingFunction->GetContext();
+
+    if (discretizationId != PETSCFE_CLASSID) {
+        // direct Modification
+        Vec localCoordsVector;
+        PetscSection coordsSection;
+        PetscScalar* coordsArray;
+
+        // get the vertex information
+        PetscInt vStart, vEnd;
+        DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd) >> checkError;
+        DMGetCoordinateSection(dm, &coordsSection) >> checkError;
+        DMGetCoordinatesLocal(dm, &localCoordsVector) >> checkError;
+        VecGetArray(localCoordsVector, &coordsArray) >> checkError;
+
+        // store the initial copy of xyz
+        PetscReal xyz[3];
+
+        for (PetscInt v = vStart; v < vEnd; ++v) {
+            PetscInt off;
+            PetscSectionGetOffset(coordsSection, v, &off);
+
+            // extract the initial x, y, z values
+            for (PetscInt d = 0; d < coordinateDim; ++d) {
+                xyz[d] = coordsArray[off + d];
+            }
+
+            // call the mapping function
+            petscFunction(coordinateDim, 0.0, xyz, coordinateDim, coordsArray + off, petscCtx) >> checkError;
+        }
+        VecRestoreArray(localCoordsVector, &coordsArray) >> checkError;
+        DMSetCoordinatesLocal(dm, localCoordsVector) >> checkError;
+    } else {
+        // projection into the coordinate space
+        // this is a duplication of PETSc DMPlexRemapGeometry that uses DMProjectFunctionLocal instead of DMProjectFieldLocal
+        DM cdm;
+        DMField cf;
+        Vec lCoords, tmpCoords;
+
+        DMGetCoordinateDM(dm, &cdm);
+        DMGetCoordinatesLocal(dm, &lCoords);
+        DMGetLocalVector(cdm, &tmpCoords);
+        VecCopy(lCoords, tmpCoords);
+        /* We have to do the coordinate field manually right now since the coordinate DM will not have its own */
+        DMGetCoordinateField(dm, &cf);
+        cdm->coordinates[0].field = cf;
+
+        // use a DMProjectFunctionLocal instead of DMProjectFieldLocal
+        PetscInt numberFields;
+        DMGetNumFields(cdm, &numberFields) >> checkError;
+        std::vector<mathFunctions::PetscFunction> fieldFunctionsPts(numberFields, nullptr);
+        std::vector<void*> fieldContexts(numberFields, nullptr);
+        fieldFunctionsPts[0] = petscFunction;
+        fieldContexts[0] = petscCtx;
+        DMProjectFunctionLocal(cdm, 0.0, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, lCoords) >> checkError;
+
+        cdm->coordinates[0].field = NULL;
+        DMRestoreLocalVector(cdm, &tmpCoords);
+        DMSetCoordinatesLocal(dm, lCoords);
+    }
 }
 void ablate::domain::modifiers::MeshMapper::Modify(const std::vector<double>& in, std::vector<double>& out) const {
     out.resize(in.size());

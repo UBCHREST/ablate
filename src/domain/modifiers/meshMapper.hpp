@@ -1,8 +1,8 @@
 #ifndef ABLATELIBRARY_MESHMAPPER_HPP
 #define ABLATELIBRARY_MESHMAPPER_HPP
 
-#include "modifier.hpp"
 #include "mathFunctions/mathFunction.hpp"
+#include "modifier.hpp"
 
 namespace ablate::domain::modifiers {
 
