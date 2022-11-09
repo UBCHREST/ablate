@@ -17,6 +17,7 @@ target_sources(ablateLibrary
         fvmCheck.cpp
         meshMapper.cpp
         createCoordinateSpace.cpp
+        translate.cpp
 
         PUBLIC
         modifier.hpp
@@ -36,4 +37,5 @@ target_sources(ablateLibrary
         fvmCheck.hpp
         meshMapper.hpp
         createCoordinateSpace.hpp
+        translate.hpp
         )

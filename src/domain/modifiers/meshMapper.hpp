@@ -17,7 +17,7 @@ class MeshMapper : public Modifier {
     explicit MeshMapper(std::shared_ptr<ablate::mathFunctions::MathFunction>);
 
     /**
-     * March over each vertex in the cell and mapp using the supplied function
+     * March over each vertex in the cell and map using the supplied function
      */
     void Modify(DM&) override;
 

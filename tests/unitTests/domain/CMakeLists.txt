@@ -3,3 +3,5 @@ target_sources(unitTests
         dmPlexTests.cpp
         fieldDescriptionTests.cpp
         )
+
+add_subdirectory(modifiers)
