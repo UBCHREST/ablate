@@ -60,7 +60,7 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
                 solveidentifier[newpoint] = identifier[ipart];  //!< Give the particle an identifier which matches the particle it was created with
                 /** Create a new 'access identifier' and set it equal to the identifier of the current cell which the search particle is occupying */
                 access[newpoint].origin = rank;                      //!< The origin should be the current rank
-                access[newpoint].iCell = index[ipart];                      //!< The index that the particle is currently occupying
+                access[newpoint].iCell = index[ipart];               //!< The index that the particle is currently occupying
                 access[newpoint].ntheta = identifier[ipart].ntheta;  //!< The angle of the ray we want
                 access[newpoint].nphi = identifier[ipart].nphi;      //!< The angle of the ray we want
                 access[newpoint].nsegment = 1;                       //!< The access identifier should always point to a native rank (segment == 1)

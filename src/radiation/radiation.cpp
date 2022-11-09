@@ -94,7 +94,7 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
     DMSwarmSetLocalSizes(radsolve, 0, 0) >> checkError;         //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
 
     /** Declare some information associated with the field declarations */
-    PetscReal* coord;                   //!< Pointer to the coordinate field information
+    PetscReal* coord;  //!< Pointer to the coordinate field information
     PetscInt* index;
     struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifier;      //!< Pointer to the ray identifier information
@@ -169,7 +169,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
 
     /** Declare some information associated with the field declarations */
-    PetscReal* coord;                   //!< Pointer to the coordinate field information
+    PetscReal* coord;  //!< Pointer to the coordinate field information
     PetscInt* index;
     struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifier;      //!< Pointer to the ray identifier information

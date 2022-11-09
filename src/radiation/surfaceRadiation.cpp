@@ -15,9 +15,9 @@ ablate::radiation::SurfaceRadiation::~SurfaceRadiation() {
 
 void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) { /** Declare some information associated with the field declarations */
     PetscReal* coord;
-    PetscInt* index;//!< Pointer to the coordinate field information
-    struct Virtualcoord* virtualcoord;                                                                                       //!< Pointer to the primary (virtual) coordinate field information
-    struct Identifier* identifier;                                                                                           //!< Pointer to the ray identifier information
+    PetscInt* index;                    //!< Pointer to the coordinate field information
+    struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
+    struct Identifier* identifier;      //!< Pointer to the ray identifier information
 
     /** Get the fields associated with the particle swarm so that they can be modified */
     DMSwarmGetField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
