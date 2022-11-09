@@ -95,7 +95,7 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
 
     /** Declare some information associated with the field declarations */
     PetscReal* coord;  //!< Pointer to the coordinate field information
-    PetscInt* index;
+    PetscInt* index;   //!< Pointer to the cell index information
     struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifier;      //!< Pointer to the ray identifier information
 
@@ -193,7 +193,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
         /** Get all of the ray information from the particle
          * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
         DMSwarmGetField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
-        DMSwarmGetField(radsearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&coord) >> checkError;
+        DMSwarmGetField(radsearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> checkError;
         DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
         DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
