@@ -1,16 +1,15 @@
-#ifndef ABLATELIBRARY_EDGECLUSTERINGMAPPER_HPP
-#define ABLATELIBRARY_EDGECLUSTERINGMAPPER_HPP
+#ifndef ABLATELIBRARY_TWOPOINTCLUSTERINGMAPPER_HPP
+#define ABLATELIBRARY_TWOPOINTCLUSTERINGMAPPER_HPP
 
 #include "meshMapper.hpp"
 #include "modifier.hpp"
 namespace ablate::domain::modifiers {
 
 /**
- * Performs clustering mapping using an algebraic relationship at the edges of the domain using Equation 9-42 from Hoffmann, Klaus A., and Steve T. Chiang. "Computational fluid dynamics volume I.
- * Forth Edition" Engineering education system (2000).
- *
+ * Performs clustering mapping using an algebraic relationship around two point using equations derived from Hoffmann, Klaus A., and Steve T. Chiang. "Computational fluid dynamics volume I. Forth
+ * Edition" Engineering education system (2000).
  */
-class EdgeClusteringMapper : public MeshMapper {
+class TwoPointClusteringMapper : public MeshMapper {
    private:
     //! The direction (0, 1, 2) to perform the mapping
     const int direction;
@@ -20,6 +19,10 @@ class EdgeClusteringMapper : public MeshMapper {
     const double size;
     //! The clustering factor
     const double beta;
+    //! The location to cluster center
+    const double location;
+    //! The offset from the location center to perform the clustering
+    const double offset;
 
    public:
     /**
@@ -28,8 +31,10 @@ class EdgeClusteringMapper : public MeshMapper {
      * @param start The start of the domain in direction
      * @param end The end of the domain in direction
      * @param beta The clustering factor
+     * @param location The location to cluster center
+     * @param offset The location to perform the clustering in direction
      */
-    explicit EdgeClusteringMapper(int direction, double start, double end, double beta);
+    explicit TwoPointClusteringMapper(int direction, double start, double end, double beta, double location, double offset);
 
     /**
      * Provide name of modifier for debug/output

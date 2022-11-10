@@ -20,6 +20,7 @@ target_sources(ablateLibrary
         translate.cpp
         onePointClusteringMapper.cpp
         edgeClusteringMapper.cpp
+        twoPointClusteringMapper.cpp
 
         PUBLIC
         modifier.hpp
@@ -42,4 +43,5 @@ target_sources(ablateLibrary
         translate.hpp
         onePointClusteringMapper.hpp
         edgeClusteringMapper.hpp
+        twoPointClusteringMapper.hpp
         )

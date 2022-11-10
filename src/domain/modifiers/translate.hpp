@@ -1,9 +1,9 @@
 #ifndef ABLATELIBRARY_TRANSLATEMODIFER_HPP
 #define ABLATELIBRARY_TRANSLATEMODIFER_HPP
 
+#include <array>
 #include "meshMapper.hpp"
 #include "modifier.hpp"
-#include <array>
 
 namespace ablate::domain::modifiers {
 

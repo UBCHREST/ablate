@@ -24,9 +24,9 @@ PetscErrorCode ablate::domain::modifiers::EdgeClusteringMapper::MappingFunction(
 
     u[map->direction] -= map->start;
     PetscReal eta = u[map->direction] / map->size;
-    PetscReal term1 = (map->beta+1) - (map->beta-1)*PetscPowReal((map->beta+1)/(map->beta-1), 1-eta);
-    PetscReal term2 = PetscPowReal((map->beta+1)/(map->beta-1), 1-eta) +1.;
-    PetscReal newLocation = map->size*term1/term2;
+    PetscReal term1 = (map->beta + 1) - (map->beta - 1) * PetscPowReal((map->beta + 1) / (map->beta - 1), 1 - eta);
+    PetscReal term2 = PetscPowReal((map->beta + 1) / (map->beta - 1), 1 - eta) + 1.;
+    PetscReal newLocation = map->size * term1 / term2;
     if (!PetscIsInfOrNanReal(u[map->direction])) {
         u[map->direction] = newLocation;
     }
@@ -35,8 +35,8 @@ PetscErrorCode ablate::domain::modifiers::EdgeClusteringMapper::MappingFunction(
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::EdgeClusteringMapper, "Performs clustering mapping using an algebraic relationship at the edges of the domain using Equation 9-42 from Hoffmann, Klaus A., and Steve T. Chiang. \"Computational fluid dynamics volume I. Forth Edition\" Engineering education system (2000).",
-         ARG(int, "direction", "The direction (0, 1, 2) to perform the mapping"),
-         ARG(double, "start", "The start of the domain in direction"),
-         ARG(double, "end", "The end of the domain in direction."),
-         ARG(double, "beta", "The clustering factor."));
+REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::EdgeClusteringMapper,
+         "Performs clustering mapping using an algebraic relationship at the edges of the domain using Equation 9-42 from Hoffmann, Klaus A., and Steve T. Chiang. \"Computational fluid dynamics "
+         "volume I. Forth Edition\" Engineering education system (2000).",
+         ARG(int, "direction", "The direction (0, 1, 2) to perform the mapping"), ARG(double, "start", "The start of the domain in direction"),
+         ARG(double, "end", "The end of the domain in direction."), ARG(double, "beta", "The clustering factor."));

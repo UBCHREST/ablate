@@ -42,9 +42,10 @@ PetscErrorCode ablate::domain::modifiers::OnePointClusteringMapper::MappingFunct
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::OnePointClusteringMapper,
-         "Performs clustering mapping using an algebraic relationship around one point using Equation 9-50 from Hoffmann, Klaus A., and Steve T. Chiang. \"Computational fluid dynamics volume I. "
-         "Forth Edition\" Engineering education system (2000). $$x'=D \\left [ 1+\\frac{sinh[\\beta(x-A))]}{sinh(\\beta A)} \\right ]$$ where $$ A=\\frac{1}{2 \\beta}ln \\left [  \\frac{1+(e^\\beta - "
-         "1)(D/H)}{1+(e^{-\\beta} - 1)(D/H)} \\right ] $$, $$ D = $$cluster location, and  $$\\beta = $$ cluster factor",
-         ARG(int, "direction", "The direction (0, 1, 2) to perform the mapping"), ARG(double, "start", "The start of the domain in direction"),
-         ARG(double, "end", "The end of the domain in direction."), ARG(double, "beta", "The clustering factor."), ARG(double, "location", "The location to perform the clustering in direction."));
+REGISTER(
+    ablate::domain::modifiers::Modifier, ablate::domain::modifiers::OnePointClusteringMapper,
+    "Performs clustering mapping using an algebraic relationship around one point using Equation 9-50 from Hoffmann, Klaus A., and Steve T. Chiang. \"Computational fluid dynamics volume I. "
+    "Forth Edition\" Engineering education system (2000). $$x'=D \\left [ 1+\\frac{sinh[\\beta(x-A))]}{sinh(\\beta A)} \\right ]$$ where $$ A=\\frac{1}{2 \\beta}ln \\left [  \\frac{1+(e^\\beta - "
+    "1)(D/H)}{1+(e^{-\\beta} - 1)(D/H)} \\right ] $$, $$ D = $$cluster location, and  $$\\beta = $$ cluster factor",
+    ARG(int, "direction", "The direction (0, 1, 2) to perform the mapping"), ARG(double, "start", "The start of the domain in direction"), ARG(double, "end", "The end of the domain in direction."),
+    ARG(double, "beta", "The clustering factor."), ARG(double, "location", "The location to perform the clustering in direction."));

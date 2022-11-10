@@ -4,6 +4,7 @@ target_sources(unitTests
         translateTests.cpp
         onePointClusteringMapperTests.cpp
         edgeClusteringMapperTests.cpp
+        twoPointClusteringMapperTests.cpp
 
         PUBLIC
         meshMapperTestFixture.hpp
