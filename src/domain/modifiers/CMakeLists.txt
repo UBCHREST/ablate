@@ -18,6 +18,8 @@ target_sources(ablateLibrary
         meshMapper.cpp
         createCoordinateSpace.cpp
         translate.cpp
+        onePointClusteringMapper.cpp
+        edgeClusteringMapper.cpp
 
         PUBLIC
         modifier.hpp
@@ -38,4 +40,6 @@ target_sources(ablateLibrary
         meshMapper.hpp
         createCoordinateSpace.hpp
         translate.hpp
+        onePointClusteringMapper.hpp
+        edgeClusteringMapper.hpp
         )

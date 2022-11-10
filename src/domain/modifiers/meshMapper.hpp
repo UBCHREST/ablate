@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_MESHMAPPER_HPP
 #define ABLATELIBRARY_MESHMAPPER_HPP
 
+#include <memory>
 #include "mathFunctions/mathFunction.hpp"
 #include "modifier.hpp"
 

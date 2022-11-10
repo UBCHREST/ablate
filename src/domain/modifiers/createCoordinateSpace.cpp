@@ -8,4 +8,4 @@ std::string ablate::domain::modifiers::CreateCoordinateSpace::ToString() const {
 
 #include "registrar.hpp"
 REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::CreateCoordinateSpace,
-         "[DMPlexCreateCoordinateSpace](https://petsc.org/release/docs/manualpages/DMPLEX/DMPlexLabelComplete.html)", ARG(int, "degree", "degree of the finite element"));
+         "Wrapper for [DMPlexCreateCoordinateSpace](https://petsc.org/release/docs/manualpages/DMPLEX/DMPlexLabelComplete.html)", ARG(int, "degree", "degree of the finite element"));
