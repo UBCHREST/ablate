@@ -132,7 +132,7 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
                 virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 0.1 * minCellRadius);
 
                 /** Update the physical coordinate field so that the real particle location can be updated. */
-                UpdateCoordinates(ipart, virtualcoord, coord);
+                UpdateCoordinates(ipart, virtualcoord, coord, 0.0); //! adv value of 0.0 places the particle exactly where the virtual coordinates are.
 
                 /** Label the particle with the ray identifier. (Use an array of 4 ints, [ncell][theta][phi][domains crossed])
                  * Label the particle with nsegment = 0; so that this can be iterated after each domain cross.
@@ -241,20 +241,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                  * It doesn't matter which method is used,
                  * this will be the same procedure.
                  * */
-                switch (dim) {
-                    case 1:
-                        coord[ipart] = virtualcoord[ipart].x + (virtualcoord[ipart].xdir * 0.1 * minCellRadius);
-                        break;
-                    case 2:                                                                                           //!< If there are only two dimensions in this simulation
-                        coord[2 * ipart] = virtualcoord[ipart].x + (virtualcoord[ipart].xdir * 0.1 * minCellRadius);  //!< Update the two physical coordinates
-                        coord[(2 * ipart) + 1] = virtualcoord[ipart].y + (virtualcoord[ipart].ydir * 0.1 * minCellRadius);
-                        break;
-                    case 3:                                                                                           //!< If there are three dimensions in this simulation
-                        coord[3 * ipart] = virtualcoord[ipart].x + (virtualcoord[ipart].xdir * 0.1 * minCellRadius);  //!< Update the three physical coordinates
-                        coord[(3 * ipart) + 1] = virtualcoord[ipart].y + (virtualcoord[ipart].ydir * 0.1 * minCellRadius);
-                        coord[(3 * ipart) + 2] = virtualcoord[ipart].z + (virtualcoord[ipart].zdir * 0.1 * minCellRadius);
-                        break;
-                }                               //!< Update the coordinates of the particle to move it to the center of the adjacent particle.
+                UpdateCoordinates(ipart, virtualcoord, coord, 0.1); //!< Update the coordinates of the particle to move it to the center of the adjacent particle.
                 virtualcoord[ipart].hhere = 0;  //!< Reset the path length to zero
             }
         }
@@ -322,9 +309,9 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
      * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
     PetscInt npoints;
     DMSwarmGetLocalSize(radsolve, &npoints);  //!< Recalculate the number of particles that are in the domain
-    DMSwarmGetField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier);
-    DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier);
-    DMSwarmGetField(radsolve, "access", nullptr, nullptr, (void**)&access);
+    DMSwarmGetField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+    DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
+    DMSwarmGetField(radsolve, "access", nullptr, nullptr, (void**)&access) >> checkError;
 
     /** ********************************************************************************************************************************
      * Iterate over the particles that are present in the domain
@@ -388,30 +375,30 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     }
 
     /** Restore the fields associated with the particles after all of the particles have been stepped */
-    DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier);
-    DMSwarmRestoreField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier);
-    DMSwarmRestoreField(radsolve, "access", nullptr, nullptr, (void**)&access);
+    DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+    DMSwarmRestoreField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
+    DMSwarmRestoreField(radsolve, "access", nullptr, nullptr, (void**)&access) >> checkError;
 
     /** ********************************************************************************************************************************
      * Now the carrier has all of the information from the rays that are needed to compute the final ray intensity. Therefore, we will perform the migration.
      * Then, all of the carrier particles will be looped through and the local Origins associated with each cell will be updated
      * */
     PetscInt* rankid;
-    DMSwarmGetField(radsolve, "DMSwarm_rank", nullptr, nullptr, (void**)&rankid);
-    DMSwarmGetField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier);
+    DMSwarmGetField(radsolve, "DMSwarm_rank", nullptr, nullptr, (void**)&rankid) >> checkError;
+    DMSwarmGetField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         rankid[ipart] = identifier[ipart].origin;
     }
-    DMSwarmRestoreField(radsolve, "DMSwarm_rank", nullptr, nullptr, (void**)&rankid);
-    DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier);
+    DMSwarmRestoreField(radsolve, "DMSwarm_rank", nullptr, nullptr, (void**)&rankid) >> checkError;
+    DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
 
     DMSwarmMigrate(radsolve, PETSC_FALSE);  //!< After iterating through all of the particles, perform a migration to the origin ranks. This will move the particles.
 
     /** ********************************************************************************************************************************
      * Now iterate through all of the particles in order to perform the information transfer */
     DMSwarmGetLocalSize(radsolve, &npoints);                                         //!< Recalculate the number of particles that are in the domain
-    DMSwarmGetField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier);  //!< Field information is needed in order to read data from the incoming particles.
-    DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier);
+    DMSwarmGetField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;  //!< Field information is needed in order to read data from the incoming particles.
+    DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
 
     /** Iterate through the particles and offload the information to their associated origin cell struct. */
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
@@ -504,21 +491,21 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     /** Delete all of the particles that were transported to their origin domains -> Delete if the particle has travelled to get here and isn't native */
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         if (identifier[ipart].origin == rank && identifier[ipart].nsegment != 1) {
-            DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier);  //!< Need to restore the field access before deleting a point
-            DMSwarmRestoreField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier);
+            DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;  //!< Need to restore the field access before deleting a point
+            DMSwarmRestoreField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
 
             DMSwarmRemovePointAtIndex(radsolve, ipart);  //!< Delete the particle!
 
             DMSwarmGetLocalSize(radsolve, &npoints);                                         //!< Need to recalculate the number of particles that are in the domain again
-            DMSwarmGetField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier);  //!< Get the field back
-            DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier);
+            DMSwarmGetField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;  //!< Get the field back
+            DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
             ipart--;  //!< Check the point replacing the one that was deleted
         }
     }
 
     /** Restore the fields associated with the particles after all of the particles have been stepped. */
-    DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier);
-    DMSwarmRestoreField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier);
+    DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+    DMSwarmRestoreField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
 
     /** ********************************************************************************************************************************
      * Loop through the cell range and compute the origin contributions. */
@@ -565,19 +552,19 @@ PetscReal ablate::radiation::Radiation::FlameIntensity(double epsilon, double te
     return epsilon * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature / ablate::utilities::Constants::pi;
 }
 
-void ablate::radiation::Radiation::UpdateCoordinates(PetscInt ipart, Virtualcoord* virtualcoord, PetscReal* coord) const {
+void ablate::radiation::Radiation::UpdateCoordinates(PetscInt ipart, Virtualcoord* virtualcoord, PetscReal* coord, PetscReal adv) const {
     switch (dim) {
         case 1:
-            coord[ipart] = virtualcoord[ipart].x;
+            coord[ipart] = virtualcoord[ipart].x + (virtualcoord[ipart].xdir * adv * minCellRadius);
             break;
-        case 2:                                        //!< If there are only two dimensions in this simulation
-            coord[2 * ipart] = virtualcoord[ipart].x;  //!< Update the two physical coordinates
-            coord[(2 * ipart) + 1] = virtualcoord[ipart].y;
+        case 2:                                                                                           //!< If there are only two dimensions in this simulation
+            coord[2 * ipart] = virtualcoord[ipart].x + (virtualcoord[ipart].xdir * adv * minCellRadius);  //!< Update the two physical coordinates
+            coord[(2 * ipart) + 1] = virtualcoord[ipart].y + (virtualcoord[ipart].ydir * adv * minCellRadius);
             break;
-        case 3:                                        //!< If there are three dimensions in this simulation
-            coord[3 * ipart] = virtualcoord[ipart].x;  //!< Update the three physical coordinates
-            coord[(3 * ipart) + 1] = virtualcoord[ipart].y;
-            coord[(3 * ipart) + 2] = virtualcoord[ipart].z;
+        case 3:                                                                                           //!< If there are three dimensions in this simulation
+            coord[3 * ipart] = virtualcoord[ipart].x + (virtualcoord[ipart].xdir * adv * minCellRadius);  //!< Update the three physical coordinates
+            coord[(3 * ipart) + 1] = virtualcoord[ipart].y + (virtualcoord[ipart].ydir * adv * minCellRadius);
+            coord[(3 * ipart) + 2] = virtualcoord[ipart].z + (virtualcoord[ipart].zdir * adv * minCellRadius);
             break;
     }
 }
