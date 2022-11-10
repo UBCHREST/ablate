@@ -57,5 +57,5 @@ REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::TwoPoin
          "Performs clustering mapping using an algebraic relationship around two point using equations derived from Hoffmann, Klaus A., and Steve T. Chiang. \"Computational fluid dynamics volume I. "
          "Forth Edition\" Engineering education system (2000).",
          ARG(int, "direction", "The direction (0, 1, 2) to perform the mapping"), ARG(double, "start", "The start of the domain in direction"),
-         ARG(double, "end", "The end of the domain in direction."), ARG(double, "beta", "The clustering factor."), ARG(double, "location", "The location to cluster center."),
-         ARG(double, "offset", "The offset from the location center to perform the clustering."));
+         ARG(double, "end", "The end of the domain in direction"), ARG(double, "beta", "The clustering factor (0 -> infinity, where infinity is more clustering)"),
+         ARG(double, "location", "The location to cluster center"), ARG(double, "offset", "The offset from the location center to perform the clustering"));

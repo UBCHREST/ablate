@@ -2,7 +2,7 @@
 #include "mathFunctions/functionFactory.hpp"
 
 ablate::domain::modifiers::EdgeClusteringMapper::EdgeClusteringMapper(int direction, double startIn, double end, double beta)
-    : ablate::domain::modifiers::MeshMapper(mathFunctions::Create(MappingFunction, this)), direction(direction), start(startIn), size(PetscAbsReal(end - startIn)), beta(beta) {
+    : ablate::domain::modifiers::MeshMapper(mathFunctions::Create(MappingFunction, this)), direction(direction), start(startIn), size(end - startIn), beta(beta) {
     // make sure that the direction is valid
     if (direction < 0 || direction > 2) {
         throw std::invalid_argument("The direction must be 0, 1, or 2. Direction " + std::to_string(direction) + " is invalid.");
@@ -39,4 +39,4 @@ REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::EdgeClu
          "Performs clustering mapping using an algebraic relationship at the edges of the domain using Equation 9-42 from Hoffmann, Klaus A., and Steve T. Chiang. \"Computational fluid dynamics "
          "volume I. Forth Edition\" Engineering education system (2000).",
          ARG(int, "direction", "The direction (0, 1, 2) to perform the mapping"), ARG(double, "start", "The start of the domain in direction"),
-         ARG(double, "end", "The end of the domain in direction."), ARG(double, "beta", "The clustering factor."));
+         ARG(double, "end", "The end of the domain in direction"), ARG(double, "beta", "The clustering factor (1 -> infinity, where 1 is more clustering)"));
