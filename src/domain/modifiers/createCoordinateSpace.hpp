@@ -16,7 +16,7 @@ class CreateCoordinateSpace : public Modifier {
     const PetscInt degree;
 
    public:
-    explicit CreateCoordinateSpace(PetscInt degree);
+    explicit CreateCoordinateSpace(int degree);
 
     void Modify(DM&) override;
 
