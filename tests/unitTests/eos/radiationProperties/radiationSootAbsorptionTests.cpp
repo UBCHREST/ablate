@@ -22,8 +22,8 @@ TEST_P(SootTestFixture, ShouldProduceExpectedValuesForField) {
             ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction([](const PetscReal conserved[], PetscReal* property) { *property = SootTestFixture::GetParam().temperatureIn; })));
     EXPECT_CALL(*eos, GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty::Density, testing::_))
         .Times(::testing::Exactly(1))
-        .WillOnce(::testing::Return(
-            ablateTesting::eos::MockEOS::CreateMockThermodynamicTemperatureFunction([](const PetscReal conserved[], PetscReal temperature, PetscReal* property) { *property = SootTestFixture::GetParam().densityIn; })));
+        .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicTemperatureFunction(
+            [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) { *property = SootTestFixture::GetParam().densityIn; })));
 
     auto sootModel = std::make_shared<ablate::eos::radiationProperties::SootMeanAbsorption>(eos);  //!< An instantiation of the Zimmer model (with options set to nullptr)
     auto absorptivityFunction = sootModel->GetRadiationPropertiesFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, SootTestFixture::GetParam().fields);
