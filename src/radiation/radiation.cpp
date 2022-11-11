@@ -592,7 +592,6 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
     PetscInt npoints = 0;
     PetscInt nglobalpoints = 0;
     PetscInt nsolvepoints = 0;  //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
-    PetscInt ipart = -1;
 
     DMSwarmGetLocalSize(radsearch, &npoints) >> checkError;
     DMSwarmGetSize(radsearch, &nglobalpoints) >> checkError;
@@ -616,10 +615,8 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
     DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
     DMSwarmGetField(radsearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> checkError;
 
-    for (PetscInt ip = 0; ip < npoints; ip++) {
-        ipart++;  //!< USE IP TO DEAL WITH DMLOCATE POINTS, USE IPART TO DEAL WITH PARTICLES
-                  /** Check that the particle is in a valid region */
-
+    for (PetscInt ipart = 0; ipart < npoints; ipart++) {
+        /** Check that the particle is in a valid region */
         //!< Compare against the field with the DMLocatePoints output instead of the output itself. This might be a little memory inefficient.
         if (index[ipart] >= 0 && subDomain.InRegion(index[ipart])) {
             /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
