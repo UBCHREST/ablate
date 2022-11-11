@@ -155,6 +155,8 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
     DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
     DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
+    DMSwarmMigrate(radsearch, PETSC_TRUE) >> checkError;  //!< Sets the search particles in the cell indexes to which they have been assigned
+
     if (log) {
         log->Printf("Particles Setup\n");
     }

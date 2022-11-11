@@ -43,7 +43,7 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         if (index[ipart] >= 0 && subDomain.InRegion(index[ipart])) {
             /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
-             * Hash the identifier into a key value that can be used in the map
+             * Hash the identifier into a key value that can be used in the ma
              * We should only iterate the identifier of the search particle (/ add a solver particle) if the point is valid in the domain and is being used
              * */
             if (presence.count(Key(&identifier[ipart])) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
