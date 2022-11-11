@@ -63,10 +63,10 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootMeanAbs
     switch (property) {
         case RadiationProperty::Absorptivity:
             return ThermodynamicFunction{.function = SootFunction,
-                                         .context = std::make_shared<FunctionContext>(
-                                             FunctionContext{.densityEVCOffset = Coffset,
-                                                             .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
-                                                             .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
+                                         .context = std::make_shared<FunctionContext>(FunctionContext{
+                                             .densityEVCOffset = Coffset,
+                                             .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
+                                             .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
         default:
             throw std::invalid_argument("Unknown radiationProperties property in ablate::eos::radiationProperties::SootAbsorptionModel");
     }
@@ -93,11 +93,12 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
 
     switch (property) {
         case RadiationProperty::Absorptivity:
-            return ThermodynamicTemperatureFunction{.function = SootTemperatureFunction,
-                                                    .context = std::make_shared<FunctionContext>(FunctionContext{
-                                                        .densityEVCOffset = Coffset,
-                                                        .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
-                                                        .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
+            return ThermodynamicTemperatureFunction{
+                .function = SootTemperatureFunction,
+                .context = std::make_shared<FunctionContext>(
+                    FunctionContext{.densityEVCOffset = Coffset,
+                                    .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
+                                    .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
         default:
             throw std::invalid_argument("Unknown radiationProperties property in ablate::eos::radiationProperties::SootAbsorptionModel");
     }
