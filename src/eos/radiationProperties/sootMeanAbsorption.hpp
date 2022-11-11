@@ -12,7 +12,7 @@ class SootMeanAbsorption : public RadiationModel {
     struct FunctionContext {
         PetscInt densityEVCOffset;
         const ThermodynamicFunction temperatureFunction;
-        const ThermodynamicFunction densityFunction;
+        const ThermodynamicTemperatureFunction densityFunction;
     };
     const std::shared_ptr<eos::EOS> eos;  //! eos is needed to compute field values
     constexpr static PetscReal C_2 = (utilities::Constants::h * utilities::Constants::c) / (utilities::Constants::k);

@@ -11,7 +11,7 @@ PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootFunctio
 
     ierr = functionContext->temperatureFunction.function(conserved, &temperature, functionContext->temperatureFunction.context.get());  //!< Get the temperature value at this location
     CHKERRQ(ierr);
-    ierr = functionContext->densityFunction.function(conserved, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
+    ierr = functionContext->densityFunction.function(conserved, temperature, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
     CHKERRQ(ierr);
 
     PetscReal YinC = (functionContext->densityEVCOffset == -1) ? 0 : conserved[functionContext->densityEVCOffset] / density;  //!< Get the mass fraction of carbon here
@@ -30,7 +30,7 @@ PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootTempera
     double density;       //!< Variables to hold information gathered from the fields
     PetscErrorCode ierr;  //!< Standard PETSc error code returned by PETSc functions
 
-    ierr = functionContext->densityFunction.function(conserved, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
+    ierr = functionContext->densityFunction.function(conserved, temperature, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
     CHKERRQ(ierr);
 
     PetscReal YinC = (functionContext->densityEVCOffset == -1) ? 0 : conserved[functionContext->densityEVCOffset] / density;  //!< Get the mass fraction of carbon here
@@ -66,7 +66,7 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootMeanAbs
                                          .context = std::make_shared<FunctionContext>(
                                              FunctionContext{.densityEVCOffset = Coffset,
                                                              .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
-                                                             .densityFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
+                                                             .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
         default:
             throw std::invalid_argument("Unknown radiationProperties property in ablate::eos::radiationProperties::SootAbsorptionModel");
     }
@@ -97,7 +97,7 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
                                                     .context = std::make_shared<FunctionContext>(FunctionContext{
                                                         .densityEVCOffset = Coffset,
                                                         .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
-                                                        .densityFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
+                                                        .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
         default:
             throw std::invalid_argument("Unknown radiationProperties property in ablate::eos::radiationProperties::SootAbsorptionModel");
     }

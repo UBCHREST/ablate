@@ -13,7 +13,7 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerFunction(const Pe
 
     ierr = functionContext->temperatureFunction.function(conserved, &temperature, functionContext->temperatureFunction.context.get());  //!< Get the temperature value at this location
     CHKERRQ(ierr);
-    ierr = functionContext->densityFunction.function(conserved, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
+    ierr = functionContext->densityFunction.function(conserved, temperature, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
     CHKERRQ(ierr);
 
     if (density == 0) {
@@ -73,7 +73,7 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerTemperatureFuncti
     double density;       //!< Variables to hold information gathered from the fields
     PetscErrorCode ierr;  //!< Standard PETSc error code returned by PETSc functions
 
-    ierr = functionContext->densityFunction.function(conserved, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
+    ierr = functionContext->densityFunction.function(conserved, temperature, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
     CHKERRQ(ierr);
 
     if (density == 0) {
@@ -156,7 +156,7 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Zimmer::Get
                                                              .densityYiCOOffset = COoffset,
                                                              .densityYiCH4Offset = CH4offset,
                                                              .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
-                                                             .densityFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
+                                                             .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
         default:
             throw std::invalid_argument("Unknown radiationProperties property in ablate::eos::radiationProperties::Zimmer");
     }
@@ -193,7 +193,7 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
                                                         .densityYiCOOffset = COoffset,
                                                         .densityYiCH4Offset = CH4offset,
                                                         .temperatureFunction = {},
-                                                        .densityFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
+                                                        .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
         default:
             throw std::invalid_argument("Unknown radiationProperties property in ablate::eos::radiationProperties::Zimmer");
     }
