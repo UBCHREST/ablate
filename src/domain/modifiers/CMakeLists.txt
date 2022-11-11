@@ -15,6 +15,12 @@ target_sources(ablateLibrary
         completeLabel.cpp
         dmPlexCheck.cpp
         fvmCheck.cpp
+        meshMapper.cpp
+        createCoordinateSpace.cpp
+        translate.cpp
+        onePointClusteringMapper.cpp
+        edgeClusteringMapper.cpp
+        twoPointClusteringMapper.cpp
 
         PUBLIC
         modifier.hpp
@@ -32,4 +38,10 @@ target_sources(ablateLibrary
         completeLabel.hpp
         dmPlexCheck.hpp
         fvmCheck.hpp
+        meshMapper.hpp
+        createCoordinateSpace.hpp
+        translate.hpp
+        onePointClusteringMapper.hpp
+        edgeClusteringMapper.hpp
+        twoPointClusteringMapper.hpp
         )
