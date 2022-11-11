@@ -94,8 +94,8 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
     DMSwarmSetLocalSizes(radsolve, 0, 0) >> checkError;         //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
 
     /** Declare some information associated with the field declarations */
-    PetscReal* coord;  //!< Pointer to the coordinate field information
-    PetscInt* index;   //!< Pointer to the cell index information
+    PetscReal* coord;                   //!< Pointer to the coordinate field information
+    PetscInt* index;                    //!< Pointer to the cell index information
     struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifier;      //!< Pointer to the ray identifier information
 
@@ -132,7 +132,7 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
                 virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 0.1 * minCellRadius);
 
                 /** Update the physical coordinate field so that the real particle location can be updated. */
-                UpdateCoordinates(ipart, virtualcoord, coord, 0.0); //! adv value of 0.0 places the particle exactly where the virtual coordinates are.
+                UpdateCoordinates(ipart, virtualcoord, coord, 0.0);  //! adv value of 0.0 places the particle exactly where the virtual coordinates are.
 
                 /** Label the particle with the ray identifier. (Use an array of 4 ints, [ncell][theta][phi][domains crossed])
                  * Label the particle with nsegment = 0; so that this can be iterated after each domain cross.
@@ -243,8 +243,8 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                  * It doesn't matter which method is used,
                  * this will be the same procedure.
                  * */
-                UpdateCoordinates(ipart, virtualcoord, coord, 0.1); //!< Update the coordinates of the particle to move it to the center of the adjacent particle.
-                virtualcoord[ipart].hhere = 0;  //!< Reset the path length to zero
+                UpdateCoordinates(ipart, virtualcoord, coord, 0.1);  //!< Update the coordinates of the particle to move it to the center of the adjacent particle.
+                virtualcoord[ipart].hhere = 0;                       //!< Reset the path length to zero
             }
         }
         /** Restore the fields associated with the particles after all of the particles have been stepped */
@@ -398,7 +398,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
 
     /** ********************************************************************************************************************************
      * Now iterate through all of the particles in order to perform the information transfer */
-    DMSwarmGetLocalSize(radsolve, &npoints);                                         //!< Recalculate the number of particles that are in the domain
+    DMSwarmGetLocalSize(radsolve, &npoints);                                                       //!< Recalculate the number of particles that are in the domain
     DMSwarmGetField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;  //!< Field information is needed in order to read data from the incoming particles.
     DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
 
@@ -498,7 +498,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
 
             DMSwarmRemovePointAtIndex(radsolve, ipart);  //!< Delete the particle!
 
-            DMSwarmGetLocalSize(radsolve, &npoints);                                         //!< Need to recalculate the number of particles that are in the domain again
+            DMSwarmGetLocalSize(radsolve, &npoints);                                                       //!< Need to recalculate the number of particles that are in the domain again
             DMSwarmGetField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;  //!< Get the field back
             DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
             ipart--;  //!< Check the point replacing the one that was deleted
