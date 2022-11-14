@@ -23,7 +23,7 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
 
     PetscFVFaceGeom* faceGeom;
 
-    PetscInt index;
+    PetscInt* index;
     PetscMPIInt rank = 0;
     MPI_Comm_rank(subDomain.GetComm(), &rank);
 
@@ -38,13 +38,12 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
      * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
     DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
     DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+    DMSwarmGetField(radsearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> checkError;
 
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
-        if (virtualcoord[ipart].ihere >= 0 && subDomain.InRegion(virtualcoord[ipart].ihere)) {
-            index = virtualcoord[ipart].ihere;
-
+        if (index[ipart] >= 0 && subDomain.InRegion(index[ipart])) {
             /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
-             * Hash the identifier into a key value that can be used in the map
+             * Hash the identifier into a key value that can be used in the ma
              * We should only iterate the identifier of the search particle (/ add a solver particle) if the point is valid in the domain and is being used
              * */
             if (presence.count(Key(&identifier[ipart])) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
@@ -62,7 +61,7 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
                 solveidentifier[newpoint] = identifier[ipart];  //!< Give the particle an identifier which matches the particle it was created with
                 /** Create a new 'access identifier' and set it equal to the identifier of the current cell which the search particle is occupying */
                 access[newpoint].origin = rank;                      //!< The origin should be the current rank
-                access[newpoint].iCell = index;                      //!< The index that the particle is currently occupying
+                access[newpoint].iCell = index[ipart];               //!< The index that the particle is currently occupying
                 access[newpoint].ntheta = identifier[ipart].ntheta;  //!< The angle of the ray we want
                 access[newpoint].nphi = identifier[ipart].nphi;      //!< The angle of the ray we want
                 access[newpoint].nsegment = 1;                       //!< The access identifier should always point to a native rank (segment == 1)
@@ -104,7 +103,7 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
 
             /** Step 1: Register the current cell index in the rays vector. The physical coordinates that have been set in the previous step / loop will be immediately registered.
              * */
-            if (identifier[ipart].nsegment == 1) rays[Key(&identifier[ipart])].cells.push_back(index);
+            if (identifier[ipart].nsegment == 1) rays[Key(&identifier[ipart])].cells.push_back(index[ipart]);
 
             /** Step 2: Acquire the intersection of the particle search line with the segment or face. In the case if a two dimensional mesh, the virtual coordinate in the z direction will
              * need to be solved for because the three dimensional line will not have a literal intersection with the segment of the cell. The third coordinate can be solved for in this case.
@@ -113,8 +112,8 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
             /** March over each face on this cell in order to check them for the one which intersects this ray next */
             PetscInt numberFaces;
             const PetscInt* cellFaces;
-            DMPlexGetConeSize(subDomain.GetDM(), index, &numberFaces) >> checkError;
-            DMPlexGetCone(subDomain.GetDM(), index, &cellFaces) >> checkError;  //!< Get the face geometry associated with the current cell
+            DMPlexGetConeSize(subDomain.GetDM(), index[ipart], &numberFaces) >> checkError;
+            DMPlexGetCone(subDomain.GetDM(), index[ipart], &cellFaces) >> checkError;  //!< Get the face geometry associated with the current cell
             PetscReal path;
 
             /** Check every face for intersection with the segment.
@@ -148,6 +147,7 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
     }
     DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
     DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+    DMSwarmRestoreField(radsearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> checkError;
 }
 
 #include "registrar.hpp"

@@ -111,7 +111,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
         PetscReal ydir;
         PetscReal zdir;
         PetscReal hhere;
-        PetscReal ihere;
     };
 
     /// Class Methods
@@ -125,8 +124,13 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
 
     /** Update the coordinates of the particle using the virtual coordinates
      * Moves the particle in physical space instead of only updating the virtual coordinates
-     * This function must be run on every updated particle before swarm migrate is used */
-    void UpdateCoordinates(PetscInt ipart, Virtualcoord* virtualcoord, PetscReal* coord) const;
+     * This function must be run on every updated particle before swarm migrate is used
+     * @param ipart the particle index which is being updated
+     * @param virtualcoord the virtual coordinate field which is being read from
+     * @param coord the DMSwarm coordinate field which is being written to
+     * @param adv a multiple of the minimum cell radius by which to advance the DMSwarm coordinates ahead of the virtual coordinates
+     * */
+    void UpdateCoordinates(PetscInt ipart, Virtualcoord* virtualcoord, PetscReal* coord, PetscReal adv) const;
 
     /** Create a unique identifier from an array of integers.
      * This is done using the nested Cantor pairing function
