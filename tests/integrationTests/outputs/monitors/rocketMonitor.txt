@@ -47,3 +47,6 @@ Upper Wall RocketMonitor for timestep 0002: time: (.*)<expects> ~
 	Pressure:	 \[ (.*), (.*), (.*) \]<expects> n101386.25 n<101486.25 n101436.25
 	machNumber:	 \[ (.*), (.*), (.*) \]<expects> n0.2343 n0.2430 n0.2383
 ResultFiles:
+domain.hdf5
+domain.xmf
+restart.rst
