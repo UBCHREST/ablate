@@ -200,19 +200,17 @@ PetscErrorCode ablate::monitors::RocketMonitor::OutputRocket(TS ts, PetscInt ste
 
         // print output
         if (rank == 0) {
-            if (monitor->interval->Check(PetscObjectComm((PetscObject)ts), step, crtime)) {
-                if (monitor->name != "") {  // If user passed a name argument then output name
-                    monitor->log->Printf("%s ", monitor->name.c_str());
-                }
-                monitor->log->Printf("RocketMonitor for timestep %04d: time: %-8.4g\n", (int)step, (double)crtime);
-                monitor->log->Printf("\tOutputs: [x y z]\n");
-                monitor->log->Printf("\tThrust:\t\t [ %1.7f, %1.7f, %1.7f ]\n", thrustTotalGlob[0], thrustTotalGlob[1], thrustTotalGlob[2]);
-                monitor->log->Printf("\tIsp:\t\t [ %1.7f, %1.7f, %1.7f ]\n", IspGlob[0], IspGlob[1], IspGlob[2]);
-                monitor->log->Printf("\tmDot:\t\t [ %1.7f, %1.7f, %1.7f ]\n", mDotTotalGlob[0], mDotTotalGlob[1], mDotTotalGlob[2]);
-                monitor->log->Printf("\tAdditional Fields: [min max mean]\n");
-                monitor->log->Printf("\tPressure:\t [ %1.7f, %1.7f, %1.7f ]\n", pressureField[0], pressureField[1], pressureField[2]);
-                monitor->log->Printf("\tmachNumber:\t [ %1.7f, %1.7f, %1.7f ]\n", machNumberField[0], machNumberField[1], machNumberField[2]);
+            if (monitor->name != "") {  // If user passed a name argument then output name
+                monitor->log->Printf("%s ", monitor->name.c_str());
             }
+            monitor->log->Printf("RocketMonitor for timestep %04d: time: %-8.4g\n", (int)step, (double)crtime);
+            monitor->log->Printf("\tOutputs: [x y z]\n");
+            monitor->log->Printf("\tThrust:\t\t [ %1.7f, %1.7f, %1.7f ]\n", thrustTotalGlob[0], thrustTotalGlob[1], thrustTotalGlob[2]);
+            monitor->log->Printf("\tIsp:\t\t [ %1.7f, %1.7f, %1.7f ]\n", IspGlob[0], IspGlob[1], IspGlob[2]);
+            monitor->log->Printf("\tmDot:\t\t [ %1.7f, %1.7f, %1.7f ]\n", mDotTotalGlob[0], mDotTotalGlob[1], mDotTotalGlob[2]);
+            monitor->log->Printf("\tAdditional Fields: [min max mean]\n");
+            monitor->log->Printf("\tPressure:\t [ %1.7f, %1.7f, %1.7f ]\n", pressureField[0], pressureField[1], pressureField[2]);
+            monitor->log->Printf("\tmachNumber:\t [ %1.7f, %1.7f, %1.7f ]\n", machNumberField[0], machNumberField[1], machNumberField[2]);
         }
 
         // cleanup
