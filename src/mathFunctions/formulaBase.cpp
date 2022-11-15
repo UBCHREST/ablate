@@ -32,7 +32,7 @@ ablate::mathFunctions::FormulaBase::FormulaBase(std::string functionString, cons
         parser.DefineFunUserData("rand", RandomFunction, reinterpret_cast<void*>(&randomEngine), false);
     }
     if (ablate::utilities::StringUtilities::Contains(formula, "%")) {
-        parser.DefineOprt("%", ModulusOperator, 0, mu::oaLEFT, true);
+        parser.DefineOprt("%", ModulusOperator, mu::prADD_SUB, mu::oaLEFT, true);
     }
 
     // set the expression

@@ -20,7 +20,8 @@ TEST_P(EquationIntervalTestFixture, ShouldProvideCorrectValuesAtCheck) {
         auto time = GetParam().time[i];
         auto step = GetParam().steps[i];
 
-        ASSERT_EQ(GetParam().expectedValues[i], interval->Check(MPI_COMM_SELF, step, time));
+        auto value = interval->Check(MPI_COMM_SELF, step, time);
+        ASSERT_EQ(GetParam().expectedValues[i], value);
     }
 }
 
@@ -31,5 +32,11 @@ INSTANTIATE_TEST_SUITE_P(
                     (EquationIntervalParameters){.equation = "time >= .2", .expectedValues = {false, false, true, true}, .time = {0.0, .1, .2, .3}, .steps = {0, 1, 2, 3}},
                     (EquationIntervalParameters){.equation = "(time >= .1) && (time < .3)", .expectedValues = {false, true, true, false}, .time = {0.0, .1, .2, .3}, .steps = {0, 1, 2, 3}},
                     (EquationIntervalParameters){.equation = "step >= 2", .expectedValues = {false, false, true, true}, .time = {0.0, .1, .2, .3}, .steps = {0, 1, 2, 3}},
-                    (EquationIntervalParameters){.equation = "(step >= 1) && (step < 3)", .expectedValues = {false, true, true, false}, .time = {0.0, .1, .2, .3}, .steps = {0, 1, 2, 3}}),
+                    (EquationIntervalParameters){.equation = "(step >= 1) && (step < 3)", .expectedValues = {false, true, true, false}, .time = {0.0, .1, .2, .3}, .steps = {0, 1, 2, 3}},
+                    (EquationIntervalParameters){
+                        .equation = "step % 3 == 0", .expectedValues = {true, false, false, true, false, false, true}, .time = {0.0, .1, .2, .3, .4, .5, .6}, .steps = {0, 1, 2, 3, 4, 5, 6}},
+                    (EquationIntervalParameters){.equation = "(step % 3 == 0) || time < .2",
+                                                 .expectedValues = {true, true, false, true, false, false, true},
+                                                 .time = {0.0, .1, .2, .3, .4, .5, .6},
+                                                 .steps = {0, 1, 2, 3, 4, 5, 6}}),
     [](const testing::TestParamInfo<EquationIntervalParameters>& info) { return "equation_" + std::to_string(info.index); });

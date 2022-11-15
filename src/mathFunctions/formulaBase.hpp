@@ -83,7 +83,7 @@ class FormulaBase : public MathFunction {
      * @param upperBound
      * @return
      */
-    static mu::value_type ModulusOperator( mu::value_type left, mu::value_type right);
+    static mu::value_type ModulusOperator(mu::value_type left, mu::value_type right);
 };
 
 }  // namespace ablate::mathFunctions
