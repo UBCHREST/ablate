@@ -4,6 +4,7 @@ target_sources(unitTests
         simulationTimeIntervalTests.cpp
         wallTimeIntervalTests.cpp
         delayIntervalTests.cpp
+        equationIntervalTests.cpp
 
         PUBLIC
         mockInterval.hpp

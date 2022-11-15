@@ -76,6 +76,14 @@ class FormulaBase : public MathFunction {
      * @return
      */
     static mu::value_type PseudoRandomFunction(void* data, mu::value_type lowerBound, mu::value_type upperBound);
+
+    /**
+     * mu parser function to the modulus as left % right
+     * @param lowerBound
+     * @param upperBound
+     * @return
+     */
+    static mu::value_type ModulusOperator( mu::value_type left, mu::value_type right);
 };
 
 }  // namespace ablate::mathFunctions

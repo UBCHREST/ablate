@@ -1,5 +1,6 @@
 #include "formulaBase.hpp"
 
+#include <tgmath.h>
 #include <utility>
 #include "utilities/stringUtilities.hpp"
 
@@ -30,6 +31,9 @@ ablate::mathFunctions::FormulaBase::FormulaBase(std::string functionString, cons
         randomEngine = std::default_random_engine(rd());
         parser.DefineFunUserData("rand", RandomFunction, reinterpret_cast<void*>(&randomEngine), false);
     }
+    if (ablate::utilities::StringUtilities::Contains(formula, "%")) {
+        parser.DefineOprt("%", ModulusOperator, 0, mu::oaLEFT, true);
+    }
 
     // set the expression
     parser.SetExpr(formula);
@@ -49,3 +53,4 @@ mu::value_type ablate::mathFunctions::FormulaBase::PseudoRandomFunction(void* da
     std::uniform_real_distribution<mu::value_type> uniformDist(lowerBound, upperBound);
     return uniformDist(*reinterpret_cast<std::minstd_rand0*>(data));
 }
+mu::value_type ablate::mathFunctions::FormulaBase::ModulusOperator(mu::value_type left, mu::value_type right) { return std::fmod(left, right); }
