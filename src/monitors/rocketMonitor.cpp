@@ -88,8 +88,6 @@ PetscErrorCode ablate::monitors::RocketMonitor::OutputRocket(TS ts, PetscInt ste
         PetscReal sumFieldsGlob[3] = {0, 0, 0};
 
         // initialize field values to calculate min, max, and sum for [cell pressure , machNumber]
-
-        // initialize field value arrays min, max, sum [pressure, machNumber]
         PetscReal minFields[2] = {PETSC_MAX_REAL, PETSC_MAX_REAL};
         PetscReal maxFields[2] = {PETSC_MIN_REAL, PETSC_MIN_REAL};
         PetscReal sumFields[2] = {0, 0};
