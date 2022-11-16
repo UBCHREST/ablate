@@ -22,6 +22,7 @@ class RocketMonitor : public Monitor {
     const std::shared_ptr<domain::Region> fieldBoundary;
     const std::shared_ptr<eos::EOS> eos;
     eos::ThermodynamicFunction computePressure;
+    eos::ThermodynamicFunction computeSpeedOfSound;
     const std::shared_ptr<logs::Log> log;
     const std::shared_ptr<io::interval::Interval> interval;
     double referencePressure;
