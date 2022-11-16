@@ -5,15 +5,15 @@ Outlet RocketMonitor for timestep 0000: time: (.*)<expects> ~
 	mDot:		 \[ (.*), (.*), (.*) \]<expects> n76.268 z z
 	Additional Fields: [min max mean]
 	Pressure:	 \[ (.*), (.*), (.*) \]<expects> n101388.75 n101486.25 n101437.50
-	machNumber:	 \[ (.*), (.*), (.*) \]<expects> n0.2231 n0.2429 n0.2332
+	machNumber:	 \[ (.*), (.*), (.*) \]<expects> n0.1871 n0.2117 n0.2000
 Upper Wall RocketMonitor for timestep 0000: time: (.*)<expects> ~
 	Outputs: [x y z]
 	Thrust:		 \[ (.*), (.*), (.*) \]<expects> z n243.119 z
 	Isp:		 \[ (.*), (.*), (.*) \]<expects> z n2.4511 z
 	mDot:		 \[ (.*), (.*), (.*) \]<expects> z n10.121 z
 	Additional Fields: [min max mean]
-	Pressure:	 \[ (.*), (.*), (.*) \]<expects> n101386.25 n<101486.25 n101436.25
-	machNumber:	 \[ (.*), (.*), (.*) \]<expects> n0.2343 n0.2430 n0.2383
+	Pressure:	 \[ (.*), (.*), (.*) \]<expects> n101386.25 n101486.25 n101436.25
+	machNumber:	 \[ (.*), (.*), (.*) \]<expects> n0.2038 n0.2117 n0.2074
 Outlet RocketMonitor for timestep 0001: time: (.*)<expects> ~
 	Outputs: [x y z]
 	Thrust:		 \[ (.*), (.*), (.*) \]<expects> n5077.651 z z
@@ -21,15 +21,15 @@ Outlet RocketMonitor for timestep 0001: time: (.*)<expects> ~
 	mDot:		 \[ (.*), (.*), (.*) \]<expects> n76.268 z z
 	Additional Fields: [min max mean]
 	Pressure:	 \[ (.*), (.*), (.*) \]<expects> n101388.75 n101486.25 n101437.50
-	machNumber:	 \[ (.*), (.*), (.*) \]<expects> n0.2231 n0.2429 n0.2332
+	machNumber:	 \[ (.*), (.*), (.*) \]<expects> n0.1871 n0.2117 n0.2000
 Upper Wall RocketMonitor for timestep 0001: time: (.*)<expects> ~
 	Outputs: [x y z]
 	Thrust:		 \[ (.*), (.*), (.*) \]<expects> z n243.119 z
 	Isp:		 \[ (.*), (.*), (.*) \]<expects> z n2.4511 z
 	mDot:		 \[ (.*), (.*), (.*) \]<expects> z n10.121 z
 	Additional Fields: [min max mean]
-	Pressure:	 \[ (.*), (.*), (.*) \]<expects> n101386.25 n<101486.25 n101436.25
-	machNumber:	 \[ (.*), (.*), (.*) \]<expects> n0.2343 n0.2430 n0.2383
+	Pressure:	 \[ (.*), (.*), (.*) \]<expects> n101386.25 n101486.25 n101436.25
+	machNumber:	 \[ (.*), (.*), (.*) \]<expects> n0.2038 n0.2117 n0.2074
 Outlet RocketMonitor for timestep 0002: time: (.*)<expects> ~
 	Outputs: [x y z]
 	Thrust:		 \[ (.*), (.*), (.*) \]<expects> n5077.651 z z
@@ -37,15 +37,15 @@ Outlet RocketMonitor for timestep 0002: time: (.*)<expects> ~
 	mDot:		 \[ (.*), (.*), (.*) \]<expects> n76.268 z z
 	Additional Fields: [min max mean]
 	Pressure:	 \[ (.*), (.*), (.*) \]<expects> n101388.75 n101486.25 n101437.50
-	machNumber:	 \[ (.*), (.*), (.*) \]<expects> n0.2231 n0.2429 n0.2332
+	machNumber:	 \[ (.*), (.*), (.*) \]<expects> n0.1871 n0.2117 n0.2000
 Upper Wall RocketMonitor for timestep 0002: time: (.*)<expects> ~
 	Outputs: [x y z]
 	Thrust:		 \[ (.*), (.*), (.*) \]<expects> z n243.119 z
 	Isp:		 \[ (.*), (.*), (.*) \]<expects> z n2.4511 z
 	mDot:		 \[ (.*), (.*), (.*) \]<expects> z n10.121 z
 	Additional Fields: [min max mean]
-	Pressure:	 \[ (.*), (.*), (.*) \]<expects> n101386.25 n<101486.25 n101436.25
-	machNumber:	 \[ (.*), (.*), (.*) \]<expects> n0.2343 n0.2430 n0.2383
+	Pressure:	 \[ (.*), (.*), (.*) \]<expects> n101386.25 n101486.25 n101436.25
+	machNumber:	 \[ (.*), (.*), (.*) \]<expects> n0.2038 n0.2117 n0.2074
 ResultFiles:
 domain.hdf5
 domain.xmf
