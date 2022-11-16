@@ -32,23 +32,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        id: cache
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-ablate-publish-doc-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-ablate-publish-doc-buildx-
-
       - name: Build the docker image
         run: |
           docker buildx build .\
             --file DockerTestFile \
             --tag framework-doc-image \
-            --load \
-            --cache-from "type=local,src=/tmp/.buildx-cache" \
-            --cache-to "type=local,dest=/tmp/.buildx-cache"
+            --load 
 
       # copy the configured docs from the test image container
       - name: Configure documentation

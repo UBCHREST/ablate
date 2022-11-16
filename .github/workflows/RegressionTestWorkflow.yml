@@ -30,15 +30,6 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        id: cache
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-${{matrix.tensorFlowConfig}}${{ matrix.compiler.id }}${{ matrix.indices.id }}${{ matrix.arch.id }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-${{matrix.tensorFlowConfig}}${{ matrix.compiler.id }}${{ matrix.indices.id }}${{ matrix.arch.id }}-buildx-
-
       - name: Building tests
         run: |
           ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies${{matrix.compiler.id}}${{matrix.indices.id}}:latest
@@ -49,9 +40,7 @@ jobs:
             --build-arg PETSC_BUILD_ARCH='${{ matrix.petscConfig }}' \
             --build-arg ENABLE_TENSOR_FLOW='${{ matrix.tensorFlowConfig }}' \
             --build-arg ABLATE_DEPENDENCY_IMAGE=$ABLATE_DEPENDENCY_IMAGE \
-            --load \
-            --cache-from "type=local,src=/tmp/.buildx-cache" \
-            --cache-to "type=local,dest=/tmp/.buildx-cache"
+            --load 
 
       - name: Run all tests
         run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ctest
