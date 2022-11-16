@@ -17,7 +17,6 @@
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
-#include "solver/directSolverTsInterface.hpp"
 #include "utilities/petscUtilities.hpp"
 
 #define Pi PETSC_PI
@@ -61,11 +60,6 @@ struct CompressibleFlowMmsTestParameters {
     std::vector<PetscReal> expectedLInfConvergence;
     std::map<std::string, std::string> conservedFieldParameters;
 };
-
-typedef struct {
-    Constants constants;
-    std::shared_ptr<ablate::finiteVolume::CompressibleFlowSolver> flowData;
-} ProblemSetup;
 
 class CompressibleFlowMmsTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<CompressibleFlowMmsTestParameters> {
    public:
@@ -577,13 +571,6 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             PetscPrintf(PETSC_COMM_WORLD, "Running RHS Calculation at Level %" PetscInt_FMT "\n", l);
 
             DM dmCreate; /* problem definition */
-            TS ts;       /* timestepper */
-
-            // Create a ts
-            TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
-            TSSetProblemType(ts, TS_NONLINEAR) >> testErrorChecker;
-            TSSetType(ts, TSEULER) >> testErrorChecker;
-            TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 
             // Create a mesh
             // hard code the problem setup
@@ -607,9 +594,13 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
                                                                     std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
                                                                                                                                       std::make_shared<domain::modifiers::GhostBoundaryCells>()});
 
-            auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}});
-
+            // create a time stepper
             auto exactSolution = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(EulerExact, &constants));
+            auto timeStepper = ablate::solver::TimeStepper(
+                mesh, ablate::parameters::MapParameters::Create({{"ts_max_steps", "1"}}), {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
+
+
+            auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}});
 
             auto transportModel = std::make_shared<ablate::eos::transport::Constant>(constants.k, constants.mu);
 
@@ -634,23 +625,9 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
                                                                                              std::vector<std::shared_ptr<ablate::finiteVolume::processes::Process>>{arbitrarySource},
                                                                                              boundaryConditions /*boundary conditions*/);
 
-            // Combine the flow data
-            ProblemSetup problemSetup;
-            problemSetup.flowData = flowObject;
-            problemSetup.constants = constants;
-
-            // Complete the problem setup
-            mesh->InitializeSubDomains(
-                {flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
-            solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
-
-            // Name the flow field
-            PetscObjectSetName(((PetscObject)mesh->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;
-
-            // Setup the TS
-            TSSetFromOptions(ts) >> testErrorChecker;
-            TSSetMaxSteps(ts, 1);
-            TSSolve(ts, mesh->GetSolutionVector()) >> testErrorChecker;
+            // run
+            timeStepper.Register(flowObject);
+            timeStepper.Solve();
 
             // Check the current residual
             std::vector<PetscReal> l2Residual(blockSize);
@@ -660,7 +637,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             PetscReal resStart[3] = {constants.L / 3.0, constants.L / 3.0, constants.L / 3.0};
             PetscReal resEnd[3] = {2.0 * constants.L / 3.0, 2.0 * constants.L / 3.0, 2.0 * constants.L / 3.0};
 
-            ComputeRHS(ts, mesh->GetDM(), 0.0, mesh->GetSolutionVector(), blockSize, &l2Residual[0], &infResidual[0], resStart, resEnd) >> testErrorChecker;
+            ComputeRHS(timeStepper.GetTS(), mesh->GetDM(), 0.0, mesh->GetSolutionVector(), blockSize, &l2Residual[0], &infResidual[0], resStart, resEnd) >> testErrorChecker;
             auto l2String = PrintVector(l2Residual, "%2.3g");
             PetscPrintf(PETSC_COMM_WORLD, "\tL_2 Residual: %s\n", l2String.c_str()) >> testErrorChecker;
             auto lInfString = PrintVector(infResidual, "%2.3g");
@@ -672,7 +649,6 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
                 l2History[b].push_back(PetscLog10Real(l2Residual[b]));
                 lInfHistory[b].push_back(PetscLog10Real(infResidual[b]));
             }
-            TSDestroy(&ts) >> testErrorChecker;
         }
 
         // Fit each component and output

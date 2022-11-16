@@ -14,7 +14,6 @@
 #include "particles/initializers/boxInitializer.hpp"
 #include "particles/particleSolver.hpp"
 #include "particles/processes/inertial.hpp"
-#include "solver/directSolverTsInterface.hpp"
 #include "utilities/petscUtilities.hpp"
 
 using namespace ablate;
@@ -204,7 +203,6 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
 TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
     StartWithMPI
         {
-            TS ts; /* timestepper */
             // Get the testing param
             auto testingParam = GetParam();
 
@@ -215,24 +213,28 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
             // setup the required fields for the flow
             std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteElement::LowMachFlowFields>()};
 
-            // setup the ts
-            TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
+            // setup the mesh
             auto mesh = std::make_shared<ablate::domain::BoxMesh>(
                 "mesh", fieldDescriptors, std::vector<std::shared_ptr<domain::modifiers::Modifier>>{}, std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
 
-            TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;
-            TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 
             // Setup the flow data
             auto parameters = std::make_shared<ablate::parameters::PetscOptionParameters>();
 
+            // set the exact solutions
             auto velocityExact = std::make_shared<mathFunctions::FieldFunction>(
                 "velocity", ablate::mathFunctions::Create(testingParam.uExact, &testingParam.parameters), ablate::mathFunctions::Create(testingParam.u_tExact, &testingParam.parameters));
             auto pressureExact = std::make_shared<mathFunctions::FieldFunction>("pressure", ablate::mathFunctions::Create(testingParam.pExact, &testingParam.parameters));
             auto temperatureExact = std::make_shared<mathFunctions::FieldFunction>(
                 "temperature", ablate::mathFunctions::Create(testingParam.TExact, &testingParam.parameters), ablate::mathFunctions::Create(testingParam.T_tExact, &testingParam.parameters));
 
-            auto flowObject = std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
+            // create a time stepper
+            auto timeStepper = ablate::solver::TimeStepper(
+                mesh, nullptr, {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},  std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact,pressureExact, temperatureExact });
+
+
+
+            timeStepper.Register(std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
                 "testFlow",
                 domain::Region::ENTIREDOMAIN,
                 nullptr,
@@ -241,18 +243,12 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{std::make_shared<boundaryConditions::Essential>("wall velocity", std::vector<int>{3, 1, 2, 4}, velocityExact),
                                                                                     std::make_shared<boundaryConditions::Essential>("wall temp", std::vector<int>{3, 1, 2, 4}, temperatureExact)},
                 /* aux updates*/
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{});
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{}));
 
             auto particleParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"fluidDensity", std::to_string(testingParam.parameters.rhoF)},
                                                                                                                              {"fluidViscosity", std::to_string(testingParam.parameters.muF)},
                                                                                                                              {"gravityField", std::to_string(testingParam.parameters.grav) + " 0 0"}});
 
-            // convert the constant values to fieldInitializations
-            auto fieldInitialization = std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{
-                std::make_shared<mathFunctions::FieldFunction>(ablate::particles::ParticleSolver::ParticleVelocity, ablate::mathFunctions::Create(testingParam.parameters.pVel)),
-                std::make_shared<mathFunctions::FieldFunction>(ablate::particles::ParticleSolver::ParticleDiameter, ablate::mathFunctions::Create(testingParam.parameters.dp)),
-                std::make_shared<mathFunctions::FieldFunction>(ablate::particles::ParticleSolver::ParticleDensity, ablate::mathFunctions::Create(testingParam.parameters.rhoP)),
-            };
 
             // Use the petsc options that start with -particle_
             auto particleOptions = std::make_shared<ablate::parameters::PetscPrefixOptions>("-particle_");
@@ -263,6 +259,14 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
                                                                        ablate::mathFunctions::Create(testingParam.particleExactPosition, &testingParam.parameters)),
                 std::make_shared<ablate::mathFunctions::FieldFunction>(particles::ParticleSolver::ParticleVelocity,
                                                                        ablate::mathFunctions::Create(testingParam.particleExactVelocity, &testingParam.parameters))};
+
+
+            // convert the constant values to fieldInitializations
+            auto fieldInitialization = std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{
+                std::make_shared<mathFunctions::FieldFunction>(ablate::particles::ParticleSolver::ParticleVelocity, ablate::mathFunctions::Create(testingParam.parameters.pVel)),
+                std::make_shared<mathFunctions::FieldFunction>(ablate::particles::ParticleSolver::ParticleDiameter, ablate::mathFunctions::Create(testingParam.parameters.dp)),
+                std::make_shared<mathFunctions::FieldFunction>(ablate::particles::ParticleSolver::ParticleDensity, ablate::mathFunctions::Create(testingParam.parameters.rhoP)),
+            };
 
             // Create an inertial particle object
             auto particles = std::make_shared<ablate::particles::ParticleSolver>(
@@ -276,12 +280,10 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
                 GetParam().particleInitializer,
                 fieldInitialization,
                 exactParticleSolutions);
+            timeStepper.Register(particles);
 
-            mesh->InitializeSubDomains({flowObject, particles},
-                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
-                                       /* exact solutions*/
-                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
-            solver::DirectSolverTsInterface directSolverTsInterface(ts, {flowObject, particles});
+            // Setup the solvers
+            timeStepper.Initialize();
 
             // Override problem with source terms, boundary, and set the exact solution
             {
@@ -305,22 +307,18 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
             }
 
             // Check the convergence
-            DMTSCheckFromOptions(ts, mesh->GetSolutionVector()) >> testErrorChecker;
+            DMTSCheckFromOptions(timeStepper.GetTS(), mesh->GetSolutionVector()) >> testErrorChecker;
 
             TSSetComputeInitialCondition(particles->GetParticleTS(), ablate::particles::ParticleSolver::ComputeParticleExactSolution) >> testErrorChecker;
 
             // setup the flow monitor to also check particles
-            TSMonitorSet(ts, MonitorFlowAndParticleError, particles.get(), NULL) >> testErrorChecker;
-            TSSetFromOptions(ts) >> testErrorChecker;
+            TSMonitorSet(timeStepper.GetTS(), MonitorFlowAndParticleError, particles.get(), NULL) >> testErrorChecker;
 
             // Solve the one way coupled system
-            TSSolve(ts, mesh->GetSolutionVector()) >> testErrorChecker;
+            timeStepper.Solve();
 
             // Compare the actual vs expected values
-            DMTSCheckFromOptions(ts, mesh->GetSolutionVector()) >> testErrorChecker;
-
-            // Cleanup
-            TSDestroy(&ts) >> testErrorChecker;
+            DMTSCheckFromOptions(timeStepper.GetTS(), mesh->GetSolutionVector()) >> testErrorChecker;
         }
         ablate::environment::RunEnvironment::Finalize();
         exit(0);

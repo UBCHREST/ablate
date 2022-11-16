@@ -31,6 +31,9 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
     // Hold a list of solvers
     std::vector<std::shared_ptr<ablate::solver::Solver>> solvers;
 
+    // hold a bool to determine if this domain has been initialized
+    bool initialized = false;
+
     // Static calls to be passed to the Petsc TS
     static PetscErrorCode TSPreStageFunction(TS ts, PetscReal stagetime);
     static PetscErrorCode TSPreStepFunction(TS ts);
@@ -60,13 +63,48 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances;
 
    public:
-    TimeStepper(std::string name, std::shared_ptr<ablate::domain::Domain> domain, std::map<std::string, std::string> arguments = {}, std::shared_ptr<io::Serializer> serializer = {},
+    /**
+     * primary constructor for timestepper
+     * @param name
+     * @param domain
+     * @param arguments
+     * @param serializer
+     * @param initialization
+     * @param exactSolutions
+     * @param absoluteTolerances
+     * @param relativeTolerances
+     */
+    TimeStepper(std::string name, std::shared_ptr<ablate::domain::Domain> domain, std::shared_ptr<ablate::parameters::Parameters> arguments = {}, std::shared_ptr<io::Serializer> serializer = {},
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {},
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances = {});
+
+    /**
+     * primary constructor for timestepper without an unqiue name
+     * @param name
+     * @param domain
+     * @param arguments
+     * @param serializer
+     * @param initialization
+     * @param exactSolutions
+     * @param absoluteTolerances
+     * @param relativeTolerances
+     */
+    TimeStepper(std::shared_ptr<ablate::domain::Domain> domain, std::shared_ptr<ablate::parameters::Parameters> arguments = {}, std::shared_ptr<io::Serializer> serializer = {},
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {},
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances = {});
+
     ~TimeStepper();
 
     TS &GetTS() { return ts; }
 
+    /**
+     * Optional call to Initialize before setup
+     */
+    void Initialize();
+
+    /**
+     * Initializes if needed, then calls solve
+     */
     void Solve();
 
     void Register(std::shared_ptr<ablate::solver::Solver> solver, std::vector<std::shared_ptr<monitors::Monitor>> = {});
