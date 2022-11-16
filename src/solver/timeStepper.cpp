@@ -59,7 +59,7 @@ void ablate::solver::TimeStepper::Solve() {
         DMTSSetBoundaryLocal(domain->GetDM(), SolverComputeBoundaryFunctionLocal, this) >> checkError;
     }
     if (!rhsFunctionSolvers.empty()) {
-        DMTSSetRHSFunctionLocal(domain->GetDM(), SolverComputeRHSFunctionLocal, this) >> checkError;
+        DMTSSetRHSFunction(domain->GetDM(), SolverComputeRHSFunction, this) >> checkError;
     }
     if (!iFunctionSolvers.empty()) {
         DMTSSetIFunctionLocal(domain->GetDM(), SolverComputeIFunctionLocal, this) >> checkError;
@@ -259,11 +259,9 @@ PetscErrorCode ablate::solver::TimeStepper::TSPostEvaluateFunction(TS ts) {
 
 PetscErrorCode ablate::solver::TimeStepper::SolverComputeBoundaryFunctionLocal(DM, PetscReal time, Vec locX, Vec locX_t, void* timeStepperCtx) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
     auto timeStepper = (ablate::solver::TimeStepper*)timeStepperCtx;
     for (auto& solver : timeStepper->boundaryFunctionSolvers) {
-        ierr = solver->ComputeBoundary(time, locX, locX_t);
-        CHKERRQ(ierr);
+        PetscCall(solver->ComputeBoundary(time, locX, locX_t));
     }
 
     PetscFunctionReturn(0);
@@ -292,16 +290,36 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeIJacobianLocal(DM, Pets
 
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunctionLocal(DM dm, PetscReal time, Vec locX, Vec locF, void* timeStepperCtx) {
+PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunction(TS ts, PetscReal time, Vec X, Vec F, void* timeStepperCtx) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
 
     auto timeStepper = (ablate::solver::TimeStepper*)timeStepperCtx;
 
+    DM dm = timeStepper->domain->GetDM();
+    Vec locX, locF;
+    DMGetLocalVector(dm, &locX);
+    DMGetLocalVector(dm, &locF);
+    VecZeroEntries(locX);
+
+    // Fill the ghost nodes (and all others).  Note the boundary/local field is swapped from the petsc version
+    DMGlobalToLocalBegin(dm, X, INSERT_VALUES, locX);
+    DMGlobalToLocalEnd(dm, X, INSERT_VALUES, locX);
+
+    PetscCall(SolverComputeBoundaryFunctionLocal(dm, time, locX, nullptr, timeStepperCtx));
+
+    VecZeroEntries(locF);
+    CHKMEMQ;
+    // Call each of the provided RHS functions
     for (auto& solver : timeStepper->rhsFunctionSolvers) {
-        ierr = solver->ComputeRHSFunction(time, locX, locF);
-        CHKERRQ(ierr);
+        PetscCall(solver->ComputeRHSFunction(time, locX, locF));
     }
+    CHKMEMQ;
+    VecZeroEntries(F);
+    DMLocalToGlobalBegin(dm, locF, ADD_VALUES, F);
+    DMLocalToGlobalEnd(dm, locF, ADD_VALUES, F);
+
+    DMRestoreLocalVector(dm, &locX);
+    DMRestoreLocalVector(dm, &locF);
 
     PetscFunctionReturn(0);
 }
