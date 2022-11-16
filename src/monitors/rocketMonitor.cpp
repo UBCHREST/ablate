@@ -90,22 +90,9 @@ PetscErrorCode ablate::monitors::RocketMonitor::OutputRocket(TS ts, PetscInt ste
         // initialize field values to calculate min, max, and sum for [cell pressure , machNumber]
 
         // initialize field value arrays min, max, sum [pressure, machNumber]
-        PetscReal minFields[2] = { PETSC_MAX_REAL, PETSC_MAX_REAL};
-        PetscReal maxFields[2] = { PETSC_MIN_REAL, PETSC_MIN_REAL};
-        PetscReal sumFields[2] = { 0, 0};
-
-//        PetscReal pressureMin[1] = {100000000};
-//        PetscReal pressureMax[1] = {0};
-//        PetscReal pressureTotal[1] = {0};
-//        PetscReal pressureMinGlob[1];
-//        PetscReal pressureMaxGlob[1];
-//        PetscReal pressureTotalGlob[1];
-//        PetscReal machMin[1] = {100000000};
-//        PetscReal machMax[1] = {0};
-//        PetscReal machTotal[1] = {0};
-//        PetscReal machMinGlob[1];
-//        PetscReal machMaxGlob[1];
-//        PetscReal machTotalGlob[1];
+        PetscReal minFields[2] = {PETSC_MAX_REAL, PETSC_MAX_REAL};
+        PetscReal maxFields[2] = {PETSC_MIN_REAL, PETSC_MIN_REAL};
+        PetscReal sumFields[2] = {0, 0};
         PetscReal machNumber;
         PetscReal numCells[1] = {0};
         PetscReal numCellsGlob[1];
@@ -165,10 +152,6 @@ PetscErrorCode ablate::monitors::RocketMonitor::OutputRocket(TS ts, PetscInt ste
                         // update cell pressure sum for mean calculation
                         sumFields[0] += cellPressure;
 
-                        // calculate cell mach number
-//                        cellVelocity = PetscSqrtReal(PetscSqr(cellEuler[finiteVolume::CompressibleFlowFields::RHOU]) + PetscSqr(cellEuler[finiteVolume::CompressibleFlowFields::RHOU + 1]) +
-//                                                     PetscSqr(cellEuler[finiteVolume::CompressibleFlowFields::RHOU + 2]));
-
                         // sum the square of the velocity in each direction, then take the square root to calculate the velocity cell velocity
                         for (PetscInt d = 0; d < dim; d++) {
                             cellVelocity += PetscSqr((cellEuler[finiteVolume::CompressibleFlowFields::RHOU + d]) / (cellEuler[finiteVolume::CompressibleFlowFields::RHO]));
@@ -193,13 +176,6 @@ PetscErrorCode ablate::monitors::RocketMonitor::OutputRocket(TS ts, PetscInt ste
         }
 
         // Take across all ranks
-//        MPI_Reduce(pressureMin, pressureMinGlob, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
-//        MPI_Reduce(pressureMax, pressureMaxGlob, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
-//        MPI_Reduce(pressureTotal, pressureTotalGlob, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-//        MPI_Reduce(machMin, machMinGlob, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
-//        MPI_Reduce(machMax, machMaxGlob, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
-//        MPI_Reduce(machTotal, machTotalGlob, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-
         MPI_Reduce(minFields, minFieldsGlob, 2, MPI_DOUBLE, MPI_MIN, 0, comm);
         MPI_Reduce(maxFields, maxFieldsGlob, 2, MPI_DOUBLE, MPI_MAX, 0, comm);
         MPI_Reduce(sumFields, sumFieldsGlob, 2, MPI_DOUBLE, MPI_SUM, 0, comm);
