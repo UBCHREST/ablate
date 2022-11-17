@@ -309,7 +309,6 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeIJacobianLocal(DM, Pets
 }
 PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunction(TS ts, PetscReal time, Vec X, Vec F, void* timeStepperCtx) {
     PetscFunctionBeginUser;
-
     auto timeStepper = (ablate::solver::TimeStepper*)timeStepperCtx;
 
     DM dm = timeStepper->domain->GetDM();
@@ -324,7 +323,14 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunction(TS ts, Pets
 
     PetscCall(SolverComputeBoundaryFunctionLocal(dm, time, locX, nullptr, timeStepperCtx));
 
+    // Call each of the provided pre RHS functions
+    for (auto& solver : timeStepper->rhsFunctionSolvers) {
+        PetscCall(solver->PreRHSFunction(time, locX));
+    }
+
+    // Zero out the temp locF array
     VecZeroEntries(locF);
+
     CHKMEMQ;
     // Call each of the provided RHS functions
     for (auto& solver : timeStepper->rhsFunctionSolvers) {

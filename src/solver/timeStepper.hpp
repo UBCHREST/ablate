@@ -35,6 +35,12 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
     bool initialized = false;
 
     // Static calls to be passed to the Petsc TS
+    /**
+     * The TSPreStepFunction is used to call both th PreStep (once) and PreStage (as need calls).
+     * @param ts
+     * @param stagetime
+     * @return
+     */
     static PetscErrorCode TSPreStageFunction(TS ts, PetscReal stagetime);
     static PetscErrorCode TSPreStepFunction(TS ts);
     static PetscErrorCode TSPostStepFunction(TS ts);

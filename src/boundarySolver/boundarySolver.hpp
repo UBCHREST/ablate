@@ -230,6 +230,14 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
      * Get access to the output functions
      */
     inline const std::vector<BoundarySourceFunctionDescription>& GetOutputFunctions() { return boundaryOutputFunctions; }
+
+    /**
+     * Called to update the aux variables
+     * @param time
+     * @param locX
+     * @return
+     */
+    PetscErrorCode PreRHSFunction(PetscReal time, Vec locX) override;
 };
 
 /**

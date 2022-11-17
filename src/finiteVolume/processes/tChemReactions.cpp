@@ -113,8 +113,6 @@ void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteV
 PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPreStage(TS flowTs, ablate::solver::Solver& solver, PetscReal stagetime) {
     PetscFunctionBegin;
     // get time step information from the ts
-    PetscInt stepNumber;
-    PetscCall(TSGetStepNumber(flowTs, &stepNumber));
     PetscReal time;
     PetscCall(TSGetTime(flowTs, &time));
 

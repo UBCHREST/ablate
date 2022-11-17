@@ -194,6 +194,14 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     std::shared_ptr<T> FindProcess() {
         return utilities::VectorUtilities::Find<T>(processes);
     }
+
+    /**
+     * Called to update the aux variables
+     * @param time
+     * @param locX
+     * @return
+     */
+    PetscErrorCode PreRHSFunction(PetscReal time, Vec locX) override;
 };
 }  // namespace ablate::finiteVolume
 
