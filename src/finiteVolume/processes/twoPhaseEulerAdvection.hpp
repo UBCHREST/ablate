@@ -10,6 +10,10 @@
 namespace ablate::finiteVolume::processes {
 
 class TwoPhaseEulerAdvection : public Process {
+   public:
+    inline const static std::string DENSITY_VF_FIELD = "densityVF";
+    inline const static std::string VOLUME_FRACTION_FIELD = "volumeFraction";
+
    private:
     struct DecodeDataStructGas {
         PetscReal etot;

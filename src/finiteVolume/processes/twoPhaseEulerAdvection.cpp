@@ -211,8 +211,8 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Setup(ablate::fini
     decoder = CreateTwoPhaseDecoder(flow.GetSubDomain().GetDimensions(), eosGas, eosLiquid);
 
     // Currently, no option for species advection
-    flow.RegisterRHSFunction(CompressibleFlowComputeEulerFlux, this, "euler", {"volumeFraction", "densityVF", "euler"}, {});
-    flow.RegisterRHSFunction(CompressibleFlowComputeVFFlux, this, "densityVF", {"volumeFraction", "densityVF", "euler"}, {});
+    flow.RegisterRHSFunction(CompressibleFlowComputeEulerFlux, this, CompressibleFlowFields::EULER_FIELD, {VOLUME_FRACTION_FIELD, DENSITY_VF_FIELD, CompressibleFlowFields::EULER_FIELD}, {});
+    flow.RegisterRHSFunction(CompressibleFlowComputeVFFlux, this, DENSITY_VF_FIELD, {VOLUME_FRACTION_FIELD, DENSITY_VF_FIELD, CompressibleFlowFields::EULER_FIELD}, {});
 
     // check to see if auxFieldUpdates needed to be added
     if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::VELOCITY_FIELD)) {
@@ -220,11 +220,13 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Setup(ablate::fini
     }
     if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::TEMPERATURE_FIELD)) {
         // add in aux update variables
-        flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField2Gas, this, std::vector<std::string>{CompressibleFlowFields::TEMPERATURE_FIELD}, {"volumeFraction", "densityVF", "euler"});
+        flow.RegisterAuxFieldUpdate(
+            UpdateAuxTemperatureField2Gas, this, std::vector<std::string>{CompressibleFlowFields::TEMPERATURE_FIELD}, {VOLUME_FRACTION_FIELD, DENSITY_VF_FIELD, CompressibleFlowFields::EULER_FIELD});
     }
-    if (flow.GetSubDomain().ContainsField("pressure")) {
+    if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::PRESSURE_FIELD)) {
         // add in aux update variables
-        flow.RegisterAuxFieldUpdate(UpdateAuxPressureField2Gas, this, std::vector<std::string>{"pressure"}, {"volumeFraction", "densityVF", "euler"});
+        flow.RegisterAuxFieldUpdate(
+            UpdateAuxPressureField2Gas, this, std::vector<std::string>{CompressibleFlowFields::PRESSURE_FIELD}, {VOLUME_FRACTION_FIELD, DENSITY_VF_FIELD, CompressibleFlowFields::EULER_FIELD});
     }
 }
 PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::MultiphaseFlowPreStage(TS flowTs, ablate::solver::Solver &solver, PetscReal stagetime) {
@@ -236,8 +238,8 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Multipha
     PetscInt dim;
     PetscCall(DMGetDimension(fvSolver.GetSubDomain().GetDM(), &dim));
     const auto &eulerOffset = fvSolver.GetSubDomain().GetField(CompressibleFlowFields::EULER_FIELD).offset;  // need this to get uOff
-    const auto &vfOffset = fvSolver.GetSubDomain().GetField("volumeFraction").offset;
-    const auto &rhoAlphaOffset = fvSolver.GetSubDomain().GetField("densityVF").offset;
+    const auto &vfOffset = fvSolver.GetSubDomain().GetField(VOLUME_FRACTION_FIELD).offset;
+    const auto &rhoAlphaOffset = fvSolver.GetSubDomain().GetField(DENSITY_VF_FIELD).offset;
 
     DM dm = fvSolver.GetSubDomain().GetDM();
     Vec globFlowVec;
@@ -247,9 +249,9 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Multipha
     PetscCall(VecGetArray(globFlowVec, &flowArray));
 
     PetscInt uOff[3];
-    uOff[0] = vfOffset;        // = 3 + dim; alpha
-    uOff[1] = rhoAlphaOffset;  // = 2 + dim; rho1alpha1
-    uOff[2] = eulerOffset;     // = 0; euler
+    uOff[0] = vfOffset;
+    uOff[1] = rhoAlphaOffset;
+    uOff[2] = eulerOffset;
 
     // For cell center, the norm is unity
     PetscReal norm[3];
