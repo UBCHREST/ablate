@@ -10,6 +10,10 @@
 namespace ablate::finiteVolume::processes {
 
 class TwoPhaseEulerAdvection : public Process {
+   public:
+    inline const static std::string DENSITY_VF_FIELD = "densityVF";
+    inline const static std::string VOLUME_FRACTION_FIELD = "volumeFraction";
+
    private:
     struct DecodeDataStructGas {
         PetscReal etot;
@@ -39,6 +43,7 @@ class TwoPhaseEulerAdvection : public Process {
     static PetscErrorCode FormFunctionStiff(SNES snes, Vec x, Vec F, void *ctx);
     static PetscErrorCode FormJacobianStiff(SNES snes, Vec x, Mat J, Mat P, void *ctx);
 
+    PetscErrorCode MultiphaseFlowPreStage(TS flowTs, ablate::solver::Solver &flow, PetscReal stagetime);
     /**
      * General two phase decoder interface
      */
@@ -172,9 +177,6 @@ class TwoPhaseEulerAdvection : public Process {
 
     static PetscErrorCode UpdateAuxVelocityField2Gas(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[], const PetscScalar *conservedValues, const PetscInt aOff[],
                                                      PetscScalar *auxField, void *ctx);
-
-    static PetscErrorCode UpdateAuxVolumeFractionField2Gas(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[], const PetscScalar *conservedValues,
-                                                           const PetscInt aOff[], PetscScalar *auxField, void *ctx);
 
     TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas,
                            std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidGas,
