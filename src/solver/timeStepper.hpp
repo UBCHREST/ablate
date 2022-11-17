@@ -34,6 +34,9 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
     // hold a bool to determine if this domain has been initialized
     bool initialized = false;
 
+    // Keep track of the current stage count, this is a hack to know if we are in a preStep/preStage for rhs
+    bool runInitialStep = false;
+
     // Static calls to be passed to the Petsc TS
     /**
      * The TSPreStepFunction is used to call both th PreStep (once) and PreStage (as need calls).

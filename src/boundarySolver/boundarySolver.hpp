@@ -237,7 +237,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
      * @param locX
      * @return
      */
-    PetscErrorCode PreRHSFunction(PetscReal time, Vec locX) override;
+    PetscErrorCode PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) override;
 };
 
 /**

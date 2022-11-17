@@ -225,9 +225,17 @@ PetscErrorCode ablate::solver::TimeStepper::TSPreStepFunction(TS ts) {
 
 PetscErrorCode ablate::solver::TimeStepper::TSPreStageFunction(TS ts, PetscReal stagetime) {
     PetscFunctionBeginUser;
+
+    // Store if we are in the first stage
+    PetscReal time;
+    PetscCall(TSGetTime(ts, &time));
+
+    // only continue if the stage time is the real time (i.e. the first stage)
     ablate::solver::TimeStepper* timeStepper;
-    PetscErrorCode ierr = TSGetApplicationContext(ts, &timeStepper);
-    CHKERRQ(ierr);
+    PetscCall(TSGetApplicationContext(ts, &timeStepper));
+    // Set to try if time == stagetime
+    timeStepper->runInitialStep = timeStepper->runInitialStep || (time == stagetime);
+
 
     for (const auto& solver : timeStepper->solvers) {
         try {
@@ -321,12 +329,15 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunction(TS ts, Pets
     DMGlobalToLocalBegin(dm, X, INSERT_VALUES, locX);
     DMGlobalToLocalEnd(dm, X, INSERT_VALUES, locX);
 
+    // Update the boundary conditions
     PetscCall(SolverComputeBoundaryFunctionLocal(dm, time, locX, nullptr, timeStepperCtx));
 
     // Call each of the provided pre RHS functions
     for (auto& solver : timeStepper->rhsFunctionSolvers) {
-        PetscCall(solver->PreRHSFunction(time, locX));
+        PetscCall(solver->PreRHSFunction(ts, time, timeStepper->runInitialStep, locX));
     }
+    // Reset the timeStepper->runInitialStep
+    timeStepper->runInitialStep = false;
 
     // Zero out the temp locF array
     VecZeroEntries(locF);

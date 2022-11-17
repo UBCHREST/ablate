@@ -808,7 +808,7 @@ void ablate::boundarySolver::BoundarySolver::UpdateVariablesPreStep(TS, ablate::
     DMRestoreLocalVector(subDomain->GetDM(), &locXVec) >> checkError;
 }
 
-PetscErrorCode ablate::boundarySolver::BoundarySolver::PreRHSFunction(PetscReal time, Vec locX) {
+PetscErrorCode ablate::boundarySolver::BoundarySolver::PreRHSFunction(TS ts,PetscReal time, bool initialStage, Vec locX) {
     PetscFunctionBeginUser;
     try {
         // update any aux fields, including ghost cells
@@ -816,6 +816,7 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::PreRHSFunction(PetscReal 
     } catch (std::exception& exception) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in UpdateAuxFields: %s", exception.what());
     }
+
     PetscFunctionReturn(0);
 }
 

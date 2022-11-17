@@ -5,6 +5,7 @@
 namespace ablate::solver {
 
 class RHSFunction {
+   private:
    public:
     /**
      * Called to compute the RHS source term.
@@ -21,7 +22,7 @@ class RHSFunction {
      * @param locX
      * @return
      */
-    virtual PetscErrorCode PreRHSFunction(PetscReal time, Vec locX) { return 0; }
+    virtual PetscErrorCode PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) { return 0; };
 };
 
 }  // namespace ablate::solver
