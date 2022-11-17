@@ -91,7 +91,7 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
         radiation->Setup(faceRange.GetRange(), bSolver.GetSubDomain());
         radiation->Initialize(faceRange.GetRange(), bSolver.GetSubDomain());  //!< Pass the non-dynamic range into the radiation solver
 
-        bSolver.RegisterPreStep([this](auto ts, auto &solver) { SublimationPreStep(ts, solver); });
+        bSolver.RegisterPreRHSFunction(SublimationPreStep, this);
     }
 }
 
@@ -295,14 +295,14 @@ void ablate::boundarySolver::physics::Sublimation::Setup(PetscInt numberSpeciesI
     computePressure = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Pressure, {});
 }
 
-PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationPreStep(TS ts, ablate::solver::Solver &solver) {
+PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationPreStep(BoundarySolver &solver, TS ts, PetscReal time, bool initialStage, Vec locX, void *ctx) {
     PetscFunctionBegin;
+    auto sublimation = (Sublimation *)ctx;
     PetscInt step;
-    PetscReal time;
     TSGetStepNumber(ts, &step) >> checkError;
     TSGetTime(ts, &time) >> checkError;
-    if (radiationInterval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
-        radiation->Solve(solver.GetSubDomain().GetSolutionVector(), solver.GetSubDomain().GetField("temperature"), solver.GetSubDomain().GetAuxVector());
+    if (initialStage && sublimation->radiationInterval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
+        sublimation->radiation->Solve(solver.GetSubDomain().GetSolutionVector(), solver.GetSubDomain().GetField("temperature"), solver.GetSubDomain().GetAuxVector());
     }
     PetscFunctionReturn(0);
 }

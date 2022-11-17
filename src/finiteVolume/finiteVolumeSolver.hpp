@@ -45,7 +45,7 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     std::vector<std::pair<RHSArbitraryFunction, void*>> rhsArbitraryFunctions;
 
     // allow the use of any arbitrary pre rhs functions
-    std::vector<std::pair<PreRHSFunctionDefinition, void*>> preRhsArbitraryFunctions;
+    std::vector<std::pair<PreRHSFunctionDefinition, void*>> preRhsFunctions;
 
     // functions to update the timestep
     const bool computePhysicsTimeStep;

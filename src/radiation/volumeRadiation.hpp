@@ -35,7 +35,13 @@ class VolumeRadiation : public solver::CellSolver, public solver::RHSFunction {
 
     ~VolumeRadiation();
 
-    PetscErrorCode RadiationPreStep(TS ts);
+    /**
+     * serves to update the radiation
+     * @param time
+     * @param locX
+     * @return
+     */
+    PetscErrorCode PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) override;
 
     const std::shared_ptr<io::interval::Interval> interval;
     std::shared_ptr<ablate::radiation::Radiation> radiation;

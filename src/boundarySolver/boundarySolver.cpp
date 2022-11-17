@@ -360,6 +360,13 @@ void ablate::boundarySolver::BoundarySolver::RegisterFunction(ablate::boundarySo
 
     boundaryUpdateFunctions.push_back(functionDescription);
 }
+/**
+ * Register an pre function that is called before any RHS function
+ * @param function
+ * @param context
+ */
+void ablate::boundarySolver::BoundarySolver::RegisterPreRHSFunction(BoundaryPreRHSFunctionDefinition function, void* context) { preRhsFunctions.emplace_back(function, context); }
+
 PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) {
     PetscFunctionBeginUser;
     PetscCall(ComputeRHSFunction(time, locXVec, locFVec, boundarySourceFunctions));
@@ -808,7 +815,7 @@ void ablate::boundarySolver::BoundarySolver::UpdateVariablesPreStep(TS, ablate::
     DMRestoreLocalVector(subDomain->GetDM(), &locXVec) >> checkError;
 }
 
-PetscErrorCode ablate::boundarySolver::BoundarySolver::PreRHSFunction(TS ts,PetscReal time, bool initialStage, Vec locX) {
+PetscErrorCode ablate::boundarySolver::BoundarySolver::PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) {
     PetscFunctionBeginUser;
     try {
         // update any aux fields, including ghost cells
@@ -817,6 +824,10 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::PreRHSFunction(TS ts,Pets
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in UpdateAuxFields: %s", exception.what());
     }
 
+    // iterate over any pre arbitrary RHS functions
+    for (const auto& rhsFunction : preRhsFunctions) {
+        PetscCall(rhsFunction.first(*this, ts, time, initialStage, locX, rhsFunction.second));
+    }
     PetscFunctionReturn(0);
 }
 

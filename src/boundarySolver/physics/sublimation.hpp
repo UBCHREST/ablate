@@ -93,7 +93,13 @@ class Sublimation : public BoundaryProcess {
      */
     void Setup(PetscInt numberSpecies);
 
-    PetscErrorCode SublimationPreStep(TS ts, ablate::solver::Solver &solver);
+    /**
+     * Prestep to update the radiation solver
+     * @param ts
+     * @param solver
+     * @return
+     */
+    static PetscErrorCode SublimationPreStep(BoundarySolver &, TS ts, PetscReal time, bool initialStage, Vec locX, void *ctx);
 
     /**
      * Support function to compute and insert source terms for this boundary condition

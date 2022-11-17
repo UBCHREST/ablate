@@ -236,7 +236,6 @@ PetscErrorCode ablate::solver::TimeStepper::TSPreStageFunction(TS ts, PetscReal 
     // Set to try if time == stagetime
     timeStepper->runInitialStep = timeStepper->runInitialStep || (time == stagetime);
 
-
     for (const auto& solver : timeStepper->solvers) {
         try {
             solver->PreStage(ts, stagetime);

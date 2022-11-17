@@ -241,7 +241,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(CellInterpola
 
 void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(RHSArbitraryFunction function, void* context) { rhsArbitraryFunctions.emplace_back(function, context); }
 
-void ablate::finiteVolume::FiniteVolumeSolver::RegisterPreRHSFunction(PreRHSFunctionDefinition function, void* context) { preRhsArbitraryFunctions.emplace_back(function, context); }
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterPreRHSFunction(PreRHSFunctionDefinition function, void* context) { preRhsFunctions.emplace_back(function, context); }
 
 void ablate::finiteVolume::FiniteVolumeSolver::EnforceTimeStep(TS ts, ablate::solver::Solver& solver) {
     auto& flowFV = dynamic_cast<ablate::finiteVolume::FiniteVolumeSolver&>(solver);
@@ -351,17 +351,16 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeBoundary(PetscRe
 
 PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) {
     PetscFunctionBeginUser;
-    // iterate over any pre arbitrary RHS functions
-    for (const auto& rhsFunction : preRhsArbitraryFunctions) {
-        PetscCall(rhsFunction.first(*this, ts, time, initialStage, locX, rhsFunction.second));
-    }
     try {
         // update any aux fields, including ghost cells
         UpdateAuxFields(time, locX, subDomain->GetAuxVector());
     } catch (std::exception& exception) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in UpdateAuxFields: %s", exception.what());
     }
-
+    // iterate over any pre arbitrary RHS functions
+    for (const auto& rhsFunction : preRhsFunctions) {
+        PetscCall(rhsFunction.first(*this, ts, time, initialStage, locX, rhsFunction.second));
+    }
     PetscFunctionReturn(0);
 }
 
