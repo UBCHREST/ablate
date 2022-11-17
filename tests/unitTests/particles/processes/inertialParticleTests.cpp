@@ -217,7 +217,6 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
             auto mesh = std::make_shared<ablate::domain::BoxMesh>(
                 "mesh", fieldDescriptors, std::vector<std::shared_ptr<domain::modifiers::Modifier>>{}, std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
 
-
             // Setup the flow data
             auto parameters = std::make_shared<ablate::parameters::PetscOptionParameters>();
 
@@ -229,10 +228,11 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
                 "temperature", ablate::mathFunctions::Create(testingParam.TExact, &testingParam.parameters), ablate::mathFunctions::Create(testingParam.T_tExact, &testingParam.parameters));
 
             // create a time stepper
-            auto timeStepper = ablate::solver::TimeStepper(
-                mesh, nullptr, {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},  std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact,pressureExact, temperatureExact });
-
-
+            auto timeStepper = ablate::solver::TimeStepper(mesh,
+                                                           nullptr,
+                                                           {},
+                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
+                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
 
             timeStepper.Register(std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
                 "testFlow",
@@ -249,7 +249,6 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
                                                                                                                              {"fluidViscosity", std::to_string(testingParam.parameters.muF)},
                                                                                                                              {"gravityField", std::to_string(testingParam.parameters.grav) + " 0 0"}});
 
-
             // Use the petsc options that start with -particle_
             auto particleOptions = std::make_shared<ablate::parameters::PetscPrefixOptions>("-particle_");
 
@@ -259,7 +258,6 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
                                                                        ablate::mathFunctions::Create(testingParam.particleExactPosition, &testingParam.parameters)),
                 std::make_shared<ablate::mathFunctions::FieldFunction>(particles::ParticleSolver::ParticleVelocity,
                                                                        ablate::mathFunctions::Create(testingParam.particleExactVelocity, &testingParam.parameters))};
-
 
             // convert the constant values to fieldInitializations
             auto fieldInitialization = std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{

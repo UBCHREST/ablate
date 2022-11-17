@@ -55,7 +55,7 @@ ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<abl
 ablate::solver::TimeStepper::~TimeStepper() { TSDestroy(&ts) >> checkError; }
 
 void ablate::solver::TimeStepper::Initialize() {
-    if(!initialized){
+    if (!initialized) {
         domain->InitializeSubDomains(solvers, initializations, exactSolutions);
         TSSetDM(ts, domain->GetDM()) >> checkError;
         initialized = true;

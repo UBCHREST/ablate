@@ -312,10 +312,11 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                 std::make_shared<mathFunctions::FieldFunction>("temperature", ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact));
 
             // create a time stepper
-            auto timeStepper = ablate::solver::TimeStepper(
-                mesh, nullptr, {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},  std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact,pressureExact, temperatureExact });
-
-
+            auto timeStepper = ablate::solver::TimeStepper(mesh,
+                                                           nullptr,
+                                                           {},
+                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
+                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
 
             timeStepper.Register(std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
                 "testFlow",
@@ -354,7 +355,6 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                                                                         particles::ParticleSolver::ParticleCoordinates, ablate::mathFunctions::Create(testingParam.particleExact))});
             timeStepper.Register(particles);
 
-
             // Setup the solvers
             timeStepper.Initialize();
 
@@ -387,7 +387,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
 
             // Solve the one way coupled system
             TSMonitorSet(timeStepper.GetTS(), MonitorFlowAndParticleError, particles.get(), NULL) >> testErrorChecker;
-            TSSetFromOptions(timeStepper.GetTS())>> testErrorChecker;
+            TSSetFromOptions(timeStepper.GetTS()) >> testErrorChecker;
             timeStepper.Solve();
 
             // Compare the actual vs expected values
