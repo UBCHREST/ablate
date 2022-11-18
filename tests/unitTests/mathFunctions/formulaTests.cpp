@@ -213,4 +213,28 @@ TEST(FormulaTests, ShouldProduceRandomNumber) {
     ASSERT_NE(resultsA, resultsB);
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct FormulaTestsModulusParameters {
+    std::string formula;
+    double expected;
+};
+
+class FormulaTestsModulusFixture : public ::testing::TestWithParam<FormulaTestsModulusParameters> {};
+
+TEST_P(FormulaTestsModulusFixture, ShouldComputeCorrectAnswer) {
+    // arrange
+    const auto& param = GetParam();
+    auto function = ablate::mathFunctions::Formula(param.formula, {});
+
+    // act
+    auto result = function.Eval(0, 0, 0, 0);
+
+    // assert
+    ASSERT_NEAR(param.expected, result, 1E-8) << "The modulus for " << param.formula << " should be correct";
+}
+INSTANTIATE_TEST_SUITE_P(FormulaTests, FormulaTestsModulusFixture,
+                         testing::Values((FormulaTestsModulusParameters){.formula = "5 % 2", .expected = 1}, (FormulaTestsModulusParameters){.formula = "100 % 8", .expected = 4},
+                                         (FormulaTestsModulusParameters){.formula = "100.1 % 8.2", .expected = 1.7}, (FormulaTestsModulusParameters){.formula = "3*3 % 1+1", .expected = 1},
+                                         (FormulaTestsModulusParameters){.formula = "100 % 27 % 4", .expected = 3}));
+
 }  // namespace ablateTesting::mathFunctions
