@@ -63,6 +63,11 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
             "The FVM check cannot be used over the entire mesh if there are no boundary ghost cells. Add boundary ghost cells with ablate::domain::modifiers::GhostBoundaryCells");
     }
 
+    // Get the fv geom to find the smallest cell in mesh
+    PetscReal minCellRadius;
+    DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius) >> checkError;
+    std::cout << "The minimum cell length is: " << minCellRadius << std::endl;
+
     // March over each face in this region
     for (PetscInt f = faceRange.start; f < faceRange.end; ++f) {
         const PetscInt face = faceRange.points ? faceRange.points[f] : f;
