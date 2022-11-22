@@ -18,7 +18,6 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/petscOptionParameters.hpp"
-#include "solver/directSolverTsInterface.hpp"
 #include "utilities/petscUtilities.hpp"
 
 using namespace ablate;
@@ -27,10 +26,6 @@ using namespace ablate::finiteElement;
 #define VTEST 0
 #define QTEST 1
 #define WTEST 2
-
-#define VEL 0
-#define PRES 1
-#define TEMP 2
 
 typedef PetscErrorCode (*ExactFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
 
@@ -562,8 +557,6 @@ static void SourceFunction(f0_incompressible_cubic_trig_w) {
 TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
         {
-            TS ts; /* timestepper */
-
             PetscReal t;
 
             // Get the testing param
@@ -576,12 +569,9 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             // setup the required fields for the flow
             std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteElement::LowMachFlowFields>()};
 
-            // setup the ts
-            TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
+            // setup the mesh
             auto mesh = std::make_shared<domain::BoxMesh>(
                 "mesh", fieldDescriptors, std::vector<std::shared_ptr<domain::modifiers::Modifier>>{}, std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
-            TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;
-            TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 
             // pull the parameters from the petsc options
             auto parameters = std::make_shared<ablate::parameters::PetscOptionParameters>();
@@ -589,6 +579,13 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             auto velocityExact = std::make_shared<mathFunctions::FieldFunction>("velocity", mathFunctions::Create(testingParam.uExact), mathFunctions::Create(testingParam.u_tExact));
             auto pressureExact = std::make_shared<mathFunctions::FieldFunction>("pressure", mathFunctions::Create(testingParam.pExact));
             auto temperatureExact = std::make_shared<mathFunctions::FieldFunction>("temperature", mathFunctions::Create(testingParam.TExact), mathFunctions::Create(testingParam.T_tExact));
+
+            // create a time stepper
+            auto timeStepper = ablate::solver::TimeStepper(mesh,
+                                                           nullptr,
+                                                           {},
+                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
+                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
 
             // Create the flow object
             std::shared_ptr<ablate::finiteElement::FiniteElementSolver> flowObject =
@@ -603,9 +600,10 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
                                           /* aux field updates */
                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{});
 
-            mesh->InitializeSubDomains({flowObject},
-                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
-                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
+            timeStepper.Register(flowObject);
+
+            // Set up the solvers
+            timeStepper.Initialize();
 
             // Override problem with source terms, boundary, and set the exact solution
             {
@@ -626,28 +624,19 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
                 }
             }
 
-            DMSetApplicationContext(mesh->GetDM(), flowObject.get());
-            solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
-
-            // Setup the TS
-            TSSetFromOptions(ts) >> testErrorChecker;
-
             // Set initial conditions from the exact solution
-            TSSetComputeInitialCondition(ts, SetInitialConditions) >> testErrorChecker; /* Must come after SetFromOptions() */
+            DMSetApplicationContext(mesh->GetDM(), flowObject.get());
+            TSSetComputeInitialCondition(timeStepper.GetTS(), SetInitialConditions) >> testErrorChecker; /* Must come after SetFromOptions() */
 
-            TSGetTime(ts, &t) >> testErrorChecker;
             DMSetOutputSequenceNumber(mesh->GetDM(), 0, t) >> testErrorChecker;
-            DMTSCheckFromOptions(ts, mesh->GetSolutionVector()) >> testErrorChecker;
-            TSMonitorSet(ts, MonitorError, NULL, NULL) >> testErrorChecker;
+            DMTSCheckFromOptions(timeStepper.GetTS(), mesh->GetSolutionVector()) >> testErrorChecker;
+            TSMonitorSet(timeStepper.GetTS(), MonitorError, NULL, NULL) >> testErrorChecker;
 
             // Solve in time
-            TSSolve(ts, mesh->GetSolutionVector()) >> testErrorChecker;
+            timeStepper.Solve();
 
             // Compare the actual vs expected values
-            DMTSCheckFromOptions(ts, mesh->GetSolutionVector()) >> testErrorChecker;
-
-            // Cleanup
-            TSDestroy(&ts) >> testErrorChecker;
+            DMTSCheckFromOptions(timeStepper.GetTS(), mesh->GetSolutionVector()) >> testErrorChecker;
         }
         ablate::environment::RunEnvironment::Finalize();
         exit(0);

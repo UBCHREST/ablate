@@ -15,8 +15,6 @@ void ablate::radiation::VolumeRadiation::Setup() {
 
     ablate::solver::CellSolver::Setup();
     radiation->Setup(cellRange, GetSubDomain());  //!< Insert the cell range of the solver here
-    auto radiationPreStep = [this](auto&& PH1, auto&& PH2) { RadiationPreStep(std::forward<decltype(PH1)>(PH1)); };
-    RegisterPreStep(radiationPreStep);
     RestoreRange(cellRange);
 }
 
@@ -31,15 +29,14 @@ void ablate::radiation::VolumeRadiation::Initialize() {
     RestoreRange(cellRange);
 }
 
-PetscErrorCode ablate::radiation::VolumeRadiation::RadiationPreStep(TS ts) {
+PetscErrorCode ablate::radiation::VolumeRadiation::PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) {
     PetscFunctionBegin;
 
     /** Only update the radiation solution if the sufficient interval has passed */
     PetscInt step;
-    PetscReal time;
     TSGetStepNumber(ts, &step) >> checkError;
     TSGetTime(ts, &time) >> checkError;
-    if (interval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
+    if (initialStage && interval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
         radiation->Solve(subDomain->GetSolutionVector(), subDomain->GetField("temperature"), subDomain->GetAuxVector());
     }
     PetscFunctionReturn(0);

@@ -31,7 +31,19 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
     // Hold a list of solvers
     std::vector<std::shared_ptr<ablate::solver::Solver>> solvers;
 
+    // hold a bool to determine if this domain has been initialized
+    bool initialized = false;
+
+    // Keep track of the current stage count, this is a hack to know if we are in a preStep/preStage for rhs
+    bool runInitialStep = false;
+
     // Static calls to be passed to the Petsc TS
+    /**
+     * The TSPreStepFunction is used to call both th PreStep (once) and PreStage (as need calls).
+     * @param ts
+     * @param stagetime
+     * @return
+     */
     static PetscErrorCode TSPreStageFunction(TS ts, PetscReal stagetime);
     static PetscErrorCode TSPreStepFunction(TS ts);
     static PetscErrorCode TSPostStepFunction(TS ts);
@@ -46,7 +58,12 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
     static PetscErrorCode SolverComputeBoundaryFunctionLocal(DM dm, PetscReal time, Vec locX, Vec locX_t, void *timeStepperCtx);
     static PetscErrorCode SolverComputeIFunctionLocal(DM dm, PetscReal time, Vec locX, Vec locX_t, Vec locF, void *timeStepperCtx);
     static PetscErrorCode SolverComputeIJacobianLocal(DM dm, PetscReal time, Vec locX, Vec locX_t, PetscReal X_tShift, Mat Jac, Mat JacP, void *domainCtx);
-    static PetscErrorCode SolverComputeRHSFunctionLocal(DM, PetscReal, Vec, Vec, void *);
+
+    /**
+     * Note this is not a Local function.  It includes fixes for Petsc TSComputeRHSFunction_DMLocal
+     * @return
+     */
+    static PetscErrorCode SolverComputeRHSFunction(TS ts, PetscReal time, Vec X, Vec F, void *ctx);
 
     // store the list of field initializations
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations;
@@ -55,13 +72,48 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances;
 
    public:
-    TimeStepper(std::string name, std::shared_ptr<ablate::domain::Domain> domain, std::map<std::string, std::string> arguments = {}, std::shared_ptr<io::Serializer> serializer = {},
+    /**
+     * primary constructor for timestepper
+     * @param name
+     * @param domain
+     * @param arguments
+     * @param serializer
+     * @param initialization
+     * @param exactSolutions
+     * @param absoluteTolerances
+     * @param relativeTolerances
+     */
+    TimeStepper(std::string name, std::shared_ptr<ablate::domain::Domain> domain, std::shared_ptr<ablate::parameters::Parameters> arguments = {}, std::shared_ptr<io::Serializer> serializer = {},
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {},
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances = {});
+
+    /**
+     * primary constructor for timestepper without an unqiue name
+     * @param name
+     * @param domain
+     * @param arguments
+     * @param serializer
+     * @param initialization
+     * @param exactSolutions
+     * @param absoluteTolerances
+     * @param relativeTolerances
+     */
+    TimeStepper(std::shared_ptr<ablate::domain::Domain> domain, std::shared_ptr<ablate::parameters::Parameters> arguments = {}, std::shared_ptr<io::Serializer> serializer = {},
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {},
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances = {});
+
     ~TimeStepper();
 
     TS &GetTS() { return ts; }
 
+    /**
+     * Optional call to Initialize before setup
+     */
+    void Initialize();
+
+    /**
+     * Initializes if needed, then calls solve
+     */
     void Solve();
 
     void Register(std::shared_ptr<ablate::solver::Solver> solver, std::vector<std::shared_ptr<monitors::Monitor>> = {});

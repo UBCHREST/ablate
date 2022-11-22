@@ -199,7 +199,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         auto initialConditionEuler = std::make_shared<ablate::mathFunctions::FieldFunction>("euler", std::make_shared<ablate::mathFunctions::ConstantValue>(0.0));
 
         // create a time stepper
-        auto timeStepper = ablate::solver::TimeStepper("timeStepper", domain, {{"ts_max_steps", "0"}}, {}, {initialConditionEuler});
+        auto timeStepper = ablate::solver::TimeStepper("timeStepper", domain, ablate::parameters::MapParameters::Create({{"ts_max_steps", "0"}}), {}, {initialConditionEuler});
 
         // Create an instance of radiation
         auto radiationPropertiesModel = std::make_shared<ablate::eos::radiationProperties::Constant>(1.0);
@@ -223,7 +223,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         VecZeroEntries(rhs) >> testErrorChecker;
 
         // Apply the rhs function for the radiation solver
-        radiation->RadiationPreStep(timeStepper.GetTS()) >> testErrorChecker;
+        radiation->PreRHSFunction(timeStepper.GetTS(), 0.0, true, nullptr) >> testErrorChecker;
         radiation->ComputeRHSFunction(0, rhs, rhs);  // The ray tracing function needs to be renamed in order to occupy the role of compute right hand side function
 
         // determine the euler field

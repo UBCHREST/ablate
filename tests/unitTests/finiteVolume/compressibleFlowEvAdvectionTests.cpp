@@ -20,7 +20,6 @@
 #include "mathFunctions/functionFactory.hpp"
 #include "monitors/solutionErrorMonitor.hpp"
 #include "parameters/mapParameters.hpp"
-#include "solver/directSolverTsInterface.hpp"
 #include "utilities/petscUtilities.hpp"
 
 using namespace ablate;
@@ -54,15 +53,6 @@ TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
 
         // March over each level
         for (PetscInt l = 0; l < GetParam().levels; l++) {
-            TS ts; /* timestepper */
-
-            // Create a ts
-            TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
-            TSSetProblemType(ts, TS_NONLINEAR) >> testErrorChecker;
-            TSSetType(ts, TSEULER) >> testErrorChecker;
-            TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
-            TSSetFromOptions(ts) >> testErrorChecker;
-
             // Create a mesh
             PetscInt nx1D = initialNx * PetscPowRealInt(2, l);
 
@@ -83,12 +73,20 @@ TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
                                                                   std::vector<double>{.01, .01},
                                                                   std::vector<std::string>{} /*boundary*/,
                                                                   false /*simplex*/);
-            // setup a flow parameters
-            auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.25"}});
 
             // setup solutions from the exact params
             auto exactEulerSolution = std::make_shared<mathFunctions::FieldFunction>(CompressibleFlowFields::EULER_FIELD, GetParam().eulerExact);
             auto evExactSolution = std::make_shared<mathFunctions::FieldFunction>(CompressibleFlowFields::DENSITY_EV_FIELD, GetParam().densityEvExact);
+
+            // create a time stepper
+            auto timeStepper = ablate::solver::TimeStepper(mesh,
+                                                           nullptr,
+                                                           {},
+                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution},
+                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution});
+
+            // setup a flow parameters
+            auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.25"}});
 
             auto boundaryConditions = std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{
                 std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("walls", std::vector<int>{1, 2, 3, 4}, exactEulerSolution),
@@ -104,35 +102,20 @@ TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
                                                                                              std::vector<std::shared_ptr<processes::Process>>(),
                                                                                              boundaryConditions /*boundary conditions*/);
 
-            mesh->InitializeSubDomains({flowObject},
-                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution},
-                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution});
-            DMSetApplicationContext(mesh->GetDM(), flowObject.get());
-            solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
-
-            // Name the flow field
-            PetscObjectSetName(((PetscObject)mesh->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;
-
-            // Setup the TS
-            TSSetFromOptions(ts) >> testErrorChecker;
-
-            // advance to the end time
-            TSSolve(ts, mesh->GetSolutionVector()) >> testErrorChecker;
-
-            PetscReal endTime;
-            TSGetTime(ts, &endTime) >> testErrorChecker;
+            // run
+            timeStepper.Register(flowObject);
+            timeStepper.Solve();
 
             // Get the L2 and LInf norms
             std::vector<PetscReal> l2Norm = ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::monitors::SolutionErrorMonitor::Norm::L2_NORM)
-                                                .ComputeError(ts, endTime, mesh->GetSolutionVector());
+                                                .ComputeError(timeStepper.GetTS(), timeStepper.GetTime(), mesh->GetSolutionVector());
             std::vector<PetscReal> lInfNorm = ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::monitors::SolutionErrorMonitor::Norm::LINF)
-                                                  .ComputeError(ts, endTime, mesh->GetSolutionVector());
+                                                  .ComputeError(timeStepper.GetTS(), timeStepper.GetTime(), mesh->GetSolutionVector());
 
             // Store the residual into history
             const PetscReal h = 0.01 / nx1D;
             l2History.Record(h, l2Norm);
             lInfHistory.Record(h, lInfNorm);
-            TSDestroy(&ts) >> testErrorChecker;
         }
 
         std::string l2Message;

@@ -5,7 +5,6 @@ static char help[] = "Compressible ShockTube 1D Tests";
 #include <domain/modifiers/ghostBoundaryCells.hpp>
 #include <finiteVolume/compressibleFlowFields.hpp>
 #include <memory>
-#include <solver/directSolverTsInterface.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
@@ -142,7 +141,6 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
     StartWithMPI
         {
             DM dmCreate; /* problem definition */
-            TS ts;       /* timestepper */
 
             // Get the testing param
             auto &testingParam = GetParam();
@@ -150,12 +148,6 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
             // initialize petsc and mpi
             ablate::environment::RunEnvironment::Initialize(argc, argv);
             ablate::utilities::PetscUtilities::Initialize(help);
-
-            // Create a ts
-            TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
-            TSSetProblemType(ts, TS_NONLINEAR) >> testErrorChecker;
-            TSSetType(ts, TSEULER) >> testErrorChecker;
-            TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 
             // Create a mesh
             // hard code the problem setup to act like a oneD problem
@@ -173,10 +165,16 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
             auto mesh = std::make_shared<ablate::domain::DMWrapper>(
                 dmCreate, fieldDescriptors, std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::GhostBoundaryCells>()});
 
+            auto initialCondition = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(SetInitialCondition, (void *)&testingParam.initialConditions));
+
+            // create a time stepper
+            auto timeStepper = ablate::solver::TimeStepper(mesh,
+                                                           ablate::parameters::MapParameters::Create({{"ts_max_time", std::to_string(testingParam.maxTime)}}),
+                                                           {},
+                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{initialCondition});
+
             // Setup the flow data
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", std::to_string(testingParam.cfl)}});
-
-            auto initialCondition = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(SetInitialCondition, (void *)&testingParam.initialConditions));
 
             auto boundaryConditions = std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{
                 std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "wall left", 1, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions),
@@ -192,15 +190,9 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
                                                                                              boundaryConditions /*boundary conditions*/,
                                                                                              true /*physics time step*/);
 
-            mesh->InitializeSubDomains({flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{initialCondition}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{});
-            solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
-
-            // Setup the TS
-            TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;
-            TSSetFromOptions(ts) >> testErrorChecker;
-            TSSetMaxTime(ts, testingParam.maxTime) >> testErrorChecker;
-
-            TSSolve(ts, mesh->GetSolutionVector()) >> testErrorChecker;
+            // run
+            timeStepper.Register(flowObject);
+            timeStepper.Solve();
 
             // extract the results
             std::map<std::string, std::vector<PetscReal>> results;
@@ -217,9 +209,6 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
                     ASSERT_NEAR(expectedResults.second[i], computedResults[i], 1E-6) << " in " << expectedResults.first << " at [" << i << "]";
                 }
             }
-
-            // Cleanup
-            TSDestroy(&ts) >> testErrorChecker;
         }
         ablate::environment::RunEnvironment::Finalize();
         exit(0);

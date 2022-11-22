@@ -293,21 +293,6 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
     VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
 }
 void ablate::boundarySolver::BoundarySolver::Initialize() {
-    RegisterPreStage([](auto ts, auto& solver, auto stageTime) {
-        Vec locXVec;
-        DMGetLocalVector(solver.GetSubDomain().GetDM(), &locXVec) >> checkError;
-        DMGlobalToLocal(solver.GetSubDomain().GetDM(), solver.GetSubDomain().GetSolutionVector(), INSERT_VALUES, locXVec) >> checkError;
-
-        // Get the time from the ts
-        PetscReal time;
-        TSGetTime(ts, &time) >> checkError;
-
-        auto& cellSolver = dynamic_cast<CellSolver&>(solver);
-        cellSolver.UpdateAuxFields(time, locXVec, solver.GetSubDomain().GetAuxVector());
-
-        DMRestoreLocalVector(solver.GetSubDomain().GetDM(), &locXVec) >> checkError;
-    });
-
     if (!boundaryUpdateFunctions.empty()) {
         RegisterPreStep([this](auto ts, auto& solver) { UpdateVariablesPreStep(ts, solver); });
     }
@@ -375,6 +360,13 @@ void ablate::boundarySolver::BoundarySolver::RegisterFunction(ablate::boundarySo
 
     boundaryUpdateFunctions.push_back(functionDescription);
 }
+/**
+ * Register an pre function that is called before any RHS function
+ * @param function
+ * @param context
+ */
+void ablate::boundarySolver::BoundarySolver::RegisterPreRHSFunction(BoundaryPreRHSFunctionDefinition function, void* context) { preRhsFunctions.emplace_back(function, context); }
+
 PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) {
     PetscFunctionBeginUser;
     PetscCall(ComputeRHSFunction(time, locXVec, locFVec, boundarySourceFunctions));
@@ -821,6 +813,22 @@ void ablate::boundarySolver::BoundarySolver::UpdateVariablesPreStep(TS, ablate::
         VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
     }
     DMRestoreLocalVector(subDomain->GetDM(), &locXVec) >> checkError;
+}
+
+PetscErrorCode ablate::boundarySolver::BoundarySolver::PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) {
+    PetscFunctionBeginUser;
+    try {
+        // update any aux fields, including ghost cells
+        UpdateAuxFields(time, locX, subDomain->GetAuxVector());
+    } catch (std::exception& exception) {
+        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in UpdateAuxFields: %s", exception.what());
+    }
+
+    // iterate over any pre arbitrary RHS functions
+    for (const auto& rhsFunction : preRhsFunctions) {
+        PetscCall(rhsFunction.first(*this, ts, time, initialStage, locX, rhsFunction.second));
+    }
+    PetscFunctionReturn(0);
 }
 
 std::istream& ablate::boundarySolver::operator>>(std::istream& is, ablate::boundarySolver::BoundarySolver::BoundarySourceType& value) {

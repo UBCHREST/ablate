@@ -152,6 +152,7 @@ void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_
     for (auto& solver : solvers) {
         solver->Setup();
     }
+
     // Create the global structures
     CreateStructures();
     for (auto& subDomain : subDomains) {

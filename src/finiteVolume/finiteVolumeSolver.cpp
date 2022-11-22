@@ -124,21 +124,6 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
 
 PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
-    auto dm = subDomain->GetDM();
-    auto ds = subDomain->GetDiscreteSystem();
-    /* Handle non-essential (e.g. outflow) boundary values.  This should be done before the auxFields are updated so that boundary values can be updated */
-    ierr = ablate::solver::Solver::DMPlexInsertBoundaryValues_Plex(dm, ds, PETSC_FALSE, locXVec, time, faceGeomVec, cellGeomVec, nullptr);
-    CHKERRQ(ierr);
-
-    try {
-        // update any aux fields, including ghost cells
-        UpdateAuxFields(time, locXVec, subDomain->GetAuxVector());
-
-    } catch (std::exception& exception) {
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in UpdateAuxFields: %s", exception.what());
-    }
-
     solver::Range faceRange, cellRange;
     GetFaceRange(faceRange);
     GetCellRange(cellRange);
@@ -183,8 +168,7 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
 
     // iterate over any arbitrary RHS functions
     for (const auto& rhsFunction : rhsArbitraryFunctions) {
-        ierr = rhsFunction.first(*this, dm, time, locXVec, locFVec, rhsFunction.second);
-        CHKERRQ(ierr);
+        PetscCall(rhsFunction.first(*this, subDomain->GetDM(), time, locXVec, locFVec, rhsFunction.second));
     }
 
     PetscFunctionReturn(0);
@@ -256,6 +240,8 @@ void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(CellInterpola
 }
 
 void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(RHSArbitraryFunction function, void* context) { rhsArbitraryFunctions.emplace_back(function, context); }
+
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterPreRHSFunction(PreRHSFunctionDefinition function, void* context) { preRhsFunctions.emplace_back(function, context); }
 
 void ablate::finiteVolume::FiniteVolumeSolver::EnforceTimeStep(TS ts, ablate::solver::Solver& solver) {
     auto& flowFV = dynamic_cast<ablate::finiteVolume::FiniteVolumeSolver&>(solver);
@@ -352,6 +338,30 @@ void ablate::finiteVolume::FiniteVolumeSolver::GetCellRangeWithoutGhost(solver::
         // Get the range
         ISGetPointRange(faceRange.is, &faceRange.start, &faceRange.end, &faceRange.points) >> checkError;
     }
+}
+
+PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeBoundary(PetscReal time, Vec locX, Vec locX_t) {
+    PetscFunctionBeginUser;
+    auto dm = subDomain->GetDM();
+    auto ds = subDomain->GetDiscreteSystem();
+    /* Handle non-essential (e.g. outflow) boundary values.  This should be done before the auxFields are updated so that boundary values can be updated */
+    PetscCall(ablate::solver::Solver::DMPlexInsertBoundaryValues_Plex(dm, ds, PETSC_FALSE, locX, time, faceGeomVec, cellGeomVec, nullptr));
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) {
+    PetscFunctionBeginUser;
+    try {
+        // update any aux fields, including ghost cells
+        UpdateAuxFields(time, locX, subDomain->GetAuxVector());
+    } catch (std::exception& exception) {
+        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in UpdateAuxFields: %s", exception.what());
+    }
+    // iterate over any pre arbitrary RHS functions
+    for (const auto& rhsFunction : preRhsFunctions) {
+        PetscCall(rhsFunction.first(*this, ts, time, initialStage, locX, rhsFunction.second));
+    }
+    PetscFunctionReturn(0);
 }
 
 #include "registrar.hpp"

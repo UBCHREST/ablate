@@ -14,7 +14,6 @@
 #include "particles/initializers/boxInitializer.hpp"
 #include "particles/particleSolver.hpp"
 #include "particles/processes/tracer.hpp"
-#include "solver/directSolverTsInterface.hpp"
 #include "utilities/petscUtilities.hpp"
 
 using namespace ablate;
@@ -286,8 +285,6 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
 TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
     StartWithMPI
         {
-            TS ts; /* timestepper */
-
             // Get the testing param
             auto testingParam = GetParam();
             omega = testingParam.omega;
@@ -299,12 +296,9 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             // setup the required fields for the flow
             std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteElement::LowMachFlowFields>()};
 
-            // setup the ts
-            TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
+            // setup the mesh
             auto mesh = std::make_shared<ablate::domain::BoxMesh>(
                 "mesh", fieldDescriptors, std::vector<std::shared_ptr<domain::modifiers::Modifier>>{}, std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
-            TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;
-            TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 
             // Setup the flow data
             // pull the parameters from the petsc options
@@ -317,7 +311,14 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             auto temperatureExact =
                 std::make_shared<mathFunctions::FieldFunction>("temperature", ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact));
 
-            auto flowObject = std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
+            // create a time stepper
+            auto timeStepper = ablate::solver::TimeStepper(mesh,
+                                                           nullptr,
+                                                           {},
+                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
+                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
+
+            timeStepper.Register(std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
                 "testFlow",
                 domain::Region::ENTIREDOMAIN,
                 nullptr,
@@ -332,7 +333,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                                                                                     std::make_shared<boundaryConditions::Essential>("right wall temp", 2, temperatureExact),
                                                                                     std::make_shared<boundaryConditions::Essential>("left wall temp", 4, temperatureExact)},
                 /* aux updates*/
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{});
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{}));
 
             // Create the particle domain
             // pass all options with the particles prefix to the particle object
@@ -352,13 +353,10 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                                                                     /** exact solutions**/
                                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{std::make_shared<ablate::mathFunctions::FieldFunction>(
                                                                         particles::ParticleSolver::ParticleCoordinates, ablate::mathFunctions::Create(testingParam.particleExact))});
+            timeStepper.Register(particles);
 
-            mesh->InitializeSubDomains({flowObject, particles},
-                                       /* init*/
-                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
-                                       /* exact solutions*/
-                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
-            solver::DirectSolverTsInterface directSolverTsInterface(ts, {flowObject, particles});
+            // Setup the solvers
+            timeStepper.Initialize();
 
             // Override problem with source terms, boundary, and set the exact solution
             {
@@ -382,23 +380,18 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             }
 
             // Check the convergence
-            DMTSCheckFromOptions(ts, mesh->GetSolutionVector()) >> testErrorChecker;
+            DMTSCheckFromOptions(timeStepper.GetTS(), mesh->GetSolutionVector()) >> testErrorChecker;
 
             // setup the initial conditions for error computing, this is only used for tests
             TSSetComputeInitialCondition(particles->GetParticleTS(), ablate::particles::ParticleSolver::ComputeParticleExactSolution) >> testErrorChecker;
 
-            // setup the flow monitor to also check particles
-            TSMonitorSet(ts, MonitorFlowAndParticleError, particles.get(), NULL) >> testErrorChecker;
-            TSSetFromOptions(ts) >> testErrorChecker;
-
             // Solve the one way coupled system
-            TSSolve(ts, mesh->GetSolutionVector()) >> testErrorChecker;
+            TSMonitorSet(timeStepper.GetTS(), MonitorFlowAndParticleError, particles.get(), NULL) >> testErrorChecker;
+            TSSetFromOptions(timeStepper.GetTS()) >> testErrorChecker;
+            timeStepper.Solve();
 
             // Compare the actual vs expected values
-            DMTSCheckFromOptions(ts, mesh->GetSolutionVector()) >> testErrorChecker;
-
-            // Cleanup
-            TSDestroy(&ts) >> testErrorChecker;
+            DMTSCheckFromOptions(timeStepper.GetTS(), mesh->GetSolutionVector()) >> testErrorChecker;
         }
         ablate::environment::RunEnvironment::Finalize();
         exit(0);

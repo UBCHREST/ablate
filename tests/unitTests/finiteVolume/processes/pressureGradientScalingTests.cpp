@@ -19,7 +19,6 @@
 #include "mathFunctions/functionFactory.hpp"
 #include "mathFunctions/geom/sphere.hpp"
 #include "parameters/mapParameters.hpp"
-#include "solver/directSolverTsInterface.hpp"
 #include "utilities/petscUtilities.hpp"
 
 typedef struct {
