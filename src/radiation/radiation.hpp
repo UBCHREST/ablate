@@ -5,6 +5,7 @@
 #include <set>
 #include "eos/radiationProperties/radiationProperties.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
+#include "io/interval/interval.hpp"
 #include "monitors/logs/log.hpp"
 #include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
@@ -22,7 +23,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      * @param rayNumber
      * @param options other options
      */
-    Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
+    Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<io::interval::Interval> intervalIn, const PetscInt raynumber, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
               std::shared_ptr<ablate::monitors::logs::Log> = {});
 
     virtual ~Radiation();
@@ -43,6 +44,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
         PetscReal Isource = 0;                   //!< Value that will be contributed to by every ray segment.
         PetscReal Kradd = 1;                     //!< Value that will be contributed to by every ray segment.
         PetscReal intensity = 0;                 //!<  Value that will be contributed to by every ray.
+        PetscReal net = 0;
         std::map<std::string, Carrier> handler;  //!< Stores local carrier information
     };
 
@@ -61,11 +63,12 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     virtual void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
     inline PetscReal GetIntensity(PetscInt iCell) {  //!< Function to give other classes access to the intensity
-        return origin[iCell].intensity;
+        return origin[iCell].net;
     }
 
     /// Class Methods
     void Solve(Vec solVec, ablate::domain::Field temperatureField, Vec aux);
+    void EvaluateGains(Vec solVec, ablate::domain::Field temperatureField, Vec auxVec);
 
     virtual void ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray);  //!< Routine to move the particle one step
     virtual PetscReal SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi,
@@ -158,6 +161,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      */
 
     std::map<std::string, Segment> rays;
+    const std::shared_ptr<io::interval::Interval> interval;
     std::basic_string<char>&& solverId;
     const std::shared_ptr<domain::Region> region;
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;

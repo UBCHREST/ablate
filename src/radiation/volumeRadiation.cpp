@@ -36,9 +36,9 @@ PetscErrorCode ablate::radiation::VolumeRadiation::PreRHSFunction(TS ts, PetscRe
     PetscInt step;
     TSGetStepNumber(ts, &step) >> checkError;
     TSGetTime(ts, &time) >> checkError;
-    if (initialStage && interval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
-        radiation->Solve(subDomain->GetSolutionVector(), subDomain->GetField("temperature"), subDomain->GetAuxVector());
-    }
+//        if (initialStage && interval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
+    radiation->Solve(subDomain->GetSolutionVector(), subDomain->GetField("temperature"), subDomain->GetAuxVector());
+    //    }
     PetscFunctionReturn(0);
 }
 
