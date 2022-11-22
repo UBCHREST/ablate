@@ -98,15 +98,6 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     PetscErrorCode ComputeBoundary(PetscReal time, Vec locX, Vec locX_t) override;
 
     /**
-     * Updates any traditional ghost node boundary
-     * @param time
-     * @param locX
-     * @param locX_t
-     * @return
-     */
-    PetscErrorCode ComputeBoundary(PetscReal time, Vec locX, Vec locX_t) override;
-
-    /**
      * Register a FVM rhs discontinuous flux function
      * @param function
      * @param context
