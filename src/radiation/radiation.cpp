@@ -8,9 +8,8 @@
 #include "finiteVolume/finiteVolumeSolver.hpp"
 #include "io/interval/interval.hpp"
 #include "utilities/constants.hpp"
-#include "utilities/mathUtilities.hpp"
 
-ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<io::interval::Interval> intervalIn, const PetscInt raynumber,
+ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber,
                                         std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
     : solverId((std::basic_string<char> &&) solverId), region(region), radiationModel(std::move(radiationModelIn)), log(std::move(log)) {
     nTheta = raynumber;    //!< The number of angles to solve with, given by user input
@@ -297,14 +296,9 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     /** Declare the basic information*/
     PetscReal* sol;          //!< The solution value at any given location
     PetscReal* temperature;  //!< The temperature at any given location
-    PetscReal dTheta = ablate::utilities::Constants::pi / (nTheta);
-    PetscReal dPhi = (2 * ablate::utilities::Constants::pi) / (nPhi);
-    double kappa = 1;  //!< Absorptivity coefficient, property of each cell
-    double theta;
+    double kappa = 1;        //!< Absorptivity coefficient, property of each cell
 
     auto absorptivityFunctionContext = absorptivityFunction.context.get();  //!< Get access to the absorption function
-
-    if (interval->Check(PetscObjectComm((PetscObject)ts), step, time)) EvaluateGains(solVec, temperatureField, auxVec);
 
     /** ********************************************************************************************************************************
      * Loop through the cell range and compute the origin contributions. */
@@ -734,10 +728,15 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     /** Restore the fields associated with the particles after all of the particles have been stepped. */
     DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
     DMSwarmRestoreField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
+
+    /** Cleanup */
+    VecRestoreArrayRead(solVec, &solArray);
+    VecRestoreArrayRead(auxVec, &auxArray);
+    VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
 }
 
 #include "registrar.hpp"
 REGISTER_DEFAULT(ablate::radiation::Radiation, ablate::radiation::Radiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
-                 ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(ablate::io::interval::Interval, "interval", "number of time steps between the radiation solves"),
-                 ARG(int, "rays", "number of rays used by the solver"), ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"),
+                 ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(int, "rays", "number of rays used by the solver"),
+                 ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"),
                  OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

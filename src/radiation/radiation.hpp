@@ -23,7 +23,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      * @param rayNumber
      * @param options other options
      */
-    Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<io::interval::Interval> intervalIn, const PetscInt raynumber, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
+    Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
               std::shared_ptr<ablate::monitors::logs::Log> = {});
 
     virtual ~Radiation();
@@ -43,8 +43,8 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
         PetscReal I0 = 0;                        //!< Determing the initial ray intensity by grabbing the head cell of the furthest ray? There will need to be additional setup for this.
         PetscReal Isource = 0;                   //!< Value that will be contributed to by every ray segment.
         PetscReal Kradd = 1;                     //!< Value that will be contributed to by every ray segment.
-        PetscReal intensity = 0;                 //!<  Value that will be contributed to by every ray.
-        PetscReal net = 0;
+        PetscReal intensity = 0;                 //!< The irradiation value that will be contributed to by every ray. This is updated every (pre-step && interval) gain evaluation.
+        PetscReal net = 0;                       //!< The net radiation value including the losses. This is updated every pre-stage solve.
         std::map<std::string, Carrier> handler;  //!< Stores local carrier information
     };
 
@@ -67,7 +67,12 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     }
 
     /// Class Methods
+    /** The solve function evaluates the net radiation source term. However, the net radiation value must be updated by each solver individually.
+     * The solve updates every value except for the radiative gains from the domain. This avoids doing the must computationally expensive part of the solve at every stage.
+     * */
     void Solve(Vec solVec, ablate::domain::Field temperatureField, Vec aux);
+    /**
+     * */
     void EvaluateGains(Vec solVec, ablate::domain::Field temperatureField, Vec auxVec);
 
     virtual void ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray);  //!< Routine to move the particle one step
@@ -161,7 +166,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      */
 
     std::map<std::string, Segment> rays;
-    const std::shared_ptr<io::interval::Interval> interval;
     std::basic_string<char>&& solverId;
     const std::shared_ptr<domain::Region> region;
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;

@@ -36,9 +36,9 @@ PetscErrorCode ablate::radiation::VolumeRadiation::PreRHSFunction(TS ts, PetscRe
     PetscInt step;
     TSGetStepNumber(ts, &step) >> checkError;
     TSGetTime(ts, &time) >> checkError;
-//        if (initialStage && interval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
-    radiation->Solve(subDomain->GetSolutionVector(), subDomain->GetField("temperature"), subDomain->GetAuxVector());
-    //    }
+    if (initialStage && interval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
+        radiation->EvaluateGains(subDomain->GetSolutionVector(), subDomain->GetField("temperature"), subDomain->GetAuxVector());
+    }
     PetscFunctionReturn(0);
 }
 
@@ -52,6 +52,8 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
 
     solver::Range cellRange;
     GetCellRange(cellRange);  //!< Gets the cell range to iterate over when retrieving cell indexes from the solver
+
+    radiation->Solve(subDomain->GetSolutionVector(), subDomain->GetField("temperature"), subDomain->GetAuxVector());
 
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
