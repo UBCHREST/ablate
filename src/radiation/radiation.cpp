@@ -289,8 +289,8 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     VecGetArrayRead(auxVec, &auxArray);
 
     /** Declare the basic information*/
-    PetscReal* sol;          //!< The solution value at any given location
-    PetscReal* temperature;  //!< The temperature at any given location
+    PetscReal* sol = nullptr;          //!< The solution value at any given location
+    PetscReal* temperature = nullptr;  //!< The temperature at any given location
     PetscReal dTheta = ablate::utilities::Constants::pi / (nTheta);
     PetscReal dPhi = (2 * ablate::utilities::Constants::pi) / (nPhi);
     double kappa = 1;  //!< Absorptivity coefficient, property of each cell
@@ -352,16 +352,21 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                     Get the array that lives inside the vector
                     Gets the temperature from the cell index specified
                 */
-                DMPlexPointLocalFieldRead(auxDm, segment.cells[n], temperatureField.id, auxArray, &temperature);
-                DMPlexPointLocalRead(solDm, segment.cells[n], solArray, &sol);
+                DMPlexPointGlobalRead(solDm, segment.cells[n], solArray, &sol) >> checkError;
+                // check for a ghost cell, don't add in any constribuation from ghost cels
+                if (sol) {
+                    DMPlexPointLocalFieldRead(auxDm, segment.cells[n], temperatureField.id, auxArray, &temperature) >> checkError;
+                    if (temperature) {
+                        /** Input absorptivity (kappa) values from model here. */
+                        absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext) >> checkError;
+                        segment.Ij += FlameIntensity(1 - exp(-kappa * segment.h[n]), *temperature) * segment.Krad;
+                        segment.Krad *= exp(-kappa * segment.h[n]);  //!< Compute the total absorption for this domain
 
-                /** Input absorptivity (kappa) values from model here. */
-                absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
-                segment.Ij += FlameIntensity(1 - exp(-kappa * segment.h[n]), *temperature) * segment.Krad;
-                segment.Krad *= exp(-kappa * segment.h[n]);  //!< Compute the total absorption for this domain
-
-                if (n == (numPoints - 1)) { /** If this is the beginning of the ray, set this as the initial intensity. (The segment intensities will be filtered through during the origin run) */
-                    segment.I0 = FlameIntensity(1, *temperature);  //!< Set the initial intensity of the ray segment
+                        if (n ==
+                            (numPoints - 1)) { /** If this is the beginning of the ray, set this as the initial intensity. (The segment intensities will be filtered through during the origin run) */
+                            segment.I0 = FlameIntensity(1, *temperature);  //!< Set the initial intensity of the ray segment
+                        }
+                    }
                 }
             }
         }
