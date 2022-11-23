@@ -91,7 +91,7 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
         solver::DynamicRange faceRange;
         for (const auto &i : bSolver.GetBoundaryGeometry()) {
             PetscInt ghost = -1;
-            DMLabelGetValue(ghostLabel, i.geometry.faceId, &ghost) >> checkError;
+            if (ghostLabel) DMLabelGetValue(ghostLabel, i.geometry.faceId, &ghost) >> checkError;
             if (!(ghost >= 0)) faceRange.Add(i.geometry.faceId);  //!< Add each ID to the range that the radiation solver will use
         }
         radiation->Setup(faceRange.GetRange(), bSolver.GetSubDomain());

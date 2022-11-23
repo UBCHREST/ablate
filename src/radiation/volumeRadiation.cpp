@@ -20,7 +20,7 @@ void ablate::radiation::VolumeRadiation::Setup() {
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
         PetscInt ghost = -1;
-        DMLabelGetValue(ghostLabel, iCell, &ghost) >> checkError;
+        if (ghostLabel) DMLabelGetValue(ghostLabel, iCell, &ghost) >> checkError;
         if (!(ghost >= 0)) radiationCellRange.Add(iCell);
     }
 
