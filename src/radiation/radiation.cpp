@@ -530,18 +530,22 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
          * In the case of a volume implementation, the temperature of the losses will be the temperature of the volumetric origin cell.
          * This distinction must be made because the temperature of faces is undefined.
          * */
-        PetscReal losses = 1;
-        PetscInt index = GetLossCell(iCell, losses, faceDM, cellDM);  //!< Get the cell that the losses should be calculated with
-        DMPlexPointLocalFieldRead(auxDm, index, temperatureField.id, auxArray, &temperature);
-        absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
-        GetFuelEmissivity(kappa);  //!< Adjusts the losses based on the material from which the radiation is emitted.
-        losses *= 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
-        if (log) {
-            PetscReal centroid[3];
-            DMPlexComputeCellGeometryFVM(solDm, index, nullptr, centroid, nullptr) >> checkError;  //!< Reads the cell location from the current cell
-            printf("%f %f %f %f %f %f\n", centroid[0], centroid[1], centroid[2], origin[iCell].intensity, losses, *temperature);
+        DMPlexPointGlobalRead(solDm, iCell, solArray, &sol) >> checkError;
+        // check for ghost cell
+        if(sol) {
+            PetscReal losses = 1;
+            PetscInt index = GetLossCell(iCell, losses, faceDM, cellDM);  //!< Get the cell that the losses should be calculated with
+            DMPlexPointLocalFieldRead(auxDm, index, temperatureField.id, auxArray, &temperature);
+            absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
+            GetFuelEmissivity(kappa);  //!< Adjusts the losses based on the material from which the radiation is emitted.
+            losses *= 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
+            if (log) {
+                PetscReal centroid[3];
+                DMPlexComputeCellGeometryFVM(solDm, index, nullptr, centroid, nullptr) >> checkError;  //!< Reads the cell location from the current cell
+                printf("%f %f %f %f %f %f\n", centroid[0], centroid[1], centroid[2], origin[iCell].intensity, losses, *temperature);
+            }
+            origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
         }
-        origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
     }
 
     /** Cleanup */
