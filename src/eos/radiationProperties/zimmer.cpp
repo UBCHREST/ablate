@@ -158,7 +158,8 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Zimmer::Get
     auto CO2offset = GetFieldComponentOffset("co2", *densityYiField);
 
     if (H2Ooffset == -1 && CH4offset == -1 && COoffset == -1 && CO2offset == -1) {
-        throw std::invalid_argument("Zimmer absorption model requires at least one of the following: H2O, CH4, CO, CO2\n The Constant class allows the absorptivity of the medium to be set manually.\n");
+        throw std::invalid_argument(
+            "Zimmer absorption model requires at least one of the following: H2O, CH4, CO, CO2\n The Constant class allows the absorptivity of the medium to be set manually.\n");
     }
 
     switch (property) {
@@ -206,7 +207,8 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
     auto CO2offset = GetFieldComponentOffset("co2", *densityYiField);
 
     if (H2Ooffset == -1 && CH4offset == -1 && COoffset == -1 && CO2offset == -1) {
-        throw std::invalid_argument("Zimmer absorption model requires at least one of the following: H2O, CH4, CO, CO2\n The Constant class allows the absorptivity of the medium to be set manually.\n");
+        throw std::invalid_argument(
+            "Zimmer absorption model requires at least one of the following: H2O, CH4, CO, CO2\n The Constant class allows the absorptivity of the medium to be set manually.\n");
     }
 
     switch (property) {
