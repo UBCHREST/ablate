@@ -83,10 +83,16 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
 void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
     /** Initialize the radiation solver with the face geometry of the boundary solver in order to solve for surface flux */
     if (radiation) {
+        // check for ghost cells
+        DMLabel ghostLabel;
+        DMGetLabel(bSolver.GetSubDomain().GetDM(), "ghost", &ghostLabel) >> checkError;
+
         //!< Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solver.
         solver::DynamicRange faceRange;
         for (const auto &i : bSolver.GetBoundaryGeometry()) {
-            faceRange.Add(i.geometry.faceId);  //!< Add each ID to the range that the radiation solver will use
+            PetscInt ghost = -1;
+            DMLabelGetValue(ghostLabel, i.geometry.faceId, &ghost) >> checkError;
+            if (!(ghost >= 0)) faceRange.Add(i.geometry.faceId);  //!< Add each ID to the range that the radiation solver will use
         }
         radiation->Setup(faceRange.GetRange(), bSolver.GetSubDomain());
         radiation->Initialize(faceRange.GetRange(), bSolver.GetSubDomain());  //!< Pass the non-dynamic range into the radiation solver

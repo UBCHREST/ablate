@@ -317,7 +317,8 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
          * */
         PetscReal losses = 1;
         PetscInt index = GetLossCell(iCell, losses, faceDM, cellDM);  //!< Get the cell that the losses should be calculated with
-        DMPlexPointLocalFieldRead(auxDm, index, temperatureField.id, auxArray, &temperature);
+        DMPlexPointLocalFieldRead(auxDm, index, temperatureField.id, auxArray, &temperature) >> checkError;
+        DMPlexPointLocalRead(solDm, index, solArray, &sol) >> checkError;
         absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
         GetFuelEmissivity(kappa);  //!< Adjusts the losses based on the material from which the radiation is emitted.
         losses *= 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
