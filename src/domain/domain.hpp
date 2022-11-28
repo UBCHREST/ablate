@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -132,9 +133,10 @@ class Domain {
 
     /**
      * checks check point in this domain for nan/inf in the solution aux vectors
+     * @param globSourceVector optional source vector to also check
      * @return bool True is returned if an error is found.
      */
-    bool CheckSolution();
+    bool CheckFieldValues(Vec globSourceVector = nullptr);
 };
 }  // namespace ablate::domain
 #endif  // ABLATELIBRARY_DOMAIN_H

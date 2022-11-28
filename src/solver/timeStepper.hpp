@@ -37,6 +37,9 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
     // Keep track of the current stage count, this is a hack to know if we are in a preStep/preStage for rhs
     bool runInitialStep = false;
 
+    // If true, uses a slow nan/inf check at each source term for each evaluation
+    const bool verboseSourceCheck;
+
     // Static calls to be passed to the Petsc TS
     /**
      * The TSPreStepFunction is used to call both th PreStep (once) and PreStage (as need calls).
@@ -82,10 +85,12 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
      * @param exactSolutions
      * @param absoluteTolerances
      * @param relativeTolerances
+     * @param verboseSourceCheck
      */
     TimeStepper(std::string name, std::shared_ptr<ablate::domain::Domain> domain, std::shared_ptr<ablate::parameters::Parameters> arguments = {}, std::shared_ptr<io::Serializer> serializer = {},
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {},
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances = {});
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances = {},
+                bool verboseSourceCheck = {});
 
     /**
      * primary constructor for timestepper without an unqiue name
@@ -97,10 +102,12 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
      * @param exactSolutions
      * @param absoluteTolerances
      * @param relativeTolerances
+     * @param verboseSourceCheck
      */
     TimeStepper(std::shared_ptr<ablate::domain::Domain> domain, std::shared_ptr<ablate::parameters::Parameters> arguments = {}, std::shared_ptr<io::Serializer> serializer = {},
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {},
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances = {});
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances = {},
+                bool verboseSourceCheck = {});
 
     ~TimeStepper();
 
