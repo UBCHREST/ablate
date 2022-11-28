@@ -1,6 +1,7 @@
 #include "tChemReactions.hpp"
 #include <TChem_EnthalpyMass.hpp>
 #include <TChem_IgnitionZeroD.hpp>
+#include "eos/tChem/ignitionZeroDTemperatureThreshold.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/petscError.hpp"
 #include "utilities/vectorUtilities.hpp"
@@ -26,6 +27,7 @@ ablate::finiteVolume::processes::TChemReactions::TChemReactions(const std::share
         numTimeIterationsPerInterval = options->Get("numTimeIterationsPerInterval", numTimeIterationsPerInterval);
         jacobianInterval = options->Get("jacobianInterval", jacobianInterval);
         maxAttempts = options->Get("maxAttempts", maxAttempts);
+        thresholdTemperature = options->Get("thresholdTemperature", 0.0);
     }
 }
 ablate::finiteVolume::processes::TChemReactions::~TChemReactions() = default;
@@ -233,9 +235,24 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
         chemistryFunctionPolicy.set_scratch_size(1, Kokkos::PerTeam(TChem::Scratch<real_type_1d_view>::shmem_size(TChem::IgnitionZeroD::getWorkSpaceSize(kineticModelGasConstDataDevice))));
 
         // assume a constant pressure zero D reaction for each cell
-        tChemLib::IgnitionZeroD::runDeviceBatch(
-            chemistryFunctionPolicy, tolNewtonDevice, tolTimeDevice, facDevice, timeAdvanceDevice, stateDevice, timeViewDevice, dtViewDevice, endStateDevice, kineticModelGasConstDataDevices);
-
+        if (thresholdTemperature != 0.0) {
+            // If there is a thresholdTemperature, use the modified version of IgnitionZeroDTemperatureThreshold
+            ablate::eos::tChem::IgnitionZeroDTemperatureThreshold::runDeviceBatch(chemistryFunctionPolicy,
+                                                                                  tolNewtonDevice,
+                                                                                  tolTimeDevice,
+                                                                                  facDevice,
+                                                                                  timeAdvanceDevice,
+                                                                                  stateDevice,
+                                                                                  timeViewDevice,
+                                                                                  dtViewDevice,
+                                                                                  endStateDevice,
+                                                                                  kineticModelGasConstDataDevices,
+                                                                                  thresholdTemperature);
+        } else {
+            // else fall back to the default tChem version
+            tChemLib::IgnitionZeroD::runDeviceBatch(
+                chemistryFunctionPolicy, tolNewtonDevice, tolTimeDevice, facDevice, timeAdvanceDevice, stateDevice, timeViewDevice, dtViewDevice, endStateDevice, kineticModelGasConstDataDevices);
+        }
         // check the output pressure, if it is zero the integration failed
         Kokkos::parallel_reduce(
             "pressureCheck",
@@ -376,4 +393,4 @@ void ablate::finiteVolume::processes::TChemReactions::AddChemistrySourceToFlow(c
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TChemReactions, "reactions using the TChem library", ARG(ablate::eos::EOS, "eos", "the tChem eos"),
          OPT(ablate::parameters::Parameters, "options",
              "time stepping options (dtMin, dtMax, dtDefault, dtEstimateFactor, relToleranceTime, relToleranceTime, absToleranceTime, relToleranceNewton, absToleranceNewton, maxNumNewtonIterations, "
-             "numTimeIterationsPerInterval, jacobianInterval, maxAttempts)"));
+             "numTimeIterationsPerInterval, jacobianInterval, maxAttempts, thresholdTemperature)"));
