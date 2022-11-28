@@ -134,15 +134,6 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerTemperatureFuncti
 ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Zimmer::GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field> &fields) const {
     const auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
 
-    auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
-
-    /** Make sure that the euler field exists.
-     * This is necessary to get the density information.
-     * */
-    if (eulerField == fields.end()) {
-        throw std::invalid_argument("The ablate::eos::PerfectGas requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
-    }
-
     /** Check if the species exist in this run.
      * If all don't exist, throw an error.
      * If some don't exist, then the values should be set to zero for their mass fractions in all cases.
@@ -170,8 +161,6 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Zimmer::Get
                                              .densityYiCO2Offset = CO2offset,
                                              .densityYiCOOffset = COoffset,
                                              .densityYiCH4Offset = CH4offset,
-                                             .eulerOffset = eulerField->offset,
-                                             .dim = eulerField->numberComponents - 2,
                                              .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
                                              .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
         default:
@@ -182,15 +171,6 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Zimmer::Get
 ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::Zimmer::GetRadiationPropertiesTemperatureFunction(RadiationProperty property,
                                                                                                                                   const std::vector<domain::Field> &fields) const {
     const auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
-
-    auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
-
-    /** Make sure that the euler field exists.
-     * This is necessary to get the density information.
-     * */
-    if (eulerField == fields.end()) {
-        throw std::invalid_argument("The ablate::eos::PerfectGas requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
-    }
 
     /** Check if the species exist in this run.
      * If all don't exist, throw an error.
@@ -220,8 +200,6 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
                                     .densityYiCO2Offset = CO2offset,
                                     .densityYiCOOffset = COoffset,
                                     .densityYiCH4Offset = CH4offset,
-                                    .eulerOffset = eulerField->offset,
-                                    .dim = eulerField->numberComponents - 2,
                                     .temperatureFunction = {},
                                     .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
         default:

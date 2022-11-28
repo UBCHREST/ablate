@@ -71,13 +71,19 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      * The solve updates every value except for the radiative gains from the domain. This avoids doing the must computationally expensive part of the solve at every stage.
      * */
     void Solve(Vec solVec, ablate::domain::Field temperatureField, Vec aux);
-    /**
+
+    /** Evaluates the ray intensity from the domain to update the effects of irradiation. Does not impact the solution unless the solve function is called again.
      * */
     void EvaluateGains(Vec solVec, ablate::domain::Field temperatureField, Vec auxVec);
 
+    /** Determines the next location of the search particles during the initialization
+     * */
     virtual void ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray);  //!< Routine to move the particle one step
-    virtual PetscReal SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi,
-                                       PetscInt ntheta);                                 //!< Dummy function that doesn't do anything unless it is overridden by the surface implementation
+
+    /** Determines what component of the incoming radiation should be accounted for when evaluating the irradiation for each ray.
+     * Dummy function that doesn't do anything unless it is overridden by the surface implementation
+     * */
+    virtual PetscReal SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi, PetscInt ntheta);
     virtual PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM solDm, DM pPDm);  //!< Get the index of the cell which the losses should be calculated from
     virtual void GetFuelEmissivity(double& kappa);
 

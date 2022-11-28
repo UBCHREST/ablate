@@ -17,8 +17,6 @@ class Zimmer : public RadiationModel {
         PetscInt densityYiCO2Offset;
         PetscInt densityYiCOOffset;
         PetscInt densityYiCH4Offset;
-        PetscInt eulerOffset;
-        PetscInt dim;
 
         const ThermodynamicFunction temperatureFunction;
         const ThermodynamicTemperatureFunction densityFunction;
