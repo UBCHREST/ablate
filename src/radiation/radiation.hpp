@@ -5,6 +5,7 @@
 #include <set>
 #include "eos/radiationProperties/radiationProperties.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
+#include "io/interval/interval.hpp"
 #include "monitors/logs/log.hpp"
 #include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
@@ -42,7 +43,8 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
         PetscReal I0 = 0;                        //!< Determing the initial ray intensity by grabbing the head cell of the furthest ray? There will need to be additional setup for this.
         PetscReal Isource = 0;                   //!< Value that will be contributed to by every ray segment.
         PetscReal Kradd = 1;                     //!< Value that will be contributed to by every ray segment.
-        PetscReal intensity = 0;                 //!<  Value that will be contributed to by every ray.
+        PetscReal intensity = 0;                 //!< The irradiation value that will be contributed to by every ray. This is updated every (pre-step && interval) gain evaluation.
+        PetscReal net = 0;                       //!< The net radiation value including the losses. This is updated every pre-stage solve.
         std::map<std::string, Carrier> handler;  //!< Stores local carrier information
     };
 
@@ -61,15 +63,27 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     virtual void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
     inline PetscReal GetIntensity(PetscInt iCell) {  //!< Function to give other classes access to the intensity
-        return origin[iCell].intensity;
+        return origin[iCell].net;
     }
 
     /// Class Methods
+    /** The solve function evaluates the net radiation source term. However, the net radiation value must be updated by each solver individually.
+     * The solve updates every value except for the radiative gains from the domain. This avoids doing the must computationally expensive part of the solve at every stage.
+     * */
     void Solve(Vec solVec, ablate::domain::Field temperatureField, Vec aux);
 
+    /** Evaluates the ray intensity from the domain to update the effects of irradiation. Does not impact the solution unless the solve function is called again.
+     * */
+    void EvaluateGains(Vec solVec, ablate::domain::Field temperatureField, Vec auxVec);
+
+    /** Determines the next location of the search particles during the initialization
+     * */
     virtual void ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray);  //!< Routine to move the particle one step
-    virtual PetscReal SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi,
-                                       PetscInt ntheta);                                 //!< Dummy function that doesn't do anything unless it is overridden by the surface implementation
+
+    /** Determines what component of the incoming radiation should be accounted for when evaluating the irradiation for each ray.
+     * Dummy function that doesn't do anything unless it is overridden by the surface implementation
+     * */
+    virtual PetscReal SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi, PetscInt ntheta);
     virtual PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM solDm, DM pPDm);  //!< Get the index of the cell which the losses should be calculated from
     virtual void GetFuelEmissivity(double& kappa);
 
