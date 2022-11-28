@@ -213,6 +213,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Setup(ablate::fini
     // Currently, no option for species advection
     flow.RegisterRHSFunction(CompressibleFlowComputeEulerFlux, this, CompressibleFlowFields::EULER_FIELD, {VOLUME_FRACTION_FIELD, DENSITY_VF_FIELD, CompressibleFlowFields::EULER_FIELD}, {});
     flow.RegisterRHSFunction(CompressibleFlowComputeVFFlux, this, DENSITY_VF_FIELD, {VOLUME_FRACTION_FIELD, DENSITY_VF_FIELD, CompressibleFlowFields::EULER_FIELD}, {});
+    flow.RegisterComputeTimeStepFunction(ComputeTimeStep, &timeStepData, "cfl");
 
     // check to see if auxFieldUpdates needed to be added
     if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::VELOCITY_FIELD)) {
@@ -292,6 +293,77 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Multipha
     // clean up
     fvSolver.RestoreRange(cellRange);
     PetscFunctionReturn(0);
+}
+
+double ablate::finiteVolume::processes::TwoPhaseEulerAdvection::ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx) {
+    // Get the dm and current solution vector
+    DM dm;
+    TSGetDM(ts, &dm) >> checkError;
+    Vec v;
+    TSGetSolution(ts, &v) >> checkError;
+
+    // Get the flow param
+    auto timeStepData = (TimeStepData*)ctx;
+    auto advectionData = timeStepData->advectionData;
+
+    // Get the fv geom
+    PetscReal minCellRadius;
+    DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius) >> checkError;
+
+    // Get the valid cell range over this region
+    solver::Range cellRange;
+    flow.GetCellRange(cellRange);
+
+    const PetscScalar* x;
+    VecGetArrayRead(v, &x) >> checkError;
+
+    // Get the dim from the dm
+    PetscInt dim;
+    DMGetDimension(dm, &dim) >> checkError;
+
+    // assume the smallest cell is the limiting factor for now
+    const PetscReal dx = 2.0 * minCellRadius;
+
+    // Get field location for euler and densityYi
+    auto eulerId = flow.GetSubDomain().GetField("euler").id;
+
+    // Get alpha if provided
+    PetscReal pgsAlpha = 1.0;
+    if (timeStepData->pgs) {
+        pgsAlpha = timeStepData->pgs->GetAlpha();
+    }
+
+    // March over each cell
+    PetscReal dtMin = 1000.0;
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+        PetscInt cell = cellRange.points ? cellRange.points[c] : c;
+
+        const PetscReal* euler;
+        const PetscReal* conserved = NULL;
+        DMPlexPointGlobalFieldRead(dm, cell, eulerId, x, &euler) >> checkError;
+        DMPlexPointGlobalRead(dm, cell, x, &conserved) >> checkError;
+
+        if (euler) {  // must be real cell and not ghost
+            PetscReal rho = euler[CompressibleFlowFields::RHO];
+
+            // Get the speed of sound from the eos
+            PetscReal temperature;
+            advectionData->computeTemperature.function(conserved, &temperature, advectionData->computeTemperature.context.get()) >> checkError;
+            PetscReal a;
+            advectionData->computeSpeedOfSound.function(conserved, temperature, &a, advectionData->computeSpeedOfSound.context.get()) >> checkError;
+
+            PetscReal velSum = 0.0;
+            for (PetscInt d = 0; d < dim; d++) {
+                velSum += PetscAbsReal(euler[CompressibleFlowFields::RHOU + d]) / rho;
+            }
+            PetscReal dt = advectionData->cfl * dx / (a / pgsAlpha + velSum);
+
+            dtMin = PetscMin(dtMin, dt);
+        }
+    }
+    VecRestoreArrayRead(v, &x) >> checkError;
+    flow.RestoreRange(cellRange);
+    return dtMin;
 }
 
 PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::CompressibleFlowComputeEulerFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscScalar *fieldL,
