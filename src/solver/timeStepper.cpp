@@ -6,16 +6,18 @@
 
 ablate::solver::TimeStepper::TimeStepper(std::shared_ptr<ablate::domain::Domain> domain, std::shared_ptr<ablate::parameters::Parameters> arguments, std::shared_ptr<io::Serializer> serializer,
                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions,
-                                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances)
-    : ablate::solver::TimeStepper::TimeStepper("", domain, arguments, serializer, initialization, exactSolutions, absoluteTolerances, relativeTolerances) {}
+                                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances,
+                                         bool verboseSourceCheck)
+    : ablate::solver::TimeStepper::TimeStepper("", domain, arguments, serializer, initialization, exactSolutions, absoluteTolerances, relativeTolerances, verboseSourceCheck) {}
 
 ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<ablate::domain::Domain> domain, std::shared_ptr<ablate::parameters::Parameters> arguments,
                                          std::shared_ptr<ablate::io::Serializer> serializerIn, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations,
                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances,
-                                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances)
+                                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances, bool verboseSourceCheck)
     : name(nameIn.empty() ? "timeStepper" : nameIn),
       domain(domain),
       serializer(serializerIn),
+      verboseSourceCheck(verboseSourceCheck),
       initializations(initializations),
       exactSolutions(exactSolutions),
       absoluteTolerances(absoluteTolerances),
@@ -354,6 +356,10 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunction(TS ts, Pets
     DMRestoreLocalVector(dm, &locX);
     DMRestoreLocalVector(dm, &locF);
 
+    if (timeStepper->verboseSourceCheck) {
+        timeStepper->domain->CheckFieldValues(F);
+    }
+
     PetscFunctionReturn(0);
 }
 
@@ -364,4 +370,5 @@ REGISTER_DEFAULT(ablate::solver::TimeStepper, ablate::solver::TimeStepper, "the 
                  OPT(std::vector<ablate::mathFunctions::FieldFunction>, "initialization", "initialization field functions"),
                  OPT(std::vector<ablate::mathFunctions::FieldFunction>, "exactSolution", "optional exact solutions that can be used for error calculations"),
                  OPT(std::vector<ablate::mathFunctions::FieldFunction>, "absoluteTolerances", "optional absolute tolerances for a field"),
-                 OPT(std::vector<ablate::mathFunctions::FieldFunction>, "relativeTolerances", "optional relative tolerances for a field"));
+                 OPT(std::vector<ablate::mathFunctions::FieldFunction>, "relativeTolerances", "optional relative tolerances for a field"),
+                 OPT(bool, "verboseSourceCheck", "does a slow nan/inf for solvers that use rhs evaluation. This is slow and should only be used for debug."));
