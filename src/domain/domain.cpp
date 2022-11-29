@@ -1,4 +1,5 @@
 #include "domain.hpp"
+#include <set>
 #include <typeinfo>
 #include <utilities/mpiError.hpp>
 #include <utility>
