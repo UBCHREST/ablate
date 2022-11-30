@@ -5,6 +5,7 @@ target_sources(ablateLibrary
         pressure.cpp
         sensibleEnthalpy.cpp
         speedOfSound.cpp
+
         PUBLIC
         temperature.hpp
         sensibleInternalEnergy.hpp
@@ -13,4 +14,5 @@ target_sources(ablateLibrary
         sensibleEnthalpy.hpp
         sensibleEnthalpyFcn.hpp
         speedOfSound.hpp
+        ignitionZeroDTemperatureThreshold.hpp
         )

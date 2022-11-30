@@ -25,6 +25,9 @@ class TChemReactions : public Process {
     int jacobianInterval = 1;
     int maxAttempts = 4;
 
+    // store an optional threshold temperature.  Only compute the reactions if the temperature is above thresholdTemperature
+    double thresholdTemperature;
+
     // eos of state variables
     std::shared_ptr<eos::TChem> eos;
     const size_t numberSpecies;
