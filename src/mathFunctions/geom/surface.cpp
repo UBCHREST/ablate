@@ -50,11 +50,6 @@ bool ablate::mathFunctions::geom::Surface::InsideGeometry(const double *xyz, con
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::mathFunctions::MathFunction, ablate::mathFunctions::geom::Surface, "Assigned a unified number to all points inside of cad geometry file.",
-         ARG(std::filesystem::path, "path", "the path to the step/stp file"), OPT(ablate::mathFunctions::MathFunction, "insideValues", "the values for inside the sphere, defaults to 1"),
-         OPT(ablate::mathFunctions::MathFunction, "outsideValues", "the outside values, defaults to zero"),
-         OPT(int, "egadsVerboseLevel", "the egads verbose level for output (default is 0, max is 3)"));
-
 REGISTER(ablate::mathFunctions::geom::Geometry, ablate::mathFunctions::geom::Surface, "Assigned a unified number to all points inside of cad geometry file.",
          ARG(std::filesystem::path, "path", "the path to the step/stp file"), OPT(ablate::mathFunctions::MathFunction, "insideValues", "the values for inside the sphere, defaults to 1"),
          OPT(ablate::mathFunctions::MathFunction, "outsideValues", "the outside values, defaults to zero"),
