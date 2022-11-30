@@ -4,48 +4,29 @@
 #include <petsc.h>
 #include <string>
 #include <vector>
+#include "eos/eos.hpp"
 
 namespace ablate::chemistry {
-class ChemistryModel {
+
+/**
+ * The ChemistryModel is an extension of the equation of state.  All ChemistryModels support computing source terms based upon conserved variables
+ */
+class ChemistryModel : public eos::EOS {
    public:
-    virtual ~ChemistryModel() = default;
+    /**
+     * provide constructor to eos
+     * @param name
+     */
+    explicit ChemistryModel(std::string name) : eos::EOS(name){};
 
     /**
-     * Function pointer allowing the computing of mass functions from progress variables
-     */
-    using ComputeMassFractionsFunction = void (*)(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal* massFractions, const std::size_t massFractionsSize,
-                                                  void* ctx);
-    /**
-     * Function pointer allowing the computing of energy*density source function and functions for each progress variable
-     */
-    using ComputeSourceFunction = void (*)(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal* predictedSourceEnergy, PetscReal* progressVariableSource,
-                                           const std::size_t progressVariableSourceSize, void* ctx);
-
-    /**
-     * Returns a vector of all species required for this model.  The species order indicates the correct order for other functions
+     * Single function to produce ChemistryFunction function based upon the available fields and sources.  This single point function is useful for unit level testing.
+     * @param fields in the conserved/source arrays
+     * @param property
+     * @param fields
      * @return
      */
-    virtual const std::vector<std::string>& GetSpecies() const = 0;
-
-    /**
-     * Returns a vector of all progress variables (including zMix) required for this model.  The progress variable order indicates the correct order for other functions
-     * @return
-     */
-    virtual const std::vector<std::string>& GetProgressVariables() const = 0;
-
-    /**
-     * Computes the progresses variables for a given mass fraction
-     * @return
-     */
-    virtual void ComputeProgressVariables(const PetscReal massFractions[], const std::size_t massFractionsSize, PetscReal* progressVariables, const std::size_t progressVariablesSize) const = 0;
-
-    /**
-     * Support functions to get access to c-style pointer functions
-     * @return
-     */
-    virtual ComputeMassFractionsFunction GetComputeMassFractionsFunction() = 0;
-    virtual ComputeSourceFunction GetComputeSourceFunction() = 0;
-    virtual void* GetContext() { return nullptr; }
+    virtual void ChemistrySource(const std::vector<domain::Field>& fields, const PetscReal conserved[], PetscReal* source) const = 0;
 };
 }  // namespace ablate::chemistry
 

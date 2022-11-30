@@ -1,5 +1,6 @@
 #include <yaml-cpp/yaml.h>
 #include "chemistry/chemTabModel.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
 #include "localPath.hpp"
 #include "mockFactory.hpp"
@@ -76,10 +77,12 @@ TEST_P(ChemTabModelTestFixture, ShouldReturnCorrectSpeciesAndVariables) {
 
         // act
         auto actualSpecies = chemTabModel.GetSpecies();
-        auto actualProgressVariables = chemTabModel.GetProgressVariables();
+        auto actualProgressVariables = chemTabModel.GetExtraVariables();
+        auto referenceSpecies = chemTabModel.GetReferenceSpecies();
 
         // assert
-        EXPECT_EQ(testTarget["species_names"].as<std::vector<std::string>>(), actualSpecies) << "should compute correct species name for model " << testTarget["testName"].as<std::string>();
+        EXPECT_TRUE(actualSpecies.empty()) << "should report no transport species" << testTarget["testName"].as<std::string>();
+        EXPECT_EQ(testTarget["species_names"].as<std::vector<std::string>>(), referenceSpecies) << "should compute correct species name for model " << testTarget["testName"].as<std::string>();
         EXPECT_EQ(testTarget["cpv_names"].as<std::vector<std::string>>(), actualProgressVariables) << "should compute correct cpv names for model " << testTarget["testName"].as<std::string>();
     }
 }
@@ -96,14 +99,12 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectMassFractions) {
     for (const auto& testTarget : testTargets) {
         // arrange
         ablate::chemistry::ChemTabModel chemTabModel(GetParam().modelPath);
-        auto chemTabModelComputeMassFractionsFunction = chemTabModel.GetComputeMassFractionsFunction();
-        auto ctx = chemTabModel.GetContext();
         auto expectedMassFractions = testTarget["output_mass_fractions"].as<std::vector<double>>();
         auto inputProgressVariables = testTarget["input_cpvs"].as<std::vector<double>>();
 
         // act
         std::vector<PetscReal> actual(expectedMassFractions.size());
-        chemTabModelComputeMassFractionsFunction(inputProgressVariables.data(), inputProgressVariables.size(), actual.data(), actual.size(), ctx);
+        chemTabModel.ComputeMassFractions(inputProgressVariables.data(), inputProgressVariables.size(), actual.data(), actual.size());
 
         // assert
         for (std::size_t r = 0; r < actual.size(); r++) {
@@ -122,23 +123,51 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectSource) {
     for (const auto& testTarget : testTargets) {
         // arrange
         ablate::chemistry::ChemTabModel chemTabModel(GetParam().modelPath);
-        auto chemTabModelComputeSourceFunction = chemTabModel.GetComputeSourceFunction();
-        auto ctx = chemTabModel.GetContext();
         auto inputProgressVariables = testTarget["input_cpvs"].as<std::vector<double>>();
         auto expectedSourceEnergy = testTarget["output_source_energy"].as<double>();
         auto expectedSource = testTarget["output_source_terms"].as<std::vector<double>>();
 
+        // assume a density
+        PetscReal density = 1.5;
+
+        // assume an initial offset
+        PetscInt fieldOffset = 2;
+
+        // set up the conserved fields so that they match what is expected from ablate
+        auto fields = {ablate::domain::Field{
+                           .name = ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD,
+                           .numberComponents = 3,  // density, density*ener, density*u
+                           .offset = fieldOffset   // assume two blank spots in conserved array
+                       },
+                       ablate::domain::Field{
+                           .name = ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD,
+                           .numberComponents = (PetscInt)chemTabModel.GetExtraVariables().size(),
+                           .components = chemTabModel.GetExtraVariables(),
+                           .offset = fieldOffset + 3  // start at end of euler field
+                       }};
+
+        // size up and set the expected input
+        std::vector<PetscReal> conserved(2 + 3 + chemTabModel.GetExtraVariables().size(), 0);
+        conserved[fieldOffset + ablate::finiteVolume::CompressibleFlowFields::RHO] = density;
+        for (std::size_t p = 0; p < inputProgressVariables.size(); p++) {
+            conserved[fieldOffset + 3 + p] = inputProgressVariables[p] * density;
+        }
+
+        // size up and set the expected source
+        std::vector<PetscReal> expectedSourceVector(conserved.size(), 0);
+        expectedSourceVector[fieldOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] = expectedSourceEnergy;
+        for (std::size_t p = 0; p < inputProgressVariables.size(); p++) {
+            expectedSourceVector[fieldOffset + 3 + p] = expectedSource[p];
+        }
+
         // act
         // Size up the results based upon expected
-        std::vector<PetscReal> actual(expectedSource.size());
-        PetscReal actualSourceEnergy;
-        chemTabModelComputeSourceFunction(inputProgressVariables.data(), inputProgressVariables.size(), &actualSourceEnergy, actual.data(), actual.size(), ctx);
+        std::vector<PetscReal> actual(expectedSourceVector.size());
+        chemTabModel.ChemistrySource(fields, conserved.data(), actual.data());
 
-        assert_float_close(expectedSourceEnergy, actualSourceEnergy) << "The sourceEnergy is incorrect for model " << testTarget["testName"].as<std::string>();
-
-        for (std::size_t r = 0; r < actual.size(); r++) {
-            assert_float_close(expectedSource[r], actual[r]) << " the percent difference of (" << expectedSource[r] << ", " << actual[r] << ") should be less than 5.0E-6 for index [" << r
-                                                             << "] for model " << testTarget["testName"].as<std::string>();
+        for (std::size_t r = 0; r < expectedSourceVector.size(); r++) {
+            assert_float_close(expectedSourceVector[r], actual[r]) << " the percent difference of (" << expectedSource[r] << ", " << actual[r] << ") should be less than 5.0E-6 for index [" << r
+                                                                   << "] for model " << testTarget["testName"].as<std::string>();
         }
     }
 }

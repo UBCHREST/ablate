@@ -1,9 +1,14 @@
 #include "compressibleFlowFields.hpp"
 #include "domain/fieldDescription.hpp"
+#include "utilities/vectorUtilities.hpp"
 
-ablate::finiteVolume::CompressibleFlowFields::CompressibleFlowFields(std::shared_ptr<eos::EOS> eos, std::vector<std::string> extraVariables, std::shared_ptr<domain::Region> region,
+ablate::finiteVolume::CompressibleFlowFields::CompressibleFlowFields(std::shared_ptr<eos::EOS> eos, std::vector<std::string> extraVariablesIn, std::shared_ptr<domain::Region> region,
                                                                      std::shared_ptr<parameters::Parameters> conservedFieldParameters)
-    : eos(eos), extraVariables(extraVariables), region(region), conservedFieldOptions(conservedFieldParameters) {}
+    : eos(eos),
+      // Add in any required extraVariables from the eos
+      extraVariables(ablate::utilities::VectorUtilities::Merge(extraVariablesIn, eos->GetExtraVariables())),
+      region(region),
+      conservedFieldOptions(conservedFieldParameters) {}
 
 std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::finiteVolume::CompressibleFlowFields::GetFields() {
     std::vector<std::shared_ptr<ablate::domain::FieldDescription>> flowFields{

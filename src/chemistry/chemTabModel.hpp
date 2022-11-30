@@ -7,6 +7,7 @@
 #include "chemistryModel.hpp"
 #ifdef WITH_TENSORFLOW
 #include <tensorflow/c/c_api.h>
+#include "utilities/vectorUtilities.hpp"
 #endif
 
 namespace ablate::chemistry {
@@ -14,6 +15,10 @@ namespace ablate::chemistry {
 #ifdef WITH_TENSORFLOW
 class ChemTabModel : public ChemistryModel {
    private:
+    //! use the reference eos to compute properties from the decoded progressVariables to yi
+    std::shared_ptr<ablate::eos::EOS> referenceEOS;
+
+    // hold the required tensorflow information
     TF_Graph* graph = nullptr;
     TF_Status* status = nullptr;
     TF_SessionOptions* sessionOpts = nullptr;
@@ -25,45 +30,99 @@ class ChemTabModel : public ChemistryModel {
     PetscReal** Wmat = nullptr;
     PetscReal** iWmat = nullptr;
     PetscReal* sourceEnergyScaler = nullptr;
+
     /**
      * private implementations of support functions
      */
-    static void ChemTabModelComputeMassFractionsFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal* massFractions, const std::size_t massFractionsSize,
-                                                         void* ctx);
-    static void ChemTabModelComputeSourceFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal* predictedSourceEnergy, PetscReal* progressVariableSource,
-                                                  const std::size_t progressVariableSourceSize, void* ctx);
     void ExtractMetaData(std::istream& inputStream);
     void LoadBasisVectors(std::istream& inputStream, std::size_t columns, PetscReal** W);
+
+    /**
+     * Private function to compute the chemistry source given the density, energy, and progress variable offset
+     * @param fields
+     * @param conserved
+     * @param source
+     */
+    void ChemistrySource(PetscInt densityOffset, PetscInt energyOffset, PetscInt progressVariableOffset, const PetscReal conserved[], PetscReal* source) const;
 
    public:
     explicit ChemTabModel(std::filesystem::path path);
     ~ChemTabModel() override;
 
     /**
-     * Returns a vector of all species required for this model.  The species order indicates the correct order for other functions
+     * As far as other parts of the code is concerned the chemTabEos does not expect species
      * @return
      */
-    const std::vector<std::string>& GetSpecies() const override;
+    [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { return ablate::utilities::VectorUtilities::Empty<std::string>; }
 
     /**
-     * Returns a vector of all progress variables (including zMix) required for this model.  The progress variable order indicates the correct order for other functions
+     * return the reference species used for the underlying eos to generate the progress variables
      * @return
      */
-    const std::vector<std::string>& GetProgressVariables() const override;
+    [[nodiscard]] const std::vector<std::string>& GetReferenceSpecies() const { return speciesNames; }
 
     /**
-     * Computes the progresses variables for a given mass fraction
+     * As far as other parts of the code is concerned the chemTabEos does not expect species
      * @return
      */
-    void ComputeProgressVariables(const PetscReal massFractions[], const std::size_t massFractionsSize, PetscReal* progressVariables, const std::size_t progressVariablesSize) const override;
+    [[nodiscard]] const std::vector<std::string>& GetExtraVariables() const override { return progressVariablesNames; }
 
     /**
-     * Support functions to get access to c-style pointer functions
+     * Single function to produce ChemistryFunction function based upon the available fields and sources.  This single point function is useful for unit level testing.
+     * @param fields in the conserved/source arrays
+     * @param property
+     * @param fields
      * @return
      */
-    ComputeMassFractionsFunction GetComputeMassFractionsFunction() override { return ChemTabModelComputeMassFractionsFunction; }
-    ComputeSourceFunction GetComputeSourceFunction() override { return ChemTabModelComputeSourceFunction; }
-    void* GetContext() override { return this; }
+    void ChemistrySource(const std::vector<domain::Field>& fields, const PetscReal conserved[], PetscReal* source) const override;
+
+    /**
+     * helper function to compute the progress variables from the mass fractions
+     * @param massFractions
+     * @param massFractionsSize
+     * @param progressVariables
+     * @param progressVariablesSize
+     */
+    void ComputeProgressVariables(const PetscReal* massFractions, std::size_t massFractionsSize, PetscReal* progressVariables, std::size_t progressVariablesSize) const;
+
+    /**
+     * helper function to compute the mass fractions = from the mass fractions progress variables
+     * @param massFractions
+     * @param massFractionsSize
+     * @param progressVariables
+     * @param progressVariablesSize
+     */
+    void ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize);
+
+    /**
+     * Print the details of this eos
+     * @param stream
+     */
+    void View(std::ostream& stream) const override;
+
+    /**
+     * Single function to produce thermodynamic function for any property based upon the available fields
+     * @param property
+     * @param fields
+     * @return
+     */
+    [[nodiscard]] eos::ThermodynamicFunction GetThermodynamicFunction(eos::ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override { return {}; }
+
+    /**
+     * Single function to produce thermodynamic function for any property based upon the available fields and temperature
+     * @param property
+     * @param fields
+     * @return
+     */
+    [[nodiscard]] eos::ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override { return {}; }
+
+    /**
+     * Single function to produce fieldFunction function for any two properties, velocity, and species mass fractions.  These calls can be slower and should be used for init/output only
+     * @param field
+     * @param property1
+     * @param property2
+     */
+    [[nodiscard]] eos::FieldFunction GetFieldFunctionFunction(const std::string& field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2) const override { return {}; }
 };
 
 #else
