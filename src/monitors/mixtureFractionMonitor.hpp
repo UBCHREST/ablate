@@ -2,7 +2,7 @@
 #define ABLATELIBRARY_MIXTUREFRACTIONMONITOR_HPP
 
 #include <memory>
-#include "chemistry/mixtureFractionCalculator.hpp"
+#include "mixtureFractionCalculator.hpp"
 #include "fieldMonitor.hpp"
 #include "finiteVolume/processes/tChemReactions.hpp"
 
@@ -14,7 +14,7 @@ namespace ablate::monitors {
 class MixtureFractionMonitor : public FieldMonitor {
    private:
     //! the mixture fraction calculator
-    const std::shared_ptr<ablate::chemistry::MixtureFractionCalculator> mixtureFractionCalculator;
+    const std::shared_ptr<MixtureFractionCalculator> mixtureFractionCalculator;
 
     //! store a reference to a function to compute density from solution field
     eos::ThermodynamicFunction densityFunction;
@@ -26,7 +26,7 @@ class MixtureFractionMonitor : public FieldMonitor {
     /**
      * Create the mixture fraction monitor using a mixture fraction calculator
      */
-    explicit MixtureFractionMonitor(std::shared_ptr<ablate::chemistry::MixtureFractionCalculator>);
+    explicit MixtureFractionMonitor(std::shared_ptr<MixtureFractionCalculator>);
 
     /**
      * Update the fields and save the results to an hdf5 file

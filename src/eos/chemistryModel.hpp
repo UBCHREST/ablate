@@ -6,7 +6,7 @@
 #include <vector>
 #include "eos/eos.hpp"
 
-namespace ablate::chemistry {
+namespace ablate::eos {
 
 /**
  * The ChemistryModel is an extension of the equation of state.  All ChemistryModels support computing source terms based upon conserved variables

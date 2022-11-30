@@ -10,7 +10,7 @@
 #include "utilities/vectorUtilities.hpp"
 #endif
 
-namespace ablate::chemistry {
+namespace ablate::eos {
 
 #ifdef WITH_TENSORFLOW
 class ChemTabModel : public ChemistryModel {

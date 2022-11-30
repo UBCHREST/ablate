@@ -18,6 +18,7 @@ target_sources(ablateLibrary
         boundarySolverMonitor.cpp
         fieldMonitor.cpp
         mixtureFractionMonitor.cpp
+        mixtureFractionCalculator.cpp
 
         PUBLIC
         monitor.hpp
@@ -39,6 +40,7 @@ target_sources(ablateLibrary
         fieldMonitor.hpp
         mixtureFractionMonitor.hpp
         boundarySolverMonitor.hpp
+        mixtureFractionCalculator.hpp
         )
 
 add_subdirectory(logs)

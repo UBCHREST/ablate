@@ -3,11 +3,14 @@ target_sources(ablateLibrary
         perfectGas.cpp
         stiffenedGas.cpp
         tChem.cpp
+        chemTabModel.cpp
         PUBLIC
         eos.hpp
         perfectGas.hpp
         tChem.hpp
         stiffenedGas.hpp
+        chemTabModel.hpp
+        chemistryModel.hpp
         )
 
 add_subdirectory(transport)
