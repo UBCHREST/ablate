@@ -68,15 +68,22 @@ class ChemTabModel : public ChemistryModel {
     [[nodiscard]] const std::vector<std::string>& GetExtraVariables() const override { return progressVariablesNames; }
 
     /**
-     * Single function to produce ChemistryFunction function based upon the available fields and sources.  This single point function is useful for unit level testing.
+     * Single function to produce ChemistryFunction calculator based upon the available fields and sources.
      * @param fields in the conserved/source arrays
      * @param property
      * @param fields
      * @return
      */
-    void ChemistrySource(const std::vector<domain::Field>& fields, PetscReal dt, const PetscReal conserved[], PetscReal* source) const override;
+    std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override { return nullptr; }
 
-    std::shared_ptr<BatchSource> CreateBatchSource(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override { return nullptr; }
+    /**
+     *
+     * @param fields
+     * @param dt
+     * @param conserved
+     * @param source
+     */
+    void ChemistrySource(const std::vector<domain::Field>& fields, PetscReal dt, const PetscReal conserved[], PetscReal* source) const;
 
     /**
      * helper function to compute the progress variables from the mass fractions

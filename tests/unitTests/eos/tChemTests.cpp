@@ -903,7 +903,7 @@ TEST_P(TCComputeSourceTestFixture, ShouldComputeCorrectSource) {
     // ACT
     ablate::solver::DynamicRange range;
     range.Add(0);
-    auto sourceTermCalculator = eos->CreateBatchSource(domain->GetFields(), range.GetRange());
+    auto sourceTermCalculator = eos->CreateSourceCalculator(domain->GetFields(), range.GetRange());
 
     // Perform prestep
     sourceTermCalculator->ComputeSource(range.GetRange(), 0.0, GetParam().dt, domain->GetSolutionVector());
@@ -944,8 +944,7 @@ INSTANTIATE_TEST_SUITE_P(
     TChemTests, TCComputeSourceTestFixture,
     testing::Values(
         (TCComputeSourceTestParameters){
-            .mechFile = "inputs/eos/grimech30.dat",
-            .thermoFile = "inputs/eos/thermo30.dat",
+            .mechFile = "inputs/eos/gri30.yaml",
             .dt = 0.0001,
             .inputEulerValues = {0.280629, 212565., 0.},
             .inputDensityYiValues = {0., 0., 0., 0.0617779, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.015487, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,      0.,
@@ -957,8 +956,7 @@ INSTANTIATE_TEST_SUITE_P(
                                         1.15566e-24,  6.18335e-14, 1.15305e-16,  1.41443e-20,  1.63021e-10, 6.24732e-21, 2.21197e-26, 1.35958e-19, 2.22306e-23, 7.79272e-21, -2.94329e-25,
                                         -1.15818e-24, 1.82192e-24, 4.16812e-24,  -2.70267e-24, 1.40856e-18, 2.57528e-14, 1.14893e-17, 1.55882e-16, -1.0375e-10}},
         (TCComputeSourceTestParameters){
-            .mechFile = "inputs/eos/grimech30.dat",
-            .thermoFile = "inputs/eos/thermo30.dat",
+            .mechFile = "inputs/eos/gri30.yaml",
             .dt = 0.017418748136926492,
             .inputEulerValues = {0.280629, 214342., 0.},
             .inputDensityYiValues = {2.70155e-06, 2.42588e-10, 1.75298e-09, 0.0615735,    5.91967e-09, 0.00013291,  1.42223e-06, 2.69273e-07, 1.17659e-25, 2.62694e-19, 1.04261e-12,

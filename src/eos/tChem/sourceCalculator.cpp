@@ -1,4 +1,4 @@
-#include "batchSource.hpp"
+#include "sourceCalculator.hpp"
 #include <TChem_Impl_IgnitionZeroD_Problem.hpp>
 #include <algorithm>
 #include "eos/tChem.hpp"
@@ -6,7 +6,7 @@
 #include "ignitionZeroDTemperatureThreshold.hpp"
 #include "utilities/mpiError.hpp"
 
-void ablate::eos::tChem::BatchSource::ChemistryConstraints::Set(const std::shared_ptr<ablate::parameters::Parameters>& options) {
+void ablate::eos::tChem::SourceCalculator::ChemistryConstraints::Set(const std::shared_ptr<ablate::parameters::Parameters>& options) {
     if (options) {
         dtMin = options->Get("dtMin", dtMin);
         dtMax = options->Get("dtMax", dtMax);
@@ -24,8 +24,8 @@ void ablate::eos::tChem::BatchSource::ChemistryConstraints::Set(const std::share
     }
 }
 
-ablate::eos::tChem::BatchSource::BatchSource(const std::vector<domain::Field>& fields, const std::shared_ptr<TChem> eosIn, ablate::eos::tChem::BatchSource::ChemistryConstraints constraints,
-                                             const solver::Range& cellRange)
+ablate::eos::tChem::SourceCalculator::SourceCalculator(const std::vector<domain::Field>& fields, const std::shared_ptr<TChem> eosIn,
+                                                       ablate::eos::tChem::SourceCalculator::ChemistryConstraints constraints, const solver::Range& cellRange)
     : chemistryConstraints(constraints), eos(eosIn), numberSpecies(eosIn->GetSpecies().size()) {
     // determine the number of required cells
     std::size_t numberCells = cellRange.end - cellRange.start;
@@ -105,7 +105,7 @@ ablate::eos::tChem::BatchSource::BatchSource(const std::vector<domain::Field>& f
     densityYiId = densityYiField->id;
 }
 
-void ablate::eos::tChem::BatchSource::ComputeSource(const ablate::solver::Range& cellRange, PetscReal time, PetscReal dt, Vec globFlowVec) {
+void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::solver::Range& cellRange, PetscReal time, PetscReal dt, Vec globFlowVec) {
     // Get the valid cell range over this region
     auto numberCells = cellRange.end - cellRange.start;
 
@@ -308,7 +308,7 @@ void ablate::eos::tChem::BatchSource::ComputeSource(const ablate::solver::Range&
     // copy the updated state back to host
     Kokkos::deep_copy(sourceTermsHost, sourceTermsDevice);
 }
-void ablate::eos::tChem::BatchSource::AddSource(const ablate::solver::Range& cellRange, Vec locFVec) {
+void ablate::eos::tChem::SourceCalculator::AddSource(const ablate::solver::Range& cellRange, Vec locFVec) {
     // get access to the fArray
     PetscScalar* fArray;
     VecGetArray(locFVec, &fArray) >> checkError;

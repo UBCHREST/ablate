@@ -80,5 +80,5 @@ class MixtureFractionCalculator {
     std::shared_ptr<ablate::eos::TChem> GetEos() { return eos; }
 };
 
-}  // namespace ablate::chemistry
+}  // namespace ablate::monitors
 #endif  // ABLATELIBRARY_MIXTUREFRACTIONCALCULATOR_HPP

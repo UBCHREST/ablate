@@ -7,10 +7,10 @@
 #include "TChem_KineticModelData.hpp"
 #include "chemistryModel.hpp"
 #include "eos.hpp"
-#include "eos/tChem/batchSource.hpp"
 #include "eos/tChem/pressure.hpp"
 #include "eos/tChem/sensibleEnthalpy.hpp"
 #include "eos/tChem/sensibleInternalEnergy.hpp"
+#include "eos/tChem/sourceCalculator.hpp"
 #include "eos/tChem/speedOfSound.hpp"
 #include "eos/tChem/temperature.hpp"
 #include "monitors/logs/log.hpp"
@@ -25,7 +25,7 @@ namespace tChemLib = TChem;
 class TChem : public ChemistryModel, public std::enable_shared_from_this<ablate::eos::TChem> {
    private:
     //! hold a copy of the constrains that can be used for single or batch source calculation
-    tChem::BatchSource::ChemistryConstraints constraints;
+    tChem::SourceCalculator::ChemistryConstraints constraints;
 
     //! the mechanismFile may be chemkin or yaml based
     const std::filesystem::path mechanismFile;
@@ -137,21 +137,12 @@ class TChem : public ChemistryModel, public std::enable_shared_from_this<ablate:
     real_type_1d_view GetEnthalpyOfFormation() { return enthalpyReference; };
 
     /**
-     * Single function to produce ChemistryFunction function based upon the available fields and sources.  This single point function is useful for unit level testing.
-     * @param fields in the conserved/source arrays
-     * @param property
-     * @param fields
-     * @return
-     */
-    void ChemistrySource(const std::vector<domain::Field>& fields, PetscReal dt, const PetscReal conserved[], PetscReal* source) const override;
-
-    /**
      * Function to create the batch source specific to the provided cell range
      * @param fields
      * @param cellRange
      * @return
      */
-    std::shared_ptr<BatchSource> CreateBatchSource(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override;
+    std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override;
 
    private:
     struct FunctionContext {

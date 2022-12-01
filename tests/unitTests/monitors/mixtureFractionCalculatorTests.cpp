@@ -1,9 +1,9 @@
 #include "PetscTestFixture.hpp"
-#include "monitors/mixtureFractionCalculator.hpp"
 #include "eos/perfectGas.hpp"
 #include "eos/tChem.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/constantValue.hpp"
+#include "monitors/mixtureFractionCalculator.hpp"
 #include "parameters/mapParameters.hpp"
 #include "utilities/vectorUtilities.hpp"
 

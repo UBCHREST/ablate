@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_TCHEMBATCHSOURCE_HPP
-#define ABLATELIBRARY_TCHEMBATCHSOURCE_HPP
+#ifndef ABLATELIBRARY_TCHEM_SOURCECALCULATOR_HPP
+#define ABLATELIBRARY_TCHEM_SOURCECALCULATOR_HPP
 
 #include <TChem_KineticModelGasConstData.hpp>
 #include "eos/chemistryModel.hpp"
@@ -13,9 +13,9 @@ class TChem;
 namespace ablate::eos::tChem {
 
 /**
- * public class to
+ * public class to to compute the source for each specified node
  */
-class BatchSource : public ChemistryModel::BatchSource {
+class SourceCalculator : public ChemistryModel::SourceCalculator {
    public:
     //! hold a struct that can be used for chemistry constraints
     struct ChemistryConstraints {
@@ -45,7 +45,7 @@ class BatchSource : public ChemistryModel::BatchSource {
      * @param constraints
      * @param cellRange
      */
-    BatchSource(const std::vector<domain::Field>& fields, std::shared_ptr<TChem> tChemEos, ChemistryConstraints constraints, const solver::Range& cellRange);
+    SourceCalculator(const std::vector<domain::Field>& fields, std::shared_ptr<TChem> tChemEos, ChemistryConstraints constraints, const solver::Range& cellRange);
 
     /**
      * The compute source can be used as a prestep allowing the add source to be used at each stage without reevaluating

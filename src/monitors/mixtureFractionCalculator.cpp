@@ -2,7 +2,7 @@
 #include "utilities/mathUtilities.hpp"
 
 ablate::monitors::MixtureFractionCalculator::MixtureFractionCalculator(const std::shared_ptr<ablate::eos::EOS>& eosIn, std::map<std::string, double> massFractionsFuel,
-                                                                        std::map<std::string, double> massFractionsOxidizer, const std::vector<std::string>& trackingElementsIn)
+                                                                       std::map<std::string, double> massFractionsOxidizer, const std::vector<std::string>& trackingElementsIn)
     : eos(std::dynamic_pointer_cast<eos::TChem>(eosIn)), trackingElements(trackingElementsIn.empty() ? std::vector<std::string>{"C", "H"} : trackingElementsIn) {
     // make sure that the eos is set
     if (!std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
@@ -71,12 +71,12 @@ ablate::monitors::MixtureFractionCalculator::MixtureFractionCalculator(const std
 }
 
 ablate::monitors::MixtureFractionCalculator::MixtureFractionCalculator(const std::shared_ptr<ablate::eos::EOS>& eos, const std::shared_ptr<ablate::mathFunctions::FieldFunction>& massFractionsFuel,
-                                                                        const std::shared_ptr<ablate::mathFunctions::FieldFunction>& massFractionsOxidizer,
-                                                                        const std::vector<std::string>& trackingElements)
+                                                                       const std::shared_ptr<ablate::mathFunctions::FieldFunction>& massFractionsOxidizer,
+                                                                       const std::vector<std::string>& trackingElements)
     : MixtureFractionCalculator(eos, ToMassFractionMap(eos, massFractionsFuel), ToMassFractionMap(eos, massFractionsOxidizer), trackingElements) {}
 
 std::map<std::string, double> ablate::monitors::MixtureFractionCalculator::ToMassFractionMap(const std::shared_ptr<ablate::eos::EOS>& eos,
-                                                                                              const std::shared_ptr<ablate::mathFunctions::FieldFunction>& massFractions) {
+                                                                                             const std::shared_ptr<ablate::mathFunctions::FieldFunction>& massFractions) {
     // set up the memory
     const auto& species = eos->GetSpecies();
     std::vector<double> yiValues(species.size(), 0);

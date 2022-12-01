@@ -22,22 +22,12 @@ class ChemistryModel : public eos::EOS {
     explicit ChemistryModel(std::string name) : eos::EOS(name){};
 
     /**
-     * Single function to produce ChemistryFunction function based upon the available fields and sources.  This single point function is useful for unit level testing.
-     * @param fields in the conserved/source arrays
-     * @param dt
-     * @param property
-     * @param fields
-     * @return
-     */
-    virtual void ChemistrySource(const std::vector<domain::Field>& fields, PetscReal dt, const PetscReal conserved[], PetscReal* source) const = 0;
-
-    /**
      * The batch source interface can be used so solve multiple nodes simultaneously.
      * The batch interface is divided into two processes
      */
-    class BatchSource {
+    class SourceCalculator {
        public:
-        virtual ~BatchSource(){};
+        virtual ~SourceCalculator(){};
         /**
          * The compute source can be used as a prestep allowing the add source to be used at each stage without reevaluating
          */
@@ -54,7 +44,7 @@ class ChemistryModel : public eos::EOS {
      * @param cellRange
      * @return
      */
-    virtual std::shared_ptr<BatchSource> CreateBatchSource(const std::vector<domain::Field>& fields, const solver::Range& cellRange) = 0;
+    virtual std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) = 0;
 };
 }  // namespace ablate::eos
 

@@ -152,9 +152,6 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     const PetscScalar* flowArray;
     PetscCall(VecGetArrayRead(globFlowVec, &flowArray));
 
-    VecView(globFlowVec, PETSC_VIEWER_STDOUT_WORLD);
-    Kokkos::deep_copy(dtViewDevice, 1E-4);
-
     // Use a parallel for loop to load up the tChem state
     Kokkos::parallel_for(
         "stateLoadHost", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const auto i) {
@@ -384,8 +381,6 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
     // cleanup
     solver.RestoreRange(cellRange);
     PetscCall(VecRestoreArray(locFVec, &fArray));
-
-    VecView(locFVec, PETSC_VIEWER_STDOUT_WORLD);
 
     PetscFunctionReturn(0);
 }
