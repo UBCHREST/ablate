@@ -868,9 +868,9 @@ TEST_P(TCComputeSourceTestFixture, ShouldComputeCorrectSource) {
     auto domain = std::make_shared<ablate::domain::BoxMesh>("zeroD",
                                                             std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>>{std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)},
                                                             std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<ablate::domain::modifiers::GhostBoundaryCells>()},
-                                                            std::vector<PetscInt>{1},
-                                                            std::vector<PetscReal>{0.0},
-                                                            std::vector<PetscReal>{1.0});
+                                                            std::vector<int>{1},
+                                                            std::vector<double>{0.0},
+                                                            std::vector<double>{1.0});
     domain->InitializeSubDomains();
 
     // get the test params
