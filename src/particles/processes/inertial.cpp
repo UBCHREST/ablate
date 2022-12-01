@@ -48,4 +48,4 @@ void ablate::particles::processes::Inertial::ComputeRHS(PetscReal time, ablate::
 #include "registrar.hpp"
 REGISTER(ablate::particles::processes::Process, ablate::particles::processes::Inertial, "massless particles that advects with the flow",
          ARG(ablate::parameters::Parameters, "parameters", "fluid parameters for the particles (fluidDensity, fluidViscosity, gravityField)"),
-         OPT(std::string, "eulerianVelocityFieldIn", "optional name of the Eulerian velocity field (defaults to velocity)"))
+         OPT(std::string, "eulerianVelocityFieldIn", "optional name of the Eulerian velocity field (defaults to velocity)"));

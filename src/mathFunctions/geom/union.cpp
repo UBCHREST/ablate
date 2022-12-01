@@ -11,12 +11,6 @@ bool ablate::mathFunctions::geom::Union::InsideGeometry(const double *xyz, const
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::mathFunctions::MathFunction, ablate::mathFunctions::geom::Union,
-         "Merges multiple geometries into a single geometry.  Note, this geometry ignores inside/outside values for unioned geometries.",
-         ARG(std::vector<ablate::mathFunctions::geom::Geometry>, "geometries", "the geometries to be merged"),
-         OPT(ablate::mathFunctions::MathFunction, "insideValues", "the values for inside the sphere, defaults to 1"),
-         OPT(ablate::mathFunctions::MathFunction, "outsideValues", "the outside values, defaults to zero"));
-
 REGISTER(ablate::mathFunctions::geom::Geometry, ablate::mathFunctions::geom::Union,
          "Merges multiple geometries into a single geometry.  Note, this geometry ignores inside/outside values for unioned geometries.",
          ARG(std::vector<ablate::mathFunctions::geom::Geometry>, "geometries", "the geometries to be merged"),
