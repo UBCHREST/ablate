@@ -74,7 +74,9 @@ class ChemTabModel : public ChemistryModel {
      * @param fields
      * @return
      */
-    void ChemistrySource(const std::vector<domain::Field>& fields, const PetscReal conserved[], PetscReal* source) const override;
+    void ChemistrySource(const std::vector<domain::Field>& fields, PetscReal dt, const PetscReal conserved[], PetscReal* source) const override;
+
+    std::shared_ptr<BatchSource> CreateBatchSource(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override { return nullptr; }
 
     /**
      * helper function to compute the progress variables from the mass fractions
@@ -142,5 +144,5 @@ class ChemTabModel : public ChemistryModel {
     ComputeSourceFunction GetComputeSourceFunction() override { throw std::runtime_error(errorMessage); }
 };
 #endif
-}  // namespace ablate::chemistry
+}  // namespace ablate::eos
 #endif  // ABLATELIBRARY_CHEMTABMODEL_HPP

@@ -163,7 +163,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectSource) {
         // act
         // Size up the results based upon expected
         std::vector<PetscReal> actual(expectedSourceVector.size());
-        chemTabModel.ChemistrySource(fields, conserved.data(), actual.data());
+        chemTabModel.ChemistrySource(fields, 0, conserved.data(), actual.data());
 
         for (std::size_t r = 0; r < expectedSourceVector.size(); r++) {
             assert_float_close(expectedSourceVector[r], actual[r]) << " the percent difference of (" << expectedSource[r] << ", " << actual[r] << ") should be less than 5.0E-6 for index [" << r

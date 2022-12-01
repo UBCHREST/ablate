@@ -4,6 +4,8 @@ target_sources(ablateLibrary
         stiffenedGas.cpp
         tChem.cpp
         chemTabModel.cpp
+        chemistryModel.cpp
+
         PUBLIC
         eos.hpp
         perfectGas.hpp

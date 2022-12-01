@@ -12,8 +12,8 @@
 #include "utilities/kokkosUtilities.hpp"
 #include "utilities/mpiUtilities.hpp"
 
-ablate::eos::TChem::TChem(std::filesystem::path mechanismFileIn, std::filesystem::path thermoFileIn, std::shared_ptr<ablate::monitors::logs::Log> logIn)
-    : EOS("TChem"), mechanismFile(std::move(mechanismFileIn)), thermoFile(std::move(thermoFileIn)), log(logIn ? logIn : std::make_shared<ablate::monitors::logs::NullLog>()) {
+ablate::eos::TChem::TChem(std::filesystem::path mechanismFileIn, std::filesystem::path thermoFileIn, std::shared_ptr<ablate::monitors::logs::Log> logIn, const std::shared_ptr<ablate::parameters::Parameters> &options)
+    : ChemistryModel("TChem"), mechanismFile(std::move(mechanismFileIn)), thermoFile(std::move(thermoFileIn)), log(logIn ? logIn : std::make_shared<ablate::monitors::logs::NullLog>()) {
     // setup/use Kokkos
     ablate::utilities::KokkosUtilities::Initialize();
 
@@ -70,6 +70,9 @@ ablate::eos::TChem::TChem(std::filesystem::path mechanismFileIn, std::filesystem
         // copy to enthalpyReference
         Kokkos::deep_copy(enthalpyReference, Kokkos::subview(perSpeciesDevice, 0, Kokkos::ALL()));
     }
+
+    // set the chemistry constraints
+    constraints.Set(options);
 }
 
 std::shared_ptr<ablate::eos::TChem::FunctionContext> ablate::eos::TChem::BuildFunctionContext(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
@@ -737,7 +740,17 @@ std::map<std::string, double> ablate::eos::TChem::GetSpeciesMolecularMass() cons
     return mw;
 }
 
+void ablate::eos::TChem::ChemistrySource(const std::vector<domain::Field> &fields, PetscReal dt, const PetscReal conserved[], PetscReal *source) const {
+
+}
+std::shared_ptr<ablate::eos::ChemistryModel::BatchSource> ablate::eos::TChem::CreateBatchSource(const std::vector<domain::Field> &fields, const ablate::solver::Range &cellRange) {
+    return std::make_shared<ablate::eos::tChem::BatchSource>(fields, shared_from_this(), constraints, cellRange );
+}
+
 #include "registrar.hpp"
-REGISTER(ablate::eos::EOS, ablate::eos::TChem, "[TChemV2](https://github.com/sandialabs/TChem) ideal gas eos", ARG(std::filesystem::path, "mechFile", "the mech file (CHEMKIN Format or Cantera Yaml)"),
+REGISTER(ablate::eos::ChemistryModel, ablate::eos::TChem, "[TChemV2](https://github.com/sandialabs/TChem) ideal gas eos", ARG(std::filesystem::path, "mechFile", "the mech file (CHEMKIN Format or Cantera Yaml)"),
          OPT(std::filesystem::path, "thermoFile", "the thermo file (CHEMKIN Format if mech file is CHEMKIN)"),
-         OPT(ablate::monitors::logs::Log, "log", "An optional log for TChem echo output (only used with yaml input)"));
+         OPT(ablate::monitors::logs::Log, "log", "An optional log for TChem echo output (only used with yaml input)"),
+         OPT(ablate::parameters::Parameters, "options",
+             "time stepping options (dtMin, dtMax, dtDefault, dtEstimateFactor, relToleranceTime, relToleranceTime, absToleranceTime, relToleranceNewton, absToleranceNewton, maxNumNewtonIterations, "
+             "numTimeIterationsPerInterval, jacobianInterval, maxAttempts, thresholdTemperature)"));

@@ -2,9 +2,11 @@
 #define ABLATELIBRARY_CHEMISTRYMODEL_HPP
 
 #include <petsc.h>
+#include <memory>
 #include <string>
 #include <vector>
 #include "eos/eos.hpp"
+#include "solver/solver.hpp"
 
 namespace ablate::eos {
 
@@ -22,12 +24,38 @@ class ChemistryModel : public eos::EOS {
     /**
      * Single function to produce ChemistryFunction function based upon the available fields and sources.  This single point function is useful for unit level testing.
      * @param fields in the conserved/source arrays
+     * @param dt
      * @param property
      * @param fields
      * @return
      */
-    virtual void ChemistrySource(const std::vector<domain::Field>& fields, const PetscReal conserved[], PetscReal* source) const = 0;
+    virtual void ChemistrySource(const std::vector<domain::Field>& fields, PetscReal dt, const PetscReal conserved[], PetscReal* source) const = 0;
+
+    /**
+     * The batch source interface can be used so solve multiple nodes simultaneously.
+     * The batch interface is divided into two processes
+     */
+    class BatchSource {
+       public:
+        virtual ~BatchSource(){};
+        /**
+         * The compute source can be used as a prestep allowing the add source to be used at each stage without reevaluating
+         */
+        virtual void ComputeSource(const solver::Range& cellRange, PetscReal time, PetscReal dt, Vec solution) = 0;
+
+        /**
+         * Adds the source that was computed in the presetp to the supplied vector
+         */
+        virtual void AddSource(const solver::Range& cellRange, Vec source) = 0;
+    };
+
+    /**
+     * Function to create the batch source specific to the provided cell range
+     * @param cellRange
+     * @return
+     */
+    virtual std::shared_ptr<BatchSource> CreateBatchSource(const std::vector<domain::Field>& fields, const solver::Range& cellRange) = 0;
 };
-}  // namespace ablate::chemistry
+}  // namespace ablate::eos
 
 #endif  // ABLATELIBRARY_CHEMISTRYMODEL_HPP

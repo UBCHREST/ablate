@@ -176,7 +176,7 @@ void ablate::eos::ChemTabModel::ComputeMassFractions(const PetscReal *progressVa
     }
 }
 
-void ablate::eos::ChemTabModel::ChemistrySource(const std::vector<domain::Field> &fields, const PetscReal *conserved, PetscReal *source) const {
+void ablate::eos::ChemTabModel::ChemistrySource(const std::vector<domain::Field> &fields, PetscReal dt, const PetscReal conserved[], PetscReal *source) const {
     // Look for the euler field
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
     if (eulerField == fields.end()) {
