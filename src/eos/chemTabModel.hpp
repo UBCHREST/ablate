@@ -138,7 +138,7 @@ class ChemTabModel : public ChemistryModel {
 class ChemTabModel : public ChemistryModel {
    public:
     static inline const std::string errorMessage = "Using the ChemTabModel requires Tensorflow to be compile with ABLATE.";
-    ChemTabModel(std::filesystem::path path) { throw std::runtime_error(errorMessage); }
+    ChemTabModel(std::filesystem::path path) : ChemistryModel("ablate::chemistry::ChemTabModel") { throw std::runtime_error(errorMessage); }
 
     [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { throw std::runtime_error(errorMessage); }
 
