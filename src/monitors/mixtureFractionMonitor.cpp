@@ -30,7 +30,7 @@ void ablate::monitors::MixtureFractionMonitor::Register(std::shared_ptr<solver::
         throw std::invalid_argument("The MixtureFractionMonitor monitor can only be used with ablate::finiteVolume::FiniteVolumeSolver");
     }
     // get a reference to the tchem reactions instance in the solver
-    tChemReactions = finiteVolumeSolver->FindProcess<ablate::finiteVolume::processes::TChemReactions>();
+    chemistry = finiteVolumeSolver->FindProcess<ablate::finiteVolume::processes::Chemistry>();
 
     // call the base function to create the domain
     FieldMonitor::Register(monitorName, solverIn, fields);
@@ -47,11 +47,11 @@ void ablate::monitors::MixtureFractionMonitor::Save(PetscViewer viewer, PetscInt
 
     // define a localFVec from the solution dm to compute the source terms
     Vec sourceTermVec = nullptr;
-    if (tChemReactions) {
+    if (chemistry) {
         DMGetLocalVector(GetSolver()->GetSubDomain().GetDM(), &sourceTermVec) >> checkError;
         VecZeroEntries(sourceTermVec);
         auto fvSolver = std::dynamic_pointer_cast<ablate::finiteVolume::FiniteVolumeSolver>(GetSolver());
-        tChemReactions->AddChemistrySourceToFlow(*fvSolver, sourceTermVec);
+        chemistry->AddChemistrySourceToFlow(*fvSolver, sourceTermVec);
     }
 
     // Get the arrays for the global vectors

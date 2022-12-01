@@ -4,7 +4,6 @@ target_sources(ablateLibrary
         navierStokesTransport.cpp
         speciesTransport.cpp
         evTransport.cpp
-        tChemReactions.cpp
         twoPhaseEulerAdvection.cpp
         gravity.cpp
         pressureGradientScaling.cpp
@@ -12,13 +11,14 @@ target_sources(ablateLibrary
         buoyancy.cpp
         constantPressureFix.cpp
         les.cpp
+        chemistry.cpp
+
         PUBLIC
         process.hpp
         flowProcess.hpp
         navierStokesTransport.hpp
         speciesTransport.hpp
         evTransport.hpp
-        tChemReactions.hpp
         twoPhaseEulerAdvection.hpp
         gravity.hpp
         pressureGradientScaling.hpp
@@ -26,4 +26,5 @@ target_sources(ablateLibrary
         buoyancy.hpp
         constantPressureFix.hpp
         les.hpp
+        chemistry.hpp
         )

@@ -47,7 +47,7 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
     mu: 0.0
   additionalProcesses:
     # add in the reaction processes
-    - !ablate::finiteVolume::processes::TChemReactions
+    - !ablate::finiteVolume::processes::Chemistry
       eos: *eos
   boundaryConditions:
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost

@@ -3,7 +3,7 @@
 
 #include <memory>
 #include "fieldMonitor.hpp"
-#include "finiteVolume/processes/tChemReactions.hpp"
+#include "finiteVolume/processes/chemistry.hpp"
 #include "mixtureFractionCalculator.hpp"
 
 /**
@@ -20,7 +20,7 @@ class MixtureFractionMonitor : public FieldMonitor {
     eos::ThermodynamicFunction densityFunction;
 
     //! store an optional pointer to the TChemReactions to output chemistry source terms
-    std::shared_ptr<ablate::finiteVolume::processes::TChemReactions> tChemReactions;
+    std::shared_ptr<ablate::finiteVolume::processes::Chemistry> chemistry;
 
    public:
     /**
