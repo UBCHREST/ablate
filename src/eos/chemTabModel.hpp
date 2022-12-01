@@ -161,6 +161,16 @@ class ChemTabModel : public ChemistryModel {
     [[nodiscard]] eos::FieldFunction GetFieldFunctionFunction(const std::string& field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2) const override {
         throw std::runtime_error(errorMessage);
     }
+
+    void ChemistrySource(const std::vector<domain::Field>& fields, PetscReal dt, const PetscReal conserved[], PetscReal* source) const { throw std::runtime_error(errorMessage); }
+
+    void ComputeProgressVariables(const PetscReal* massFractions, std::size_t massFractionsSize, PetscReal* progressVariables, std::size_t progressVariablesSize) const {
+        throw std::runtime_error(errorMessage);
+    }
+
+    void ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize) {
+        throw std::runtime_error(errorMessage);
+    }
 };
 #endif
 }  // namespace ablate::eos
