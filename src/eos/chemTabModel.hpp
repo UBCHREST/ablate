@@ -140,15 +140,27 @@ class ChemTabModel : public ChemistryModel {
     static inline const std::string errorMessage = "Using the ChemTabModel requires Tensorflow to be compile with ABLATE.";
     ChemTabModel(std::filesystem::path path) { throw std::runtime_error(errorMessage); }
 
-    const std::vector<std::string>& GetSpecies() const override { throw std::runtime_error(errorMessage); }
-    const std::vector<std::string>& GetProgressVariables() const override { throw std::runtime_error(errorMessage); }
+    [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { throw std::runtime_error(errorMessage); }
 
-    void ComputeProgressVariables(const PetscReal massFractions[], const std::size_t massFractionsSize, PetscReal* progressVariables, const std::size_t progressVariablesSize) const override {
+    [[nodiscard]] const std::vector<std::string>& GetReferenceSpecies() const { throw std::runtime_error(errorMessage); }
+
+    [[nodiscard]] const std::vector<std::string>& GetExtraVariables() const override { throw std::runtime_error(errorMessage); }
+
+    std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override { throw std::runtime_error(errorMessage); }
+
+    void View(std::ostream& stream) const override { throw std::runtime_error(errorMessage); }
+
+    [[nodiscard]] eos::ThermodynamicFunction GetThermodynamicFunction(eos::ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override {
         throw std::runtime_error(errorMessage);
     }
 
-    ComputeMassFractionsFunction GetComputeMassFractionsFunction() override { throw std::runtime_error(errorMessage); }
-    ComputeSourceFunction GetComputeSourceFunction() override { throw std::runtime_error(errorMessage); }
+    [[nodiscard]] eos::ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override {
+        throw std::runtime_error(errorMessage);
+    }
+
+    [[nodiscard]] eos::FieldFunction GetFieldFunctionFunction(const std::string& field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2) const override {
+        throw std::runtime_error(errorMessage);
+    }
 };
 #endif
 }  // namespace ablate::eos
