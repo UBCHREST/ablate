@@ -327,12 +327,6 @@ double ablate::finiteVolume::processes::TwoPhaseEulerAdvection::ComputeTimeStep(
     // Get field location for euler and densityYi
     auto eulerId = flow.GetSubDomain().GetField("euler").id;
 
-    // Get alpha if provided
-    PetscReal pgsAlpha = 1.0;
-    if (timeStepData->pgs) {
-        pgsAlpha = timeStepData->pgs->GetAlpha();
-    }
-
     // March over each cell
     PetscReal dtMin = 1000.0;
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
@@ -356,7 +350,7 @@ double ablate::finiteVolume::processes::TwoPhaseEulerAdvection::ComputeTimeStep(
             for (PetscInt d = 0; d < dim; d++) {
                 velSum += PetscAbsReal(euler[CompressibleFlowFields::RHOU + d]) / rho;
             }
-            PetscReal dt = advectionData->cfl * dx / (a / pgsAlpha + velSum);
+            PetscReal dt = advectionData->cfl * dx / (a + velSum);
 
             dtMin = PetscMin(dtMin, dt);
         }
