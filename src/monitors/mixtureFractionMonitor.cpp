@@ -3,7 +3,7 @@
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 
-ablate::monitors::MixtureFractionMonitor::MixtureFractionMonitor(std::shared_ptr<ablate::chemistry::MixtureFractionCalculator> mixtureFractionCalculator)
+ablate::monitors::MixtureFractionMonitor::MixtureFractionMonitor(std::shared_ptr<MixtureFractionCalculator> mixtureFractionCalculator)
     : mixtureFractionCalculator(std::move(std::move(mixtureFractionCalculator))) {}
 
 void ablate::monitors::MixtureFractionMonitor::Register(std::shared_ptr<solver::Solver> solverIn) {
@@ -133,4 +133,4 @@ void ablate::monitors::MixtureFractionMonitor::Save(PetscViewer viewer, PetscInt
 #include "registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::MixtureFractionMonitor,
          "This class computes the mixture fraction for each point in the domain and outputs zMix, Yi, and source terms to the hdf5 file",
-         ARG(ablate::chemistry::MixtureFractionCalculator, "mixtureFractionCalculator", "the calculator used to compute zMix"));
+         ARG(ablate::monitors::MixtureFractionCalculator, "mixtureFractionCalculator", "the calculator used to compute zMix"));

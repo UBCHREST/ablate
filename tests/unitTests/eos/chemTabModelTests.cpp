@@ -1,5 +1,5 @@
 #include <yaml-cpp/yaml.h>
-#include "chemistry/chemTabModel.hpp"
+#include "eos/chemTabModel.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
 #include "localPath.hpp"
@@ -28,22 +28,22 @@ TEST(ChemTabModelTests, ShouldCreateFromRegistar) {
 
     // arrange
     std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
-    const std::string expectedClassType = "ablate::chemistry::ChemTabModel";
+    const std::string expectedClassType = "ablate::eos::ChemTabModel";
     EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
 
     auto mockSubFactory = std::make_shared<cppParserTesting::MockFactory>();
     const std::string expectedSubClassType = "";
     EXPECT_CALL(*mockSubFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedSubClassType));
-    EXPECT_CALL(*mockSubFactory, Get(cppParser::ArgumentIdentifier<std::string>{})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("inputs/chemistry/chemTabTestModel_1"));
+    EXPECT_CALL(*mockSubFactory, Get(cppParser::ArgumentIdentifier<std::string>{})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("inputs/eos/chemTabTestModel_1"));
     EXPECT_CALL(*mockFactory, GetFactory("path")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(mockSubFactory));
 
     // act
-    auto createMethod = Creator<ablate::chemistry::ChemistryModel>::GetCreateMethod(mockFactory->GetClassType());
+    auto createMethod = Creator<ablate::eos::ChemistryModel>::GetCreateMethod(mockFactory->GetClassType());
     auto instance = createMethod(mockFactory);
 
     // assert
     ASSERT_TRUE(instance != nullptr) << " should create an instance of the ablate::chemistry::ChemTabModel";
-    ASSERT_TRUE(std::dynamic_pointer_cast<ablate::chemistry::ChemTabModel>(instance) != nullptr) << " should be an instance of ablate::chemistry::ChemTabModel";
+    ASSERT_TRUE(std::dynamic_pointer_cast<ablate::eos::ChemTabModel>(instance) != nullptr) << " should be an instance of ablate::chemistry::ChemTabModel";
 }
 
 /*******************************************************************************************************
@@ -73,7 +73,7 @@ TEST_P(ChemTabModelTestFixture, ShouldReturnCorrectSpeciesAndVariables) {
     // iterate over each test
     for (const auto& testTarget : testTargets) {
         // arrange
-        ablate::chemistry::ChemTabModel chemTabModel(GetParam().modelPath);
+        ablate::eos::ChemTabModel chemTabModel(GetParam().modelPath);
 
         // act
         auto actualSpecies = chemTabModel.GetSpecies();
@@ -98,7 +98,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectMassFractions) {
     // iterate over each test
     for (const auto& testTarget : testTargets) {
         // arrange
-        ablate::chemistry::ChemTabModel chemTabModel(GetParam().modelPath);
+        ablate::eos::ChemTabModel chemTabModel(GetParam().modelPath);
         auto expectedMassFractions = testTarget["output_mass_fractions"].as<std::vector<double>>();
         auto inputProgressVariables = testTarget["input_cpvs"].as<std::vector<double>>();
 
@@ -122,7 +122,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectSource) {
     // iterate over each test
     for (const auto& testTarget : testTargets) {
         // arrange
-        ablate::chemistry::ChemTabModel chemTabModel(GetParam().modelPath);
+        ablate::eos::ChemTabModel chemTabModel(GetParam().modelPath);
         auto inputProgressVariables = testTarget["input_cpvs"].as<std::vector<double>>();
         auto expectedSourceEnergy = testTarget["output_source_energy"].as<double>();
         auto expectedSource = testTarget["output_source_terms"].as<std::vector<double>>();
@@ -180,7 +180,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectProgressVariables) {
 
     for (const auto& testTarget : testTargets) {
         // arrange
-        ablate::chemistry::ChemTabModel chemTabModel(GetParam().modelPath);
+        ablate::eos::ChemTabModel chemTabModel(GetParam().modelPath);
         auto expectedProgressVariables = testTarget["output_cpvs"].as<std::vector<double>>();
         auto inputMassFractions = testTarget["input_mass_fractions"].as<std::vector<double>>();
 
@@ -197,12 +197,12 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectProgressVariables) {
 }
 
 INSTANTIATE_TEST_SUITE_P(ChemTabModelTests, ChemTabModelTestFixture,
-                         testing::Values((ChemTabModelTestParameters){.modelPath = "inputs/chemistry/chemTabTestModel_1", .testTargetFile = "inputs/chemistry/chemTabTestModel_1/testTargets.yaml"}));
+                         testing::Values((ChemTabModelTestParameters){.modelPath = "inputs/eos/chemTabTestModel_1", .testTargetFile = "inputs/eos/chemTabTestModel_1/testTargets.yaml"}));
 
 /*********************************************************************************************************
  * Test for when tensorflow is not available
  */
 TEST(ChemTabModelTests, ShouldReportTensorFlowLibraryMissing) {
     ONLY_WITHOUT_TENSORFLOW_CHECK;
-    ASSERT_ANY_THROW(ablate::chemistry::ChemTabModel("inputs/chemistry/chemTabTestModel_1"));
+    ASSERT_ANY_THROW(ablate::eos::ChemTabModel("inputs/eos/chemTabTestModel_1"));
 }
