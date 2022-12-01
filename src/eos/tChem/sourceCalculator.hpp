@@ -34,7 +34,7 @@ class SourceCalculator : public ChemistryModel::SourceCalculator {
         int maxAttempts = 4;
 
         // store an optional threshold temperature.  Only compute the reactions if the temperature is above thresholdTemperature
-        double thresholdTemperature;
+        double thresholdTemperature = 0.0;
 
         void Set(const std::shared_ptr<ablate::parameters::Parameters>&);
     };
@@ -59,7 +59,7 @@ class SourceCalculator : public ChemistryModel::SourceCalculator {
 
    private:
     //! copy of constraints
-    const ChemistryConstraints chemistryConstraints;
+    ChemistryConstraints chemistryConstraints;
 
     /**
      * Hold access to the tchem eos needed to create eos
