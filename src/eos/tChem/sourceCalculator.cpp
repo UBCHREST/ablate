@@ -20,7 +20,7 @@ void ablate::eos::tChem::SourceCalculator::ChemistryConstraints::Set(const std::
         numTimeIterationsPerInterval = options->Get("numTimeIterationsPerInterval", numTimeIterationsPerInterval);
         jacobianInterval = options->Get("jacobianInterval", jacobianInterval);
         maxAttempts = options->Get("maxAttempts", maxAttempts);
-        thresholdTemperature = options->Get("thresholdTemperature", 0.0);
+        thresholdTemperature = options->Get("thresholdTemperature", thresholdTemperature);
     }
 }
 

@@ -944,7 +944,8 @@ INSTANTIATE_TEST_SUITE_P(
     TChemTests, TCComputeSourceTestFixture,
     testing::Values(
         (TCComputeSourceTestParameters){
-            .mechFile = "inputs/eos/gri30.yaml",
+            .mechFile = "inputs/eos/grimech30.dat",
+            .thermoFile = "inputs/eos/thermo30.dat",
             .dt = 0.0001,
             .inputEulerValues = {0.280629, 212565., 0.},
             .inputDensityYiValues = {0., 0., 0., 0.0617779, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.015487, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,      0.,
