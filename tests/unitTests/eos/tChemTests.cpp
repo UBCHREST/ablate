@@ -221,11 +221,11 @@ TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputePropertyUsingMassFractio
     auto eulerField = std::find_if(params.fields.begin(), params.fields.end(), [](const auto& field) { return field.name == "euler"; });
 
     // build the total conserved values
-    std::vector<PetscReal> conservedValues(eulerField->numberComponents + 10, 0.0); /* 10 provides some extra buffer for placement testing*/
+    auto conservedValuesSize = std::accumulate(params.fields.begin(), params.fields.end(), 0, [](int a, const ablate::domain::Field& field) { return a + field.numberComponents; });
+    std::vector<PetscReal> conservedValues(conservedValuesSize + 10, 0.0); /* 10 provides some extra buffer for placement testing*/
     std::copy(params.conservedEulerValues.begin(), params.conservedEulerValues.end(), conservedValues.begin() + std::find_if(params.fields.begin(), params.fields.end(), [](const auto& field) {
                                                                                                                     return field.name == "euler";
                                                                                                                 })->offset);
-
     // Size and fill species
     std::vector<PetscReal> yi(eos->GetSpecies().size(), 0.0);
     FillMassFraction(eos->GetSpecies(), params.yiMap, yi);
