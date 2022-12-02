@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_CHEMTABMODEL_HPP
-#define ABLATELIBRARY_CHEMTABMODEL_HPP
+#ifndef ABLATELIBRARY_CHEMTAB_HPP
+#define ABLATELIBRARY_CHEMTAB_HPP
 
 #include <petscmat.h>
 #include <filesystem>
@@ -13,7 +13,7 @@
 namespace ablate::eos {
 
 #ifdef WITH_TENSORFLOW
-class ChemTabModel : public ChemistryModel {
+class ChemTab : public ChemistryModel {
    private:
     //! use the reference eos to compute properties from the decoded progressVariables to yi
     std::shared_ptr<ablate::eos::EOS> referenceEOS;
@@ -46,8 +46,8 @@ class ChemTabModel : public ChemistryModel {
     void ChemistrySource(PetscInt densityOffset, PetscInt energyOffset, PetscInt progressVariableOffset, const PetscReal conserved[], PetscReal* source) const;
 
    public:
-    explicit ChemTabModel(std::filesystem::path path);
-    ~ChemTabModel() override;
+    explicit ChemTab(std::filesystem::path path);
+    ~ChemTab() override;
 
     /**
      * As far as other parts of the code is concerned the chemTabEos does not expect species
@@ -135,7 +135,7 @@ class ChemTabModel : public ChemistryModel {
 };
 
 #else
-class ChemTabModel : public ChemistryModel {
+class ChemTab : public ChemistryModel {
    public:
     static inline const std::string errorMessage = "Using the ChemTabModel requires Tensorflow to be compile with ABLATE.";
     ChemTabModel(std::filesystem::path path) : ChemistryModel("ablate::chemistry::ChemTabModel") { throw std::runtime_error(errorMessage); }
@@ -174,4 +174,4 @@ class ChemTabModel : public ChemistryModel {
 };
 #endif
 }  // namespace ablate::eos
-#endif  // ABLATELIBRARY_CHEMTABMODEL_HPP
+#endif  // ABLATELIBRARY_CHEMTAB_HPP

@@ -3,7 +3,7 @@ target_sources(ablateLibrary
         perfectGas.cpp
         stiffenedGas.cpp
         tChem.cpp
-        chemTabModel.cpp
+        chemTab.cpp
         chemistryModel.cpp
 
         PUBLIC
@@ -11,7 +11,7 @@ target_sources(ablateLibrary
         perfectGas.hpp
         tChem.hpp
         stiffenedGas.hpp
-        chemTabModel.hpp
+        chemTab.hpp
         chemistryModel.hpp
         )
 

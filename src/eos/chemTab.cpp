@@ -1,4 +1,4 @@
-#include "chemTabModel.hpp"
+#include "chemTab.hpp"
 #include <yaml-cpp/yaml.h>
 #include <algorithm>
 #include <eos/tChem.hpp>
@@ -11,13 +11,13 @@
 
 void NoOpDeallocator(void *data, size_t a, void *b) {}
 
-ablate::eos::ChemTabModel::ChemTabModel(std::filesystem::path path) : ChemistryModel("ablate::chemistry::ChemTabModel") {
+ablate::eos::ChemTab::ChemTab(std::filesystem::path path) : ChemistryModel("ablate::chemistry::ChemTab") {
     const char *tags = "serve";  // default model serving tag; can change in future
     int ntags = 1;
 
     // check to make sure the file
     if (!exists(path)) {
-        throw std::runtime_error("Cannot locate ChemTabModel Folder " + path.string());
+        throw std::runtime_error("Cannot locate ChemTab Folder " + path.string());
     }
 
     // open the metadata yaml file
@@ -30,19 +30,19 @@ ablate::eos::ChemTabModel::ChemTabModel(std::filesystem::path path) : ChemistryM
     if (!std::filesystem::exists(rpath)) {
         throw std::runtime_error(
             "The 'regressor' file cannot be located in the "
-            "specified ChemTabModel Folder " +
+            "specified ChemTab Folder " +
             path.string());
     }
     if (!std::filesystem::exists(wpath)) {
         throw std::runtime_error(
             "The 'weights.csv' file cannot be located in the "
-            "specified ChemTabModel Folder " +
+            "specified ChemTab Folder " +
             path.string());
     }
     if (!std::filesystem::exists(ipath)) {
         throw std::runtime_error(
             "The 'weights_inv.csv' file cannot be located in "
-            "the specified ChemTabModel Folder " +
+            "the specified ChemTab Folder " +
             path.string());
     }
 
@@ -80,7 +80,7 @@ ablate::eos::ChemTabModel::ChemTabModel(std::filesystem::path path) : ChemistryM
     referenceEOS = std::make_shared<ablate::eos::TChem>(mechanismPath);
 }
 
-ablate::eos::ChemTabModel::~ChemTabModel() {
+ablate::eos::ChemTab::~ChemTab() {
     TF_DeleteGraph(graph);
     TF_DeleteSession(session, status);
     TF_DeleteSessionOptions(sessionOpts);
@@ -99,7 +99,7 @@ static inline void trim(std::string &s) {
     s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) { return !std::isspace(ch); }).base(), s.end());
 }
 
-void ablate::eos::ChemTabModel::ExtractMetaData(std::istream &inputStream) {
+void ablate::eos::ChemTab::ExtractMetaData(std::istream &inputStream) {
     // determine the headers from the first row
     std::string line;
     std::getline(inputStream, line);
@@ -128,7 +128,7 @@ void ablate::eos::ChemTabModel::ExtractMetaData(std::istream &inputStream) {
     }
 }
 
-void ablate::eos::ChemTabModel::LoadBasisVectors(std::istream &inputStream, std::size_t cols, double **W) {
+void ablate::eos::ChemTab::LoadBasisVectors(std::istream &inputStream, std::size_t cols, double **W) {
     std::string line, sName;
     // skip first row
     std::getline(inputStream, line);
@@ -148,7 +148,7 @@ void ablate::eos::ChemTabModel::LoadBasisVectors(std::istream &inputStream, std:
     }
 }
 
-void ablate::eos::ChemTabModel::ComputeMassFractions(const PetscReal *progressVariables, std::size_t progressVariablesSize, PetscReal *massFractions, std::size_t massFractionsSize) {
+void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal *progressVariables, std::size_t progressVariablesSize, PetscReal *massFractions, std::size_t massFractionsSize) {
     // y = inv(W)'C
     // for now the mass fractions will be obtained using the inverse of the
     // weights. Will be replaced by a ML predictive model in the next iteration
@@ -176,28 +176,28 @@ void ablate::eos::ChemTabModel::ComputeMassFractions(const PetscReal *progressVa
     }
 }
 
-void ablate::eos::ChemTabModel::ChemistrySource(const std::vector<domain::Field> &fields, PetscReal dt, const PetscReal conserved[], PetscReal *source) const {
+void ablate::eos::ChemTab::ChemistrySource(const std::vector<domain::Field> &fields, PetscReal dt, const PetscReal conserved[], PetscReal *source) const {
     // Look for the euler field
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
     if (eulerField == fields.end()) {
-        throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
+        throw std::invalid_argument("The ablate::chemistry::ChemTab requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
     }
 
     auto densityEvField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD; });
     if (densityEvField == fields.end()) {
-        throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD Field");
+        throw std::invalid_argument("The ablate::chemistry::ChemTab requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD Field");
     }
 
     auto zMixIter = std::find(densityEvField->components.begin(), densityEvField->components.end(), "zmix");
     if (zMixIter == densityEvField->components.end()) {
-        throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD Field contain zMix and other progress variables");
+        throw std::invalid_argument("The ablate::chemistry::ChemTab requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD Field contain zMix and other progress variables");
     }
     auto zMixOffset = densityEvField->offset + std::distance(densityEvField->components.begin(), zMixIter);
 
     ChemistrySource(eulerField->offset + ablate::finiteVolume::CompressibleFlowFields::RHO, eulerField->offset + ablate::finiteVolume::CompressibleFlowFields::RHOE, zMixOffset, conserved, source);
 }
 
-void ablate::eos::ChemTabModel::ChemistrySource(PetscInt densityOffset, PetscInt energyOffset, PetscInt progressVariableOffset, const PetscReal conserved[], PetscReal *source) const {
+void ablate::eos::ChemTab::ChemistrySource(PetscInt densityOffset, PetscInt energyOffset, PetscInt progressVariableOffset, const PetscReal conserved[], PetscReal *source) const {
     //********* Get Input tensor
     int numInputs = 1;
     TF_Output *input = (TF_Output *)malloc(sizeof(TF_Output) * numInputs);
@@ -268,7 +268,7 @@ void ablate::eos::ChemTabModel::ChemistrySource(PetscInt densityOffset, PetscInt
     free(output);
 }
 
-void ablate::eos::ChemTabModel::ComputeProgressVariables(const PetscReal *massFractions, std::size_t massFractionsSize, PetscReal *progressVariables, std::size_t progressVariablesSize) const {
+void ablate::eos::ChemTab::ComputeProgressVariables(const PetscReal *massFractions, std::size_t massFractionsSize, PetscReal *progressVariables, std::size_t progressVariablesSize) const {
     // c = W'y
     // size of progressVariables should match the expected number of
     // progressVariables
@@ -294,9 +294,9 @@ void ablate::eos::ChemTabModel::ComputeProgressVariables(const PetscReal *massFr
     }
 }
 
-void ablate::eos::ChemTabModel::View(std::ostream &stream) const { stream << "EOS: " << type << std::endl; }
+void ablate::eos::ChemTab::View(std::ostream &stream) const { stream << "EOS: " << type << std::endl; }
 
 #endif
 
 #include "registrar.hpp"
-REGISTER(ablate::eos::ChemistryModel, ablate::eos::ChemTabModel, "Uses a tensorflow model developed by ChemTab", ARG(std::filesystem::path, "path", "the path to the model"));
+REGISTER(ablate::eos::ChemistryModel, ablate::eos::ChemTab, "Uses a tensorflow model developed by ChemTab", ARG(std::filesystem::path, "path", "the path to the model"));

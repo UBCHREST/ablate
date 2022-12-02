@@ -1,5 +1,5 @@
 #include <yaml-cpp/yaml.h>
-#include "eos/chemTabModel.hpp"
+#include "eos/chemTab.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
 #include "localPath.hpp"
@@ -23,7 +23,7 @@
 /*******************************************************************************************************
  * This test ensure that the chemTabModel can be created using the input file
  */
-TEST(ChemTabModelTests, ShouldCreateFromRegistar) {
+TEST(ChemTabTests, ShouldCreateFromRegistar) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
     // arrange
@@ -43,7 +43,7 @@ TEST(ChemTabModelTests, ShouldCreateFromRegistar) {
 
     // assert
     ASSERT_TRUE(instance != nullptr) << " should create an instance of the ablate::chemistry::ChemTabModel";
-    ASSERT_TRUE(std::dynamic_pointer_cast<ablate::eos::ChemTabModel>(instance) != nullptr) << " should be an instance of ablate::chemistry::ChemTabModel";
+    ASSERT_TRUE(std::dynamic_pointer_cast<ablate::eos::ChemTab>(instance) != nullptr) << " should be an instance of ablate::chemistry::ChemTabModel";
 }
 
 /*******************************************************************************************************
@@ -73,7 +73,7 @@ TEST_P(ChemTabModelTestFixture, ShouldReturnCorrectSpeciesAndVariables) {
     // iterate over each test
     for (const auto& testTarget : testTargets) {
         // arrange
-        ablate::eos::ChemTabModel chemTabModel(GetParam().modelPath);
+        ablate::eos::ChemTab chemTabModel(GetParam().modelPath);
 
         // act
         auto actualSpecies = chemTabModel.GetSpecies();
@@ -98,7 +98,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectMassFractions) {
     // iterate over each test
     for (const auto& testTarget : testTargets) {
         // arrange
-        ablate::eos::ChemTabModel chemTabModel(GetParam().modelPath);
+        ablate::eos::ChemTab chemTabModel(GetParam().modelPath);
         auto expectedMassFractions = testTarget["output_mass_fractions"].as<std::vector<double>>();
         auto inputProgressVariables = testTarget["input_cpvs"].as<std::vector<double>>();
 
@@ -122,7 +122,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectSource) {
     // iterate over each test
     for (const auto& testTarget : testTargets) {
         // arrange
-        ablate::eos::ChemTabModel chemTabModel(GetParam().modelPath);
+        ablate::eos::ChemTab chemTabModel(GetParam().modelPath);
         auto inputProgressVariables = testTarget["input_cpvs"].as<std::vector<double>>();
         auto expectedSourceEnergy = testTarget["output_source_energy"].as<double>();
         auto expectedSource = testTarget["output_source_terms"].as<std::vector<double>>();
@@ -180,7 +180,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectProgressVariables) {
 
     for (const auto& testTarget : testTargets) {
         // arrange
-        ablate::eos::ChemTabModel chemTabModel(GetParam().modelPath);
+        ablate::eos::ChemTab chemTabModel(GetParam().modelPath);
         auto expectedProgressVariables = testTarget["output_cpvs"].as<std::vector<double>>();
         auto inputMassFractions = testTarget["input_mass_fractions"].as<std::vector<double>>();
 
@@ -196,13 +196,13 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectProgressVariables) {
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(ChemTabModelTests, ChemTabModelTestFixture,
+INSTANTIATE_TEST_SUITE_P(ChemTabTests, ChemTabModelTestFixture,
                          testing::Values((ChemTabModelTestParameters){.modelPath = "inputs/eos/chemTabTestModel_1", .testTargetFile = "inputs/eos/chemTabTestModel_1/testTargets.yaml"}));
 
 /*********************************************************************************************************
  * Test for when tensorflow is not available
  */
-TEST(ChemTabModelTests, ShouldReportTensorFlowLibraryMissing) {
+TEST(ChemTabTests, ShouldReportTensorFlowLibraryMissing) {
     ONLY_WITHOUT_TENSORFLOW_CHECK;
-    ASSERT_ANY_THROW(ablate::eos::ChemTabModel("inputs/eos/chemTabTestModel_1"));
+    ASSERT_ANY_THROW(ablate::eos::ChemTab("inputs/eos/chemTabTestModel_1"));
 }

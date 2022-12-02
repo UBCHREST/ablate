@@ -4,7 +4,7 @@ target_sources(unitTests
         perfectGasTests.cpp
         stiffenedGasTests.cpp
         tChemTests.cpp
-        chemTabModelTests.cpp
+        chemTabTests.cpp
         )
 
 add_subdirectory(transport)
