@@ -224,8 +224,8 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
 #else
 class ChemTab : public ChemistryModel {
    public:
-    static inline const std::string errorMessage = "Using the ChemTabModel requires Tensorflow to be compile with ABLATE.";
-    ChemTabModel(std::filesystem::path path) : ChemistryModel("ablate::chemistry::ChemTabModel") { throw std::runtime_error(errorMessage); }
+    static inline const std::string errorMessage = "Using the ChemTab requires Tensorflow to be compile with ABLATE.";
+    ChemTab(std::filesystem::path path) : ChemistryModel("ablate::chemistry::ChemTabModel") { throw std::runtime_error(errorMessage); }
 
     [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { throw std::runtime_error(errorMessage); }
 
