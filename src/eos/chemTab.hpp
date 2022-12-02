@@ -249,7 +249,9 @@ class ChemTab : public ChemistryModel {
         throw std::runtime_error(errorMessage);
     }
 
-    void ChemistrySource(const std::vector<domain::Field>& fields, PetscReal dt, const PetscReal conserved[], PetscReal* source) const { throw std::runtime_error(errorMessage); }
+    void ChemistrySource(PetscReal density, const PetscReal densityProgressVariable[], PetscReal* densityEnergySource, PetscReal* progressVariableSource) const {
+        throw std::runtime_error(errorMessage);
+    }
 
     void ComputeProgressVariables(const PetscReal* massFractions, std::size_t massFractionsSize, PetscReal* progressVariables, std::size_t progressVariablesSize) const {
         throw std::runtime_error(errorMessage);
