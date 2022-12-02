@@ -36,7 +36,7 @@ class ChemistryModel : public eos::EOS {
         /**
          * Adds the source that was computed in the presetp to the supplied vector
          */
-        virtual void AddSource(const solver::Range& cellRange, Vec source) = 0;
+        virtual void AddSource(const solver::Range& cellRange, Vec solution, Vec source) = 0;
     };
 
     /**

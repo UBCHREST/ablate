@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <istream>
 #include "chemistryModel.hpp"
+#include "eos/tChem.hpp"
 #ifdef WITH_TENSORFLOW
 #include <tensorflow/c/c_api.h>
 #include "utilities/vectorUtilities.hpp"
@@ -13,10 +14,10 @@
 namespace ablate::eos {
 
 #ifdef WITH_TENSORFLOW
-class ChemTab : public ChemistryModel {
+class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemTab> {
    private:
     //! use the reference eos to compute properties from the decoded progressVariables to yi
-    std::shared_ptr<ablate::eos::EOS> referenceEOS;
+    std::shared_ptr<ablate::eos::TChem> referenceEOS;
 
     // hold the required tensorflow information
     TF_Graph* graph = nullptr;
@@ -38,12 +39,99 @@ class ChemTab : public ChemistryModel {
     void LoadBasisVectors(std::istream& inputStream, std::size_t columns, PetscReal** W);
 
     /**
-     * Private function to compute the chemistry source given the density, energy, and progress variable offset
-     * @param fields
-     * @param conserved
-     * @param source
+     * The source calculator is used to do batch processing for chemistry model.  This is a bad implementation
+     * that calls each node one at a time.
      */
-    void ChemistrySource(PetscInt densityOffset, PetscInt energyOffset, PetscInt progressVariableOffset, const PetscReal conserved[], PetscReal* source) const;
+    class ChemTabSourceCalculator : public ChemistryModel::SourceCalculator {
+       private:
+        //! Store the offset for each of the required variables
+        const PetscInt densityOffset;
+        const PetscInt densityEnergyOffset;
+        const PetscInt densityProgressVariableOffset;
+        //! hold a pointer to the chemTabModel to compute the source terms
+        const std::shared_ptr<ChemTab> chemTabModel;
+
+       public:
+        ChemTabSourceCalculator(PetscInt densityOffset, PetscInt densityEnergyOffset, PetscInt densityProgressVariableOffset, std::shared_ptr<ChemTab> chemTabModel);
+        /**
+         * There is no need to precompute source for the chemtab model
+         */
+        void ComputeSource(const solver::Range& cellRange, PetscReal time, PetscReal dt, Vec solution) override{};
+
+        /**
+         * Computes and adds the source to the supplied vector
+         */
+        void AddSource(const solver::Range& cellRange, Vec locSolution, Vec locSource) override;
+    };
+
+    /**
+     * Struct for the thermodynamic function context
+     */
+    struct ThermodynamicFunctionContext {
+        // memory access locations for fields
+        std::size_t numberSpecies;
+        std::size_t numberProgressVariables;
+        std::size_t densityOffset;
+        std::size_t zMixOffset;
+
+        // store a scratch variable to compute yi
+        std::vector<PetscReal> yiScratch;
+
+        // Hold the context for the baseline tChem function
+        ablate::eos::TChem::ThermodynamicMassFractionFunction tChemFunction;
+
+        // inverse function/  This does not hold the pointer, but it is held by chemTab;
+        PetscReal** iWmat;
+    };
+
+    /**
+     * Struct for the thermodynamic function context
+     */
+    struct ThermodynamicTemperatureFunctionContext {
+        // memory access locations for fields
+        std::size_t numberSpecies;
+        std::size_t numberProgressVariables;
+        std::size_t densityOffset;
+        std::size_t zMixOffset;
+
+        // store a scratch variable to compute yi
+        std::vector<PetscReal> yiScratch;
+
+        // Hold the context for the baseline tChem function
+        ablate::eos::TChem::ThermodynamicTemperatureMassFractionFunction tChemFunction;
+
+        // inverse function/  This does not hold the pointer, but it is held by chemTab;
+        PetscReal** iWmat;
+    };
+
+    /**
+     * static call to compute yi and call baseline tChem function
+     * @param conserved
+     * @param property
+     * @param ctx
+     * @return
+     */
+    static PetscErrorCode ChemTabThermodynamicFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+
+    /**
+     * static call to compute yi and call baseline tChem function
+     * @param conserved
+     * @param property
+     * @param ctx
+     * @return
+     */
+    static PetscErrorCode ChemTabThermodynamicTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+
+    /**
+     * helper function to compute the mass fractions = from the mass fractions progress variables
+     * @param massFractions
+     * @param massFractionsSize
+     * @param progressVariables
+     * @param progressVariablesSize
+     * @param density allows for this function to be used with density*progress variables
+     */
+    static void ComputeMassFractions(std::size_t numSpecies, std::size_t numProgressVariables, PetscReal** iWmat, const PetscReal* progressVariables, PetscReal* massFractions,
+                                     PetscReal density = 1.0);
 
    public:
     explicit ChemTab(std::filesystem::path path);
@@ -68,22 +156,21 @@ class ChemTab : public ChemistryModel {
     [[nodiscard]] const std::vector<std::string>& GetExtraVariables() const override { return progressVariablesNames; }
 
     /**
+     * Single function to compute the source terms for a single point
+     * @param fields
+     * @param conserved
+     * @param source
+     */
+    void ChemistrySource(PetscReal density, const PetscReal densityProgressVariable[], PetscReal* densityEnergySource, PetscReal* progressVariableSource) const;
+
+    /**
      * Single function to produce ChemistryFunction calculator based upon the available fields and sources.
      * @param fields in the conserved/source arrays
      * @param property
      * @param fields
      * @return
      */
-    std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override { return nullptr; }
-
-    /**
-     *
-     * @param fields
-     * @param dt
-     * @param conserved
-     * @param source
-     */
-    void ChemistrySource(const std::vector<domain::Field>& fields, PetscReal dt, const PetscReal conserved[], PetscReal* source) const;
+    std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override;
 
     /**
      * helper function to compute the progress variables from the mass fractions
@@ -101,7 +188,7 @@ class ChemTab : public ChemistryModel {
      * @param progressVariables
      * @param progressVariablesSize
      */
-    void ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize);
+    void ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize) const;
 
     /**
      * Print the details of this eos
@@ -115,7 +202,7 @@ class ChemTab : public ChemistryModel {
      * @param fields
      * @return
      */
-    [[nodiscard]] eos::ThermodynamicFunction GetThermodynamicFunction(eos::ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override { return {}; }
+    [[nodiscard]] eos::ThermodynamicFunction GetThermodynamicFunction(eos::ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
 
     /**
      * Single function to produce thermodynamic function for any property based upon the available fields and temperature
@@ -123,7 +210,7 @@ class ChemTab : public ChemistryModel {
      * @param fields
      * @return
      */
-    [[nodiscard]] eos::ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override { return {}; }
+    [[nodiscard]] eos::ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
 
     /**
      * Single function to produce fieldFunction function for any two properties, velocity, and species mass fractions.  These calls can be slower and should be used for init/output only

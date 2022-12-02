@@ -308,7 +308,7 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::solver::R
     // copy the updated state back to host
     Kokkos::deep_copy(sourceTermsHost, sourceTermsDevice);
 }
-void ablate::eos::tChem::SourceCalculator::AddSource(const ablate::solver::Range& cellRange, Vec locFVec) {
+void ablate::eos::tChem::SourceCalculator::AddSource(const ablate::solver::Range& cellRange, Vec, Vec locFVec) {
     // get access to the fArray
     PetscScalar* fArray;
     VecGetArray(locFVec, &fArray) >> checkError;

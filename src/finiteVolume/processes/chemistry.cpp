@@ -73,7 +73,7 @@ PetscErrorCode ablate::finiteVolume::processes::Chemistry::AddChemistrySourceToF
 
     // add in contributions
     try {
-        process->sourceCalculator->AddSource(cellRange, locFVec);
+        process->sourceCalculator->AddSource(cellRange, locX, locFVec);
     } catch (std::exception& exception) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exception.what());
     }

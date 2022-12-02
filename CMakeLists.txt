@@ -69,9 +69,7 @@ target_link_libraries(ablateLibrary
         TChem::tchem
         Tines::tines
         Threads::Threads
-        nlohmann_json::nlohmann_json
-        PRIVATE
-        chrestCompilerFlags)
+        nlohmann_json::nlohmann_json)
 
 # Set the ablate library requirements
 set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)

@@ -1,10 +1,12 @@
 #include <yaml-cpp/yaml.h>
+#include "PetscTestFixture.hpp"
+#include "domain/boxMesh.hpp"
 #include "eos/chemTab.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
 #include "localPath.hpp"
 #include "mockFactory.hpp"
-#include "parameters/mapParameters.hpp"
+#include "solver/dynamicRange.hpp"
 
 #ifndef WITH_TENSORFLOW
 #define ONLY_WITH_TENSORFLOW_CHECK                                       \
@@ -28,7 +30,7 @@ TEST(ChemTabTests, ShouldCreateFromRegistar) {
 
     // arrange
     std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
-    const std::string expectedClassType = "ablate::eos::ChemTabModel";
+    const std::string expectedClassType = "ablate::eos::ChemTab";
     EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
 
     auto mockSubFactory = std::make_shared<cppParserTesting::MockFactory>();
@@ -53,11 +55,12 @@ struct ChemTabModelTestParameters {
     std::string modelPath;
     std::string testTargetFile;
 };
-class ChemTabModelTestFixture : public testing::TestWithParam<ChemTabModelTestParameters> {
+class ChemTabModelTestFixture : public testingResources::PetscTestFixture, public testing::WithParamInterface<ChemTabModelTestParameters> {
    protected:
     YAML::Node testTargets;
 
     void SetUp() override {
+        testingResources::PetscTestFixture::SetUp();
         testTargets = YAML::LoadFile(GetParam().testTargetFile);
 
         // this should be an array
@@ -125,49 +128,106 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectSource) {
         ablate::eos::ChemTab chemTabModel(GetParam().modelPath);
         auto inputProgressVariables = testTarget["input_cpvs"].as<std::vector<double>>();
         auto expectedSourceEnergy = testTarget["output_source_energy"].as<double>();
-        auto expectedSource = testTarget["output_source_terms"].as<std::vector<double>>();
+        auto expectedSourceProgress = testTarget["output_source_terms"].as<std::vector<double>>();
 
         // assume a density
         PetscReal density = 1.5;
 
-        // assume an initial offset
-        PetscInt fieldOffset = 2;
-
-        // set up the conserved fields so that they match what is expected from ablate
-        auto fields = {ablate::domain::Field{
-                           .name = ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD,
-                           .numberComponents = 3,  // density, density*ener, density*u
-                           .offset = fieldOffset   // assume two blank spots in conserved array
-                       },
-                       ablate::domain::Field{
-                           .name = ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD,
-                           .numberComponents = (PetscInt)chemTabModel.GetExtraVariables().size(),
-                           .components = chemTabModel.GetExtraVariables(),
-                           .offset = fieldOffset + 3  // start at end of euler field
-                       }};
-
         // size up and set the expected input
-        std::vector<PetscReal> conserved(2 + 3 + chemTabModel.GetExtraVariables().size(), 0);
-        conserved[fieldOffset + ablate::finiteVolume::CompressibleFlowFields::RHO] = density;
+        std::vector<PetscReal> conservedProgressVariable(chemTabModel.GetExtraVariables().size(), 0.0);
         for (std::size_t p = 0; p < inputProgressVariables.size(); p++) {
-            conserved[fieldOffset + 3 + p] = inputProgressVariables[p] * density;
-        }
-
-        // size up and set the expected source
-        std::vector<PetscReal> expectedSourceVector(conserved.size(), 0);
-        expectedSourceVector[fieldOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] = expectedSourceEnergy;
-        for (std::size_t p = 0; p < inputProgressVariables.size(); p++) {
-            expectedSourceVector[fieldOffset + 3 + p] = expectedSource[p];
+            conservedProgressVariable[p] = inputProgressVariables[p] * density;
         }
 
         // act
         // Size up the results based upon expected
-        std::vector<PetscReal> actual(expectedSourceVector.size());
-        chemTabModel.ChemistrySource(fields, 0, conserved.data(), actual.data());
+        std::vector<PetscReal> actualSourceProgress(conservedProgressVariable.size(), 0.0);
+        PetscReal actualSourceEnergy = 0.0;
+        chemTabModel.ChemistrySource(density, conservedProgressVariable.data(), &actualSourceEnergy, actualSourceProgress.data());
 
-        for (std::size_t r = 0; r < expectedSourceVector.size(); r++) {
-            assert_float_close(expectedSourceVector[r], actual[r]) << " the percent difference of (" << expectedSource[r] << ", " << actual[r] << ") should be less than 5.0E-6 for index [" << r
-                                                                   << "] for model " << testTarget["testName"].as<std::string>();
+        assert_float_close(expectedSourceEnergy, actualSourceEnergy) << "The sourceEnergy is incorrect for model " << testTarget["testName"].as<std::string>();
+
+        for (std::size_t r = 0; r < expectedSourceProgress.size(); r++) {
+            assert_float_close(expectedSourceProgress[r], actualSourceProgress[r]) << " the percent difference of (" << expectedSourceProgress[r] << ", " << actualSourceProgress[r]
+                                                                                   << ") should be less than 5.0E-6 for index [" << r << "] for model " << testTarget["testName"].as<std::string>();
+        }
+    }
+}
+
+TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectThermalProperties) {
+    ONLY_WITH_TENSORFLOW_CHECK;
+
+    // iterate over each test
+    for (const auto& testTarget : testTargets) {
+        // ARRANGE
+        auto chemTab = std::make_shared<ablate::eos::ChemTab>(GetParam().modelPath);
+        auto expectedMassFractions = testTarget["output_mass_fractions"].as<std::vector<double>>();
+        auto inputProgressVariables = testTarget["input_cpvs"].as<std::vector<double>>();
+        auto inputProgressVariablesNames = testTarget["cpv_names"].as<std::vector<std::string>>();
+
+        // build a new reference eos
+        auto metadata = YAML::LoadFile(std::filesystem::path(GetParam().modelPath) / "metadata.yaml");
+        auto tchem = std::make_shared<ablate::eos::TChem>(std::filesystem::path(GetParam().modelPath) / metadata["mechanism"].as<std::string>());
+
+        // assume values for density and energy
+        double density = 1.2;
+        double densityEnergy = 1.2 * 1.0E+05;
+        double momentum = 1.2 * 10;
+
+        // build a conserved array for only euler
+        std::vector<PetscReal> eulerConserved = {0.0, density, densityEnergy, momentum};
+        std::vector<PetscReal> allFieldsConserved = eulerConserved;
+        for (auto pv : inputProgressVariables) {
+            allFieldsConserved.push_back(pv * density);
+        }
+
+        // create fake fields for testings
+        auto fields = {ablate::domain::Field{.name = ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD, .numberComponents = 3, .offset = 1},
+                       ablate::domain::Field{.name = ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD,
+                                             .numberComponents = (PetscInt)inputProgressVariablesNames.size(),
+                                             .components = inputProgressVariablesNames,
+                                             .offset = (PetscInt)eulerConserved.size()}};
+
+        // compute the reference temperature for other calculations
+        auto tChemTemperatureFunction = tchem->GetThermodynamicMassFractionFunction(ablate::eos::ThermodynamicProperty::Temperature, fields);
+        PetscReal tChemComputedTemperature;
+        ASSERT_EQ(tChemTemperatureFunction.function(eulerConserved.data(), expectedMassFractions.data(), &tChemComputedTemperature, tChemTemperatureFunction.context.get()), 0);
+        auto chemTabTemperatureFunction = chemTab->GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, fields);
+        PetscReal chemTabComputedTemperature;
+        ASSERT_EQ(chemTabTemperatureFunction.function(allFieldsConserved.data(), &chemTabComputedTemperature, chemTabTemperatureFunction.context.get()), 0);
+        ASSERT_FLOAT_EQ(chemTabComputedTemperature, tChemComputedTemperature) << " The TChem and ChemTab temperatures should be equal";
+
+        // Now check the other thermodynamic properties
+        auto testProperties = {ablate::eos::ThermodynamicProperty::Pressure,
+                               ablate::eos::ThermodynamicProperty::Temperature,
+                               ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
+                               ablate::eos::ThermodynamicProperty::SensibleEnthalpy,
+                               ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume,
+                               ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure,
+                               ablate::eos::ThermodynamicProperty::SpeedOfSound,
+                               ablate::eos::ThermodynamicProperty::Density};
+
+        for (auto& testProperty : testProperties) {
+            PetscReal tChemComputedProperty, chemTabComputedProperty;
+
+            // Test the direction function
+            auto tChemFunction = tchem->GetThermodynamicMassFractionFunction(testProperty, fields);
+            ASSERT_EQ(tChemFunction.function(eulerConserved.data(), expectedMassFractions.data(), &tChemComputedProperty, tChemFunction.context.get()), 0);
+
+            auto chemTabFunction = chemTab->GetThermodynamicFunction(testProperty, fields);
+            ASSERT_EQ(chemTabFunction.function(allFieldsConserved.data(), &chemTabComputedProperty, chemTabFunction.context.get()), 0);
+
+            ASSERT_FLOAT_EQ(tChemComputedProperty, chemTabComputedProperty) << " The TChem and ChemTab " << testProperty << " should be equal";
+
+            // test the function where temperature is an input
+            auto tChemFunctionTemperature = tchem->GetThermodynamicTemperatureMassFractionFunction(testProperty, fields);
+            ASSERT_EQ(tChemFunctionTemperature.function(eulerConserved.data(), expectedMassFractions.data(), tChemComputedTemperature, &tChemComputedProperty, tChemFunctionTemperature.context.get()),
+                      0);
+
+            auto chemTabFunctionTemperature = chemTab->GetThermodynamicTemperatureFunction(testProperty, fields);
+            ASSERT_EQ(chemTabFunctionTemperature.function(allFieldsConserved.data(), chemTabComputedTemperature, &chemTabComputedProperty, chemTabFunctionTemperature.context.get()), 0);
+
+            ASSERT_FLOAT_EQ(tChemComputedProperty, chemTabComputedProperty) << " The TChem and ChemTab " << testProperty << " should be equal when computed with temperature";
         }
     }
 }

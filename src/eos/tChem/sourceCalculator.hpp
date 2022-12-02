@@ -55,7 +55,7 @@ class SourceCalculator : public ChemistryModel::SourceCalculator {
     /**
      * Adds the source that was computed in the ComputeSource to the supplied vector
      */
-    void AddSource(const solver::Range& cellRange, Vec localFVec) override;
+    void AddSource(const solver::Range& cellRange, Vec localXVec, Vec localFVec) override;
 
    private:
     //! copy of constraints
