@@ -5,21 +5,45 @@
 #include <map>
 #include <memory>
 #include "TChem_KineticModelData.hpp"
+#include "chemistryModel.hpp"
 #include "eos.hpp"
 #include "eos/tChem/pressure.hpp"
 #include "eos/tChem/sensibleEnthalpy.hpp"
 #include "eos/tChem/sensibleInternalEnergy.hpp"
+#include "eos/tChem/sourceCalculator.hpp"
 #include "eos/tChem/speedOfSound.hpp"
 #include "eos/tChem/temperature.hpp"
 #include "monitors/logs/log.hpp"
+#include "parameters/parameters.hpp"
 #include "utilities/intErrorChecker.hpp"
+#include "utilities/vectorUtilities.hpp"
 
 namespace ablate::eos {
 
 namespace tChemLib = TChem;
 
-class TChem : public EOS {
+class TChem : public ChemistryModel, public std::enable_shared_from_this<ablate::eos::TChem> {
+   public:
+    /**
+     * a thermodynamic function specific to TChem that takes yi from the arguments instead of conserved
+     */
+    struct ThermodynamicMassFractionFunction {
+        PetscErrorCode (*function)(const PetscReal conserved[], const PetscReal yi[], PetscReal* property, void* ctx) = nullptr;
+        std::shared_ptr<void> context = nullptr;
+    };
+
+    /**
+     * a temperature thermodynamic function specific to TChem that takes yi from the arguments instead of conserved
+     */
+    struct ThermodynamicTemperatureMassFractionFunction {
+        PetscErrorCode (*function)(const PetscReal conserved[], const PetscReal yi[], PetscReal T, PetscReal* property, void* ctx) = nullptr;
+        std::shared_ptr<void> context = nullptr;
+    };
+
    private:
+    //! hold a copy of the constrains that can be used for single or batch source calculation
+    tChem::SourceCalculator::ChemistryConstraints constraints;
+
     //! the mechanismFile may be chemkin or yaml based
     const std::filesystem::path mechanismFile;
 
@@ -55,7 +79,8 @@ class TChem : public EOS {
      * @param mechFile
      * @param optionalThermoFile
      */
-    explicit TChem(std::filesystem::path mechanismFile, std::filesystem::path thermoFile = {}, std::shared_ptr<ablate::monitors::logs::Log> = {});
+    explicit TChem(std::filesystem::path mechanismFile, std::filesystem::path thermoFile = {}, std::shared_ptr<ablate::monitors::logs::Log> = {},
+                   const std::shared_ptr<ablate::parameters::Parameters>& options = {});
 
     /**
      * Single function to produce thermodynamic function for any property based upon the available fields
@@ -74,6 +99,22 @@ class TChem : public EOS {
     [[nodiscard]] ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
 
     /**
+     * Single function to produce thermodynamic function for any property based upon the available fields and yi
+     * @param property
+     * @param fields
+     * @return
+     */
+    [[nodiscard]] ThermodynamicMassFractionFunction GetThermodynamicMassFractionFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const;
+
+    /**
+     * Single function to produce thermodynamic function for any property based upon the available fields, temperature and yi
+     * @param property
+     * @param fields
+     * @return
+     */
+    [[nodiscard]] ThermodynamicTemperatureMassFractionFunction GetThermodynamicTemperatureMassFractionFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const;
+
+    /**
      * Single function to produce fieldFunction function for any two properties, velocity, and species mass fractions.  These calls can be slower and should be used for init/output only
      * @param field
      * @param property1
@@ -87,6 +128,12 @@ class TChem : public EOS {
      * @return
      */
     [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { return species; }
+
+    /**
+     * Returns a vector of all extra variables required to utilize the equation of state
+     * @return
+     */
+    [[nodiscard]] virtual const std::vector<std::string>& GetExtraVariables() const override { return ablate::utilities::VectorUtilities::Empty<std::string>; }
 
     /**
      * Returns all elements tracked in this mechanism and their molecular mass
@@ -121,6 +168,14 @@ class TChem : public EOS {
      * Get the  reference enthalpy per species
      */
     real_type_1d_view GetEnthalpyOfFormation() { return enthalpyReference; };
+
+    /**
+     * Function to create the batch source specific to the provided cell range
+     * @param fields
+     * @param cellRange
+     * @return
+     */
+    std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override;
 
    private:
     struct FunctionContext {
@@ -158,9 +213,10 @@ class TChem : public EOS {
      * @tparam Function
      * @tparam Type
      * @param fields
+     * @param optional argument to check for yi
      * @return
      */
-    [[nodiscard]] std::shared_ptr<FunctionContext> BuildFunctionContext(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field>& fields) const;
+    [[nodiscard]] std::shared_ptr<FunctionContext> BuildFunctionContext(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field>& fields, bool checkDensityYi = true) const;
 
     /** @name Direct Thermodynamic Properties Functions
      * These functions are used to compute the direct thermodynamic properties (without temperature).  They are not called directly but a pointer to them is returned
@@ -201,6 +257,45 @@ class TChem : public EOS {
     static PetscErrorCode SpeciesSensibleEnthalpyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     /** @} */
 
+    /** @name Direct Thermodynamic Properties Functions
+     * These functions are used to compute the direct thermodynamic properties (without temperature).  They are not called directly but a pointer to them is returned
+     * @param conserved
+     * @param property
+     * @param ctx
+     * @return
+     * @{
+     */
+    static PetscErrorCode DensityMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal* property, void* ctx);
+    static PetscErrorCode TemperatureMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal* property, void* ctx);
+    static PetscErrorCode PressureMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal* property, void* ctx);
+    static PetscErrorCode InternalSensibleEnergyMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal* property, void* ctx);
+    static PetscErrorCode SensibleEnthalpyMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantVolumeMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantPressureMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpeedOfSoundMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpeciesSensibleEnthalpyMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal* property, void* ctx);
+    /** @} */
+
+    /** @name Temperature Based Thermodynamic Properties Functions
+     * These functions are used to compute the thermodynamic properties when temperature is known.  They are not called directly but a pointer to them is returned and may be faster than the direct
+     * calls.
+     * @param conserved
+     * @param property
+     * @param ctx
+     * @return
+     * @{
+     */
+    static PetscErrorCode DensityTemperatureMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode TemperatureTemperatureMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode PressureTemperatureMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode InternalSensibleEnergyTemperatureMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SensibleEnthalpyTemperatureMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantVolumeTemperatureMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantPressureTemperatureMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SpeedOfSoundTemperatureMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SpeciesSensibleEnthalpyTemperatureMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal T, PetscReal* property, void* ctx);
+    /** @} */
+
     /**
      * template function to call base tChem function
      */
@@ -230,11 +325,47 @@ class TChem : public EOS {
     };
 
     /**
+     * Store a map of functions functions for quick lookup
+     */
+    using ThermodynamicStaticMassFractionFunction = PetscErrorCode (*)(const PetscReal conserved[], const PetscReal yi[], PetscReal* property, void* ctx);
+    using ThermodynamicTemperatureStaticMassFractionFunction = PetscErrorCode (*)(const PetscReal conserved[], const PetscReal yi[], PetscReal temperature, PetscReal* property, void* ctx);
+    std::map<ThermodynamicProperty, std::tuple<ThermodynamicStaticMassFractionFunction, ThermodynamicTemperatureStaticMassFractionFunction, std::function<ordinal_type(ordinal_type)>>>
+        thermodynamicMassFractionFunctions = {
+            {ThermodynamicProperty::Density, {DensityMassFractionFunction, DensityTemperatureMassFractionFunction, [](auto) { return 0; }}},
+            {ThermodynamicProperty::Pressure,
+             {PressureMassFractionFunction,
+              PressureTemperatureMassFractionFunction,
+              ablate::eos::tChem::Temperature::getWorkSpaceSize}} /**note size of temperature because it has a larger scratch space */,
+            {ThermodynamicProperty::Temperature, {TemperatureMassFractionFunction, TemperatureTemperatureMassFractionFunction, ablate::eos::tChem::Temperature::getWorkSpaceSize}},
+            {ThermodynamicProperty::InternalSensibleEnergy,
+             {InternalSensibleEnergyMassFractionFunction, InternalSensibleEnergyTemperatureMassFractionFunction, ablate::eos::tChem::SensibleInternalEnergy::getWorkSpaceSize}},
+            {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyMassFractionFunction, SensibleEnthalpyTemperatureMassFractionFunction, ablate::eos::tChem::SensibleEnthalpy::getWorkSpaceSize}},
+            {ThermodynamicProperty::SpecificHeatConstantVolume,
+             {SpecificHeatConstantVolumeMassFractionFunction, SpecificHeatConstantVolumeTemperatureMassFractionFunction, [](auto nSpec) { return nSpec; }}},
+            {ThermodynamicProperty::SpecificHeatConstantPressure,
+             {SpecificHeatConstantPressureMassFractionFunction,
+              SpecificHeatConstantPressureTemperatureMassFractionFunction,
+              ablate::eos::tChem::Temperature::getWorkSpaceSize}} /**note size of temperature because it has a larger scratch space */,
+            {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundMassFractionFunction, SpeedOfSoundTemperatureMassFractionFunction, ablate::eos::tChem::SpeedOfSound::getWorkSpaceSize}},
+            {ThermodynamicProperty::SpeciesSensibleEnthalpy,
+             {SpeciesSensibleEnthalpyMassFractionFunction,
+              SpeciesSensibleEnthalpyTemperatureMassFractionFunction,
+              ablate::eos::tChem::Temperature::getWorkSpaceSize}} /**note size of temperature because it has a larger scratch space */
+        };
+
+    /**
      * Fill and Normalize the density species mass fractions
      * @param numSpec
      * @param yi
      */
     static void FillWorkingVectorFromDensityMassFractions(double density, double temperature, const double* densityYi, const tChemLib::Impl::StateVector<real_type_1d_view_host>& stateVector);
+
+    /**
+     * Fill the working vector from yi
+     * @param numSpec
+     * @param yi
+     */
+    static void FillWorkingVectorFromMassFractions(double density, double temperature, const double* densityYi, const tChemLib::Impl::StateVector<real_type_1d_view_host>& stateVector);
 
    public:
     // Private static helper functions

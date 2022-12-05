@@ -1,10 +1,9 @@
 #include "PetscTestFixture.hpp"
-#include "chemistry/mixtureFractionCalculator.hpp"
 #include "eos/perfectGas.hpp"
 #include "eos/tChem.hpp"
 #include "gtest/gtest.h"
-#include "localPath.hpp"
 #include "mathFunctions/constantValue.hpp"
+#include "monitors/mixtureFractionCalculator.hpp"
 #include "parameters/mapParameters.hpp"
 #include "utilities/vectorUtilities.hpp"
 
@@ -24,7 +23,7 @@ class MixtureFractionCalculatorFixture : public testing::TestWithParam<MixtureFr
 TEST_P(MixtureFractionCalculatorFixture, ShouldComputeMixtureFraction) {
     // arrange
     auto eos = GetParam().createEOS();
-    ablate::chemistry::MixtureFractionCalculator mixtureFractionCalculator(eos, GetParam().massFractionsFuel, GetParam().massFractionsOxidizer, GetParam().trackingElements);
+    ablate::monitors::MixtureFractionCalculator mixtureFractionCalculator(eos, GetParam().massFractionsFuel, GetParam().massFractionsOxidizer, GetParam().trackingElements);
 
     // test each case
     for (const auto& [inputMassFractions, expectedValue] : GetParam().parameters) {
@@ -48,7 +47,7 @@ TEST_P(MixtureFractionCalculatorFixture, ShouldComputeMixtureFraction) {
 TEST_P(MixtureFractionCalculatorFixture, ShouldComputeMixtureFractionUsingFieldFunction) {
     // arrange
     auto eos = GetParam().createEOS();
-    ablate::chemistry::MixtureFractionCalculator mixtureFractionCalculator(
+    ablate::monitors::MixtureFractionCalculator mixtureFractionCalculator(
         eos,
         std::make_shared<ablate::mathFunctions::FieldFunction>(
             "yi", std::make_shared<ablate::mathFunctions::ConstantValue>(ablate::utilities::VectorUtilities::Fill(eos->GetSpecies(), GetParam().massFractionsFuel))),
@@ -110,14 +109,14 @@ class MixtureFractionCalculatorExceptionFixture : public testingResources::Petsc
 TEST_P(MixtureFractionCalculatorExceptionFixture, ShouldThrowExceptionWithInvalidInputs) {
     // arrange
     auto eos = GetParam().createEOS();
-    ASSERT_THROW(ablate::chemistry::MixtureFractionCalculator mixtureFractionCalculator(eos, GetParam().massFractionsFuel, GetParam().massFractionsOxidizer, GetParam().trackingElements);
+    ASSERT_THROW(ablate::monitors::MixtureFractionCalculator mixtureFractionCalculator(eos, GetParam().massFractionsFuel, GetParam().massFractionsOxidizer, GetParam().trackingElements);
                  , std::invalid_argument);
 }
 
 TEST_P(MixtureFractionCalculatorExceptionFixture, ShouldThrowExceptionWithInvalidInputsUsingFieldFunction) {
     // arrange
     auto eos = GetParam().createEOS();
-    ASSERT_THROW(ablate::chemistry::MixtureFractionCalculator mixtureFractionCalculator(
+    ASSERT_THROW(ablate::monitors::MixtureFractionCalculator mixtureFractionCalculator(
                      eos,
                      std::make_shared<ablate::mathFunctions::FieldFunction>(
                          "yi", std::make_shared<ablate::mathFunctions::ConstantValue>(ablate::utilities::VectorUtilities::Fill(eos->GetSpecies(), GetParam().massFractionsFuel))),

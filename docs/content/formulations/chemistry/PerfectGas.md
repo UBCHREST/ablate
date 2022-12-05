@@ -3,6 +3,7 @@ layout: default
 title: Perfect Gas
 parent: Chemistry
 nav_order: 1
+grand_parent: Formulations
 ---
 
 The perfect gas ("perfectGas") assumptions of an ideal gas simplify the equations assuming that $$C_p$$ and $$C_v$$ are constant.  For the current implementation this results in an EOS that is independent of the gas species.  The EOS can be described with only $$\gamma$$ and $$R$$.

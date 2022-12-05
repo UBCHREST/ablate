@@ -1,19 +1,12 @@
-#include "tChemReactions.hpp"
-#include <TChem_EnthalpyMass.hpp>
-#include <TChem_IgnitionZeroD.hpp>
-#include "eos/tChem/ignitionZeroDTemperatureThreshold.hpp"
+#include "sourceCalculator.hpp"
+#include <TChem_Impl_IgnitionZeroD_Problem.hpp>
+#include <algorithm>
+#include "eos/tChem.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
-#include "utilities/petscError.hpp"
-#include "utilities/vectorUtilities.hpp"
+#include "ignitionZeroDTemperatureThreshold.hpp"
+#include "utilities/mpiError.hpp"
 
-ablate::finiteVolume::processes::TChemReactions::TChemReactions(const std::shared_ptr<eos::EOS>& eosIn, const std::shared_ptr<ablate::parameters::Parameters>& options)
-    : eos(std::dynamic_pointer_cast<eos::TChem>(eosIn)), numberSpecies(eosIn->GetSpecies().size()) {
-    // make sure that the eos is set
-    if (!std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
-        throw std::invalid_argument("ablate::finiteVolume::processes::TChemReactions only accepts EOS of type eos::TChem");
-    }
-
-    // Make sure the massFractionBounds are valid
+void ablate::eos::tChem::SourceCalculator::ChemistryConstraints::Set(const std::shared_ptr<ablate::parameters::Parameters>& options) {
     if (options) {
         dtMin = options->Get("dtMin", dtMin);
         dtMax = options->Get("dtMax", dtMax);
@@ -27,32 +20,19 @@ ablate::finiteVolume::processes::TChemReactions::TChemReactions(const std::share
         numTimeIterationsPerInterval = options->Get("numTimeIterationsPerInterval", numTimeIterationsPerInterval);
         jacobianInterval = options->Get("jacobianInterval", jacobianInterval);
         maxAttempts = options->Get("maxAttempts", maxAttempts);
-        thresholdTemperature = options->Get("thresholdTemperature", 0.0);
+        thresholdTemperature = options->Get("thresholdTemperature", thresholdTemperature);
     }
 }
-ablate::finiteVolume::processes::TChemReactions::~TChemReactions() = default;
 
-void ablate::finiteVolume::processes::TChemReactions::Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) {
-    // Before each step, compute the source term over the entire dt
-    auto chemistryPreStage = std::bind(&ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPreStage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-    flow.RegisterPreStage(chemistryPreStage);
-
-    // Add the rhs point function for the source
-    flow.RegisterRHSFunction(AddChemistrySourceToFlow, this);
-}
-
-void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) {
-    // determine the number of nodes we need to compute based upon the local solver
-    solver::Range cellRange;
-    flow.GetCellRangeWithoutGhost(cellRange);
-
+ablate::eos::tChem::SourceCalculator::SourceCalculator(const std::vector<domain::Field>& fields, const std::shared_ptr<TChem> eosIn,
+                                                       ablate::eos::tChem::SourceCalculator::ChemistryConstraints constraints, const solver::Range& cellRange)
+    : chemistryConstraints(constraints), eos(eosIn), numberSpecies(eosIn->GetSpecies().size()) {
     // determine the number of required cells
     std::size_t numberCells = cellRange.end - cellRange.start;
-    flow.RestoreRange(cellRange);
 
     // compute the required state dimension
-    auto kineticModelGasConstData = TChem::createGasKineticModelConstData<typename Tines::UseThisDevice<host_exec_space>::type>(eos->GetKineticModelData());
-    const ordinal_type stateVecDim = TChem::Impl::getStateVectorSize(kineticModelGasConstData.nSpec);
+    auto kineticModelGasConstData = createGasKineticModelConstData<typename Tines::UseThisDevice<host_exec_space>::type>(eos->GetKineticModelData());
+    const ordinal_type stateVecDim = Impl::getStateVectorSize(kineticModelGasConstData.nSpec);
 
     // allocate the tChem memory
     stateHost = real_type_2d_view_host("stateVectorDevices", numberCells, stateVecDim);
@@ -69,13 +49,13 @@ void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteV
     // Create the default timeAdvanceObject
     timeAdvanceDefault._tbeg = 0.0;
     timeAdvanceDefault._tend = 1.0;
-    timeAdvanceDefault._dt = dtDefault;
-    timeAdvanceDefault._dtmin = dtMin;
-    timeAdvanceDefault._dtmax = dtMax;
-    timeAdvanceDefault._max_num_newton_iterations = maxNumNewtonIterations;
-    timeAdvanceDefault._num_time_iterations_per_interval = numTimeIterationsPerInterval;
+    timeAdvanceDefault._dt = constraints.dtDefault;
+    timeAdvanceDefault._dtmin = constraints.dtMin;
+    timeAdvanceDefault._dtmax = constraints.dtMax;
+    timeAdvanceDefault._max_num_newton_iterations = constraints.maxNumNewtonIterations;
+    timeAdvanceDefault._num_time_iterations_per_interval = constraints.numTimeIterationsPerInterval;
     timeAdvanceDefault._num_outer_time_iterations_per_interval = 10;
-    timeAdvanceDefault._jacobian_interval = jacobianInterval;
+    timeAdvanceDefault._jacobian_interval = constraints.jacobianInterval;
 
     // Copy the default values to device
     timeAdvanceDevice = time_advance_type_1d_view("timeAdvanceDevice", numberCells);
@@ -83,7 +63,7 @@ void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteV
     Kokkos::deep_copy(dtViewDevice, 1E-4);
 
     // determine the number of equations
-    auto numberOfEquations = TChem::Impl::IgnitionZeroD_Problem<real_type, Tines::UseThisDevice<exec_space>::type>::getNumberOfTimeODEs(kineticModelGasConstData);
+    auto numberOfEquations = ::tChemLib::Impl::IgnitionZeroD_Problem<real_type, Tines::UseThisDevice<exec_space>::type>::getNumberOfTimeODEs(kineticModelGasConstData);
 
     // size up the tolerance constraints
     tolTimeDevice = real_type_2d_view("tolTimeDevice", numberOfEquations, 2);
@@ -96,61 +76,53 @@ void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteV
         auto tolNewtonHost = Kokkos::create_mirror_view(tolNewtonDevice);
 
         for (ordinal_type i = 0, iend = tolTimeDevice.extent(0); i < iend; ++i) {
-            tolTimeHost(i, 0) = absToleranceTime;  // atol
-            tolTimeHost(i, 1) = relToleranceTime;  // rtol
+            tolTimeHost(i, 0) = constraints.absToleranceTime;  // atol
+            tolTimeHost(i, 1) = constraints.relToleranceTime;  // rtol
         }
-        tolNewtonHost(0) = absToleranceNewton;  // atol
-        tolNewtonHost(1) = relToleranceNewton;  // rtol
+        tolNewtonHost(0) = constraints.absToleranceNewton;  // atol
+        tolNewtonHost(1) = constraints.relToleranceNewton;  // rtol
 
         Kokkos::deep_copy(tolTimeDevice, tolTimeHost);
         Kokkos::deep_copy(tolNewtonDevice, tolNewtonHost);
     }
 
     // get device kineticModelGasConstData
-    kineticModelGasConstDataDevice = TChem::createGasKineticModelConstData<typename Tines::UseThisDevice<exec_space>::type>(eos->GetKineticModelData());
+    kineticModelGasConstDataDevice = ::tChemLib::createGasKineticModelConstData<typename Tines::UseThisDevice<exec_space>::type>(eos->GetKineticModelData());
     kineticModelDataClone = eos->GetKineticModelData().clone(numberCells);
-    kineticModelGasConstDataDevices = TChem::createGasKineticModelConstData<typename Tines::UseThisDevice<exec_space>::type>(kineticModelDataClone);
+    kineticModelGasConstDataDevices = ::tChemLib::createGasKineticModelConstData<typename Tines::UseThisDevice<exec_space>::type>(kineticModelDataClone);
+
+    // Look for the euler field
+    auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto& field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
+    if (eulerField == fields.end()) {
+        throw std::invalid_argument("ablate::eos::tChem::BatchSource requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
+    }
+    eulerId = eulerField->id;
+
+    auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto& field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
+    if (densityYiField == fields.end()) {
+        throw std::invalid_argument("ablate::eos::tChem::BatchSource requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD Field");
+    }
+    densityYiId = densityYiField->id;
 }
 
-PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPreStage(TS flowTs, ablate::solver::Solver& solver, PetscReal stagetime) {
-    PetscFunctionBegin;
-    // get time step information from the ts
-    PetscReal time;
-    PetscCall(TSGetTime(flowTs, &time));
-
-    // only continue if the stage time is the real time (i.e. the first stage)
-    if (time != stagetime) {
-        PetscFunctionReturn(0);
-    }
-
+void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::solver::Range& cellRange, PetscReal time, PetscReal dt, Vec globFlowVec) {
     // Get the valid cell range over this region
-    auto& fvSolver = dynamic_cast<ablate::finiteVolume::FiniteVolumeSolver&>(solver);
-    solver::Range cellRange;
-    fvSolver.GetCellRangeWithoutGhost(cellRange);
     auto numberCells = cellRange.end - cellRange.start;
 
-    // get the dim
-    PetscInt dim;
-    PetscCall(DMGetDimension(fvSolver.GetSubDomain().GetDM(), &dim));
-
-    // store the current dt
-    PetscReal dt;
-    PetscCall(TSGetTimeStep(flowTs, &dt));
+    // Get the solution dm
+    DM solutionDm;
+    VecGetDM(globFlowVec, &solutionDm) >> checkError;
 
     // get the rank
     PetscMPIInt rank;
-    PetscCallMPI(MPI_Comm_rank(fvSolver.GetSubDomain().GetComm(), &rank));
+    MPI_Comm_rank(PetscObjectComm((PetscObject)solutionDm), &rank) >> checkMpiError;
 
-    // get access to the underlying data for the flow
-    const auto& flowEulerId = fvSolver.GetSubDomain().GetField("euler").id;
-    const auto& flowDensityId = fvSolver.GetSubDomain().GetField("densityYi").id;
-
-    // get the flowSolution from the ts
-    DM dm = fvSolver.GetSubDomain().GetDM();
-    Vec globFlowVec;
-    PetscCall(TSGetSolution(flowTs, &globFlowVec));
+    // get the flowSolution
     const PetscScalar* flowArray;
-    PetscCall(VecGetArrayRead(globFlowVec, &flowArray));
+    VecGetArrayRead(globFlowVec, &flowArray) >> checkError;
+
+    PetscInt dim;
+    DMGetDimension(solutionDm, &dim) >> checkError;
 
     // Use a parallel for loop to load up the tChem state
     Kokkos::parallel_for(
@@ -161,9 +133,9 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
 
             // Get the current state variables for this cell
             const PetscScalar* eulerField = nullptr;
-            DMPlexPointLocalFieldRead(dm, cell, flowEulerId, flowArray, &eulerField) >> checkError;
+            DMPlexPointLocalFieldRead(solutionDm, cell, eulerId, flowArray, &eulerField) >> checkError;
             const PetscScalar* flowDensityField = nullptr;
-            DMPlexPointLocalFieldRead(dm, cell, flowDensityId, flowArray, &flowDensityField) >> checkError;
+            DMPlexPointLocalFieldRead(solutionDm, cell, densityYiId, flowArray, &flowDensityField) >> checkError;
 
             // cast the state at i to a state vector
             const auto state_at_i = Kokkos::subview(stateHost, chemIndex, Kokkos::ALL());
@@ -205,11 +177,12 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     Kokkos::deep_copy(stateDevice, stateHost);
 
     // setup the enthalpy, temperature, pressure, chemistry function policies
-    auto temperatureFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(TChem::exec_space(), numberCells, Kokkos::AUTO());
-    temperatureFunctionPolicy.set_scratch_size(1,
-                                               Kokkos::PerTeam(TChem::Scratch<real_type_1d_view>::shmem_size(ablate::eos::tChem::Temperature::getWorkSpaceSize(kineticModelGasConstDataDevice.nSpec))));
-    auto pressureFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(TChem::exec_space(), numberCells, Kokkos::AUTO());
-    pressureFunctionPolicy.set_scratch_size(1, Kokkos::PerTeam(TChem::Scratch<real_type_1d_view>::shmem_size(ablate::eos::tChem::Pressure::getWorkSpaceSize(kineticModelGasConstDataDevice.nSpec))));
+    auto temperatureFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(::tChemLib::exec_space(), numberCells, Kokkos::AUTO());
+    temperatureFunctionPolicy.set_scratch_size(
+        1, Kokkos::PerTeam(::tChemLib::Scratch<real_type_1d_view>::shmem_size(ablate::eos::tChem::Temperature::getWorkSpaceSize(kineticModelGasConstDataDevice.nSpec))));
+    auto pressureFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(::tChemLib::exec_space(), numberCells, Kokkos::AUTO());
+    pressureFunctionPolicy.set_scratch_size(1,
+                                            Kokkos::PerTeam(::tChemLib::Scratch<real_type_1d_view>::shmem_size(ablate::eos::tChem::Pressure::getWorkSpaceSize(kineticModelGasConstDataDevice.nSpec))));
 
     // Compute temperature into the state field in the device
     ablate::eos::tChem::Temperature::runDeviceBatch(
@@ -219,23 +192,23 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     ablate::eos::tChem::Pressure::runDeviceBatch(pressureFunctionPolicy, stateDevice, kineticModelGasConstDataDevice);
 
     double minimumPressure = 0;
-    for (int attempt = 0; (attempt < maxAttempts) && minimumPressure == 0; ++attempt) {
+    for (int attempt = 0; (attempt < chemistryConstraints.maxAttempts) && minimumPressure == 0; ++attempt) {
         // Use a parallel for updating timeAdvanceDevice dt
         Kokkos::parallel_for(
             "timeAdvanceUpdate", Kokkos::RangePolicy<typename tChemLib::exec_space>(0, numberCells), KOKKOS_LAMBDA(const auto i) {
                 auto& tAdvAtI = timeAdvanceDevice(i);
                 tAdvAtI._tbeg = time;
                 tAdvAtI._tend = time + dt;
-                tAdvAtI._dt = PetscMax(PetscMin(PetscMin(dtViewDevice(i) * dtEstimateFactor, dt), tAdvAtI._dtmax) / (PetscPowInt(2, attempt)), tAdvAtI._dtmin);
+                tAdvAtI._dt = PetscMax(PetscMin(PetscMin(dtViewDevice(i) * chemistryConstraints.dtEstimateFactor, dt), tAdvAtI._dtmax) / (PetscPowInt(2, attempt)), tAdvAtI._dtmin);
                 // set the default time information
                 timeViewDevice(i) = time;
             });
 
-        auto chemistryFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(TChem::exec_space(), numberCells, Kokkos::AUTO());
-        chemistryFunctionPolicy.set_scratch_size(1, Kokkos::PerTeam(TChem::Scratch<real_type_1d_view>::shmem_size(TChem::IgnitionZeroD::getWorkSpaceSize(kineticModelGasConstDataDevice))));
+        auto chemistryFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(::tChemLib::exec_space(), numberCells, Kokkos::AUTO());
+        chemistryFunctionPolicy.set_scratch_size(1, Kokkos::PerTeam(::tChemLib::Scratch<real_type_1d_view>::shmem_size(::tChemLib::IgnitionZeroD::getWorkSpaceSize(kineticModelGasConstDataDevice))));
 
         // assume a constant pressure zero D reaction for each cell
-        if (thresholdTemperature != 0.0) {
+        if (chemistryConstraints.thresholdTemperature != 0.0) {
             // If there is a thresholdTemperature, use the modified version of IgnitionZeroDTemperatureThreshold
             ablate::eos::tChem::IgnitionZeroDTemperatureThreshold::runDeviceBatch(chemistryFunctionPolicy,
                                                                                   tolNewtonDevice,
@@ -247,7 +220,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
                                                                                   dtViewDevice,
                                                                                   endStateDevice,
                                                                                   kineticModelGasConstDataDevices,
-                                                                                  thresholdTemperature);
+                                                                                  chemistryConstraints.thresholdTemperature);
         } else {
             // else fall back to the default tChem version
             tChemLib::IgnitionZeroD::runDeviceBatch(
@@ -316,7 +289,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
 
                 // compute the cell centroid
                 PetscReal centroid[3];
-                DMPlexComputeCellGeometryFVM(dm, cell, nullptr, centroid, nullptr) >> checkError;
+                DMPlexComputeCellGeometryFVM(solutionDm, cell, nullptr, centroid, nullptr) >> checkError;
 
                 // Output error information
                 std::stringstream warningMessage;
@@ -334,27 +307,15 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
 
     // copy the updated state back to host
     Kokkos::deep_copy(sourceTermsHost, sourceTermsDevice);
-
-    // clean up
-    solver.RestoreRange(cellRange);
-    PetscFunctionReturn(0);
 }
-
-PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySourceToFlow(const FiniteVolumeSolver& solver, DM dm, PetscReal time, Vec locX, Vec locFVec, void* ctx) {
-    PetscFunctionBegin;
-    auto process = (ablate::finiteVolume::processes::TChemReactions*)ctx;
-
-    // get the cell range
-    solver::Range cellRange;
-    solver.GetCellRangeWithoutGhost(cellRange);
-
+void ablate::eos::tChem::SourceCalculator::AddSource(const ablate::solver::Range& cellRange, Vec, Vec locFVec) {
     // get access to the fArray
     PetscScalar* fArray;
-    PetscCall(VecGetArray(locFVec, &fArray));
+    VecGetArray(locFVec, &fArray) >> checkError;
 
-    // get access to the underlying data for the flow
-    const auto& flowEulerId = solver.GetSubDomain().GetField("euler").id;
-    const auto& flowDensityYiId = solver.GetSubDomain().GetField("densityYi").id;
+    // Get the solution dm
+    DM dm;
+    VecGetDM(locFVec, &dm) >> checkError;
 
     // Use a parallel for loop to load up the tChem state
     Kokkos::parallel_for(
@@ -365,32 +326,19 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
 
             // Get the current state variables for this cell
             PetscScalar* eulerSource = nullptr;
-            DMPlexPointLocalFieldRef(dm, cell, flowEulerId, fArray, &eulerSource) >> checkError;
+            DMPlexPointLocalFieldRef(dm, cell, eulerId, fArray, &eulerSource) >> checkError;
             PetscScalar* densityYiSource = nullptr;
-            DMPlexPointLocalFieldRef(dm, cell, flowDensityYiId, fArray, &densityYiSource) >> checkError;
+            DMPlexPointLocalFieldRef(dm, cell, densityYiId, fArray, &densityYiSource) >> checkError;
 
             // cast the state at i to a state vector
-            const auto sourceAtI = Kokkos::subview(process->sourceTermsHost, chemIndex, Kokkos::ALL());
+            const auto sourceAtI = Kokkos::subview(sourceTermsHost, chemIndex, Kokkos::ALL());
 
             eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] += sourceAtI[0];
-            for (std::size_t sp = 0; sp < process->numberSpecies; sp++) {
+            for (std::size_t sp = 0; sp < numberSpecies; sp++) {
                 densityYiSource[sp] += sourceAtI(sp + 1);
             }
         });
 
     // cleanup
-    solver.RestoreRange(cellRange);
-    PetscCall(VecRestoreArray(locFVec, &fArray));
-
-    PetscFunctionReturn(0);
+    VecRestoreArray(locFVec, &fArray) >> checkError;
 }
-
-void ablate::finiteVolume::processes::TChemReactions::AddChemistrySourceToFlow(const FiniteVolumeSolver& solver, Vec locFVec) {
-    AddChemistrySourceToFlow(solver, solver.GetSubDomain().GetDM(), NAN, nullptr, locFVec, this) >> checkError;
-}
-
-#include "registrar.hpp"
-REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TChemReactions, "reactions using the TChem library", ARG(ablate::eos::EOS, "eos", "the tChem eos"),
-         OPT(ablate::parameters::Parameters, "options",
-             "time stepping options (dtMin, dtMax, dtDefault, dtEstimateFactor, relToleranceTime, relToleranceTime, absToleranceTime, relToleranceNewton, absToleranceNewton, maxNumNewtonIterations, "
-             "numTimeIterationsPerInterval, jacobianInterval, maxAttempts, thresholdTemperature)"));

@@ -19,7 +19,6 @@ add_subdirectory(utilities)
 add_subdirectory(monitors)
 add_subdirectory(io)
 add_subdirectory(boundarySolver)
-add_subdirectory(chemistry)
 add_subdirectory(radiation)
 add_subdirectory(solver)
 

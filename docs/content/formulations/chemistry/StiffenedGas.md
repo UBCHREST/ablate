@@ -3,6 +3,7 @@ layout: default
 title: Stiffened Gas
 parent: Chemistry
 nav_order: 2
+grand_parent: Formulations
 ---
 
 The stiffened gas equation of state models liquids using assumptions of an ideal gas with respect to a reference

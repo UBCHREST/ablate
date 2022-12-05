@@ -8,7 +8,7 @@
 #include "eos/tChem.hpp"
 #include "mathFunctions/fieldFunction.hpp"
 
-namespace ablate::chemistry {
+namespace ablate::monitors {
 
 /**
  * Calculate mixture fraction given a list of species using elemental species based on Bilger's (1980) definition of mixture fraction Zeta =
@@ -80,5 +80,5 @@ class MixtureFractionCalculator {
     std::shared_ptr<ablate::eos::TChem> GetEos() { return eos; }
 };
 
-}  // namespace ablate::chemistry
+}  // namespace ablate::monitors
 #endif  // ABLATELIBRARY_MIXTUREFRACTIONCALCULATOR_HPP

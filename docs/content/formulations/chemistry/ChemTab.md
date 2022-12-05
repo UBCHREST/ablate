@@ -3,6 +3,7 @@ layout: default
 title: ChemTab 
 parent: Chemistry
 nav_order: 4
+grand_parent: Formulations
 ---
 
 ## Reference

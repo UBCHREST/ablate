@@ -9,7 +9,10 @@ namespace ablate::utilities {
 class VectorUtilities {
    public:
     template <class T>
-    static inline std::vector<T> Merge(const std::vector<T>& a, std::vector<T>& b) {
+    inline const static std::vector<T> Empty = {};
+
+    template <class T>
+    static inline std::vector<T> Merge(const std::vector<T>& a, const std::vector<T>& b) {
         if (a.empty()) {
             return b;
         }
