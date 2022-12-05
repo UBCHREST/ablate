@@ -3,6 +3,7 @@ layout: default
 title: TChem
 parent: Chemistry
 nav_order: 3
+grand_parent: Formulations
 ---
 
 [![TChem Logo](https://github.com/sandialabs/TChem/blob/main/logo/TChem_Logo_Large.png?raw=true)](https://github.com/sandialabs/TChem)
