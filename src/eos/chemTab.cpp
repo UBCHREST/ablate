@@ -238,8 +238,8 @@ void ablate::eos::ChemTab::ChemistrySource(PetscReal density, const PetscReal de
     *densityEnergySource += p;
 
     outputArray = (float *)TF_TensorData(outputValues[0]);
-    for (size_t i = 0; i < progressVariablesNames.size(); i++) {
-        progressVariableSource[i + 1] += (PetscReal)outputArray[i];  // the 1 offset is for zMix
+    for (size_t i = 1; i < progressVariablesNames.size(); i++) {  // skip the first index for zMix, but the progressVariableSource also includes zMix
+        progressVariableSource[i] += (PetscReal)outputArray[i - 1];
     }
     // free allocated vectors
     free(inputValues);
