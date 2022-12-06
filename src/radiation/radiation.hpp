@@ -28,6 +28,35 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
 
     virtual ~Radiation();
 
+    /** Identifiers are carrying by both the search and solve particles in order to associate them with their origins and ray segments
+     * In the search particles, nsegment iterates based on how many domains the search particle has crossed.
+     * In the solve particle, nsegment remains constant as it ties the particle to its specific order in the ray */
+    struct Identifier {
+        PetscInt rank;
+        PetscInt iCell;
+        PetscInt ntheta;
+        PetscInt nphi;
+        PetscInt nsegment;
+
+        bool operator==(const Identifier& comp) const {
+            if (comp.rank != this->rank) return false;
+            if (comp.iCell != this->iCell) return false;
+            if (comp.ntheta != this->ntheta) return false;
+            if (comp.nphi != this->nphi) return false;
+            if (comp.nsegment != this->nsegment) return false;
+            return true;
+        };
+        bool operator<(const Identifier& comp) const {
+            if (comp.rank < this->rank) return true;
+            if (comp.iCell < this->iCell) return true;
+            if (comp.ntheta < this->ntheta) return true;
+            if (comp.nphi < this->nphi) return true;
+            if (comp.nsegment < this->nsegment) return true;
+            return false;
+        }
+    };
+
+
     /** Carriers are attached to the solve particles and bring ray information from the local segments to the origin cells
      * They are transported directly from the segment to the origin. They carry only the values that the Segment computes and not the spatial information necessary to  */
     struct Carrier {
@@ -42,11 +71,11 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     struct Origin {
         PetscReal intensity = 0;                 //!< The irradiation value that will be contributed to by every ray. This is updated every (pre-step && interval) gain evaluation.
         PetscReal net = 0;                       //!< The net radiation value including the losses. This is updated every pre-stage solve.
-        std::map<std::string, Carrier> handler;  //!< Stores local carrier information
+        std::map<Identifier, Carrier> handler;  //!< Stores local carrier information
     };
 
     std::map<PetscInt, Origin> origin;
-    std::map<std::string, bool> presence;  //!< Map to track the local presence of search particles during the initialization
+    std::set<Identifier> presence;  //!< Map to track the local presence of search particles during the initialization
 
     /** Returns the black body intensity for a given temperature and emissivity */
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
@@ -99,17 +128,6 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
         std::vector<PetscReal> h;     //!< Stores the space steps of the segment locally.
     };
 
-    /** Identifiers are carrying by both the search and solve particles in order to associate them with their origins and ray segments
-     * In the search particles, nsegment iterates based on how many domains the search particle has crossed.
-     * In the solve particle, nsegment remains constant as it ties the particle to its specific order in the ray */
-    struct Identifier {
-        PetscInt origin;
-        PetscInt iCell;
-        PetscInt ntheta;
-        PetscInt nphi;
-        PetscInt nsegment;
-    };
-
     /** Virtual coordinates are used during the search to compute path length properties in case the simulation is not 3 dimensional */
     struct Virtualcoord {
         PetscReal x;
@@ -140,17 +158,6 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * */
     void UpdateCoordinates(PetscInt ipart, Virtualcoord* virtualcoord, PetscReal* coord, PetscReal adv) const;
 
-    /** Create a unique identifier from an array of integers.
-     * This is done using the nested Cantor pairing function
-     * The ray segment will always be accessed by a particle carrying an identifier so it does not need to be inverted.
-     * (Unless the particles created for the solve need to find their ray segments efficiently? Maybe dont destroy the particles of the search?)
-     * */
-    std::string static inline Key(Identifier* id) {  //!< Nested Cantor pairing function in order to identify ray segment
-
-        std::string key = std::to_string(id->origin) + "." + std::to_string(id->iCell) + "." + std::to_string(id->ntheta) + "." + std::to_string(id->nphi) + "." + std::to_string(id->nsegment);
-        return key;
-    }
-
     eos::ThermodynamicTemperatureFunction absorptivityFunction;
 
     PetscMPIInt numRanks = 0;  //!< The number of the ranks that the simulation contains. This will be used to support global indexing.
@@ -165,7 +172,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * Store a log used to output the required information
      */
 
-    std::map<std::string, Segment> rays;
+    std::map<Identifier, Segment> rays;
     std::basic_string<char>&& solverId;
     const std::shared_ptr<domain::Region> region;
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;

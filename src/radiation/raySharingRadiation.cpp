@@ -43,12 +43,11 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         if (index[ipart] >= 0 && subDomain.InRegion(index[ipart])) {
             /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
-             * Hash the identifier into a key value that can be used in the ma
              * We should only iterate the identifier of the search particle (/ add a solver particle) if the point is valid in the domain and is being used
              * */
-            if (presence.count(Key(&identifier[ipart])) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
+            if (presence.count(identifier[ipart]) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
                 identifier[ipart].nsegment++;                    //!< The particle has passed through another domain!
-                presence[Key(&identifier[ipart])] = true;
+                presence.insert(identifier[ipart]);
                 DMSwarmAddPoint(radsolve) >> checkError;  //!< Another solve particle is added here because the search particle has entered a new domain
 
                 DMSwarmGetLocalSize(radsolve, &nsolvepoints) >> checkError;  //!< Recalculate the number of solve particles so that the last one in the list can be accessed.
@@ -60,7 +59,7 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
                 PetscInt newpoint = nsolvepoints - 1;           //!< This must be replaced with the index of whatever particle there is. Maybe the last index?
                 solveidentifier[newpoint] = identifier[ipart];  //!< Give the particle an identifier which matches the particle it was created with
                 /** Create a new 'access identifier' and set it equal to the identifier of the current cell which the search particle is occupying */
-                access[newpoint].origin = rank;                      //!< The origin should be the current rank
+                access[newpoint].rank = rank;                      //!< The origin should be the current rank
                 access[newpoint].iCell = index[ipart];               //!< The index that the particle is currently occupying
                 access[newpoint].ntheta = identifier[ipart].ntheta;  //!< The angle of the ray we want
                 access[newpoint].nphi = identifier[ipart].nphi;      //!< The angle of the ray we want
@@ -77,11 +76,11 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
                  * same ray.
                  * If the particle is native to this domain, then we don't want to mess with it at all because it's at the beginning of building a ray.
                  */
-                if (access[newpoint].origin != identifier[ipart].origin) {
+                if (access[newpoint].rank != identifier[ipart].rank) {
                     PetscReal centroid[3];
-                    PetscInt numPoints = static_cast<PetscInt>(rays[Key(&access[newpoint])].cells.size());
+                    PetscInt numPoints = static_cast<PetscInt>(rays[access[newpoint]].cells.size());
                     if (numPoints != 0) {
-                        DMPlexComputeCellGeometryFVM(subDomain.GetDM(), rays[Key(&access[newpoint])].cells[numPoints - 1], nullptr, centroid, nullptr) >>
+                        DMPlexComputeCellGeometryFVM(subDomain.GetDM(), rays[access[newpoint]].cells[numPoints - 1], nullptr, centroid, nullptr) >>
                             checkError;                                                                        //!< Get the cell center of the last cell in the ray segment
                         virtualcoord[ipart].x = centroid[0] + (virtualcoord[ipart].xdir * 2 * minCellRadius);  //!< Offset from the centroid slightly so they sit in a cell if they are on its face.
                         virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 2 * minCellRadius);
@@ -103,7 +102,7 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
 
             /** Step 1: Register the current cell index in the rays vector. The physical coordinates that have been set in the previous step / loop will be immediately registered.
              * */
-            if (identifier[ipart].nsegment == 1) rays[Key(&identifier[ipart])].cells.push_back(index[ipart]);
+            if (identifier[ipart].nsegment == 1) rays[identifier[ipart]].cells.push_back(index[ipart]);
 
             /** Step 2: Acquire the intersection of the particle search line with the segment or face. In the case if a two dimensional mesh, the virtual coordinate in the z direction will
              * need to be solved for because the three dimensional line will not have a literal intersection with the segment of the cell. The third coordinate can be solved for in this case.
@@ -140,7 +139,7 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
                 }
             }
             virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
-            if (identifier[ipart].nsegment == 1) rays[Key(&identifier[ipart])].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
+            if (identifier[ipart].nsegment == 1) rays[identifier[ipart]].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
         } else {
             virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
         }
