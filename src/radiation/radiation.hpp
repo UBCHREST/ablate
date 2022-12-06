@@ -33,19 +33,15 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * In the solve particle, nsegment remains constant as it ties the particle to its specific order in the ray */
     struct Identifier {
         PetscInt rank;
-        PetscShort iCell;
-        PetscShort ntheta;
-        PetscShort nphi;
-        PetscShort nsegment;
+        PetscInt iCell;
+        PetscInt ntheta;
+        PetscInt nphi;
+        PetscInt nsegment;
 
         /** Operator to check if 2 structs are equal */
         inline bool operator==(const Identifier& comp) const {
-            if (comp.rank != this->rank) return false;
-            else if (comp.iCell != this->iCell) return false;
-            else if (comp.ntheta != this->ntheta) return false;
-            else if (comp.nphi != this->nphi) return false;
-            else if (comp.nsegment != this->nsegment) return false;
-            else return true;
+            if (comp.rank == this->rank && comp.iCell == this->iCell && comp.ntheta == this->ntheta && comp.nphi == this->nphi && comp.nsegment == this->nsegment) return true;
+            else return false;
         };
 
         /** Operator to sort structs in a map */
@@ -62,17 +58,17 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     /** Carriers are attached to the solve particles and bring ray information from the local segments to the origin cells
      * They are transported directly from the segment to the origin. They carry only the values that the Segment computes and not the spatial information necessary to  */
     struct Carrier {
-        PetscFloat Ij = 0;    //!< Black body source for the segment. Make sure that this is reset every solve after the value has been transported.
-        PetscFloat Krad = 1;  //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
-        PetscFloat I0 = 0;
+        PetscReal Ij = 0;    //!< Black body source for the segment. Make sure that this is reset every solve after the value has been transported.
+        PetscReal Krad = 1;  //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
+        PetscReal I0 = 0;
     };
 
     /** Each origin cell will need to retain local information given to it by the ray segments in order to compute the final intenisty.
      * This information will be owned by cell index and stored in a map of local cell indices.
      * */
     struct Origin {
-        PetscFloat intensity = 0;                 //!< The irradiation value that will be contributed to by every ray. This is updated every (pre-step && interval) gain evaluation.
-        PetscFloat net = 0;                       //!< The net radiation value including the losses. This is updated every pre-stage solve.
+        PetscReal intensity = 0;                 //!< The irradiation value that will be contributed to by every ray. This is updated every (pre-step && interval) gain evaluation.
+        PetscReal net = 0;                       //!< The net radiation value including the losses. This is updated every pre-stage solve.
         std::map<Identifier, Carrier> handler;  //!< Stores local carrier information
     };
 

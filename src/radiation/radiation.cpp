@@ -323,6 +323,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
             absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
             GetFuelEmissivity(kappa);  //!< Adjusts the losses based on the material from which the radiation is emitted.
             losses *= 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
+            if (isinf(losses)) losses = ablate::utilities::Constants::huge;
             if (log) {
                 PetscReal centroid[3];
                 DMPlexComputeCellGeometryFVM(solDm, index, nullptr, centroid, nullptr) >> checkError;  //!< Reads the cell location from the current cell
@@ -710,6 +711,7 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                 origin[iCell].intensity += ((I0 * Kradd) + Isource) * abs(sin(theta)) * dTheta * dPhi * ldotn;  //!< Final ray calculation
             }
         }
+        if (isinf(origin[iCell].intensity)) origin[iCell].intensity = ablate::utilities::Constants::huge;
         origin[iCell].handler.clear();  //!< Eliminate all of the data being stored in the cell handler to free local memory
     }
 

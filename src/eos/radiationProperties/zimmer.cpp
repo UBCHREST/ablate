@@ -64,7 +64,11 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerFunction(const Pe
         pCO = (density * UGC * YinCO * temperature) / (MWCO * 101325.);
 
         /** The resulting absorptivity is an average of species absorptivity weighted by partial pressure. */
-        *kappa = pCO2 * kappaCO2 + pH2O * kappaH2O + pCH4 * kappaCH4 + pCO * kappaCO;
+        *kappa = 0;
+        if (pCO2 > 1E-3 && kappaCO2 > 0) *kappa += pCO2 * kappaCO2;
+        if (pH2O > 1E-3 && kappaH2O > 0) *kappa += pH2O * kappaH2O;
+        if (pCH4 > 1E-3 && kappaCH4 > 0) *kappa += pCH4 * kappaCH4;
+        if (pCO > 1E-3 && kappaCO > 0) *kappa += pCO * kappaCO;
     }
     PetscFunctionReturn(0);
 }
@@ -126,7 +130,11 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerTemperatureFuncti
         pCO = (density * UGC * YinCO * temperature) / (MWCO * 101325.);
 
         /** The resulting absorptivity is an average of species absorptivity weighted by partial pressure. */
-        *kappa = pCO2 * kappaCO2 + pH2O * kappaH2O + pCH4 * kappaCH4 + pCO * kappaCO;
+        *kappa = 0;
+        if (pCO2 > 1E-3 && kappaCO2 > 0) *kappa += pCO2 * kappaCO2;
+        if (pH2O > 1E-3 && kappaH2O > 0) *kappa += pH2O * kappaH2O;
+        if (pCH4 > 1E-3 && kappaCH4 > 0) *kappa += pCH4 * kappaCH4;
+        if (pCO > 1E-3 && kappaCO > 0) *kappa += pCO * kappaCO;
     }
     PetscFunctionReturn(0);
 }
