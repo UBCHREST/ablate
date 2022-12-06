@@ -9,6 +9,7 @@
 #include "monitors/logs/log.hpp"
 #include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
+#include "utilities/constants.hpp"
 #include "utilities/loggable.hpp"
 
 namespace ablate::radiation {
@@ -63,7 +64,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
         PetscReal I0 = 0;
     };
 
-    /** Each origin cell will need to retain local information given to it by the ray segments in order to compute the final intenisty.
+    /** Each origin cell will need to retain local information given to it by the ray segments in order to compute the final intensity.
      * This information will be owned by cell index and stored in a map of local cell indices.
      * */
     struct Origin {
@@ -86,8 +87,14 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      */
     virtual void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
-    inline PetscReal GetIntensity(PetscInt iCell) {  //!< Function to give other classes access to the intensity
-        return origin[iCell].net;
+    /** Function to give other classes access to the intensity
+     * Put safegaurds on the intensity read so that the rhs doesn't break if the time stepper decides to put absurd values into the eos for fun
+     * */
+    inline PetscReal GetIntensity(PetscInt iCell) {
+        if (abs(origin[iCell].net) < 1E10) return origin[iCell].net;
+        else if (origin[iCell].net > 1E10) return 1E10;
+        else if (origin[iCell].net < -1E10) return -1E10;
+        else return 0;
     }
 
     /// Class Methods
@@ -140,7 +147,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     /// Class Methods
     /** Returns the forward path length of a travelling particle with any face.
      * The function will return zero if the intersection is not in the direction of travel.
-     *
+     *x
      * @param virtualcoord the struct containing particle position information
      * @param face the struct containing information about a cell face
      */
