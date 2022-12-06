@@ -38,24 +38,26 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
         PetscInt nphi;
         PetscInt nsegment;
 
-        bool operator==(const Identifier& comp) const {
+        /** Operator to check if 2 structs are equal */
+        inline bool operator==(const Identifier& comp) const {
             if (comp.rank != this->rank) return false;
-            if (comp.iCell != this->iCell) return false;
-            if (comp.ntheta != this->ntheta) return false;
-            if (comp.nphi != this->nphi) return false;
-            if (comp.nsegment != this->nsegment) return false;
-            return true;
+            else if (comp.iCell != this->iCell) return false;
+            else if (comp.ntheta != this->ntheta) return false;
+            else if (comp.nphi != this->nphi) return false;
+            else if (comp.nsegment != this->nsegment) return false;
+            else return true;
         };
-        bool operator<(const Identifier& comp) const {
-            if (comp.rank < this->rank) return true;
-            if (comp.iCell < this->iCell) return true;
-            if (comp.ntheta < this->ntheta) return true;
-            if (comp.nphi < this->nphi) return true;
-            if (comp.nsegment < this->nsegment) return true;
-            return false;
+
+        /** Operator to sort structs in a map */
+        inline bool operator<(const Identifier& comp) const {
+            if (comp.rank > this->rank) return true;
+            else if (comp.rank == this->rank && comp.iCell > this->iCell) return true;
+            else if (comp.rank == this->rank && comp.iCell == this->iCell && comp.ntheta > this->ntheta) return true;
+            else if (comp.rank == this->rank && comp.iCell == this->iCell && comp.ntheta == this->ntheta && comp.nphi > this->nphi) return true;
+            else if (comp.rank == this->rank && comp.iCell == this->iCell && comp.ntheta == this->ntheta && comp.nphi == this->nphi && comp.nsegment > this->nsegment) return true;
+            else return false;
         }
     };
-
 
     /** Carriers are attached to the solve particles and bring ray information from the local segments to the origin cells
      * They are transported directly from the segment to the origin. They carry only the values that the Segment computes and not the spatial information necessary to  */
@@ -75,7 +77,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     };
 
     std::map<PetscInt, Origin> origin;
-    std::set<Identifier> presence;  //!< Map to track the local presence of search particles during the initialization
+    std::map<Identifier, bool> presence;  //!< Map to track the local presence of search particles during the initialization
 
     /** Returns the black body intensity for a given temperature and emissivity */
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
