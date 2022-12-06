@@ -41,18 +41,26 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
 
         /** Operator to check if 2 structs are equal */
         inline bool operator==(const Identifier& comp) const {
-            if (comp.rank == this->rank && comp.iCell == this->iCell && comp.ntheta == this->ntheta && comp.nphi == this->nphi && comp.nsegment == this->nsegment) return true;
-            else return false;
+            if (comp.rank == this->rank && comp.iCell == this->iCell && comp.ntheta == this->ntheta && comp.nphi == this->nphi && comp.nsegment == this->nsegment)
+                return true;
+            else
+                return false;
         };
 
         /** Operator to sort structs in a map */
         inline bool operator<(const Identifier& comp) const {
-            if (comp.rank > this->rank) return true;
-            else if (comp.rank == this->rank && comp.iCell > this->iCell) return true;
-            else if (comp.rank == this->rank && comp.iCell == this->iCell && comp.ntheta > this->ntheta) return true;
-            else if (comp.rank == this->rank && comp.iCell == this->iCell && comp.ntheta == this->ntheta && comp.nphi > this->nphi) return true;
-            else if (comp.rank == this->rank && comp.iCell == this->iCell && comp.ntheta == this->ntheta && comp.nphi == this->nphi && comp.nsegment > this->nsegment) return true;
-            else return false;
+            if (comp.rank > this->rank)
+                return true;
+            else if (comp.rank == this->rank && comp.iCell > this->iCell)
+                return true;
+            else if (comp.rank == this->rank && comp.iCell == this->iCell && comp.ntheta > this->ntheta)
+                return true;
+            else if (comp.rank == this->rank && comp.iCell == this->iCell && comp.ntheta == this->ntheta && comp.nphi > this->nphi)
+                return true;
+            else if (comp.rank == this->rank && comp.iCell == this->iCell && comp.ntheta == this->ntheta && comp.nphi == this->nphi && comp.nsegment > this->nsegment)
+                return true;
+            else
+                return false;
         }
     };
 
@@ -68,8 +76,8 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * This information will be owned by cell index and stored in a map of local cell indices.
      * */
     struct Origin {
-        PetscReal intensity = 0;                 //!< The irradiation value that will be contributed to by every ray. This is updated every (pre-step && interval) gain evaluation.
-        PetscReal net = 0;                       //!< The net radiation value including the losses. This is updated every pre-stage solve.
+        PetscReal intensity = 0;                //!< The irradiation value that will be contributed to by every ray. This is updated every (pre-step && interval) gain evaluation.
+        PetscReal net = 0;                      //!< The net radiation value including the losses. This is updated every pre-stage solve.
         std::map<Identifier, Carrier> handler;  //!< Stores local carrier information
     };
 
@@ -91,10 +99,14 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * Put safegaurds on the intensity read so that the rhs doesn't break if the time stepper decides to put absurd values into the eos for fun
      * */
     inline PetscReal GetIntensity(PetscInt iCell) {
-        if (abs(origin[iCell].net) < 1E10) return origin[iCell].net;
-        else if (origin[iCell].net > 1E10) return 1E10;
-        else if (origin[iCell].net < -1E10) return -1E10;
-        else return 0;
+        if (abs(origin[iCell].net) < 1E10)
+            return origin[iCell].net;
+        else if (origin[iCell].net > 1E10)
+            return 1E10;
+        else if (origin[iCell].net < -1E10)
+            return -1E10;
+        else
+            return 0;
     }
 
     /// Class Methods

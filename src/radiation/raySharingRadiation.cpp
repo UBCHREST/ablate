@@ -46,7 +46,7 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
              * We should only iterate the identifier of the search particle (/ add a solver particle) if the point is valid in the domain and is being used
              * */
             if (presence.count(identifier[ipart]) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
-                identifier[ipart].nsegment++;                    //!< The particle has passed through another domain!
+                identifier[ipart].nsegment++;              //!< The particle has passed through another domain!
                 presence[identifier[ipart]] = true;
                 DMSwarmAddPoint(radsolve) >> checkError;  //!< Another solve particle is added here because the search particle has entered a new domain
 
@@ -59,7 +59,7 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
                 PetscInt newpoint = nsolvepoints - 1;           //!< This must be replaced with the index of whatever particle there is. Maybe the last index?
                 solveidentifier[newpoint] = identifier[ipart];  //!< Give the particle an identifier which matches the particle it was created with
                 /** Create a new 'access identifier' and set it equal to the identifier of the current cell which the search particle is occupying */
-                access[newpoint].rank = rank;                      //!< The origin should be the current rank
+                access[newpoint].rank = rank;                        //!< The origin should be the current rank
                 access[newpoint].iCell = index[ipart];               //!< The index that the particle is currently occupying
                 access[newpoint].ntheta = identifier[ipart].ntheta;  //!< The angle of the ray we want
                 access[newpoint].nphi = identifier[ipart].nphi;      //!< The angle of the ray we want
