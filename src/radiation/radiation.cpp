@@ -6,7 +6,6 @@
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
-#include "utilities/constants.hpp"
 
 ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber,
                                         std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
@@ -136,7 +135,7 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
                 /** Label the particle with the ray identifier. (Use an array of 4 ints, [ncell][theta][phi][domains crossed])
                  * Label the particle with nsegment = 0; so that this can be iterated after each domain cross.
                  * */
-                identifier[ipart].rank = rank;    //!< Input the ray identifier. This location scheme represents stepping four entries for every particle index increase
+                identifier[ipart].rank = rank;      //!< Input the ray identifier. This location scheme represents stepping four entries for every particle index increase
                 identifier[ipart].iCell = iCell;    //!< Input the ray identifier. This location scheme represents stepping four entries for every particle index increase
                 identifier[ipart].ntheta = ntheta;  //!< Input the ray identifier.
                 identifier[ipart].nphi = nphi;      //!< Input the ray identifier.
@@ -323,7 +322,6 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
             absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
             GetFuelEmissivity(kappa);  //!< Adjusts the losses based on the material from which the radiation is emitted.
             losses *= 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
-            if (isinf(losses)) losses = ablate::utilities::Constants::huge;
             if (log) {
                 PetscReal centroid[3];
                 DMPlexComputeCellGeometryFVM(solDm, index, nullptr, centroid, nullptr) >> checkError;  //!< Reads the cell location from the current cell
@@ -417,7 +415,7 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
              * We should only iterate the identifier of the search particle (/ add a solver particle) if the point is valid in the domain and is being used
              * */
             if (presence.count(identifier[ipart]) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
-                identifier[ipart].nsegment++;                    //!< The particle has passed through another domain!
+                identifier[ipart].nsegment++;              //!< The particle has passed through another domain!
                 presence[identifier[ipart]] = true;
                 DMSwarmAddPoint(radsolve) >> checkError;  //!< Another solve particle is added here because the search particle has entered a new domain
 
@@ -656,7 +654,11 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
             for (PetscInt nphi = 0; nphi < nPhi; nphi++) {
                 /** Now that we are iterating over every ray identifier in this local domain, we can get all of the particles that are associated with this ray.
                  * We will need to sort the rays in order of domain segment. We need to start at the end of the ray and go towards the beginning of the ray. */
-                Identifier loopid = {.rank = rank, .iCell = PetscShort(iCell), .ntheta = PetscShort(ntheta), .nphi = PetscShort(nphi), .nsegment = 1};  //!< Instantiate an identifier associated with this loop location.
+                Identifier loopid = {.rank = rank,
+                                     .iCell = PetscShort(iCell),
+                                     .ntheta = PetscShort(ntheta),
+                                     .nphi = PetscShort(nphi),
+                                     .nsegment = 1};  //!< Instantiate an identifier associated with this loop location.
 
                 /** Get the maximum nsegment by looping through all of the particles and searching for it.*/
                 bool pointfound = true;
@@ -679,9 +681,9 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                  * The I0 (beginning ray intensity) will also need to be found before the ray is added.
                  * The source and absorption must be set to zero at the beginning of each new ray.
                  * */
-                PetscReal Kradd = 1;       //!< This must be reset at the beginning of each new ray.
-                PetscReal Isource = 0;     //!< This must be reset at the beginning of each new ray.
-                PetscReal I0 = 0;          //!< For the last segment in the domain, take that as the black body intensity of the far field.
+                PetscReal Kradd = 1;           //!< This must be reset at the beginning of each new ray.
+                PetscReal Isource = 0;         //!< This must be reset at the beginning of each new ray.
+                PetscReal I0 = 0;              //!< For the last segment in the domain, take that as the black body intensity of the far field.
                 loopid.nsegment--;             //!< Decrement the segment identifier to the last known segment that was found.
                 oldsegment = loopid.nsegment;  //!< Set the old segment to be the head of the ray
 
@@ -697,8 +699,8 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                      * In the parallel form at the end of each ray, the absorption of the initial ray and the absorption of the black body source are computed individually at the end.
                      * */
                     Isource += origin[iCell].handler[loopid].Ij * Kradd;  //!< Add the black body radiation transmitted through the domain to the source term
-                    Kradd *= origin[iCell].handler[loopid].Krad;                        //!< Add the absorption for this domain to the total absorption of the ray
-                    loopid.nsegment++;                                                                      //!< Decrement the segment number to move to the next closer segment in the ray.
+                    Kradd *= origin[iCell].handler[loopid].Krad;          //!< Add the absorption for this domain to the total absorption of the ray
+                    loopid.nsegment++;                                    //!< Decrement the segment number to move to the next closer segment in the ray.
                 }
 
                 if (dim != 1) {
@@ -711,7 +713,6 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                 origin[iCell].intensity += ((I0 * Kradd) + Isource) * abs(sin(theta)) * dTheta * dPhi * ldotn;  //!< Final ray calculation
             }
         }
-        if (isinf(origin[iCell].intensity)) origin[iCell].intensity = ablate::utilities::Constants::huge;
         origin[iCell].handler.clear();  //!< Eliminate all of the data being stored in the cell handler to free local memory
     }
 
