@@ -40,9 +40,6 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * This information will be owned by cell index and stored in a map of local cell indices.
      * */
     struct Origin {
-        PetscReal I0 = 0;                        //!< Determing the initial ray intensity by grabbing the head cell of the furthest ray? There will need to be additional setup for this.
-        PetscReal Isource = 0;                   //!< Value that will be contributed to by every ray segment.
-        PetscReal Kradd = 1;                     //!< Value that will be contributed to by every ray segment.
         PetscReal intensity = 0;                 //!< The irradiation value that will be contributed to by every ray. This is updated every (pre-step && interval) gain evaluation.
         PetscReal net = 0;                       //!< The net radiation value including the losses. This is updated every pre-stage solve.
         std::map<std::string, Carrier> handler;  //!< Stores local carrier information
@@ -100,9 +97,6 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     struct Segment {
         std::vector<PetscInt> cells;  //!< Stores the cell indices of the segment locally.
         std::vector<PetscReal> h;     //!< Stores the space steps of the segment locally.
-        PetscReal Ij = 0;             //!< Black body source for the segment. Make sure that this is reset every solve after the value has been transported.
-        PetscReal Krad = 1;           //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
-        PetscReal I0 = 0;
     };
 
     /** Identifiers are carrying by both the search and solve particles in order to associate them with their origins and ray segments
