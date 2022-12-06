@@ -417,7 +417,7 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
              * */
             if (presence.count(identifier[ipart]) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
                 identifier[ipart].nsegment++;                    //!< The particle has passed through another domain!
-                presence.insert(identifier[ipart]);
+                presence[identifier[ipart]] = true;
                 DMSwarmAddPoint(radsolve) >> checkError;  //!< Another solve particle is added here because the search particle has entered a new domain
 
                 DMSwarmGetLocalSize(radsolve,
