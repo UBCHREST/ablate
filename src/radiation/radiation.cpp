@@ -655,7 +655,7 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
             for (PetscInt nphi = 0; nphi < nPhi; nphi++) {
                 /** Now that we are iterating over every ray identifier in this local domain, we can get all of the particles that are associated with this ray.
                  * We will need to sort the rays in order of domain segment. We need to start at the end of the ray and go towards the beginning of the ray. */
-                Identifier loopid = {.rank = rank, .iCell = iCell, .ntheta = ntheta, .nphi = nphi, .nsegment = 1};  //!< Instantiate an identifier associated with this loop location.
+                Identifier loopid = {.rank = rank, .iCell = PetscShort(iCell), .ntheta = PetscShort(ntheta), .nphi = PetscShort(nphi), .nsegment = 1};  //!< Instantiate an identifier associated with this loop location.
 
                 /** Get the maximum nsegment by looping through all of the particles and searching for it.*/
                 bool pointfound = true;
