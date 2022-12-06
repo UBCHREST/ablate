@@ -26,9 +26,6 @@ class Constants {
 
     //! A somewhat small number
     constexpr inline static PetscReal small = 1e-10;
-
-    //! A huge number
-    constexpr inline static PetscReal huge = 1e30;
 };
 }  // namespace ablate::utilities
 
