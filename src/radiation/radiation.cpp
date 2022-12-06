@@ -566,7 +566,7 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
             Set the initial ray intensity to the wall temperature, etc.
          */
         /** For each domain in the ray (The rays vector will have an added index, splitting every x points) */
-        PetscInt numPoints = static_cast<PetscInt>(rays[Key(&identifier[ipart])].cells.size());
+        PetscInt numPoints = static_cast<PetscInt>(rays[Key(&access[ipart])].cells.size());
 
         if (numPoints > 0) {
             for (PetscInt n = 0; n < numPoints; n++) {
@@ -576,13 +576,13 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                     Get the array that lives inside the vector
                     Gets the temperature from the cell index specified
                 */
-                DMPlexPointLocalRead(solDm, rays[Key(&identifier[ipart])].cells[n], solArray, &sol);
+                DMPlexPointLocalRead(solDm, rays[Key(&access[ipart])].cells[n], solArray, &sol);
                 if (sol) {
-                    DMPlexPointLocalFieldRead(auxDm, rays[Key(&identifier[ipart])].cells[n], temperatureField.id, auxArray, &temperature);
+                    DMPlexPointLocalFieldRead(auxDm, rays[Key(&access[ipart])].cells[n], temperatureField.id, auxArray, &temperature);
                     if (temperature) { /** Input absorptivity (kappa) values from model here. */
                         absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
-                        carrier[ipart].Ij += FlameIntensity(1 - exp(-kappa * rays[Key(&identifier[ipart])].h[n]), *temperature) * carrier[ipart].Krad;
-                        carrier[ipart].Krad *= exp(-kappa * rays[Key(&identifier[ipart])].h[n]);  //!< Compute the total absorption for this domain
+                        carrier[ipart].Ij += FlameIntensity(1 - exp(-kappa * rays[Key(&access[ipart])].h[n]), *temperature) * carrier[ipart].Krad;
+                        carrier[ipart].Krad *= exp(-kappa * rays[Key(&access[ipart])].h[n]);  //!< Compute the total absorption for this domain
 
                         if (n ==
                             (numPoints - 1)) { /** If this is the beginning of the ray, set this as the initial intensity. (The segment intensities will be filtered through during the origin run) */
@@ -623,9 +623,7 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     /** Iterate through the particles and offload the information to their associated origin cell struct. */
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         if (identifier[ipart].origin == rank) {
-            origin[identifier[ipart].iCell].handler[Key(&identifier[ipart])].Krad = carrier[ipart].Krad;
-            origin[identifier[ipart].iCell].handler[Key(&identifier[ipart])].Ij = carrier[ipart].Ij;
-            origin[identifier[ipart].iCell].handler[Key(&identifier[ipart])].I0 = carrier[ipart].I0;
+            origin[identifier[ipart].iCell].handler[Key(&identifier[ipart])] = carrier[ipart];
 
             /** Delete all of the particles that were transported to their origin domains -> Delete if the particle has travelled to get here and isn't native
              * Delete the particles as the local memory is being written to reduce the total memory consumption */
