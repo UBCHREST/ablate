@@ -153,7 +153,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * As far as other parts of the code is concerned the chemTabEos does not expect species
      * @return
      */
-    [[nodiscard]] const std::vector<std::string>& GetExtraVariables() const override { return progressVariablesNames; }
+    [[nodiscard]] const std::vector<std::string>& GetProgressVariables() const override { return progressVariablesNames; }
 
     /**
      * Single function to compute the source terms for a single point
@@ -218,7 +218,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @param property1
      * @param property2
      */
-    [[nodiscard]] eos::FieldFunction GetFieldFunctionFunction(const std::string& field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2) const override { return {}; }
+    [[nodiscard]] eos::FieldFunction GetFieldFunctionFunction(const std::string& field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2) const override;
 };
 
 #else

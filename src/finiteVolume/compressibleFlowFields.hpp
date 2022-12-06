@@ -23,6 +23,10 @@ class CompressibleFlowFields : public domain::FieldDescriptor {
     inline const static std::string TEMPERATURE_FIELD = "temperature";
     inline const static std::string VELOCITY_FIELD = "velocity";
     inline const static std::string PRESSURE_FIELD = "pressure";
+    inline const static std::string DENSITY_EV_FIELD_ = "densityEV_";
+    inline const static std::string EV_FIELD_ = "ev_";
+    inline const static std::string DENSITY_EV_FIELD_PROGRESS = "densityEV_progress";
+    inline const static std::string EV_FIELD_PROGRESS = "ev_progress";
 
    private:
     const std::shared_ptr<eos::EOS> eos;

@@ -97,7 +97,7 @@ class EOS {
      * Returns a vector of all extra variables required to utilize the equation of state
      * @return
      */
-    [[nodiscard]] virtual const std::vector<std::string>& GetExtraVariables() const = 0;
+    [[nodiscard]] virtual const std::vector<std::string>& GetProgressVariables() const = 0;
 
     /**
      * Support function for printing any eos

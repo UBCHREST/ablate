@@ -331,6 +331,7 @@ PetscErrorCode ablate::eos::ChemTab::ChemTabThermodynamicTemperatureFunction(con
 
     PetscFunctionReturn(0);
 }
+
 ablate::eos::ThermodynamicFunction ablate::eos::ChemTab::GetThermodynamicFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
     // Look for the euler field
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
@@ -359,6 +360,32 @@ ablate::eos::ThermodynamicFunction ablate::eos::ChemTab::GetThermodynamicFunctio
                                                                                                .tChemFunction = referenceEOS->GetThermodynamicMassFractionFunction(property, fields),
                                                                                                .iWmat = iWmat})};
 }
+
+ablate::eos::FieldFunction ablate::eos::ChemTab::GetFieldFunctionFunction(const std::string &field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2) const {
+    if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field) {
+        return referenceEOS->GetFieldFunctionFunction(field, property1, property2);
+    } else if (finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD_PROGRESS == field) {
+        // get the euler field because we need density
+        auto eulerFunction = referenceEOS->GetFieldFunctionFunction(finiteVolume::CompressibleFlowFields::EULER_FIELD, property1, property2);
+
+        return [=](PetscReal property1, PetscReal property2, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+            // Compute euler
+            PetscReal euler[ablate::finiteVolume::CompressibleFlowFields::RHOW + 1];  // Max size for euler
+            eulerFunction(property1, property2, dim, velocity, yi, euler);
+
+            // compute the progress variables and put into conserved for now
+            ComputeProgressVariables(yi, speciesNames.size(), conserved, progressVariablesNames.size());
+
+            // Scale the progress variables by density
+            for (std::size_t p = 0; p < progressVariablesNames.size(); p++) {
+                conserved[p] *= euler[ablate::finiteVolume::CompressibleFlowFields::RHO];
+            }
+        };
+    } else {
+        throw std::invalid_argument("Unknown field type " + field + " for ablate::eos::PerfectGas.");
+    }
+}
+
 ablate::eos::ThermodynamicTemperatureFunction ablate::eos::ChemTab::GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
     // Look for the euler field
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });

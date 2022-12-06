@@ -29,7 +29,7 @@ class MockEOS : public ablate::eos::EOS {
 
     MOCK_METHOD(void, View, (std::ostream & stream), (override, const));
     MOCK_METHOD(const std::vector<std::string>&, GetSpecies, (), (const, override));
-    MOCK_METHOD(const std::vector<std::string>&, GetExtraVariables, (), (const, override));
+    MOCK_METHOD(const std::vector<std::string>&, GetProgressVariables, (), (const, override));
 
     MOCK_METHOD(ablate::eos::ThermodynamicFunction, GetThermodynamicFunction, (ablate::eos::ThermodynamicProperty, const std::vector<ablate::domain::Field>&), (const, override));
     MOCK_METHOD(ablate::eos::ThermodynamicTemperatureFunction, GetThermodynamicTemperatureFunction, (ablate::eos::ThermodynamicProperty, const std::vector<ablate::domain::Field>&), (const, override));

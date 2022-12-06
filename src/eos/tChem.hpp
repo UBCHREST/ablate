@@ -133,7 +133,7 @@ class TChem : public ChemistryModel, public std::enable_shared_from_this<ablate:
      * Returns a vector of all extra variables required to utilize the equation of state
      * @return
      */
-    [[nodiscard]] virtual const std::vector<std::string>& GetExtraVariables() const override { return ablate::utilities::VectorUtilities::Empty<std::string>; }
+    [[nodiscard]] virtual const std::vector<std::string>& GetProgressVariables() const override { return ablate::utilities::VectorUtilities::Empty<std::string>; }
 
     /**
      * Returns all elements tracked in this mechanism and their molecular mass

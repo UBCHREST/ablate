@@ -6,7 +6,7 @@ ablate::finiteVolume::CompressibleFlowFields::CompressibleFlowFields(std::shared
                                                                      std::shared_ptr<parameters::Parameters> conservedFieldParameters)
     : eos(eos),
       // Add in any required extraVariables from the eos
-      extraVariables(ablate::utilities::VectorUtilities::Merge(extraVariablesIn, eos->GetExtraVariables())),
+      extraVariables(ablate::utilities::VectorUtilities::Merge(extraVariablesIn, eos->GetProgressVariables())),
       region(region),
       conservedFieldOptions(conservedFieldParameters) {}
 

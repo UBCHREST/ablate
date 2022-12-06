@@ -103,7 +103,7 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
             std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
             auto species = std::vector<std::string>();
             EXPECT_CALL(*eos, GetSpecies()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(species));
-            EXPECT_CALL(*eos, GetExtraVariables()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(ablate::utilities::VectorUtilities::Empty<std::string>));
+            EXPECT_CALL(*eos, GetProgressVariables()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(ablate::utilities::VectorUtilities::Empty<std::string>));
             EXPECT_CALL(*eos, GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Temperature, testing::_))
                 .Times(::testing::AtLeast(1))
                 .WillRepeatedly(
