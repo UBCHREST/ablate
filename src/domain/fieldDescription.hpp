@@ -40,8 +40,11 @@ struct FieldDescription : public FieldDescriptor, public std::enable_shared_from
     // The region for the field (nullptr is everywhere)
     const std::shared_ptr<domain::Region> region;
 
+    // store any optional tags, there are strings that can be used to describe the field
+    const std::vector<std::string> tags;
+
     FieldDescription(std::string name, std::string prefix, std::vector<std::string> components, FieldLocation location, FieldType type, std::shared_ptr<domain::Region> = {},
-                     std::shared_ptr<parameters::Parameters> = {});
+                     std::shared_ptr<parameters::Parameters> = {}, std::vector<std::string> tags = {});
 
     /**
      * Public function that will cause the components to expand or decompress based upon the number of dims

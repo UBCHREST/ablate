@@ -31,6 +31,9 @@ struct Field {
     // Keep track of the field type
     const enum FieldType type;
 
+    // store any optional tags, there are strings that can be used to describe the field
+    const std::vector<std::string> tags;
+
     static Field FromFieldDescription(const FieldDescription& fieldDescription, PetscInt id, PetscInt subId = PETSC_DEFAULT, PetscInt offset = PETSC_DEFAULT);
 
     Field CreateSubField(PetscInt subId, PetscInt offset) const;

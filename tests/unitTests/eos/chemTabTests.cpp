@@ -319,7 +319,7 @@ TEST_P(ChemTabFieldFunctionTestFixture, ShouldComputeField) {
     // act
     auto stateEulerFunction = chemTab->GetFieldFunctionFunction("euler", params.property1, params.property2);
     stateEulerFunction(params.property1Value, params.property2Value, (PetscInt)params.velocity.size(), params.velocity.data(), yi.data(), actualEulerValue.data());
-    auto stateDensityEvFunction = chemTab->GetFieldFunctionFunction("densityEV_progress", params.property1, params.property2);
+    auto stateDensityEvFunction = chemTab->GetFieldFunctionFunction("density_progress", params.property1, params.property2);
     stateDensityEvFunction(params.property1Value, params.property2Value, (PetscInt)params.velocity.size(), params.velocity.data(), yi.data(), actualDensityEvValue.data());
 
     // assert

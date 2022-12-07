@@ -364,7 +364,7 @@ ablate::eos::ThermodynamicFunction ablate::eos::ChemTab::GetThermodynamicFunctio
 ablate::eos::FieldFunction ablate::eos::ChemTab::GetFieldFunctionFunction(const std::string &field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2) const {
     if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field) {
         return referenceEOS->GetFieldFunctionFunction(field, property1, property2);
-    } else if (finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD_PROGRESS == field) {
+    } else if (finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS == field) {
         // get the euler field because we need density
         auto eulerFunction = referenceEOS->GetFieldFunctionFunction(finiteVolume::CompressibleFlowFields::EULER_FIELD, property1, property2);
 

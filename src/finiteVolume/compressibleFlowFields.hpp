@@ -15,18 +15,30 @@ class CompressibleFlowFields : public domain::FieldDescriptor {
    public:
     typedef enum { RHO, RHOE, RHOU, RHOV, RHOW } EulerComponents;
 
+    //! the primary euler field containing the EulerComponents
     inline const static std::string EULER_FIELD = "euler";
+
+    //! The conserved prefix used for fields that have a conserved and non conserved form
     inline const static std::string DENSITY_YI_FIELD = "densityYi";
+
+
+    //! the conserved (density*yi) solution field for species mass fractions
+    inline const static std::string DENSITY_YI_FIELD = "densityYi";
+    //! the non-conserved (yi) solution field for species mass fractions
     inline const static std::string YI_FIELD = "yi";
-    inline const static std::string DENSITY_EV_FIELD = "densityEV";
-    inline const static std::string EV_FIELD = "ev";
+
+    //! the conserved tag used to tag all fields that should act like extra variables (transported with the flow)
+    inline const static std::string EV_TAG = "ev";
+
+
+
     inline const static std::string TEMPERATURE_FIELD = "temperature";
     inline const static std::string VELOCITY_FIELD = "velocity";
     inline const static std::string PRESSURE_FIELD = "pressure";
-    inline const static std::string DENSITY_EV_FIELD_ = "densityEV_";
-    inline const static std::string EV_FIELD_ = "ev_";
-    inline const static std::string DENSITY_EV_FIELD_PROGRESS = "densityEV_progress";
-    inline const static std::string EV_FIELD_PROGRESS = "ev_progress";
+
+    //! progress fields are used by the eos/chemistry model to transport required non species
+    inline const static std::string DENSITY_PROGRESS = "density_progress";
+    inline const static std::string PROGRESS = "progress";
 
    private:
     const std::shared_ptr<eos::EOS> eos;

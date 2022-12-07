@@ -6,13 +6,15 @@
 #include <utilities/petscOptions.hpp>
 
 ablate::domain::FieldDescription::FieldDescription(std::string nameIn, std::string prefixIn, std::vector<std::string> componentsIn, ablate::domain::FieldLocation location,
-                                                   ablate::domain::FieldType type, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> optionsIn)
+                                                   ablate::domain::FieldType type, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> optionsIn,
+                                                   std::vector<std::string> tags)
     : name(nameIn),
       prefix(prefixIn.empty() ? name + "_" : prefixIn + "_"),
       components(componentsIn.empty() ? std::vector<std::string>{"_"} : componentsIn),
       location(location),
       type(type),
-      region(region) {
+      region(region),
+      tags(tags) {
     if (optionsIn) {
         PetscOptionsCreate(&options);
         optionsIn->Fill(options);
@@ -114,4 +116,5 @@ REGISTER_DEFAULT(ablate::domain::FieldDescription, ablate::domain::FieldDescript
                  OPT(std::string, "prefix", "optional prefix (defaults to name)"), OPT(std::vector<std::string>, "components", "the components in the field (defaults to 1)"),
                  OPT(EnumWrapper<ablate::domain::FieldLocation>, "location", "if it is a solution (SOL) or auxiliary (aux) field"),
                  ARG(EnumWrapper<ablate::domain::FieldType>, "type", "if it is a finite volume (FV) or finite element (FE) field"),
-                 OPT(ablate::domain::Region, "region", "the region in which this field lives"), OPT(ablate::parameters::Parameters, "options", "field specific options"));
+                 OPT(ablate::domain::Region, "region", "the region in which this field lives"), OPT(ablate::parameters::Parameters, "options", "field specific options"),
+                 OPT(std::vector<std::string>, "tags", "optional list of tags that can be used with this field"));
