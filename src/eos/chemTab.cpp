@@ -282,19 +282,13 @@ std::shared_ptr<ablate::eos::ChemistryModel::SourceCalculator> ablate::eos::Chem
         throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
     }
 
-    auto densityEvField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD; });
-    if (densityEvField == fields.end()) {
-        throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD Field");
+    auto densityProgressField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD; });
+    if (densityProgressField == fields.end()) {
+        throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD Field");
     }
-
-    auto zMixIter = std::find(densityEvField->components.begin(), densityEvField->components.end(), "zmix");
-    if (zMixIter == densityEvField->components.end()) {
-        throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD Field contain zMix and other progress variables");
-    }
-    auto zMixOffset = densityEvField->offset + std::distance(densityEvField->components.begin(), zMixIter);
 
     return std::make_shared<ChemTabSourceCalculator>(
-        eulerField->offset + ablate::finiteVolume::CompressibleFlowFields::RHO, eulerField->offset + ablate::finiteVolume::CompressibleFlowFields::RHOE, zMixOffset, shared_from_this());
+        eulerField->offset + ablate::finiteVolume::CompressibleFlowFields::RHO, eulerField->offset + ablate::finiteVolume::CompressibleFlowFields::RHOE, densityProgressField->offset, shared_from_this());
 }
 PetscErrorCode ablate::eos::ChemTab::ChemTabThermodynamicFunction(const PetscReal *conserved, PetscReal *property, void *ctx) {
     PetscFunctionBeginUser;
@@ -364,7 +358,7 @@ ablate::eos::ThermodynamicFunction ablate::eos::ChemTab::GetThermodynamicFunctio
 ablate::eos::FieldFunction ablate::eos::ChemTab::GetFieldFunctionFunction(const std::string &field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2) const {
     if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field) {
         return referenceEOS->GetFieldFunctionFunction(field, property1, property2);
-    } else if (finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS == field) {
+    } else if (finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD == field) {
         // get the euler field because we need density
         auto eulerFunction = referenceEOS->GetFieldFunctionFunction(finiteVolume::CompressibleFlowFields::EULER_FIELD, property1, property2);
 
@@ -382,7 +376,7 @@ ablate::eos::FieldFunction ablate::eos::ChemTab::GetFieldFunctionFunction(const 
             }
         };
     } else {
-        throw std::invalid_argument("Unknown field type " + field + " for ablate::eos::PerfectGas.");
+        throw std::invalid_argument("Unknown field type " + field + " for ablate::eos::ChemTab.");
     }
 }
 

@@ -4,6 +4,7 @@
 #include <petsc.h>
 #include <string>
 #include <vector>
+#include <set>
 
 namespace ablate::domain {
 
@@ -32,7 +33,7 @@ struct Field {
     const enum FieldType type;
 
     // store any optional tags, there are strings that can be used to describe the field
-    const std::vector<std::string> tags;
+    const std::set<std::string> tags;
 
     static Field FromFieldDescription(const FieldDescription& fieldDescription, PetscInt id, PetscInt subId = PETSC_DEFAULT, PetscInt offset = PETSC_DEFAULT);
 

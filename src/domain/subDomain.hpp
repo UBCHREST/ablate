@@ -130,6 +130,14 @@ class SubDomain : public io::Serializable {
     [[nodiscard]] inline const std::vector<Field>& GetFields(FieldLocation type = FieldLocation::SOL) const { return fieldsByType.at(type); }
 
     /**
+     * returns all fields of a certain type with a specific tag.  This can be costly and should be used only for setup
+     * @param type
+     * @param tag
+     * @return
+     */
+    [[nodiscard]] std::vector<Field> GetFields(FieldLocation type, std::string_view tag) const;
+
+    /**
      * gets the dm corresponding to a field location (aux/sol)
      * @param field
      * @return

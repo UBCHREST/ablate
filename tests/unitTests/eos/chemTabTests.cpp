@@ -317,9 +317,9 @@ TEST_P(ChemTabFieldFunctionTestFixture, ShouldComputeField) {
     chemTab->ComputeProgressVariables(yi.data(), yi.size(), expectedEvValue.data(), expectedEvValue.size());
 
     // act
-    auto stateEulerFunction = chemTab->GetFieldFunctionFunction("euler", params.property1, params.property2);
+    auto stateEulerFunction = chemTab->GetFieldFunctionFunction(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD, params.property1, params.property2);
     stateEulerFunction(params.property1Value, params.property2Value, (PetscInt)params.velocity.size(), params.velocity.data(), yi.data(), actualEulerValue.data());
-    auto stateDensityEvFunction = chemTab->GetFieldFunctionFunction("density_progress", params.property1, params.property2);
+    auto stateDensityEvFunction = chemTab->GetFieldFunctionFunction(ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD, params.property1, params.property2);
     stateDensityEvFunction(params.property1Value, params.property2Value, (PetscInt)params.velocity.size(), params.velocity.data(), yi.data(), actualDensityEvValue.data());
 
     // assert

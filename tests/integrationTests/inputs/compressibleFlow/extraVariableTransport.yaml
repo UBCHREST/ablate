@@ -118,7 +118,7 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
         - name: c
           location: [ .25, .75 ]
       bufferSize: 10
-      variables:  [velocity, densityEV, ev, euler ] # these fields will be saved to a text file at the specified locations
+      variables:  [velocity, densityEV, EV, euler ] # these fields will be saved to a text file at the specified locations
 
     # define a probe using a rake, which uses a start/end location and a number of probes to compute initial probe locations
     - !ablate::monitors::Probes
@@ -128,4 +128,4 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
         end: [.25, 0.5]
         number: 3
       bufferSize: 10
-      variables: [ velocity, densityEV, ev, euler ]  # these fields will be saved to a text file at the specified locations
+      variables: [ velocity, densityEV, EV, euler ]  # these fields will be saved to a text file at the specified locations

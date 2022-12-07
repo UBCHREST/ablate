@@ -41,7 +41,7 @@ ablate::domain::Field ablate::domain::Field::FromFieldDescription(const ablate::
                                  .offset = offset,
                                  .location = fieldDescription.location,
                                  .type = fieldDescription.type,
-                                 .tags = fieldDescription.tags};
+                                 .tags = std::set<std::string>(fieldDescription.tags.begin(), fieldDescription.tags.end())};
 }
 
 ablate::domain::Field ablate::domain::Field::CreateSubField(PetscInt newSubId, PetscInt newOffset) const {
