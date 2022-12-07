@@ -71,19 +71,22 @@ void ablate::monitors::MixtureFractionMonitor::Save(PetscViewer viewer, PetscInt
     DMPlexGetHeightStratum(monitorSubDomain->GetDM(), 0, &cStart, &cEnd) >> checkError;
 
     // Get the cells we need to march over
-    IS monitorToSolutionIs;
-    DMPlexGetSubpointIS(monitorSubDomain->GetDM(), &monitorToSolutionIs) >> checkError;
-    const PetscInt* monitorToSolution = nullptr;
-    ISGetIndices(monitorToSolutionIs, &monitorToSolution) >> checkError;
-
     DMLabel solutionToMonitor;
     DMPlexGetSubpointMap(monitorSubDomain->GetDM(), &solutionToMonitor) >> checkError;
+
+    const PetscInt* monitorToSolution = nullptr;
+    IS monitorToSolutionIs = nullptr;
+    // if this is a submap, get the monitor to solution
+    if (solutionToMonitor) {
+        DMPlexGetSubpointIS(monitorSubDomain->GetDM(), &monitorToSolutionIs) >> checkError;
+        ISGetIndices(monitorToSolutionIs, &monitorToSolution) >> checkError;
+    }
 
     // save time to get densityFunctionContext
     const auto densityFunctionContext = densityFunction.context.get();
 
     for (PetscInt monitorPt = cStart; monitorPt < cEnd; ++monitorPt) {
-        PetscInt solutionPt = monitorToSolution[monitorPt];
+        PetscInt solutionPt = monitorToSolution ? monitorToSolution[monitorPt] : monitorPt;
 
         // Get the solutionField and monitorField
         const PetscScalar* solutionField = nullptr;
@@ -121,7 +124,9 @@ void ablate::monitors::MixtureFractionMonitor::Save(PetscViewer viewer, PetscInt
         VecRestoreArrayRead(sourceTermVec, &sourceTermArray) >> checkError;
         DMRestoreLocalVector(GetSolver()->GetSubDomain().GetDM(), &sourceTermVec) >> checkError;
     }
-    ISRestoreIndices(monitorToSolutionIs, &monitorToSolution) >> checkError;
+    if (monitorToSolutionIs) {
+        ISRestoreIndices(monitorToSolutionIs, &monitorToSolution) >> checkError;
+    }
     VecRestoreArrayRead(GetSolver()->GetSubDomain().GetSolutionVector(), &solutionFieldArray) >> checkError;
     VecRestoreArray(monitorSubDomain->GetSolutionVector(), &monitorFieldArray) >> checkError;
 
