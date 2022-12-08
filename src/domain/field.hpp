@@ -38,6 +38,11 @@ struct Field {
     static Field FromFieldDescription(const FieldDescription& fieldDescription, PetscInt id, PetscInt subId = PETSC_DEFAULT, PetscInt offset = PETSC_DEFAULT);
 
     Field CreateSubField(PetscInt subId, PetscInt offset) const;
+
+    // helper function to check if the field contains a certain tag
+    inline bool Tagged(std::string_view tag) const {
+        return std::any_of(tags.begin(), tags.end(), [tag](const auto& tagItem) { return tagItem == tag; });
+    }
 };
 
 std::istream& operator>>(std::istream& is, FieldLocation& v);

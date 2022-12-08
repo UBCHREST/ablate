@@ -68,7 +68,7 @@ class EVTransport : public FlowProcess {
 
    private:
     /**
-     * This computes the species transfer for species diffusion fluxy
+     * This computes the species transfer for species diffusion flux
      * f = "densityYi"
      * u = {"euler"}
      * a = {"yi", "T"}

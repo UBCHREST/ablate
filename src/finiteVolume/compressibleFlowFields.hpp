@@ -43,7 +43,7 @@ class CompressibleFlowFields : public domain::FieldDescriptor {
     inline const static std::string VELOCITY_FIELD = "velocity";
     inline const static std::string PRESSURE_FIELD = "pressure";
 
-   private:
+   protected:
     const std::shared_ptr<eos::EOS> eos;
     const std::vector<std::string> extraVariables;
     const std::shared_ptr<domain::Region> region;
