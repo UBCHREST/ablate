@@ -4,21 +4,16 @@
 
 ablate::finiteVolume::processes::EVTransport::EVTransport(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn,
                                                           std::shared_ptr<eos::transport::TransportModel> transportModelIn)
-    : fluxCalculator(std::move(fluxCalcIn)),
-      eos(std::move(eosIn)),
-      transportModel(std::move(transportModelIn)) {
-
-}
+    : fluxCalculator(std::move(fluxCalcIn)), eos(std::move(eosIn)), transportModel(std::move(transportModelIn)) {}
 
 void ablate::finiteVolume::processes::EVTransport::Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) {
+    const auto &evConservedFields = flow.GetSubDomain().GetFields(domain::FieldLocation::SOL, CompressibleFlowFields::EV_TAG);
 
-    const auto& evConservedFields = flow.GetSubDomain().GetFields(domain::FieldLocation::SOL, CompressibleFlowFields::EV_TAG);
-
-    for(auto& evConservedField : evConservedFields){
+    for (auto &evConservedField : evConservedFields) {
         // increase the size of the stored data
-        auto& advectionData =advectionDatas.emplace_back();
-        auto& numberEV =numberEVs.emplace_back();
-        auto& diffusionData =diffusionDatas.emplace_back();
+        auto &advectionData = advectionDatas.emplace_back();
+        auto &numberEV = numberEVs.emplace_back();
+        auto &diffusionData = diffusionDatas.emplace_back();
 
         // determine the number of components in the ev
         advectionData.numberEV = evConservedField.numberComponents;
@@ -54,13 +49,16 @@ void ablate::finiteVolume::processes::EVTransport::Setup(ablate::finiteVolume::F
 
             if (diffusionData.diffFunction.function) {
                 if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::YI_FIELD)) {
-                    flow.RegisterRHSFunction(
-                        DiffusionEVFlux, &diffusionData, evConservedField.name, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD}, {nonConserved, CompressibleFlowFields::YI_FIELD});
+                    flow.RegisterRHSFunction(DiffusionEVFlux,
+                                             &diffusionData,
+                                             evConservedField.name,
+                                             {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
+                                             {nonConserved, CompressibleFlowFields::YI_FIELD});
                 } else {
                     flow.RegisterRHSFunction(DiffusionEVFlux, &diffusionData, evConservedField.name, {CompressibleFlowFields::EULER_FIELD}, {nonConserved});
                 }
             }
-        }else{
+        } else {
             diffusionData.diffFunction.function = nullptr;
         }
 

@@ -52,8 +52,7 @@ class EVTransport : public FlowProcess {
     std::vector<PetscInt> numberEVs;
 
    public:
-    explicit EVTransport(std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {},
-                         std::shared_ptr<eos::transport::TransportModel> transportModel = {});
+    explicit EVTransport(std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {}, std::shared_ptr<eos::transport::TransportModel> transportModel = {});
 
     /**
      * public function to link this process with the flow

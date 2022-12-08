@@ -287,8 +287,10 @@ std::shared_ptr<ablate::eos::ChemistryModel::SourceCalculator> ablate::eos::Chem
         throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD Field");
     }
 
-    return std::make_shared<ChemTabSourceCalculator>(
-        eulerField->offset + ablate::finiteVolume::CompressibleFlowFields::RHO, eulerField->offset + ablate::finiteVolume::CompressibleFlowFields::RHOE, densityProgressField->offset, shared_from_this());
+    return std::make_shared<ChemTabSourceCalculator>(eulerField->offset + ablate::finiteVolume::CompressibleFlowFields::RHO,
+                                                     eulerField->offset + ablate::finiteVolume::CompressibleFlowFields::RHOE,
+                                                     densityProgressField->offset,
+                                                     shared_from_this());
 }
 PetscErrorCode ablate::eos::ChemTab::ChemTabThermodynamicFunction(const PetscReal *conserved, PetscReal *property, void *ctx) {
     PetscFunctionBeginUser;
