@@ -183,7 +183,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectThermalProperties) {
 
         // create fake fields for testings
         auto fields = {ablate::domain::Field{.name = ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD, .numberComponents = 3, .offset = 1},
-                       ablate::domain::Field{.name = ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD,
+                       ablate::domain::Field{.name = ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD,
                                              .numberComponents = (PetscInt)inputProgressVariablesNames.size(),
                                              .components = inputProgressVariablesNames,
                                              .offset = (PetscInt)eulerConserved.size()}};

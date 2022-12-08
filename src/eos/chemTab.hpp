@@ -72,7 +72,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
         std::size_t numberSpecies;
         std::size_t numberProgressVariables;
         std::size_t densityOffset;
-        std::size_t zMixOffset;
+        std::size_t progressOffset;
 
         // store a scratch variable to compute yi
         std::vector<PetscReal> yiScratch;
@@ -92,7 +92,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
         std::size_t numberSpecies;
         std::size_t numberProgressVariables;
         std::size_t densityOffset;
-        std::size_t zMixOffset;
+        std::size_t progressOffset;
 
         // store a scratch variable to compute yi
         std::vector<PetscReal> yiScratch;
