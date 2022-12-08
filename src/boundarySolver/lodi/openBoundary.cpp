@@ -90,8 +90,11 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
         for (PetscInt sp = 0; sp < boundary->nSpecEqs; sp++) {
             stencilYi[sp][s] = stencilValues[s][uOff[boundary->speciesId] + sp] / stencilDensity[s];
         }
-        for (PetscInt ev = 0; ev < boundary->nEvEqs; ev++) {
-            stencilEv[ev][s] = stencilValues[s][uOff[boundary->evId] + ev] / stencilDensity[s];
+        int ne = 0;
+        for (std::size_t ev = 0; ev < boundary->evIds.size(); ++ev) {
+            for (PetscInt ec = 0; ec < boundary->nEvComps[ev]; ++ec) {
+                stencilEv[ne++][s] = stencilValues[s][uOff[boundary->evIds[ev]] + ec] / stencilDensity[s];
+            }
         }
     }
 
@@ -112,8 +115,13 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
         boundaryYi[i] = boundaryDensityYi[i] / boundaryDensity;
     }
     std::vector<PetscReal> boundaryEv(boundary->nEvEqs);
-    for (PetscInt i = 0; i < boundary->nEvEqs; i++) {
-        boundaryEv[i] = boundaryValues[uOff[boundary->evId] + i] / boundaryDensity;
+    int i = 0;
+    for (std::size_t ev = 0; ev < boundary->evIds.size(); ++ev) {
+        const PetscReal *rhoEV = boundaryValues + uOff[boundary->evIds[ev]];
+        for (PetscInt ec = 0; ec < boundary->nEvComps[ev]; ++ec) {
+            boundaryEv[i] = rhoEV[ec] / boundaryDensity;
+            i++;
+        }
     }
 
     // Compute the cp, cv from the eos
@@ -235,9 +243,9 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
                        boundarySensibleEnthalpy,
                        velNormPrim,
                        speedOfSoundPrim,
-                       boundaryDensityYi /* PetscReal* Yi*/,
-                       boundary->nEvEqs > 0 ? boundaryValues + uOff[boundary->evId] : nullptr /* PetscReal* EV*/,
-                       &scriptL[0],
+                       boundaryValues,
+                       uOff,
+                       scriptL.data(),
                        transformationMatrix,
                        source);
 

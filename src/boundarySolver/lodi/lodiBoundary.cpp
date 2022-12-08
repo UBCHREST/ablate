@@ -6,7 +6,7 @@
 #include "utilities/mathUtilities.hpp"
 
 ablate::boundarySolver::lodi::LODIBoundary::LODIBoundary(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling)
-    : pressureGradientScaling(std::move(pressureGradientScaling)), dims(0), nEqs(0), nSpecEqs(0), nEvEqs(0), eulerId(-1), speciesId(-1), evId(-1), eos(std::move(eos)) {}
+    : pressureGradientScaling(std::move(pressureGradientScaling)), dims(0), nEqs(0), nSpecEqs(0), nEvEqs(0), eulerId(-1), speciesId(-1), eos(std::move(eos)) {}
 
 void ablate::boundarySolver::lodi::LODIBoundary::GetVelAndCPrims(PetscReal velNorm, PetscReal speedOfSound, PetscReal cp, PetscReal cv, PetscReal &velNormPrim, PetscReal &speedOfSoundPrim) {
     PetscReal alpha2 = 1.0;
@@ -47,7 +47,7 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetEigenValues(PetscReal veln, 
 }
 
 void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(const PetscInt sOff[], const PetscReal *vel, PetscReal rho, PetscReal T, PetscReal Cp, PetscReal Cv, PetscReal C, PetscReal Enth,
-                                                          PetscReal velnprm, PetscReal Cprm, const PetscReal *rhoYi, const PetscReal *rhoEV, const PetscReal *sL,
+                                                          PetscReal velnprm, PetscReal Cprm, const PetscReal *conserved, const PetscInt uOff[], const PetscReal *sL,
                                                           const PetscReal transformationMatrix[3][3], PetscReal *mdFdn) const {
     std::vector<PetscScalar> d(nEqs);
     PetscReal alpha2 = 1.0;
@@ -80,11 +80,18 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(const PetscInt sOff[],
     }
     KE = 0.5e+0 * KE;
     mdFdn[sOff[eulerId] + RHOE] = -(d[0] * (KE + Enth - Cp * T) + d[1] / (Cp / Cv - 1.e+0 + 1.0E-30) + rho * dvelterm);
+    const PetscReal *rhoYi = conserved + uOff[speciesId];
     for (int ns = 0; ns < nSpecEqs; ns++) {
         mdFdn[sOff[speciesId] + ns] = -(rhoYi[ns] / rho * d[0] + rho * d[2 + dims + ns]);  // species
     }
-    for (int ne = 0; ne < nEvEqs; ne++) {
-        mdFdn[sOff[evId] + ne] = -(rhoEV[ne] / rho * d[0] + rho * d[2 + dims + nSpecEqs + ne]);  // extra
+
+    int ne = 0;
+    for (std::size_t ev = 0; ev < evIds.size(); ++ev) {
+        const PetscReal *rhoEV = conserved + uOff[evIds[ev]];
+        for (PetscInt ec = 0; ec < nEvComps[ev]; ++ec) {
+            mdFdn[sOff[evIds[ev]] + ec] = -(rhoEV[ec] / rho * d[0] + rho * d[2 + dims + nSpecEqs + ne]);  // extra
+            ne++;
+        }
     }
 
     /*
@@ -140,40 +147,53 @@ void ablate::boundarySolver::lodi::LODIBoundary::Setup(ablate::boundarySolver::B
 
         bSolver.RegisterPostEvaluate(ablate::finiteVolume::processes::SpeciesTransport::NormalizeSpecies);
     }
-    if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD)) {
-        nEvEqs = bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD).numberComponents;
-        nEqs += nEvEqs;
 
-        // Register an update for the yi field
-        bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EVTransport::UpdateEVField,
-                                       &nEvEqs,
-                                       std::vector<std::string>{finiteVolume::CompressibleFlowFields::EV_FIELD},
-                                       {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD});
+    for (const auto &evField : bSolver.GetSubDomain().GetFields(domain::FieldLocation::SOL, finiteVolume::CompressibleFlowFields::EV_TAG)) {
+        auto &nEvComp = nEvComps.emplace_back(evField.numberComponents);
+        nEqs += nEvComp;
+
+        // Register an update for the ev field
+        auto evNonConserved = evField.name.substr(finiteVolume::CompressibleFlowFields::CONSERVED.length());
+        bSolver.RegisterAuxFieldUpdate(
+            ablate::finiteVolume::processes::EVTransport::UpdateEVField, &nEvComp, std::vector<std::string>{evNonConserved}, {finiteVolume::CompressibleFlowFields::EULER_FIELD, evField.name});
     }
 
     // Call Initialize to setup the other needed vars
-    Setup(dims, nEqs, nSpecEqs, nEvEqs, bSolver.GetSubDomain().GetFields());
+    Setup(dims, nEqs, nSpecEqs, nEvComps, bSolver.GetSubDomain().GetFields());
 }
 
-void ablate::boundarySolver::lodi::LODIBoundary::Setup(PetscInt dimsIn, PetscInt nEqsIn, PetscInt nSpecEqsIn, PetscInt nEvEqsIn, const std::vector<domain::Field> &fields) {
+void ablate::boundarySolver::lodi::LODIBoundary::Setup(PetscInt dimsIn, PetscInt nEqsIn, PetscInt nSpecEqsIn, std::vector<PetscInt> nEvCompsIn, const std::vector<domain::Field> &fields) {
     dims = dimsIn;
     nEqs = nEqsIn;
     nSpecEqs = nSpecEqsIn;
-    nEvEqs = nEvEqsIn;
+    if (nEvComps.empty()) {
+        nEvComps = nEvCompsIn;
+    }
 
-    // compute the offsets depending on if there are any ev, species
-    PetscInt offset = 0;
-    eulerId = offset++;
+    // compute the idOffsets depending on if there are any ev, species
+    PetscInt idOffset = 0;
+    eulerId = idOffset++;
     fieldNames.push_back(finiteVolume::CompressibleFlowFields::EULER_FIELD);
 
     if (nSpecEqs > 0) {
-        speciesId = offset++;
+        speciesId = idOffset++;
         fieldNames.push_back(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD);
     }
 
-    if (nEvEqsIn > 0) {
-        evId = offset++;
-        fieldNames.push_back(finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD);
+    // March over each field, assume the ev order is the same as specified in the field
+    nEvEqs = 0;
+    std::size_t evCount = 0;
+    for (const auto &field : fields) {
+        if (field.Tagged(finiteVolume::CompressibleFlowFields::EV_TAG)) {
+            evIds.push_back(idOffset++);
+            fieldNames.push_back(field.name);
+            nEvEqs += field.numberComponents;
+
+            // sanity check
+            if (nEvComps[evCount++] != field.numberComponents) {
+                throw std::invalid_argument("Error setting up LODIBoundary.  The EV component does not match.");
+            }
+        }
     }
 
     // set decode state functions
