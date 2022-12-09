@@ -20,7 +20,7 @@ namespace processes {
 class Process;
 }
 
-class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction, public io::Serializable, public solver::BoundaryFunction {
+class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction, public io::Serializable, public solver::BoundaryFunction, private utilities::Loggable<FiniteVolumeSolver> {
    public:
     using PreRHSFunctionDefinition = PetscErrorCode (*)(const FiniteVolumeSolver&, TS ts, PetscReal time, bool initialStage, Vec locX, void* ctx);
     using RHSArbitraryFunction = PetscErrorCode (*)(const FiniteVolumeSolver&, DM dm, PetscReal time, Vec locXVec, Vec locFVec, void* ctx);

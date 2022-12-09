@@ -13,6 +13,7 @@
 #include "io/serializable.hpp"
 #include "mathFunctions/fieldFunction.hpp"
 #include "region.hpp"
+#include "utilities/loggable.hpp"
 
 namespace ablate::solver {
 // forward declare the Solver
@@ -23,7 +24,7 @@ namespace ablate::domain {
 // forward declare the subDomain
 class SubDomain;
 
-class Domain {
+class Domain : private utilities::Loggable<Domain> {
    protected:
     Domain(DM dm, std::string name, std::vector<std::shared_ptr<FieldDescriptor>>, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers,
            const std::shared_ptr<parameters::Parameters>& options = {}, bool setFromOptions = true);

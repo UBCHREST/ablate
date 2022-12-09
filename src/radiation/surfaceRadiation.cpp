@@ -14,6 +14,7 @@ ablate::radiation::SurfaceRadiation::~SurfaceRadiation() {
 }
 
 void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) { /** Declare some information associated with the field declarations */
+    StartEvent("SurfaceRadiation::Initialize");
     PetscReal* coord;
     PetscInt* index;                    //!< Pointer to the coordinate field information
     struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
@@ -56,6 +57,7 @@ void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRa
     DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
     DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
+    EndEvent();
     ablate::radiation::Radiation::Initialize(cellRange, subDomain);
 }
 

@@ -10,7 +10,7 @@ namespace ablate::boundarySolver {
 // forward declare the boundaryProcess
 class BoundaryProcess;
 
-class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
+class BoundarySolver : public solver::CellSolver, public solver::RHSFunction, private utilities::Loggable<BoundarySolver> {
    public:
     /**
      * Boundary information.

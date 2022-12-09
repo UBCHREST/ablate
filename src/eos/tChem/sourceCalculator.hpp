@@ -15,7 +15,7 @@ namespace ablate::eos::tChem {
 /**
  * public class to to compute the source for each specified node
  */
-class SourceCalculator : public ChemistryModel::SourceCalculator {
+class SourceCalculator : public ChemistryModel::SourceCalculator, private utilities::Loggable<SourceCalculator> {
    public:
     //! hold a struct that can be used for chemistry constraints
     struct ChemistryConstraints {

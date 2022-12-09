@@ -106,6 +106,7 @@ ablate::eos::tChem::SourceCalculator::SourceCalculator(const std::vector<domain:
 }
 
 void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::solver::Range& cellRange, PetscReal time, PetscReal dt, Vec globFlowVec) {
+    StartEvent("tChem::SourceCalculator::ComputeSource");
     // Get the valid cell range over this region
     auto numberCells = cellRange.end - cellRange.start;
 
@@ -307,8 +308,10 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::solver::R
 
     // copy the updated state back to host
     Kokkos::deep_copy(sourceTermsHost, sourceTermsDevice);
+    EndEvent();
 }
 void ablate::eos::tChem::SourceCalculator::AddSource(const ablate::solver::Range& cellRange, Vec, Vec locFVec) {
+    StartEvent("tChem::SourceCalculator::AddSource");
     // get access to the fArray
     PetscScalar* fArray;
     VecGetArray(locFVec, &fArray) >> checkError;
@@ -341,4 +344,5 @@ void ablate::eos::tChem::SourceCalculator::AddSource(const ablate::solver::Range
 
     // cleanup
     VecRestoreArray(locFVec, &fArray) >> checkError;
+    EndEvent();
 }
