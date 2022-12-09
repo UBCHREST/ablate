@@ -7,7 +7,7 @@
 
 ablate::boundarySolver::BoundarySolver::BoundarySolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary,
                                                        std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses, std::shared_ptr<parameters::Parameters> options, bool mergeFaces)
-    : CellSolver(solverId, std::move(region), std::move(options)), fieldBoundary(std::move(fieldBoundary)), boundaryProcesses(std::move(boundaryProcesses)), mergeFaces(mergeFaces) {}
+    : CellSolver(std::move(solverId), std::move(region), std::move(options)), fieldBoundary(std::move(fieldBoundary)), boundaryProcesses(std::move(boundaryProcesses)), mergeFaces(mergeFaces) {}
 
 ablate::boundarySolver::BoundarySolver::~BoundarySolver() {
     if (gradientCalculator) {
