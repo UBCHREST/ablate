@@ -158,9 +158,11 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
     if (log) {
         log->Printf("Particles Setup\n");
     }
+    EndEvent();
 }
 
 void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) {
+    StartEvent("Radiation::Initialize");
     DM faceDM;
     const PetscScalar* faceGeomArray;
 
@@ -494,6 +496,7 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
 }
 
 void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Field temperatureField, Vec auxVec) {
+    StartEvent("Radiation::EvaluateGains");
     /** Get the array of the solution vector. */
     const PetscScalar* solArray;
     DM solDm;
@@ -724,6 +727,7 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     VecRestoreArrayRead(solVec, &solArray);
     VecRestoreArrayRead(auxVec, &auxArray);
     VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+    EndEvent();
 }
 
 #include "registrar.hpp"
