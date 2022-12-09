@@ -9,7 +9,7 @@
 ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                              std::vector<std::shared_ptr<processes::Process>> processes,
                                                              std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, bool computePhysicsTimeStep)
-    : CellSolver(solverId, std::move(region), std::move(options)),
+    : CellSolver(std::move(solverId), std::move(region), std::move(options)),
       computePhysicsTimeStep(computePhysicsTimeStep),
       processes(std::move(processes)),
       boundaryConditions(std::move(boundaryConditions)),
