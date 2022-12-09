@@ -13,8 +13,8 @@
 
 namespace ablate::radiation {
 
-class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver provides cell based functionality, right hand side function compatibility with
-                                                           //!< finite element/ volume, loggable allows for the timing and tracking of events
+class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver provides cell based functionality, right hand side function compatibility with
+                                                              //!< finite element/ volume, loggable allows for the timing and tracking of events
    public:
     /**
      *

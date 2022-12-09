@@ -149,10 +149,12 @@ void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_
         solver->Register(GetSubDomain(solver->GetRegion()));
     }
 
+    StartEvent("Domain::Setup");
     // Setup each of the fields
     for (auto& solver : solvers) {
         solver->Setup();
     }
+    EndEvent();
 
     // Create the global structures
     CreateStructures();
@@ -174,9 +176,11 @@ void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_
     }
 
     // Initialize each solver
+    StartEvent("Domain::Initialize");
     for (auto& solver : solvers) {
         solver->Initialize();
     }
+    EndEvent();
 
     // Set the exact solutions if the field in lives in each subDomain
     for (auto& subDomain : subDomains) {

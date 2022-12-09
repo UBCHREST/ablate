@@ -44,7 +44,7 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
      * Obtain the geometric information about the cells in the DM
      * */
 
-    if (log) StartEvent("Radiation Initialization");
+    StartEvent("Radiation::Setup");
     if (log) log->Printf("Starting Initialize\n");
 
     DMPlexGetMinRadius(subDomain.GetDM(), &minCellRadius) >> checkError;
@@ -159,9 +159,11 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
     if (log) {
         log->Printf("Particles Setup\n");
     }
+    EndEvent();
 }
 
 void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) {
+    StartEvent("Radiation::Initialize");
     DM faceDM;
     const PetscScalar* faceGeomArray;
 
@@ -268,12 +270,11 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     /** Cleanup */
     DMDestroy(&radsearch) >> checkError;
     VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
-
-    if (log) EndEvent();
+    EndEvent();
 }
 
 void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field temperatureField, Vec auxVec) {  //!< Pass in const auto for temperature and Vec for aux
-    if (log) StartEvent("Radiation Solve");
+    StartEvent("Radiation::Solve");
 
     /** Get the array of the solution vector. */
     const PetscScalar* solArray;
@@ -338,9 +339,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
     VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
 
-    if (log) {
-        EndEvent();
-    }
+    EndEvent();
 }
 
 PetscReal ablate::radiation::Radiation::FlameIntensity(double epsilon, double temperature) { /** Gets the flame intensity based on temperature and emissivity (black body intensity) */
@@ -498,6 +497,7 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
 }
 
 void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Field temperatureField, Vec auxVec) {
+    StartEvent("Radiation::EvaluateGains");
     /** Get the array of the solution vector. */
     const PetscScalar* solArray;
     DM solDm;
@@ -738,6 +738,7 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     VecRestoreArrayRead(solVec, &solArray);
     VecRestoreArrayRead(auxVec, &auxArray);
     VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+    EndEvent();
 }
 
 #include "registrar.hpp"

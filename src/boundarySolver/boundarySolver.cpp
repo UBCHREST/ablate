@@ -7,7 +7,7 @@
 
 ablate::boundarySolver::BoundarySolver::BoundarySolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary,
                                                        std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses, std::shared_ptr<parameters::Parameters> options, bool mergeFaces)
-    : CellSolver(std::move(solverId), std::move(region), std::move(options)), fieldBoundary(std::move(fieldBoundary)), boundaryProcesses(std::move(boundaryProcesses)), mergeFaces(mergeFaces) {}
+    : CellSolver(solverId, std::move(region), std::move(options)), fieldBoundary(std::move(fieldBoundary)), boundaryProcesses(std::move(boundaryProcesses)), mergeFaces(mergeFaces) {}
 
 ablate::boundarySolver::BoundarySolver::~BoundarySolver() {
     if (gradientCalculator) {
@@ -369,7 +369,9 @@ void ablate::boundarySolver::BoundarySolver::RegisterPreRHSFunction(BoundaryPreR
 
 PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) {
     PetscFunctionBeginUser;
+    StartEvent("BoundarySolver::ComputeRHSFunction");
     PetscCall(ComputeRHSFunction(time, locXVec, locFVec, boundarySourceFunctions));
+    EndEvent();
     PetscFunctionReturn(0);
 }
 
@@ -817,6 +819,7 @@ void ablate::boundarySolver::BoundarySolver::UpdateVariablesPreStep(TS, ablate::
 
 PetscErrorCode ablate::boundarySolver::BoundarySolver::PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) {
     PetscFunctionBeginUser;
+    StartEvent("BoundarySolver::PreRHSFunction");
     try {
         // update any aux fields, including ghost cells
         UpdateAuxFields(time, locX, subDomain->GetAuxVector());
@@ -828,6 +831,7 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::PreRHSFunction(TS ts, Pet
     for (const auto& rhsFunction : preRhsFunctions) {
         PetscCall(rhsFunction.first(*this, ts, time, initialStage, locX, rhsFunction.second));
     }
+    EndEvent();
     PetscFunctionReturn(0);
 }
 

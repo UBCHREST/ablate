@@ -9,7 +9,7 @@
 ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                              std::vector<std::shared_ptr<processes::Process>> processes,
                                                              std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, bool computePhysicsTimeStep)
-    : CellSolver(std::move(solverId), std::move(region), std::move(options)),
+    : CellSolver(solverId, std::move(region), std::move(options)),
       computePhysicsTimeStep(computePhysicsTimeStep),
       processes(std::move(processes)),
       boundaryConditions(std::move(boundaryConditions)),
@@ -128,6 +128,7 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
     GetFaceRange(faceRange);
     GetCellRange(cellRange);
     try {
+        StartEvent("FiniteVolumeSolver::ComputeRHSFunction::discontinuousFluxFunction");
         if (!discontinuousFluxFunctionDescriptions.empty()) {
             if (cellInterpolant == nullptr) {
                 cellInterpolant = std::make_unique<CellInterpolant>(subDomain, GetRegion(), faceGeomVec, cellGeomVec);
@@ -135,11 +136,13 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
 
             cellInterpolant->ComputeRHS(time, locXVec, subDomain->GetAuxVector(), locFVec, GetRegion(), discontinuousFluxFunctionDescriptions, faceRange, cellRange, cellGeomVec, faceGeomVec);
         }
+        EndEvent();
     } catch (std::exception& exception) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in CellInterpolant discontinuousFluxFunction: %s", exception.what());
     }
 
     try {
+        StartEvent("FiniteVolumeSolver::ComputeRHSFunction::pointFunction");
         if (!pointFunctionDescriptions.empty()) {
             if (cellInterpolant == nullptr) {
                 cellInterpolant = std::make_unique<CellInterpolant>(subDomain, GetRegion(), faceGeomVec, cellGeomVec);
@@ -147,11 +150,13 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
 
             cellInterpolant->ComputeRHS(time, locXVec, subDomain->GetAuxVector(), locFVec, GetRegion(), pointFunctionDescriptions, cellRange, cellGeomVec);
         }
+        EndEvent();
     } catch (std::exception& exception) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in CellInterpolant pointFunctionDescriptions: %s", exception.what());
     }
 
     try {
+        StartEvent("FiniteVolumeSolver::ComputeRHSFunction::continuousFluxFunctionDescriptions");
         if (!continuousFluxFunctionDescriptions.empty()) {
             if (faceInterpolant == nullptr) {
                 faceInterpolant = std::make_unique<FaceInterpolant>(subDomain, GetRegion(), faceGeomVec, cellGeomVec);
@@ -159,6 +164,7 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
 
             faceInterpolant->ComputeRHS(time, locXVec, subDomain->GetAuxVector(), locFVec, GetRegion(), continuousFluxFunctionDescriptions, faceRange, cellGeomVec, faceGeomVec);
         }
+        EndEvent();
     } catch (std::exception& exception) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in FaceInterpolant continuousFluxFunctionDescriptions: %s", exception.what());
     }
@@ -167,9 +173,11 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
     RestoreRange(cellRange);
 
     // iterate over any arbitrary RHS functions
+    StartEvent("FiniteVolumeSolver::ComputeRHSFunction::rhsArbitraryFunctions");
     for (const auto& rhsFunction : rhsArbitraryFunctions) {
         PetscCall(rhsFunction.first(*this, subDomain->GetDM(), time, locXVec, locFVec, rhsFunction.second));
     }
+    EndEvent();
 
     PetscFunctionReturn(0);
 }
@@ -351,6 +359,7 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeBoundary(PetscRe
 
 PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) {
     PetscFunctionBeginUser;
+    StartEvent("FiniteVolumeSolver::PreRHSFunction");
     try {
         // update any aux fields, including ghost cells
         UpdateAuxFields(time, locX, subDomain->GetAuxVector());
@@ -361,6 +370,7 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::PreRHSFunction(TS ts, P
     for (const auto& rhsFunction : preRhsFunctions) {
         PetscCall(rhsFunction.first(*this, ts, time, initialStage, locX, rhsFunction.second));
     }
+    EndEvent();
     PetscFunctionReturn(0);
 }
 

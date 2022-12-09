@@ -57,6 +57,7 @@ ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<abl
 ablate::solver::TimeStepper::~TimeStepper() { TSDestroy(&ts) >> checkError; }
 
 void ablate::solver::TimeStepper::Initialize() {
+    StartEvent((this->name + "::Initialize").c_str());
     if (!initialized) {
         domain->InitializeSubDomains(solvers, initializations, exactSolutions);
         TSSetDM(ts, domain->GetDM()) >> checkError;
@@ -118,6 +119,7 @@ void ablate::solver::TimeStepper::Initialize() {
         TSSetFromOptions(ts) >> checkError;
         TSSetSolution(ts, solutionVec) >> checkError;
     }
+    EndEvent();
 }
 void ablate::solver::TimeStepper::Solve() {
     if (solvers.empty()) {
@@ -168,7 +170,7 @@ void ablate::solver::TimeStepper::Solve() {
     VecGetSize(solutionVec, &dof) >> checkError;
 
     // create a log event
-    auto logEvent = RegisterEvent(this->name.c_str());
+    auto logEvent = RegisterEvent((this->name + "::Solve").c_str());
     PetscLogEventSetDof(logEvent, 0, dof) >> checkError;
     PetscLogEventBegin(logEvent, 0, 0, 0, 0);
     TSSolve(ts, solutionVec) >> checkError;
@@ -320,6 +322,7 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunction(TS ts, Pets
     PetscFunctionBeginUser;
     auto timeStepper = (ablate::solver::TimeStepper*)timeStepperCtx;
 
+    timeStepper->StartEvent("SolverComputeRHSFunction::DMGlobalToLocal");
     DM dm = timeStepper->domain->GetDM();
     Vec locX, locF;
     DMGetLocalVector(dm, &locX);
@@ -329,35 +332,47 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunction(TS ts, Pets
     // Fill the ghost nodes (and all others).  Note the boundary/local field is swapped from the petsc version
     DMGlobalToLocalBegin(dm, X, INSERT_VALUES, locX);
     DMGlobalToLocalEnd(dm, X, INSERT_VALUES, locX);
+    timeStepper->EndEvent();
 
     // Update the boundary conditions
+    timeStepper->StartEvent("SolverComputeRHSFunction::SolverComputeBoundaryFunctionLocal");
     PetscCall(SolverComputeBoundaryFunctionLocal(dm, time, locX, nullptr, timeStepperCtx));
+    timeStepper->EndEvent();
 
     // Call each of the provided pre RHS functions
+    timeStepper->StartEvent("SolverComputeRHSFunction::PreRHSFunction");
     for (auto& solver : timeStepper->rhsFunctionSolvers) {
         PetscCall(solver->PreRHSFunction(ts, time, timeStepper->runInitialStep, locX));
     }
+    timeStepper->EndEvent();
+
     // Reset the timeStepper->runInitialStep
     timeStepper->runInitialStep = false;
 
     // Zero out the temp locF array
     VecZeroEntries(locF);
-
     CHKMEMQ;
+
     // Call each of the provided RHS functions
+    timeStepper->StartEvent("SolverComputeRHSFunction::ComputeRHSFunction");
     for (auto& solver : timeStepper->rhsFunctionSolvers) {
         PetscCall(solver->ComputeRHSFunction(time, locX, locF));
     }
     CHKMEMQ;
+    timeStepper->EndEvent();
+
+    timeStepper->StartEvent("SolverComputeRHSFunction::DMLocalToGlobalEnd");
     VecZeroEntries(F);
     DMLocalToGlobalBegin(dm, locF, ADD_VALUES, F);
     DMLocalToGlobalEnd(dm, locF, ADD_VALUES, F);
-
     DMRestoreLocalVector(dm, &locX);
     DMRestoreLocalVector(dm, &locF);
+    timeStepper->EndEvent();
 
     if (timeStepper->verboseSourceCheck) {
+        timeStepper->StartEvent("SolverComputeRHSFunction::CheckFieldValues");
         timeStepper->domain->CheckFieldValues(F);
+        timeStepper->EndEvent();
     }
 
     PetscFunctionReturn(0);
