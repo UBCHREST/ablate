@@ -711,4 +711,7 @@ INSTANTIATE_TEST_SUITE_P(
                                 -43851.86586848472,
                                 -87703.73173696944,
                                 -43851.86586848472}}),
-    [](const testing::TestParamInfo<IsothermalWallTestParameters>& info) { return std::to_string(info.index); });
+    [](const testing::TestParamInfo<IsothermalWallTestParameters>& info) {
+        return "test" + std::to_string(info.index) + "d" + std::to_string(info.param.dim) + "e" + std::to_string(info.param.nEqs) + "s" + std::to_string(info.param.nSpecEqs) + "ev" +
+               ablate::utilities::VectorUtilities::Concatenate(info.param.nEvComps, "ev");
+    });
