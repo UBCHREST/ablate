@@ -138,10 +138,16 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
     ~ChemTab() override;
 
     /**
-     * As far as other parts of the code is concerned the chemTabEos does not expect species
+     * As far as other parts of the code is concerned the chemTabEos does not expect species to be transported
      * @return
      */
-    [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { return ablate::utilities::VectorUtilities::Empty<std::string>; }
+    [[nodiscard]] const std::vector<std::string>& GetSpeciesVariables() const override { return ablate::utilities::VectorUtilities::Empty<std::string>; }
+
+    /**
+     * List of species used for the field function initialization.
+     * @return
+     */
+    [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { return speciesNames; }
 
     /**
      * return the reference species used for the underlying eos to generate the progress variables

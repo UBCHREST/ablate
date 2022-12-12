@@ -127,7 +127,7 @@ class TChem : public ChemistryModel, public std::enable_shared_from_this<ablate:
      * species model functions
      * @return
      */
-    [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { return species; }
+    [[nodiscard]] const std::vector<std::string>& GetSpeciesVariables() const override { return species; }
 
     /**
      * Returns a vector of all extra variables required to utilize the equation of state

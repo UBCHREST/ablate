@@ -131,7 +131,7 @@ class StiffenedGas : public EOS {
      * returns the species supported by this EOS
      * @return
      */
-    const std::vector<std::string>& GetSpecies() const override { return species; }
+    const std::vector<std::string>& GetSpeciesVariables() const override { return species; }
 
     /**
      * Returns a vector of all extra variables required to utilize the equation of state

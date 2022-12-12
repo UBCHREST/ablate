@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "utilities/stringUtilities.hpp"
 
 #ifdef WITH_TENSORFLOW
 
@@ -78,6 +79,17 @@ ablate::eos::ChemTab::ChemTab(std::filesystem::path path) : ChemistryModel("abla
     // create a reference equation of state given the mechanism provided in the metedata file
     const std::string mechanismPath = path / metadata["mechanism"].as<std::string>();
     referenceEOS = std::make_shared<ablate::eos::TChem>(mechanismPath);
+
+    // make sure that the species list is the same
+    auto &referenceEOSSpecies = referenceEOS->GetSpecies();
+    if (referenceEOSSpecies.size() != speciesNames.size()) {
+        throw std::invalid_argument("The ReferenceEOS species and chemTab species are expected to be the same.");
+    }
+    for (std::size_t s = 0; s < speciesNames.size(); s++) {
+        if (!ablate::utilities::StringUtilities::EndsWith(speciesNames[s], referenceEOSSpecies[s])) {
+            throw std::invalid_argument("The ReferenceEOS species and chemTab species are expected to be the same.");
+        }
+    }
 }
 
 ablate::eos::ChemTab::~ChemTab() {

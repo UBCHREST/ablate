@@ -47,6 +47,22 @@ class StringUtilities {
      */
     static inline bool Contains(const std::string_view& str, const std::string_view& subTtr) { return str.find(subTtr) != str.npos; }
 
+    /**
+     * Check if the string ends with a suffix
+     * @param str
+     * @param suffix
+     * @return
+     */
+    static bool EndsWith(std::string_view str, std::string_view suffix) { return str.size() >= suffix.size() && 0 == str.compare(str.size() - suffix.size(), suffix.size(), suffix); }
+
+    /**
+     * Check if a string starts with a prefix
+     * @param str
+     * @param prefix
+     * @return
+     */
+    static bool StartsWith(std::string_view str, std::string_view prefix) { return str.size() >= prefix.size() && 0 == str.compare(0, prefix.size(), prefix); }
+
    private:
     StringUtilities() = delete;
 };

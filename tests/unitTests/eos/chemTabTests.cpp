@@ -1,12 +1,10 @@
 #include <yaml-cpp/yaml.h>
 #include "PetscTestFixture.hpp"
-#include "domain/boxMesh.hpp"
 #include "eos/chemTab.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
 #include "localPath.hpp"
 #include "mockFactory.hpp"
-#include "solver/dynamicRange.hpp"
 
 #ifndef WITH_TENSORFLOW
 #define ONLY_WITH_TENSORFLOW_CHECK                                       \
@@ -79,14 +77,17 @@ TEST_P(ChemTabModelTestFixture, ShouldReturnCorrectSpeciesAndVariables) {
         ablate::eos::ChemTab chemTabModel(GetParam().modelPath);
 
         // act
+        auto actualSpeciesVariables = chemTabModel.GetSpeciesVariables();
         auto actualSpecies = chemTabModel.GetSpecies();
         auto actualProgressVariables = chemTabModel.GetProgressVariables();
         auto referenceSpecies = chemTabModel.GetReferenceSpecies();
 
         // assert
-        EXPECT_TRUE(actualSpecies.empty()) << "should report no transport species" << testTarget["testName"].as<std::string>();
+        EXPECT_TRUE(actualSpeciesVariables.empty()) << "should report no transport species" << testTarget["testName"].as<std::string>();
         EXPECT_EQ(testTarget["species_names"].as<std::vector<std::string>>(), referenceSpecies) << "should compute correct species name for model " << testTarget["testName"].as<std::string>();
         EXPECT_EQ(testTarget["cpv_names"].as<std::vector<std::string>>(), actualProgressVariables) << "should compute correct cpv names for model " << testTarget["testName"].as<std::string>();
+        EXPECT_EQ(testTarget["species_names"].as<std::vector<std::string>>().size(), actualSpecies.size())
+            << "should compute correct species name for model " << testTarget["testName"].as<std::string>();
     }
 }
 

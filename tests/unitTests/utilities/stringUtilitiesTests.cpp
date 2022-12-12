@@ -51,3 +51,39 @@ TEST_P(StringToLowerTestFixture, ShouldConvertCopyToLowerCase) {
 
 INSTANTIATE_TEST_SUITE_P(StringUtilititiesTests, StringToLowerTestFixture,
                          testing::Values(std::make_pair("DOUBLE", "double"), std::make_pair("a eAd Ewer", "a ead ewer"), std::make_pair("  \tCaT BLUE\tGreen ", "  \tcat blue\tgreen ")));
+
+class StringPrefixTestFixture : public ::testing::TestWithParam<std::tuple<std::string, std::string, bool>> {};
+
+TEST_P(StringPrefixTestFixture, ShouldDetermineStartsWith) {
+    // arrange
+    std::string inputString = std::get<0>(GetParam());
+    std::string inputPrefix = std::get<1>(GetParam());
+
+    // act
+    auto startsWith = ablate::utilities::StringUtilities::StartsWith(inputString, inputPrefix);
+
+    // assert
+    ASSERT_EQ(startsWith, std::get<2>(GetParam()));
+}
+
+INSTANTIATE_TEST_SUITE_P(StringUtilititiesTests, StringPrefixTestFixture,
+                         testing::Values(std::make_tuple("YiCO2", "Yi", true), std::make_tuple("YICO2", "Yi", false), std::make_tuple("CO2Yi", "Yi", false), std::make_tuple("", "Yi", false),
+                                         std::make_tuple("Yi CO2", "Yi", true), std::make_tuple(" Yi CO2", "Yi", false), std::make_tuple(" Yi CO2", " Yi", true)));
+
+class StringPostfixTestFixture : public ::testing::TestWithParam<std::tuple<std::string, std::string, bool>> {};
+
+TEST_P(StringPostfixTestFixture, ShouldDetermineEndsWith) {
+    // arrange
+    std::string inputString = std::get<0>(GetParam());
+    std::string inputPrefix = std::get<1>(GetParam());
+
+    // act
+    auto endsWith = ablate::utilities::StringUtilities::EndsWith(inputString, inputPrefix);
+
+    // assert
+    ASSERT_EQ(endsWith, std::get<2>(GetParam()));
+}
+
+INSTANTIATE_TEST_SUITE_P(StringUtilititiesTests, StringPostfixTestFixture,
+                         testing::Values(std::make_tuple("CO2Yi", "Yi", true), std::make_tuple("CO2YI", "Yi", false), std::make_tuple("YiCO2", "Yi", false), std::make_tuple("", "Yi", false),
+                                         std::make_tuple("CO2 Yi", "Yi", true), std::make_tuple("CO2Yi ", "Yi", false), std::make_tuple("CO2 Yi ", "Yi ", true)));
