@@ -80,11 +80,10 @@ TEST_P(ChemTabModelTestFixture, ShouldReturnCorrectSpeciesAndVariables) {
         auto actualSpeciesVariables = chemTabModel.GetSpeciesVariables();
         auto actualSpecies = chemTabModel.GetSpecies();
         auto actualProgressVariables = chemTabModel.GetProgressVariables();
-        auto referenceSpecies = chemTabModel.GetReferenceSpecies();
 
         // assert
         EXPECT_TRUE(actualSpeciesVariables.empty()) << "should report no transport species" << testTarget["testName"].as<std::string>();
-        EXPECT_EQ(testTarget["species_names"].as<std::vector<std::string>>(), referenceSpecies) << "should compute correct species name for model " << testTarget["testName"].as<std::string>();
+        EXPECT_EQ(testTarget["species_names"].as<std::vector<std::string>>(), actualSpecies) << "should compute correct species name for model " << testTarget["testName"].as<std::string>();
         EXPECT_EQ(testTarget["cpv_names"].as<std::vector<std::string>>(), actualProgressVariables) << "should compute correct cpv names for model " << testTarget["testName"].as<std::string>();
         EXPECT_EQ(testTarget["species_names"].as<std::vector<std::string>>().size(), actualSpecies.size())
             << "should compute correct species name for model " << testTarget["testName"].as<std::string>();
@@ -414,6 +413,34 @@ INSTANTIATE_TEST_SUITE_P(ChemTabTests, ChemTabFieldFunctionTestFixture,
                              return std::to_string(info.index) + "_from_" + std::string(to_string(info.param.property1)) + "_" + std::string(to_string(info.param.property2)) + "_with_" +
                                     info.param.modelPath.stem().string();
                          });
+
+TEST_P(ChemTabModelTestFixture, ShouldComputeProgressVariablesMassFractionsInterchangeability) {
+    GTEST_SKIP() << "Test is not working with ChemTab";
+    ONLY_WITH_TENSORFLOW_CHECK;
+
+    for (const auto& testTarget : testTargets) {
+        // arrange
+        auto chemTab = std::make_shared<ablate::eos::ChemTab>(GetParam().modelPath);
+        auto expectedProgressVariables = testTarget["output_cpvs"].as<std::vector<double>>();
+        auto inputMassFractions = testTarget["input_mass_fractions"].as<std::vector<double>>();
+
+        // act
+        // Size up the results based upon expected
+        std::vector<PetscReal> actualProgressVariables(expectedProgressVariables.size());
+        chemTab->ComputeProgressVariables(inputMassFractions.data(), inputMassFractions.size(), actualProgressVariables.data(), actualProgressVariables.size());
+
+        std::vector<PetscReal> actualMassFractions(inputMassFractions.size());
+        chemTab->ComputeMassFractions(actualProgressVariables.data(), actualProgressVariables.size(), actualMassFractions.data(), actualMassFractions.size());
+
+        // assert
+        for (std::size_t r = 0; r < actualProgressVariables.size(); r++) {
+            assert_float_close(expectedProgressVariables[r], actualProgressVariables[r]) << "The value for input set [" << r << "] is incorrect for model " << testTarget["testName"].as<std::string>();
+        }
+        for (std::size_t r = 0; r < actualMassFractions.size(); r++) {
+            assert_float_close(inputMassFractions[r], actualMassFractions[r]) << "The value for input mass fractions [" << r << "] is incorrect for model " << testTarget["testName"].as<std::string>();
+        }
+    }
+}
 
 /*********************************************************************************************************
  * Test for when tensorflow is not available

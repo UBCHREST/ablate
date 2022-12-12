@@ -6,7 +6,6 @@
 #include <iostream>
 #include <string>
 #include "finiteVolume/compressibleFlowFields.hpp"
-#include "utilities/stringUtilities.hpp"
 
 #ifdef WITH_TENSORFLOW
 
@@ -86,7 +85,7 @@ ablate::eos::ChemTab::ChemTab(std::filesystem::path path) : ChemistryModel("abla
         throw std::invalid_argument("The ReferenceEOS species and chemTab species are expected to be the same.");
     }
     for (std::size_t s = 0; s < speciesNames.size(); s++) {
-        if (!ablate::utilities::StringUtilities::EndsWith(speciesNames[s], referenceEOSSpecies[s])) {
+        if (speciesNames[s] != referenceEOSSpecies[s]) {
             throw std::invalid_argument("The ReferenceEOS species and chemTab species are expected to be the same.");
         }
     }
@@ -160,7 +159,8 @@ void ablate::eos::ChemTab::LoadBasisVectors(std::istream &inputStream, std::size
     }
 }
 
-void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal *progressVariables, std::size_t progressVariablesSize, PetscReal *massFractions, std::size_t massFractionsSize) const {
+void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal *progressVariables, std::size_t progressVariablesSize, PetscReal *massFractions, std::size_t massFractionsSize,
+                                                PetscReal density) const {
     // y = inv(W)'C
     // for now the mass fractions will be obtained using the inverse of the
     // weights. Will be replaced by a ML predictive model in the next iteration
@@ -177,7 +177,7 @@ void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal *progressVariabl
             "The massFractions size does not match the "
             "supported number of species");
     }
-    ComputeMassFractions(speciesNames.size(), progressVariablesNames.size(), iWmat, progressVariables, massFractions);
+    ComputeMassFractions(speciesNames.size(), progressVariablesNames.size(), iWmat, progressVariables, massFractions, density);
 }
 
 void ablate::eos::ChemTab::ComputeMassFractions(std::size_t numSpecies, std::size_t numProgressVariables, PetscReal **iWmat, const PetscReal *progressVariables, PetscReal *massFractions,

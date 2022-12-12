@@ -125,7 +125,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                 std::make_shared<ablate::domain::FieldDescription>(
                     "euler", "euler", std::vector<std::string>{"rho", "rhoE", "rhoVel" + domain::FieldDescription::DIMENSION}, domain::FieldLocation::SOL, domain::FieldType::FVM),
                 std::make_shared<ablate::domain::FieldDescription>("densityYi", "densityYi", eos->GetSpecies(), domain::FieldLocation::SOL, domain::FieldType::FVM),
-                std::make_shared<ablate::domain::FieldDescription>("yi", "yi", eos->GetSpecies(), domain::FieldLocation::AUX, domain::FieldType::FVM),
+                std::make_shared<ablate::domain::FieldDescription>("Yi", "Yi", eos->GetSpecies(), domain::FieldLocation::AUX, domain::FieldType::FVM),
 
             };
 

@@ -22,21 +22,19 @@ class CompressibleFlowFields : public domain::FieldDescriptor {
     inline const static std::string CONSERVED = "density";
 
     //! the conserved (density*yi) solution field for species mass fractions
-    inline const static std::string DENSITY_YI_FIELD = CONSERVED + "Yi";
-
-    //! the non-conserved (yi) solution field for species mass fractions
-    inline const static std::string YI_FIELD = "yi";
+    inline const static std::string YI_FIELD = "Yi";
+    inline const static std::string DENSITY_YI_FIELD = CONSERVED + YI_FIELD;
 
     //! progress fields are used by the eos/chemistry model to transport required non species
-    inline const static std::string DENSITY_PROGRESS_FIELD = CONSERVED + "Progress";
-    inline const static std::string PROGRESS_FIELD = "progress";
+    inline const static std::string PROGRESS_FIELD = "Progress";
+    inline const static std::string DENSITY_PROGRESS_FIELD = CONSERVED + PROGRESS_FIELD;
 
     //! the conserved tag used to tag all fields that should act like extra variables (transported with the flow)
-    inline const static std::string EV_TAG = "ev";
+    inline const static std::string EV_TAG = "EV";
 
     //! these are arbitrary ev fields
-    inline const static std::string DENSITY_EV_FIELD = "densityEV";
     inline const static std::string EV_FIELD = "EV";
+    inline const static std::string DENSITY_EV_FIELD = CONSERVED + EV_FIELD;
 
     //! some common aux fields
     inline const static std::string TEMPERATURE_FIELD = "temperature";

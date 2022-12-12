@@ -147,13 +147,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * List of species used for the field function initialization.
      * @return
      */
-    [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { return speciesNames; }
-
-    /**
-     * return the reference species used for the underlying eos to generate the progress variables
-     * @return
-     */
-    [[nodiscard]] const std::vector<std::string>& GetReferenceSpecies() const { return speciesNames; }
+    [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { return referenceEOS->GetSpecies(); }
 
     /**
      * As far as other parts of the code is concerned the chemTabEos does not expect species
@@ -193,8 +187,10 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @param massFractionsSize
      * @param progressVariables
      * @param progressVariablesSize
+     * @param density allows for this function to be used with density*progress variables
+     *
      */
-    void ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize) const;
+    void ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize, PetscReal density = 1.0) const;
 
     /**
      * Print the details of this eos
@@ -263,7 +259,7 @@ class ChemTab : public ChemistryModel {
         throw std::runtime_error(errorMessage);
     }
 
-    void ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize) {
+    void ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize, PetscReal density = 1.0) {
         throw std::runtime_error(errorMessage);
     }
 };
