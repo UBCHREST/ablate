@@ -23,8 +23,8 @@ TEST_P(BuoyancyTestFixture, ShouldComputeCorrectFlux) {
 
     // create a mock eos
     auto mockEOS = std::make_shared<ablateTesting::eos::MockEOS>();
-    EXPECT_CALL(*mockEOS, GetSpecies).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(ablate::utilities::VectorUtilities::Empty<std::string>));
-    EXPECT_CALL(*mockEOS, GetExtraVariables).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(ablate::utilities::VectorUtilities::Empty<std::string>));
+    EXPECT_CALL(*mockEOS, GetSpeciesVariables).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(ablate::utilities::VectorUtilities::Empty<std::string>));
+    EXPECT_CALL(*mockEOS, GetProgressVariables).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(ablate::utilities::VectorUtilities::Empty<std::string>));
 
     // Create a box mesh
     auto domain = std::make_shared<ablate::domain::BoxMesh>("testMesh",

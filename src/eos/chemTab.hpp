@@ -72,7 +72,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
         std::size_t numberSpecies;
         std::size_t numberProgressVariables;
         std::size_t densityOffset;
-        std::size_t zMixOffset;
+        std::size_t progressOffset;
 
         // store a scratch variable to compute yi
         std::vector<PetscReal> yiScratch;
@@ -92,7 +92,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
         std::size_t numberSpecies;
         std::size_t numberProgressVariables;
         std::size_t densityOffset;
-        std::size_t zMixOffset;
+        std::size_t progressOffset;
 
         // store a scratch variable to compute yi
         std::vector<PetscReal> yiScratch;
@@ -138,22 +138,22 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
     ~ChemTab() override;
 
     /**
+     * As far as other parts of the code is concerned the chemTabEos does not expect species to be transported
+     * @return
+     */
+    [[nodiscard]] const std::vector<std::string>& GetSpeciesVariables() const override { return ablate::utilities::VectorUtilities::Empty<std::string>; }
+
+    /**
+     * List of species used for the field function initialization.
+     * @return
+     */
+    [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { return referenceEOS->GetSpecies(); }
+
+    /**
      * As far as other parts of the code is concerned the chemTabEos does not expect species
      * @return
      */
-    [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { return ablate::utilities::VectorUtilities::Empty<std::string>; }
-
-    /**
-     * return the reference species used for the underlying eos to generate the progress variables
-     * @return
-     */
-    [[nodiscard]] const std::vector<std::string>& GetReferenceSpecies() const { return speciesNames; }
-
-    /**
-     * As far as other parts of the code is concerned the chemTabEos does not expect species
-     * @return
-     */
-    [[nodiscard]] const std::vector<std::string>& GetExtraVariables() const override { return progressVariablesNames; }
+    [[nodiscard]] const std::vector<std::string>& GetProgressVariables() const override { return progressVariablesNames; }
 
     /**
      * Single function to compute the source terms for a single point
@@ -187,8 +187,10 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @param massFractionsSize
      * @param progressVariables
      * @param progressVariablesSize
+     * @param density allows for this function to be used with density*progress variables
+     *
      */
-    void ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize) const;
+    void ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize, PetscReal density = 1.0) const;
 
     /**
      * Print the details of this eos
@@ -218,7 +220,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @param property1
      * @param property2
      */
-    [[nodiscard]] eos::FieldFunction GetFieldFunctionFunction(const std::string& field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2) const override { return {}; }
+    [[nodiscard]] eos::FieldFunction GetFieldFunctionFunction(const std::string& field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2) const override;
 };
 
 #else
@@ -227,11 +229,11 @@ class ChemTab : public ChemistryModel {
     static inline const std::string errorMessage = "Using the ChemTab requires Tensorflow to be compile with ABLATE.";
     ChemTab(std::filesystem::path path) : ChemistryModel("ablate::chemistry::ChemTabModel") { throw std::runtime_error(errorMessage); }
 
+    [[nodiscard]] const std::vector<std::string>& GetSpeciesVariables() const override { throw std::runtime_error(errorMessage); }
+
     [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { throw std::runtime_error(errorMessage); }
 
-    [[nodiscard]] const std::vector<std::string>& GetReferenceSpecies() const { throw std::runtime_error(errorMessage); }
-
-    [[nodiscard]] const std::vector<std::string>& GetExtraVariables() const override { throw std::runtime_error(errorMessage); }
+    [[nodiscard]] const std::vector<std::string>& GetProgressVariables() const override { throw std::runtime_error(errorMessage); }
 
     std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override { throw std::runtime_error(errorMessage); }
 
@@ -257,7 +259,7 @@ class ChemTab : public ChemistryModel {
         throw std::runtime_error(errorMessage);
     }
 
-    void ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize) {
+    void ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize, PetscReal density = 1.0) {
         throw std::runtime_error(errorMessage);
     }
 };

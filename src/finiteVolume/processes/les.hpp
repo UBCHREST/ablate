@@ -9,16 +9,11 @@
 namespace ablate::finiteVolume::processes {
 
 class LES : public FlowProcess {
-   public:
-    /* store turbulent diffusion  data */
-    struct DiffusionData {
-        PetscInt numberSpecies;
-        PetscInt numberEV;
-        PetscInt tke_ev;
-    };
-
    private:
-    const std::string tke;
+    /**
+     * tke is assumed to consist of a field with a single component
+     */
+    const std::string tkeField;
 
     // constant values
     inline const static PetscReal c_k = 0.094;
@@ -27,10 +22,15 @@ class LES : public FlowProcess {
     inline const static PetscReal scT = 1.00;
     inline const static PetscReal prT = 1.00;
 
-    DiffusionData diffusionData{};
+    // Store the numberComponents for each ev/species
+    std::vector<PetscInt> numberComponents;
 
    public:
-    explicit LES(std::string tke);
+    /**
+     * The field name containing the tkeField.  This is assumed to contain the density/tke value (conserved form)
+     * @param tkeField
+     */
+    explicit LES(std::string tkeField = {});
 
     /**
      * public function to link this process with the flow
@@ -42,9 +42,9 @@ class LES : public FlowProcess {
     /**
      * This computes the momentum source for SGS model for rhoU
      * f = "euler"
-     * u = {"euler", "densityYi"}
-     * a = {"yi"}
-     * ctx = lesDiffusionData
+     * u = {"euler"}
+     * a = {"tke, "vel"}
+     * ctx = nullptr
      * @return
      */
     static PetscErrorCode LesMomentumFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
@@ -52,35 +52,35 @@ class LES : public FlowProcess {
     /**
      * This computes the energy source for SGS model for rhoE
      * f = "euler"
-     * u = {"euler", "densityYi"}
-     * a = {"yi"}
-     * ctx = lesDiffusionData
+     * u = {"euler"}
+     * a = {"tke", "vel", "temperature"}
+     * ctx = nullptr
      * @return
      */
     static PetscErrorCode LesEnergyFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
                                         const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
 
     /**
-     * This computes the EV transfer for SGS model for densityEV
-     * f = "euler"
-     * u = {"euler", "densityEV"}
-     * a = {"ev"}
-     * ctx = lesDiffusionData
+     * This computes the EV transfer for SGS model for density_tke
+     * f = "conserved_tke"
+     * u = {"euler"}
+     * a = {"tke", "vel"}
+     * ctx = nullptr
      * return
+     */
+    static PetscErrorCode LesTkeFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
+                                     const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
+
+    /**
+     * This computes the species transfer for SGS model for density-Yi or density ev
+     * f = "conserved_ev/yi"
+     * u = {"euler"}
+     * a = {"tke", "yi/ev"}
+     * ctx = (PetscInt*) size of yi/ev field
+     * @return
      */
     static PetscErrorCode LesEvFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[],
                                     const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
-
-    /**
-     * This computes the species transfer for SGS model for density-YI
-     * f = "euler"
-     * u = {"euler", "densityYi"}
-     * a = {"yi"}
-     * ctx = lesDiffusionData
-     * @return
-     */
-    static PetscErrorCode LesSpeciesFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
-                                         const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
 
     /**
      * static support function to compute the turbulent viscosity

@@ -24,7 +24,7 @@ ablate::finiteVolume::processes::SpeciesTransport::SpeciesTransport(std::shared_
 }
 
 void ablate::finiteVolume::processes::SpeciesTransport::Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) {
-    if (!eos->GetSpecies().empty()) {
+    if (!eos->GetSpeciesVariables().empty()) {
         if (fluxCalculator) {
             flow.RegisterRHSFunction(AdvectionFlux, &advectionData, CompressibleFlowFields::DENSITY_YI_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD}, {});
             advectionData.computeTemperature = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature, flow.GetSubDomain().GetFields());

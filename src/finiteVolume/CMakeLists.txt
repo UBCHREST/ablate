@@ -5,12 +5,15 @@ target_sources(ablateLibrary
         compressibleFlowSolver.cpp
         faceInterpolant.cpp
         cellInterpolant.cpp
+        turbulenceFlowFields.cpp
+
         PUBLIC
         finiteVolumeSolver.hpp
         compressibleFlowFields.hpp
         compressibleFlowSolver.hpp
         faceInterpolant.hpp
         cellInterpolant.hpp
+        turbulenceFlowFields.hpp
         )
 
 add_subdirectory(boundaryConditions)

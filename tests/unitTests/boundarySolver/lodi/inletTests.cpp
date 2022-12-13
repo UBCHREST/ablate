@@ -10,7 +10,7 @@ struct InletTestParameters {
     PetscInt dim;
     PetscInt nEqs;
     PetscInt nSpecEqs = 0;
-    PetscInt nEvEqs = 0;
+    std::vector<PetscInt> nEvComps;
     std::vector<ablate::domain::Field> fields;
 
     std::function<void(const PetscReal conserved[], PetscReal* property)> computeTemperatureFunction;
@@ -61,11 +61,11 @@ TEST_P(InletTestFixture, ShouldComputeCorrectSourceTerm) {
         .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction(params.computeStencilPressureFunction)));
     // create the boundary
     std::shared_ptr<ablate::boundarySolver::lodi::LODIBoundary> boundary = std::make_shared<ablate::boundarySolver::lodi::Inlet>(mockEOS, params.getPgs());
-    boundary->Setup(params.dim, params.nEqs, params.nSpecEqs, params.nEvEqs, params.fields);
+    boundary->Setup(params.dim, params.nEqs, params.nSpecEqs, params.nEvComps, params.fields);
 
-    PetscInt uOff[3] = {0, params.dim + 2, params.dim + 2 + params.nSpecEqs};
+    PetscInt uOff[4] = {0, params.dim + 2, params.dim + 2 + params.nSpecEqs, params.dim + 2 + params.nSpecEqs + (params.nEvComps.empty() ? 0 : params.nEvComps[0])};
     PetscInt aOff[1] = {0};
-    PetscInt sOff[3] = {0, params.dim + 2, params.dim + 2 + params.nSpecEqs};
+    PetscInt sOff[4] = {0, params.dim + 2, params.dim + 2 + params.nSpecEqs, params.dim + 2 + params.nSpecEqs + (params.nEvComps.empty() ? 0 : params.nEvComps[0])};
     const PetscScalar* stencilValues = &params.stencilValues[0];
     const PetscScalar* allStencilValues[1] = {stencilValues};
     const PetscInt stencil[1] = {-1};
@@ -253,8 +253,10 @@ INSTANTIATE_TEST_SUITE_P(
             .dim = 1,
             .nEqs = 8,
             .nSpecEqs = 3,
-            .nEvEqs = 2,
-            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0}, {.name = "densityYi", .numberComponents = 3, .offset = 3}, {.name = "densityEV", .numberComponents = 2, .offset = 6}},
+            .nEvComps = {2},
+            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0},
+                       {.name = "densityYi", .numberComponents = 3, .offset = 3},
+                       {.name = "densityEV", .numberComponents = 2, .offset = 6, .tags = {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}}},
             .computeTemperatureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 1.783191515808363, conserved[ff::RHO]);
@@ -374,9 +376,13 @@ INSTANTIATE_TEST_SUITE_P(
         // case 4 with ev/yi and alpha
         (InletTestParameters){
             .dim = 1,
-            .nEqs = 8,
+            .nEqs = 9,
             .nSpecEqs = 3,
-            .nEvEqs = 2,
+            .nEvComps = {1, 2},
+            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0},
+                       {.name = "densityYi", .numberComponents = 3, .offset = 3},
+                       {.name = "otherEV", .numberComponents = 1, .offset = 6, .tags = {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}},
+                       {.name = "densityEV", .numberComponents = 2, .offset = 7, .tags = {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}}},
             .computeTemperatureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 1.783191515808363, conserved[ff::RHO]);
@@ -387,8 +393,9 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783191515808363, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783191515808363, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 * 1.783191515808363, conserved[6]);
-                    CHECK_EXPECT("densityEV1", 0.5 * 1.783191515808363, conserved[7]);
+                    CHECK_EXPECT("otherEV", 0.25 * 1.783191515808363, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783191515808363, conserved[7]);
+                    CHECK_EXPECT("densityEV1", 0.5 * 1.783191515808363, conserved[8]);
 
                     *property = 300.4;
                 },
@@ -403,8 +410,9 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783191515808363, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783191515808363, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 * 1.783191515808363, conserved[6]);
-                    CHECK_EXPECT("densityEV1", 0.5 * 1.783191515808363, conserved[7]);
+                    CHECK_EXPECT("otherEV", 0.25 * 1.783191515808363, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783191515808363, conserved[7]);
+                    CHECK_EXPECT("densityEV1", 0.5 * 1.783191515808363, conserved[8]);
                     *property = 431.6854962124021;
                 },
             .computePressureFromTemperature =
@@ -418,8 +426,9 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783191515808363, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783191515808363, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 * 1.783191515808363, conserved[6]);
-                    CHECK_EXPECT("densityEV1", 0.5 * 1.783191515808363, conserved[7]);
+                    CHECK_EXPECT("otherEV", 0.25 * 1.783191515808363, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783191515808363, conserved[7]);
+                    CHECK_EXPECT("densityEV1", 0.5 * 1.783191515808363, conserved[8]);
                     *property = 251619.82076699706;
                 },
             .computeCpFunction =
@@ -433,8 +442,9 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783191515808363, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783191515808363, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 * 1.783191515808363, conserved[6]);
-                    CHECK_EXPECT("densityEV1", 0.5 * 1.783191515808363, conserved[7]);
+                    CHECK_EXPECT("otherEV", 0.25 * 1.783191515808363, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783191515808363, conserved[7]);
+                    CHECK_EXPECT("densityEV1", 0.5 * 1.783191515808363, conserved[8]);
                     *property = 1934.650079471233;
                 },
             .computeCvFunction =
@@ -448,8 +458,9 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783191515808363, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783191515808363, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 * 1.783191515808363, conserved[6]);
-                    CHECK_EXPECT("densityEV1", 0.5 * 1.783191515808363, conserved[7]);
+                    CHECK_EXPECT("otherEV", 0.25 * 1.783191515808363, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783191515808363, conserved[7]);
+                    CHECK_EXPECT("densityEV1", 0.5 * 1.783191515808363, conserved[8]);
                     *property = 1464.9215577478003;
                 },
             .computeSensibleEnthalpy =
@@ -463,8 +474,9 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783191515808363, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783191515808363, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 * 1.783191515808363, conserved[6]);
-                    CHECK_EXPECT("densityEV1", 0.5 * 1.783191515808363, conserved[7]);
+                    CHECK_EXPECT("otherEV", 0.25 * 1.783191515808363, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783191515808363, conserved[7]);
+                    CHECK_EXPECT("densityEV1", 0.5 * 1.783191515808363, conserved[8]);
                     *property = 4347.52375485136;
                 },
             .computeStencilPressureFunction =
@@ -477,8 +489,9 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.3 * 20.0, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 20.0, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.5 * 20.0, conserved[6]);
-                    CHECK_EXPECT("densityEV1", 0.6 * 20.0, conserved[7]);
+                    CHECK_EXPECT("otherEV", 0.5 * 20.0, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.5 * 20.0, conserved[7]);
+                    CHECK_EXPECT("densityEV1", 0.6 * 20.0, conserved[8]);
 
                     *property = 251619.82076699712 + 199.99999981373549;  // delta p = stencil-boundary ... stencil = boundary+deltap
                 },
@@ -491,7 +504,9 @@ INSTANTIATE_TEST_SUITE_P(
                                0.5 * 1.783191515808363,
                                0.4 * 1.783191515808363,
                                0.25 * 1.783191515808363,
+                               0.25 * 1.783191515808363,
                                0.5 * 1.783191515808363},
-            .stencilValues = {20, 3000 * 20, (40000.000 + 10.0) * 20, .2 * 20, .3 * 20, .4 * 20, .5 * 20, .6 * 20},
-            .expectedResults = {333143.9252721959, -4.554374761802185E10, 3331439.252721959, 33314.39252721959, 166571.96263609795, 133257.57010887837, 83285.98131804897, 166571.96263609795}}),
+            .stencilValues = {20, 3000 * 20, (40000.000 + 10.0) * 20, .2 * 20, .3 * 20, .4 * 20, .5 * 20, .5 * 20, .6 * 20},
+            .expectedResults =
+                {333143.9252721959, -4.554374761802185E10, 3331439.252721959, 33314.39252721959, 166571.96263609795, 133257.57010887837, 83285.98131804897, 83285.98131804897, 166571.96263609795}}),
     [](const testing::TestParamInfo<InletTestParameters>& info) { return std::to_string(info.index); });

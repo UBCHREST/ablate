@@ -37,9 +37,6 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
     PetscReal boundarySpeedOfSound;
     PetscReal boundaryPressure;
 
-    // Get the densityYi pointer if available
-    const PetscScalar *boundaryDensityYi = isothermalWall->nSpecEqs > 0 ? boundaryValues + uOff[isothermalWall->speciesId] : nullptr;
-
     // Get the velocity and pressure on the surface
     {
         boundaryDensity = boundaryValues[uOff[isothermalWall->eulerId] + finiteVolume::CompressibleFlowFields::RHO];
@@ -47,12 +44,9 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
             boundaryVel[d] = boundaryValues[uOff[isothermalWall->eulerId] + finiteVolume::CompressibleFlowFields::RHOU + d] / boundaryDensity;
             boundaryNormalVelocity += boundaryVel[d] * fg->normal[d];
         }
-        PetscErrorCode ierr = isothermalWall->computeTemperature.function(boundaryValues, &boundaryTemperature, isothermalWall->computeTemperature.context.get());
-        CHKERRQ(ierr);
-        ierr = isothermalWall->computeSpeedOfSound.function(boundaryValues, boundaryTemperature, &boundarySpeedOfSound, isothermalWall->computeSpeedOfSound.context.get());
-        CHKERRQ(ierr);
-        ierr = isothermalWall->computePressureFromTemperature.function(boundaryValues, boundaryTemperature, &boundaryPressure, isothermalWall->computePressureFromTemperature.context.get());
-        CHKERRQ(ierr);
+        PetscCall(isothermalWall->computeTemperature.function(boundaryValues, &boundaryTemperature, isothermalWall->computeTemperature.context.get()));
+        PetscCall(isothermalWall->computeSpeedOfSound.function(boundaryValues, boundaryTemperature, &boundarySpeedOfSound, isothermalWall->computeSpeedOfSound.context.get()));
+        PetscCall(isothermalWall->computePressureFromTemperature.function(boundaryValues, boundaryTemperature, &boundaryPressure, isothermalWall->computePressureFromTemperature.context.get()));
     }
 
     // Map the boundary velocity into the normal coord system
@@ -71,8 +65,7 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
             stencilVel[s][d] = stencilValues[s][uOff[isothermalWall->eulerId] + finiteVolume::CompressibleFlowFields::RHOU + d] / stencilDensity[s];
             stencilNormalVelocity[s] += stencilVel[s][d] * fg->normal[d];
         }
-        PetscErrorCode ierr = isothermalWall->computePressure.function(stencilValues[s], &stencilPressure[s], isothermalWall->computePressure.context.get());
-        CHKERRQ(ierr);
+        PetscCall(isothermalWall->computePressure.function(stencilValues[s], &stencilPressure[s], isothermalWall->computePressure.context.get()));
     }
 
     // Interpolate the normal velocity gradient to the surface
@@ -80,12 +73,6 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
     BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryNormalVelocity, stencilSize, &stencilNormalVelocity[0], stencilWeights, dVeldNorm);
     PetscScalar dPdNorm;
     BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryPressure, stencilSize, &stencilPressure[0], stencilWeights, dPdNorm);
-
-    // Compute the cp, cv from the eos
-    std::vector<PetscReal> boundaryYi(isothermalWall->nSpecEqs);
-    for (PetscInt i = 0; i < isothermalWall->nSpecEqs; i++) {
-        boundaryYi[i] = boundaryDensityYi[i] / boundaryDensity;
-    }
 
     PetscReal boundaryCp, boundaryCv;
     isothermalWall->computeSpecificHeatConstantPressure.function(boundaryValues, boundaryTemperature, &boundaryCp, isothermalWall->computeSpecificHeatConstantPressure.context.get());
@@ -130,6 +117,8 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
         scriptL[2 + dim + isothermalWall->nSpecEqs + ne] = 0.e+0;
     }
 
+    // Get the pointers to the ev fields
+
     // Directly compute the source terms, note that this may be problem in the future with multiple source terms on the same boundary cell
     isothermalWall->GetmdFdn(sOff,
                              boundaryVelNormCord,
@@ -141,8 +130,8 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
                              boundarySensibleEnthalpy,
                              velNormPrim,
                              speedOfSoundPrim,
-                             boundaryDensityYi /* PetscReal* Yi*/,
-                             isothermalWall->nEvEqs > 0 ? boundaryValues + uOff[isothermalWall->evId] : nullptr /* PetscReal* EV*/,
+                             boundaryValues,
+                             uOff,
                              scriptL.data(),
                              transformationMatrix,
                              source);
