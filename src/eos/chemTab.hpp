@@ -229,11 +229,11 @@ class ChemTab : public ChemistryModel {
     static inline const std::string errorMessage = "Using the ChemTab requires Tensorflow to be compile with ABLATE.";
     ChemTab(std::filesystem::path path) : ChemistryModel("ablate::chemistry::ChemTabModel") { throw std::runtime_error(errorMessage); }
 
+    [[nodiscard]] const std::vector<std::string>& GetSpeciesVariables() const override { throw std::runtime_error(errorMessage); }
+
     [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { throw std::runtime_error(errorMessage); }
 
-    [[nodiscard]] const std::vector<std::string>& GetReferenceSpecies() const { throw std::runtime_error(errorMessage); }
-
-    [[nodiscard]] const std::vector<std::string>& GetExtraVariables() const override { throw std::runtime_error(errorMessage); }
+    [[nodiscard]] const std::vector<std::string>& GetProgressVariables() const override { throw std::runtime_error(errorMessage); }
 
     std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override { throw std::runtime_error(errorMessage); }
 
