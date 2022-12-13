@@ -299,6 +299,8 @@ static std::vector<PetscReal> GetMassFraction(const std::vector<std::string>& sp
 class ChemTabFieldFunctionTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<ChemTabFieldFunctionTestParameters> {};
 
 TEST_P(ChemTabFieldFunctionTestFixture, ShouldComputeField) {
+    ONLY_WITH_TENSORFLOW_CHECK;
+
     // arrange
     auto chemTab = std::make_shared<ablate::eos::ChemTab>(GetParam().modelPath);
 
