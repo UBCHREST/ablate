@@ -3,7 +3,7 @@
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 
-ablate::monitors::MixtureFractionMonitor::MixtureFractionMonitor(std::shared_ptr<ablate::chemistry::MixtureFractionCalculator> mixtureFractionCalculator)
+ablate::monitors::MixtureFractionMonitor::MixtureFractionMonitor(std::shared_ptr<MixtureFractionCalculator> mixtureFractionCalculator)
     : mixtureFractionCalculator(std::move(std::move(mixtureFractionCalculator))) {}
 
 void ablate::monitors::MixtureFractionMonitor::Register(std::shared_ptr<solver::Solver> solverIn) {
@@ -30,7 +30,7 @@ void ablate::monitors::MixtureFractionMonitor::Register(std::shared_ptr<solver::
         throw std::invalid_argument("The MixtureFractionMonitor monitor can only be used with ablate::finiteVolume::FiniteVolumeSolver");
     }
     // get a reference to the tchem reactions instance in the solver
-    tChemReactions = finiteVolumeSolver->FindProcess<ablate::finiteVolume::processes::TChemReactions>();
+    chemistry = finiteVolumeSolver->FindProcess<ablate::finiteVolume::processes::Chemistry>();
 
     // call the base function to create the domain
     FieldMonitor::Register(monitorName, solverIn, fields);
@@ -47,11 +47,11 @@ void ablate::monitors::MixtureFractionMonitor::Save(PetscViewer viewer, PetscInt
 
     // define a localFVec from the solution dm to compute the source terms
     Vec sourceTermVec = nullptr;
-    if (tChemReactions) {
+    if (chemistry) {
         DMGetLocalVector(GetSolver()->GetSubDomain().GetDM(), &sourceTermVec) >> checkError;
         VecZeroEntries(sourceTermVec);
         auto fvSolver = std::dynamic_pointer_cast<ablate::finiteVolume::FiniteVolumeSolver>(GetSolver());
-        tChemReactions->AddChemistrySourceToFlow(*fvSolver, sourceTermVec);
+        chemistry->AddChemistrySourceToFlow(*fvSolver, sourceTermVec);
     }
 
     // Get the arrays for the global vectors
@@ -71,19 +71,22 @@ void ablate::monitors::MixtureFractionMonitor::Save(PetscViewer viewer, PetscInt
     DMPlexGetHeightStratum(monitorSubDomain->GetDM(), 0, &cStart, &cEnd) >> checkError;
 
     // Get the cells we need to march over
-    IS monitorToSolutionIs;
-    DMPlexGetSubpointIS(monitorSubDomain->GetDM(), &monitorToSolutionIs) >> checkError;
-    const PetscInt* monitorToSolution = nullptr;
-    ISGetIndices(monitorToSolutionIs, &monitorToSolution) >> checkError;
-
     DMLabel solutionToMonitor;
     DMPlexGetSubpointMap(monitorSubDomain->GetDM(), &solutionToMonitor) >> checkError;
+
+    const PetscInt* monitorToSolution = nullptr;
+    IS monitorToSolutionIs = nullptr;
+    // if this is a submap, get the monitor to solution
+    if (solutionToMonitor) {
+        DMPlexGetSubpointIS(monitorSubDomain->GetDM(), &monitorToSolutionIs) >> checkError;
+        ISGetIndices(monitorToSolutionIs, &monitorToSolution) >> checkError;
+    }
 
     // save time to get densityFunctionContext
     const auto densityFunctionContext = densityFunction.context.get();
 
     for (PetscInt monitorPt = cStart; monitorPt < cEnd; ++monitorPt) {
-        PetscInt solutionPt = monitorToSolution[monitorPt];
+        PetscInt solutionPt = monitorToSolution ? monitorToSolution[monitorPt] : monitorPt;
 
         // Get the solutionField and monitorField
         const PetscScalar* solutionField = nullptr;
@@ -121,7 +124,9 @@ void ablate::monitors::MixtureFractionMonitor::Save(PetscViewer viewer, PetscInt
         VecRestoreArrayRead(sourceTermVec, &sourceTermArray) >> checkError;
         DMRestoreLocalVector(GetSolver()->GetSubDomain().GetDM(), &sourceTermVec) >> checkError;
     }
-    ISRestoreIndices(monitorToSolutionIs, &monitorToSolution) >> checkError;
+    if (monitorToSolutionIs) {
+        ISRestoreIndices(monitorToSolutionIs, &monitorToSolution) >> checkError;
+    }
     VecRestoreArrayRead(GetSolver()->GetSubDomain().GetSolutionVector(), &solutionFieldArray) >> checkError;
     VecRestoreArray(monitorSubDomain->GetSolutionVector(), &monitorFieldArray) >> checkError;
 
@@ -133,4 +138,4 @@ void ablate::monitors::MixtureFractionMonitor::Save(PetscViewer viewer, PetscInt
 #include "registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::MixtureFractionMonitor,
          "This class computes the mixture fraction for each point in the domain and outputs zMix, Yi, and source terms to the hdf5 file",
-         ARG(ablate::chemistry::MixtureFractionCalculator, "mixtureFractionCalculator", "the calculator used to compute zMix"));
+         ARG(ablate::monitors::MixtureFractionCalculator, "mixtureFractionCalculator", "the calculator used to compute zMix"));

@@ -1,5 +1,4 @@
 #include "cellSolver.hpp"
-
 #include <utility>
 
 ablate::solver::CellSolver::CellSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options)

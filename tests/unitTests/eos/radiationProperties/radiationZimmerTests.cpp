@@ -20,10 +20,10 @@ TEST_P(ZimmerTestFixture, ShouldProduceExpectedValuesForField) {
         .Times(::testing::Exactly(1))
         .WillOnce(::testing::Return(
             ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction([](const PetscReal conserved[], PetscReal* property) { *property = ZimmerTestFixture::GetParam().temperatureIn; })));
-    EXPECT_CALL(*eos, GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Density, testing::_))
+    EXPECT_CALL(*eos, GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty::Density, testing::_))
         .Times(::testing::Exactly(1))
-        .WillOnce(::testing::Return(
-            ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction([](const PetscReal conserved[], PetscReal* property) { *property = ZimmerTestFixture::GetParam().densityIn; })));
+        .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicTemperatureFunction(
+            [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) { *property = ZimmerTestFixture::GetParam().densityIn; })));
 
     auto zimmerModel = std::make_shared<ablate::eos::radiationProperties::Zimmer>(eos);  //!< An instantiation of the Zimmer model (with options set to nullptr)
     auto absorptivityFunction = zimmerModel->GetRadiationPropertiesFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, ZimmerTestFixture::GetParam().fields);

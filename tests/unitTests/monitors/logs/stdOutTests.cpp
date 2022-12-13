@@ -30,6 +30,10 @@ TEST_P(StdOutLogTestFixture, ShouldPrintToStdOut) {
 
             log.Print("Standard Out Log\n");
             log.Printf("rank: %d\n", rank);
+
+            // Should also print from a stream
+            auto& stream = log.GetStream();
+            stream << "stream: " << rank << std::endl;
         }
         ablate::environment::RunEnvironment::Finalize();
         exit(0);
@@ -39,4 +43,4 @@ TEST_P(StdOutLogTestFixture, ShouldPrintToStdOut) {
 INSTANTIATE_TEST_SUITE_P(LogTests, StdOutLogTestFixture,
                          testing::Values((MpiTestParameter){.testName = "std out 1 proc", .nproc = 1, .expectedOutputFile = "outputs/monitors/logs/stdOutLogFile", .arguments = ""},
                                          (MpiTestParameter){.testName = "std out 2 proc", .nproc = 2, .expectedOutputFile = "outputs/monitors/logs/stdOutLogFile", .arguments = ""}),
-                         [](const testing::TestParamInfo<MpiTestParameter> &info) { return info.param.getTestName(); });
+                         [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });

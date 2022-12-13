@@ -11,10 +11,10 @@ void ablate::particles::processes::Tracer::ComputeRHS(PetscReal time, ablate::pa
     // march over each particle
     const PetscInt np = swarmAccessor.GetNumberParticles();
     for (PetscInt p = 0; p < np; p++) {
-        coordinateRhs.CopyFrom(fluidVelocity[p], p);
+        coordinateRhs.AddFrom(fluidVelocity[p], p);
     }
 }
 
 #include "registrar.hpp"
 REGISTER(ablate::particles::processes::Process, ablate::particles::processes::Tracer, "massless particles that advects with the flow",
-         OPT(std::string, "eulerianVelocityFieldIn", "optional name of the Eulerian velocity field (defaults to velocity)"))
+         OPT(std::string, "eulerianVelocityFieldIn", "optional name of the Eulerian velocity field (defaults to velocity)"));

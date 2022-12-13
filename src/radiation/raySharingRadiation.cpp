@@ -1,9 +1,8 @@
 #include "raySharingRadiation.hpp"
 
-ablate::radiation::RaySharingRadiation::RaySharingRadiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary,
-                                                            const PetscInt raynumber, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
-                                                            std::shared_ptr<ablate::monitors::logs::Log> log)
-    : Radiation(solverId, region, fieldBoundary, raynumber, radiationModelIn, log) {
+ablate::radiation::RaySharingRadiation::RaySharingRadiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber,
+                                                            std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
+    : Radiation(solverId, region, raynumber, radiationModelIn, log) {
     nTheta = raynumber;    //!< The number of angles to solve with, given by user input
     nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
 }
@@ -14,18 +13,17 @@ ablate::radiation::RaySharingRadiation::~RaySharingRadiation() {
     VecDestroy(&cellGeomVec) >> checkError;
 }
 
-void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray, PetscInt stepcount) {
+void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray) {
     PetscInt npoints = 0;
     PetscInt nglobalpoints = 0;
     PetscInt nsolvepoints = 0;  //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
-    PetscInt ipart = -1;
 
     DMSwarmGetLocalSize(radsearch, &npoints) >> checkError;
     DMSwarmGetSize(radsearch, &nglobalpoints) >> checkError;
 
     PetscFVFaceGeom* faceGeom;
 
-    PetscInt index;
+    PetscInt* index;
     PetscMPIInt rank = 0;
     MPI_Comm_rank(subDomain.GetComm(), &rank);
 
@@ -40,19 +38,12 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
      * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
     DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
     DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+    DMSwarmGetField(radsearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> checkError;
 
-    PetscInt nFound;
-    const PetscInt* point = nullptr;
-    const PetscSFNode* cell = nullptr;
-    PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell) >> checkError;  //!< Using this to get the petsc int cell number from the struct (SF)
-
-    for (PetscInt ip = 0; ip < npoints; ip++) {
-        ipart++;  //!< USE IP TO DEAL WITH DMLOCATE POINTS, USE IPART TO DEAL WITH PARTICLES
-        if (nFound > -1 && cell[ip].index >= 0 && subDomain.InRegion(cell[ip].index)) {
-            index = (stepcount == 0) ? identifier[ipart].iCell : cell[ip].index;
-
+    for (PetscInt ipart = 0; ipart < npoints; ipart++) {
+        if (index[ipart] >= 0 && subDomain.InRegion(index[ipart])) {
             /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
-             * Hash the identifier into a key value that can be used in the map
+             * Hash the identifier into a key value that can be used in the ma
              * We should only iterate the identifier of the search particle (/ add a solver particle) if the point is valid in the domain and is being used
              * */
             if (presence.count(Key(&identifier[ipart])) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
@@ -70,7 +61,7 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
                 solveidentifier[newpoint] = identifier[ipart];  //!< Give the particle an identifier which matches the particle it was created with
                 /** Create a new 'access identifier' and set it equal to the identifier of the current cell which the search particle is occupying */
                 access[newpoint].origin = rank;                      //!< The origin should be the current rank
-                access[newpoint].iCell = index;                      //!< The index that the particle is currently occupying
+                access[newpoint].iCell = index[ipart];               //!< The index that the particle is currently occupying
                 access[newpoint].ntheta = identifier[ipart].ntheta;  //!< The angle of the ray we want
                 access[newpoint].nphi = identifier[ipart].nphi;      //!< The angle of the ray we want
                 access[newpoint].nsegment = 1;                       //!< The access identifier should always point to a native rank (segment == 1)
@@ -89,11 +80,13 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
                 if (access[newpoint].origin != identifier[ipart].origin) {
                     PetscReal centroid[3];
                     PetscInt numPoints = static_cast<PetscInt>(rays[Key(&access[newpoint])].cells.size());
-                    DMPlexComputeCellGeometryFVM(subDomain.GetDM(), rays[Key(&access[newpoint])].cells[numPoints - 1], nullptr, centroid, nullptr) >>
-                        checkError;                                                                        //!< Get the cell center of the last cell in the ray segment
-                    virtualcoord[ipart].x = centroid[0] + (virtualcoord[ipart].xdir * 2 * minCellRadius);  //!< Offset from the centroid slightly so they sit in a cell if they are on its face.
-                    virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 2 * minCellRadius);
-                    virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 2 * minCellRadius);
+                    if (numPoints != 0) {
+                        DMPlexComputeCellGeometryFVM(subDomain.GetDM(), rays[Key(&access[newpoint])].cells[numPoints - 1], nullptr, centroid, nullptr) >>
+                            checkError;                                                                        //!< Get the cell center of the last cell in the ray segment
+                        virtualcoord[ipart].x = centroid[0] + (virtualcoord[ipart].xdir * 2 * minCellRadius);  //!< Offset from the centroid slightly so they sit in a cell if they are on its face.
+                        virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 2 * minCellRadius);
+                        virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 2 * minCellRadius);
+                    }
                 }
 
                 DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&solveidentifier) >> checkError;  //!< The fields must be returned so that the swarm can be updated correctly?
@@ -110,7 +103,7 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
 
             /** Step 1: Register the current cell index in the rays vector. The physical coordinates that have been set in the previous step / loop will be immediately registered.
              * */
-            if (identifier[ipart].nsegment == 1) rays[Key(&identifier[ipart])].cells.push_back(index);
+            if (identifier[ipart].nsegment == 1) rays[Key(&identifier[ipart])].cells.push_back(index[ipart]);
 
             /** Step 2: Acquire the intersection of the particle search line with the segment or face. In the case if a two dimensional mesh, the virtual coordinate in the z direction will
              * need to be solved for because the three dimensional line will not have a literal intersection with the segment of the cell. The third coordinate can be solved for in this case.
@@ -119,8 +112,8 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
             /** March over each face on this cell in order to check them for the one which intersects this ray next */
             PetscInt numberFaces;
             const PetscInt* cellFaces;
-            DMPlexGetConeSize(subDomain.GetDM(), index, &numberFaces) >> checkError;
-            DMPlexGetCone(subDomain.GetDM(), index, &cellFaces) >> checkError;  //!< Get the face geometry associated with the current cell
+            DMPlexGetConeSize(subDomain.GetDM(), index[ipart], &numberFaces) >> checkError;
+            DMPlexGetCone(subDomain.GetDM(), index[ipart], &cellFaces) >> checkError;  //!< Get the face geometry associated with the current cell
             PetscReal path;
 
             /** Check every face for intersection with the segment.
@@ -154,10 +147,10 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
     }
     DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
     DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+    DMSwarmRestoreField(radsearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> checkError;
 }
 
 #include "registrar.hpp"
 REGISTER(ablate::radiation::Radiation, ablate::radiation::RaySharingRadiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
-         ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(ablate::domain::Region, "fieldBoundary", "boundary of the radiation region"),
-         ARG(int, "rays", "number of rays used by the solver"), ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"),
-         OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
+         ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(int, "rays", "number of rays used by the solver"),
+         ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

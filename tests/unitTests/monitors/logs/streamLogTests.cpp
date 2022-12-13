@@ -16,8 +16,12 @@ TEST(StreamLog, ShouldPrintToStream) {
         log.Print("StreamLog\n");
         log.Printf("Line %d\n", 12);
         log.Printf("Line %d, Line %d\n", 14, 16);
+
+        // Should also print from a stream
+        auto& stream = log.GetStream();
+        stream << "Stream " << 23 << std::endl;
     }
 
     // assert
-    ASSERT_EQ("StreamLog\nLine 12\nLine 14, Line 16\n", outputStream.str());
+    ASSERT_EQ("StreamLog\nLine 12\nLine 14, Line 16\nStream 23\n", outputStream.str());
 }

@@ -46,3 +46,6 @@ void ablate::mathFunctions::geom::Geometry::Eval(const double *xyz, const int &n
         outsideValues->Eval(xyz, ndims, t, result);
     }
 }
+
+#include "registrar.hpp"
+REGISTER_DERIVED(ablate::mathFunctions::MathFunction, ablate::mathFunctions::geom::Geometry);

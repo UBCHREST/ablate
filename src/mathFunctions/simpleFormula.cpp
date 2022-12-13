@@ -111,5 +111,5 @@ PetscErrorCode ablate::mathFunctions::SimpleFormula::ParsedPetscFunction(PetscIn
 #include "registrar.hpp"
 REGISTER_DEFAULT_PASS_THROUGH(ablate::mathFunctions::MathFunction, ablate::mathFunctions::SimpleFormula,
                               "a string based function to be parsed with [muparser](https://beltoforion.de/en/muparser/). The (string) formula that may accept x, y, z, t as variables. ABLATE custom "
-                              "functions include Power(a, b), rand(lowerBound, upperBound), and pRand(lowerBound, upperBound).",
+                              "functions include %, Power(a, b), rand(lowerBound, upperBound), and pRand(lowerBound, upperBound).",
                               std::string);

@@ -388,11 +388,6 @@ class SubDomain : public io::Serializable {
     void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 
     /**
-     * checks each point in this subdomain for nan/inf and reports information.  True is returned if an error is found.
-     */
-    bool CheckSolution();
-
-    /**
      * This checks for whether the label describing the subdomain exists. If it does, use DMPlexFilter. If not, use DMClone to return new DM.
      * @param inDM
      */

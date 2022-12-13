@@ -10,7 +10,7 @@ namespace ablate::boundarySolver {
 // forward declare the boundaryProcess
 class BoundaryProcess;
 
-class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
+class BoundarySolver : public solver::CellSolver, public solver::RHSFunction, private utilities::Loggable<BoundarySolver> {
    public:
     /**
      * Boundary information.
@@ -31,6 +31,11 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
      */
     using BoundaryUpdateFunction = PetscErrorCode (*)(PetscInt dim, const BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell, const PetscInt uOff[], PetscScalar* boundaryValues,
                                                       const PetscScalar* stencilValues, const PetscInt aOff[], PetscScalar* auxValues, const PetscScalar* stencilAuxValues, void* ctx);
+
+    /**
+     * Called before any of the rhs functions of the solver
+     */
+    using BoundaryPreRHSFunctionDefinition = PetscErrorCode (*)(BoundarySolver&, TS ts, PetscReal time, bool initialStage, Vec locX, void* ctx);
 
     /**
      * Boundaries can be treated in two different ways, point source on the boundary or distributed in the other phase.  For the Distributed model, the source is divided by volume in each case
@@ -126,6 +131,9 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
     // Hold a list of boundaryProcesses that contribute to this solver
     std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses;
 
+    // allow the use of any arbitrary pre rhs functions
+    std::vector<std::pair<BoundaryPreRHSFunctionDefinition, void*>> preRhsFunctions;
+
    protected:
     // Hold a list of GradientStencils, this order corresponds to the face order
     std::vector<GradientStencil> gradientStencils;
@@ -188,6 +196,13 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
     void RegisterFunction(BoundaryUpdateFunction function, void* context, const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields);
 
     /**
+     * Register an pre function that is called before any RHS function
+     * @param function
+     * @param context
+     */
+    void RegisterPreRHSFunction(BoundaryPreRHSFunctionDefinition function, void* context);
+
+    /**
      * Function passed into PETSc to compute the FV RHS with all boundarySourceFunctions
      * @param time
      * @param locXVec
@@ -230,6 +245,14 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
      * Get access to the output functions
      */
     inline const std::vector<BoundarySourceFunctionDescription>& GetOutputFunctions() { return boundaryOutputFunctions; }
+
+    /**
+     * Called to update the aux variables
+     * @param time
+     * @param locX
+     * @return
+     */
+    PetscErrorCode PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) override;
 };
 
 /**

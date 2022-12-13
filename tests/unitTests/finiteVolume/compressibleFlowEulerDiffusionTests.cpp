@@ -5,7 +5,6 @@
 #include <domain/modifiers/ghostBoundaryCells.hpp>
 #include <finiteVolume/compressibleFlowFields.hpp>
 #include <memory>
-#include <solver/directSolverTsInterface.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
@@ -31,7 +30,7 @@ typedef struct {
     PetscReal Tboundary;
 } InputParameters;
 
-struct CompressibleFlowDiffusionTestParameters {
+struct CompressibleFlowEulerDiffusionTestParameters {
     testingResources::MpiTestParameter mpiTestParameter;
     InputParameters parameters;
     PetscInt initialNx;
@@ -42,7 +41,7 @@ struct CompressibleFlowDiffusionTestParameters {
 
 using namespace ablate;
 
-class CompressibleFlowDiffusionTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<CompressibleFlowDiffusionTestParameters> {
+class CompressibleFlowEulerDiffusionTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<CompressibleFlowEulerDiffusionTestParameters> {
    public:
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
@@ -152,7 +151,7 @@ static void ComputeErrorNorms(TS ts, std::shared_ptr<ablate::finiteVolume::Compr
     VecDestroy(&exactVec) >> errorChecker;
 }
 
-TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
+TEST_P(CompressibleFlowEulerDiffusionTestFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
         // initialize petsc and mpi
         ablate::environment::RunEnvironment::Initialize(argc, argv);
@@ -172,14 +171,6 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %" PetscInt_FMT "\n", l);
 
             DM dmCreate; /* problem definition */
-            TS ts;       /* timestepper */
-
-            // Create a ts
-            TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
-            TSSetProblemType(ts, TS_NONLINEAR) >> testErrorChecker;
-            TSSetType(ts, TSEULER) >> testErrorChecker;
-            TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
-            TSSetFromOptions(ts) >> testErrorChecker;
 
             // Create a mesh
             // hard code the problem setup
@@ -200,12 +191,16 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                                                                     std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
                                                                                                                                       std::make_shared<domain::modifiers::GhostBoundaryCells>()});
 
+            auto exactSolution = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(EulerExact, &parameters));
+
+            // create a time stepper
+            auto timeStepper = ablate::solver::TimeStepper(
+                mesh, nullptr, {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
+
             // Setup the flow data
             auto flowParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}});
 
             auto transportModel = std::make_shared<ablate::eos::transport::Constant>(parameters.k);
-
-            auto exactSolution = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(EulerExact, &parameters));
 
             auto boundaryConditions = std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{
                 std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "wall left/right", std::vector<int>{1, 2}, PhysicsBoundary_Euler, &parameters),
@@ -220,26 +215,16 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                                                                                              std::make_shared<finiteVolume::fluxCalculator::OffFlux>(),
                                                                                              boundaryConditions /*boundary conditions*/);
 
-            mesh->InitializeSubDomains(
-                {flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
-            solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
-
-            // Name the flow field
-            PetscObjectSetName(((PetscObject)mesh->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;
-
-            // Setup the TS
-            TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;
-            TSSetFromOptions(ts) >> testErrorChecker;
-
-            // advance to the end time
-            TSSolve(ts, mesh->GetSolutionVector()) >> testErrorChecker;
+            // run
+            timeStepper.Register(flowObject);
+            timeStepper.Solve();
 
             // Get the L2 and LInf norms
             std::vector<PetscReal> l2Norm;
             std::vector<PetscReal> lInfNorm;
 
             // Compute the error
-            ComputeErrorNorms(ts, flowObject, l2Norm, lInfNorm, &parameters, testErrorChecker);
+            ComputeErrorNorms(timeStepper.GetTS(), flowObject, l2Norm, lInfNorm, &parameters, testErrorChecker);
 
             // print the results to help with debug
             auto l2String = PrintVector(l2Norm, "%2.3g");
@@ -254,7 +239,6 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                 l2History[b].push_back(PetscLog10Real(l2Norm[b]));
                 lInfHistory[b].push_back(PetscLog10Real(lInfNorm[b]));
             }
-            TSDestroy(&ts) >> testErrorChecker;
         }
 
         // Fit each component and output
@@ -287,23 +271,24 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
     EndWithMPI
 }
 
-INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowDiffusionTestFixture,
-                         testing::Values((CompressibleFlowDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction",
-                                                                                                        .nproc = 1,
-                                                                                                        .arguments = "-dm_plex_separate_marker -ts_adapt_type none "
-                                                                                                                     "-ts_max_steps 600 -ts_dt 0.00000625 "},
-                                                                                   .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
-                                                                                   .initialNx = 3,
-                                                                                   .levels = 3,
-                                                                                   .expectedL2Convergence = {NAN, 2.25, NAN},
-                                                                                   .expectedLInfConvergence = {NAN, 2.25, NAN}},
-                                         (CompressibleFlowDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction multi mpi",
-                                                                                                        .nproc = 2,
-                                                                                                        .arguments = "-dm_plex_separate_marker -ts_adapt_type none "
-                                                                                                                     " -ts_max_steps 600 -ts_dt 0.00000625 "},
-                                                                                   .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
-                                                                                   .initialNx = 9,
-                                                                                   .levels = 2,
-                                                                                   .expectedL2Convergence = {NAN, 2.2, NAN},
-                                                                                   .expectedLInfConvergence = {NAN, 2.0, NAN}}),
-                         [](const testing::TestParamInfo<CompressibleFlowDiffusionTestParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
+INSTANTIATE_TEST_SUITE_P(
+    CompressibleFlow, CompressibleFlowEulerDiffusionTestFixture,
+    testing::Values((CompressibleFlowEulerDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction",
+                                                                                        .nproc = 1,
+                                                                                        .arguments = "-dm_plex_separate_marker -ts_adapt_type none "
+                                                                                                     "-ts_max_steps 600 -ts_dt 0.00000625 "},
+                                                                   .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
+                                                                   .initialNx = 3,
+                                                                   .levels = 3,
+                                                                   .expectedL2Convergence = {NAN, 2.25, NAN},
+                                                                   .expectedLInfConvergence = {NAN, 2.25, NAN}},
+                    (CompressibleFlowEulerDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction multi mpi",
+                                                                                        .nproc = 2,
+                                                                                        .arguments = "-dm_plex_separate_marker -ts_adapt_type none "
+                                                                                                     " -ts_max_steps 600 -ts_dt 0.00000625 "},
+                                                                   .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
+                                                                   .initialNx = 9,
+                                                                   .levels = 2,
+                                                                   .expectedL2Convergence = {NAN, 2.2, NAN},
+                                                                   .expectedLInfConvergence = {NAN, 2.0, NAN}}),
+    [](const testing::TestParamInfo<CompressibleFlowEulerDiffusionTestParameters> &info) { return info.param.mpiTestParameter.getTestName(); });

@@ -90,6 +90,19 @@ struct Data {
     }
 
     /**
+     * Adds all of the dimensions of this field to specified destination
+     * @tparam IndexType
+     * @param source
+     * @param np the number of particles to copy
+     */
+    template <class DestinationDataType, class IndexType>
+    inline void AddFrom(DestinationDataType* source, IndexType p) const {
+        for (PetscInt d = 0; d < numberComponents; d++) {
+            values[p * dataSize + offset + d] += source[d];
+        }
+    }
+
+    /**
      * Copy the values in this pointData to destination
      * @tparam IndexType
      * @param destination

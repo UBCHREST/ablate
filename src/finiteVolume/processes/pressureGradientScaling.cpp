@@ -169,14 +169,9 @@ void ablate::finiteVolume::processes::PressureGradientScaling::Save(PetscViewer 
 void ablate::finiteVolume::processes::PressureGradientScaling::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) { RestoreKeyValue(viewer, "pressureGradientScalingAlpha", alpha); }
 
 #include "registrar.hpp"
+REGISTER_DERIVED(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::PressureGradientScaling);
 REGISTER_DEFAULT(ablate::finiteVolume::processes::PressureGradientScaling, ablate::finiteVolume::processes::PressureGradientScaling,
                  "Rescales the thermodynamic pressure gradient scaling the acoustic propagation speeds to allow for a larger time step.",
                  ARG(ablate::eos::EOS, "eos", "the equation of state used for the flow"), ARG(double, "alphaInit", "the initial alpha"),
                  ARG(double, "domainLength", "the reference length of the domain"), OPT(double, "maxAlphaAllowed", "the maximum allowed alpha during the simulation (default 100)"),
                  OPT(double, "maxDeltaPressureFac", "max variation from mean pressure (default 0.05)"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
-
-REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::PressureGradientScaling,
-         "Rescales the thermodynamic pressure gradient scaling the acoustic propagation speeds to allow for a larger time step.",
-         ARG(ablate::eos::EOS, "eos", "the equation of state used for the flow"), ARG(double, "alphaInit", "the initial alpha"), ARG(double, "domainLength", "the reference length of the domain"),
-         OPT(double, "maxAlphaAllowed", "the maximum allowed alpha during the simulation (default 100)"), OPT(double, "maxDeltaPressureFac", "max variation from mean pressure (default 0.05)"),
-         OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

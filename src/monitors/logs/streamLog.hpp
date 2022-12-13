@@ -18,6 +18,12 @@ class StreamLog : public Log {
     void Printf(const char*, ...) override;
 
     void Initialize(MPI_Comm comm) override;
+
+    /**
+     * Return access to an underlying stream
+     * @return
+     */
+    std::ostream& GetStream() override { return stream; }
 };
 }  // namespace ablate::monitors::logs
 

@@ -99,7 +99,7 @@ class Parameters {
     std::map<std::string, T> ToMap() const {
         std::map<std::string, T> map;
         for (const auto& key : GetKeys()) {
-            map[key] = GetExpect<double>(key);
+            map[key] = GetExpect<T>(key);
         }
         return map;
     }

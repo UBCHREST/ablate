@@ -103,6 +103,7 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
             std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
             auto species = std::vector<std::string>();
             EXPECT_CALL(*eos, GetSpecies()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(species));
+            EXPECT_CALL(*eos, GetExtraVariables()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(ablate::utilities::VectorUtilities::Empty<std::string>));
             EXPECT_CALL(*eos, GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Temperature, testing::_))
                 .Times(::testing::AtLeast(1))
                 .WillRepeatedly(
@@ -136,9 +137,8 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
             std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization{eulerExactField, evExactField};
 
             // create a time stepper
-            auto timeStepper = ablate::solver::TimeStepper("timeStepper",
-                                                           mesh,
-                                                           {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}},
+            auto timeStepper = ablate::solver::TimeStepper(mesh,
+                                                           ablate::parameters::MapParameters::Create({{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}}),
                                                            {},
                                                            initialization,
                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, evExactField});

@@ -1,0 +1,47 @@
+# Simple test for mapping the mesh using a simple function when the dm has a coordinate space
+---
+# metadata for the simulation
+environment:
+  title: _meshMappingTestWithCoordinateSpace
+  tagDirectory: false
+# global arguments that can be used by petsc
+arguments:
+  # ask petsc to label the boundary values
+  dm_plex_separate_marker: ""
+# set up the time stepper responsible for marching in time
+timestepper:
+  io:
+    interval: 0
+  # for this example there are no time stepper arguments (empty simulation)
+  arguments: { }
+  # create a simple box mesh for simulation
+  domain: !ablate::domain::BoxMesh
+    name: mappingMesh
+    # keep the mesh simple with only 4 faces in each direction
+    faces: [ 4, 4 ]
+    # range the mesh between 0.0, 0.0 to 1.0, 1.0
+    lower: [ 0, 0 ]
+    upper: [ 1, 1 ]
+    # create a dummy example fild
+    fields:
+      - name: exampleFVField
+        components: [ "xx", "yy" ]
+        type: FVM
+    modifiers:
+      # create a coordinate Space
+      - !ablate::domain::modifiers::CreateCoordinateSpace
+        degree: 1
+      # define a simple mesh mapper that translate in x+x and y+y
+      - !ablate::domain::modifiers::MeshMapper
+        "x+1.0*x, y+2.0*y"
+      # the $OutputDirectory is a special keyword that gets parsed by ablate to update to the output directory
+      - !ablate::monitors::DmViewFromOptions
+        options: "hdf5:$OutputDirectory/dm.h5"
+      - !ablate::monitors::DmViewFromOptions
+        options: ascii::ascii_info_detail  
+  initialization:
+    - fieldName: "exampleFVField"
+      field: "x, y"
+
+# this is a test input file with no solvers
+solvers: [ ]

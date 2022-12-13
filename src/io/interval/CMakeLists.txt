@@ -4,6 +4,7 @@ target_sources(ablateLibrary
         wallTimeInterval.cpp
         simulationTimeInterval.cpp
         delayInterval.cpp
+        equationInterval.cpp
 
         PUBLIC
         interval.hpp
@@ -11,4 +12,5 @@ target_sources(ablateLibrary
         simulationTimeInterval.hpp
         wallTimeInterval.hpp
         delayInterval.hpp
+        equationInterval.hpp
         )

@@ -13,6 +13,7 @@
 #include "io/serializable.hpp"
 #include "mathFunctions/fieldFunction.hpp"
 #include "region.hpp"
+#include "utilities/loggable.hpp"
 
 namespace ablate::solver {
 // forward declare the Solver
@@ -23,7 +24,7 @@ namespace ablate::domain {
 // forward declare the subDomain
 class SubDomain;
 
-class Domain {
+class Domain : private utilities::Loggable<Domain> {
    protected:
     Domain(DM dm, std::string name, std::vector<std::shared_ptr<FieldDescriptor>>, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers,
            const std::shared_ptr<parameters::Parameters>& options = {}, bool setFromOptions = true);
@@ -132,9 +133,10 @@ class Domain {
 
     /**
      * checks check point in this domain for nan/inf in the solution aux vectors
+     * @param globSourceVector optional source vector to also check
      * @return bool True is returned if an error is found.
      */
-    bool CheckSolution();
+    bool CheckFieldValues(Vec globSourceVector = nullptr);
 };
 }  // namespace ablate::domain
 #endif  // ABLATELIBRARY_DOMAIN_H

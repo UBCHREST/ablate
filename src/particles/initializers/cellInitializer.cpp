@@ -1,5 +1,4 @@
 #include "cellInitializer.hpp"
-#include "registrar.hpp"
 #include "utilities/petscError.hpp"
 
 ablate::particles::initializers::CellInitializer::CellInitializer(int particlesPerCellPerDim) : particlesPerCell(particlesPerCellPerDim) {}
@@ -25,5 +24,6 @@ void ablate::particles::initializers::CellInitializer::Initialize(ablate::domain
     DMSwarmSetPointCoordinatesRandom(particleDm, particlesPerCellLocal) >> checkError;
 }
 
+#include "registrar.hpp"
 REGISTER(ablate::particles::initializers::Initializer, ablate::particles::initializers::CellInitializer, "simple cell initializer that puts particles in every element",
          ARG(int, "particlesPerCellPerDim", "particles per cell per dimension"));
