@@ -2,6 +2,7 @@
 #define ABLATELIBRARY_FIELDDESCRIPTION_HPP
 
 #include <petsc.h>
+#include <algorithm>
 #include <memory>
 #include <parameters/parameters.hpp>
 #include <string>

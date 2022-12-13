@@ -2,6 +2,7 @@
 #define ABLATELIBRARY_FIELD_HPP
 
 #include <petsc.h>
+#include <algorithm>
 #include <set>
 #include <string>
 #include <vector>
