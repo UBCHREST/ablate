@@ -32,6 +32,6 @@ add_subdirectory(eos)
 add_subdirectory(environment)
 add_subdirectory(io)
 add_subdirectory(chemistry)
-add_subdirectory(levelSet)
+#add_subdirectory(levelSet)
 add_subdirectory(radiation)
 

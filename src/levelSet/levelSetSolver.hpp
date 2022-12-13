@@ -8,7 +8,7 @@
 #include "domain/domain.hpp"
 #include "solver/solver.hpp"
 #include "solver/timeStepper.hpp"
-#include "rbfV2.hpp"
+#include "domain/RBF/rbf.hpp"
 
 //ablate::solver::Solver::Solver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options)
 

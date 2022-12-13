@@ -24,7 +24,7 @@ class LevelSetField : public domain::FieldDescriptor {
 
     // Constructors
     LevelSetField(std::shared_ptr<domain::Region> = {});
-    LevelSetField(std::shared_ptr<ablate::radialBasis::RBF> rbf = {}, levelSetShape shape = LevelSetField::levelSetShape::SPHERE);
+//    LevelSetField(std::shared_ptr<ablate::radialBasis::RBF> rbf = {}, levelSetShape shape = LevelSetField::levelSetShape::SPHERE);
 
     // Destructor
     ~LevelSetField();

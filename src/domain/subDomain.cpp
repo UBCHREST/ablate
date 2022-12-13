@@ -3,7 +3,7 @@
 #include <sstream>
 #include <utilities/petscError.hpp>
 #include "utilities/mpiError.hpp"
-#include "levelSet/rbfV2.hpp"
+//#include "levelSet/rbfV2.hpp"
 
 
 ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const std::vector<std::shared_ptr<FieldDescription>>& allAuxFields)
@@ -863,12 +863,4 @@ void ablate::domain::SubDomain::CreateEmptySubDM(DM* inDM, std::shared_ptr<domai
     } else {
         DMClone(GetDM(), inDM);
     }
-}
-
-
-// Create a new RBF for the given region, if required.
-void ablate::domain::SubDomain::SetupRBF(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
-  if (!(subDomain->rbf)) {
-    subDomain->rbf = std::make_shared<ablate::domain::RBF>(subDomain, ablate::domain::RBF::RBFType::mq, 0, 0.0);
-  }
 }

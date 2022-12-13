@@ -1,28 +1,31 @@
-#include "lsSupport.hpp"
+#include "rbfSupport.hpp"
 #include <petsc/private/vecimpl.h>
 
 
 
 // Return all cells which share an vertex or edge/face with a center cell
-// dm - The mesh
-// p - The cell to use
-// maxDist - Maximum distance from p to consider adding
-// useVertices - Should we include cells which share a vertex (TRUE) or an edge/face (FALSE)
-// nCells - Number of cells found
-// cells - The IDs of the cells found.
+// Inputs:
+//    dm - The mesh
+//    p - The center cell
+//    maxDist - Maximum distance from p to consider adding
+//    useVertices - Should we include cells which share a vertex (TRUE) or an edge/face (FALSE)
+//
+// Outputs:
+//    nCells - Number of cells found
+//    cells - The IDs of the cells found.
 PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscInt p, PetscReal maxDist, PetscBool useVertices, PetscInt *nCells, PetscInt *cells[]) {
 
   PetscInt        cStart, cEnd, vStart, vEnd;
   PetscInt        cl, nClosure, *closure = NULL;
   PetscInt        st, nStar, *star = NULL;
-  PetscInt        n, list[10000];  // As of right now just make it a list big enough to hold everything. There must be a better way of doing this.
+  PetscInt        n, list[10000];  // To avoid memory reallocation just make the list bigger than it would ever need to be. Will look at doing something else in the future.
   PetscInt        i, dim;
   PetscReal       x0[3], x[3], dist;
   PetscErrorCode  ierr;
 
   PetscFunctionBegin;
 
-  ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
+  ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);                            // The dimension of the grid
 
   ierr = DMPlexComputeCellGeometryFVM(dm, p, NULL, x0, NULL);CHKERRQ(ierr); // Center of the cell-of-interest
 
@@ -46,7 +49,7 @@ PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscInt p, PetscReal maxD
         if( star[st] >= cStart && star[st] < cEnd){   // If the point is a cell add it.
           ierr = DMPlexComputeCellGeometryFVM(dm, star[st], NULL, x, NULL);CHKERRQ(ierr); // Center of the candidate cell.
           dist = 0;
-          for (i = 0; i < dim; ++i) {
+          for (i = 0; i < dim; ++i) { // Compute the distance so that we can check if it's within the required distance.
             dist += PetscSqr(x0[i] - x[i]);
           }
 
@@ -56,15 +59,15 @@ PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscInt p, PetscReal maxD
         }
       }
 
-      ierr = DMPlexRestoreTransitiveClosure(dm, closure[cl], PETSC_FALSE, &nStar, &star);CHKERRQ(ierr);
+      ierr = DMPlexRestoreTransitiveClosure(dm, closure[cl], PETSC_FALSE, &nStar, &star);CHKERRQ(ierr); // Restore the points
     }
   }
 
-  ierr = DMPlexRestoreTransitiveClosure(dm, p, PETSC_TRUE, &nClosure, &closure);CHKERRQ(ierr);
-  ierr = PetscSortRemoveDupsInt(&n, list);CHKERRQ(ierr);
-  ierr = PetscMalloc1(n, cells);CHKERRQ(ierr);
-  ierr = PetscArraycpy(*cells, list, n);CHKERRQ(ierr);
-  *nCells = n;
+  ierr = DMPlexRestoreTransitiveClosure(dm, p, PETSC_TRUE, &nClosure, &closure);CHKERRQ(ierr);  // Restore the points
+  ierr = PetscSortRemoveDupsInt(&n, list);CHKERRQ(ierr);  // Cleanup the list
+  ierr = PetscMalloc1(n, cells);CHKERRQ(ierr);            // Allocate the output
+  ierr = PetscArraycpy(*cells, list, n);CHKERRQ(ierr);    // Copy the cell list
+  *nCells = n;                                            // Set the number of cells for output
 
   PetscFunctionReturn(0);
 }
