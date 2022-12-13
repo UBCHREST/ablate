@@ -61,10 +61,10 @@ REGISTER(ablate::domain::Domain, ablate::domain::BoxMesh,
          "\n### 3D:\n\n"
          "| Direction | Description | Value |\n"
          "| --- | --- |-----|\n"
-         " | y- | bottom | 1 |\n"
-         " | y+ | top    | 2|\n"
-         " | z+ | front  | 3|\n"
-         " | z- | back   | 4|\n"
+         " | z- | bottom | 1 |\n"
+         " | z+ | top    | 2|\n"
+         " | y+ | front  | 3|\n"
+         " | y- | back   | 4|\n"
          " | x+ | right  | 5|\n"
          " | x- | left   | 6|\n",
          ARG(std::string, "name", "the name of the domain/mesh object"), OPT(std::vector<ablate::domain::FieldDescriptor>, "fields", "a list of fields/field descriptors"),
