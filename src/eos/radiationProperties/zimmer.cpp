@@ -8,13 +8,16 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerFunction(const Pe
 
     /** This model depends on mass fraction, temperature, and density in order to predict the absorption properties of the medium. */
     auto functionContext = (FunctionContext *)ctx;
-    double temperature, density;  //!< Variables to hold information gathered from the fields
-    PetscErrorCode ierr;          //!< Standard PETSc error code returned by PETSc functions
+    PetscReal temperature = 0;
+    PetscReal density = 0;  //!< Variables to hold information gathered from the fields
+    PetscErrorCode ierr;    //!< Standard PETSc error code returned by PETSc functions
 
     ierr = functionContext->temperatureFunction.function(conserved, &temperature, functionContext->temperatureFunction.context.get());  //!< Get the temperature value at this location
     CHKERRQ(ierr);
-    ierr = functionContext->densityFunction.function(conserved, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
-    CHKERRQ(ierr);
+    if (temperature != 0) {
+        ierr = functionContext->densityFunction.function(conserved, temperature, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
+        CHKERRQ(ierr);
+    }
 
     if (density == 0) {
         *kappa = 0;
@@ -70,11 +73,13 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerTemperatureFuncti
 
     /** This model depends on mass fraction, temperature, and density in order to predict the absorption properties of the medium. */
     auto functionContext = (FunctionContext *)ctx;
-    double density;       //!< Variables to hold information gathered from the fields
-    PetscErrorCode ierr;  //!< Standard PETSc error code returned by PETSc functions
+    PetscReal density = 0;  //!< Variables to hold information gathered from the fields
+    PetscErrorCode ierr;    //!< Standard PETSc error code returned by PETSc functions
 
-    ierr = functionContext->densityFunction.function(conserved, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
-    CHKERRQ(ierr);
+    if (temperature != 0) {
+        ierr = functionContext->densityFunction.function(conserved, temperature, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
+        CHKERRQ(ierr);
+    }
 
     if (density == 0) {
         *kappa = 0;
@@ -144,19 +149,20 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Zimmer::Get
     auto CO2offset = GetFieldComponentOffset("co2", *densityYiField);
 
     if (H2Ooffset == -1 && CH4offset == -1 && COoffset == -1 && CO2offset == -1) {
-        throw std::invalid_argument("Zimmer absorption model requires at least one of the following: H2O, CH4, CO, CO2\n The Constant class allows the absorptivity of the medium to be set manually.");
+        throw std::invalid_argument(
+            "Zimmer absorption model requires at least one of the following: H2O, CH4, CO, CO2\n The Constant class allows the absorptivity of the medium to be set manually.\n");
     }
 
     switch (property) {
         case RadiationProperty::Absorptivity:
             return ThermodynamicFunction{.function = ZimmerFunction,
-                                         .context = std::make_shared<FunctionContext>(
-                                             FunctionContext{.densityYiH2OOffset = H2Ooffset,
-                                                             .densityYiCO2Offset = CO2offset,
-                                                             .densityYiCOOffset = COoffset,
-                                                             .densityYiCH4Offset = CH4offset,
-                                                             .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
-                                                             .densityFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
+                                         .context = std::make_shared<FunctionContext>(FunctionContext{
+                                             .densityYiH2OOffset = H2Ooffset,
+                                             .densityYiCO2Offset = CO2offset,
+                                             .densityYiCOOffset = COoffset,
+                                             .densityYiCH4Offset = CH4offset,
+                                             .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
+                                             .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
         default:
             throw std::invalid_argument("Unknown radiationProperties property in ablate::eos::radiationProperties::Zimmer");
     }
@@ -181,19 +187,21 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
     auto CO2offset = GetFieldComponentOffset("co2", *densityYiField);
 
     if (H2Ooffset == -1 && CH4offset == -1 && COoffset == -1 && CO2offset == -1) {
-        throw std::invalid_argument("Zimmer absorption model requires at least one of the following: H2O, CH4, CO, CO2\n The Constant class allows the absorptivity of the medium to be set manually.");
+        throw std::invalid_argument(
+            "Zimmer absorption model requires at least one of the following: H2O, CH4, CO, CO2\n The Constant class allows the absorptivity of the medium to be set manually.\n");
     }
 
     switch (property) {
         case RadiationProperty::Absorptivity:
-            return ThermodynamicTemperatureFunction{.function = ZimmerTemperatureFunction,
-                                                    .context = std::make_shared<FunctionContext>(FunctionContext{
-                                                        .densityYiH2OOffset = H2Ooffset,
-                                                        .densityYiCO2Offset = CO2offset,
-                                                        .densityYiCOOffset = COoffset,
-                                                        .densityYiCH4Offset = CH4offset,
-                                                        .temperatureFunction = {},
-                                                        .densityFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
+            return ThermodynamicTemperatureFunction{
+                .function = ZimmerTemperatureFunction,
+                .context = std::make_shared<FunctionContext>(
+                    FunctionContext{.densityYiH2OOffset = H2Ooffset,
+                                    .densityYiCO2Offset = CO2offset,
+                                    .densityYiCOOffset = COoffset,
+                                    .densityYiCH4Offset = CH4offset,
+                                    .temperatureFunction = {},
+                                    .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
         default:
             throw std::invalid_argument("Unknown radiationProperties property in ablate::eos::radiationProperties::Zimmer");
     }

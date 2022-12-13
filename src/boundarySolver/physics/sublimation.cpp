@@ -10,7 +10,7 @@ using fp = ablate::finiteVolume::CompressibleFlowFields;
 ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
                                                           const std::shared_ptr<ablate::mathFunctions::FieldFunction> &massFractions, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux,
                                                           std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling, bool diffusionFlame,
-                                                          std::shared_ptr<ablate::radiation::Radiation> radiationIn, std::shared_ptr<io::interval::Interval> intervalIn)
+                                                          std::shared_ptr<ablate::radiation::Radiation> radiationIn, const std::shared_ptr<io::interval::Interval> &intervalIn)
     : latentHeatOfFusion(latentHeatOfFusion),
       transportModel(std::move(transportModel)),
       eos(std::move(eos)),
@@ -83,15 +83,21 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
 void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
     /** Initialize the radiation solver with the face geometry of the boundary solver in order to solve for surface flux */
     if (radiation) {
+        // check for ghost cells
+        DMLabel ghostLabel;
+        DMGetLabel(bSolver.GetSubDomain().GetDM(), "ghost", &ghostLabel) >> checkError;
+
         //!< Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solver.
         solver::DynamicRange faceRange;
-        for (PetscInt i = 0; i < static_cast<int>(bSolver.GetBoundaryGeometry().size()); i++) {
-            faceRange.Add(bSolver.GetBoundaryGeometry()[i].geometry.faceId);  //!< Add each ID to the range that the radiation solver will use
+        for (const auto &i : bSolver.GetBoundaryGeometry()) {
+            PetscInt ghost = -1;
+            if (ghostLabel) DMLabelGetValue(ghostLabel, i.geometry.faceId, &ghost) >> checkError;
+            if (!(ghost >= 0)) faceRange.Add(i.geometry.faceId);  //!< Add each ID to the range that the radiation solver will use
         }
         radiation->Setup(faceRange.GetRange(), bSolver.GetSubDomain());
         radiation->Initialize(faceRange.GetRange(), bSolver.GetSubDomain());  //!< Pass the non-dynamic range into the radiation solver
 
-        bSolver.RegisterPreStep([this](auto ts, auto &solver) { SublimationPreStep(ts, solver); });
+        bSolver.RegisterPreRHSFunction(SublimationPreRHS, this);
     }
 }
 
@@ -130,8 +136,8 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     }
 
     // compute the heat flux. Add the radiation heat flux for this face intensity if the radiation solver exists
-    PetscReal heatFluxIntoSolid = -dTdn * effectiveConductivity + radIntensity;
-    PetscReal sublimationHeatFlux = PetscMax(0.0, heatFluxIntoSolid);  // note that q = -dTdn as dTdN faces into the solid
+    PetscReal conductionIntoSolid = -dTdn * effectiveConductivity;
+    PetscReal sublimationHeatFlux = PetscMax(0.0, conductionIntoSolid + radIntensity);  // note that q = -dTdn as dTdN faces into the solid
     // If there is an additional heat flux compute and add value
     if (sublimation->additionalHeatFlux) {
         sublimationHeatFlux += sublimation->additionalHeatFlux->Eval(fg->centroid, (int)dim, sublimation->currentTime);
@@ -212,7 +218,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     PetscCall(sublimation->computeSensibleEnthalpy.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &sensibleEnthalpy, sublimation->computeSensibleEnthalpy.context.get()));
 
     // Energy term
-    source[sOff[EULER_LOC] + fp::RHOE] = (massFlux * sensibleEnthalpy - heatFluxIntoSolid) * area;
+    source[sOff[EULER_LOC] + fp::RHOE] = (massFlux * sensibleEnthalpy - conductionIntoSolid) * area;
 
     // Add in species
     if (sublimation->massFractionsContext) {
@@ -271,7 +277,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationOutputFu
     PetscReal heatFluxIntoSolid = -dTdn * effectiveConductivity;
     source[sOff[RAD_LOC]] = radIntensity;
     source[sOff[CONDUCTION_LOC]] = heatFluxIntoSolid;
-    PetscReal sublimationHeatFlux = PetscMax(0.0, heatFluxIntoSolid);  // note that q = -dTdn as dTdN faces into the solid
+    PetscReal sublimationHeatFlux = PetscMax(0.0, heatFluxIntoSolid + radIntensity);  // note that q = -dTdn as dTdN faces into the solid
     // If there is an additional heat flux compute and add value
     PetscReal additionalHeatFlux = 0.0;
     if (sublimation->additionalHeatFlux) {
@@ -295,15 +301,16 @@ void ablate::boundarySolver::physics::Sublimation::Setup(PetscInt numberSpeciesI
     computePressure = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Pressure, {});
 }
 
-PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationPreStep(TS ts, ablate::solver::Solver &solver) {
+PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationPreRHS(BoundarySolver &solver, TS ts, PetscReal time, bool initialStage, Vec locX, void *ctx) {
     PetscFunctionBegin;
+    auto sublimation = (Sublimation *)ctx;
     PetscInt step;
-    PetscReal time;
     TSGetStepNumber(ts, &step) >> checkError;
     TSGetTime(ts, &time) >> checkError;
-    if (radiationInterval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
-        radiation->Solve(solver.GetSubDomain().GetSolutionVector(), solver.GetSubDomain().GetField("temperature"), solver.GetSubDomain().GetAuxVector());
+    if (initialStage && sublimation->radiationInterval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
+        sublimation->radiation->EvaluateGains(solver.GetSubDomain().GetSolutionVector(), solver.GetSubDomain().GetField("temperature"), solver.GetSubDomain().GetAuxVector());
     }
+    sublimation->radiation->Solve(solver.GetSubDomain().GetSolutionVector(), solver.GetSubDomain().GetField("temperature"), solver.GetSubDomain().GetAuxVector());
     PetscFunctionReturn(0);
 }
 

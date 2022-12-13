@@ -5,6 +5,7 @@
 #include <set>
 #include "eos/radiationProperties/radiationProperties.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
+#include "io/interval/interval.hpp"
 #include "monitors/logs/log.hpp"
 #include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
@@ -12,8 +13,8 @@
 
 namespace ablate::radiation {
 
-class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver provides cell based functionality, right hand side function compatibility with
-                                                           //!< finite element/ volume, loggable allows for the timing and tracking of events
+class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver provides cell based functionality, right hand side function compatibility with
+                                                              //!< finite element/ volume, loggable allows for the timing and tracking of events
    public:
     /**
      *
@@ -22,8 +23,8 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      * @param rayNumber
      * @param options other options
      */
-    Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
-              std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> = {});
+    Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
+              std::shared_ptr<ablate::monitors::logs::Log> = {});
 
     virtual ~Radiation();
 
@@ -42,7 +43,8 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
         PetscReal I0 = 0;                        //!< Determing the initial ray intensity by grabbing the head cell of the furthest ray? There will need to be additional setup for this.
         PetscReal Isource = 0;                   //!< Value that will be contributed to by every ray segment.
         PetscReal Kradd = 1;                     //!< Value that will be contributed to by every ray segment.
-        PetscReal intensity = 0;                 //!<  Value that will be contributed to by every ray.
+        PetscReal intensity = 0;                 //!< The irradiation value that will be contributed to by every ray. This is updated every (pre-step && interval) gain evaluation.
+        PetscReal net = 0;                       //!< The net radiation value including the losses. This is updated every pre-stage solve.
         std::map<std::string, Carrier> handler;  //!< Stores local carrier information
     };
 
@@ -61,16 +63,29 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     virtual void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
     inline PetscReal GetIntensity(PetscInt iCell) {  //!< Function to give other classes access to the intensity
-        return origin[iCell].intensity;
+        return origin[iCell].net;
     }
 
     /// Class Methods
+    /** The solve function evaluates the net radiation source term. However, the net radiation value must be updated by each solver individually.
+     * The solve updates every value except for the radiative gains from the domain. This avoids doing the must computationally expensive part of the solve at every stage.
+     * */
     void Solve(Vec solVec, ablate::domain::Field temperatureField, Vec aux);
 
-    virtual void ParticleStep(ablate::domain::SubDomain& subDomain, PetscSF cellSF, DM faceDM, const PetscScalar* faceGeomArray, PetscInt stepcount);  //!< Routine to move the particle one step
-    virtual PetscReal SurfaceComponent(DM* faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi,
-                                       PetscInt ntheta);                         //!< Dummy function that doesn't do anything unless it is overridden by the surface implementation
-    virtual PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM& solDm);  //!< Get the index of the cell which the losses should be calculated from
+    /** Evaluates the ray intensity from the domain to update the effects of irradiation. Does not impact the solution unless the solve function is called again.
+     * */
+    void EvaluateGains(Vec solVec, ablate::domain::Field temperatureField, Vec auxVec);
+
+    /** Determines the next location of the search particles during the initialization
+     * */
+    virtual void ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray);  //!< Routine to move the particle one step
+
+    /** Determines what component of the incoming radiation should be accounted for when evaluating the irradiation for each ray.
+     * Dummy function that doesn't do anything unless it is overridden by the surface implementation
+     * */
+    virtual PetscReal SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi, PetscInt ntheta);
+    virtual PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM solDm, DM pPDm);  //!< Get the index of the cell which the losses should be calculated from
+    virtual void GetFuelEmissivity(double& kappa);
 
    protected:
     DM radsolve{};   //!< DM associated with the radiation particles
@@ -123,8 +138,13 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
 
     /** Update the coordinates of the particle using the virtual coordinates
      * Moves the particle in physical space instead of only updating the virtual coordinates
-     * This function must be run on every updated particle before swarm migrate is used */
-    void UpdateCoordinates(PetscInt ipart, Virtualcoord* virtualcoord, PetscReal* coord) const;
+     * This function must be run on every updated particle before swarm migrate is used
+     * @param ipart the particle index which is being updated
+     * @param virtualcoord the virtual coordinate field which is being read from
+     * @param coord the DMSwarm coordinate field which is being written to
+     * @param adv a multiple of the minimum cell radius by which to advance the DMSwarm coordinates ahead of the virtual coordinates
+     * */
+    void UpdateCoordinates(PetscInt ipart, Virtualcoord* virtualcoord, PetscReal* coord, PetscReal adv) const;
 
     /** Create a unique identifier from an array of integers.
      * This is done using the nested Cantor pairing function
@@ -155,7 +175,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     std::basic_string<char>&& solverId;
     const std::shared_ptr<domain::Region> region;
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
-    const std::shared_ptr<domain::Region> fieldBoundary;  //!< Hold the region used to define the boundary faces
     const std::shared_ptr<ablate::monitors::logs::Log> log = nullptr;
 };
 

@@ -1,6 +1,3 @@
-//
-// Created by owen on 5/19/22.
-//
 #ifndef ABLATELIBRARY_RADIATIONMODEL_H
 #define ABLATELIBRARY_RADIATIONMODEL_H
 

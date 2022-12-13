@@ -61,8 +61,8 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
   id: reactingFlowODE
   options: {}
   processes:
-    # without advection/diffusion the tChemReactions process is the only one needed
-    - !ablate::finiteVolume::processes::TChemReactions
+    # without advection/diffusion the Chemistry process is the only one needed
+    - !ablate::finiteVolume::processes::Chemistry
       eos: *eos
   boundaryConditions: []
   monitors:

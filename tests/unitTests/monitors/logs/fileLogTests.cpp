@@ -33,6 +33,10 @@ TEST_P(FileLogTestFixture, ShouldPrintToFile) {
 
             log.Print("Log Out Log\n");
             log.Printf("rank: %d\n", rank);
+
+            // Should also print from a stream
+            auto& stream = log.GetStream();
+            stream << "stream: " << rank << std::endl;
         }
         ablate::environment::RunEnvironment::Finalize();
         exit(0);
@@ -43,7 +47,7 @@ TEST_P(FileLogTestFixture, ShouldPrintToFile) {
     std::stringstream buffer;
     buffer << logFile.rdbuf();
 
-    ASSERT_EQ(buffer.str(), "Log Out Log\nrank: 0\n");
+    ASSERT_EQ(buffer.str(), "Log Out Log\nrank: 0\nstream: 0\n");
 }
 
 TEST_P(FileLogTestFixture, ShouldPrintToFileInOutputDirectory) {
@@ -133,4 +137,4 @@ TEST_P(FileLogTestFixture, ShouldAppendToFileInOutputDirectory) {
 }
 
 INSTANTIATE_TEST_SUITE_P(LogTests, FileLogTestFixture, testing::Values((MpiTestParameter){.testName = "logFile 1 proc", .nproc = 1, .arguments = ""}),
-                         [](const testing::TestParamInfo<MpiTestParameter> &info) { return info.param.getTestName(); });
+                         [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });

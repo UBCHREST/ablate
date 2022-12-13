@@ -39,8 +39,8 @@ void ablate::particles::processes::Inertial::ComputeRHS(PetscReal time, ablate::
         // Note: this function assumed that the solution vector order is correct
         tauP = partDens(p) * PetscSqr(partDiam(p)) / (18.0 * muF);  // particle relaxation time
         for (PetscInt n = 0; n < dim; n++) {
-            coordinateRhs(p, n) = partVel(p, n);
-            velocityRhs(p, n) = corFactor * (fluidVel(p, n) - partVel(p, n)) / tauP + gravityField[n] * (1.0 - rhoF / partDens(p));
+            coordinateRhs(p, n) += partVel(p, n);
+            velocityRhs(p, n) += corFactor * (fluidVel(p, n) - partVel(p, n)) / tauP + gravityField[n] * (1.0 - rhoF / partDens(p));
         }
     }
 }
@@ -48,4 +48,4 @@ void ablate::particles::processes::Inertial::ComputeRHS(PetscReal time, ablate::
 #include "registrar.hpp"
 REGISTER(ablate::particles::processes::Process, ablate::particles::processes::Inertial, "massless particles that advects with the flow",
          ARG(ablate::parameters::Parameters, "parameters", "fluid parameters for the particles (fluidDensity, fluidViscosity, gravityField)"),
-         OPT(std::string, "eulerianVelocityFieldIn", "optional name of the Eulerian velocity field (defaults to velocity)"))
+         OPT(std::string, "eulerianVelocityFieldIn", "optional name of the Eulerian velocity field (defaults to velocity)"));

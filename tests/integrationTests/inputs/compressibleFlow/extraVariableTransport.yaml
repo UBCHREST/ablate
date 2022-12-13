@@ -5,7 +5,7 @@
 environment:
   title: _extraVariableTransport
   tagDirectory: false
-arguments: 
+arguments:
   dm_plex_separate_marker: ""
 # set up the time stepper responsible for marching in time
 timestepper:

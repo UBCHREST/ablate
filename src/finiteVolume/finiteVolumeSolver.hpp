@@ -20,8 +20,9 @@ namespace processes {
 class Process;
 }
 
-class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction, public io::Serializable {
+class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction, public io::Serializable, public solver::BoundaryFunction, private utilities::Loggable<FiniteVolumeSolver> {
    public:
+    using PreRHSFunctionDefinition = PetscErrorCode (*)(const FiniteVolumeSolver&, TS ts, PetscReal time, bool initialStage, Vec locX, void* ctx);
     using RHSArbitraryFunction = PetscErrorCode (*)(const FiniteVolumeSolver&, DM dm, PetscReal time, Vec locXVec, Vec locFVec, void* ctx);
     using ComputeTimeStepFunction = double (*)(TS ts, FiniteVolumeSolver&, void* ctx);
 
@@ -42,6 +43,9 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
 
     // allow the use of any arbitrary rhs functions
     std::vector<std::pair<RHSArbitraryFunction, void*>> rhsArbitraryFunctions;
+
+    // allow the use of any arbitrary pre rhs functions
+    std::vector<std::pair<PreRHSFunctionDefinition, void*>> preRhsFunctions;
 
     // functions to update the timestep
     const bool computePhysicsTimeStep;
@@ -85,6 +89,15 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) override;
 
     /**
+     * Updates any traditional ghost node boundary
+     * @param time
+     * @param locX
+     * @param locX_t
+     * @return
+     */
+    PetscErrorCode ComputeBoundary(PetscReal time, Vec locX, Vec locX_t) override;
+
+    /**
      * Register a FVM rhs discontinuous flux function
      * @param function
      * @param context
@@ -123,6 +136,13 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
      * @param context
      */
     void RegisterRHSFunction(RHSArbitraryFunction function, void* context);
+
+    /**
+     * Register a pre rhs function.  The user is responsible for all work
+     * @param function
+     * @param context
+     */
+    void RegisterPreRHSFunction(PreRHSFunctionDefinition function, void* context);
 
     /**
      * Register a dtCalculator
@@ -185,6 +205,14 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     std::shared_ptr<T> FindProcess() {
         return utilities::VectorUtilities::Find<T>(processes);
     }
+
+    /**
+     * Called to update the aux variables
+     * @param time
+     * @param locX
+     * @return
+     */
+    PetscErrorCode PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) override;
 };
 }  // namespace ablate::finiteVolume
 

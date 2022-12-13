@@ -87,11 +87,17 @@ class EOS {
     [[nodiscard]] virtual FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const = 0;
 
     /**
-     * Species supported by this EOS
+     * Required species to utilize the equation of state
      * species model functions
      * @return
      */
     [[nodiscard]] virtual const std::vector<std::string>& GetSpecies() const = 0;
+
+    /**
+     * Returns a vector of all extra variables required to utilize the equation of state
+     * @return
+     */
+    [[nodiscard]] virtual const std::vector<std::string>& GetExtraVariables() const = 0;
 
     /**
      * Support function for printing any eos
