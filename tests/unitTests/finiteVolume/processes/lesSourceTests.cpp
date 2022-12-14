@@ -4,36 +4,129 @@
 #include "finiteVolume/processes/les.hpp"
 #include "gtest/gtest.h"
 
-struct lesEvSourceTestParameters {
+struct LesEvSourceTestParameters {
     std::vector<PetscReal> area;
     std::vector<PetscReal> field;
-    PetscInt tke_ev;
-    PetscInt numberEv;
+    PetscInt tkeFieldOffset;
+    PetscInt evFieldOffset;
+    PetscInt numberEvComponents;
+    PetscInt tkeGradOffset;
+    PetscInt evGradOffset;
+    PetscInt velGradOffset;
     std::vector<PetscReal> gradVel;
-    std::vector<PetscReal> EVs;
-    std::vector<PetscReal> Grad;
+    std::vector<PetscReal> aux;
+    std::vector<PetscReal> gradAux;
     std::vector<PetscReal> expectedFlux;
 };
 
-class lesEvSourceTestFixture : public testingResources::PetscTestFixture, public testing::WithParamInterface<lesEvSourceTestParameters> {};
+class lesEvSourceTestFixture : public testingResources::PetscTestFixture, public testing::WithParamInterface<LesEvSourceTestParameters> {};
 
 TEST_P(lesEvSourceTestFixture, ShouldComputeCorrectFlux) {
     // arrange
     const auto &params = GetParam();
-    ablate::finiteVolume::processes::LES::DiffusionData flowParam{.numberEV = params.numberEv, .tke_ev = params.tke_ev};
 
     PetscFVFaceGeom faceGeom{};
     std::copy(std::begin(params.area), std::end(params.area), faceGeom.normal);
 
-    PetscInt uOff[1] = {0};
-    PetscInt aOff[1] = {0};
-    PetscInt aOff_x[2] = {1};
+    auto dim = (PetscInt)params.area.size();
+
+    std::vector<PetscReal> computedFlux(params.expectedFlux.size());
+
+    // act
+    // call the function for tke
+    {
+        PetscInt uOff[1] = {0};                                                     // euler field is in the zero location
+        PetscInt aOff[2] = {GetParam().tkeFieldOffset, -1};                         // tke, vel (velocity should not be used)
+        PetscInt aOff_x[2] = {GetParam().tkeGradOffset, GetParam().velGradOffset};  // tke, vel
+
+        ablate::finiteVolume::processes::LES::LesTkeFlux(
+            dim, &faceGeom, uOff, nullptr, params.field.data(), nullptr, aOff, aOff_x, params.aux.data(), params.gradAux.data(), &computedFlux[GetParam().tkeFieldOffset], nullptr);
+    }
+    // call the function for evs
+    {
+        PetscInt uOff[1] = {0};                                                    // euler field is in the zero location
+        PetscInt aOff[2] = {GetParam().tkeFieldOffset, GetParam().evFieldOffset};  // tke, ev
+        PetscInt aOff_x[2] = {GetParam().tkeGradOffset, GetParam().evGradOffset};  // tke, ev
+
+        PetscInt numberComponents = GetParam().numberEvComponents;
+        ablate::finiteVolume::processes::LES::LesEvFlux(
+            dim, &faceGeom, uOff, nullptr, params.field.data(), nullptr, aOff, aOff_x, params.aux.data(), params.gradAux.data(), &computedFlux[GetParam().evFieldOffset], &numberComponents);
+    }
+    // assert
+    for (std::size_t i = 0; i < params.expectedFlux.size(); i++) {
+        ASSERT_NEAR(computedFlux[i], params.expectedFlux[i], 1E-3);
+    }
+}
+
+INSTANTIATE_TEST_SUITE_P(lesTransportTests, lesEvSourceTestFixture,
+                         testing::Values((LesEvSourceTestParameters){.area = {0.5},
+                                                                     .field = {1.130},
+                                                                     .tkeFieldOffset = 1,
+                                                                     .evFieldOffset = 0,
+                                                                     .numberEvComponents = 1,
+                                                                     .tkeGradOffset = 2,
+                                                                     .evGradOffset = 1,
+                                                                     .velGradOffset = 0,
+                                                                     .aux = {1.1, 0.93},
+                                                                     .gradAux = {1.19, 1.43, 0.014},
+                                                                     .expectedFlux = {-0.0517, 0.494}},
+
+                                         (LesEvSourceTestParameters){.area = {0.5},
+                                                                     .field = {1.130},
+                                                                     .tkeFieldOffset = 0,
+                                                                     .evFieldOffset = 1,
+                                                                     .numberEvComponents = 1,
+                                                                     .tkeGradOffset = 1,
+                                                                     .evGradOffset = 2,
+                                                                     .velGradOffset = 0,
+                                                                     .aux = {0.93, 1.1},
+                                                                     .gradAux = {1.19, 0.014, 1.43},
+                                                                     .expectedFlux = {0.494, -0.0517}},
+
+                                         (LesEvSourceTestParameters){.area = {1.5},
+                                                                     .field = {1.130},
+                                                                     .tkeFieldOffset = 2,
+                                                                     .evFieldOffset = 0,
+                                                                     .numberEvComponents = 2,
+                                                                     .tkeGradOffset = 3,
+                                                                     .evGradOffset = 1,
+                                                                     .velGradOffset = 0,
+                                                                     .aux = {0.93, 1.1, 0.43},
+                                                                     .gradAux = {1.19, 0.56, 2.14, 0.12},
+                                                                     .expectedFlux = {-0.072, -0.273, 0.261}}
+
+                                         ));
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct LesSpeciesSourceTestParameters {
+    std::vector<PetscReal> area;
+    std::vector<PetscReal> field;
+    PetscInt tkeFieldOffset;
+    std::vector<PetscReal> aux;  // note that this does not contain yi
+    PetscInt numberSpecies;
+    std::vector<PetscReal> gradAux;
+    std::vector<PetscReal> expectedFlux;
+};
+
+class LesSpeciesSourceTestFixture : public testingResources::PetscTestFixture, public testing::WithParamInterface<LesSpeciesSourceTestParameters> {};
+
+TEST_P(LesSpeciesSourceTestFixture, ShouldComputeCorrectFlux) {
+    // arrange
+    const auto &params = GetParam();
+    auto numberSpecies = params.numberSpecies;
+
+    PetscFVFaceGeom faceGeom{};
+    std::copy(std::begin(params.area), std::end(params.area), faceGeom.normal);
+
+    PetscInt uOff[1] = {0};                              // euler field is in the zero location
+    PetscInt aOff[2] = {GetParam().tkeFieldOffset, -1};  // tke, ev
+    PetscInt aOff_x[2] = {-1, 0};                        // tke, ev/species
 
     std::vector<PetscReal> computedFlux(params.expectedFlux.size());
 
     // act
     ablate::finiteVolume::processes::LES::LesEvFlux(
-        (PetscInt)params.area.size(), &faceGeom, uOff, nullptr, params.field.data(), nullptr, aOff, aOff_x, params.EVs.data(), params.Grad.data(), computedFlux.data(), &flowParam);
+        (PetscInt)params.area.size(), &faceGeom, uOff, nullptr, params.field.data(), nullptr, aOff, aOff_x, params.aux.data(), params.gradAux.data(), &computedFlux[0], &numberSpecies);
 
     // assert
     for (std::size_t i = 0; i < params.expectedFlux.size(); i++) {
@@ -41,81 +134,31 @@ TEST_P(lesEvSourceTestFixture, ShouldComputeCorrectFlux) {
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    lesTransportTests, lesEvSourceTestFixture,
-    testing::Values((lesEvSourceTestParameters){.area = {0.5}, .field = {1.130}, .tke_ev = 1, .numberEv = 2, .EVs = {1.1, 0.93}, .Grad = {1.19, 1.43, 0.014}, .expectedFlux = {-0.0517, 0.494}},
-
-                    (lesEvSourceTestParameters){.area = {0.5}, .field = {1.130}, .tke_ev = 0, .numberEv = 2, .EVs = {0.93, 1.1}, .Grad = {1.19, 0.014, 1.43}, .expectedFlux = {0.494, -0.0517}},
-
-                    (lesEvSourceTestParameters){
-                        .area = {1.5}, .field = {1.130}, .tke_ev = 2, .numberEv = 3, .EVs = {0.93, 1.1, 0.43}, .Grad = {1.19, 0.56, 2.14, 0.12}, .expectedFlux = {-0.072, -0.273, 0.261}}
-
-                    ));
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-struct lesSpeciesSourceTestParameters {
-    std::vector<PetscReal> area;
-    std::vector<PetscReal> field;
-    PetscInt tke_ev;
-    std::vector<PetscReal> EVs;
-    PetscInt numberSpecies;
-    std::vector<PetscReal> Grad;
-    std::vector<PetscReal> expectedFlux;
-};
-
-class lesSpeciesSourceTestFixture : public testingResources::PetscTestFixture, public testing::WithParamInterface<lesSpeciesSourceTestParameters> {};
-
-TEST_P(lesSpeciesSourceTestFixture, ShouldComputeCorrectFlux) {
-    // arrange
-    const auto &params = GetParam();
-    ablate::finiteVolume::processes::LES::DiffusionData flowParam{};
-    flowParam.tke_ev = params.tke_ev;
-    flowParam.numberSpecies = params.numberSpecies;
-
-    PetscFVFaceGeom faceGeom{};
-    std::copy(std::begin(params.area), std::end(params.area), faceGeom.normal);
-
-    PetscInt uOff[1] = {0};
-    PetscInt aOff[1] = {0};
-    PetscInt aOff_x[2] = {1};
-
-    std::vector<PetscReal> computedFlux(params.expectedFlux.size());
-
-    // act
-    ablate::finiteVolume::processes::LES::LesSpeciesFlux(
-        (PetscInt)params.area.size(), &faceGeom, uOff, nullptr, &params.field[0], nullptr, aOff, aOff_x, &params.EVs[0], &params.Grad[0], &computedFlux[0], &flowParam);
-
-    // assert
-    for (std::size_t i = 0; i < params.expectedFlux.size(); i++) {
-        ASSERT_NEAR(computedFlux[i], params.expectedFlux[i], 1E-3);
-    }
-}
-
-INSTANTIATE_TEST_SUITE_P(lesTransportTests, lesSpeciesSourceTestFixture,
-                         testing::Values((lesSpeciesSourceTestParameters){.area = {1.5},
+INSTANTIATE_TEST_SUITE_P(lesTransportTests, LesSpeciesSourceTestFixture,
+                         testing::Values((LesSpeciesSourceTestParameters){.area = {1.5},
                                                                           .field = {1.130},
-                                                                          .tke_ev = 1,
-                                                                          .EVs = {0.93, 1.10},
+                                                                          .tkeFieldOffset = 1,
+                                                                          .aux = {0.93, 1.10},
                                                                           .numberSpecies = 2,
 
-                                                                          .Grad = {0.52, 0.3},
+                                                                          .gradAux = {0.52, 0.3},
                                                                           .expectedFlux = {-0.106, -.0613}},
-                                         (lesSpeciesSourceTestParameters){.area = {1.5},
+                                         (LesSpeciesSourceTestParameters){.area = {1.5},
                                                                           .field = {1.130},
-                                                                          .tke_ev = 0,
-                                                                          .EVs = {0.93, 1.10},
+                                                                          .tkeFieldOffset = 0,
+                                                                          .aux = {0.93, 1.10},
                                                                           .numberSpecies = 2,
 
-                                                                          .Grad = {0.52, 0.3},
+                                                                          .gradAux = {0.52, 0.3},
                                                                           .expectedFlux = {-0.097, -.057}},
 
-                                         (lesSpeciesSourceTestParameters){.area = {0.5},
+                                         (LesSpeciesSourceTestParameters){.area = {0.5},
                                                                           .field = {1.130},
-                                                                          .tke_ev = 0,
-                                                                          .EVs = {0.93, 1.10},
+                                                                          .tkeFieldOffset = 0,
+                                                                          .aux = {0.93, 1.10},
                                                                           .numberSpecies = 3,
 
-                                                                          .Grad = {0.52, 0.3, 0.97},
+                                                                          .gradAux = {0.52, 0.3, 0.97},
                                                                           .expectedFlux = {-0.018, -0.0108, -0.035}}
 
                                          ));

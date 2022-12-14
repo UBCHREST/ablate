@@ -109,7 +109,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
 
             // create a mock eos
             std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
-            EXPECT_CALL(*eos, GetSpecies()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(species));
+            EXPECT_CALL(*eos, GetSpeciesVariables()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(species));
             EXPECT_CALL(*eos, GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature, testing::_))
                 .Times(::testing::Exactly(1))
                 .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction([](const PetscReal conserved[], PetscReal* T) { *T = NAN; })));
@@ -125,7 +125,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                 std::make_shared<ablate::domain::FieldDescription>(
                     "euler", "euler", std::vector<std::string>{"rho", "rhoE", "rhoVel" + domain::FieldDescription::DIMENSION}, domain::FieldLocation::SOL, domain::FieldType::FVM),
                 std::make_shared<ablate::domain::FieldDescription>("densityYi", "densityYi", eos->GetSpecies(), domain::FieldLocation::SOL, domain::FieldType::FVM),
-                std::make_shared<ablate::domain::FieldDescription>("yi", "yi", eos->GetSpecies(), domain::FieldLocation::AUX, domain::FieldType::FVM),
+                std::make_shared<ablate::domain::FieldDescription>("Yi", "Yi", eos->GetSpecies(), domain::FieldLocation::AUX, domain::FieldType::FVM),
 
             };
 

@@ -37,25 +37,20 @@ std::shared_ptr<ablate::mathFunctions::MathFunction> ablate::finiteVolume::field
                           velocityFunction = this->velocityFunction,
                           massFractionFunction = this->massFractionFunction,
                           eosFunction](int dim, double time, const double x[], int nf, double* u, void* ctx) {
-        PetscErrorCode ierr;
         // get the temperature, pressure, and velocity
         PetscReal temperature;
-        ierr = temperatureFunction->GetPetscFunction()(dim, time, x, 1, &temperature, temperatureFunction->GetContext());
-        CHKERRQ(ierr);
+        PetscCall(temperatureFunction->GetPetscFunction()(dim, time, x, 1, &temperature, temperatureFunction->GetContext()));
 
         PetscReal pressure;
-        ierr = pressureFunction->GetPetscFunction()(dim, time, x, 1, &pressure, pressureFunction->GetContext());
-        CHKERRQ(ierr);
+        PetscCall(pressureFunction->GetPetscFunction()(dim, time, x, 1, &pressure, pressureFunction->GetContext()));
 
         PetscReal velocity[3];
-        ierr = velocityFunction->GetPetscFunction()(dim, time, x, dim, velocity, velocityFunction->GetContext());
-        CHKERRQ(ierr);
+        PetscCall(velocityFunction->GetPetscFunction()(dim, time, x, dim, velocity, velocityFunction->GetContext()));
 
         // compute the mass fraction at this location
         std::vector<PetscReal> yi(eos->GetSpecies().size());
         if (massFractionFunction) {
-            ierr = massFractionFunction->GetSolutionField().GetPetscFunction()(dim, time, x, yi.size(), &yi[0], massFractionFunction->GetSolutionField().GetContext());
-            CHKERRQ(ierr);
+            PetscCall(massFractionFunction->GetSolutionField().GetPetscFunction()(dim, time, x, yi.size(), yi.data(), massFractionFunction->GetSolutionField().GetContext()));
         }
 
         eosFunction(temperature, pressure, dim, velocity, yi.data(), u);

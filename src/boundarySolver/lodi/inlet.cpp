@@ -152,9 +152,9 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
                             boundarySensibleEnthalpy,
                             velNormPrim,
                             speedOfSoundPrim,
-                            boundaryDensityYi /* PetscReal* Yi*/,
-                            inletBoundary->nEvEqs > 0 ? boundaryValues + uOff[inletBoundary->evId] : nullptr /* PetscReal* EV*/,
-                            &scriptL[0],
+                            boundaryValues,
+                            uOff,
+                            scriptL.data(),
                             transformationMatrix,
                             source);
 

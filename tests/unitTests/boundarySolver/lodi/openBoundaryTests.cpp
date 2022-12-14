@@ -11,7 +11,7 @@ struct OpenBoundaryTestParameters {
     PetscInt dim;
     PetscInt nEqs;
     PetscInt nSpecEqs = 0;
-    PetscInt nEvEqs = 0;
+    std::vector<PetscInt> nEvComps;
     double reflectFactor;
     double referencePressure;
     double maxAcousticsLength;
@@ -67,11 +67,11 @@ TEST_P(OpenBoundaryTestFixture, ShouldComputeCorrectSourceTerm) {
     // create the boundary
     std::shared_ptr<ablate::boundarySolver::lodi::LODIBoundary> boundary =
         std::make_shared<ablate::boundarySolver::lodi::OpenBoundary>(mockEOS, GetParam().reflectFactor, GetParam().referencePressure, GetParam().maxAcousticsLength, params.getPgs());
-    boundary->Setup(params.dim, params.nEqs, params.nSpecEqs, params.nEvEqs, params.fields);
+    boundary->Setup(params.dim, params.nEqs, params.nSpecEqs, params.nEvComps, params.fields);
 
-    PetscInt uOff[3] = {0, params.dim + 2, params.dim + 2 + params.nSpecEqs};
+    PetscInt uOff[4] = {0, params.dim + 2, params.dim + 2 + params.nSpecEqs, params.dim + 2 + params.nSpecEqs + (params.nEvComps.empty() ? 0 : params.nEvComps[0])};
     PetscInt aOff[1] = {0};
-    PetscInt sOff[3] = {0, params.dim + 2, params.dim + 2 + params.nSpecEqs};
+    PetscInt sOff[4] = {0, params.dim + 2, params.dim + 2 + params.nSpecEqs, params.dim + 2 + params.nSpecEqs + (params.nEvComps.empty() ? 0 : params.nEvComps[0])};
     const PetscScalar* stencilValues = &params.stencilValues[0];
     const PetscScalar* allStencilValues[1] = {stencilValues};
     const PetscInt stencil[1] = {-1};
@@ -547,13 +547,16 @@ INSTANTIATE_TEST_SUITE_P(
         (OpenBoundaryTestParameters){
             .name = "1D subsonic out of the domain with sp and ev",
             .dim = 1,
-            .nEqs = 8,
+            .nEqs = 9,
             .nSpecEqs = 3,
-            .nEvEqs = 2,
+            .nEvComps = {2, 1},
             .reflectFactor = 0.15,
             .referencePressure = 202650.0,
             .maxAcousticsLength = 0.02,
-            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0}, {.name = "densityYi", .numberComponents = 3, .offset = 3}, {.name = "densityEV", .numberComponents = 2, .offset = 6}},
+            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0},
+                       {.name = "densityYi", .numberComponents = 3, .offset = 3},
+                       {.name = "densityEV", .numberComponents = 2, .offset = 6, .tags = {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}},
+                       {.name = "otherEv", .numberComponents = 1, .offset = 8, .tags = {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}}},
             .computeTemperatureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 1.783192, conserved[ff::RHO]);
@@ -566,6 +569,7 @@ INSTANTIATE_TEST_SUITE_P(
 
                     CHECK_EXPECT("densityEV0", 0.25 * 1.783192, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783192, conserved[7]);
+                    CHECK_EXPECT("otherEV", 0.25 * 1.783192, conserved[8]);
 
                     *property = 300.4;
                 },
@@ -582,6 +586,7 @@ INSTANTIATE_TEST_SUITE_P(
 
                     CHECK_EXPECT("densityEV0", 0.25 * 1.783192, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783192, conserved[7]);
+                    CHECK_EXPECT("otherEV", 0.25 * 1.783192, conserved[8]);
 
                     *property = 431.6854962124021;
                 },
@@ -598,6 +603,8 @@ INSTANTIATE_TEST_SUITE_P(
 
                     CHECK_EXPECT("densityEV0", 0.25 * 1.783192, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783192, conserved[7]);
+                    CHECK_EXPECT("otherEV", 0.25 * 1.783192, conserved[8]);
+
                     *property = 251619.82076699706;
                 },
             .computeCpFunction =
@@ -613,6 +620,8 @@ INSTANTIATE_TEST_SUITE_P(
 
                     CHECK_EXPECT("densityEV0", 0.25 * 1.783192, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783192, conserved[7]);
+                    CHECK_EXPECT("otherEV", 0.25 * 1.783192, conserved[8]);
+
                     *property = 1934.650079471233;
                 },
             .computeCvFunction =
@@ -628,6 +637,8 @@ INSTANTIATE_TEST_SUITE_P(
 
                     CHECK_EXPECT("densityEV0", 0.25 * 1.783192, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783192, conserved[7]);
+                    CHECK_EXPECT("otherEV", 0.25 * 1.783192, conserved[8]);
+
                     *property = 1464.9215577478003;
                 },
             .computeSensibleEnthalpy =
@@ -643,6 +654,8 @@ INSTANTIATE_TEST_SUITE_P(
 
                     CHECK_EXPECT("densityEV0", 0.25 * 1.783192, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783192, conserved[7]);
+                    CHECK_EXPECT("otherEV", 0.25 * 1.783192, conserved[8]);
+
                     *property = 4347.52375485136;
                 },
             .computeStencilPressureFunction =
@@ -657,11 +670,19 @@ INSTANTIATE_TEST_SUITE_P(
 
                     CHECK_EXPECT("densityEV0", (.25 + 1.9999999999989138) * (1.783191515808363 + 90.16181478870485), conserved[6]);
                     CHECK_EXPECT("densityEV1", (.5 + 2.000000000001112) * (1.783191515808363 + 90.16181478870485), conserved[7]);
+                    CHECK_EXPECT("otherEv", (.25 + 1.9999999999989138) * (1.783191515808363 + 90.16181478870485), conserved[8]);
                     *property = 251619.82076699706 + 199.99999981373549;  // delta p = stencil-boundary ... stencil = boundary+deltap
                 },
             .fvFaceGeom = {.normal = {-1, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
-            .boundaryValues =
-                {1.783191515808363, -243778.19371678037, -17.831915158083632, .1 * 1.783191515808363, .5 * 1.783191515808363, .4 * 1.783191515808363, .25 * 1.783191515808363, .5 * 1.783191515808363},
+            .boundaryValues = {1.783191515808363,
+                               -243778.19371678037,
+                               -17.831915158083632,
+                               .1 * 1.783191515808363,
+                               .5 * 1.783191515808363,
+                               .4 * 1.783191515808363,
+                               .25 * 1.783191515808363,
+                               .5 * 1.783191515808363,
+                               .25 * 1.783191515808363},
             .stencilValues = {(1.783191515808363 + 90.16181478870485),
                               3000 * (1.783191515808363 + 90.16181478870485),
                               (-10 - 40000.000000000015) * (1.783191515808363 + 90.16181478870485),
@@ -669,18 +690,22 @@ INSTANTIATE_TEST_SUITE_P(
                               (.5) * (1.783191515808363 + 90.16181478870485),
                               (.4 - 117.62376237623829) * (1.783191515808363 + 90.16181478870485),
                               (.25 + 1.9999999999989138) * (1.783191515808363 + 90.16181478870485),
-                              (.5 + 2.000000000001112) * (1.783191515808363 + 90.16181478870485)},
-            .expectedResults = {36966.4328851267, -2.0206605128724575E8, -1.6305600063259933E7, 5794.10023978034, 18483.21644256335, 12689.11620278302, 9277.272051597822, 18518.880272879534}},
+                              (.5 + 2.000000000001112) * (1.783191515808363 + 90.16181478870485),
+                              (.25 + 1.9999999999989138) * (1.783191515808363 + 90.16181478870485)},
+            .expectedResults =
+                {36966.4328851267, -2.0206605128724575E8, -1.6305600063259933E7, 5794.10023978034, 18483.21644256335, 12689.11620278302, 9277.272051597822, 18518.880272879534, 9277.272051597822}},
         (OpenBoundaryTestParameters){
             .name = "1D subsonic out of the domain with sp/ev and pgs",
             .dim = 1,
             .nEqs = 8,
             .nSpecEqs = 3,
-            .nEvEqs = 2,
+            .nEvComps = {2},
             .reflectFactor = 0.15,
             .referencePressure = 202650.0,
             .maxAcousticsLength = 0.02,
-            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0}, {.name = "densityYi", .numberComponents = 3, .offset = 3}, {.name = "densityEV", .numberComponents = 2, .offset = 6}},
+            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0},
+                       {.name = "densityYi", .numberComponents = 3, .offset = 3},
+                       {.name = "densityEV", .numberComponents = 2, .offset = 6, .tags = {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}}},
             .computeTemperatureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 1.783192, conserved[ff::RHO]);
@@ -804,11 +829,13 @@ INSTANTIATE_TEST_SUITE_P(
             .dim = 1,
             .nEqs = 8,
             .nSpecEqs = 3,
-            .nEvEqs = 2,
+            .nEvComps = {2},
             .reflectFactor = 0.15,
             .referencePressure = 202650.0,
             .maxAcousticsLength = 0.02,
-            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0}, {.name = "densityYi", .numberComponents = 3, .offset = 3}, {.name = "densityEV", .numberComponents = 2, .offset = 6}},
+            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0},
+                       {.name = "densityYi", .numberComponents = 3, .offset = 3},
+                       {.name = "densityEV", .numberComponents = 2, .offset = 6, .tags = {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}}},
             .computeTemperatureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 1.783191515808363, conserved[ff::RHO]);

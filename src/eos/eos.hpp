@@ -91,13 +91,20 @@ class EOS {
      * species model functions
      * @return
      */
-    [[nodiscard]] virtual const std::vector<std::string>& GetSpecies() const = 0;
+    [[nodiscard]] virtual const std::vector<std::string>& GetSpeciesVariables() const = 0;
 
     /**
      * Returns a vector of all extra variables required to utilize the equation of state
      * @return
      */
-    [[nodiscard]] virtual const std::vector<std::string>& GetExtraVariables() const = 0;
+    [[nodiscard]] virtual const std::vector<std::string>& GetProgressVariables() const = 0;
+
+    /**
+     * Species known by this equation of state.  This list is used for the FieldFunction calculations. This can be the same as the GetSpeciesVariables.
+     * species model functions
+     * @return
+     */
+    [[nodiscard]] virtual const std::vector<std::string>& GetSpecies() const { return GetSpeciesVariables(); }
 
     /**
      * Support function for printing any eos

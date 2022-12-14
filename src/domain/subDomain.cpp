@@ -759,3 +759,13 @@ void ablate::domain::SubDomain::CreateEmptySubDM(DM* inDM, std::shared_ptr<domai
         DMClone(GetDM(), inDM);
     }
 }
+
+std::vector<ablate::domain::Field> ablate::domain::SubDomain::GetFields(ablate::domain::FieldLocation type, std::string_view tag) const {
+    std::vector<ablate::domain::Field> taggedFields;
+    const auto& fields = fieldsByType.at(type);
+    std::copy_if(fields.begin(), fields.end(), std::back_inserter(taggedFields), [tag](const auto& field) {
+        return std::any_of(field.tags.begin(), field.tags.end(), [tag](const auto& tagItem) { return tagItem == tag; });
+    });
+
+    return taggedFields;
+}

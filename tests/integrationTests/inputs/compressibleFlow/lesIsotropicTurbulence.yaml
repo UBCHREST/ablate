@@ -48,8 +48,9 @@ timestepper:
           parameters:
             gamma: 1.4
             Rgas: 287
-        # the initial value of turbulent kinetic energy (tke) should be passed into the lesSolver as an extra variable
-        extraVariables: ["ev1"]
+      # a field should be created for turbulent kinetic energy (tke)
+      - !ablate::finiteVolume::TurbulenceFlowFields
+
   initialization:
     # the ablate::finiteVolume::fieldFunctions::Euler helper can define the "euler" field (rho, rhoE, rhoU, rhoV) from more common inputs
     - !ablate::finiteVolume::fieldFunctions::Euler
@@ -80,6 +81,7 @@ timestepper:
             LO2: -pi/2
     # the density*ev field must be specified. The DensityExtraVariables class helps by computing density and each ev value using the specified list functions
     - !ablate::finiteVolume::fieldFunctions::DensityExtraVariables
+      name: tke
       state: *flowFieldState
       # a list of functions used to describe the extra variable initialization
       functions:
@@ -107,7 +109,6 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
   # introduce the initial value of tke to LES application
   additionalProcesses:
     - !ablate::finiteVolume::processes::LES
-      tke: ev1
 
   monitors:
     # output the time and dt at each time step

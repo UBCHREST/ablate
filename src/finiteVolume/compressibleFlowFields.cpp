@@ -4,11 +4,7 @@
 
 ablate::finiteVolume::CompressibleFlowFields::CompressibleFlowFields(std::shared_ptr<eos::EOS> eos, std::vector<std::string> extraVariablesIn, std::shared_ptr<domain::Region> region,
                                                                      std::shared_ptr<parameters::Parameters> conservedFieldParameters)
-    : eos(eos),
-      // Add in any required extraVariables from the eos
-      extraVariables(ablate::utilities::VectorUtilities::Merge(extraVariablesIn, eos->GetExtraVariables())),
-      region(region),
-      conservedFieldOptions(conservedFieldParameters) {}
+    : eos(eos), extraVariables(extraVariablesIn), region(region), conservedFieldOptions(conservedFieldParameters) {}
 
 std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::finiteVolume::CompressibleFlowFields::GetFields() {
     std::vector<std::shared_ptr<ablate::domain::FieldDescription>> flowFields{
@@ -24,15 +20,28 @@ std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::finiteVol
         std::make_shared<domain::FieldDescription>(
             VELOCITY_FIELD, VELOCITY_FIELD, std::vector<std::string>{"vel" + domain::FieldDescription::DIMENSION}, domain::FieldLocation::AUX, domain::FieldType::FVM, region, auxFieldOptions)};
 
-    if (!eos->GetSpecies().empty()) {
+    if (!eos->GetSpeciesVariables().empty()) {
         flowFields.emplace_back(
             std::make_shared<domain::FieldDescription>(DENSITY_YI_FIELD, DENSITY_YI_FIELD, eos->GetSpecies(), domain::FieldLocation::SOL, domain::FieldType::FVM, region, conservedFieldOptions));
         flowFields.emplace_back(std::make_shared<domain::FieldDescription>(YI_FIELD, YI_FIELD, eos->GetSpecies(), domain::FieldLocation::AUX, domain::FieldType::FVM, region, auxFieldOptions));
     }
 
-    if (!extraVariables.empty()) {
+    if (!eos->GetProgressVariables().empty()) {
+        flowFields.emplace_back(std::make_shared<domain::FieldDescription>(DENSITY_PROGRESS_FIELD,
+                                                                           DENSITY_PROGRESS_FIELD,
+                                                                           eos->GetProgressVariables(),
+                                                                           domain::FieldLocation::SOL,
+                                                                           domain::FieldType::FVM,
+                                                                           region,
+                                                                           conservedFieldOptions,
+                                                                           std::vector<std::string>{EV_TAG}));
         flowFields.emplace_back(
-            std::make_shared<domain::FieldDescription>(DENSITY_EV_FIELD, DENSITY_EV_FIELD, extraVariables, domain::FieldLocation::SOL, domain::FieldType::FVM, region, conservedFieldOptions));
+            std::make_shared<domain::FieldDescription>(PROGRESS_FIELD, PROGRESS_FIELD, eos->GetProgressVariables(), domain::FieldLocation::AUX, domain::FieldType::FVM, region, auxFieldOptions));
+    }
+
+    if (!extraVariables.empty()) {
+        flowFields.emplace_back(std::make_shared<domain::FieldDescription>(
+            DENSITY_EV_FIELD, DENSITY_EV_FIELD, extraVariables, domain::FieldLocation::SOL, domain::FieldType::FVM, region, conservedFieldOptions, std::vector<std::string>{EV_TAG}));
         flowFields.emplace_back(std::make_shared<domain::FieldDescription>(EV_FIELD, EV_FIELD, extraVariables, domain::FieldLocation::AUX, domain::FieldType::FVM, region, auxFieldOptions));
     }
 
