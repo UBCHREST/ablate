@@ -12,9 +12,9 @@ has_children: false
 
 Radiation heat transfer makes up a source term in the energy equation, which has the radiative gains and losses as its
 components. While the losses are easy to calculate (using only the properties of the cell in question), the gains
-involve the entire domain. This means that in order to solve for the radiative gains of a single cell, rays are traced
-from the boundaries of the domain into the cell center. The values of the rays represent the amount of energy
-transferred into the cell from the environment. The summation of these rays about a solid sphere of angles results in
+involve the entire domain. This means that in order to solve for the radiative gains of a single cell, remoteRays are traced
+from the boundaries of the domain into the cell center. The values of the remoteRays represent the amount of energy
+transferred into the cell from the environment. The summation of these remoteRays about a solid sphere of angles results in
 the
 radiative gain that the cell experiences from its environment. The calculation of the energy source term due to
 radiation is shown below.
@@ -36,9 +36,9 @@ velocity, $\vec{q_{rad}}$ is radiative heat, $\vec{q_{cond}}$ is conductive heat
 source term.
 
 $G_{irr}$ represents the irradiation on the cell by its environment. Ray tracing solves the problem of
-calculating irradiation by discretizing the solid sphere, or breaking it into pieces, and casting discrete rays into the
-domain. The radiative properties along these rays are calculated, and the final radiation due to each ray is contributed
-to the cell. A finite number of rays can be used to approximate the total irradiation from every direction. The figure
+calculating irradiation by discretizing the solid sphere, or breaking it into pieces, and casting discrete remoteRays into the
+domain. The radiative properties along these remoteRays are calculated, and the final radiation due to each ray is contributed
+to the cell. A finite number of remoteRays can be used to approximate the total irradiation from every direction. The figure
 below shows angles considered for the irradiation of a surface. For our
 purposes, $\theta$ is extended to $2 \pi$ in order to include the entire sphere and
 the irradiation of the cell as a volume. The figure describing the solid sphere formulation is shown below.
@@ -49,8 +49,8 @@ $$ G_{irr} = \int_{0}^{2\pi} \int_{0}^{\pi} I_{pt}(\theta,\phi)\ sin\theta\ d\th
 
 The summing of ray intensities around the whole solid sphere is shown. The contribution of each individual ray is added
 to the total irradiation of the solid sphere. The presence of the sine term is
-an artifact of the polar coordinates. For example, at $\theta = 0$, all rays at each $\phi$ occupy the same point.
-Therefore, they are all weighted at 0. Because of this, no rays are cast in the vertical direction. They begin at a
+an artifact of the polar coordinates. For example, at $\theta = 0$, all remoteRays at each $\phi$ occupy the same point.
+Therefore, they are all weighted at 0. Because of this, no remoteRays are cast in the vertical direction. They begin at a
 small angle and are equally spaced through $\theta$. The effects of this integral must be broken into a discrete
 formulation in order to be of use computationally. The equation below represents the actual discretization of the above
 integral.
@@ -60,11 +60,11 @@ $$ G_{irr}\ = \sum_{\theta=0}^{n_{\theta}}\sum_{\phi=0}^{n_{\phi}} I_{pt}(\theta
 
 The third equation shows how the irradiation is calculated for a cell. Each ray is weighted by its partial
 area. The “sine of theta” in this equation represents a conversion from polar coordinates. At each theta there is an
-equal number of rays around the circumference of the band. However, the lower bands have a lower density of rays
-compared to the high bands (small theta). Therefore, when theta is 0 and many rays occupy the same point, they are
+equal number of remoteRays around the circumference of the band. However, the lower bands have a lower density of remoteRays
+compared to the high bands (small theta). Therefore, when theta is 0 and many remoteRays occupy the same point, they are
 weighted as 0 and so on.
 
-With this solid angle formulation, many rays can be generated for each cell and their intensities individually
+With this solid angle formulation, many remoteRays can be generated for each cell and their intensities individually
 calculated.
 
 The radiation implementation in ABLATE must handle participating media, an absorbing media that attenuates the radiation
@@ -72,7 +72,7 @@ passing
 through it. Radiation solvers are typically formulated to calculate the radiation into a point based on the amount of
 radiation incoming from a solid sphere of directions.
 
-The discrete transfer method involves decomposing the solid sphere into many discrete rays. These rays describe the
+The discrete transfer method involves decomposing the solid sphere into many discrete remoteRays. These remoteRays describe the
 amount of radiation that reaches the point for which the radiation is being calculated.
 
 The calculation of radiative intensity implemented in this radiation solver is based on the radiative transfer equation.
@@ -81,7 +81,7 @@ This equation describes how the intensity of radiation changes through participa
 $$\frac{d I}{d x} = \kappa (\frac{\sigma T^4}{\pi} - I)$$
 
 Note that the change in intensity is proportional to the product of the intensity difference and the absorption at a
-given point. This radiative transfer equation is implemented for each ray. All rays are summed along the solid sphere.
+given point. This radiative transfer equation is implemented for each ray. All remoteRays are summed along the solid sphere.
 
 The behavior of the radiative transfer equation indicates that a strongly absorbing media will change the intensity of
 a ray over a very short distance. The temperature of the ray will follow the temperature of the medium with a first
@@ -135,8 +135,8 @@ particles for the radiation solver, information has been stored in a small numbe
 particle fields.
 
 The initialization of the solver forms the infrastructure for the gathering of ray information and
-communication across domains. The particles are transported through space along their rays in order to inform the local
-domain of what rays exist there. The particles are responsible for identifying which cells belong to which ray segment,
+communication across domains. The particles are transported through space along their remoteRays in order to inform the local
+domain of what remoteRays exist there. The particles are responsible for identifying which cells belong to which ray segment,
 and creating an associated local storage of information which is globally identifiable to a specific ray segment. It
 also is responsible for creating a communication infrastructure which will be used in the later solve steps. The purpose
 of
@@ -165,7 +165,7 @@ The steps of the initialization are as follows:
 4. The particles are migrated. The migration process moves every cell that has crossed a rank boundary to the new rank.
    The particle carries all of its information with it into the new rank. It can be globally identified as belonging to
    a
-   given ray by its identifier. The rays that it established in this new rank will be globally associated with the
+   given ray by its identifier. The remoteRays that it established in this new rank will be globally associated with the
    origin
    cell through the established communication scheme.
 
@@ -181,7 +181,7 @@ The computation of the energy source term, or the solve, is completed in three s
 
 Notice that the local computation of the ray segment properties is computed first. In the former version of the serial
 solver, the computation of the ray intensities was completed linearly through the ray. The crossing of domains requires
-that the rays be broken into local segments. However, the ray intensities could still be computed linearly through the
+that the remoteRays be broken into local segments. However, the ray intensities could still be computed linearly through the
 entire ray.
 The organization of the solve into these steps has a few key advantages. The first advantage is that each solve step
 only has one communication through the entire domain. The previous approach involves moving information linearly
@@ -189,7 +189,7 @@ through the entire ray. In this case, multiple communications would occur for ea
 were synchronized, the differing number of segments in each ray
 would mean that the number of communications is unknown and that the majority of the processes could be idly waiting
 for the last communication. The second advantage is that the communication of the information in this manner requires
-only one communication for each ray segment. If the rays were solved through linearly, each process would require two
+only one communication for each ray segment. If the remoteRays were solved through linearly, each process would require two
 communications. The first communication would move information into the domain and the second communication
 would move information out of the domain. The organization of all ray segment information to the origin rank in one
 step allows for a single communication where the segment order of information is handled by the local process.
@@ -219,7 +219,7 @@ occurs as well as minimizing the volume of communication that occurs between dis
 
 Multiple test cases will be used to verify that the solver is properly functioning. The first test case used is a set of
 parallel plates with a media of defined temperature distribution. The one dimensional analytical solution of this
-problem is compared against the results from the solver in order to define the error. The selected number of rays to use
+problem is compared against the results from the solver in order to define the error. The selected number of remoteRays to use
 for each cell is 750.
 
 ## Scaling
@@ -241,11 +241,11 @@ will be performed on Quartz to determine the limits and condition of the solver 
      *          Run swarm migrate and check if the particle has left the domain for every space step that is taken. This is currently the best known way to check for domain crosses.
      *          If yes: Finish that ray segment and store it with its ray ID / domain number.
      *          If no: Repeat march and filling routine.
-     *      The ray segments should be stored as vectors, with the indices matching the ray identity. These indices can be the same as the existing rays vector most likely.
-     *      The difference is that this is an entirely local variable. Only the local ray segment identities which have ray segments passing through this domain will be non-empty for the local rays
+     *      The ray segments should be stored as vectors, with the indices matching the ray identity. These indices can be the same as the existing remoteRays vector most likely.
+     *      The difference is that this is an entirely local variable. Only the local ray segment identities which have ray segments passing through this domain will be non-empty for the local remoteRays
      *      vector. This provides a global indexing scheme that the particles and domains can interface between without occupying a lot of local memory.
-     *          Sub-task: During the cell search, form a vector (the same rays vector) from the information provided by the particle. In other words, the particle will "seed" the ray segments
-     *          within each domain. Just pack the ray segment into whatever rays index matches the global scheme. This way when the particles are looped through in their local configuration, the
+     *          Sub-task: During the cell search, form a vector (the same remoteRays vector) from the information provided by the particle. In other words, the particle will "seed" the ray segments
+     *          within each domain. Just pack the ray segment into whatever remoteRays index matches the global scheme. This way when the particles are looped through in their local configuration, the
      *          memory location of the local ray segment can be accessed immediately.
      *          Sub-task: As the particle search routine is taking place, they should be simultaneously forming a particle field containing the solve field characterstics. This includes the
      *
@@ -258,7 +258,7 @@ will be performed on Quartz to determine the limits and condition of the solver 
      *
      * The local calculation of the ray absorption and intensity needs to be enabled by the local storage of ray segment cell indices.
      * This could be achieved by storing them within a vector that contains identifying information.
-     *      Sub-task: The local calculation must loop through all ray identities, doing the calculation for only those rays that are present within the process. (If this segment index !empty)
+     *      Sub-task: The local calculation must loop through all ray identities, doing the calculation for only those remoteRays that are present within the process. (If this segment index !empty)
      *      Sub-task: The ray segments must update the particle field by looping though the particles present in the domain and grabbing the calculated values from their associated ray segments.
      *      Since the associated ray segments are globally indexed, this might be faster.
      *

@@ -18,8 +18,8 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
     PetscInt nglobalpoints = 0;
     PetscInt nsolvepoints = 0;  //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
 
-    DMSwarmGetLocalSize(radsearch, &npoints) >> checkError;
-    DMSwarmGetSize(radsearch, &nglobalpoints) >> checkError;
+    DMSwarmGetLocalSize(radSearch, &npoints) >> checkError;
+    DMSwarmGetSize(radSearch, &nglobalpoints) >> checkError;
 
     PetscFVFaceGeom* faceGeom;
 
@@ -36,9 +36,9 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
 
     /** Get all of the ray information from the particle
      * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
-    DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
-    DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
-    DMSwarmGetField(radsearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> checkError;
+    DMSwarmGetField(radSearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+    DMSwarmGetField(radSearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+    DMSwarmGetField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> checkError;
 
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         if (index[ipart] >= 0 && subDomain.InRegion(index[ipart])) {
@@ -78,9 +78,9 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
                  */
                 if (access[newpoint].rank != identifier[ipart].rank) {
                     PetscReal centroid[3];
-                    PetscInt numPoints = static_cast<PetscInt>(rays[access[newpoint]].cells.size());
+                    PetscInt numPoints = static_cast<PetscInt>(remoteRays[access[newpoint]].cells.size());
                     if (numPoints != 0) {
-                        DMPlexComputeCellGeometryFVM(subDomain.GetDM(), rays[access[newpoint]].cells[numPoints - 1], nullptr, centroid, nullptr) >>
+                        DMPlexComputeCellGeometryFVM(subDomain.GetDM(), remoteRays[access[newpoint]].cells[numPoints - 1], nullptr, centroid, nullptr) >>
                             checkError;                                                                        //!< Get the cell center of the last cell in the ray segment
                         virtualcoord[ipart].x = centroid[0] + (virtualcoord[ipart].xdir * 2 * minCellRadius);  //!< Offset from the centroid slightly so they sit in a cell if they are on its face.
                         virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 2 * minCellRadius);
@@ -102,7 +102,7 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
 
             /** Step 1: Register the current cell index in the rays vector. The physical coordinates that have been set in the previous step / loop will be immediately registered.
              * */
-            if (identifier[ipart].nsegment == 1) rays[identifier[ipart]].cells.push_back(index[ipart]);
+            if (identifier[ipart].nsegment == 1) remoteRays[identifier[ipart]].cells.push_back(index[ipart]);
 
             /** Step 2: Acquire the intersection of the particle search line with the segment or face. In the case if a two dimensional mesh, the virtual coordinate in the z direction will
              * need to be solved for because the three dimensional line will not have a literal intersection with the segment of the cell. The third coordinate can be solved for in this case.
@@ -139,14 +139,14 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
                 }
             }
             virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
-            if (identifier[ipart].nsegment == 1) rays[identifier[ipart]].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
+            if (identifier[ipart].nsegment == 1) remoteRays[identifier[ipart]].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
         } else {
             virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
         }
     }
-    DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
-    DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
-    DMSwarmRestoreField(radsearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> checkError;
+    DMSwarmRestoreField(radSearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+    DMSwarmRestoreField(radSearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+    DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> checkError;
 }
 
 #include "registrar.hpp"
