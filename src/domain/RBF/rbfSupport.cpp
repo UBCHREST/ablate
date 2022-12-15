@@ -2,6 +2,45 @@
 #include <petsc/private/vecimpl.h>
 
 
+// Return the cell containing the location xyz
+// Inputs:
+//  dm - The mesh
+//  xyz - Array containing the point
+//
+// Outputs:
+//  cell - The cell containing xyz. Will return -1 if this point is not in the DM
+//
+// Note: This is adapted from DMInterpolationSetUp. It is unknown if this will work in parallel (if the cell is on another rank).
+PetscErrorCode DMPlexGetContainingCell(DM dm, PetscScalar *xyz, PetscInt *cell) {
+  PetscSF         cellSF;
+  Vec             pointVec;
+  PetscInt        dim;
+  PetscErrorCode  ierr;
+  const           PetscSFNode *foundCells;
+  const PetscInt  *foundPoints;
+  PetscInt        numFound;
+
+  ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
+
+  ierr = VecCreateSeqWithArray(PETSC_COMM_SELF, dim, dim, xyz, &pointVec);CHKERRQ(ierr);
+
+  ierr = DMLocatePoints(dm, pointVec, DM_POINTLOCATION_NONE, &cellSF);CHKERRQ(ierr);
+
+
+  ierr = PetscSFGetGraph(cellSF, NULL, &numFound, &foundPoints, &foundCells);CHKERRQ(ierr);
+
+  if (numFound==0) {
+    *cell = -1;
+  }
+  else {
+    *cell = foundCells[0].index;
+  }
+
+  PetscFunctionReturn(0);
+
+}
+
+
 
 // Return all cells which share an vertex or edge/face with a center cell
 // Inputs:

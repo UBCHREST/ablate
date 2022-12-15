@@ -88,7 +88,7 @@ class RBF {
 
     // Interpolation stuff
     void SetInterpolation(PetscBool hasInterpolation);
-    PetscReal Interpolate(const ablate::domain::Field *field, PetscInt c, PetscReal xEval[3]);
+    PetscReal Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]);
 
 
 

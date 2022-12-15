@@ -338,19 +338,22 @@ void RBF::SetInterpolation(PetscBool hasInterpolation) {
 
 // Return the interpolation of a field at a given location
 // field - The field to interpolate
-// c - The location in ablate::solver::Range
 // xEval - The location to interpolate at
-PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscInt c, PetscReal xEval[3]) {
+PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]) {
 
-  Mat         A = RBF::RBFMatrix[c];
+  Mat         A;
   Vec         weights, rhs;
-  PetscInt    nCells, *lst;
-  PetscInt    i;
+  PetscInt    i, c, nCells, *lst;
   PetscScalar *vals;
   const PetscScalar *fvals;
-  PetscReal   *x = RBF::stencilXLocs[c], x0[3];
+  PetscReal   *x, x0[3];
   Vec         f = subDomain->GetVec(*field);
   DM          dm  = subDomain->GetFieldDM(*field);
+
+  DMPlexGetContainingCell(dm, xEval, &c) >> ablate::checkError;
+
+  A = RBF::RBFMatrix[c];
+  x = RBF::stencilXLocs[c];
 
   if (A == nullptr) {
     RBF::Matrix(c, &x, &A);
