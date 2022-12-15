@@ -1,11 +1,11 @@
 target_sources(ablateLibrary
         PRIVATE
         #lsSupport.cpp
-        #levelSetField.cpp
-        #levelSetSolver.cpp
+        levelSetFields.cpp
+        levelSetSolver.cpp
 
         PUBLIC
         #lsSupport.hpp
-        #levelSetField.hpp
-        #levelSetSolver.hpp
+        levelSetFields.hpp
+        levelSetSolver.hpp
         )
