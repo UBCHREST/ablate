@@ -52,7 +52,7 @@ TEST_P(LogLawBoundaryTestFixture, ShouldComputeCorrectAuxValues) {
 INSTANTIATE_TEST_SUITE_P(
     PhysicsBoundaryTests, LogLawBoundaryTestFixture,
     testing::Values(
-        //case 0
+        // case 0
         (LogLawBoundaryTestParameters){
             .dim = 2, .fvFaceGeom = {.normal = {0, -1, NAN}, .areas = {NAN, 0.5, NAN}}, .boundaryCell = {.volume = {0.5}}, .stencilValues = {1.7, 10, 10}, .expectedResults = {3.566176, 0}},
         // case 1
