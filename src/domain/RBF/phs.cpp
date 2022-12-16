@@ -3,7 +3,7 @@
 using namespace ablate::domain::rbf;
 
 /************ Begin Polyharmonic Spline Derived Class **********************/
-PHS::PHS(std::shared_ptr<ablate::domain::SubDomain> subDomain, PetscInt p, PetscInt phsOrder) : RBF(subDomain, p), phsOrder(phsOrder) {};
+PHS::PHS(PetscInt p, PetscInt phsOrder, bool hasDerivatives, bool hasInterpolation) : RBF(p, hasDerivatives, hasInterpolation), phsOrder(phsOrder) {};
 
 
  //Polyharmonic spline: r^m
@@ -60,9 +60,10 @@ PetscReal PHS::InternalDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz)
 }
 /************ End Polyharmonic Spline Derived Class **********************/
 
-//#include "registrar.hpp"
-//REGISTER(ablate::domain::rbf::RBF, ablate::domain::rbf::PHS, "Radial Basis Function",
-//         OPT(ablate::domain::SubDomain , "subDomain", "The sub-domain to use."),
-//         OPT(PetscInt, "polyOrder", "Order of the augmenting RBF polynomial. Must be >= 1. Default is 4."),
-//         OPT(PetscInt, "phsOrder", "Order of the polyharmonic spline. Must be >=1. Default is 4.")
-//         );
+#include "registrar.hpp"
+REGISTER(ablate::domain::rbf::RBF, ablate::domain::rbf::PHS, "Radial Basis Function",
+         OPT(PetscInt, "polyOrder", "Order of the augmenting RBF polynomial. Must be >= 1. Default is 4."),
+         OPT(PetscInt, "phsOrder", "Order of the polyharmonic spline. Must be >=1. Default is 4."),
+         OPT(bool, "hasDerivatives", "Compute derivative information. Default is false."),
+         OPT(bool, "hasInterpolation", "Compute interpolation information. Default is false.")
+         );

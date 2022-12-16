@@ -90,7 +90,8 @@ class LevelSetSolver : public ablate::solver::Solver {
     LevelSetSolver(
       std::string solverId,
       std::shared_ptr<ablate::domain::Region>,
-      std::shared_ptr<ablate::parameters::Parameters> options);
+      std::shared_ptr<ablate::parameters::Parameters> options,
+      const std::shared_ptr<ablate::domain::rbf::RBF>& rbf);
 
 
     /** SubDomain Register and Setup **/

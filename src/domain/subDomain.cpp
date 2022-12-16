@@ -3,7 +3,7 @@
 #include <sstream>
 #include <utilities/petscError.hpp>
 #include "utilities/mpiError.hpp"
-//#include "levelSet/rbfV2.hpp"
+
 
 
 ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const std::vector<std::shared_ptr<FieldDescription>>& allAuxFields)
@@ -108,6 +108,7 @@ ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const 
             offset += newAuxField.numberComponents;
         }
     }
+
 
 }
 

@@ -1,15 +1,9 @@
 #ifndef ABLATELIBRARY_RBF_HPP
 #define ABLATELIBRARY_RBF_HPP
 #include <petsc.h>
-#include <string>
-#include <vector>
-#include <domain/region.hpp>
-#include "domain/domain.hpp"
 #include "domain/subDomain.hpp"
+#include "solver/solver.hpp" // For solver::Range
 #include "rbfSupport.hpp"
-#include "domain/modifiers/modifier.hpp"
-
-
 
 #define __RBF_DEFAULT_POLYORDER 4
 #define __RBF_DEFAULT_PARAM 0.1
@@ -21,21 +15,19 @@ class RBF {
   private:
 
 
-    const std::shared_ptr<ablate::domain::SubDomain> subDomain;
-
+    std::shared_ptr<ablate::domain::SubDomain> subDomain;
 
     // Radial Basis Function type and parameters
     const PetscInt polyOrder = 4;
 
-    PetscInt nCells = -1;               // Number of cells in ablate::solver::Range
-
     PetscInt  nPoly = -1;               // The number of polynomial components to include
     PetscInt  minNumberCells = -1;      // Minimum number of cells needed to compute the RBF
     PetscBool useVertices = PETSC_TRUE; // Use vertices or edges/faces when computing neighbor cells
+    PetscInt  cStart = 0, cEnd = 0;     // The cell range
 
 
     // Derivative data
-    PetscBool hasDerivativeInformation = PETSC_FALSE;
+    const bool hasDerivatives;
     PetscInt nDer = 0;                      // Number of derivative stencils which are pre-computed
     PetscInt *dxyz = nullptr;               // The derivatives which have been setup
     PetscInt *nStencil = nullptr;           // Length of each stencil. Needed for both derivatives and interpolation.
@@ -46,7 +38,7 @@ class RBF {
     // Setup the derivative stencil at a point. There is no need for anyone outside of RBF to call this
     void SetupDerivativeStencils(PetscInt c);
 
-    PetscBool hasInterpolation = PETSC_FALSE;
+    const bool hasInterpolation;
     Mat *RBFMatrix = nullptr;
 
     // Compute the LU-decomposition of the augmented RBF matrix given a cell list.
@@ -64,19 +56,15 @@ class RBF {
 
   public:
 
-
-
-    RBF(std::shared_ptr<ablate::domain::SubDomain> subDomain, PetscInt polyOrder);
-
-//    RBF(std::shared_ptr<ablate::domain::SubDomain> subDomain);
+    RBF(PetscInt polyOrder, bool hasDerivatives, bool hasInterpolation);
 
     ~RBF();
 
 
     /** SubDomain Register and Setup **/
-    void Initialize();
-    void Setup();
-    void Register();
+    void Initialize(solver::Range cellRange);
+    void Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain);
+//    void Register();
 //    void Modify(DM&) override;
 
 
@@ -87,10 +75,7 @@ class RBF {
     void SetupDerivativeStencils();   // Setup all derivative stencils. Useful if someone wants to remove setup cost when testing
 
     // Interpolation stuff
-    void SetInterpolation(PetscBool hasInterpolation);
     PetscReal Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]);
-
-
 
 };
 

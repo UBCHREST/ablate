@@ -1,11 +1,11 @@
 #include "levelSetFields.hpp"
 #include "domain/fieldDescription.hpp"
 
-ablate::levelSet::LevelSetFields::LevelSetFields(std::shared_ptr<domain::Region> region) : region(region) {}
+ablate::levelSet::LevelSetFields::LevelSetFields(std::shared_ptr<domain::Region> region, std::string shape) : region(region), shape(shape) {}
 
 std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::levelSet::LevelSetFields::GetFields() {
     std::vector<std::shared_ptr<ablate::domain::FieldDescription>> lsFields{
-        std::make_shared<domain::FieldDescription>(LEVELSET_FIELD, LEVELSET_FIELD, domain::FieldDescription::ONECOMPONENT, domain::FieldLocation::SOL, domain::FieldType::FVM, region),
+        std::make_shared<domain::FieldDescription>(LEVELSET_FIELD, LEVELSET_FIELD, domain::FieldDescription::ONECOMPONENT, domain::FieldLocation::AUX, domain::FieldType::FVM, region),
         std::make_shared<domain::FieldDescription>(NORMAL_FIELD, NORMAL_FIELD, std::vector<std::string>{NORMAL_FIELD + domain::FieldDescription::DIMENSION}, domain::FieldLocation::AUX, domain::FieldType::FVM, region),
         std::make_shared<domain::FieldDescription>(CURVATURE_FIELD, CURVATURE_FIELD, domain::FieldDescription::ONECOMPONENT, domain::FieldLocation::AUX, domain::FieldType::FVM, region)};
 
@@ -15,7 +15,9 @@ std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::levelSet:
 
 #include "registrar.hpp"
 REGISTER(ablate::domain::FieldDescriptor, ablate::levelSet::LevelSetFields, "Level set fields need for interface tracking",
-         OPT(ablate::domain::Region, "region", "the region for the compressible flow (defaults to entire domain)"));
+         OPT(ablate::domain::Region, "region", "the region for the compressible flow (defaults to entire domain)"),
+         OPT(std::string, "shape", "the initial shape to use")
+         );
 
 
 

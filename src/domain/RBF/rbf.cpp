@@ -1,6 +1,4 @@
 #include "rbf.hpp"
-#include <petsc/private/dmpleximpl.h>
-
 
 using namespace ablate::domain::rbf;
 
@@ -146,7 +144,7 @@ void RBF::SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt d
     DMPlexGetHeightStratum(subDomain->GetDM(), 0, &cStart, &cEnd) >> ablate::checkError;       // Range of cells
     n = cEnd - cStart;
 
-    RBF::hasDerivativeInformation = PETSC_TRUE;
+//    RBF::hasDerivativeInformation = PETSC_TRUE;
     RBF::useVertices = useVertices;
     RBF::nDer = nDer;
 
@@ -330,11 +328,6 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt 
 
 /************ Begin Interpolation Code **********************/
 
-void RBF::SetInterpolation(PetscBool hasInterpolation) {
-  RBF::hasInterpolation = hasInterpolation;
-}
-
-
 
 // Return the interpolation of a field at a given location
 // field - The field to interpolate
@@ -439,33 +432,25 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
 
 /************ Constructor, Setup, Registration, and Initialization Code **********************/
 
-RBF::RBF(std::shared_ptr<ablate::domain::SubDomain> subDomain,
-  PetscInt polyOrder) :
-    subDomain(subDomain),
-    polyOrder(polyOrder == 0 ? __RBF_DEFAULT_POLYORDER : polyOrder)
-    {
-printf("IN RBF!\n");
-  PetscFinalize();
-//      ablate::domain::RBF::Setup();
+RBF::RBF(PetscInt polyOrder, bool hasDerivatives, bool hasInterpolation) :
+    polyOrder(polyOrder == 0 ? __RBF_DEFAULT_POLYORDER : polyOrder),
+    hasDerivatives(hasDerivatives),
+    hasInterpolation(hasInterpolation) {}
 
-    }
-
-
-// With default values
-//ablate::domain::RBF::RBF(
-//  std::shared_ptr<ablate::domain::SubDomain> subDomain) :
-//    subDomain(subDomain),
-//    rbfType(stringToRBFType.at("")),
-//    polyOrder(__RBF_DEFAULT_POLYORDER),
-//    rbfParam(__RBF_DEFAULT_PARAM) { }
 
 RBF::~RBF() {}
 
 
 // This is done once
-void RBF::Setup() {
-printf("IN SETUP!\n");
-  PetscFinalize();
+void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
+printf("RBF: SETUP!\n");
+
+  if ((!RBF::hasDerivatives) && (!RBF::hasInterpolation)) {
+    throw std::runtime_error("ablate::domain::RBF requires either derivatives or interpolation.");
+  }
+
+  RBF::subDomain = subDomain;
+
   PetscInt dim = subDomain->GetDimensions();
 
   // The number of polynomial values is (p+2)(p+1)/2 in 2D and (p+3)(p+2)(p+1)/6 in 3D
@@ -478,57 +463,58 @@ printf("IN SETUP!\n");
 
   // Set the minimum number of cells to get compute the RBF matrix
   RBF::minNumberCells = (PetscInt)floor(2*(RBF::nPoly));
+printf("%d\t%d\n", RBF::hasDerivatives, RBF::hasInterpolation);
+  if (RBF::hasDerivatives) {
 
-  // Now setup the derivatives required for curvature/normal calculations. This should probably move over to user-option
-  PetscInt nDer = 0;
-  PetscInt dx[10], dy[10], dz[10];
+    // Now setup the derivatives required for curvature/normal calculations. This should probably move over to user-option
+    PetscInt nDer = 0;
+    PetscInt dx[10], dy[10], dz[10];
 
 
-  nDer = ( dim == 2 ) ? 5 : 10;
-  PetscInt i = 0;
-  dx[i] = 1; dy[i] = 0; dz[i++] = 0;
-  dx[i] = 0; dy[i] = 1; dz[i++] = 0;
-  dx[i] = 2; dy[i] = 0; dz[i++] = 0;
-  dx[i] = 0; dy[i] = 2; dz[i++] = 0;
-  dx[i] = 1; dy[i] = 1; dz[i++] = 0;
-  if( dim == 3) {
-    dx[i] = 0; dy[i] = 0; dz[i++] = 1;
-    dx[i] = 0; dy[i] = 0; dz[i++] = 2;
-    dx[i] = 1; dy[i] = 0; dz[i++] = 1;
-    dx[i] = 0; dy[i] = 1; dz[i++] = 1;
-    dx[i] = 1; dy[i] = 1; dz[i++] = 1;
+    nDer = ( dim == 2 ) ? 5 : 10;
+    PetscInt i = 0;
+    dx[i] = 1; dy[i] = 0; dz[i++] = 0;
+    dx[i] = 0; dy[i] = 1; dz[i++] = 0;
+    dx[i] = 2; dy[i] = 0; dz[i++] = 0;
+    dx[i] = 0; dy[i] = 2; dz[i++] = 0;
+    dx[i] = 1; dy[i] = 1; dz[i++] = 0;
+    if( dim == 3) {
+      dx[i] = 0; dy[i] = 0; dz[i++] = 1;
+      dx[i] = 0; dy[i] = 0; dz[i++] = 2;
+      dx[i] = 1; dy[i] = 0; dz[i++] = 1;
+      dx[i] = 0; dy[i] = 1; dz[i++] = 1;
+      dx[i] = 1; dy[i] = 1; dz[i++] = 1;
+    }
+    SetDerivatives(nDer, dx, dy, dz);
   }
-  SetDerivatives(nDer, dx, dy, dz);
-
-  // Let the RBF know that there will also be interpolation. This should probably move over to user-option
-  SetInterpolation(PETSC_TRUE);
-
-
-  // The number of cells in the DM
-  PetscInt cStart, cEnd;
-  DMPlexGetHeightStratum(subDomain->GetDM(), 0, &cStart, &cEnd) >> ablate::checkError;       // Range of cells
-  RBF::nCells = cEnd - cStart;
 
 
 }
 
-void RBF::Initialize() {
-printf("IN INITALIZE!\n");
-  PetscFinalize();
-  // If this is called due to a grid change then release the old memory
-  for (PetscInt c = 0; c < RBF::nCells; ++c ){
-    PetscFree(RBF::stencilList[c]);
-    if(RBF::RBFMatrix[c]) MatDestroy(&(RBF::RBFMatrix[c]));
-    PetscFree(::RBF::stencilXLocs[c]);
-  }
-  PetscFree4(RBF::nStencil, RBF::stencilList, RBF::RBFMatrix, RBF::stencilXLocs) >> ablate::checkError;
+void RBF::Initialize(solver::Range cellRange) {
 
-  PetscInt cStart, cEnd;
-  DMPlexGetHeightStratum(subDomain->GetDM(), 0, &cStart, &cEnd) >> ablate::checkError;       // Range of cells
+  // If this is called due to a grid change then release the old memory. In this case cEnd - cStart will be greater than zero.
+  if ((RBF::cEnd - RBF::cStart) > 0) {
+    for (PetscInt c = RBF::cStart; c < RBF::cEnd; ++c ){
+      PetscFree(RBF::stencilList[c]);
+      if(RBF::RBFMatrix[c]) MatDestroy(&(RBF::RBFMatrix[c]));
+      PetscFree(::RBF::stencilXLocs[c]);
+    }
+    PetscFree4(RBF::nStencil, RBF::stencilList, RBF::RBFMatrix, RBF::stencilXLocs) >> ablate::checkError;
+  }
+
+  RBF::cStart = cellRange.start;
+  RBF::cEnd   = cellRange.end;
 
   // Both interpolation and derivatives need the list of points
-  RBF::nCells = cEnd - cStart;
-  PetscMalloc4(RBF::nCells, &(RBF::nStencil), RBF::nCells, &(RBF::stencilList), RBF::nCells, &(RBF::RBFMatrix), RBF::nCells, &(RBF::stencilXLocs)) >> ablate::checkError;
+  PetscInt nCells = RBF::cEnd - RBF::cStart;
+  PetscMalloc4(nCells, &(RBF::nStencil), nCells, &(RBF::stencilList), nCells, &(RBF::RBFMatrix), nCells, &(RBF::stencilXLocs)) >> ablate::checkError;
+
+  // Shift so that we can use cell range directly
+  RBF::nStencil -= cStart;
+  RBF::stencilList -= cStart;
+  RBF::RBFMatrix -= cStart;
+  RBF::stencilXLocs -= cStart;
 
   for (PetscInt c = cStart; c < cEnd; ++c) {
     RBF::nStencil[c] = -1;
@@ -540,12 +526,3 @@ printf("IN INITALIZE!\n");
 
 }
 
-void RBF::Register() {  }
-
-
-
-//#include "registrar.hpp"
-//REGISTER(ablate::domain::rbf::RBF, ablate::domain::rbf::RBF, "Radial Basis Function",
-//         ARG(ablate::domain::SubDomain , "subDomain", "The sub-domain to use."),
-//         OPT(PetscInt, "polyOrder", "Order of the augmenting RBF polynomial. Must be >= 1. Default is 4.")
-//         );

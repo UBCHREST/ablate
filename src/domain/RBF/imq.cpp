@@ -4,7 +4,7 @@
 using namespace ablate::domain::rbf;
 
 /************ Begin Inverse Multiquadric Derived Class **********************/
-IMQ::IMQ(std::shared_ptr<ablate::domain::SubDomain> subDomain, PetscInt p, PetscReal scale) : RBF(subDomain, p), scale(scale) {};
+IMQ::IMQ(PetscInt p, PetscReal scale, bool hasDerivatives, bool hasInterpolation) : RBF(p, hasDerivatives, hasInterpolation), scale(scale) {};
 
 
 // Multiquadric: sqrt(1+(er)^2)
@@ -65,9 +65,10 @@ PetscReal IMQ::InternalDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz)
 }
 /************ End Inverse Multiquadric Derived Class **********************/
 
-//#include "registrar.hpp"
-//REGISTER(ablate::domain::rbf::RBF, ablate::domain::rbf::IMQ, "Radial Basis Function",
-//         OPT(ablate::domain::SubDomain , "subDomain", "The sub-domain to use."),
-//         OPT(PetscInt, "polyOrder", "Order of the augmenting RBF polynomial. Must be >= 1. Default is 4."),
-//         OPT(PetscReal, "scale", "Scaling parameter. Default is 0.1.")
-//         );
+#include "registrar.hpp"
+REGISTER(ablate::domain::rbf::RBF, ablate::domain::rbf::IMQ, "Radial Basis Function",
+         OPT(PetscInt, "polyOrder", "Order of the augmenting RBF polynomial. Must be >= 1. Default is 4."),
+         OPT(PetscReal, "scale", "Scaling parameter. Default is 0.1."),
+         OPT(bool, "hasDerivatives", "Compute derivative information. Default is false."),
+         OPT(bool, "hasInterpolation", "Compute interpolation information. Default is false.")
+         );

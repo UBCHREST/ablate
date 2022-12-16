@@ -10,12 +10,8 @@
 #include "domain.hpp"
 #include "fieldDescription.hpp"
 #include "io/serializable.hpp"
-//#include "levelSet/rbfV2.hpp"
 
 namespace ablate::domain {
-
-  // forward declare the RBF
-  class RBF;
 
 class SubDomain : public io::Serializable {
    private:
@@ -88,9 +84,6 @@ class SubDomain : public io::Serializable {
      * @param localVector
      */
     void CopySubVectorToGlobal(DM subDM, DM gDM, Vec subVec, Vec globVec, const std::vector<Field>& subFields, const std::vector<Field>& gFields = {}, bool localVector = false) const;
-
-    // The radial basis function. This will be a vector with a length equal to the number of regions.
-    std::shared_ptr<ablate::domain::RBF> rbf = {};
 
    public:
     SubDomain(Domain& domain, PetscInt dsNumber, const std::vector<std::shared_ptr<FieldDescription>>& allAuxFields);
@@ -392,14 +385,6 @@ class SubDomain : public io::Serializable {
      * @param inDM
      */
     void CreateEmptySubDM(DM* inDM, std::shared_ptr<domain::Region> region = {});
-
-
-    //Get the radial basis function on this subdomain describe system for this subDomain
-    inline std::shared_ptr<ablate::domain::RBF> GetRBF(){ return rbf; };
-
-    // Setup an RBF over a solver region
-    void SetupRBF(std::shared_ptr<ablate::domain::SubDomain> subDomain);
-
 
 };
 

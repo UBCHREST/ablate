@@ -12,7 +12,7 @@ class IMQ: public RBF {
     PetscReal InternalVal(PetscReal x[], PetscReal y[]);
     PetscReal InternalDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz);
   public:
-    IMQ(std::shared_ptr<ablate::domain::SubDomain> subDomain = nullptr, PetscInt p = 4, PetscReal scale = 0.1);
+    IMQ(PetscInt p = 4, PetscReal scale = 0.1, bool hasDerivatives = false, bool hasInterpolation = false);
 
     PetscReal RBFVal(PetscReal x[], PetscReal y[]) override {return InternalVal(std::move(x), std::move(y)); }
     PetscReal RBFDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) override {return InternalDer(std::move(x), std::move(dx), std::move(dy), std::move(dz)); }

@@ -4,7 +4,7 @@
 using namespace ablate::domain::rbf;
 
 /************ Begin Gaussian Derived Class **********************/
-GA::GA(std::shared_ptr<ablate::domain::SubDomain> subDomain, PetscInt p, PetscReal scale) : RBF(subDomain, p), scale(scale) {};
+GA::GA(PetscInt p, PetscReal scale, bool hasDerivatives, bool hasInterpolation) : RBF(p, hasDerivatives, hasInterpolation), scale(scale) {};
 
 
 // Gaussian: r^m
@@ -70,9 +70,10 @@ PetscReal GA::InternalDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) 
 
 #include "registrar.hpp"
 REGISTER(ablate::domain::rbf::RBF, ablate::domain::rbf::GA, "Radial Basis Function",
-         ARG(ablate::domain::SubDomain , "subDomain", "The sub-domain to use."),
          OPT(PetscInt, "polyOrder", "Order of the augmenting RBF polynomial. Must be >= 1. Default is 4."),
-         OPT(PetscReal, "scale", "Scaling parameter. Default is 0.1.")
+         OPT(PetscReal, "scale", "Scaling parameter. Default is 0.1."),
+         OPT(bool, "hasDerivatives", "Compute derivative information. Default is false."),
+         OPT(bool, "hasInterpolation", "Compute interpolation information. Default is false.")
          );
 
 
