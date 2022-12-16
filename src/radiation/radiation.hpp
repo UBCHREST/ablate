@@ -114,7 +114,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     Vec cellGeomVec = nullptr;
 
     //! create a data type to simplify moving the carrier
-    MPI_Datatype carrierMpiType = nullptr;
+    MPI_Datatype carrierMpiType;
 
 
     /** Segments belong to the local maps and hold all of the local information about the ray segments both during the search and the solve */
@@ -163,10 +163,10 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
 
 
     //! store the local rays identified on this rank.  This includes rays that do and do not originate on this rank
-    std::vector<std::vector<Segment>> remoteRays;
+    std::vector<std::vector<Segment>> raySegments;
 
     //! the calculation over each of the remoteRays. indexed over remote ray
-    std::vector<Carrier> remoteRayCalculation;
+    std::vector<Carrier> raySegmentsCalculation;
 
     //! store the number of originating rays
     PetscInt numberOriginRays;

@@ -9,9 +9,7 @@
 
 ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber,
                                         std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
-    : solverId(solverId), region(region), radiationModel(std::move(radiationModelIn)), log(std::move(log)) {
-    nTheta = raynumber;    //!< The number of angles to solve with, given by user input
-    nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
+    : nTheta(raynumber), nPhi(2*raynumber), solverId(solverId), region(region), radiationModel(std::move(radiationModelIn)), log(std::move(log)) {
 }
 
 ablate::radiation::Radiation::~Radiation() {
@@ -314,14 +312,16 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     // Create the remote access structure
     PetscSFCreate(PETSC_COMM_WORLD, &remoteAccess) >> checkError;
     PetscSFSetFromOptions(remoteAccess) >> checkError;
-    PetscSFSetGraph(remoteAccess, (PetscInt)remoteRays.size(), numberOfReturnedSegments, nullptr, PETSC_OWN_POINTER, remoteRayInformation, PETSC_OWN_POINTER) >> checkError;
+    PetscSFSetGraph(remoteAccess, (PetscInt)raySegments.size(), numberOfReturnedSegments, nullptr, PETSC_OWN_POINTER, remoteRayInformation, PETSC_OWN_POINTER) >> checkError;
     PetscSFSetUp(remoteAccess) >> checkError;
 
     // Size up the memory to hold the local calculations and the retrieved information
-    remoteRayCalculation.resize(remoteRays.size());
+    raySegmentsCalculation.resize(raySegments.size());
     raySegmentSummary.resize(numberOfReturnedSegments);
 
     // Create a mpi data type to allow reducing the remoteRayCalculation to raySegmentSummary
+    MPI_Type_contiguous(2, MPIU_REAL, &carrierMpiType);
+    MPI_Type_commit(&carrierMpiType);
 }
 
 void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field temperatureField, Vec auxVec) {  //!< Pass in const auto for temperature and Vec for aux
@@ -464,12 +464,12 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
                 // Update the identifier for this rank.  When it gets sent to another rank a copy will be made
                 identifier.remoteRank = rank;
                 // set the remoteRayId to be the next one in the way
-                identifiers->remoteRayId = (PetscInt)remoteRays.size();
+                identifiers->remoteRayId = (PetscInt)raySegments.size();
                 // bump the nSegment
                 identifiers->nSegment++;
 
                 // Create an empty struct in the ray
-                remoteRays.emplace_back();
+                raySegments.emplace_back();
 
                 // store this ray and information in the return data
                 DMSwarmAddPoint(radReturn) >> checkError;  //!< Another solve particle is added here because the search particle has entered a new domain
@@ -488,7 +488,7 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
                 DMSwarmRestoreField(radReturn, DMSwarmField_rank, nullptr, nullptr, (void**)&returnRank) >> checkError;
             }
             // Exact the ray to reduce lookup
-            auto& ray = remoteRays[identifiers->nSegment];
+            auto& ray = raySegments[identifiers->nSegment];
 
             /** ********************************************
              * The face stepping routine will give the precise path length of the mesh without any error. It will also allow the faces of the cells to be accounted for so that the
@@ -613,6 +613,15 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
      * We don't want to resolve any segments unnecessarily, so the map can be iterated through instead.
      * Don't touch the carrier particles.
      */
+
+    // Start by marching over all rays in this rank
+    for(std::size_t r = 0; r < raySegments.size(); r++){
+        // zero our the calculation
+        raySegmentsCalculation[r].Ij = 0.0;
+        raySegmentsCalculation[r].Krad = 1.0;
+    }
+
+
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
                                                           //!< particles then pass out of initialization.
         /** Each ray is born here. They begin at the far field temperature.
@@ -620,7 +629,7 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
             Set the initial ray intensity to the wall temperature, etc.
          */
         /** For each domain in the ray (The rays vector will have an added index, splitting every x points) */
-        PetscInt numPoints = static_cast<PetscInt>(remoteRays[access[ipart]].cells.size());
+        PetscInt numPoints = static_cast<PetscInt>(raySegments[access[ipart]].cells.size());
 
         if (numPoints > 0) {
             for (PetscInt n = 0; n < numPoints; n++) {
@@ -630,13 +639,13 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                     Get the array that lives inside the vector
                     Gets the temperature from the cell index specified
                 */
-                DMPlexPointLocalRead(solDm, remoteRays[access[ipart]].cells[n], solArray, &sol);
+                DMPlexPointLocalRead(solDm, raySegments[access[ipart]].cells[n], solArray, &sol);
                 if (sol) {
-                    DMPlexPointLocalFieldRead(auxDm, remoteRays[access[ipart]].cells[n], temperatureField.id, auxArray, &temperature);
+                    DMPlexPointLocalFieldRead(auxDm, raySegments[access[ipart]].cells[n], temperatureField.id, auxArray, &temperature);
                     if (temperature) { /** Input absorptivity (kappa) values from model here. */
                         absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
-                        carrier[ipart].Ij += FlameIntensity(1 - exp(-kappa * remoteRays[access[ipart]].h[n]), *temperature) * carrier[ipart].Krad;
-                        carrier[ipart].Krad *= exp(-kappa * remoteRays[access[ipart]].h[n]);  //!< Compute the total absorption for this domain
+                        carrier[ipart].Ij += FlameIntensity(1 - exp(-kappa * raySegments[access[ipart]].h[n]), *temperature) * carrier[ipart].Krad;
+                        carrier[ipart].Krad *= exp(-kappa * raySegments[access[ipart]].h[n]);  //!< Compute the total absorption for this domain
 
                         if (n ==
                             (numPoints - 1)) { /** If this is the beginning of the ray, set this as the initial intensity. (The segment intensities will be filtered through during the origin run) */

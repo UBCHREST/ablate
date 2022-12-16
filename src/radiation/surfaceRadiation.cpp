@@ -3,14 +3,9 @@
 ablate::radiation::SurfaceRadiation::SurfaceRadiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber,
                                                       std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
     : Radiation(solverId, region, raynumber, radiationModelIn, log) {
-    nTheta = raynumber;    //!< The number of angles to solve with, given by user input
-    nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
 }
 
 ablate::radiation::SurfaceRadiation::~SurfaceRadiation() {
-    if (radsolve) DMDestroy(&radsolve) >> checkError;  //!< Destroy the radiation particle swarm
-    VecDestroy(&faceGeomVec) >> checkError;
-    VecDestroy(&cellGeomVec) >> checkError;
 }
 
 void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) { /** Declare some information associated with the field declarations */
