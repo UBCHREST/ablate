@@ -137,11 +137,9 @@ void ablate::chemistry::ChemTabModel::LoadBasisVectors(std::istream &inputStream
     }
 }
 
-void ablate::chemistry::ChemTabModel::ChemTabModelComputeMassFractionsFunction(const PetscReal *progressVariables, std::size_t progressVariablesSize, PetscReal *massFractions,
-                                                                               std::size_t massFractionsSize, void *ctx) {
-    // y = inv(W)'C
-    // for now the mass fractions will be obtained using the inverse of the
-    // weights. Will be replaced by a ML predictive model in the next iteration
+void ChemTabModelComputeFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal *predictedSourceEnergy,
+                                 PetscReal *progressVariableSource, const std::size_t progressVariableSourceSize,
+                                 PetscReal *massFractions, std::size_t massFractionsSize, void *ctx) {
     auto ctModel = (ChemTabModel *)ctx;
     // size of progressVariables should match the expected number of
     // progressVariables
@@ -149,37 +147,6 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeMassFractionsFunction(c
         throw std::invalid_argument(
             "The progressVariables size does not match the "
             "supported number of progressVariables");
-    }
-    // size of massFractions should match the expected number of species
-    if (massFractionsSize != ctModel->speciesNames.size()) {
-        throw std::invalid_argument(
-            "The massFractions size does not match the "
-            "supported number of species");
-    }
-    for (size_t i = 0; i < ctModel->speciesNames.size(); i++) {
-        PetscReal v = 0;
-        // j starts from 1 because the first entry in progressVariables is assumed
-        // to be zMix
-        for (size_t j = 1; j < ctModel->progressVariablesNames.size(); j++) {
-            v += ctModel->iWmat[j - 1][i] * progressVariables[j];
-        }
-        massFractions[i] = v;
-    }
-}
-
-void ablate::chemistry::ChemTabModel::ChemTabModelComputeSourceFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal *predictedSourceEnergy,
-                                                                        PetscReal *progressVariableSource, const std::size_t progressVariableSourceSize, void *ctx) {
-    auto ctModel = (ChemTabModel *)ctx;
-    // size of progressVariables should match the expected number of
-    // progressVariables
-    if (progressVariablesSize != ctModel->progressVariablesNames.size()) {
-        throw std::invalid_argument(
-            "The progressVariables size does not match the "
-            "supported number of progressVariables");
-    }
-    // size of progressVariableSource should match the expected number of progressVariables (excluding zmix)
-    if (progressVariableSourceSize != ctModel->progressVariablesNames.size() - 1) {
-        throw std::invalid_argument("The progressVariableSource size does not match the supported number of progressVariables");
     }
     //********* Get Input tensor
     int numInputs = 1;
@@ -192,26 +159,18 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeSourceFunction(const Pe
     int numOutputs = 2;
     TF_Output *output = (TF_Output *)malloc(sizeof(TF_Output) * numOutputs);
 
-    TF_Output t_sourceterms = {TF_GraphOperationByName(ctModel->graph, "StatefulPartitionedCall"), 0};
-    TF_Output t_sourceenergy = {TF_GraphOperationByName(ctModel->graph, "StatefulPartitionedCall"), 1};
+    TF_Output t_sourceenergy = {TF_GraphOperationByName(ctModel->graph, "StatefulPartitionedCall"), 0};
+    TF_Output t_sourceterms = {TF_GraphOperationByName(ctModel->graph, "StatefulPartitionedCall"), 1};
 
-    if (t_sourceterms.oper == NULL) throw std::runtime_error("ERROR: Failed TF_GraphOperationByName StatefulPartitionedCall:0");
-    if (t_sourceenergy.oper == NULL) throw std::runtime_error("ERROR: Failed TF_GraphOperationByName StatefulPartitionedCall:1");
-    output[0] = t_sourceterms;
-    output[1] = t_sourceenergy;
+    if (t_sourceenergy.oper == NULL) throw std::runtime_error("ERROR: Failed TF_GraphOperationByName StatefulPartitionedCall:0");
+    if (t_sourceterms.oper == NULL) throw std::runtime_error("ERROR: Failed TF_GraphOperationByName StatefulPartitionedCall:1");
+    output[0] = t_sourceenergy;
+    output[1] = t_sourceterms;
     //********* Allocate data for inputs & outputs
     TF_Tensor **inputValues = (TF_Tensor **)malloc(sizeof(TF_Tensor *) * numInputs);
     TF_Tensor **outputValues = (TF_Tensor **)malloc(sizeof(TF_Tensor *) * numOutputs);
 
     int ndims = 2;
-
-    /*int ninputs = (int)ctModel->progressVariablesNames.size() - 1;
-    int64_t dims[] = {1, ninputs};
-    float data[ninputs];
-    // Ignoring the zmix variable for predicting the source terms
-    for (int i = 0; i < ninputs; i++) {
-        data[i] = progressVariables[i + 1];
-    }*/
 
     // according to Varun this should work for including Zmix
     int ninputs = (int)ctModel->progressVariablesNames.size();
@@ -223,19 +182,27 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeSourceFunction(const Pe
     }
 
     int ndata = ninputs * sizeof(float);
-    TF_Tensor *int_tensor = TF_NewTensor(TF_FLOAT, dims, ndims, data, ndata, &NoOpDeallocator, 0);
-    if (int_tensor == NULL) throw std::runtime_error("ERROR: Failed TF_NewTensor");
+    TF_Tensor *input_tensor = TF_NewTensor(TF_FLOAT, dims, ndims, data, ndata, &NoOpDeallocator, 0);
+    if (input_tensor == NULL) throw std::runtime_error("ERROR: Failed TF_NewTensor");
 
-    inputValues[0] = int_tensor;
+    inputValues[0] = input_tensor;
 
     TF_SessionRun(ctModel->session, NULL, input, inputValues, numInputs, output, outputValues, numOutputs, NULL, 0, NULL, ctModel->status);
     if (TF_GetCode(ctModel->status) != TF_OK) throw std::runtime_error(TF_Message(ctModel->status));
     //********** Extract source predictions
-    float *outputArray;
+
+    // store physical variables (e.g. souener & mass fractions)
+    float *outputArray; // Dwyer: as counter intuitive as it may be static dependents come second, it did pass its tests!
     outputArray = (float *)TF_TensorData(outputValues[1]);
     PetscReal p = (PetscReal)outputArray[0];
-    *predictedSourceEnergy = p;
+    if (predictedSourceEnergy!=NULL) *predictedSourceEnergy = p;
+    
+    // store inverted mass fractions
+    for (size_t i = 0; i < massFractionsSize; i++) {
+        massFractions[i] = (PetscReal)outputArray[i+1];
+    }
 
+    // store CPV sources
     outputArray = (float *)TF_TensorData(outputValues[0]);
     for (size_t i = 0; i < progressVariableSourceSize; i++) {
         progressVariableSource[i] = (PetscReal)outputArray[i];
@@ -246,6 +213,67 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeSourceFunction(const Pe
     free(input);
     free(output);
 }
+
+
+//void ablate::chemistry::ChemTabModel::ChemTabModelComputeMassFractionsFunction(const PetscReal *progressVariables, std::size_t progressVariablesSize, PetscReal *massFractions,
+//                                                                               std::size_t massFractionsSize, void *ctx) {
+//    // y = inv(W)'C
+//    // for now the mass fractions will be obtained using the inverse of the
+//    // weights. Will be replaced by a ML predictive model in the next iteration
+//    auto ctModel = (ChemTabModel *)ctx;
+//    // size of progressVariables should match the expected number of
+//    // progressVariables
+//    if (progressVariablesSize != ctModel->progressVariablesNames.size()) {
+//        throw std::invalid_argument(
+//            "The progressVariables size does not match the "
+//            "supported number of progressVariables");
+//    }
+//    // size of massFractions should match the expected number of species
+//    if (massFractionsSize != ctModel->speciesNames.size()) {
+//        throw std::invalid_argument(
+//            "The massFractions size does not match the "
+//            "supported number of species");
+//    }
+//    for (size_t i = 0; i < ctModel->speciesNames.size(); i++) {
+//        PetscReal v = 0;
+//        // j starts from 1 because the first entry in progressVariables is assumed
+//        // to be zMix
+//        for (size_t j = 1; j < ctModel->progressVariablesNames.size(); j++) {
+//            v += ctModel->iWmat[j - 1][i] * progressVariables[j];
+//        }
+//        massFractions[i] = v;
+//    }
+//}
+
+void ablate::chemistry::ChemTabModel::ChemTabModelComputeMassFractionsFunction(const PetscReal *progressVariables, std::size_t progressVariablesSize, PetscReal *massFractions,
+                                                                               std::size_t massFractionsSize, void *ctx) {
+    auto ctModel = (ChemTabModel *)ctx;
+    // size of massFractions should match the expected number of species
+    if (massFractionsSize != ctModel->speciesNames.size()) {
+        throw std::invalid_argument(
+            "The massFractions size does not match the "
+            "supported number of species");
+    }
+    
+    // call model using generalized invokation method (usable for inversion & source computation)
+    ChemTabModelComputeFunction(progressVariables, progressVariablesSize, NULL, NULL, 0, massFractions, massFractionsSize, ctx);
+}
+
+
+void ablate::chemistry::ChemTabModel::ChemTabModelComputeSourceFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal *predictedSourceEnergy,
+                                                                        PetscReal *progressVariableSource, const std::size_t progressVariableSourceSize, void *ctx) {
+    auto ctModel = (ChemTabModel *)ctx;
+    // size of progressVariableSource should match the expected number of progressVariables (excluding zmix)
+    if (progressVariableSourceSize != ctModel->progressVariablesNames.size() - 1) {
+        throw std::invalid_argument("The progressVariableSource size does not match the supported number of progressVariables");
+    }
+
+    // call model using generalized invokation method (usable for inversion & source computation)
+    ChemTabModelComputeFunction(progressVariables, progressVariablesSize, predictedSourceEnergy, progressVariableSource, progressVariableSourceSize, NULL, 0, ctx);
+}
+//void ChemTabModelComputeFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal *predictedSourceEnergy,
+//                                 PetscReal *progressVariableSource, const std::size_t progressVariableSourceSize,
+//                                 PetscReal *massFractions, std::size_t massFractionsSize, void *ctx) {
 
 const std::vector<std::string> &ablate::chemistry::ChemTabModel::GetSpecies() const { return speciesNames; }
 
