@@ -148,6 +148,10 @@ INSTANTIATE_TEST_SUITE_P(
         .restartOverrides = {{"timestepper::arguments::ts_max_steps", "10"}}}),
     [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) { return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc); });
 
+INSTANTIATE_TEST_SUITE_P(Monitors, IntegrationTestsSpecifier,
+                         testing::Values((MpiTestParameter){.testName = "inputs/monitors/rocketMonitor.yaml", .nproc = 1, .expectedOutputFile = "outputs/monitors/rocketMonitor.txt", .arguments = ""}),
+                         [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
+
 INSTANTIATE_TEST_SUITE_P(Radiation, IntegrationTestsSpecifier,
                          testing::Values(
 

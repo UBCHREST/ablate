@@ -1,4 +1,6 @@
 #include "subDomain.hpp"
+#include <set>
+#include <sstream>
 #include <utilities/petscError.hpp>
 #include "utilities/mpiError.hpp"
 
@@ -200,6 +202,9 @@ void ablate::domain::SubDomain::ProjectFieldFunctionsToSubDM(const std::vector<s
 }
 
 Vec ablate::domain::SubDomain::GetAuxGlobalVector() {
+    if (!auxDM) {
+        return nullptr;
+    }
     DMLocalToGlobal(auxDM, auxLocalVec, INSERT_VALUES, auxGlobalVec) >> checkError;
     return auxGlobalVec;
 }
@@ -552,7 +557,7 @@ PetscErrorCode ablate::domain::SubDomain::GetFieldLocalVector(const ablate::doma
         auto entireDm = GetDM();
         auto entireVec = GetSolutionVector();
 
-        // Create a subD
+        // Create a subDM
         ierr = DMCreateSubDM(entireDm, 1, &field.id, vecIs, subdm);
         CHKERRQ(ierr);
 
@@ -733,4 +738,106 @@ void ablate::domain::SubDomain::ProjectFieldFunctionsToLocalVector(const std::ve
             DMProjectFunctionLocal(dm, time, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> checkError;
         }
     }
+}
+
+bool ablate::domain::SubDomain::CheckSolution() {
+    // create a set of points that have failed
+    std::set<PetscInt> failedPoints;
+
+    // Get the solution and aux info
+    Vec solutionVec = GetSolutionVector();
+    const PetscScalar* solutionArray;
+    VecGetArrayRead(solutionVec, &solutionArray) >> checkError;
+
+    // march over point in the domain
+    PetscInt pStart, pEnd;
+    DMPlexGetChart(GetDM(), &pStart, &pEnd) >> checkError;
+
+    // get the global section
+    PetscSection globalSection;
+    DMGetSection(GetDM(), &globalSection) >> checkError;
+
+    for (PetscInt p = pStart; p < pEnd; ++p) {
+        const PetscScalar* solutionAtP = nullptr;
+        DMPlexPointGlobalRead(GetDM(), p, solutionArray, &solutionAtP) >> checkError;
+
+        // check each scalar for nan/inf
+        if (solutionAtP) {
+            PetscInt dof;
+            PetscSectionGetDof(globalSection, p, &dof);
+
+            for (PetscInt m = 0; m < dof; ++m) {
+                if (PetscIsInfOrNanScalar(solutionAtP[m])) {
+                    failedPoints.insert(p);
+                }
+            }
+        }
+    }
+
+    // do a global check
+    auto localFailedPoints = (PetscMPIInt)failedPoints.size();
+    PetscMPIInt globalFailedPoints;
+    MPI_Allreduce(&localFailedPoints, &globalFailedPoints, 1, MPI_INT, MPI_SUM, GetComm()) >> checkMpiError;
+    if (globalFailedPoints) {
+        PetscPrintf(GetComm(), "Field values at points in the domain were not initialized.\n") >> checkError;
+
+        PetscMPIInt rank;
+        MPI_Comm_rank(GetComm(), &rank) >> checkMpiError;
+
+        std::stringstream failedPointsMessage;
+        // march over each failed point
+        for (auto& p : failedPoints) {
+            // Get the coordinate
+            PetscReal centroid[3] = {0.0, 0.0, 0.0};
+            DMPlexComputeCellGeometryFVM(GetDM(), p, nullptr, centroid, nullptr) >> checkError;
+
+            failedPointsMessage << "Nan/Inf Point (" << p << ") at [" << centroid[0] << "," << centroid[1] << ", " << centroid[2] << "] on rank " << rank << std::endl;
+
+            // output the labels at this point
+            PetscInt numberLabels;
+            DMGetNumLabels(GetDM(), &numberLabels);
+            failedPointsMessage << "\tLabels: ";
+            for (PetscInt l = 0; l < numberLabels; l++) {
+                DMLabel labelCheck;
+                DMGetLabelByNum(GetDM(), l, &labelCheck) >> checkError;
+                const char* labelName;
+                DMGetLabelName(GetDM(), l, &labelName) >> checkError;
+                PetscInt labelCheckValue;
+                DMLabelGetValue(labelCheck, p, &labelCheckValue) >> checkError;
+                PetscInt labelDefaultValue;
+                DMLabelGetDefaultValue(labelCheck, &labelDefaultValue) >> checkError;
+                if (labelDefaultValue != labelCheckValue) {
+                    failedPointsMessage << labelName << "(" << labelCheckValue << ") ";
+                }
+            }
+            failedPointsMessage << std::endl;
+
+            // check each local field
+            for (const auto& field : GetFields()) {
+                PetscSection section;
+                DMGetGlobalSection(GetDM(), &section) >> checkError;
+
+                // make sure that this field lives at this point
+                PetscInt dof;
+                PetscSectionGetFieldDof(section, p, field.id, &dof) >> checkError;
+
+                // get the value at the point
+                const PetscScalar* solutionAtP = nullptr;
+                DMPlexPointGlobalFieldRead(GetDM(), p, field.id, solutionArray, &solutionAtP) >> checkError;
+                if (dof) {
+                    failedPointsMessage << '\t' << field.name << ":" << std::endl;
+                    for (PetscInt c = 0; c < dof; ++c) {
+                        failedPointsMessage << "\t\t[" << c << "]: " << solutionAtP[c] << std::endl;
+                    }
+                }
+            }
+        }
+
+        PetscSynchronizedPrintf(GetComm(), "%s", failedPointsMessage.str().c_str()) >> checkError;
+        PetscSynchronizedFlush(GetComm(), PETSC_STDOUT) >> checkError;
+    }
+
+    // cleanup
+    VecRestoreArrayRead(solutionVec, &solutionArray) >> checkError;
+    return (bool)globalFailedPoints;
 }

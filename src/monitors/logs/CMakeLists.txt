@@ -1,13 +1,15 @@
 target_sources(ablateLibrary
+        PRIVATE
+        log.cpp
+        csvLog.cpp
+        streamLog.cpp
+        fileLog.cpp
+        stdOut.cpp
+
         PUBLIC
         log.hpp
-        log.cpp
         csvLog.hpp
-        csvLog.cpp
         streamLog.hpp
-        streamLog.cpp
         fileLog.hpp
-        fileLog.cpp
         stdOut.hpp
-        stdOut.cpp
         )

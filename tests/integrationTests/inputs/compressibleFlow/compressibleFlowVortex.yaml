@@ -24,11 +24,10 @@ timestepper:
     upper: [ 1, 1 ]
     boundary: [ "PERIODIC", "PERIODIC" ]
     simplex: false
+    # pass in these options to petsc when setting up the domain.  Using an option list here prevents command line arguments from being seen.
+    options:
+      dm_refine: 1
     modifiers:
-      # pass in these options to petsc when setting up the domain.  Using an option list here prevents command line arguments from being seen.
-      - !ablate::domain::modifiers::SetFromOptions
-        dm_refine: 1
-
       # if using mpi, this modifier distributes cells
       - !ablate::domain::modifiers::DistributeWithGhostCells
       # if using a FVM ghost boundary cells must be added
@@ -75,9 +74,6 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
     cfl: 0.5
 
   # there is no transport properties resulting in inviscid flow
-  transport:
-    k: 0.0
-    mu: 0.0
   monitors:
     # output time step information for each time step
     - !ablate::monitors::TimeStepMonitor

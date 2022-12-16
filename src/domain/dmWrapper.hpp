@@ -5,7 +5,8 @@
 namespace ablate::domain {
 class DMWrapper : public ablate::domain::Domain {
    public:
-    explicit DMWrapper(DM dm, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers = {});
+    explicit DMWrapper(DM dm, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers = {},
+                       std::shared_ptr<parameters::Parameters> options = {});
     ~DMWrapper() = default;
 };
 }  // namespace ablate::domain

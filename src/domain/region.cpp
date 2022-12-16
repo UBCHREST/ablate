@@ -8,6 +8,12 @@ ablate::domain::Region::Region(std::string name, int valueIn) : name(name), valu
     id = std::hash<std::string>()(hashString);
 }
 
+void ablate::domain::Region::CreateLabel(DM dm, DMLabel& regionLabel, PetscInt& regionValue) {
+    DMCreateLabel(dm, GetName().c_str()) >> checkError;
+    DMGetLabel(dm, GetName().c_str(), &regionLabel) >> checkError;
+    regionValue = GetValue();
+}
+
 void ablate::domain::Region::GetLabel(const std::shared_ptr<Region>& region, DM dm, DMLabel& regionLabel, PetscInt& regionValue) {
     regionLabel = nullptr;
     regionValue = PETSC_DECIDE;

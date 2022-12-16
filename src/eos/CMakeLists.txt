@@ -1,13 +1,15 @@
 target_sources(ablateLibrary
+        PRIVATE
+        perfectGas.cpp
+        stiffenedGas.cpp
+        tChem.cpp
         PUBLIC
         eos.hpp
         perfectGas.hpp
-        perfectGas.cpp
         tChem.hpp
-        tChem.cpp
         stiffenedGas.hpp
-        stiffenedGas.cpp
         )
 
 add_subdirectory(transport)
+add_subdirectory(tChem)
 add_subdirectory(radiationProperties)

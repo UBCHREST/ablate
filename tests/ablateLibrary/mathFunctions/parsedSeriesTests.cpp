@@ -16,7 +16,8 @@ TEST(ParsedSeriesTests, ShouldBeCreatedFromRegistar) {
     EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<int>{.inputName = "upperBound"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(10));
 
     // act
-    auto instance = ResolveAndCreate<ablate::mathFunctions::MathFunction>(mockFactory);
+    auto createMethod = Creator<ablate::mathFunctions::MathFunction>::GetCreateMethod(mockFactory->GetClassType());
+    auto instance = createMethod(mockFactory);
 
     // assert
     ASSERT_TRUE(instance != nullptr) << " should create an instance of the ParsedSeries";

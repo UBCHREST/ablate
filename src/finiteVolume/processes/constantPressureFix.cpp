@@ -5,7 +5,7 @@
 
 ablate::finiteVolume::processes::ConstantPressureFix::ConstantPressureFix(std::shared_ptr<eos::EOS> eos, double pressure) : pressure(pressure), eos(std::move(eos)) {}
 
-void ablate::finiteVolume::processes::ConstantPressureFix::Initialize(ablate::finiteVolume::FiniteVolumeSolver& fv) {
+void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteVolume::FiniteVolumeSolver& fv) {
     // use the eos to set up the eos functions
     densityFunction = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Density, fv.GetSubDomain().GetFields());
     internalSensibleEnergyFunction = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::InternalSensibleEnergy, fv.GetSubDomain().GetFields());

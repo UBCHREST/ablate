@@ -9,7 +9,7 @@
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
-#include "domain/modifiers/setFromOptions.hpp"
+#include "environment/runEnvironment.hpp"
 #include "eos/mockEOS.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/essentialGhost.hpp"
@@ -21,6 +21,7 @@
 #include "parameters/mapParameters.hpp"
 #include "solver/timeStepper.hpp"
 #include "utilities/petscOptions.hpp"
+#include "utilities/petscUtilities.hpp"
 
 typedef struct {
     PetscReal L;
@@ -85,12 +86,12 @@ static PetscErrorCode ComputeEulerExact(PetscInt dim, PetscReal time, const Pets
 
     PetscFunctionReturn(0);
 }
+
 TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
-        PetscErrorCode ierr;
-
         // initialize petsc and mpi
-        PetscInitialize(argc, argv, NULL, "HELP") >> testErrorChecker;
+        ablate::environment::RunEnvironment::Initialize(argc, argv);
+        ablate::utilities::PetscUtilities::Initialize();
 
         // keep track of history
         testingResources::ConvergenceTester l2History("l2");
@@ -138,21 +139,19 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions{eulerExactField, yiExactField};
 
             PetscInt initialNx = GetParam().initialNx;
-            auto mesh = std::make_shared<ablate::domain::BoxMesh>(
-                "simpleMesh",
-                fieldDescriptors,
-                std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{
-                    std::make_shared<domain::modifiers::SetFromOptions>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-                        {"dm_refine", std::to_string(l)},
-                        {"dm_distribute", ""},
-                    })),
-                    std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
-                    std::make_shared<domain::modifiers::GhostBoundaryCells>()},
-                std::vector<int>{(int)initialNx},
-                std::vector<double>{0.0},
-                std::vector<double>{parameters.L},
-                std::vector<std::string>{"NONE"} /*boundary*/,
-                false /*simplex*/);
+            auto mesh = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
+                                                                  fieldDescriptors,
+                                                                  std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
+                                                                                                                                    std::make_shared<domain::modifiers::GhostBoundaryCells>()},
+                                                                  std::vector<int>{(int)initialNx},
+                                                                  std::vector<double>{0.0},
+                                                                  std::vector<double>{parameters.L},
+                                                                  std::vector<std::string>{"NONE"} /*boundary*/,
+                                                                  false /*simplex*/,
+                                                                  ablate::parameters::MapParameters::Create({
+                                                                      {"dm_refine", std::to_string(l)},
+                                                                      {"dm_distribute", ""},
+                                                                  }));
 
             // create a time stepper
             auto timeStepper =
@@ -207,9 +206,8 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             FAIL() << lInfMessage;
         }
 
-        ierr = PetscFinalize();
-        exit(ierr);
-
+        ablate::environment::RunEnvironment::Finalize();
+        exit(0);
     EndWithMPI
 }
 

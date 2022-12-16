@@ -1,11 +1,23 @@
 target_sources(ablateLibrary
+        PRIVATE
+        geometry.cpp
+        sphere.cpp
+        box.cpp
+        surface.cpp
+        cylinderShell.cpp
+        cylinder.cpp
+        union.cpp
+        difference.cpp
+        inverse.cpp
+
         PUBLIC
         geometry.hpp
-        geometry.cpp
         sphere.hpp
-        sphere.cpp
         box.hpp
-        box.cpp
         surface.hpp
-        surface.cpp
+        cylinderShell.hpp
+        cylinder.hpp
+        union.hpp
+        difference.hpp
+        inverse.hpp
         )

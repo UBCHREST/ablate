@@ -81,7 +81,7 @@ class EulerTransport : public FlowProcess {
      * public function to link this process with the flow
      * @param flow
      */
-    void Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) override;
+    void Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) override;
 
     /**
      * This Computes the Flow Euler flow for rho, rhoE, and rhoVel.

@@ -51,7 +51,7 @@ ablate::io::Hdf5MultiFileSerializer::~Hdf5MultiFileSerializer() {
 
         // run the convert function
         std::filesystem::path outputFile = directoryPath / (id + ".xmf");
-        petscXdmfGenerator::Generate(inputFilePaths, outputFile);
+        xdmfGenerator::Generate(inputFilePaths, outputFile);
     }
 
     if (petscOptions) {

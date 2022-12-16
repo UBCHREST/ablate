@@ -37,7 +37,8 @@ TEST(ChemTabModelTests, ShouldCreateFromRegistar) {
     EXPECT_CALL(*mockFactory, GetFactory("path")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(mockSubFactory));
 
     // act
-    auto instance = ResolveAndCreate<ablate::chemistry::ChemistryModel>(mockFactory);
+    auto createMethod = Creator<ablate::chemistry::ChemistryModel>::GetCreateMethod(mockFactory->GetClassType());
+    auto instance = createMethod(mockFactory);
 
     // assert
     ASSERT_TRUE(instance != nullptr) << " should create an instance of the ablate::chemistry::ChemTabModel";

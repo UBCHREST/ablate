@@ -9,6 +9,7 @@
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
+#include "environment/runEnvironment.hpp"
 #include "eos/perfectGas.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
@@ -17,6 +18,7 @@
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
+#include "utilities/petscUtilities.hpp"
 
 typedef struct {
     PetscInt dim;
@@ -152,10 +154,9 @@ static void ComputeErrorNorms(TS ts, std::shared_ptr<ablate::finiteVolume::Compr
 
 TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
-        PetscErrorCode ierr;
-
         // initialize petsc and mpi
-        PetscInitialize(argc, argv, NULL, "HELP") >> testErrorChecker;
+        ablate::environment::RunEnvironment::Initialize(argc, argv);
+        ablate::utilities::PetscUtilities::Initialize();
 
         InputParameters parameters = GetParam().parameters;
         parameters.dim = 1;
@@ -280,8 +281,8 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             }
         }
 
-        ierr = PetscFinalize();
-        exit(ierr);
+        environment::RunEnvironment::Get().Finalize();
+        exit(0);
 
     EndWithMPI
 }

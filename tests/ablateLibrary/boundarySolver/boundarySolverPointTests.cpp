@@ -11,6 +11,7 @@
 #include "domain/modifiers/ghostBoundaryCells.hpp"
 #include "domain/modifiers/mergeLabels.hpp"
 #include "domain/modifiers/tagLabelBoundary.hpp"
+#include "environment/runEnvironment.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
@@ -18,6 +19,7 @@
 #include "mathFunctions/functionFactory.hpp"
 #include "mathFunctions/geom/sphere.hpp"
 #include "utilities/mathUtilities.hpp"
+#include "utilities/petscUtilities.hpp"
 
 using namespace ablate;
 
@@ -48,7 +50,8 @@ static void FillStencilValues(PetscInt loc, const PetscScalar* stencilValues[], 
 TEST_P(BoundarySolverPointTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
     StartWithMPI
         // initialize petsc and mpi
-        PetscInitialize(argc, argv, nullptr, "HELP") >> testErrorChecker;
+        ablate::environment::RunEnvironment::Initialize(argc, argv);
+        ablate::utilities::PetscUtilities::Initialize();
 
         // Define regions for this test
         auto insideRegion = std::make_shared<ablate::domain::Region>("insideRegion");
@@ -277,7 +280,8 @@ TEST_P(BoundarySolverPointTestFixture, ShouldComputeCorrectGradientsOnBoundary) 
 
         VecDestroy(&gradVec) >> checkError;
 
-        exit(PetscFinalize());
+        ablate::environment::RunEnvironment::Finalize();
+        exit(0);
     EndWithMPI
 }
 

@@ -89,7 +89,7 @@ void ablate::particles::Particles::Initialize() {
     PetscObjectSetOptions((PetscObject)particleTs, petscOptions) >> checkError;
     TSSetApplicationContext(particleTs, this) >> checkError;
 
-    // Link thw dm
+    // Link the dm
     TSSetDM(particleTs, swarmDm);
     TSSetProblemType(particleTs, TS_NONLINEAR) >> checkError;
     TSSetExactFinalTime(particleTs, TS_EXACTFINALTIME_MATCHSTEP) >> checkError;

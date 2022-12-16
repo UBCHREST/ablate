@@ -1,11 +1,12 @@
 #include <petsc.h>
 #include <cmath>
-#include <domain/modifiers/setFromOptions.hpp>
 #include <memory>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
 #include "domain/dmPlex.hpp"
+#include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
+#include "utilities/petscUtilities.hpp"
 
 using namespace ablate;
 
@@ -25,21 +26,20 @@ TEST_P(DMPlexTestFixture, ShouldCreateAndViewDMPlex) {
         {
             // arrange
             // initialize petsc and mpi
-            PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
+            ablate::environment::RunEnvironment::Initialize(argc, argv);
+            ablate::utilities::PetscUtilities::Initialize();
 
             // Get the testing param
             auto &testingParam = GetParam();
 
             // act
             auto dmPlex = std::make_shared<ablate::domain::DMPlex>(
-                std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>>{},
-                "dmPlex",
-                std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<ablate::domain::modifiers::SetFromOptions>(testingParam.parameters)});
+                std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>>{}, "dmPlex", std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{}, testingParam.parameters);
 
             // assert - print the dmPlex to standard out
             DMView(dmPlex->GetDM(), PETSC_VIEWER_STDOUT_WORLD) >> testErrorChecker;
         }
-        exit(PetscFinalize());
+        ablate::environment::RunEnvironment::Finalize();
     EndWithMPI
 }
 

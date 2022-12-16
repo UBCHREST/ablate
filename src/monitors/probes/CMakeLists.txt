@@ -1,10 +1,12 @@
 target_sources(ablateLibrary
+        PRIVATE
+        probe.cpp
+        list.cpp
+        rake.cpp
+
         PUBLIC
         probe.hpp
-        probe.cpp
         probeInitializer.hpp
         list.hpp
-        list.cpp
         rake.hpp
-        rake.cpp
         )

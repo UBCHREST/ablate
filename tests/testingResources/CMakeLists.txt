@@ -1,24 +1,26 @@
 
 # Setup the framework library
 add_library(testingResources "")
-target_link_libraries(testingResources PUBLIC gtest gmock ablateLibrary)
+target_link_libraries(testingResources PUBLIC GTest::gtest GTest::gmock ablateLibrary)
 
 target_sources(testingResources
+        PRIVATE
+        MpiTestFixture.cpp
+        PetscTestViewer.cpp
+        convergenceTester.cpp
+        testRunEnvironment.cpp
+        temporaryPath.cpp
+
         PUBLIC
         MpiTestFixture.hpp
-        MpiTestFixture.cpp
         MpiTestParamFixture.hpp
         MpiTestEventListener.hpp
         PetscTestFixture.hpp
         PetscTestViewer.hpp
-        PetscTestViewer.cpp
         PetscTestErrorChecker.hpp
         convergenceTester.hpp
-        convergenceTester.cpp
         temporaryPath.hpp
-        temporaryPath.cpp
         testRunEnvironment.hpp
-        testRunEnvironment.cpp
         )
 
 # Allow public access to the header files in the directory
