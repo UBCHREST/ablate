@@ -13,7 +13,8 @@ PetscErrorCode ablate::boundarySolver::physics::LogLawBoundary::UpdateBoundaryVe
     PetscFunctionBeginUser;
     const PetscInt EULER_FIELD = 0;
     const PetscInt VEL = 0;
-    PetscReal logLawVel[dim];
+
+    PetscReal logLawVel[3];
     PetscArrayzero(logLawVel, 3);
     PetscReal stencilVel[3];
     PetscReal stencilNormalVelocity[3];
@@ -28,17 +29,30 @@ PetscErrorCode ablate::boundarySolver::physics::LogLawBoundary::UpdateBoundaryVe
     utilities::MathUtilities::ComputeTransformationMatrix(dim, fg->normal, transformationMatrix);
     ablate::utilities::MathUtilities::Multiply(dim, transformationMatrix, stencilVel, stencilNormalVelocity);
 
-    // calculate the new boundary velocity in normal coord.
-    logLawVel[1] = -fg->normal[1] * -0.5 * (1 / kappa) * 2 / ((boundaryCell->volume * boundaryCell->volume / (fg->areas[1] * fg->areas[1])) * abs(fg->normal[1])) /
-                       (4 / ((boundaryCell->volume * boundaryCell->volume / (fg->areas[1] * fg->areas[1])) * abs(fg->normal[1])) - 4 / (fg->areas[1])) -
-                   fg->normal[1] * 0.5 * stencilNormalVelocity[1];
-
+    // calculate the new boundary velocity in normal coord for 2D.
     logLawVel[0] = 0e+0;
-    logLawVel[2] = stencilNormalVelocity[2];
 
-    // map the boundary velocitiy into Cartesian coord.
-    PetscReal boundaryVel[3];
-    PetscReal velocityCartSystem[3];
+    logLawVel[1] = -fg->normal[1] * 0.5 * (1 / kappa) * 2 / ((boundaryCell->volume * boundaryCell->volume / (fg->areas[1] * fg->areas[1]))) /
+                       (4 / ((boundaryCell->volume * boundaryCell->volume / (fg->areas[1] * fg->areas[1]))) - 4 / (fg->areas[1])) +
+                   0.5 * stencilNormalVelocity[1];
+    // for 3D
+    if ((dim = 3)) {
+        if (abs(stencilNormalVelocity[2]) >= abs(stencilNormalVelocity[1])) {
+            logLawVel[2] = fg->normal[1] * 0.5 * (1 / kappa) * 2 / ((boundaryCell->volume * boundaryCell->volume / (fg->areas[1] * fg->areas[1]))) /
+                               (4 / ((boundaryCell->volume * boundaryCell->volume / (fg->areas[1] * fg->areas[1]))) - 4 / (fg->areas[1])) +
+                           0.5 * stencilNormalVelocity[2];
+        }
+
+        else {
+            logLawVel[1] = fg->normal[1] * 0.5 * (1 / kappa) * 2 / ((boundaryCell->volume * boundaryCell->volume / (fg->areas[1] * fg->areas[1]))) /
+                               (4 / ((boundaryCell->volume * boundaryCell->volume / (fg->areas[1] * fg->areas[1]))) - 4 / (fg->areas[1])) +
+                           0.5 * stencilNormalVelocity[1];
+            logLawVel[2] = stencilNormalVelocity[2];
+        }
+    }
+    // map the boundary velocities back into Cartesian coord.
+    PetscReal boundaryVel[dim];
+    PetscReal velocityCartSystem[dim];
 
     ablate::utilities::MathUtilities::MultiplyTranspose(dim, transformationMatrix, logLawVel, velocityCartSystem);
     // update boundary velocities

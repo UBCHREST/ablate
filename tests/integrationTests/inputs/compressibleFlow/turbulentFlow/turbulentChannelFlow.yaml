@@ -32,7 +32,7 @@ timestepper:
   name: theMainTimeStepper
   arguments:
     ts_type: rk
-    ts_max_steps: 10
+    ts_max_steps: 20
     ts_dt: 1.0E-10
     ts_adapt_safety: 0.9
   io:
@@ -40,7 +40,7 @@ timestepper:
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
     faces: [ 10, 10, 5]
-    lower: [ 0.0, -0.025, 0.0]
+    lower: [ 0.0, -0.025,0.0]
     upper: [ 0.2 , 0.025, 0.02]
     simplex: false
     # pass in these options to petsc when setting up the domain.  Using an option list here prevents command line arguments from being seen.
@@ -155,7 +155,7 @@ solvers:
           formula: (a*(h-abs(y))^(1/7))/5000 +(sqrt(alpha * exp(-2 * (((kappa_o) + (kappa_max) - (kappa_o)) * (i - 1)  / n) / kappa_eta) ^ 2) * (uPrime^2 /kappa_e * (((kappa_o)+ (kappa_max)- (kappa_o)) * (i - 1)  / n)/ kappa_e) ^ 4 / (1* (1 + (((kappa_o) + (kappa_max)- (kappa_o)) * (i - 1)  / n) / kappa_e) )^ (17/6)* cos( (((kappa_o) + (kappa_max) - (kappa_o)) * (i - 1)  / n) * (delta_x)*sin(.5* ((kappa_o) + (kappa_max) - (kappa_o)) * (i - 1)  / n)* (delta_x)*sin( acos(pRand(LO,HI)))* cos(pRand(LO1,HI1) )* x + (pRand(LO2,HI2)))), sqrt(alpha * exp(-2 * (((kappa_o) + (kappa_max) - (kappa_o)) * (i - 1)  / n) / kappa_eta) ^ 2) * (uPrime^2 /kappa_e * (((kappa_o)+ (kappa_max)- (kappa_o)) * (i - 1)  / n)/ kappa_e) ^ 4 / (1* (1 + (((kappa_o) + (kappa_max)- (kappa_o)) * (i - 1)  / n) / kappa_e) )^ (17/6)* cos( (((kappa_o) + (kappa_max) - (kappa_o)) * (i - 1)  / n) * (delta_y)*sin(.5* ((kappa_o) + (kappa_max) - (kappa_o)) * (i - 1)  / n)* (delta_y)*sin( acos(pRand(LO,HI)))* cos(pRand(LO1,HI1) )* y + (pRand(LO2,HI2))),sqrt(alpha * exp(-2 * (((kappa_o) + (kappa_max) - (kappa_o)) * (i - 1)  / n) / kappa_eta) ^ 2) * (uPrime^2 /kappa_e * (((kappa_o)+ (kappa_max)- (kappa_o)) * (i - 1)  / n)/ kappa_e) ^ 4 / (1* (1 + (((kappa_o) + (kappa_max)- (kappa_o)) * (i - 1)  / n) / kappa_e) )^ (17/6)* cos( (((kappa_o) + (kappa_max) - (kappa_o)) * (i - 1)  / n) * (delta_z)*sin(.5* ((kappa_o) + (kappa_max) - (kappa_o)) * (i - 1)  / n)* (delta_z)*sin( acos(pRand(LO,HI)))* cos(pRand(LO1,HI1) )* z + (pRand(LO2,HI2)))
           constants:
             n: 5000 # modes
-            a: 28 # Umean/Re^(1/7)
+            a: 20.078 # Umean/Re^(1/7)
             alpha: 1.453 # scaling constant
             h: 0.025  # Integral length scale: half of the channel height
             delta_x: 0.002 # grid size

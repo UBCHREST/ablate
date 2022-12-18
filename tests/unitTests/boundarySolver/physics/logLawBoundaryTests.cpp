@@ -52,28 +52,34 @@ TEST_P(LogLawBoundaryTestFixture, ShouldComputeCorrectAuxValues) {
 INSTANTIATE_TEST_SUITE_P(
     PhysicsBoundaryTests, LogLawBoundaryTestFixture,
     testing::Values(
+
         // case 0
         (LogLawBoundaryTestParameters){
-            .dim = 2, .fvFaceGeom = {.normal = {0, -1, NAN}, .areas = {NAN, 0.5, NAN}}, .boundaryCell = {.volume = {0.5}}, .stencilValues = {1.7, 10, 10}, .expectedResults = {3.566176, 0}},
+            .dim = 2, .fvFaceGeom = {.normal = {0, -1, NAN}, .areas = {NAN, 0.5, NAN}}, .boundaryCell = {.volume = {0.5}}, .stencilValues = {1.7, 0, 10, 0}, .expectedResults = {3.566176, 0}},
         // case 1
+
         (LogLawBoundaryTestParameters){
-            .dim = 2, .fvFaceGeom = {.normal = {0, 1, NAN}, .areas = {NAN, 0.5, NAN}}, .boundaryCell = {.volume = {0.5}}, .stencilValues = {1.7, 10, 10}, .expectedResults = {-2.316176, 0}},
+            .dim = 2, .fvFaceGeom = {.normal = {0, -1, NAN}, .areas = {NAN, 0.5, NAN}}, .boundaryCell = {.volume = {0.5}}, .stencilValues = {1.7, 0, 10, 0}, .expectedResults = {3.566176, 0}},
+
         // case 2
         (LogLawBoundaryTestParameters){
-            .dim = 3, .fvFaceGeom = {.normal = {0, 1, 0}, .areas = {0.5, 0.5, 0.5}}, .boundaryCell = {.volume = {0.05}}, .stencilValues = {1.7, 10, 5, 0}, .expectedResults = {-0.832833, 0, 0}},
+            .dim = 3, .fvFaceGeom = {.normal = {0, 1, 0}, .areas = {0.5, 0.5, 0.5}}, .boundaryCell = {.volume = {0.05}}, .stencilValues = {1.7, 0, 10, 0, 0}, .expectedResults = {3.5789315, 0, 0}},
+
         // case 3
         (LogLawBoundaryTestParameters){
-            .dim = 3, .fvFaceGeom = {.normal = {0, -1, 0}, .areas = {0.5, 0.5, 0.5}}, .boundaryCell = {.volume = {0.05}}, .stencilValues = {1.7, 10, 5, 0}, .expectedResults = {2.10834, 0, 0}},
+            .dim = 3, .fvFaceGeom = {.normal = {0, -1, 0}, .areas = {0.5, 0.5, 0.5}}, .boundaryCell = {.volume = {0.05}}, .stencilValues = {1.7, 0, 10, 0, 0}, .expectedResults = {3.5789315, 0, 0}},
+
         // case 4
         (LogLawBoundaryTestParameters){.dim = 3,
-                                       .fvFaceGeom = {.normal = {1, 1, 0}, .areas = {0.5, 0.5, 0.5}},
+                                       .fvFaceGeom = {.normal = {0.707, 0.707, 0}, .areas = {0.5, 0.5, 0.5}},
                                        .boundaryCell = {.volume = {0.05}},
-                                       .stencilValues = {1.7, 10, 5, 0},
-                                       .expectedResults = {-0.28433316, 0.28433316, 0}},
+                                       .stencilValues = {1.7, 0, 10, 0, 0},
+                                       .expectedResults = {1.7894176, -1.7894176, 0}},
+
         // case 5
         (LogLawBoundaryTestParameters){.dim = 3,
-                                       .fvFaceGeom = {.normal = {1, -1, 0}, .areas = {0.5, 0.5, 0.5}},
+                                       .fvFaceGeom = {.normal = {-0.707, -0.707, 0}, .areas = {0.5, 0.5, 0.5}},
                                        .boundaryCell = {.volume = {0.05}},
-                                       .stencilValues = {1.7, 10, 5, 0},
-                                       .expectedResults = {1.18625507, 1.18625507, 0}}),
+                                       .stencilValues = {1.7, 0, 10, 0, 0},
+                                       .expectedResults = {1.7894176, -1.7894176, 0}}),
     [](const testing::TestParamInfo<LogLawBoundaryTestParameters>& info) { return std::to_string(info.index); });
