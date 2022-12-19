@@ -318,7 +318,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
         // first offset it by the originRayId
         PetscInt localMemoryIndex = rayOffset[returnIdentifiers[p].originRayId];
 
-        // order them in terms of origin to the farthest  away
+        // order them in terms of origin to the farthest away
         localMemoryIndex += returnIdentifiers[p].nSegment;
 
         // Store the remote ray information at this localMemoryIndex

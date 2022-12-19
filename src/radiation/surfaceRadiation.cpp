@@ -16,8 +16,8 @@ void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRa
     /** Get the fields associated with the particle swarm so that they can be modified */
     DMSwarmGetField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
     DMSwarmGetField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> checkError;
-    DMSwarmGetField(radSearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
-    DMSwarmGetField(radSearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+    DMSwarmGetField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;
+    DMSwarmGetField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
     PetscInt npoints = 0;
     DMSwarmGetLocalSize(radSearch, &npoints) >> checkError;  //!< Recalculate the number of particles that are in the domain
@@ -30,16 +30,16 @@ void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRa
         if (!(region->InRegion(region, subDomain.GetDM(), index[ipart]))) {  //!< If the particle location index and boundary cell index are the same, then they should be deleted
             DMSwarmRestoreField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
             DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> checkError;
-            DMSwarmRestoreField(radSearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
-            DMSwarmRestoreField(radSearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+            DMSwarmRestoreField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;
+            DMSwarmRestoreField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
             DMSwarmRemovePointAtIndex(radSearch, ipart);  //!< Delete the particle!
             DMSwarmGetLocalSize(radSearch, &npoints);
 
             DMSwarmGetField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
             DMSwarmGetField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> checkError;
-            DMSwarmGetField(radSearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
-            DMSwarmGetField(radSearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+            DMSwarmGetField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;
+            DMSwarmGetField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> checkError;
             ipart--;  //!< Check the point replacing the one that was deleted
         }
     }
@@ -47,8 +47,8 @@ void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRa
     /** Restore the fields associated with the particles */
     DMSwarmRestoreField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
     DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> checkError;
-    DMSwarmRestoreField(radSearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
-    DMSwarmRestoreField(radSearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+    DMSwarmRestoreField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;
+    DMSwarmRestoreField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
     EndEvent();
     ablate::radiation::Radiation::Initialize(cellRange, subDomain);

@@ -16,9 +16,6 @@ namespace ablate::radiation {
 
 class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver provides cell based functionality, right hand side function compatibility with
                                                               //!< finite element/ volume, loggable allows for the timing and tracking of events
-   private:
-    static inline constexpr char IdentifierField[] = "identifier";
-    static inline constexpr char VirtualCoordField[] = "virtual coord";
 
    public:
     /**
@@ -203,6 +200,8 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
 
     // !Store a log used to output the required information
     const std::shared_ptr<ablate::monitors::logs::Log> log = nullptr;
+    static inline constexpr char IdentifierField[] = "identifier";
+    static inline constexpr char VirtualCoordField[] = "virtual coord";
 };
 
 }  // namespace ablate::radiation
