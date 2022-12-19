@@ -15,7 +15,7 @@
 #include "monitors/timeStepMonitor.hpp"
 #include "parameters/mapParameters.hpp"
 #include "radiation/radiation.hpp"
-#include "radiation/raySharingRadiation.hpp"
+//#include "radiation/raySharingRadiation.hpp"
 #include "radiation/volumeRadiation.hpp"
 #include "utilities/petscUtilities.hpp"
 
@@ -316,7 +316,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .radiationFactory =
                                                   [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
                                                       return std::make_shared<ablate::radiation::Radiation>("radiationBase", ablate::domain::Region::ENTIREDOMAIN, 15, radiationModelIn, nullptr);
-                                                  }},
+                                                  }}/*,
                     (RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature 2 proc. sharing", .nproc = 2},
                                               .meshFaces = {3, 20},
                                               .meshStart = {-0.5, -0.0105},
@@ -327,5 +327,5 @@ INSTANTIATE_TEST_SUITE_P(
                                                   [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
                                                       return std::make_shared<ablate::radiation::RaySharingRadiation>(
                                                           "radiationBaseSharing", ablate::domain::Region::ENTIREDOMAIN, 15, radiationModelIn, nullptr);
-                                                  }}),
+                                                  }}*/),
     [](const testing::TestParamInfo<RadiationTestParameters>& info) { return info.param.mpiTestParameter.getTestName(); });

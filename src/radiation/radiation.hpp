@@ -38,15 +38,15 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * In the solve particle, nsegment remains constant as it ties the particle to its specific order in the ray */
     struct Identifier {
         //! the rank for the start of the ray
-        PetscInt originRank = PETSC_DECIDE;
+        PetscInt originRank;
         //! The local ray id 'index'
-        PetscInt originRayId = PETSC_DECIDE;
+        PetscInt originRayId;
         //! the remote rank (may be same as originating) for this segment id
-        PetscInt remoteRank = PETSC_DECIDE;
+        PetscInt remoteRank;
         //! The local ray id 'index'
-        PetscInt remoteRayId = PETSC_DECIDE;
+        PetscInt remoteRayId;
         //! The number of segments away from the origin, zero on the origin
-        PetscInt nSegment = -1;
+        PetscInt nSegment;
     };
 
     /** Carriers are attached to the solve particles and bring ray information from the local segments to the origin cells
@@ -55,9 +55,6 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
         PetscReal Ij = 0;    //!< Black body source for the segment. Make sure that this is reset every solve after the value has been transported.
         PetscReal Krad = 1;  //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
     };
-
-
-
 
     /** Returns the black body intensity for a given temperature and emissivity */
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
@@ -70,25 +67,26 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      */
     virtual void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
-//    /** Function to give other classes access to the intensity
-//     * Put safegaurds on the intensity read so that the rhs doesn't break if the time stepper decides to put absurd values into the eos for fun
-//     * */
-//    inline PetscReal GetIntensity(PetscInt iCell) {
-//        if (abs(origin[iCell].net) < 1E10)
-//            return origin[iCell].net;
-//        else if (origin[iCell].net > 1E10)
-//            return 1E10;
-//        else if (origin[iCell].net < -1E10)
-//            return -1E10;
-//        else
-//            return 0;
-//    }
+    /**
+     * Compute total intensity (pre computed gains + current loss) with
+     * @param index the current index in the cell range (note, this is not the cell/face id)
+     * @param cellRange the cell/face range used in setup/initialize
+     * @param temperature the temperature of the cell or face
+     * @param kappa the absorptivity of the cell
+     * @return
+     */
+    inline PetscReal GetIntensity(PetscInt index, const solver::Range& cellRange, PetscReal temperature, PetscReal kappa) {
+        // Compute the losses
+        PetscReal netIntensity = -4.0 * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
 
-    /// Class Methods
-    /** The solve function evaluates the net radiation source term. However, the net radiation value must be updated by each solver individually.
-     * The solve updates every value except for the radiative gains from the domain. This avoids doing the must computationally expensive part of the solve at every stage.
-     * */
-    void Solve(Vec solVec, ablate::domain::Field temperatureField, Vec aux);
+        // add in precomputed gains
+        netIntensity += evaluatedGains[index - cellRange.start];
+
+        // scale by kappa
+        netIntensity *= kappa;
+
+        return abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
+    }
 
     /** Evaluates the ray intensity from the domain to update the effects of irradiation. Does not impact the solution unless the solve function is called again.
      * */
@@ -101,9 +99,10 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     /** Determines what component of the incoming radiation should be accounted for when evaluating the irradiation for each ray.
      * Dummy function that doesn't do anything unless it is overridden by the surface implementation
      * */
-    virtual PetscReal SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi, PetscInt ntheta);
-    virtual PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM solDm, DM pPDm);  //!< Get the index of the cell which the losses should be calculated from
-    virtual void GetFuelEmissivity(double& kappa);
+    virtual PetscReal SurfaceComponent(const PetscReal normal[], PetscInt iCell, PetscInt nphi, PetscInt ntheta);
+
+    //! provide access to the model used to provided the absorptivity function
+    inline std::shared_ptr<eos::radiationProperties::RadiationModel> GetRadiationModel() { return radiationModel; }
 
    protected:
     //! DM which the search particles occupy.  This representations the physical particle in space
@@ -116,9 +115,8 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     //! create a data type to simplify moving the carrier
     MPI_Datatype carrierMpiType;
 
-
-    /** Segments belong to the local maps and hold all of the local information about the ray segments both during the search and the solve */
-    struct Segment {
+    /** CellSegment belong to the local maps and hold all of the local information about the ray segments both during the search and the solve */
+    struct CellSegment {
         //!< Stores the cell indices of the segment locally.
         PetscInt cell;
         //!< Stores the space steps of the segment locally.
@@ -161,21 +159,32 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     PetscInt nPhi;     //!< The number of angles to solve with, given by user input (x2)
     PetscReal minCellRadius{};
 
-
     //! store the local rays identified on this rank.  This includes rays that do and do not originate on this rank
-    std::vector<std::vector<Segment>> raySegments;
+    std::vector<std::vector<CellSegment>> raySegments;
 
     //! the calculation over each of the remoteRays. indexed over remote ray
-    std::vector<Carrier> raySegmentsCalculation;
+    std::vector<Carrier> raySegmentsCalculations;
 
     //! store the number of originating rays
     PetscInt numberOriginRays;
 
-    //! store the number of ray segments for each originating on this rank
+    //! store the number of originating rays cells
+    PetscInt numberOriginCells;
+
+    //! the number of rays per cell
+    PetscInt raysPerCell;
+
+    //! store the number of ray segments for each originating on this rank.  This may be zero
     std::vector<unsigned short int> raySegmentsPerOriginRay;
 
     //! a vector of raySegment information for every local/remote ray segment ordered as ray, segment
     std::vector<Carrier> raySegmentSummary;
+
+    //! the factor for each origin ray
+    std::vector<PetscReal> gainsFactor;
+
+    //! size up the evaluated gains, this index is based upon order of the requested cells
+    std::vector<PetscScalar> evaluatedGains;
 
     //! Store the petscSF that is used for pulling remote ray calculation
     PetscSF remoteAccess;
@@ -194,7 +203,6 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
 
     // !Store a log used to output the required information
     const std::shared_ptr<ablate::monitors::logs::Log> log = nullptr;
-
 };
 
 }  // namespace ablate::radiation

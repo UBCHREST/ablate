@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_CONSTANTS_HPP
-#define ABLATELIBRARY_CONSTANTS_HPP
+#ifndef ABLATE_LIBRARY_CONSTANTS_HPP
+#define ABLATE_LIBRARY_CONSTANTS_HPP
 
 #include <petscsystypes.h>
 
@@ -26,6 +26,9 @@ class Constants {
 
     //! A somewhat small number
     constexpr inline static PetscReal small = 1e-10;
+
+    //! A somewhat large number
+    constexpr inline static PetscReal large = 1E10;
 };
 }  // namespace ablate::utilities
 
