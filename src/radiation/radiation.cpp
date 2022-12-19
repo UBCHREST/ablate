@@ -525,10 +525,16 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                 if (temperature) {    /** Input absorptivity (kappa) values from model here. */
                     PetscReal kappa;  //!< Absorptivity coefficient, property of each cell
                     absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
-                    raySegmentsCalculation.Ij += FlameIntensity(1 - exp(-kappa * cellSegment.h), *temperature) * raySegmentsCalculation.Krad;
+                    if (cellSegment.h < 0) {
+                        // This is a boundary cell
+                        raySegmentsCalculation.Ij += FlameIntensity(1.0, *temperature) * raySegmentsCalculation.Krad;
+                    } else {
+                        // This is not a boundary cell
+                        raySegmentsCalculation.Ij += FlameIntensity(1 - exp(-kappa * cellSegment.h), *temperature) * raySegmentsCalculation.Krad;
 
-                    // Compute the total absorption for this domain
-                    raySegmentsCalculation.Krad *= exp(-kappa * cellSegment.h);
+                        // Compute the total absorption for this domain
+                        raySegmentsCalculation.Krad *= exp(-kappa * cellSegment.h);
+                    }
                 }
             }
         }
