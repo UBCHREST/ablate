@@ -218,6 +218,14 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
              * If the domain is 1D and the x-direction of the particle is zero then delete the particle here
              * */
             if ((!(region->InRegion(region, subDomain.GetDM(), index[ipart]))) || ((dim == 1) && (abs(virtualcoord[ipart].xdir) < 0.0000001))) {
+
+                //! If the boundary has been reached by this ray, then add a boundary condition segment to the ray.
+                auto& ray = raySegments[identifier[ipart].remoteRayId];
+                auto& raySegment = ray.emplace_back();
+                raySegment.cell = index[ipart];
+                raySegment.h = -1;
+
+                //! Delete the search particle associated with the ray
                 DMSwarmRestoreField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
                 DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> checkError;
                 DMSwarmRestoreField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;
