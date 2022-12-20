@@ -550,8 +550,8 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     }
 
     // Now that all the ray information is computed, transfer it back to rank that originated each ray using a pull
-    PetscSFBcastBegin(remoteAccess, carrierMpiType, (const void*)raySegmentSummary.data(), (void*)raySegmentsCalculations.data(), MPI_REPLACE) >> checkError;
-    PetscSFBcastEnd(remoteAccess, carrierMpiType, (const void*)raySegmentSummary.data(), (void*)raySegmentsCalculations.data(), MPI_REPLACE) >> checkError;
+    PetscSFReduceBegin(remoteAccess, carrierMpiType, (const void*)raySegmentsCalculations.data(), (void*)raySegmentSummary.data(), MPI_REPLACE) >> checkError;
+    PetscSFReduceEnd(remoteAccess, carrierMpiType, (const void*)raySegmentsCalculations.data(), (void*)raySegmentSummary.data(), MPI_REPLACE) >> checkError;
 
     // March over each
     std::size_t segmentOffset = 0;
