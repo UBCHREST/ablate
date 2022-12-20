@@ -163,7 +163,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     DMSetDimension(radReturn, dim) >> checkError;
     DMSwarmSetType(radReturn, DMSWARM_BASIC) >> checkError;
 
-    DMSwarmRegisterUserStructField(radReturn, IdentifierField, sizeof(Virtualcoord)) >> checkError;
+    DMSwarmRegisterUserStructField(radReturn, IdentifierField, sizeof(Identifier)) >> checkError;
     DMSwarmFinalizeFieldRegister(radReturn) >> checkError;  //!< Initialize the fields that have been defined
 
     /** This will be added to as rays are created on each rank */
@@ -218,7 +218,6 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
              * If the domain is 1D and the x-direction of the particle is zero then delete the particle here
              * */
             if ((!(domain::Region::InRegion(region, subDomain.GetDM(), index[ipart]))) || ((dim == 1) && (abs(virtualcoord[ipart].xdir) < 0.0000001))) {
-
                 //! If the boundary has been reached by this ray, then add a boundary condition segment to the ray.
                 auto& ray = raySegments[identifier[ipart].remoteRayId];
                 auto& raySegment = ray.emplace_back();
@@ -283,7 +282,9 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     EndEvent();
 
     // Move the identifiers in radReturn back to origin
+    StartEvent("Radiation::RadReturn");
     DMSwarmMigrate(radReturn, PETSC_TRUE) >> checkError;
+    EndEvent();
 
     /* radReturn contains a list of all ranks (including this one) that contain segments for each ray.
      * Count the number of ray segments per ray
