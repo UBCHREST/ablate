@@ -25,7 +25,7 @@ struct RadiationTestParameters {
     std::vector<int> meshFaces;
     std::vector<double> meshStart;
     std::vector<double> meshEnd;
-    std::shared_ptr<ablate::mathFunctions::MathFunction> temperatureField;
+    std::function<std::vector<ablate::mathFunctions::FieldFunction>()> initialization;
     std::shared_ptr<ablate::mathFunctions::MathFunction> expectedResult;
     std::function<std::shared_ptr<ablate::radiation::Radiation>(std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn)> radiationFactory;
 };
@@ -217,7 +217,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         auto auxFieldFunctions = {
             std::make_shared<ablate::mathFunctions::FieldFunction>(ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD, GetParam().temperatureField),
         };
-        radiation->GetSubDomain().ProjectFieldFunctionsToLocalVector(auxFieldFunctions, auxVec);
+        radiation->GetSubDomain().ProjectFieldFunctionsToLocalVector(GetParam().initialization(), auxVec);
 
         // Setup the rhs for the test
         Vec rhs;

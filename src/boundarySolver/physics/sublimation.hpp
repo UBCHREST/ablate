@@ -75,6 +75,11 @@ class Sublimation : public BoundaryProcess {
     const std::shared_ptr<io::interval::Interval> radiationInterval;
 
     /**
+     * Emissivity of the fuel surface. For the gray assumption, this indicates how much of the black body radiation is absorbed and emitted from the fuel surface.
+     * */
+    const double emissivity;
+
+    /**
      * Set the species densityYi based upon the blowing rate.  Update the energy if needed to maintain temperature
      */
     void UpdateSpecies(TS ts, ablate::solver::Solver &);
@@ -83,7 +88,7 @@ class Sublimation : public BoundaryProcess {
     explicit Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
                          const std::shared_ptr<ablate::mathFunctions::FieldFunction> & = {}, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {},
                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {}, bool diffusionFlame = false,
-                         std::shared_ptr<ablate::radiation::SurfaceRadiation> radiationIn = {}, const std::shared_ptr<io::interval::Interval> &intervalIn = {});
+                         std::shared_ptr<ablate::radiation::SurfaceRadiation> radiationIn = {}, const std::shared_ptr<io::interval::Interval> &intervalIn = {}, const double emissivityIn = 1);
 
     void Setup(ablate::boundarySolver::BoundarySolver &bSolver) override;
     void Initialize(ablate::boundarySolver::BoundarySolver &bSolver) override;
