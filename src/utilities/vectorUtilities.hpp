@@ -49,6 +49,22 @@ class VectorUtilities {
     }
 
     /**
+     * Copies vector of items to vector of shared pointers
+     * @tparam T
+     * @param vector
+     * @return
+     */
+    template <class T>
+    static inline std::vector<std::shared_ptr<T>> Copy(const std::vector<T>& vector) {
+        std::vector<std::shared_ptr<T>> result;
+        for (const auto& item : vector) {
+            result.push_back(std::make_shared<T>(item));
+        }
+        return result;
+    }
+
+
+    /**
      * Fills an array based upon a key vector and map
      * @tparam T
      * @param list

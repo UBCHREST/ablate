@@ -15,8 +15,10 @@
 #include "monitors/timeStepMonitor.hpp"
 #include "parameters/mapParameters.hpp"
 #include "radiation/radiation.hpp"
-//#include "radiation/raySharingRadiation.hpp"
+// #include "radiation/raySharingRadiation.hpp"
 #include "domain/boxMeshBoundaryCells.hpp"
+#include "io/hdf5Serializer.hpp"
+#include "io/interval/fixedInterval.hpp"
 #include "radiation/volumeRadiation.hpp"
 #include "utilities/petscUtilities.hpp"
 
@@ -25,7 +27,7 @@ struct RadiationTestParameters {
     std::vector<int> meshFaces;
     std::vector<double> meshStart;
     std::vector<double> meshEnd;
-    std::function<std::vector<ablate::mathFunctions::FieldFunction>()> initialization;
+    std::function<std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>>()> initialization;
     std::shared_ptr<ablate::mathFunctions::MathFunction> expectedResult;
     std::function<std::shared_ptr<ablate::radiation::Radiation>(std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn)> radiationFactory;
 };
@@ -170,19 +172,17 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}));
 
         // determine required fields for radiation, this will include euler and temperature
-        std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {
-            std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos),
-            std::make_shared<ablate::domain::FieldDescription>("error", "error", eos->GetSpecies(), ablate::domain::FieldLocation::AUX, ablate::domain::FieldType::FVM)};
+        std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
 
         auto domain = std::make_shared<ablate::domain::BoxMeshBoundaryCells>("simpleMesh",
-                                                                fieldDescriptors,
-                                                                std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
-                                                                std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
-                                                                GetParam().meshFaces,
-                                                                GetParam().meshStart,
-                                                                GetParam().meshEnd,
-                                                                false,
-                                                                ablate::parameters::MapParameters::Create({{"dm_plex_hash_location", "true"}}));
+                                                                             fieldDescriptors,
+                                                                             std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
+                                                                             std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
+                                                                             GetParam().meshFaces,
+                                                                             GetParam().meshStart,
+                                                                             GetParam().meshEnd,
+                                                                             false,
+                                                                             ablate::parameters::MapParameters::Create({{"dm_plex_hash_location", "true"}}));
 
         IS allPointIS;
         DMGetStratumIS(domain->GetDM(), "dim", 2, &allPointIS) >> testErrorChecker;
@@ -200,7 +200,10 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         auto initialConditionEuler = std::make_shared<ablate::mathFunctions::FieldFunction>("euler", std::make_shared<ablate::mathFunctions::ConstantValue>(0.0));
 
         // create a time stepper
-        auto timeStepper = ablate::solver::TimeStepper("timeStepper", domain, ablate::parameters::MapParameters::Create({{"ts_max_steps", "0"}}), {}, {initialConditionEuler});
+        auto timeStepper = ablate::solver::TimeStepper("timeStepper",
+                                                       domain,
+                                                       ablate::parameters::MapParameters::Create({{"ts_max_steps", "0"}}), {},
+                                                       {initialConditionEuler});
 
         // Create an instance of radiation
         auto radiationPropertiesModel = std::make_shared<ablate::eos::radiationProperties::Constant>(1.0);
@@ -214,9 +217,6 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
         // force the aux variables of temperature to a known value
         auto auxVec = radiation->GetSubDomain().GetAuxVector();
-        auto auxFieldFunctions = {
-            std::make_shared<ablate::mathFunctions::FieldFunction>(ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD, GetParam().temperatureField),
-        };
         radiation->GetSubDomain().ProjectFieldFunctionsToLocalVector(GetParam().initialization(), auxVec);
 
         // Setup the rhs for the test
@@ -254,19 +254,22 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             // March over each cell
             for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
                 const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
-                // Get the cell center
-                PetscFVCellGeom* cellGeom;
-                DMPlexPointLocalRead(dmCell, cell, cellGeomArray, &cellGeom) >> testErrorChecker;
 
-                // extract the result from the rhs
-                PetscScalar* rhsValues;
-                DMPlexPointLocalFieldRead(domain->GetDM(), cell, eulerFieldInfo.id, rhsArray, &rhsValues) >> testErrorChecker;
-                PetscScalar actualResult = rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE];
-                PetscScalar analyticalResult = ReallySolveParallelPlates(cellGeom->centroid[1]);  // Compute the analytical solution at this z height.
+                if (ablate::domain::Region::InRegion(interiorLabel, dmCell, cell)) {
+                    // Get the cell center
+                    PetscFVCellGeom* cellGeom;
+                    DMPlexPointLocalRead(dmCell, cell, cellGeomArray, &cellGeom) >> testErrorChecker;
 
-                /// Summing of the L2 norm values
-                error = (analyticalResult - actualResult);
-                l2sum += error * error;
+                    // extract the result from the rhs
+                    PetscScalar* rhsValues;
+                    DMPlexPointLocalFieldRead(domain->GetDM(), cell, eulerFieldInfo.id, rhsArray, &rhsValues) >> testErrorChecker;
+                    PetscScalar actualResult = rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE];
+                    PetscScalar analyticalResult = ReallySolveParallelPlates(cellGeom->centroid[1]);  // Compute the analytical solution at this z height.
+
+                    /// Summing of the L2 norm values
+                    error = (analyticalResult - actualResult);
+                    l2sum += error * error;
+                }
             }
             /// Compute the L2 Norm error
             double N = (cellRange.end - cellRange.start);
@@ -281,6 +284,9 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> testErrorChecker;
         }
 
+        DMViewFromOptions(radiation->GetSubDomain().GetAuxDM(), nullptr, "-viewdm");
+        VecViewFromOptions(auxVec, nullptr, "-viewvec");
+
         DMRestoreLocalVector(domain->GetDM(), &rhs);
         ablate::environment::RunEnvironment::Finalize();
         exit(0);
@@ -290,10 +296,15 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 INSTANTIATE_TEST_SUITE_P(
     RadiationTests, RadiationTestFixture,
     testing::Values((RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature 1", .nproc = 1},
-                                              .meshFaces = {3, 100},
+                                              .meshFaces = {3, 20},
                                               .meshStart = {-0.5, -0.0105},
                                               .meshEnd = {0.5, 0.0105},
-                                              .temperatureField = ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)"),
+                                              .initialization = [](){
+                                                  return std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>> {
+                                                      std::make_shared<ablate::mathFunctions::FieldFunction>(ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD, ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)")),
+                                                        std::make_shared<ablate::mathFunctions::FieldFunction>(ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD, ablate::mathFunctions::Create("1300"), nullptr, std::make_shared<ablate::domain::Region>("boundaryCellsBottom")),
+                                                      std::make_shared<ablate::mathFunctions::FieldFunction>(ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD, ablate::mathFunctions::Create("700"), nullptr, std::make_shared<ablate::domain::Region>("boundaryCellsTop"))
+                                                  };},
                                               .expectedResult = ablate::mathFunctions::Create("x + y"),
                                               .radiationFactory =
                                                   [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
@@ -301,22 +312,30 @@ INSTANTIATE_TEST_SUITE_P(
                                                       return std::make_shared<ablate::radiation::Radiation>("radiationBase", interiorLabel, 15, radiationModelIn, nullptr);
                                                   }},
                     (RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature 1.1", .nproc = 1},
-                                              .meshFaces = {3, 100},
+                                              .meshFaces = {3, 20},
                                               .meshStart = {-0.5, -0.0105},
                                               .meshEnd = {0.5, 0.0105},
-                                              .temperatureField = ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)"),
-                                              .expectedResult = ablate::mathFunctions::Create("x + y"),
+                                              .initialization = [](){
+                                                  return std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>> {
+                                                      std::make_shared<ablate::mathFunctions::FieldFunction>(ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD, ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)")),
+                                                      std::make_shared<ablate::mathFunctions::FieldFunction>(ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD, ablate::mathFunctions::Create("1300"), nullptr, std::make_shared<ablate::domain::Region>("boundaryCellsBottom")),
+                                                      std::make_shared<ablate::mathFunctions::FieldFunction>(ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD, ablate::mathFunctions::Create("700"), nullptr, std::make_shared<ablate::domain::Region>("boundaryCellsTop"))
+                                                  };},                                              .expectedResult = ablate::mathFunctions::Create("x + y"),
                                               .radiationFactory =
                                                   [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
                                                       auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
                                                       return std::make_shared<ablate::radiation::Radiation>("radiationBase", interiorLabel, 15, radiationModelIn, nullptr);
                                                   }},
                     (RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature 2 proc.", .nproc = 2},
-                                              .meshFaces = {3, 100},
+                                              .meshFaces = {3, 20},
                                               .meshStart = {-0.5, -0.0105},
                                               .meshEnd = {0.5, 0.0105},
-                                              .temperatureField = ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)"),
-                                              .expectedResult = ablate::mathFunctions::Create("x + y"),
+                                              .initialization = [](){
+                                                  return std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>> {
+                                                      std::make_shared<ablate::mathFunctions::FieldFunction>(ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD, ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)")),
+                                                      std::make_shared<ablate::mathFunctions::FieldFunction>(ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD, ablate::mathFunctions::Create("1300"), nullptr, std::make_shared<ablate::domain::Region>("boundaryCellsBottom")),
+                                                      std::make_shared<ablate::mathFunctions::FieldFunction>(ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD, ablate::mathFunctions::Create("700"), nullptr, std::make_shared<ablate::domain::Region>("boundaryCellsTop"))
+                                                  };},                                              .expectedResult = ablate::mathFunctions::Create("x + y"),
                                               .radiationFactory =
                                                   [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
                                                       auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
