@@ -6,6 +6,7 @@
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
+#include "utilities/mpiError.hpp"
 
 ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber,
                                         std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
@@ -117,6 +118,7 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
                 virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 0.1 * minCellRadius);
                 virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 0.1 * minCellRadius);
 
+                /** Update the physical coordinate field so that the real particle location can be updated. */
                 /** Update the physical coordinate field so that the real particle location can be updated. */
                 UpdateCoordinates(ipart, virtualcoord, coord, 0.0);  //! adv value of 0.0 places the particle exactly where the virtual coordinates are.
 
@@ -343,8 +345,8 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     evaluatedGains.resize(numberOriginCells);
 
     // Create a mpi data type to allow reducing the remoteRayCalculation to raySegmentSummary
-    MPI_Type_contiguous(2, MPIU_REAL, &carrierMpiType);
-    MPI_Type_commit(&carrierMpiType);
+    MPI_Type_contiguous(2, MPIU_REAL, &carrierMpiType) >> checkMpiError;
+    MPI_Type_commit(&carrierMpiType) >> checkMpiError;
 }
 
 PetscReal ablate::radiation::Radiation::FlameIntensity(double epsilon, double temperature) { /** Gets the flame intensity based on temperature and emissivity (black body intensity) */
@@ -550,8 +552,8 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     }
 
     // Now that all the ray information is computed, transfer it back to rank that originated each ray using a pull
-    PetscSFReduceBegin(remoteAccess, carrierMpiType, (const void*)raySegmentsCalculations.data(), (void*)raySegmentSummary.data(), MPI_REPLACE) >> checkError;
-    PetscSFReduceEnd(remoteAccess, carrierMpiType, (const void*)raySegmentsCalculations.data(), (void*)raySegmentSummary.data(), MPI_REPLACE) >> checkError;
+    PetscSFBcastBegin(remoteAccess, carrierMpiType, (const void*)raySegmentsCalculations.data(), (void*)raySegmentSummary.data(), MPI_REPLACE) >> checkError;
+    PetscSFBcastEnd(remoteAccess, carrierMpiType, (const void*)raySegmentsCalculations.data(), (void*)raySegmentSummary.data(), MPI_REPLACE) >> checkError;
 
     // March over each
     std::size_t segmentOffset = 0;
