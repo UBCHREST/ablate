@@ -34,6 +34,7 @@ static PetscInt Test5[6] = {4, 7, 9, 11, 12, 17};
 static PetscInt Test6[2] = {-1000, -100};
 static PetscInt Test7[1] = {3};
 static PetscInt Test8[7] = {3, 4, 7, 8, 10, 11, 13};
+static PetscInt Test9[6] = {3, 4, 11, 7, 13, 10};
 
 INSTANTIATE_TEST_SUITE_P(SolverTests, ReverseRangeTestFixture,
                          testing::Values(std::make_pair(ablate::solver::Range{.start = 0, .end = 3, .points = nullptr}, std::vector<PetscInt>{0, 1, 2}),
@@ -44,6 +45,7 @@ INSTANTIATE_TEST_SUITE_P(SolverTests, ReverseRangeTestFixture,
                                          std::make_pair(ablate::solver::Range{.start = 0, .end = 0, .points = Test6}, std::vector<PetscInt>{}),
                                          std::make_pair(ablate::solver::Range{.start = 1, .end = 1, .points = Test6}, std::vector<PetscInt>{}),
                                          std::make_pair(ablate::solver::Range{.start = 0, .end = 1, .points = Test7}, std::vector<PetscInt>{0}),
-                                         std::make_pair(ablate::solver::Range{.start = 5, .end = 6, .points = Test8}, std::vector<PetscInt>{0})));
+                                         std::make_pair(ablate::solver::Range{.start = 5, .end = 6, .points = Test8}, std::vector<PetscInt>{0}),
+                                         std::make_pair(ablate::solver::Range{.start = 0, .end = 6, .points = Test9}, std::vector<PetscInt>{0, 1, 2, 3, 4, 5})));
 
 }  // namespace ablateTesting::solver
