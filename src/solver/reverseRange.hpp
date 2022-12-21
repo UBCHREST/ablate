@@ -17,7 +17,7 @@ struct ReverseRange {
    public:
     explicit ReverseRange(const Range& range) {
         rangeStart = range.start;
-        if (range.points) {
+        if (range.points && (range.start != range.end)) {
             // size to the maximum location, set default to -1
             indexStart = range.GetPoint(range.start);
             indices.resize(range.GetPoint(range.end - 1) - indexStart + 1, -1);
