@@ -6,9 +6,20 @@
 
 static inline PetscReal SimpleGasGasDecode(PetscInt dim, const PetscReal *in, PetscReal *out){
     // decode using known alpha
-    PetscReal e, rho, gamma1, gamma2, cv1, cv2, R1, R2
-    PetscReal alpha = 1, alpha1rho1, Y1, Y2;
-    PetscReal T,p,rho1,rho2,e1,e2;
+    PetscReal e = in[0];
+    PetscReal rho = in[1];
+    PetscReal gamma1 = in[2];
+    PetscReal gamma2 = in[3];
+    PetscReal cv1 = in[4];
+    PetscReal cv2 = in[5];
+    PetscReal R1 = in[6];
+    PetscReal R2 = in[7];
+    //rho, gamma1, gamma2, cv1, cv2, R1, R2;
+    PetscReal alpha = 1;
+    PetscReal alpha1rho1 = in[8];
+    PetscReal Y1 = in[9];
+    PetscReal Y2 = in[10];
+    PetscReal T=1,p=1,rho1=1,rho2=1,e1=1,e2=1;
     if (alpha < 10E-16){ // all water
         rho2 = rho;
         e2 = e;
@@ -31,14 +42,31 @@ static inline PetscReal SimpleGasGasDecode(PetscInt dim, const PetscReal *in, Pe
         p = (gamma1-1)*rho1* e1;
         T = e1/cv1;
     }
-    return [rho1, rho2, e1, e2, p, T];
+    out[0] = rho1;
+    out[1] = rho2;
+    out[2] = e1;
+    out[3] = e2;
+    out[4] = p;
+    out[5] = T;
+    return *out;
 }
 
 static inline PetscReal SimpleGasStiffDecode(PetscInt dim, const PetscReal *in, PetscReal *out){
     // decode using known alpha
-    PetscReal e, rho, gamma1, gamma2, R1, p02, cv1, cp2;
-    PetscReal alpha = 1, alpha1rho1, Y1, Y2;
-    PetscReal T,p,rho1,rho2,e1,e2;
+    PetscReal e = in[0];
+    PetscReal rho = in[1];
+    PetscReal gamma1 = in[2];
+    PetscReal gamma2 = in[3];
+    PetscReal cv1 = in[4];
+    PetscReal cp2 = in[5];
+    PetscReal R1 = in[6];
+    PetscReal p02 = in[7];
+    //rho, gamma1, gamma2, cv1, cv2, R1, R2;
+    PetscReal alpha = 1;
+    PetscReal alpha1rho1 = in[8];
+    PetscReal Y1 = in[9];
+    PetscReal Y2 = in[10];
+    PetscReal T=1,p=1,rho1=1,rho2=1,e1=1,e2=1;
     if (alpha < 10E-16){ // all water
         rho2 = rho;
         e2 = e;
@@ -61,14 +89,31 @@ static inline PetscReal SimpleGasStiffDecode(PetscInt dim, const PetscReal *in, 
         p = (gamma1-1)*rho1* e1;
         T = e1/cv1;
     }
-    return [rho1, rho2, e1, e2, p, T];
+    out[0] = rho1;
+    out[1] = rho2;
+    out[2] = e1;
+    out[3] = e2;
+    out[4] = p;
+    out[5] = T;
+    return *out;
 }
 
 static inline PetscReal SimpleStiffStiffDecode(PetscInt dim, const PetscReal *in, PetscReal *out){
     // decode using known alpha
-    PetscReal e, rho, gamma1, gamma2, p01, p02, cp1, cp2;
-    PetscReal alpha = 1, alpha1rho1, Y1, Y2;
-    PetscReal T,p,rho1,rho2,e1,e2;
+    PetscReal e = in[0];
+    PetscReal rho = in[1];
+    PetscReal gamma1 = in[2];
+    PetscReal gamma2 = in[3];
+    PetscReal cp1 = in[4];
+    PetscReal cp2 = in[5];
+    PetscReal p01 = in[6];
+    PetscReal p02 = in[7];
+    //rho, gamma1, gamma2, cv1, cv2, R1, R2;
+    PetscReal alpha = 1;
+    PetscReal alpha1rho1 = in[8];
+    PetscReal Y1 = in[9];
+    PetscReal Y2 = in[10];
+    PetscReal T=1, p=1, rho1=1, rho2=1, e1=1, e2=1;
     if (alpha < 10E-16){ // all water
         rho2 = rho;
         e2 = e;
@@ -91,17 +136,54 @@ static inline PetscReal SimpleStiffStiffDecode(PetscInt dim, const PetscReal *in
         p = (gamma1-1)*rho1* e1 - gamma1*p01;
         T = gamma1/cp1*(e1 - p01/rho1);
     }
-    return [rho1, rho2, e1, e2, p, T];
+    out[0] = rho1;
+    out[1] = rho2;
+    out[2] = e1;
+    out[3] = e2;
+    out[4] = p;
+    out[5] = T;
+    return *out;
 }
 
 ablate::eos::TwoPhase::TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<eos::EOS> eos2)
-    : eos(std::move(eos1)), eos(std::move(eos2)) {
+    : EOS("twoPhase"), eos1(std::move(eos1)), eos2(std::move(eos2)) {
     // set default values for options
-    // need to call eos1 eos2 to fill parameters structure
+//    // need to call eos1 eos2 to fill parameters structure
+////    PetscReal gamma1;
+////    PetscReal rGas1;
+////    PetscReal Cp1;
+////    PetscReal p01;
+////    PetscReal gamma2;
+////    PetscReal rGas2;
+////    PetscReal Cp2;
+////    PetscReal p02;
+////    PetscInt numberSpecies;
+//    parameters.gamma1 = eos1->GetSpecificHeatRatio();
+//    parameters.gamma2 = eos2->GetSpecificHeatRatio();
+//    // check if both perfect gases, use analytical solution
+//    auto perfectGasEos1 = std::dynamic_pointer_cast<eos::PerfectGas>(eos1);
+//    auto perfectGasEos2 = std::dynamic_pointer_cast<eos::PerfectGas>(eos2);
+//    // check if stiffened gas
+//    auto stiffenedGasEos1 = std::dynamic_pointer_cast<eos::StiffenedGas>(eos1);
+//    auto stiffenedGasEos2 = std::dynamic_pointer_cast<eos::StiffenedGas>(eos2);
+//    if (perfectGasEos1 && perfectGasEos2) {
+//        parameters.rGas1 = eos1->GetGasConstant();
+//        parameters.rGas2 = eos2->GetGasConstant();
+//    } else if (perfectGasEos1 && stiffenedGasEos2) {
+//        parameters.rGas1 = eos1->GetGasConstant();
+//        parameters.Cp2 = eos2->GetSpecificHeatCp();
+//        parameters.p02 = eos2->GetReferencePressure();
+//    } else if (stiffenedGasEos1 && stiffenedGasEos2) {
+//        parameters.Cp1 = eos1->GetSpecificHeatCp();
+//        parameters.p01 = eos1->GetReferencePressure();
+//        parameters.Cp2 = eos2->GetSpecificHeatCp();
+//        parameters.p02 = eos2->GetReferencePressure();
+//    }
 }
 
 void ablate::eos::TwoPhase::View(std::ostream &stream) const {
     stream << "EOS1: " << type << std::endl;
+    // want to stream all parameters?
 }
 
 ablate::eos::ThermodynamicFunction ablate::eos::TwoPhase::GetThermodynamicFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
@@ -127,21 +209,22 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::TwoPhase::GetThermody
 }
 
 ablate::eos::FieldFunction  ablate::eos::TwoPhase::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1, ablate::eos::ThermodynamicProperty property2) const {
-    if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field) {
-        if ((property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) ||
-            (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature)) {
-                auto tp = [this](PetscReal temperature, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
-                // Compute the density, use EOS1 or one with larger volumeFraction?
-                // call eos here
-
-                // compute the sensible internal energy
-
-                // convert to total sensibleEnergy
-
-            };
-            }
-            // other if statements here
-    }
+//    if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field) {
+//        if ((property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) ||
+//            (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature)) {
+//                auto tp = [this](PetscReal temperature, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+//                // Compute the density, use EOS1 or one with larger volumeFraction?
+//                // call eos here
+//
+//                // compute the sensible internal energy
+//
+//                // convert to total sensibleEnergy
+//
+//            };
+//            }
+//            // other if statements here
+//    }
+    return 0;
 }
 
 PetscErrorCode ablate::eos::TwoPhase::PressureFunction(const PetscReal *conserved, PetscReal *p, void *ctx) {
@@ -254,15 +337,27 @@ PetscErrorCode ablate::eos::TwoPhase::SpecificHeatConstantVolumeFunction(const P
     const auto &parameters = ((FunctionContext *)ctx)->parameters;
     // call EOS1 EOS2 for cv1 cv2
     // simple decode for Y1 Y2 T rho1 rho2
-//    PetscReal w1 =
-//    (*specificHeat) = Y1 * cv1 + Y2 * cv2 + (w1 * w2) / (w1 + w2) * PetscSqr(cv1 * (gamma1 - 1) * rho1 - cv2 * (gamma2 - 1) * rho2) * T
+    PetscReal Y1=1, Y2=1, rho1=1, rho2=1, gamma1=1, gamma2=1, T=1, cv1=1, cv2=1, cp2=1;
+    PetscReal at1 = PetscSqrtReal((gamma1 - 1) * cv1 * T); // ideal gas eos
+    PetscReal at2 = PetscSqrtReal((gamma2 - 1)/gamma2 * cp2 * T); // stiffened gas eos
+    PetscReal w1 = Y1 / PetscSqr(rho1 * at1);
+    PetscReal w2 = Y2 / PetscSqr(rho2 * at2);
+    (*specificHeat) = Y1 * cv1 + Y2 * cv2 + (w1 * w2) / (w1 + w2) * PetscSqr(cv1 * (gamma1 - 1) * rho1 - cv2 * (gamma2 - 1) * rho2) * T;
     //    ;
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::TwoPhase::SpecificHeatConstantVolumeTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *specificHeat, void *ctx) {
     PetscFunctionBeginUser;
-    // same as specificHeatConstantVolumeFunction
+    // cv_mix, same as specificHeatConstantVolumeFunction
     const auto &parameters = ((FunctionContext *)ctx)->parameters;
+    // call EOS1 EOS2 for cv1 cv2
+    // simple decode for Y1 Y2 T rho1 rho2
+    PetscReal Y1=1, Y2=1, rho1=1, rho2=1, gamma1=1, gamma2=1, T=1, cv1=1, cv2=1, cp2=1;
+    PetscReal at1 = PetscSqrtReal((gamma1 - 1) * cv1 * T); // ideal gas eos
+    PetscReal at2 = PetscSqrtReal((gamma2 - 1)/gamma2 * cp2 * T); // stiffened gas eos
+    PetscReal w1 = Y1 / PetscSqr(rho1 * at1);
+    PetscReal w2 = Y2 / PetscSqr(rho2 * at2);
+    (*specificHeat) = Y1 * cv1 + Y2 * cv2 + (w1 * w2) / (w1 + w2) * PetscSqr(cv1 * (gamma1 - 1) * rho1 - cv2 * (gamma2 - 1) * rho2) * T;
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::TwoPhase::SpecificHeatConstantPressureFunction(const PetscReal *conserved, PetscReal *specificHeat, void *ctx) {
@@ -280,7 +375,7 @@ PetscErrorCode ablate::eos::TwoPhase::SpecificHeatConstantPressureTemperatureFun
     // same as specificHeatConstantPressureFunction
     auto functionContext = (FunctionContext *)ctx;
     const auto &parameters = ((FunctionContext *)ctx)->parameters;
-    // dont know how to refer to alpha1rho1 field, below conserved[0] = alpha1rho1
+    // do not know how to refer to alpha1rho1 field, below conserved[0] = alpha1rho1
     PetscReal Y1 = conserved[0] / conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
     PetscReal Y2 = (conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO] - conserved[0]) / conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
     (*specificHeat) = Y1 * parameters.Cp1 + Y2 * parameters.Cp2;
@@ -290,14 +385,34 @@ PetscErrorCode ablate::eos::TwoPhase::SpeedOfSoundFunction(const PetscReal *cons
     PetscFunctionBeginUser;
     // isentropic sound speed a_mix
     auto functionContext = (FunctionContext *)ctx;
-    // *a = PetscSqrtReal(at_mix^2 + Gamma^2 * cv_mix * T)
+    // call EOS1 EOS2 for cv1 cv2
+    // simple decode for Y1 Y2 T rho1 rho2
+    PetscReal Y1=1, Y2=1, rho1=1, rho2=1, gamma1=1, gamma2=1, T=1, cv1=1, cv2=1, cp2=1;
+    PetscReal at1 = PetscSqrtReal((gamma1 - 1) * cv1 * T); // ideal gas eos
+    PetscReal at2 = PetscSqrtReal((gamma2 - 1)/gamma2 * cp2 * T); // stiffened gas eos
+    PetscReal w1 = Y1 / PetscSqr(rho1 * at1);
+    PetscReal w2 = Y2 / PetscSqr(rho2 * at2);
+    PetscReal cv_mix = Y1 * cv1 + Y2 * cv2 + (w1 * w2) / (w1 + w2) * PetscSqr(cv1 * (gamma1 - 1) * rho1 - cv2 * (gamma2 - 1) * rho2) * T;
+    PetscReal at_mix = PetscSqrtReal(1 / (w1 + w2));
+    PetscReal Gamma = (w1*cv1*(gamma1-1)*rho1 + w2*cv2*(gamma2-1)*rho2) / ((w1+w2)*cv_mix*T*conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO]);
+    *a = PetscSqrtReal(PetscSqr(at_mix) + PetscSqr(Gamma) * cv_mix * T);
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::TwoPhase::SpeedOfSoundTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *a, void *ctx) {
     PetscFunctionBeginUser;
     // same as speedOfSoundFunction, isentropic sound speed a_mix
     auto functionContext = (FunctionContext *)ctx;
-    // *a = PetscSqrtReal(at_mix^2 + Gamma^2 * cv_mix * T)
+    // call EOS1 EOS2 for cv1 cv2
+    // simple decode for Y1 Y2 T rho1 rho2
+    PetscReal Y1=1, Y2=1, rho1=1, rho2=1, gamma1=1, gamma2=1, T=1, cv1=1, cv2=1, cp2=1;
+    PetscReal at1 = PetscSqrtReal((gamma1 - 1) * cv1 * T); // ideal gas eos
+    PetscReal at2 = PetscSqrtReal((gamma2 - 1)/gamma2 * cp2 * T); // stiffened gas eos
+    PetscReal w1 = Y1 / PetscSqr(rho1 * at1);
+    PetscReal w2 = Y2 / PetscSqr(rho2 * at2);
+    PetscReal cv_mix = Y1 * cv1 + Y2 * cv2 + (w1 * w2) / (w1 + w2) * PetscSqr(cv1 * (gamma1 - 1) * rho1 - cv2 * (gamma2 - 1) * rho2) * T;
+    PetscReal at_mix = PetscSqrtReal(1 / (w1 + w2));
+    PetscReal Gamma = (w1*cv1*(gamma1-1)*rho1 + w2*cv2*(gamma2-1)*rho2) / ((w1+w2)*cv_mix*T*conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO]);
+    *a = PetscSqrtReal(PetscSqr(at_mix) + PetscSqr(Gamma) * cv_mix * T);
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::TwoPhase::SpeciesSensibleEnthalpyFunction(const PetscReal *conserved, PetscReal *hi, void *ctx) {

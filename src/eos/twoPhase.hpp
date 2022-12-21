@@ -65,7 +65,7 @@ class TwoPhase : public EOS { // , public std::enabled_shared_from_this<TwoPhase
         {ThermodynamicProperty::SpeciesSensibleEnthalpy, {SpeciesSensibleEnthalpyFunction, SpeciesSensibleEnthalpyTemperatureFunction}}};
 
    public:
-    explicit TwoPhase(std::shared_ptr<ablate::eos::EOS> eos1, std::shared_ptr<ablate::eos::EOS> eos2);
+    explicit TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<eos::EOS> eos2);
     void View(std::ostream& stream) const override;
 
     ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
