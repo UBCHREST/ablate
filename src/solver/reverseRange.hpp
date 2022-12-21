@@ -10,29 +10,40 @@ namespace ablate::solver {
  */
 struct ReverseRange {
    private:
-    PetscInt start;
+    PetscInt rangeStart = 0;
+    PetscInt indexStart = 0;
     std::vector<PetscInt> indices;
 
    public:
     explicit ReverseRange(const Range& range) {
+        rangeStart = range.start;
         if (range.points) {
+            // size to the maximum location, set default to -1
+            indexStart = range.GetPoint(range.start);
+            indices.resize(range.GetPoint(range.end - 1) - indexStart, -1);
+
+            // store the index at each point
             for (PetscInt i = range.start; i < range.end; ++i) {
-                indices.push_back(range.GetPoint(i));
+                indices[range.GetPoint(i) - indexStart] = i;
             }
-        } else {
-            start = range.start;
         }
     }
 
-    ReverseRange(): start(-1) {
-    }
+    ReverseRange() : rangeStart(-1), indexStart(-1) {}
 
     /**
-     * Get the point for the index i
-     * @param i
+     * Get the index for point i
+     * @param point
      * @return
      */
-    inline PetscInt GetIndex(PetscInt point) const { return indices.empty() ? start + point : indices[point]; }
+    inline PetscInt GetIndex(PetscInt point) const { return indices.empty() ? point : indices[point - indexStart]; }
+
+    /**
+     * Get the absolute index for this point.  This always starts at zero
+     * @param point
+     * @return
+     */
+    inline PetscInt GetAbsoluteIndex(PetscInt point) const { return GetIndex(point) - rangeStart; }
 };
 }  // namespace ablate::solver
 #endif  // ABLATELIBRARY_RANGE_HPP

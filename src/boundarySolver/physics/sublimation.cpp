@@ -23,7 +23,7 @@ ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOf
       pressureGradientScaling(std::move(pressureGradientScaling)),
       radiation(std::move(radiationIn)),
       radiationInterval((intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>())),
-      emissivity(emissivityIn) {}
+      emissivity(emissivityIn == 0 ? 1.0 : emissivityIn) {}
 
 void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
     // check for species

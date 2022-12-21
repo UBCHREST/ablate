@@ -40,7 +40,7 @@ class SurfaceRadiation : public ablate::radiation::Radiation {
         PetscReal netIntensity = -4.0 * 0.5 /*face*/ * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
 
         // add in precomputed gains
-        netIntensity += evaluatedGains[indexLookup.GetIndex(faceId)];
+        netIntensity += evaluatedGains[indexLookup.GetAbsoluteIndex(faceId)];
 
         // scale by kappa
         netIntensity *= emissivity;
