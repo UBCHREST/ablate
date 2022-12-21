@@ -20,7 +20,7 @@ struct ReverseRange {
         if (range.points) {
             // size to the maximum location, set default to -1
             indexStart = range.GetPoint(range.start);
-            indices.resize(range.GetPoint(range.end - 1) - indexStart, -1);
+            indices.resize(range.GetPoint(range.end - 1) - indexStart + 1, -1);
 
             // store the index at each point
             for (PetscInt i = range.start; i < range.end; ++i) {
