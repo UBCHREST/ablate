@@ -28,6 +28,8 @@ class TwoPhase : public EOS { // , public std::enabled_shared_from_this<TwoPhase
     struct FunctionContext {
         PetscInt dim;
         PetscInt eulerOffset;
+        PetscInt densityVFOffset;
+        PetscInt volumeFractionOffset;
         Parameters parameters;
     };
     // bunch of functions here
@@ -65,7 +67,7 @@ class TwoPhase : public EOS { // , public std::enabled_shared_from_this<TwoPhase
         {ThermodynamicProperty::SpeciesSensibleEnthalpy, {SpeciesSensibleEnthalpyFunction, SpeciesSensibleEnthalpyTemperatureFunction}}};
 
    public:
-    explicit TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<eos::EOS> eos2);
+    explicit TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<eos::EOS> eos2, std::vector<std::string> species = {});
     void View(std::ostream& stream) const override;
 
     ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
@@ -74,7 +76,8 @@ class TwoPhase : public EOS { // , public std::enabled_shared_from_this<TwoPhase
 
     FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const override;
 
-    const std::vector<std::string>& GetSpecies() const override { return species; }
+    const std::vector<std::string>& GetSpeciesVariables() const override { return species; }
+    [[nodiscard]] virtual const std::vector<std::string>& GetProgressVariables() const override { return ablate::utilities::VectorUtilities::Empty<std::string>; }
 };
 } // namespace ablate::eos
 
