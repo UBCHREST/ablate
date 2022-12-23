@@ -28,6 +28,8 @@ class ChemTabModel : public ChemistryModel {
     /**
      * private implementations of support functions
      */
+    static void ChemTabModelComputeFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal* predictedSourceEnergy, PetscReal* progressVariableSource,
+                                            const std::size_t progressVariableSourceSize, PetscReal* massFractions, std::size_t massFractionsSize, void* ctx);
     static void ChemTabModelComputeMassFractionsFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal* massFractions, const std::size_t massFractionsSize,
                                                          void* ctx);
     static void ChemTabModelComputeSourceFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal* predictedSourceEnergy, PetscReal* progressVariableSource,
