@@ -41,6 +41,7 @@ PetscErrorCode ablate::boundarySolver::physics::LogLawBoundary::UpdateBoundaryVe
 
     // for 3D
     if (dim == 3) {
+        // if  vel_t2 >= vel_t1
         if (abs(stencilNormalVelocity[2]) >= abs(stencilNormalVelocity[1])) {
             tangVel_1 =
                 fg->normal[1] * 0.5 * (1 / kappa) * 2 / (boundaryCell->volume * boundaryCell->volume / area * area) / (4 / (boundaryCell->volume * boundaryCell->volume / area * area) - 4 / (area)) +
@@ -48,16 +49,17 @@ PetscErrorCode ablate::boundarySolver::physics::LogLawBoundary::UpdateBoundaryVe
 
             tangVel_2 = stencilNormalVelocity[1];
 
-        } else {
+        } else {  // if vel_t1 > vel_t2
             tangVel_1 =
                 fg->normal[1] * 0.5 * (1 / kappa) * 2 / (boundaryCell->volume * boundaryCell->volume / area * area) / (4 / (boundaryCell->volume * boundaryCell->volume / area * area) - 4 / (area)) +
                 0.5 * stencilNormalVelocity[1];
 
             tangVel_2 = stencilNormalVelocity[2];
         }
-
-        PetscReal newMagTangVel = sqrt(tangVel_1 * tangVel_1 + tangVel_2 * tangVel_2);
+        // calculate the magnitude of the tangential velocity
         PetscReal magTangVel = sqrt(stencilNormalVelocity[1] * stencilNormalVelocity[1] + stencilNormalVelocity[2] * stencilNormalVelocity[2]);
+        // calculate the magnitude of new velocities
+        PetscReal newMagTangVel = sqrt(tangVel_1 * tangVel_1 + tangVel_2 * tangVel_2);
 
         if (magTangVel == 0) {
             logLawVel[1] = tangVel_1;
