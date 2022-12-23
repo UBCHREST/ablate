@@ -29,14 +29,18 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
     std::vector<std::string> progressVariablesNames = std::vector<std::string>(0);
 
     PetscReal** Wmat = nullptr;
-    PetscReal** iWmat = nullptr;
     PetscReal* sourceEnergyScaler = nullptr;
+
+
 
     /**
      * private implementations of support functions
      */
     void ExtractMetaData(std::istream& inputStream);
     void LoadBasisVectors(std::istream& inputStream, std::size_t columns, PetscReal** W);
+    static void ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariable[], const std::size_t progressVariablesSize,
+                                            PetscReal *predictedSourceEnergy, PetscReal *progressVariableSource, const std::size_t progressVariableSourceSize,
+                                            PetscReal *massFractions, std::size_t massFractionsSize, void *ctx)
 
     /**
      * The source calculator is used to do batch processing for chemistry model.  This is a bad implementation
@@ -79,9 +83,6 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
 
         // Hold the context for the baseline tChem function
         ablate::eos::TChem::ThermodynamicMassFractionFunction tChemFunction;
-
-        // inverse function/  This does not hold the pointer, but it is held by chemTab;
-        PetscReal** iWmat;
     };
 
     /**
@@ -99,9 +100,6 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
 
         // Hold the context for the baseline tChem function
         ablate::eos::TChem::ThermodynamicTemperatureMassFractionFunction tChemFunction;
-
-        // inverse function/  This does not hold the pointer, but it is held by chemTab;
-        PetscReal** iWmat;
     };
 
     /**

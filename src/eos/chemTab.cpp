@@ -101,8 +101,6 @@ void ablate::eos::ChemTab::ExtractMetaData(std::istream &inputStream) {
     std::getline(inputStream, line);
     int i = 0;
 
-    // push the Zmix name as the first "progress variables" name
-    progressVariablesNames.push_back("zmix");
     // get the progress variable names (skipping the first one)
     std::stringstream headerStream(line);
     while (headerStream.good()) {
