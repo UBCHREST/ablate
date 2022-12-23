@@ -52,34 +52,46 @@ TEST_P(LogLawBoundaryTestFixture, ShouldComputeCorrectAuxValues) {
 INSTANTIATE_TEST_SUITE_P(
     PhysicsBoundaryTests, LogLawBoundaryTestFixture,
     testing::Values(
-
         // case 0
         (LogLawBoundaryTestParameters){
-            .dim = 2, .fvFaceGeom = {.normal = {0, -1, NAN}, .areas = {NAN, 0.5, NAN}}, .boundaryCell = {.volume = {0.5}}, .stencilValues = {1.7, 0, 10, 0}, .expectedResults = {3.566176, 0}},
-        // case 1
+            .dim = 2, .fvFaceGeom = {.normal = {0, -1, NAN}, .areas = {0, 0.5, 0}}, .boundaryCell = {.volume = {0.5}}, .stencilValues = {1.7, 0, 10, 0}, .expectedResults = {4.191176, 0}},
 
+        // case 1
         (LogLawBoundaryTestParameters){
-            .dim = 2, .fvFaceGeom = {.normal = {0, -1, NAN}, .areas = {NAN, 0.5, NAN}}, .boundaryCell = {.volume = {0.5}}, .stencilValues = {1.7, 0, 10, 0}, .expectedResults = {3.566176, 0}},
+            .dim = 2, .fvFaceGeom = {.normal = {0, -1, NAN}, .areas = {0, 0.5, 0}}, .boundaryCell = {.volume = {0.5}}, .stencilValues = {1.7, 0, 10, 0}, .expectedResults = {4.191176, 0}},
 
         // case 2
         (LogLawBoundaryTestParameters){
-            .dim = 3, .fvFaceGeom = {.normal = {0, 1, 0}, .areas = {0.5, 0.5, 0.5}}, .boundaryCell = {.volume = {0.05}}, .stencilValues = {1.7, 0, 10, 0, 0}, .expectedResults = {3.5789315, 0, 0}},
+            .dim = 3, .fvFaceGeom = {.normal = {0, 1, 0}, .areas = {0, 0.5, 0}}, .boundaryCell = {.volume = {0.05}}, .stencilValues = {1.7, 0, 10, 0, 0}, .expectedResults = {3.5693171, 0, 0}},
 
         // case 3
         (LogLawBoundaryTestParameters){
-            .dim = 3, .fvFaceGeom = {.normal = {0, -1, 0}, .areas = {0.5, 0.5, 0.5}}, .boundaryCell = {.volume = {0.05}}, .stencilValues = {1.7, 0, 10, 0, 0}, .expectedResults = {3.5789315, 0, 0}},
+            .dim = 3, .fvFaceGeom = {.normal = {0, -1, 0}, .areas = {0, 0.5, 0}}, .boundaryCell = {.volume = {0.05}}, .stencilValues = {1.7, 0, 10, 0, 0}, .expectedResults = {3.5693171, 0, 0}},
 
         // case 4
         (LogLawBoundaryTestParameters){.dim = 3,
-                                       .fvFaceGeom = {.normal = {0.707, 0.707, 0}, .areas = {0.5, 0.5, 0.5}},
+                                       .fvFaceGeom = {.normal = {0.707, 0.707, 0}, .areas = {0, 0.5, 0}},
                                        .boundaryCell = {.volume = {0.05}},
                                        .stencilValues = {1.7, 0, 10, 0, 0},
-                                       .expectedResults = {1.7894176, -1.7894176, 0}},
+                                       .expectedResults = {1.7846111, -1.7846111, 0}},
 
         // case 5
         (LogLawBoundaryTestParameters){.dim = 3,
-                                       .fvFaceGeom = {.normal = {-0.707, -0.707, 0}, .areas = {0.5, 0.5, 0.5}},
+                                       .fvFaceGeom = {.normal = {-0.707, -0.707, 0}, .areas = {0, 0.5, 0}},
                                        .boundaryCell = {.volume = {0.05}},
                                        .stencilValues = {1.7, 0, 10, 0, 0},
-                                       .expectedResults = {1.7894176, -1.7894176, 0}}),
+                                       .expectedResults = {1.7846111, -1.7846111, 0}},
+
+        // case 6
+        (LogLawBoundaryTestParameters){.dim = 3,
+                                       .fvFaceGeom = {.normal = {0, -1, 0}, .areas = {0, 0.5, 0}},
+                                       .boundaryCell = {.volume = {0.05}},
+                                       .stencilValues = {1.7, 0, 10, 5, 5},
+                                       .expectedResults = {4.13671793, 0, 2.0683589}},
+        // case 7
+        (LogLawBoundaryTestParameters){.dim = 3,
+                                       .fvFaceGeom = {.normal = {0, 1, 0}, .areas = {0, 0.5, 0}},
+                                       .boundaryCell = {.volume = {0.05}},
+                                       .stencilValues = {1.7, 0, 5, 5, 10},
+                                       .expectedResults = {1.673359, 0, 3.34671821}}),
     [](const testing::TestParamInfo<LogLawBoundaryTestParameters>& info) { return std::to_string(info.index); });

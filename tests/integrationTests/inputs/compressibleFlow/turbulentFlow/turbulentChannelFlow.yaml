@@ -93,7 +93,7 @@ timestepper:
         eos: *eos
         pressure: 101325.0
         temperature: 300
-        velocity: 0,0,0
+        velocity: 15,0,0
     - !ablate::finiteVolume::fieldFunctions::DensityExtraVariables
       # introduce initial value for tke
       name: tke
@@ -190,7 +190,7 @@ solvers:
         referencePressure: 101325.0
         maxAcousticsLength: 1
         pgs: *pgs
-   # bottom wall
+    # bottom wall
   - !ablate::boundarySolver::BoundarySolver
     id: topBoundary
     region:
@@ -206,7 +206,7 @@ solvers:
       # Deardorff (1970) wall model is used to recover the log law at the first boundary cell near the wall
       - !ablate::boundarySolver::physics::LogLawBoundary
 
-        # top wall
+      # top wall
   - !ablate::boundarySolver::BoundarySolver
     id: bottomBoundary
     region:

@@ -18,6 +18,8 @@ PetscErrorCode ablate::boundarySolver::physics::LogLawBoundary::UpdateBoundaryVe
     PetscArrayzero(logLawVel, 3);
     PetscReal stencilVel[3];
     PetscReal stencilNormalVelocity[3];
+    PetscReal tangVel_1;
+    PetscReal tangVel_2;
 
     // map the stencil velocity in normal coord.
     PetscReal stencilDensity = stencilValues[uOff[EULER_FIELD] + finiteVolume::CompressibleFlowFields::RHO];
@@ -28,26 +30,42 @@ PetscErrorCode ablate::boundarySolver::physics::LogLawBoundary::UpdateBoundaryVe
     PetscReal transformationMatrix[dim][3];
     utilities::MathUtilities::ComputeTransformationMatrix(dim, fg->normal, transformationMatrix);
     ablate::utilities::MathUtilities::Multiply(dim, transformationMatrix, stencilVel, stencilNormalVelocity);
+    PetscReal area = utilities::MathUtilities::MagVector(dim, fg->areas);
 
     // calculate the new boundary velocity in normal coord for 2D.
     logLawVel[0] = 0e+0;
 
-    logLawVel[1] = -fg->normal[1] * 0.5 * (1 / kappa) * 2 / ((boundaryCell->volume * boundaryCell->volume / (fg->areas[1] * fg->areas[1]))) /
-                       (4 / ((boundaryCell->volume * boundaryCell->volume / (fg->areas[1] * fg->areas[1]))) - 4 / (fg->areas[1])) +
-                   0.5 * stencilNormalVelocity[1];
+    logLawVel[1] =
+        -fg->normal[1] * 0.5 * (1 / kappa) * 2 / (boundaryCell->volume * boundaryCell->volume / area * area) / (4 / (boundaryCell->volume * boundaryCell->volume / area * area) - 4 / (area)) +
+        0.5 * stencilNormalVelocity[1];
+
     // for 3D
-    if ((dim = 3)) {
+    if (dim == 3) {
         if (abs(stencilNormalVelocity[2]) >= abs(stencilNormalVelocity[1])) {
-            logLawVel[2] = fg->normal[1] * 0.5 * (1 / kappa) * 2 / ((boundaryCell->volume * boundaryCell->volume / (fg->areas[1] * fg->areas[1]))) /
-                               (4 / ((boundaryCell->volume * boundaryCell->volume / (fg->areas[1] * fg->areas[1]))) - 4 / (fg->areas[1])) +
-                           0.5 * stencilNormalVelocity[2];
+            tangVel_1 =
+                fg->normal[1] * 0.5 * (1 / kappa) * 2 / (boundaryCell->volume * boundaryCell->volume / area * area) / (4 / (boundaryCell->volume * boundaryCell->volume / area * area) - 4 / (area)) +
+                0.5 * stencilNormalVelocity[2];
+
+            tangVel_2 = stencilNormalVelocity[1];
+
+        } else {
+            tangVel_1 =
+                fg->normal[1] * 0.5 * (1 / kappa) * 2 / (boundaryCell->volume * boundaryCell->volume / area * area) / (4 / (boundaryCell->volume * boundaryCell->volume / area * area) - 4 / (area)) +
+                0.5 * stencilNormalVelocity[1];
+
+            tangVel_2 = stencilNormalVelocity[2];
         }
 
-        else {
-            logLawVel[1] = fg->normal[1] * 0.5 * (1 / kappa) * 2 / ((boundaryCell->volume * boundaryCell->volume / (fg->areas[1] * fg->areas[1]))) /
-                               (4 / ((boundaryCell->volume * boundaryCell->volume / (fg->areas[1] * fg->areas[1]))) - 4 / (fg->areas[1])) +
-                           0.5 * stencilNormalVelocity[1];
-            logLawVel[2] = stencilNormalVelocity[2];
+        PetscReal newMagTangVel = sqrt(tangVel_1 * tangVel_1 + tangVel_2 * tangVel_2);
+        PetscReal magTangVel = sqrt(stencilNormalVelocity[1] * stencilNormalVelocity[1] + stencilNormalVelocity[2] * stencilNormalVelocity[2]);
+
+        if (magTangVel == 0) {
+            logLawVel[1] = tangVel_1;
+            logLawVel[2] = tangVel_2;
+
+        } else {
+            logLawVel[1] = (newMagTangVel / magTangVel) * stencilNormalVelocity[1];
+            logLawVel[2] = (newMagTangVel / magTangVel) * stencilNormalVelocity[2];
         }
     }
     // map the boundary velocities back into Cartesian coord.
