@@ -112,12 +112,15 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
                     monitorPt[monitorFields[FieldPlacements::densitySum].offset] += densLoc;
                     monitorPt[monitorFields[FieldPlacements::densityDtSum].offset] += densLoc * dt;
 
-                    // Set the offset
-                    PetscInt offset = monitorFields[FieldPlacements::fieldsStart + f].offset;
+                    // Get fields to be monitored here
+                    const auto& field = monitor->GetSolver()->GetSubDomain().GetField(monitor->fieldNames[f]);
 
                     // March over each field component
-                    for (int p = 0; p < monitorFields[f].numberComponents; p++) {
-                        offset += SectionLabels::END * p;
+                    for (int p = 0; p < field.numberComponents; p++) {
+                        // Set the offset. The first two offset places are reserved for "field placements". Each field component takes " SectionLabels::END" number of offset placements.
+                        // the next field starts the offset counter from where the last field stops.
+                        PetscInt offset = SectionLabels::END * p + monitorFields[FieldPlacements::fieldsStart + f].offset;
+
                         monitorPt[offset + SectionLabels::densityMult] += fieldPt[p] * densLoc;
                         monitorPt[offset + SectionLabels::densityDtMult] += fieldPt[p] * densLoc * dt;
                         monitorPt[offset + SectionLabels::densitySqr] += fieldPt[p] * fieldPt[p] * densLoc;
