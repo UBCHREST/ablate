@@ -129,12 +129,12 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
                 identifier[ipart].remoteRayId = PETSC_DECIDE;
                 identifier[ipart].nSegment = -1;
 
-                /** Set the index of the field value so that it can be written to for every particle */
-                ipart++;  //!< Must be iterated at the end since the value is initialized at zero.
-
                 // Compute the intensityFactor
                 // If surface, get the perpendicular component here and multiply the result by it
                 gainsFactor[ipart] = abs(sin(theta)) * dTheta * dPhi * SurfaceComponent(normal, iCell, nphi, ntheta);
+
+                /** Set the index of the field value so that it can be written to for every particle */
+                ipart++;  //!< Must be iterated at the end since the value is initialized at zero.
             }
         }
     }
