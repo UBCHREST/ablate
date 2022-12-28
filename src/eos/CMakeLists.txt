@@ -5,6 +5,7 @@ target_sources(ablateLibrary
         tChem.cpp
         chemTab.cpp
         chemistryModel.cpp
+        twoPhase.cpp
 
         PUBLIC
         eos.hpp
@@ -13,6 +14,7 @@ target_sources(ablateLibrary
         stiffenedGas.hpp
         chemTab.hpp
         chemistryModel.hpp
+        twoPhase.hpp
         )
 
 add_subdirectory(transport)

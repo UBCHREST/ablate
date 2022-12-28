@@ -147,40 +147,60 @@ static inline PetscReal SimpleStiffStiffDecode(PetscInt dim, const PetscReal *in
 ablate::eos::TwoPhase::TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<eos::EOS> eos2, std::vector<std::string> species)
     : EOS("twoPhase"), eos1(std::move(eos1)), eos2(std::move(eos2)), species(species) {
     // set parameter values
-    // check if both perfect gases, use analytical solution
-    auto perfectGasEos1 = std::dynamic_pointer_cast<eos::PerfectGas>(eos1);
-    auto perfectGasEos2 = std::dynamic_pointer_cast<eos::PerfectGas>(eos2);
-    // check if stiffened gas
-    auto stiffenedGasEos1 = std::dynamic_pointer_cast<eos::StiffenedGas>(eos1);
-    auto stiffenedGasEos2 = std::dynamic_pointer_cast<eos::StiffenedGas>(eos2);
-    if (perfectGasEos1 && perfectGasEos2) {
-        parameters.gamma1 = perfectGasEos1->GetSpecificHeatRatio();
-        parameters.gamma2 = perfectGasEos2->GetSpecificHeatRatio();
-        parameters.rGas1 = perfectGasEos1->GetGasConstant();
-        parameters.rGas2 = perfectGasEos2->GetGasConstant();
+    if (eos1 && eos2){
+        // check if both perfect gases, use analytical solution
+        auto perfectGasEos1 = std::dynamic_pointer_cast<eos::PerfectGas>(eos1);
+        auto perfectGasEos2 = std::dynamic_pointer_cast<eos::PerfectGas>(eos2);
+        // check if stiffened gas
+        auto stiffenedGasEos1 = std::dynamic_pointer_cast<eos::StiffenedGas>(eos1);
+        auto stiffenedGasEos2 = std::dynamic_pointer_cast<eos::StiffenedGas>(eos2);
+        if (perfectGasEos1 && perfectGasEos2) {
+            parameters.gamma1 = perfectGasEos1->GetSpecificHeatRatio();
+            parameters.gamma2 = perfectGasEos2->GetSpecificHeatRatio();
+            parameters.rGas1 = perfectGasEos1->GetGasConstant();
+            parameters.rGas2 = perfectGasEos2->GetGasConstant();
+            parameters.p01 = 0;
+            parameters.p02 = 0;
+        } else if (perfectGasEos1 && stiffenedGasEos2) {
+            parameters.gamma1 = perfectGasEos1->GetSpecificHeatRatio();
+            parameters.rGas1 = perfectGasEos1->GetGasConstant();
+            parameters.p01 = 0;
+            parameters.gamma2 = stiffenedGasEos2->GetSpecificHeatRatio();
+            parameters.Cp2 = stiffenedGasEos2->GetSpecificHeatCp();
+            parameters.p02 = stiffenedGasEos2->GetReferencePressure();
+        } else if (stiffenedGasEos1 && stiffenedGasEos2) {
+            parameters.gamma1 = stiffenedGasEos1->GetSpecificHeatRatio();
+            parameters.Cp1 = stiffenedGasEos1->GetSpecificHeatCp();
+            parameters.p01 = stiffenedGasEos1->GetReferencePressure();
+            parameters.gamma2 = stiffenedGasEos2->GetSpecificHeatRatio();
+            parameters.Cp2 = stiffenedGasEos2->GetSpecificHeatCp();
+            parameters.p02 = stiffenedGasEos2->GetReferencePressure();
+        }
+    } else{
+        // defaults to air (perfect) and water (stiffened)
+        parameters.gamma1 = 1.4;
+        parameters.rGas1 = 287.0;
         parameters.p01 = 0;
-        parameters.p02 = 0;
-    } else if (perfectGasEos1 && stiffenedGasEos2) {
-        parameters.gamma1 = perfectGasEos1->GetSpecificHeatRatio();
-        parameters.rGas1 = perfectGasEos1->GetGasConstant();
-        parameters.p01 = 0;
-        parameters.gamma2 = stiffenedGasEos2->GetSpecificHeatRatio();
-        parameters.Cp2 = stiffenedGasEos2->GetSpecificHeatCp();
-        parameters.p02 = stiffenedGasEos2->GetReferencePressure();
-    } else if (stiffenedGasEos1 && stiffenedGasEos2) {
-        parameters.gamma1 = stiffenedGasEos1->GetSpecificHeatRatio();
-        parameters.Cp1 = stiffenedGasEos1->GetSpecificHeatCp();
-        parameters.p01 = stiffenedGasEos1->GetReferencePressure();
-        parameters.gamma2 = stiffenedGasEos2->GetSpecificHeatRatio();
-        parameters.Cp2 = stiffenedGasEos2->GetSpecificHeatCp();
-        parameters.p02 = stiffenedGasEos2->GetReferencePressure();
+        parameters.gamma2 = 1.932;
+        parameters.Cp2 = 8095.08;
+        parameters.p02 = 1.1645e9;
     }
 //    parameters.numberSpecies = 0;  // not used here, need to add support for species eventually
 }
 
 void ablate::eos::TwoPhase::View(std::ostream &stream) const {
-    stream << "EOS1: " << type << std::endl;
-    // add here if we want to stream all parameters
+    stream << "EOS: " << type << std::endl;
+    if (eos1 && eos2){
+        stream << *eos1;
+        stream << *eos2;
+    }
+    if (!species.empty()) {
+        stream << "\tspecies: " << species.front();
+        for (std::size_t i = 1; i < species.size(); i++) {
+            stream << ", " << species[i];
+        }
+        stream << std::endl;
+    }
 }
 
 ablate::eos::ThermodynamicFunction ablate::eos::TwoPhase::GetThermodynamicFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
