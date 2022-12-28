@@ -12,13 +12,15 @@
 //
 // Note: This is adapted from DMInterpolationSetUp. It is unknown if this will work in parallel (if the cell is on another rank).
 PetscErrorCode DMPlexGetContainingCell(DM dm, PetscScalar *xyz, PetscInt *cell) {
-  PetscSF         cellSF;
+  PetscSF         cellSF = NULL;
   Vec             pointVec;
   PetscInt        dim;
   PetscErrorCode  ierr;
   const           PetscSFNode *foundCells;
   const PetscInt  *foundPoints;
   PetscInt        numFound;
+
+  PetscFunctionBegin;
 
   ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
