@@ -299,23 +299,25 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     struct Identifier* returnIdentifiers;                                                                     //!< Pointer to the ray identifier information
     DMSwarmGetField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >> checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
     for (PetscInt p = 0; p < numberOfReturnedSegments; ++p) {
-        raySegmentsPerOriginRay[returnIdentifiers[p].originRayId]++;
+        // There may be duplicates so take the maximum based upon nSegment for the size
+        raySegmentsPerOriginRay[returnIdentifiers[p].originRayId] = PetscMax(raySegmentsPerOriginRay[returnIdentifiers[p].originRayId], (returnIdentifiers[p].nSegment + 1));
     }
 
     // Keep track of the offset for each originRay assuming the memory is in order
     std::vector<PetscInt> rayOffset(numberOriginRays);
-    PetscInt offset = 0;
+    PetscInt uniqueRaySegments = 0;
     for (std::size_t r = 0; r < raySegmentsPerOriginRay.size(); r++) {
-        rayOffset[r] = offset;
-        offset += raySegmentsPerOriginRay[r];
+        rayOffset[r] = uniqueRaySegments;
+        uniqueRaySegments += raySegmentsPerOriginRay[r];
     }
 
     /* Build the leafs for the petscSf.
      * - Each root corresponds to a single ray/segment id in the raySegmentSummary
      * - Each corresponding leaf points to a local/remote remoteRayCalculation indexed based upon the remote ray index
+     * - because there are duplicates we are taking only the returnIdentifiers for each localMemoryIndex
      */
     PetscSFNode* remoteRayInformation;
-    PetscMalloc1(numberOfReturnedSegments, &remoteRayInformation) >> checkError;
+    PetscMalloc1(uniqueRaySegments, &remoteRayInformation) >> checkError;
     for (PetscInt p = 0; p < numberOfReturnedSegments; ++p) {
         // determine where in local memory this remoteRayInformation corresponds to
         // first offset it by the originRayId
@@ -336,7 +338,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     // Create the remote access structure
     PetscSFCreate(PETSC_COMM_WORLD, &remoteAccess) >> checkError;
     PetscSFSetFromOptions(remoteAccess) >> checkError;
-    PetscSFSetGraph(remoteAccess, (PetscInt)raySegments.size(), numberOfReturnedSegments, nullptr, PETSC_OWN_POINTER, remoteRayInformation, PETSC_OWN_POINTER) >> checkError;
+    PetscSFSetGraph(remoteAccess, (PetscInt)raySegments.size(), uniqueRaySegments, nullptr, PETSC_OWN_POINTER, remoteRayInformation, PETSC_OWN_POINTER) >> checkError;
     PetscSFSetUp(remoteAccess) >> checkError;
 
     // Size up the memory to hold the local calculations and the retrieved information
