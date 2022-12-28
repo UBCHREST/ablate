@@ -5,6 +5,8 @@
 #include <string>
 #ifdef WITH_TENSORFLOW
 
+using namespace std;
+
 void NoOpDeallocator(void *data, size_t a, void *b) {}
 
 ablate::chemistry::ChemTabModel::ChemTabModel(std::filesystem::path path) {
@@ -19,7 +21,7 @@ ablate::chemistry::ChemTabModel::ChemTabModel(std::filesystem::path path) {
     //TODO: use metadata.yaml file here!
     const std::string rpath = path / "regressor";
     const std::string wpath = path / "weights.csv";
-    const std::string ipath = path / "weights_inv.csv";
+    //const std::string ipath = path / "weights_inv.csv";
 
     // Check for missing files
     if (!std::filesystem::exists(rpath)) {
@@ -34,12 +36,12 @@ ablate::chemistry::ChemTabModel::ChemTabModel(std::filesystem::path path) {
             "specified ChemTabModel Folder " +
             path.string());
     }
-    if (!std::filesystem::exists(ipath)) {
-        throw std::runtime_error(
-            "The 'weights_inv.csv' file cannot be located in "
-            "the specified ChemTabModel Folder " +
-            path.string());
-    }
+    //if (!std::filesystem::exists(ipath)) {
+    //    throw std::runtime_error(
+    //        "The 'weights_inv.csv' file cannot be located in "
+    //        "the specified ChemTabModel Folder " +
+    //        path.string());
+    //}
 
     // Load the source energy predictor model first
     graph = TF_NewGraph();
@@ -205,7 +207,7 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeFunction(const PetscRea
 
     // store CPV sources
     outputArray = (float *)TF_TensorData(outputValues[0]);
-    progressVariableSource[0]=0 // Zmix source is always 0!
+    progressVariableSource[0]=0; // Zmix source is always 0!
     for (size_t i = 0; i < progressVariableSourceSize; i++) {
         progressVariableSource[i+1] = (PetscReal)outputArray[i]; // +1 b/c we are manually filling in Zmix source value (to 0)
     }
