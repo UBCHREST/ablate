@@ -1,14 +1,14 @@
 #include "solver.hpp"
 #include <petsc/private/dmpleximpl.h>
 #include <regex>
-#include <utilities/petscError.hpp>
+#include "utilities/petscUtilities.hpp"
 #include <utilities/petscOptions.hpp>
 
 ablate::solver::Solver::Solver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options)
     : solverId(std::move(solverId)), region(std::move(region)), petscOptions(nullptr) {
     // Set the options
     if (options) {
-        PetscOptionsCreate(&petscOptions) >> checkError;
+        PetscOptionsCreate(&petscOptions) >> utilities::PetscUtilities::checkError;
         options->Fill(petscOptions);
     }
 }
@@ -167,23 +167,23 @@ PetscErrorCode ablate::solver::Solver::DMPlexInsertTimeDerivativeBoundaryValues_
 void ablate::solver::Solver::GetCellRange(Range &cellRange) const {
     // Start out getting all the cells
     PetscInt depth;
-    DMPlexGetDepth(subDomain->GetDM(), &depth) >> checkError;
+    DMPlexGetDepth(subDomain->GetDM(), &depth) >> utilities::PetscUtilities::checkError;
     GetRange(depth, cellRange);
 }
 
 void ablate::solver::Solver::GetFaceRange(Range &faceRange) const {
     // Start out getting all the faces
     PetscInt depth;
-    DMPlexGetDepth(subDomain->GetDM(), &depth) >> checkError;
+    DMPlexGetDepth(subDomain->GetDM(), &depth) >> utilities::PetscUtilities::checkError;
     GetRange(depth - 1, faceRange);
 }
 
 void ablate::solver::Solver::GetRange(PetscInt depth, Range &faceRange) const {
     // Start out getting all the points
     IS allPointIS;
-    DMGetStratumIS(subDomain->GetDM(), "dim", depth, &allPointIS) >> checkError;
+    DMGetStratumIS(subDomain->GetDM(), "dim", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
     if (!allPointIS) {
-        DMGetStratumIS(subDomain->GetDM(), "depth", depth, &allPointIS) >> checkError;
+        DMGetStratumIS(subDomain->GetDM(), "depth", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
     }
 
     // If there is a label for this solver, get only the parts of the mesh that here
@@ -192,11 +192,11 @@ void ablate::solver::Solver::GetRange(PetscInt depth, Range &faceRange) const {
         DMGetLabel(subDomain->GetDM(), region->GetName().c_str(), &label);
 
         IS labelIS;
-        DMLabelGetStratumIS(label, region->GetValue(), &labelIS) >> checkError;
-        ISIntersect_Caching_Internal(allPointIS, labelIS, &faceRange.is) >> checkError;
-        ISDestroy(&labelIS) >> checkError;
+        DMLabelGetStratumIS(label, region->GetValue(), &labelIS) >> utilities::PetscUtilities::checkError;
+        ISIntersect_Caching_Internal(allPointIS, labelIS, &faceRange.is) >> utilities::PetscUtilities::checkError;
+        ISDestroy(&labelIS) >> utilities::PetscUtilities::checkError;
     } else {
-        PetscObjectReference((PetscObject)allPointIS) >> checkError;
+        PetscObjectReference((PetscObject)allPointIS) >> utilities::PetscUtilities::checkError;
         faceRange.is = allPointIS;
     }
 
@@ -208,16 +208,16 @@ void ablate::solver::Solver::GetRange(PetscInt depth, Range &faceRange) const {
         faceRange.points = nullptr;
     } else {
         // Get the range
-        ISGetPointRange(faceRange.is, &faceRange.start, &faceRange.end, &faceRange.points) >> checkError;
+        ISGetPointRange(faceRange.is, &faceRange.start, &faceRange.end, &faceRange.points) >> utilities::PetscUtilities::checkError;
     }
 
     // Clean up the allCellIS
-    ISDestroy(&allPointIS) >> checkError;
+    ISDestroy(&allPointIS) >> utilities::PetscUtilities::checkError;
 }
 
 void ablate::solver::Solver::RestoreRange(Range &range) const {
     if (range.is) {
-        ISRestorePointRange(range.is, &range.start, &range.end, &range.points) >> checkError;
-        ISDestroy(&range.is) >> checkError;
+        ISRestorePointRange(range.is, &range.start, &range.end, &range.points) >> utilities::PetscUtilities::checkError;
+        ISDestroy(&range.is) >> utilities::PetscUtilities::checkError;
     }
 }

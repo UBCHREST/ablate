@@ -3,7 +3,7 @@
 #include "finiteVolume/processes/navierStokesTransport.hpp"
 #include "monitors/logs/stdOut.hpp"
 #include "utilities/mpiUtilities.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::monitors::IgnitionDelayPeakYi::IgnitionDelayPeakYi(std::string species, std::vector<double> location, std::shared_ptr<logs::Log> logIn, std::shared_ptr<logs::Log> historyLogIn)
     : log(logIn ? logIn : std::make_shared<logs::StdOut>()), historyLog(historyLogIn), species(species), location(location) {}
@@ -57,17 +57,17 @@ void ablate::monitors::IgnitionDelayPeakYi::Register(std::shared_ptr<solver::Sol
 
     // Convert the location to a vec
     Vec locVec;
-    VecCreateSeqWithArray(flow->GetSubDomain().GetComm(), location.size(), location.size(), &location[0], &locVec) >> checkError;
+    VecCreateSeqWithArray(flow->GetSubDomain().GetComm(), location.size(), location.size(), &location[0], &locVec) >> utilities::PetscUtilities::checkError;
 
     // Get all points still in this mesh
     PetscSF cellSF = NULL;
-    DMLocatePoints(flow->GetSubDomain().GetDM(), locVec, DM_POINTLOCATION_NONE, &cellSF) >> checkError;
+    DMLocatePoints(flow->GetSubDomain().GetDM(), locVec, DM_POINTLOCATION_NONE, &cellSF) >> utilities::PetscUtilities::checkError;
     const PetscSFNode* cells;
     PetscInt numberFound;
     PetscMPIInt rank;
     MPI_Comm_rank(flow->GetSubDomain().GetComm(), &rank) >> utilities::MpiUtilities::checkError;
 
-    PetscSFGetGraph(cellSF, NULL, &numberFound, NULL, &cells) >> checkError;
+    PetscSFGetGraph(cellSF, NULL, &numberFound, NULL, &cells) >> utilities::PetscUtilities::checkError;
     if (numberFound == 1) {
         if (cells[0].rank == rank) {
             cellOfInterest = cells[0].index;
@@ -77,8 +77,8 @@ void ablate::monitors::IgnitionDelayPeakYi::Register(std::shared_ptr<solver::Sol
     }
 
     // restore
-    PetscSFDestroy(&cellSF) >> checkError;
-    VecDestroy(&locVec) >> checkError;
+    PetscSFDestroy(&cellSF) >> utilities::PetscUtilities::checkError;
+    VecDestroy(&locVec) >> utilities::PetscUtilities::checkError;
 
     // init the log(s)
     log->Initialize(flow->GetSubDomain().GetComm());

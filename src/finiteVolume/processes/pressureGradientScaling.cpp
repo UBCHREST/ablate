@@ -49,7 +49,7 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
     // check to see if there is a ghost label
     auto dm = flow.GetSubDomain().GetDM();
     DMLabel ghostLabel;
-    DMGetLabel(dm, "ghost", &ghostLabel) >> checkError;
+    DMGetLabel(dm, "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
 
     // March over each cell
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {

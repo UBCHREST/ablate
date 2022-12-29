@@ -7,9 +7,42 @@ namespace ablate::utilities {
 class PetscUtilities {
    public:
     /**
+     * helper class to check mpi errors
+     */
+    class ErrorChecker {
+       public:
+        struct PetscError : public std::runtime_error {
+           private:
+            static std::string GetMessage(PetscErrorCode ierr) {
+                const char* text;
+                char* specific;
+
+                PetscErrorMessage(ierr, &text, &specific);
+
+                return std::string(text) + ": " + std::string(specific);
+            }
+
+           public:
+            PetscError(PetscErrorCode ierr) : std::runtime_error(GetMessage(ierr)) {}
+        };
+
+        inline friend void operator>>(PetscErrorCode ierr, const ErrorChecker& errorChecker) {
+            if (ierr != 0) {
+                throw PetscError(ierr);
+            }
+        }
+    };
+
+   public:
+    /**
      * static call to setup petsc petsc and register cleanup call
      */
     static void Initialize(const char[] = nullptr);
+
+    /**
+     * static inline error checker for petsc based errors
+     */
+    static inline utilities::PetscUtilities::ErrorChecker checkError;
 
    private:
     PetscUtilities() = delete;

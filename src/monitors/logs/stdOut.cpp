@@ -1,7 +1,7 @@
 #include "stdOut.hpp"
 #include <stdarg.h>
 #include "utilities/mpiUtilities.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 #include "nullLog.hpp"
 
 void ablate::monitors::logs::StdOut::Initialize(MPI_Comm comm) {
@@ -15,7 +15,7 @@ void ablate::monitors::logs::StdOut::Printf(const char* format, ...) {
     if (output) {
         va_list args;
         va_start(args, format);
-        PetscVFPrintf(PETSC_STDOUT, format, args) >> checkError;
+        PetscVFPrintf(PETSC_STDOUT, format, args) >> utilities::PetscUtilities::checkError;
         va_end(args);
     }
 }

@@ -1,5 +1,5 @@
 #include "fileLog.hpp"
-#include <utilities/petscError.hpp>
+#include "utilities/petscUtilities.hpp"
 #include "environment/runEnvironment.hpp"
 
 ablate::monitors::logs::FileLog::FileLog(std::string fileName)
@@ -14,14 +14,14 @@ ablate::monitors::logs::FileLog::~FileLog() {
 void ablate::monitors::logs::FileLog::Initialize(MPI_Comm commIn) {
     Log::Initialize(commIn);
     comm = commIn;
-    PetscFOpen(comm, outputPath.c_str(), "a", &file) >> checkError;
+    PetscFOpen(comm, outputPath.c_str(), "a", &file) >> utilities::PetscUtilities::checkError;
 }
 
 void ablate::monitors::logs::FileLog::Printf(const char* format, ...) {
     if (file) {
         va_list args;
         va_start(args, format);
-        PetscVFPrintf(file, format, args) >> checkError;
+        PetscVFPrintf(file, format, args) >> utilities::PetscUtilities::checkError;
         va_end(args);
     }
 }

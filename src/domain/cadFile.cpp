@@ -1,5 +1,5 @@
 #include "cadFile.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 #include "utilities/petscOptions.hpp"
 
 ablate::domain::CadFile::CadFile(const std::string& nameIn, const std::filesystem::path& pathIn, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::string generator,
@@ -16,14 +16,14 @@ ablate::domain::CadFile::CadFile(const std::string& nameIn, const std::filesyste
 
 ablate::domain::CadFile::~CadFile() {
     if (dm) {
-        DMDestroy(&dm) >> checkError;
+        DMDestroy(&dm) >> utilities::PetscUtilities::checkError;
     }
     // cleanup
     if (surfacePetscOptions) {
         ablate::utilities::PetscOptionsDestroyAndCheck("ablate::domain::CadFile::ReadDMFromCadFile", &surfacePetscOptions);
     }
     if (surfaceDm) {
-        DMDestroy(&surfaceDm) >> checkError;
+        DMDestroy(&surfaceDm) >> utilities::PetscUtilities::checkError;
     }
 }
 
@@ -38,17 +38,17 @@ DM ablate::domain::CadFile::ReadDMFromCadFile(const std::string& name, const std
     }
 
     // create a surface mesh from the cad
-    DMPlexCreateFromFile(PETSC_COMM_WORLD, path.c_str(), name.c_str(), PETSC_TRUE, &surfaceDm) >> checkError;
+    DMPlexCreateFromFile(PETSC_COMM_WORLD, path.c_str(), name.c_str(), PETSC_TRUE, &surfaceDm) >> utilities::PetscUtilities::checkError;
     auto surfaceDmName = "surface_" + name;
-    PetscObjectSetName((PetscObject)surfaceDm, surfaceDmName.c_str()) >> checkError;
+    PetscObjectSetName((PetscObject)surfaceDm, surfaceDmName.c_str()) >> utilities::PetscUtilities::checkError;
 
     // if provided set the options
     if (surfaceOptions) {
-        PetscOptionsCreate(&surfacePetscOptions) >> checkError;
+        PetscOptionsCreate(&surfacePetscOptions) >> utilities::PetscUtilities::checkError;
         surfaceOptions->Fill(surfacePetscOptions);
     }
-    PetscObjectSetOptions((PetscObject)surfaceDm, surfacePetscOptions) >> checkError;
-    DMSetFromOptions(surfaceDm) >> checkError;
+    PetscObjectSetOptions((PetscObject)surfaceDm, surfacePetscOptions) >> utilities::PetscUtilities::checkError;
+    DMSetFromOptions(surfaceDm) >> utilities::PetscUtilities::checkError;
 
     // provide a way to view the surface mesh
     auto surfaceDmViewString = "-" + surfaceDmName + "_view";
@@ -56,12 +56,12 @@ DM ablate::domain::CadFile::ReadDMFromCadFile(const std::string& name, const std
 
     // with the surface mesh created, compute the volumetric dm
     DM dm;
-    DMPlexGenerate(surfaceDm, generator.empty() ? "tetgen" : generator.c_str(), PETSC_TRUE, &dm) >> checkError;
-    PetscObjectSetName((PetscObject)dm, name.c_str()) >> checkError;
-    DMPlexSetRefinementUniform(dm, PETSC_TRUE) >> checkError;
+    DMPlexGenerate(surfaceDm, generator.empty() ? "tetgen" : generator.c_str(), PETSC_TRUE, &dm) >> utilities::PetscUtilities::checkError;
+    PetscObjectSetName((PetscObject)dm, name.c_str()) >> utilities::PetscUtilities::checkError;
+    DMPlexSetRefinementUniform(dm, PETSC_TRUE) >> utilities::PetscUtilities::checkError;
 
     // inflate the mesh
-    DMPlexInflateToGeomModel(dm) >> checkError;
+    DMPlexInflateToGeomModel(dm) >> utilities::PetscUtilities::checkError;
     return dm;
 }
 

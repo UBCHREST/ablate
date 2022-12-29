@@ -9,7 +9,7 @@ ablate::finiteVolume::CellInterpolant::CellInterpolant(std::shared_ptr<ablate::d
         auto petscFieldFV = (PetscFV)petscField;
 
         PetscBool computeGradients;
-        PetscFVGetComputeGradients(petscFieldFV, &computeGradients) >> checkError;
+        PetscFVGetComputeGradients(petscFieldFV, &computeGradients) >> utilities::PetscUtilities::checkError;
 
         if (computeGradients) {
             DM dmGradInt;
@@ -18,7 +18,7 @@ ablate::finiteVolume::CellInterpolant::CellInterpolant(std::shared_ptr<ablate::d
             PetscInt regionValue = PETSC_DECIDE;
             domain::Region::GetLabel(solverRegion, subDomain->GetDM(), regionLabel, regionValue);
 
-            ComputeGradientFVM(subDomain->GetFieldDM(fieldInfo), regionLabel, regionValue, petscFieldFV, faceGeomVec, cellGeomVec, &dmGradInt) >> checkError;
+            ComputeGradientFVM(subDomain->GetFieldDM(fieldInfo), regionLabel, regionValue, petscFieldFV, faceGeomVec, cellGeomVec, &dmGradInt) >> utilities::PetscUtilities::checkError;
             gradDMs.push_back(dmGradInt);
         } else {
             gradDMs.push_back(nullptr);
@@ -34,7 +34,7 @@ ablate::finiteVolume::CellInterpolant::CellInterpolant(std::shared_ptr<ablate::d
 ablate::finiteVolume::CellInterpolant::~CellInterpolant() {
     for (auto& dm : gradientCellDms) {
         if (dm) {
-            DMDestroy(&dm) >> checkError;
+            DMDestroy(&dm) >> utilities::PetscUtilities::checkError;
         }
     }
 }
@@ -47,42 +47,42 @@ void ablate::finiteVolume::CellInterpolant::ComputeRHS(PetscReal time, Vec locXV
 
     /* 1: Get sizes from dm and dmAux */
     PetscSection section = nullptr;
-    DMGetLocalSection(dm, &section) >> checkError;
+    DMGetLocalSection(dm, &section) >> utilities::PetscUtilities::checkError;
 
     // Get the ds from he subDomain and required info
     auto ds = subDomain->GetDiscreteSystem();
     PetscInt nf, totDim;
-    PetscDSGetNumFields(ds, &nf) >> checkError;
-    PetscDSGetTotalDimension(ds, &totDim) >> checkError;
+    PetscDSGetNumFields(ds, &nf) >> utilities::PetscUtilities::checkError;
+    PetscDSGetTotalDimension(ds, &totDim) >> utilities::PetscUtilities::checkError;
 
     // Check to see if the dm has an auxVec/auxDM associated with it.  If it does, extract it
     PetscDS dsAux = subDomain->GetAuxDiscreteSystem();
     PetscInt naf = 0, totDimAux = 0;
     if (locAuxVec) {
-        PetscDSGetTotalDimension(dsAux, &totDimAux) >> checkError;
-        PetscDSGetNumFields(dsAux, &naf) >> checkError;
+        PetscDSGetTotalDimension(dsAux, &totDimAux) >> utilities::PetscUtilities::checkError;
+        PetscDSGetNumFields(dsAux, &naf) >> utilities::PetscUtilities::checkError;
     }
 
     /* 2: Get geometric data */
     // We can use a single call for the geometry data because it does not depend on the fv object
     const PetscScalar* cellGeomArray = nullptr;
     const PetscScalar* faceGeomArray = nullptr;
-    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
+    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
     DM faceDM, cellDM;
-    VecGetDM(faceGeomVec, &faceDM) >> checkError;
-    VecGetDM(cellGeomVec, &cellDM) >> checkError;
+    VecGetDM(faceGeomVec, &faceDM) >> utilities::PetscUtilities::checkError;
+    VecGetDM(cellGeomVec, &cellDM) >> utilities::PetscUtilities::checkError;
 
     // Get raw access to the computed values
     const PetscScalar *xArray, *auxArray = nullptr;
-    VecGetArrayRead(locXVec, &xArray) >> checkError;
+    VecGetArrayRead(locXVec, &xArray) >> utilities::PetscUtilities::checkError;
     if (locAuxVec) {
-        VecGetArrayRead(locAuxVec, &auxArray) >> checkError;
+        VecGetArrayRead(locAuxVec, &auxArray) >> utilities::PetscUtilities::checkError;
     }
 
     // get raw access to the locF
     PetscScalar* locFArray;
-    VecGetArray(locFVec, &locFArray) >> checkError;
+    VecGetArray(locFVec, &locFArray) >> utilities::PetscUtilities::checkError;
 
     // there must be a separate gradient vector/dm for field because they can be different sizes
     std::vector<Vec> locGradVecs(nf, nullptr);
@@ -96,7 +96,7 @@ void ablate::finiteVolume::CellInterpolant::ComputeRHS(PetscReal time, Vec locXV
     std::vector<const PetscScalar*> locGradArrays(nf, nullptr);
     for (const auto& field : subDomain->GetFields()) {
         if (locGradVecs[field.subId]) {
-            VecGetArrayRead(locGradVecs[field.subId], &locGradArrays[field.subId]) >> checkError;
+            VecGetArrayRead(locGradVecs[field.subId], &locGradArrays[field.subId]) >> utilities::PetscUtilities::checkError;
         }
     }
 
@@ -123,20 +123,20 @@ void ablate::finiteVolume::CellInterpolant::ComputeRHS(PetscReal time, Vec locXV
     // clean up cell grads
     for (const auto& field : subDomain->GetFields()) {
         if (locGradVecs[field.subId]) {
-            VecRestoreArrayRead(locGradVecs[field.subId], &locGradArrays[field.subId]) >> checkError;
-            DMRestoreLocalVector(gradientCellDms[field.subId], &locGradVecs[field.subId]) >> checkError;
+            VecRestoreArrayRead(locGradVecs[field.subId], &locGradArrays[field.subId]) >> utilities::PetscUtilities::checkError;
+            DMRestoreLocalVector(gradientCellDms[field.subId], &locGradVecs[field.subId]) >> utilities::PetscUtilities::checkError;
         }
     }
 
     // cleanup (restore access to locGradVecs, locAuxGradVecs with DMRestoreLocalVector)
-    VecRestoreArrayRead(locXVec, &xArray) >> checkError;
+    VecRestoreArrayRead(locXVec, &xArray) >> utilities::PetscUtilities::checkError;
     if (locAuxVec) {
-        VecRestoreArrayRead(locAuxVec, &auxArray) >> checkError;
+        VecRestoreArrayRead(locAuxVec, &auxArray) >> utilities::PetscUtilities::checkError;
     }
 
-    VecRestoreArray(locFVec, &locFArray) >> checkError;
-    VecRestoreArrayRead(faceGeomVec, (const PetscScalar**)&faceGeomArray) >> checkError;
-    VecRestoreArrayRead(cellGeomVec, (const PetscScalar**)&cellGeomArray) >> checkError;
+    VecRestoreArray(locFVec, &locFArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(faceGeomVec, (const PetscScalar**)&faceGeomArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(cellGeomVec, (const PetscScalar**)&cellGeomArray) >> utilities::PetscUtilities::checkError;
 }
 
 void ablate::finiteVolume::CellInterpolant::ComputeRHS(PetscReal time, Vec locXVec, Vec locAuxVec, Vec locFVec, const std::shared_ptr<domain::Region>& solverRegion,
@@ -146,38 +146,38 @@ void ablate::finiteVolume::CellInterpolant::ComputeRHS(PetscReal time, Vec locXV
 
     /* 1: Get sizes from dm and dmAux */
     PetscSection section = nullptr;
-    DMGetLocalSection(dm, &section) >> checkError;
+    DMGetLocalSection(dm, &section) >> utilities::PetscUtilities::checkError;
 
     // Get the ds from he subDomain and required info
     auto ds = subDomain->GetDiscreteSystem();
     PetscInt nf, totDim;
-    PetscDSGetNumFields(ds, &nf) >> checkError;
-    PetscDSGetTotalDimension(ds, &totDim) >> checkError;
+    PetscDSGetNumFields(ds, &nf) >> utilities::PetscUtilities::checkError;
+    PetscDSGetTotalDimension(ds, &totDim) >> utilities::PetscUtilities::checkError;
 
     // Check to see if the dm has an auxVec/auxDM associated with it.  If it does, extract it
     PetscDS dsAux = subDomain->GetAuxDiscreteSystem();
     PetscInt naf = 0, totDimAux = 0;
     if (locAuxVec) {
-        PetscDSGetTotalDimension(dsAux, &totDimAux) >> checkError;
-        PetscDSGetNumFields(dsAux, &naf) >> checkError;
+        PetscDSGetTotalDimension(dsAux, &totDimAux) >> utilities::PetscUtilities::checkError;
+        PetscDSGetNumFields(dsAux, &naf) >> utilities::PetscUtilities::checkError;
     }
 
     // We can use a single call for the geometry data because it does not depend on the fv object
     const PetscScalar* cellGeomArray = nullptr;
-    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
     DM cellDM;
-    VecGetDM(cellGeomVec, &cellDM) >> checkError;
+    VecGetDM(cellGeomVec, &cellDM) >> utilities::PetscUtilities::checkError;
 
     // Get raw access to the computed values
     const PetscScalar *xArray, *auxArray = nullptr;
-    VecGetArrayRead(locXVec, &xArray) >> checkError;
+    VecGetArrayRead(locXVec, &xArray) >> utilities::PetscUtilities::checkError;
     if (locAuxVec) {
-        VecGetArrayRead(locAuxVec, &auxArray) >> checkError;
+        VecGetArrayRead(locAuxVec, &auxArray) >> utilities::PetscUtilities::checkError;
     }
 
     // get raw access to the locF
     PetscScalar* locFArray;
-    VecGetArray(locFVec, &locFArray) >> checkError;
+    VecGetArray(locFVec, &locFArray) >> utilities::PetscUtilities::checkError;
 
     // Compute the source terms from flux across the interface for cell based gradient functions
     // Precompute the offsets to pass into the rhsFluxFunctionDescriptions
@@ -188,15 +188,15 @@ void ablate::finiteVolume::CellInterpolant::ComputeRHS(PetscReal time, Vec locXV
 
     // Get the full set of offsets from the ds
     PetscInt* uOffTotal;
-    PetscDSGetComponentOffsets(ds, &uOffTotal) >> checkError;
+    PetscDSGetComponentOffsets(ds, &uOffTotal) >> utilities::PetscUtilities::checkError;
 
     for (std::size_t fun = 0; fun < rhsFunctions.size(); fun++) {
         for (std::size_t f = 0; f < rhsFunctions[fun].fields.size(); f++) {
             const auto& field = subDomain->GetField(rhsFunctions[fun].fields[f]);
 
             PetscInt fieldSize, fieldOffset;
-            PetscDSGetFieldSize(ds, field.subId, &fieldSize) >> checkError;
-            PetscDSGetFieldOffset(ds, field.subId, &fieldOffset) >> checkError;
+            PetscDSGetFieldSize(ds, field.subId, &fieldSize) >> utilities::PetscUtilities::checkError;
+            PetscDSGetFieldOffset(ds, field.subId, &fieldOffset) >> utilities::PetscUtilities::checkError;
             fluxComponentSize[fun].push_back(fieldSize);
             fluxComponentOffset[fun].push_back(fieldOffset);
         }
@@ -208,7 +208,7 @@ void ablate::finiteVolume::CellInterpolant::ComputeRHS(PetscReal time, Vec locXV
 
     if (dsAux) {
         PetscInt* auxOffTotal;
-        PetscDSGetComponentOffsets(dsAux, &auxOffTotal) >> checkError;
+        PetscDSGetComponentOffsets(dsAux, &auxOffTotal) >> utilities::PetscUtilities::checkError;
         for (std::size_t fun = 0; fun < rhsFunctions.size(); fun++) {
             for (std::size_t f = 0; f < rhsFunctions[fun].auxFields.size(); f++) {
                 aOff[fun].push_back(auxOffTotal[rhsFunctions[fun].auxFields[f]]);
@@ -218,7 +218,7 @@ void ablate::finiteVolume::CellInterpolant::ComputeRHS(PetscReal time, Vec locXV
 
     // check to see if there is a ghost label
     DMLabel ghostLabel;
-    DMGetLabel(dm, "ghost", &ghostLabel) >> checkError;
+    DMGetLabel(dm, "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
 
     PetscInt dim = subDomain->GetDimensions();
 
@@ -235,7 +235,7 @@ void ablate::finiteVolume::CellInterpolant::ComputeRHS(PetscReal time, Vec locXV
         if (ghostLabel) {
             PetscInt ghostVal;
 
-            DMLabelGetValue(ghostLabel, cell, &ghostVal) >> checkError;
+            DMLabelGetValue(ghostLabel, cell, &ghostVal) >> utilities::PetscUtilities::checkError;
             if (ghostVal > 0) continue;
         }
 
@@ -243,19 +243,19 @@ void ablate::finiteVolume::CellInterpolant::ComputeRHS(PetscReal time, Vec locXV
         const PetscFVCellGeom* cg;
         const PetscScalar* u;
         PetscScalar* rhs;
-        DMPlexPointLocalRead(cellDM, cell, cellGeomArray, &cg) >> checkError;
-        DMPlexPointLocalRead(dm, cell, xArray, &u) >> checkError;
-        DMPlexPointLocalRef(dm, cell, locFArray, &rhs) >> checkError;
+        DMPlexPointLocalRead(cellDM, cell, cellGeomArray, &cg) >> utilities::PetscUtilities::checkError;
+        DMPlexPointLocalRead(dm, cell, xArray, &u) >> utilities::PetscUtilities::checkError;
+        DMPlexPointLocalRef(dm, cell, locFArray, &rhs) >> utilities::PetscUtilities::checkError;
 
         // if there is an aux field, get it
         const PetscScalar* a = nullptr;
         if (auxArray) {
-            DMPlexPointLocalRead(dmAux, cell, auxArray, &a) >> checkError;
+            DMPlexPointLocalRead(dmAux, cell, auxArray, &a) >> utilities::PetscUtilities::checkError;
         }
 
         // March over each functionDescriptions
         for (std::size_t fun = 0; fun < rhsFunctions.size(); fun++) {
-            rhsFunctions[fun].function(dim, time, cg, uOff[fun].data(), u, aOff[fun].data(), a, fScratch, rhsFunctions[fun].context) >> checkError;
+            rhsFunctions[fun].function(dim, time, cg, uOff[fun].data(), u, aOff[fun].data(), a, fScratch, rhsFunctions[fun].context) >> utilities::PetscUtilities::checkError;
 
             // copy over each result flux field
             PetscInt r = 0;
@@ -268,13 +268,13 @@ void ablate::finiteVolume::CellInterpolant::ComputeRHS(PetscReal time, Vec locXV
     }
 
     // cleanup (restore access to locGradVecs, locAuxGradVecs with DMRestoreLocalVector)
-    VecRestoreArrayRead(locXVec, &xArray) >> checkError;
+    VecRestoreArrayRead(locXVec, &xArray) >> utilities::PetscUtilities::checkError;
     if (locAuxVec) {
-        VecRestoreArrayRead(locAuxVec, &auxArray) >> checkError;
+        VecRestoreArrayRead(locAuxVec, &auxArray) >> utilities::PetscUtilities::checkError;
     }
 
-    VecRestoreArray(locFVec, &locFArray) >> checkError;
-    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+    VecRestoreArray(locFVec, &locFArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
 }
 
 /**
@@ -339,21 +339,21 @@ void ablate::finiteVolume::CellInterpolant::ComputeFieldGradients(const domain::
     }
 
     // Create a gradLocVec
-    DMGetLocalVector(dmGrad, &gradLocVec) >> checkError;
+    DMGetLocalVector(dmGrad, &gradLocVec) >> utilities::PetscUtilities::checkError;
 
     // Get the correct sized vec (gradient for this field)
     Vec gradGlobVec;
-    DMGetGlobalVector(dmGrad, &gradGlobVec) >> checkError;
-    VecZeroEntries(gradGlobVec) >> checkError;
+    DMGetGlobalVector(dmGrad, &gradGlobVec) >> utilities::PetscUtilities::checkError;
+    VecZeroEntries(gradGlobVec) >> utilities::PetscUtilities::checkError;
 
     // check to see if there is a ghost label
     DMLabel ghostLabel;
-    DMGetLabel(dm, "ghost", &ghostLabel) >> checkError;
+    DMGetLabel(dm, "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
 
     // Get the face geometry
     DM dmFace;
     const PetscScalar* faceGeometryArray;
-    VecGetDM(faceGeomVec, &dmFace) >> checkError;
+    VecGetDM(faceGeomVec, &dmFace) >> utilities::PetscUtilities::checkError;
     VecGetArrayRead(faceGeomVec, &faceGeometryArray);
 
     // extract the local x array
@@ -398,8 +398,8 @@ void ablate::finiteVolume::CellInterpolant::ComputeFieldGradients(const domain::
         DMPlexGetSupport(dm, face, &cells);
         DMPlexPointLocalRead(dmFace, face, faceGeometryArray, &fg);
         for (PetscInt c = 0; c < 2; ++c) {
-            DMPlexPointLocalFieldRead(dm, cells[c], field.id, xLocalArray, &cx[c]) >> checkError;
-            DMPlexPointGlobalRef(dmGrad, cells[c], gradGlobArray, &cgrad[c]) >> checkError;
+            DMPlexPointLocalFieldRead(dm, cells[c], field.id, xLocalArray, &cx[c]) >> utilities::PetscUtilities::checkError;
+            DMPlexPointGlobalRef(dmGrad, cells[c], gradGlobArray, &cgrad[c]) >> utilities::PetscUtilities::checkError;
         }
         for (PetscInt pd = 0; pd < dof; ++pd) {
             PetscScalar delta = cx[1][pd] - cx[0][pd];
@@ -413,18 +413,18 @@ void ablate::finiteVolume::CellInterpolant::ComputeFieldGradients(const domain::
 
     // Check for a limiter the limiter
     PetscLimiter lim;
-    PetscFVGetLimiter(fvm, &lim) >> checkError;
+    PetscFVGetLimiter(fvm, &lim) >> utilities::PetscUtilities::checkError;
     if (lim) {
         /* Limit interior gradients (using cell-based loop because it generalizes better to vector limiters) */
         // Get the cell geometry
         DM dmCell;
         const PetscScalar* cellGeometryArray;
-        VecGetDM(cellGeomVec, &dmCell) >> checkError;
+        VecGetDM(cellGeomVec, &dmCell) >> utilities::PetscUtilities::checkError;
         VecGetArrayRead(cellGeomVec, &cellGeometryArray);
 
         // create a temp work array
         PetscReal* cellPhi;
-        DMGetWorkArray(dm, dof, MPIU_REAL, &cellPhi) >> checkError;
+        DMGetWorkArray(dm, dof, MPIU_REAL, &cellPhi) >> utilities::PetscUtilities::checkError;
 
         for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
             PetscInt cell = cellRange.points ? cellRange.points[c] : c;
@@ -435,11 +435,11 @@ void ablate::finiteVolume::CellInterpolant::ComputeFieldGradients(const domain::
             PetscScalar* cgrad;
             PetscInt coneSize;
 
-            DMPlexGetConeSize(dm, cell, &coneSize) >> checkError;
-            DMPlexGetCone(dm, cell, &cellFaces) >> checkError;
-            DMPlexPointLocalFieldRead(dm, cell, field.id, xLocalArray, &cx) >> checkError;
-            DMPlexPointLocalRead(dmCell, cell, cellGeometryArray, &cg) >> checkError;
-            DMPlexPointGlobalRef(dmGrad, cell, gradGlobArray, &cgrad) >> checkError;
+            DMPlexGetConeSize(dm, cell, &coneSize) >> utilities::PetscUtilities::checkError;
+            DMPlexGetCone(dm, cell, &cellFaces) >> utilities::PetscUtilities::checkError;
+            DMPlexPointLocalFieldRead(dm, cell, field.id, xLocalArray, &cx) >> utilities::PetscUtilities::checkError;
+            DMPlexPointLocalRead(dmCell, cell, cellGeometryArray, &cg) >> utilities::PetscUtilities::checkError;
+            DMPlexPointGlobalRef(dmGrad, cell, gradGlobArray, &cgrad) >> utilities::PetscUtilities::checkError;
 
             if (!cgrad) {
                 /* Unowned overlap cell, we do not compute */
@@ -451,7 +451,7 @@ void ablate::finiteVolume::CellInterpolant::ComputeFieldGradients(const domain::
             }
             for (PetscInt f = 0; f < coneSize; ++f) {
                 DMPlexApplyLimiter_Internal(dm, dmCell, lim, dim, dof, cell, field.id, cellFaces[f], faceRange.start, faceRange.end, cellPhi, xLocalArray, cellGeometryArray, cg, cx, cgrad) >>
-                    checkError;
+                    utilities::PetscUtilities::checkError;
             }
             /* Apply limiter to gradient */
             for (PetscInt pd = 0; pd < dof; ++pd) {
@@ -463,18 +463,18 @@ void ablate::finiteVolume::CellInterpolant::ComputeFieldGradients(const domain::
         }
 
         // clean up the limiter work
-        DMRestoreWorkArray(dm, dof, MPIU_REAL, &cellPhi) >> checkError;
+        DMRestoreWorkArray(dm, dof, MPIU_REAL, &cellPhi) >> utilities::PetscUtilities::checkError;
         VecRestoreArrayRead(cellGeomVec, &cellGeometryArray);
     }
     // Communicate gradient values
-    VecRestoreArray(gradGlobVec, &gradGlobArray) >> checkError;
-    DMGlobalToLocalBegin(dmGrad, gradGlobVec, INSERT_VALUES, gradLocVec) >> checkError;
-    DMGlobalToLocalEnd(dmGrad, gradGlobVec, INSERT_VALUES, gradLocVec) >> checkError;
+    VecRestoreArray(gradGlobVec, &gradGlobArray) >> utilities::PetscUtilities::checkError;
+    DMGlobalToLocalBegin(dmGrad, gradGlobVec, INSERT_VALUES, gradLocVec) >> utilities::PetscUtilities::checkError;
+    DMGlobalToLocalEnd(dmGrad, gradGlobVec, INSERT_VALUES, gradLocVec) >> utilities::PetscUtilities::checkError;
 
     // cleanup
-    VecRestoreArrayRead(xLocalVec, &xLocalArray) >> checkError;
-    VecRestoreArrayRead(faceGeomVec, &faceGeometryArray) >> checkError;
-    DMRestoreGlobalVector(dmGrad, &gradGlobVec) >> checkError;
+    VecRestoreArrayRead(xLocalVec, &xLocalArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(faceGeomVec, &faceGeometryArray) >> utilities::PetscUtilities::checkError;
+    DMRestoreGlobalVector(dmGrad, &gradGlobVec) >> utilities::PetscUtilities::checkError;
 }
 
 void ablate::finiteVolume::CellInterpolant::ComputeFluxSourceTerms(DM dm, PetscDS ds, PetscInt totDim, const PetscScalar* xArray, DM dmAux, PetscDS dsAux, PetscInt totDimAux,
@@ -487,15 +487,15 @@ void ablate::finiteVolume::CellInterpolant::ComputeFluxSourceTerms(DM dm, PetscD
 
     // Size up the work arrays (uL, uR, gradL, gradR, auxL, auxR, gradAuxL, gradAuxR), these are only sized for one face at a time
     PetscScalar* flux;
-    DMGetWorkArray(dm, totDim, MPIU_SCALAR, &flux) >> checkError;
+    DMGetWorkArray(dm, totDim, MPIU_SCALAR, &flux) >> utilities::PetscUtilities::checkError;
 
     PetscScalar *uL, *uR;
-    DMGetWorkArray(dm, totDim, MPIU_SCALAR, &uL) >> checkError;
-    DMGetWorkArray(dm, totDim, MPIU_SCALAR, &uR) >> checkError;
+    DMGetWorkArray(dm, totDim, MPIU_SCALAR, &uL) >> utilities::PetscUtilities::checkError;
+    DMGetWorkArray(dm, totDim, MPIU_SCALAR, &uR) >> utilities::PetscUtilities::checkError;
 
     PetscScalar *gradL, *gradR;
-    DMGetWorkArray(dm, dim * totDim, MPIU_SCALAR, &gradL) >> checkError;
-    DMGetWorkArray(dm, dim * totDim, MPIU_SCALAR, &gradR) >> checkError;
+    DMGetWorkArray(dm, dim * totDim, MPIU_SCALAR, &gradL) >> utilities::PetscUtilities::checkError;
+    DMGetWorkArray(dm, dim * totDim, MPIU_SCALAR, &gradR) >> utilities::PetscUtilities::checkError;
 
     // size up the aux variables
     PetscScalar *auxL = nullptr, *auxR = nullptr;
@@ -508,7 +508,7 @@ void ablate::finiteVolume::CellInterpolant::ComputeFluxSourceTerms(DM dm, PetscD
 
     // Get the full set of offsets from the ds
     PetscInt* uOffTotal;
-    PetscDSGetComponentOffsets(ds, &uOffTotal) >> checkError;
+    PetscDSGetComponentOffsets(ds, &uOffTotal) >> utilities::PetscUtilities::checkError;
 
     for (std::size_t fun = 0; fun < rhsFunctions.size(); fun++) {
         const auto& field = subDomain->GetField(rhsFunctions[fun].field);
@@ -521,7 +521,7 @@ void ablate::finiteVolume::CellInterpolant::ComputeFluxSourceTerms(DM dm, PetscD
 
     if (dsAux) {
         PetscInt* auxOffTotal;
-        PetscDSGetComponentOffsets(dsAux, &auxOffTotal) >> checkError;
+        PetscDSGetComponentOffsets(dsAux, &auxOffTotal) >> utilities::PetscUtilities::checkError;
         for (std::size_t fun = 0; fun < rhsFunctions.size(); fun++) {
             for (std::size_t f = 0; f < rhsFunctions[fun].auxFields.size(); f++) {
                 aOff[fun].push_back(auxOffTotal[rhsFunctions[fun].auxFields[f]]);
@@ -530,7 +530,7 @@ void ablate::finiteVolume::CellInterpolant::ComputeFluxSourceTerms(DM dm, PetscD
     }
     // check for ghost cells
     DMLabel ghostLabel;
-    DMGetLabel(dm, "ghost", &ghostLabel) >> checkError;
+    DMGetLabel(dm, "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
 
     // get the label for this region
     DMLabel regionLabel = nullptr;
@@ -543,19 +543,19 @@ void ablate::finiteVolume::CellInterpolant::ComputeFluxSourceTerms(DM dm, PetscD
 
         // make sure that this is a valid face
         PetscInt ghost, nsupp, nchild;
-        DMLabelGetValue(ghostLabel, face, &ghost) >> checkError;
-        DMPlexGetSupportSize(dm, face, &nsupp) >> checkError;
-        DMPlexGetTreeChildren(dm, face, &nchild, nullptr) >> checkError;
+        DMLabelGetValue(ghostLabel, face, &ghost) >> utilities::PetscUtilities::checkError;
+        DMPlexGetSupportSize(dm, face, &nsupp) >> utilities::PetscUtilities::checkError;
+        DMPlexGetTreeChildren(dm, face, &nchild, nullptr) >> utilities::PetscUtilities::checkError;
         if (ghost >= 0 || nsupp > 2 || nchild > 0) continue;
 
         // Get the face geometry
         const PetscInt* faceCells;
         PetscFVFaceGeom* fg;
         PetscFVCellGeom *cgL, *cgR;
-        DMPlexPointLocalRead(faceDM, face, faceGeomArray, &fg) >> checkError;
-        DMPlexGetSupport(dm, face, &faceCells) >> checkError;
-        DMPlexPointLocalRead(cellDM, faceCells[0], cellGeomArray, &cgL) >> checkError;
-        DMPlexPointLocalRead(cellDM, faceCells[1], cellGeomArray, &cgR) >> checkError;
+        DMPlexPointLocalRead(faceDM, face, faceGeomArray, &fg) >> utilities::PetscUtilities::checkError;
+        DMPlexGetSupport(dm, face, &faceCells) >> utilities::PetscUtilities::checkError;
+        DMPlexPointLocalRead(cellDM, faceCells[0], cellGeomArray, &cgL) >> utilities::PetscUtilities::checkError;
+        DMPlexPointLocalRead(cellDM, faceCells[1], cellGeomArray, &cgR) >> utilities::PetscUtilities::checkError;
 
         PetscInt leftFlowLabelValue = regionValue;
         PetscInt rightFlowLabelValue = regionValue;
@@ -570,34 +570,34 @@ void ablate::finiteVolume::CellInterpolant::ComputeFluxSourceTerms(DM dm, PetscD
         // determine the left/right cells
         if (auxArray) {
             // Get the field values at this cell
-            DMPlexPointLocalRead(dmAux, faceCells[0], auxArray, &auxL) >> checkError;
-            DMPlexPointLocalRead(dmAux, faceCells[1], auxArray, &auxR) >> checkError;
+            DMPlexPointLocalRead(dmAux, faceCells[0], auxArray, &auxL) >> utilities::PetscUtilities::checkError;
+            DMPlexPointLocalRead(dmAux, faceCells[1], auxArray, &auxR) >> utilities::PetscUtilities::checkError;
         }
 
         // March over each source function
         for (std::size_t fun = 0; fun < rhsFunctions.size(); fun++) {
-            PetscArrayzero(flux, totDim) >> checkError;
+            PetscArrayzero(flux, totDim) >> utilities::PetscUtilities::checkError;
             const auto& rhsFluxFunctionDescription = rhsFunctions[fun];
-            rhsFluxFunctionDescription.function(dim, fg, uOff[fun].data(), uL, uR, aOff[fun].data(), auxL, auxR, flux, rhsFluxFunctionDescription.context) >> checkError;
+            rhsFluxFunctionDescription.function(dim, fg, uOff[fun].data(), uL, uR, aOff[fun].data(), auxL, auxR, flux, rhsFluxFunctionDescription.context) >> utilities::PetscUtilities::checkError;
 
             // add the flux back to the cell
             PetscScalar *fL = nullptr, *fR = nullptr;
             PetscInt cellLabelValue = regionValue;
-            DMLabelGetValue(ghostLabel, faceCells[0], &ghost) >> checkError;
+            DMLabelGetValue(ghostLabel, faceCells[0], &ghost) >> utilities::PetscUtilities::checkError;
             if (regionLabel) {
-                DMLabelGetValue(regionLabel, faceCells[0], &cellLabelValue) >> checkError;
+                DMLabelGetValue(regionLabel, faceCells[0], &cellLabelValue) >> utilities::PetscUtilities::checkError;
             }
             if (ghost <= 0 && regionValue == cellLabelValue) {
-                DMPlexPointLocalFieldRef(dm, faceCells[0], fluxId[fun], locFArray, &fL) >> checkError;
+                DMPlexPointLocalFieldRef(dm, faceCells[0], fluxId[fun], locFArray, &fL) >> utilities::PetscUtilities::checkError;
             }
 
             cellLabelValue = regionValue;
-            DMLabelGetValue(ghostLabel, faceCells[1], &ghost) >> checkError;
+            DMLabelGetValue(ghostLabel, faceCells[1], &ghost) >> utilities::PetscUtilities::checkError;
             if (regionLabel) {
-                DMLabelGetValue(regionLabel, faceCells[1], &cellLabelValue) >> checkError;
+                DMLabelGetValue(regionLabel, faceCells[1], &cellLabelValue) >> utilities::PetscUtilities::checkError;
             }
             if (ghost <= 0 && regionValue == cellLabelValue) {
-                DMPlexPointLocalFieldRef(dm, faceCells[1], fluxId[fun], locFArray, &fR) >> checkError;
+                DMPlexPointLocalFieldRef(dm, faceCells[1], fluxId[fun], locFArray, &fR) >> utilities::PetscUtilities::checkError;
             }
 
             for (PetscInt d = 0; d < fluxComponentSize[fun]; ++d) {
@@ -608,11 +608,11 @@ void ablate::finiteVolume::CellInterpolant::ComputeFluxSourceTerms(DM dm, PetscD
     }
 
     // cleanup
-    DMRestoreWorkArray(dm, totDim, MPIU_SCALAR, &flux) >> checkError;
-    DMRestoreWorkArray(dm, totDim, MPIU_SCALAR, &uL) >> checkError;
-    DMRestoreWorkArray(dm, totDim, MPIU_SCALAR, &uR) >> checkError;
-    DMRestoreWorkArray(dm, dim * totDim, MPIU_SCALAR, &gradL) >> checkError;
-    DMRestoreWorkArray(dm, dim * totDim, MPIU_SCALAR, &gradR) >> checkError;
+    DMRestoreWorkArray(dm, totDim, MPIU_SCALAR, &flux) >> utilities::PetscUtilities::checkError;
+    DMRestoreWorkArray(dm, totDim, MPIU_SCALAR, &uL) >> utilities::PetscUtilities::checkError;
+    DMRestoreWorkArray(dm, totDim, MPIU_SCALAR, &uR) >> utilities::PetscUtilities::checkError;
+    DMRestoreWorkArray(dm, dim * totDim, MPIU_SCALAR, &gradL) >> utilities::PetscUtilities::checkError;
+    DMRestoreWorkArray(dm, dim * totDim, MPIU_SCALAR, &gradR) >> utilities::PetscUtilities::checkError;
 }
 
 static PetscErrorCode BuildGradientReconstruction_Internal(DM dm, DMLabel regionLabel, PetscInt regionValue, PetscFV fvm, DM dmFace, PetscScalar* fgeom, DM dmCell, PetscScalar* cgeom) {
@@ -871,8 +871,8 @@ void ablate::finiteVolume::CellInterpolant::ProjectToFace(const std::vector<doma
     // Keep track of derivative offset
     PetscInt* offsets;
     PetscInt* dirOffsets;
-    PetscDSGetComponentOffsets(ds, &offsets) >> checkError;
-    PetscDSGetComponentDerivativeOffsets(ds, &dirOffsets) >> checkError;
+    PetscDSGetComponentOffsets(ds, &offsets) >> utilities::PetscUtilities::checkError;
+    PetscDSGetComponentDerivativeOffsets(ds, &dirOffsets) >> utilities::PetscUtilities::checkError;
 
     // March over each field
     for (const auto& field : fields) {
@@ -881,11 +881,11 @@ void ablate::finiteVolume::CellInterpolant::ProjectToFace(const std::vector<doma
         PetscScalar* gradCell;
 
         // Get the field values at this cell
-        DMPlexPointLocalFieldRead(dm, cellId, field.subId, xArray, &xCell) >> checkError;
+        DMPlexPointLocalFieldRead(dm, cellId, field.subId, xArray, &xCell) >> utilities::PetscUtilities::checkError;
 
         // If we need to project the field
         if (projectField && dmGrads[field.subId]) {
-            DMPlexPointLocalRead(dmGrads[field.subId], cellId, gradArrays[field.subId], &gradCell) >> checkError;
+            DMPlexPointLocalRead(dmGrads[field.subId], cellId, gradArrays[field.subId], &gradCell) >> utilities::PetscUtilities::checkError;
             DMPlex_WaxpyD_Internal(dim, -1, cellGeom.centroid, faceGeom.centroid, dx);
 
             // Project the cell centered value onto the face
@@ -900,7 +900,7 @@ void ablate::finiteVolume::CellInterpolant::ProjectToFace(const std::vector<doma
 
         } else if (dmGrads[field.subId]) {
             // Project the cell centered value onto the face
-            DMPlexPointLocalRead(dmGrads[field.subId], cellId, gradArrays[field.subId], &gradCell) >> checkError;
+            DMPlexPointLocalRead(dmGrads[field.subId], cellId, gradArrays[field.subId], &gradCell) >> utilities::PetscUtilities::checkError;
             // Project the cell centered value onto the face
             for (PetscInt c = 0; c < field.numberComponents; ++c) {
                 u[offsets[field.subId] + c] = xCell[c];

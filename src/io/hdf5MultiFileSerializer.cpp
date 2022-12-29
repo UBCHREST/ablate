@@ -2,6 +2,7 @@
 #include <petscviewerhdf5.h>
 #include <yaml-cpp/yaml.h>
 #include <fstream>
+#include <iostream>
 #include <utility>
 #include "environment/runEnvironment.hpp"
 #include "generators.hpp"
@@ -37,7 +38,7 @@ ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer(std::shared_ptr<abl
 
     // setup petsc options if provided
     if (options) {
-        PetscOptionsCreate(&petscOptions) >> checkError;
+        PetscOptionsCreate(&petscOptions) >> utilities::PetscUtilities::checkError;
         options->Fill(petscOptions);
     }
 }
@@ -72,7 +73,7 @@ void ablate::io::Hdf5MultiFileSerializer::Register(std::weak_ptr<Serializable> s
 
     // Mark this to clean up
     int rank;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkError;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> utilities::PetscUtilities::checkError;
 
     if (auto serializableObject = serializable.lock()) {
         // resume if needed
@@ -81,13 +82,13 @@ void ablate::io::Hdf5MultiFileSerializer::Register(std::weak_ptr<Serializable> s
 
             PetscViewer petscViewer = nullptr;
             StartEvent("PetscViewerHDF5Open");
-            PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_UPDATE, &petscViewer) >> checkError;
+            PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_UPDATE, &petscViewer) >> utilities::PetscUtilities::checkError;
             EndEvent();
 
             // set the petsc options if provided
-            PetscObjectSetOptions((PetscObject)petscViewer, petscOptions) >> checkError;
-            PetscViewerSetFromOptions(petscViewer) >> checkError;
-            PetscViewerViewFromOptions(petscViewer, nullptr, "-hdf5ViewerView") >> checkError;
+            PetscObjectSetOptions((PetscObject)petscViewer, petscOptions) >> utilities::PetscUtilities::checkError;
+            PetscViewerSetFromOptions(petscViewer) >> utilities::PetscUtilities::checkError;
+            PetscViewerViewFromOptions(petscViewer, nullptr, "-hdf5ViewerView") >> utilities::PetscUtilities::checkError;
 
             // Restore the simulation
             StartEvent("Restore");
@@ -96,7 +97,7 @@ void ablate::io::Hdf5MultiFileSerializer::Register(std::weak_ptr<Serializable> s
             EndEvent();
 
             StartEvent("PetscViewerHDF5Destroy");
-            PetscViewerDestroy(&petscViewer) >> checkError;
+            PetscViewerDestroy(&petscViewer) >> utilities::PetscUtilities::checkError;
             EndEvent();
         } else {
             // Create an output directory
@@ -127,7 +128,7 @@ PetscErrorCode ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializerSaveS
         hdf5Serializer->time = time;
         hdf5Serializer->timeStep = steps;
         hdf5Serializer->sequenceNumber++;
-        TSGetTimeStep(ts, &(hdf5Serializer->dt)) >> checkError;
+        TSGetTimeStep(ts, &(hdf5Serializer->dt)) >> utilities::PetscUtilities::checkError;
 
         // Save this to a file
         hdf5Serializer->SaveMetadata(ts);
@@ -141,13 +142,13 @@ PetscErrorCode ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializerSaveS
 
                     PetscViewer petscViewer = nullptr;
                     hdf5Serializer->StartEvent("PetscViewerHDF5Open");
-                    PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_WRITE, &petscViewer) >> checkError;
+                    PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_WRITE, &petscViewer) >> utilities::PetscUtilities::checkError;
                     hdf5Serializer->EndEvent();
 
                     // set the petsc options if provided
-                    PetscObjectSetOptions((PetscObject)petscViewer, hdf5Serializer->petscOptions) >> checkError;
-                    PetscViewerSetFromOptions(petscViewer) >> checkError;
-                    PetscViewerViewFromOptions(petscViewer, nullptr, "-hdf5ViewerView") >> checkError;
+                    PetscObjectSetOptions((PetscObject)petscViewer, hdf5Serializer->petscOptions) >> utilities::PetscUtilities::checkError;
+                    PetscViewerSetFromOptions(petscViewer) >> utilities::PetscUtilities::checkError;
+                    PetscViewerViewFromOptions(petscViewer, nullptr, "-hdf5ViewerView") >> utilities::PetscUtilities::checkError;
 
                     hdf5Serializer->StartEvent("Save");
                     // NOTE: as far as the output file the sequence number is always zero because it is a new file
@@ -155,7 +156,7 @@ PetscErrorCode ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializerSaveS
                     hdf5Serializer->EndEvent();
 
                     hdf5Serializer->StartEvent("PetscViewerHDF5Destroy");
-                    PetscViewerDestroy(&petscViewer) >> checkError;
+                    PetscViewerDestroy(&petscViewer) >> utilities::PetscUtilities::checkError;
                     hdf5Serializer->EndEvent();
                 }
             }
@@ -183,7 +184,7 @@ void ablate::io::Hdf5MultiFileSerializer::SaveMetadata(TS ts) const {
     out << YAML::EndMap;
 
     int rank;
-    MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank) >> checkError;
+    MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank) >> utilities::PetscUtilities::checkError;
     if (rank == 0) {
         auto restartFilePath = environment::RunEnvironment::Get().GetOutputDirectory() / "restart.rst";
         std::ofstream restartFile;

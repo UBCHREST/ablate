@@ -951,9 +951,9 @@ TEST_P(TCComputeSourceTestFixture, ShouldComputeCorrectSource) {
 
     // copy over the initial euler values
     PetscScalar* solution;
-    VecGetArray(domain->GetSolutionVector(), &solution) >> ablate::checkError;
+    VecGetArray(domain->GetSolutionVector(), &solution) >> ablate::utilities::PetscUtilities::checkError;
     PetscScalar* eulerField = nullptr;
-    DMPlexPointLocalFieldRef(domain->GetDM(), 0, domain->GetField("euler").id, solution, &eulerField) >> ablate::checkError;
+    DMPlexPointLocalFieldRef(domain->GetDM(), 0, domain->GetField("euler").id, solution, &eulerField) >> ablate::utilities::PetscUtilities::checkError;
     // copy over euler
     for (std::size_t i = 0; i < GetParam().inputEulerValues.size(); i++) {
         eulerField[i] = GetParam().inputEulerValues[i];
@@ -961,17 +961,17 @@ TEST_P(TCComputeSourceTestFixture, ShouldComputeCorrectSource) {
 
     // copy over the initial densityYi values
     PetscScalar* densityYiField = nullptr;
-    DMPlexPointLocalFieldRef(domain->GetDM(), 0, domain->GetField("densityYi").id, solution, &densityYiField) >> ablate::checkError;
+    DMPlexPointLocalFieldRef(domain->GetDM(), 0, domain->GetField("densityYi").id, solution, &densityYiField) >> ablate::utilities::PetscUtilities::checkError;
     // copy over euler
     for (std::size_t i = 0; i < GetParam().inputDensityYiValues.size(); i++) {
         densityYiField[i] = GetParam().inputDensityYiValues[i];
     }
-    VecRestoreArray(domain->GetSolutionVector(), &solution) >> ablate::checkError;
+    VecRestoreArray(domain->GetSolutionVector(), &solution) >> ablate::utilities::PetscUtilities::checkError;
 
     // create a copy to store f calculation
     Vec computedF;
-    DMGetLocalVector(domain->GetDM(), &computedF) >> ablate::checkError;
-    VecZeroEntries(computedF) >> ablate::checkError;
+    DMGetLocalVector(domain->GetDM(), &computedF) >> ablate::utilities::PetscUtilities::checkError;
+    VecZeroEntries(computedF) >> ablate::utilities::PetscUtilities::checkError;
 
     // ACT
     ablate::solver::DynamicRange range;
@@ -986,9 +986,9 @@ TEST_P(TCComputeSourceTestFixture, ShouldComputeCorrectSource) {
 
     // ASSERT
     PetscScalar* sourceArray;
-    VecGetArray(computedF, &sourceArray) >> ablate::checkError;
+    VecGetArray(computedF, &sourceArray) >> ablate::utilities::PetscUtilities::checkError;
     PetscScalar* eulerSource = nullptr;
-    DMPlexPointLocalFieldRef(domain->GetDM(), 0, domain->GetField("euler").id, sourceArray, &eulerSource) >> ablate::checkError;
+    DMPlexPointLocalFieldRef(domain->GetDM(), 0, domain->GetField("euler").id, sourceArray, &eulerSource) >> ablate::utilities::PetscUtilities::checkError;
     for (std::size_t c = 0; c < GetParam().expectedEulerSource.size(); c++) {
         if (PetscAbs(GetParam().expectedEulerSource[c]) == 0) {
             ASSERT_LT(PetscAbs(eulerSource[c]), params.errorTolerance) << "The computed value of source for index " << c << " is " << eulerSource[c] << "), it should be near zero";
@@ -998,7 +998,7 @@ TEST_P(TCComputeSourceTestFixture, ShouldComputeCorrectSource) {
         }
     }
     PetscScalar* densityYiSource = nullptr;
-    DMPlexPointLocalFieldRef(domain->GetDM(), 0, domain->GetField("densityYi").id, sourceArray, &densityYiSource) >> ablate::checkError;
+    DMPlexPointLocalFieldRef(domain->GetDM(), 0, domain->GetField("densityYi").id, sourceArray, &densityYiSource) >> ablate::utilities::PetscUtilities::checkError;
     for (std::size_t c = 0; c < GetParam().expectedDensityYiSource.size(); c++) {
         if (PetscAbs(GetParam().expectedDensityYiSource[c]) < params.errorTolerance) {
             ASSERT_LT(PetscAbs(densityYiSource[c]), params.errorTolerance) << "The computed value of source for index " << c << " is " << densityYiSource[c] << "), it should be near zero";
@@ -1007,9 +1007,9 @@ TEST_P(TCComputeSourceTestFixture, ShouldComputeCorrectSource) {
                 << "The percent difference for the expected and actual source (" << GetParam().expectedDensityYiSource[c] << " vs " << densityYiSource[c] << ") should be small for index " << c;
         }
     }
-    VecRestoreArray(computedF, &sourceArray) >> ablate::checkError;
+    VecRestoreArray(computedF, &sourceArray) >> ablate::utilities::PetscUtilities::checkError;
 
-    DMRestoreLocalVector(domain->GetDM(), &computedF) >> ablate::checkError;
+    DMRestoreLocalVector(domain->GetDM(), &computedF) >> ablate::utilities::PetscUtilities::checkError;
 }
 
 INSTANTIATE_TEST_SUITE_P(

@@ -112,7 +112,7 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::solver::R
 
     // Get the solution dm
     DM solutionDm;
-    VecGetDM(globFlowVec, &solutionDm) >> checkError;
+    VecGetDM(globFlowVec, &solutionDm) >> utilities::PetscUtilities::checkError;
 
     // get the rank
     PetscMPIInt rank;
@@ -120,10 +120,10 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::solver::R
 
     // get the flowSolution
     const PetscScalar* flowArray;
-    VecGetArrayRead(globFlowVec, &flowArray) >> checkError;
+    VecGetArrayRead(globFlowVec, &flowArray) >> utilities::PetscUtilities::checkError;
 
     PetscInt dim;
-    DMGetDimension(solutionDm, &dim) >> checkError;
+    DMGetDimension(solutionDm, &dim) >> utilities::PetscUtilities::checkError;
 
     // Use a parallel for loop to load up the tChem state
     Kokkos::parallel_for(
@@ -134,9 +134,9 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::solver::R
 
             // Get the current state variables for this cell
             const PetscScalar* eulerField = nullptr;
-            DMPlexPointLocalFieldRead(solutionDm, cell, eulerId, flowArray, &eulerField) >> checkError;
+            DMPlexPointLocalFieldRead(solutionDm, cell, eulerId, flowArray, &eulerField) >> utilities::PetscUtilities::checkError;
             const PetscScalar* flowDensityField = nullptr;
-            DMPlexPointLocalFieldRead(solutionDm, cell, densityYiId, flowArray, &flowDensityField) >> checkError;
+            DMPlexPointLocalFieldRead(solutionDm, cell, densityYiId, flowArray, &flowDensityField) >> utilities::PetscUtilities::checkError;
 
             // cast the state at i to a state vector
             const auto state_at_i = Kokkos::subview(stateHost, chemIndex, Kokkos::ALL());
@@ -290,7 +290,7 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::solver::R
 
                 // compute the cell centroid
                 PetscReal centroid[3];
-                DMPlexComputeCellGeometryFVM(solutionDm, cell, nullptr, centroid, nullptr) >> checkError;
+                DMPlexComputeCellGeometryFVM(solutionDm, cell, nullptr, centroid, nullptr) >> utilities::PetscUtilities::checkError;
 
                 // Output error information
                 std::stringstream warningMessage;
@@ -314,11 +314,11 @@ void ablate::eos::tChem::SourceCalculator::AddSource(const ablate::solver::Range
     StartEvent("tChem::SourceCalculator::AddSource");
     // get access to the fArray
     PetscScalar* fArray;
-    VecGetArray(locFVec, &fArray) >> checkError;
+    VecGetArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
 
     // Get the solution dm
     DM dm;
-    VecGetDM(locFVec, &dm) >> checkError;
+    VecGetDM(locFVec, &dm) >> utilities::PetscUtilities::checkError;
 
     // Use a parallel for loop to load up the tChem state
     Kokkos::parallel_for(
@@ -329,9 +329,9 @@ void ablate::eos::tChem::SourceCalculator::AddSource(const ablate::solver::Range
 
             // Get the current state variables for this cell
             PetscScalar* eulerSource = nullptr;
-            DMPlexPointLocalFieldRef(dm, cell, eulerId, fArray, &eulerSource) >> checkError;
+            DMPlexPointLocalFieldRef(dm, cell, eulerId, fArray, &eulerSource) >> utilities::PetscUtilities::checkError;
             PetscScalar* densityYiSource = nullptr;
-            DMPlexPointLocalFieldRef(dm, cell, densityYiId, fArray, &densityYiSource) >> checkError;
+            DMPlexPointLocalFieldRef(dm, cell, densityYiId, fArray, &densityYiSource) >> utilities::PetscUtilities::checkError;
 
             // cast the state at i to a state vector
             const auto sourceAtI = Kokkos::subview(sourceTermsHost, chemIndex, Kokkos::ALL());
@@ -343,6 +343,6 @@ void ablate::eos::tChem::SourceCalculator::AddSource(const ablate::solver::Range
         });
 
     // cleanup
-    VecRestoreArray(locFVec, &fArray) >> checkError;
+    VecRestoreArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
     EndEvent();
 }

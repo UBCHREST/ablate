@@ -72,13 +72,13 @@ PetscErrorCode ablate::monitors::CurveMonitor::OutputCurve(TS ts, PetscInt steps
 }
 void ablate::monitors::CurveMonitor::WriteToCurveFile(std::ostream& curveFile, PetscInt cStart, PetscInt cEnd, Vec cellGeomVec, const std::vector<domain::Field>& fields, DM dm, Vec valuesVec) {
     DM cellGeomDM;
-    VecGetDM(cellGeomVec, &cellGeomDM) >> checkError;
+    VecGetDM(cellGeomVec, &cellGeomDM) >> utilities::PetscUtilities::checkError;
     const PetscScalar* cellGeomArray;
-    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
 
     // get the value field
     const PetscScalar* valuesArray;
-    VecGetArrayRead(valuesVec, &valuesArray) >> checkError;
+    VecGetArrayRead(valuesVec, &valuesArray) >> utilities::PetscUtilities::checkError;
 
     for (const auto& field : fields) {
         for (PetscInt comp = 0; comp < field.numberComponents; comp++) {
@@ -87,11 +87,11 @@ void ablate::monitors::CurveMonitor::WriteToCurveFile(std::ostream& curveFile, P
             // march over each cell
             for (PetscInt c = cStart; c < cEnd; c++) {
                 PetscFVCellGeom* cellGeom;
-                DMPlexPointLocalRead(cellGeomDM, c, cellGeomArray, &cellGeom) >> checkError;
+                DMPlexPointLocalRead(cellGeomDM, c, cellGeomArray, &cellGeom) >> utilities::PetscUtilities::checkError;
 
                 // Now grab the field
                 const PetscScalar* values;
-                DMPlexPointGlobalFieldRead(dm, c, field.subId, valuesArray, &values) >> checkError;
+                DMPlexPointGlobalFieldRead(dm, c, field.subId, valuesArray, &values) >> utilities::PetscUtilities::checkError;
 
                 if (values) {
                     curveFile << cellGeom->centroid[0] << " ";
@@ -101,8 +101,8 @@ void ablate::monitors::CurveMonitor::WriteToCurveFile(std::ostream& curveFile, P
         }
     }
     curveFile << std::endl;
-    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-    VecRestoreArrayRead(valuesVec, &valuesArray) >> checkError;
+    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(valuesVec, &valuesArray) >> utilities::PetscUtilities::checkError;
 }
 
 #include "registrar.hpp"

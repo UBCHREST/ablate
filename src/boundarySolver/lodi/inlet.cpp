@@ -23,7 +23,7 @@ void ablate::boundarySolver::lodi::Inlet::Setup(ablate::boundarySolver::Boundary
         bSolver.RegisterPreStep([&bSolver, updateFieldFunction](auto ts, auto &solver) {
             // Get the current time
             PetscReal time;
-            TSGetTime(ts, &time) >> checkError;
+            TSGetTime(ts, &time) >> utilities::PetscUtilities::checkError;
 
             bSolver.InsertFieldFunctions({updateFieldFunction}, time);
         });
@@ -179,7 +179,7 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::UpdateVelocityFunction(Petsc
     PetscScalar sensibleEnergy = internalEnergy - kineticEnergy;
 
     // Update velocity
-    velocityFunction->GetPetscFunction()(dim, time, x, dim, velocity, velocityFunction->GetContext()) >> checkError;
+    velocityFunction->GetPetscFunction()(dim, time, x, dim, velocity, velocityFunction->GetContext()) >> utilities::PetscUtilities::checkError;
 
     // Update the momentum terms
     kineticEnergy = 0.0;

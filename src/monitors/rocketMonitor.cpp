@@ -1,6 +1,6 @@
 #include "rocketMonitor.hpp"
 #include "utilities/mpiUtilities.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 #include <utility>
 #include "io/interval/fixedInterval.hpp"
 #include "monitor.hpp"
@@ -41,7 +41,7 @@ PetscErrorCode ablate::monitors::RocketMonitor::OutputRocket(TS ts, PetscInt ste
         PetscMPIIntCast(dim, &bufferSize);  // define the number of elements in buffer
         // check to see if there is a ghost label
         DMLabel ghostLabel;
-        DMGetLabel(dm, "ghost", &ghostLabel) >> checkError;
+        DMGetLabel(dm, "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
 
         const auto& fieldEuler = monitor->GetSolver()->GetSubDomain().GetField("euler");  // get the euler field
         PetscReal* cellEuler;
@@ -57,16 +57,16 @@ PetscErrorCode ablate::monitors::RocketMonitor::OutputRocket(TS ts, PetscInt ste
 
         Vec faceGeomVec;
         Vec cellGeomVec;
-        DMPlexComputeGeometryFVM(dm, &cellGeomVec, &faceGeomVec) >> checkError;
+        DMPlexComputeGeometryFVM(dm, &cellGeomVec, &faceGeomVec) >> utilities::PetscUtilities::checkError;
         DM faceDM;
         DM cellDM;
 
-        VecGetDM(faceGeomVec, &faceDM) >> checkError;
+        VecGetDM(faceGeomVec, &faceDM) >> utilities::PetscUtilities::checkError;
         const PetscScalar* faceGeomArray;
-        VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
-        VecGetDM(cellGeomVec, &cellDM) >> checkError;
+        VecGetArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
+        VecGetDM(cellGeomVec, &cellDM) >> utilities::PetscUtilities::checkError;
         const PetscScalar* cellGeomArray;
-        VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+        VecGetArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
 
         PetscReal tol = 1e-3;
 
@@ -83,7 +83,7 @@ PetscErrorCode ablate::monitors::RocketMonitor::OutputRocket(TS ts, PetscInt ste
 
         // find all faces
         PetscInt fStart, fEnd;
-        DMPlexGetHeightStratum(dm, 1, &fStart, &fEnd) >> checkError;
+        DMPlexGetHeightStratum(dm, 1, &fStart, &fEnd) >> utilities::PetscUtilities::checkError;
 
         /** Get the current rank associated with this process */
         PetscMPIInt rank;
@@ -93,12 +93,12 @@ PetscErrorCode ablate::monitors::RocketMonitor::OutputRocket(TS ts, PetscInt ste
         for (PetscInt face = fStart; face < fEnd; ++face) {                            // Iterate through all faces to check if in fieldBoundary
             if (ablate::domain::Region::InRegion(monitor->fieldBoundary, dm, face)) {  // Check if each face is in fieldBoundary
                 PetscFVFaceGeom* fg;
-                DMPlexPointLocalRead(faceDM, face, faceGeomArray, &fg) >> checkError;  // read face geometry for face
+                DMPlexPointLocalRead(faceDM, face, faceGeomArray, &fg) >> utilities::PetscUtilities::checkError;  // read face geometry for face
 
                 PetscInt numberNeighborCells;
                 const PetscInt* neighborCells;
-                DMPlexGetSupportSize(dm, face, &numberNeighborCells) >> ablate::checkError;
-                DMPlexGetSupport(dm, face, &neighborCells) >> ablate::checkError;
+                DMPlexGetSupportSize(dm, face, &numberNeighborCells) >> utilities::PetscUtilities::checkError;
+                DMPlexGetSupport(dm, face, &neighborCells) >> utilities::PetscUtilities::checkError;
                 for (PetscInt n = 0; n < numberNeighborCells; n++) {
                     // Make sure that we are not working with a ghost cell
                     PetscInt ghost = -1;
@@ -153,12 +153,12 @@ PetscErrorCode ablate::monitors::RocketMonitor::OutputRocket(TS ts, PetscInt ste
         }
 
         // cleanup
-        VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
-        VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-        VecDestroy(&cellGeomVec) >> checkError;
-        VecDestroy(&faceGeomVec) >> checkError;
-        VecRestoreArrayRead(auxVec, &auxArray) >> checkError;
-        VecRestoreArrayRead(solVec, &solArray) >> checkError;
+        VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
+        VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
+        VecDestroy(&cellGeomVec) >> utilities::PetscUtilities::checkError;
+        VecDestroy(&faceGeomVec) >> utilities::PetscUtilities::checkError;
+        VecRestoreArrayRead(auxVec, &auxArray) >> utilities::PetscUtilities::checkError;
+        VecRestoreArrayRead(solVec, &solArray) >> utilities::PetscUtilities::checkError;
     }
     PetscFunctionReturn(0);
 }

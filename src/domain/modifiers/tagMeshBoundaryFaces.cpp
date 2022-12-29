@@ -1,18 +1,18 @@
 #include "tagMeshBoundaryFaces.hpp"
-#include <utilities/petscError.hpp>
+#include "utilities/petscUtilities.hpp"
 #include <utility>
 
 ablate::domain::modifiers::TagMeshBoundaryFaces::TagMeshBoundaryFaces(std::shared_ptr<domain::Region> region) : region(std::move(region)) {}
 
 void ablate::domain::modifiers::TagMeshBoundaryFaces::Modify(DM &dm) {
     // Create a new label
-    DMCreateLabel(dm, region->GetName().c_str()) >> checkError;
+    DMCreateLabel(dm, region->GetName().c_str()) >> utilities::PetscUtilities::checkError;
     DMLabel boundaryFaceLabel;
-    DMGetLabel(dm, region->GetName().c_str(), &boundaryFaceLabel) >> checkError;
+    DMGetLabel(dm, region->GetName().c_str(), &boundaryFaceLabel) >> utilities::PetscUtilities::checkError;
 
     // mark the boundary faces
-    DMPlexMarkBoundaryFaces(dm, region->GetValue(), boundaryFaceLabel) >> checkError;
-    DMPlexLabelComplete(dm, boundaryFaceLabel) >> checkError;
+    DMPlexMarkBoundaryFaces(dm, region->GetValue(), boundaryFaceLabel) >> utilities::PetscUtilities::checkError;
+    DMPlexLabelComplete(dm, boundaryFaceLabel) >> utilities::PetscUtilities::checkError;
 }
 
 #include "registrar.hpp"

@@ -1,6 +1,6 @@
 #include "modifier.hpp"
 #include <petsc/private/dmpleximpl.h>
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 std::ostream& ablate::domain::modifiers::operator<<(std::ostream& os, const ablate::domain::modifiers::Modifier& modifier) {
     os << modifier.ToString();
@@ -10,17 +10,17 @@ void ablate::domain::modifiers::Modifier::ReplaceDm(DM& originalDm, DM& replaceD
     if (replaceDm) {
         // copy over the name
         const char* name;
-        PetscObjectName((PetscObject)originalDm) >> ablate::checkError;
-        PetscObjectGetName((PetscObject)originalDm, &name) >> ablate::checkError;
-        PetscObjectSetName((PetscObject)replaceDm, name) >> ablate::checkError;
+        PetscObjectName((PetscObject)originalDm) >> utilities::PetscUtilities::checkError;
+        PetscObjectGetName((PetscObject)originalDm, &name) >> utilities::PetscUtilities::checkError;
+        PetscObjectSetName((PetscObject)replaceDm, name) >> utilities::PetscUtilities::checkError;
 
         // Copy over the options object
         PetscOptions options;
-        PetscObjectGetOptions((PetscObject)originalDm, &options) >> checkError;
-        PetscObjectSetOptions((PetscObject)replaceDm, options) >> checkError;
+        PetscObjectGetOptions((PetscObject)originalDm, &options) >> utilities::PetscUtilities::checkError;
+        PetscObjectSetOptions((PetscObject)replaceDm, options) >> utilities::PetscUtilities::checkError;
         ((DM_Plex*)(replaceDm)->data)->useHashLocation = ((DM_Plex*)originalDm->data)->useHashLocation;
 
-        DMDestroy(&originalDm) >> checkError;
+        DMDestroy(&originalDm) >> utilities::PetscUtilities::checkError;
         originalDm = replaceDm;
     }
 }

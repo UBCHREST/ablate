@@ -2,7 +2,7 @@
 #include <utility>
 #include "finiteVolume/turbulenceFlowFields.hpp"
 #include "utilities/mathUtilities.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::finiteVolume::processes::LES::LES(std::string tkeFieldIn) : tkeField(tkeFieldIn.empty() ? ablate::finiteVolume::TurbulenceFlowFields::TKE_FIELD : tkeFieldIn) {}
 

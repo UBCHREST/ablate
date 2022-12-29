@@ -1,5 +1,5 @@
 #include "dmPlex.hpp"
-#include <utilities/petscError.hpp>
+#include "utilities/petscUtilities.hpp"
 #include <utilities/petscOptions.hpp>
 #include <utility>
 
@@ -14,9 +14,9 @@ ablate::domain::DMPlex::~DMPlex() {
 }
 DM ablate::domain::DMPlex::CreateDM(const std::string& name) {
     DM dm;
-    DMCreate(PETSC_COMM_WORLD, &dm) >> checkError;
-    DMSetType(dm, DMPLEX) >> checkError;
-    PetscObjectSetName((PetscObject)dm, name.c_str()) >> checkError;
+    DMCreate(PETSC_COMM_WORLD, &dm) >> utilities::PetscUtilities::checkError;
+    DMSetType(dm, DMPLEX) >> utilities::PetscUtilities::checkError;
+    PetscObjectSetName((PetscObject)dm, name.c_str()) >> utilities::PetscUtilities::checkError;
     return dm;
 }
 

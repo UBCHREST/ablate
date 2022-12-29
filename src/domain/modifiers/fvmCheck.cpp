@@ -7,14 +7,14 @@
 #include <utility>
 #include "utilities/mathUtilities.hpp"
 #include "utilities/mpiUtilities.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::domain::modifiers::FvmCheck::FvmCheck(std::shared_ptr<domain::Region> fvmRegion, int expectedFaceCount, int expectedNodeCount)
     : region(std::move(fvmRegion)), expectedFaceCount(expectedFaceCount), expectedNodeCount(expectedNodeCount) {}
 
 void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
     PetscInt depth;
-    DMPlexGetDepth(dm, &depth) >> checkError;
+    DMPlexGetDepth(dm, &depth) >> utilities::PetscUtilities::checkError;
 
     // Get the faces in this range
     ablate::solver::Range faceRange;
@@ -27,26 +27,26 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
 
     // check for ghost cells
     DMLabel ghostLabel;
-    DMGetLabel(dm, "ghost", &ghostLabel) >> checkError;
+    DMGetLabel(dm, "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
 
     // compute the dm geometry
     Vec cellGeomVec, faceGeomVec;
-    DMPlexComputeGeometryFVM(dm, &cellGeomVec, &faceGeomVec) >> checkError;
+    DMPlexComputeGeometryFVM(dm, &cellGeomVec, &faceGeomVec) >> utilities::PetscUtilities::checkError;
 
     // Get the dim
     PetscInt dim;
-    DMGetDimension(dm, &dim) >> checkError;
+    DMGetDimension(dm, &dim) >> utilities::PetscUtilities::checkError;
 
     // Get the dm for each value
     DM cellDM, faceDM;
-    VecGetDM(cellGeomVec, &cellDM) >> checkError;
-    VecGetDM(faceGeomVec, &faceDM) >> checkError;
+    VecGetDM(cellGeomVec, &cellDM) >> utilities::PetscUtilities::checkError;
+    VecGetDM(faceGeomVec, &faceDM) >> utilities::PetscUtilities::checkError;
 
     // Get the array data from the geom vec
     const PetscScalar* cellGeomArray;
     const PetscScalar* faceGeomArray;
-    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
+    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
 
     // store a map of summed area
     std::map<PetscInt, std::array<PetscReal, 3>> cellAreas;
@@ -56,7 +56,7 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
 
     // check if it is an exterior boundary cell ghost
     PetscInt boundaryCellStart;
-    DMPlexGetGhostCellStratum(dm, &boundaryCellStart, nullptr) >> checkError;
+    DMPlexGetGhostCellStratum(dm, &boundaryCellStart, nullptr) >> utilities::PetscUtilities::checkError;
 
     if (boundaryCellStart < 0 && region == nullptr) {
         throw std::invalid_argument(
@@ -70,20 +70,20 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
         // make sure that this is a valid face
         PetscInt ghost = -1, nsupp, nchild;
         if (ghostLabel) {
-            DMLabelGetValue(ghostLabel, face, &ghost) >> checkError;
+            DMLabelGetValue(ghostLabel, face, &ghost) >> utilities::PetscUtilities::checkError;
         }
-        DMPlexGetSupportSize(dm, face, &nsupp) >> checkError;
-        DMPlexGetTreeChildren(dm, face, &nchild, nullptr) >> checkError;
+        DMPlexGetSupportSize(dm, face, &nsupp) >> utilities::PetscUtilities::checkError;
+        DMPlexGetTreeChildren(dm, face, &nchild, nullptr) >> utilities::PetscUtilities::checkError;
         if (ghost >= 0 || nsupp != 2 || nchild > 0) continue;
 
         // Get the face geometry
         const PetscInt* faceCells;
         PetscFVFaceGeom* fg;
         PetscFVCellGeom *cgL, *cgR;
-        DMPlexPointLocalRead(faceDM, face, faceGeomArray, &fg) >> checkError;
-        DMPlexGetSupport(dm, face, &faceCells) >> checkError;
-        DMPlexPointLocalRead(cellDM, faceCells[0], cellGeomArray, &cgL) >> checkError;
-        DMPlexPointLocalRead(cellDM, faceCells[1], cellGeomArray, &cgR) >> checkError;
+        DMPlexPointLocalRead(faceDM, face, faceGeomArray, &fg) >> utilities::PetscUtilities::checkError;
+        DMPlexGetSupport(dm, face, &faceCells) >> utilities::PetscUtilities::checkError;
+        DMPlexPointLocalRead(cellDM, faceCells[0], cellGeomArray, &cgL) >> utilities::PetscUtilities::checkError;
+        DMPlexPointLocalRead(cellDM, faceCells[1], cellGeomArray, &cgR) >> utilities::PetscUtilities::checkError;
 
         PetscInt leftFlowLabelValue = regionValue;
         PetscInt rightFlowLabelValue = regionValue;
@@ -108,10 +108,10 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
         PetscInt cellLabelValue = regionValue;
         ghost = -1;
         if (ghostLabel) {
-            DMLabelGetValue(ghostLabel, faceCells[0], &ghost) >> checkError;
+            DMLabelGetValue(ghostLabel, faceCells[0], &ghost) >> utilities::PetscUtilities::checkError;
         }
         if (regionLabel) {
-            DMLabelGetValue(regionLabel, faceCells[0], &cellLabelValue) >> checkError;
+            DMLabelGetValue(regionLabel, faceCells[0], &cellLabelValue) >> utilities::PetscUtilities::checkError;
         }
         if (ghost <= 0 && regionValue == cellLabelValue && (boundaryCellStart < 0 || faceCells[0] < boundaryCellStart)) {
             if (!cellAreas.count(faceCells[0])) {
@@ -128,10 +128,10 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
         cellLabelValue = regionValue;
         ghost = -1;
         if (ghostLabel) {
-            DMLabelGetValue(ghostLabel, faceCells[1], &ghost) >> checkError;
+            DMLabelGetValue(ghostLabel, faceCells[1], &ghost) >> utilities::PetscUtilities::checkError;
         }
         if (regionLabel) {
-            DMLabelGetValue(regionLabel, faceCells[1], &cellLabelValue) >> checkError;
+            DMLabelGetValue(regionLabel, faceCells[1], &cellLabelValue) >> utilities::PetscUtilities::checkError;
         }
         if (ghost <= 0 && regionValue == cellLabelValue && (boundaryCellStart < 0 || faceCells[1] < boundaryCellStart)) {
             if (!cellAreas.count(faceCells[1])) {
@@ -166,14 +166,14 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
                 // Count the number of nodes in this cell
                 PetscInt* points = nullptr;
                 PetscInt numPoints;
-                DMPlexGetTransitiveClosure(dm, cellInfo.first, PETSC_TRUE, &numPoints, &points) >> checkError;
+                DMPlexGetTransitiveClosure(dm, cellInfo.first, PETSC_TRUE, &numPoints, &points) >> utilities::PetscUtilities::checkError;
 
                 for (PetscInt p = 0; p < numPoints; p++) {
                     PetscInt point = points[p * 2];
 
                     // Check the depth
                     PetscInt pointDepth = 0;
-                    DMPlexGetPointDepth(dm, point, &pointDepth) >> checkError;
+                    DMPlexGetPointDepth(dm, point, &pointDepth) >> utilities::PetscUtilities::checkError;
 
                     // check if node
                     if (pointDepth == 0) {
@@ -186,7 +186,7 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
 
             if (nonZeroArea || wrongFaceCount || wrongNodeCount) {
                 PetscFVCellGeom* cg;
-                DMPlexPointLocalRead(cellDM, cellInfo.first, cellGeomArray, &cg) >> checkError;
+                DMPlexPointLocalRead(cellDM, cellInfo.first, cellGeomArray, &cg) >> utilities::PetscUtilities::checkError;
 
                 std::cout << "Issues with Cell: " << cellInfo.first << " at [" << cg->centroid[0] << ", " << cg->centroid[1] << ", " << cg->centroid[2] << "]" << std::endl;
                 if (expectedFaceCount) {
@@ -204,7 +204,7 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
 
                 // DM dm, PetscInt cell, PetscReal *vol, PetscReal centroid[], PetscReal normal[]
                 PetscReal volume;
-                DMPlexComputeCellGeometryFVM(dm, cellInfo.first, &volume, nullptr, nullptr) >> checkError;
+                DMPlexComputeCellGeometryFVM(dm, cellInfo.first, &volume, nullptr, nullptr) >> utilities::PetscUtilities::checkError;
                 std::cout << "volume: " << std::setprecision(16) << volume << std::endl;
 
                 // Print all labels at this cell
@@ -214,13 +214,13 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
                 std::cout << "\tLabels: ";
                 for (PetscInt l = 0; l < numberLabels; l++) {
                     DMLabel labelCheck;
-                    DMGetLabelByNum(dm, l, &labelCheck) >> checkError;
+                    DMGetLabelByNum(dm, l, &labelCheck) >> utilities::PetscUtilities::checkError;
                     const char* labelName;
-                    DMGetLabelName(dm, l, &labelName) >> checkError;
+                    DMGetLabelName(dm, l, &labelName) >> utilities::PetscUtilities::checkError;
                     PetscInt labelCheckValue;
-                    DMLabelGetValue(labelCheck, cellInfo.first, &labelCheckValue) >> checkError;
+                    DMLabelGetValue(labelCheck, cellInfo.first, &labelCheckValue) >> utilities::PetscUtilities::checkError;
                     PetscInt labelDefaultValue;
-                    DMLabelGetDefaultValue(labelCheck, &labelDefaultValue) >> checkError;
+                    DMLabelGetDefaultValue(labelCheck, &labelDefaultValue) >> utilities::PetscUtilities::checkError;
                     if (labelDefaultValue != labelCheckValue) {
                         std::cout << labelName << "(" << labelCheckValue << ") ";
                     }
@@ -230,8 +230,8 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
                 // March over each face connected to this cell
                 const PetscInt* faces;
                 PetscInt numberFaces;
-                DMPlexGetConeSize(dm, cellInfo.first, &numberFaces) >> checkError;
-                DMPlexGetCone(dm, cellInfo.first, &faces) >> checkError;
+                DMPlexGetConeSize(dm, cellInfo.first, &numberFaces) >> utilities::PetscUtilities::checkError;
+                DMPlexGetCone(dm, cellInfo.first, &faces) >> utilities::PetscUtilities::checkError;
                 std::cout << "faces: " << std::endl;
 
                 for (PetscInt f = 0; f < numberFaces; f++) {
@@ -240,8 +240,8 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
                     // get the cells that touch this face
                     const PetscInt* cells;
                     PetscInt numberCells;
-                    DMPlexGetSupport(dm, face, &cells) >> checkError;
-                    DMPlexGetSupportSize(dm, face, &numberCells) >> checkError;
+                    DMPlexGetSupport(dm, face, &cells) >> utilities::PetscUtilities::checkError;
+                    DMPlexGetSupportSize(dm, face, &numberCells) >> utilities::PetscUtilities::checkError;
 
                     std::cout << "\tface: " << face << std::endl;
 
@@ -251,7 +251,7 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
                     PetscReal centroid[3];
 
                     // DM dm, PetscInt cell, PetscReal *vol, PetscReal centroid[], PetscReal normal[]
-                    DMPlexComputeCellGeometryFVM(dm, face, &area, centroid, normal) >> checkError;
+                    DMPlexComputeCellGeometryFVM(dm, face, &area, centroid, normal) >> utilities::PetscUtilities::checkError;
 
                     // check to see if we need to flip the area
                     PetscInt leftCell = cells[0];
@@ -260,14 +260,14 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
                     if (leftCell >= boundaryCellStart) {
                         PetscArraycpy(leftCellCentroid, centroid, dim);
                     } else {
-                        DMPlexComputeCellGeometryFVM(dm, leftCell, nullptr, leftCellCentroid, nullptr) >> checkError;
+                        DMPlexComputeCellGeometryFVM(dm, leftCell, nullptr, leftCellCentroid, nullptr) >> utilities::PetscUtilities::checkError;
                     }
                     PetscScalar rightCellCentroid[3];
                     if (numberCells < 2 || rightCell >= boundaryCellStart) {
                         PetscArraycpy(rightCellCentroid, centroid, dim);
 
                     } else {
-                        DMPlexComputeCellGeometryFVM(dm, rightCell, nullptr, rightCellCentroid, nullptr) >> checkError;
+                        DMPlexComputeCellGeometryFVM(dm, rightCell, nullptr, rightCellCentroid, nullptr) >> utilities::PetscUtilities::checkError;
                     }
 
                     // Check the normal direction, it should go from left[0] to right[1]
@@ -299,7 +299,7 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
 
                     // Get the stored area
                     PetscFVFaceGeom* fg;
-                    DMPlexPointLocalRead(faceDM, face, faceGeomArray, &fg) >> checkError;
+                    DMPlexPointLocalRead(faceDM, face, faceGeomArray, &fg) >> utilities::PetscUtilities::checkError;
 
                     std::cout << "\t\tstoredNormalArea: [" << fg->normal[0] << ", " << fg->normal[1] << ", " << fg->normal[2] << "]" << std::endl;
 
@@ -307,19 +307,19 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
                     // March over each node
                     PetscInt* points = nullptr;
                     PetscInt numPoints;
-                    DMPlexGetTransitiveClosure(dm, face, PETSC_TRUE, &numPoints, &points) >> checkError;
+                    DMPlexGetTransitiveClosure(dm, face, PETSC_TRUE, &numPoints, &points) >> utilities::PetscUtilities::checkError;
 
                     for (PetscInt p = 0; p < numPoints; p++) {
                         PetscInt point = points[p * 2];
 
                         // Check the depth
                         PetscInt pointDepth = 0;
-                        DMPlexGetPointDepth(dm, point, &pointDepth) >> checkError;
+                        DMPlexGetPointDepth(dm, point, &pointDepth) >> utilities::PetscUtilities::checkError;
 
                         // check if node
                         if (pointDepth == 0) {
                             PetscScalar nodeLocation[3];
-                            DMPlexComputeCellGeometryFVM(dm, point, nullptr, nodeLocation, nullptr) >> checkError;
+                            DMPlexComputeCellGeometryFVM(dm, point, nullptr, nodeLocation, nullptr) >> utilities::PetscUtilities::checkError;
                             std::cout << "\t\t\t" << point << ": [" << nodeLocation[0] << ", " << nodeLocation[1] << ", " << nodeLocation[2] << "]" << std::endl;
                             nodesInCell.insert(point);
                         }
@@ -330,12 +330,12 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
     });
 
     // cleanup
-    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-    VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
 
     RestoreRange(dm, faceRange);
-    VecDestroy(&faceGeomVec) >> checkError;
-    VecDestroy(&cellGeomVec) >> checkError;
+    VecDestroy(&faceGeomVec) >> utilities::PetscUtilities::checkError;
+    VecDestroy(&cellGeomVec) >> utilities::PetscUtilities::checkError;
 }
 
 std::string ablate::domain::modifiers::FvmCheck::ToString() const { return "ablate::domain::modifiers::FvmCheck: " + (region ? region->ToString() : ""); }
@@ -343,9 +343,9 @@ std::string ablate::domain::modifiers::FvmCheck::ToString() const { return "abla
 void ablate::domain::modifiers::FvmCheck::GetRange(DM dm, PetscInt depth, ablate::solver::Range& range) const {
     // Start out getting all the points
     IS allPointIS;
-    DMGetStratumIS(dm, "dim", depth, &allPointIS) >> checkError;
+    DMGetStratumIS(dm, "dim", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
     if (!allPointIS) {
-        DMGetStratumIS(dm, "depth", depth, &allPointIS) >> checkError;
+        DMGetStratumIS(dm, "depth", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
     }
 
     // If there is a label for this solver, get only the parts of the mesh that here
@@ -354,11 +354,11 @@ void ablate::domain::modifiers::FvmCheck::GetRange(DM dm, PetscInt depth, ablate
         DMGetLabel(dm, region->GetName().c_str(), &label);
 
         IS labelIS;
-        DMLabelGetStratumIS(label, region->GetValue(), &labelIS) >> checkError;
-        ISIntersect_Caching_Internal(allPointIS, labelIS, &range.is) >> checkError;
-        ISDestroy(&labelIS) >> checkError;
+        DMLabelGetStratumIS(label, region->GetValue(), &labelIS) >> utilities::PetscUtilities::checkError;
+        ISIntersect_Caching_Internal(allPointIS, labelIS, &range.is) >> utilities::PetscUtilities::checkError;
+        ISDestroy(&labelIS) >> utilities::PetscUtilities::checkError;
     } else {
-        PetscObjectReference((PetscObject)allPointIS) >> checkError;
+        PetscObjectReference((PetscObject)allPointIS) >> utilities::PetscUtilities::checkError;
         range.is = allPointIS;
     }
 
@@ -370,16 +370,16 @@ void ablate::domain::modifiers::FvmCheck::GetRange(DM dm, PetscInt depth, ablate
         range.points = nullptr;
     } else {
         // Get the range
-        ISGetPointRange(range.is, &range.start, &range.end, &range.points) >> checkError;
+        ISGetPointRange(range.is, &range.start, &range.end, &range.points) >> utilities::PetscUtilities::checkError;
     }
 
     // Clean up the allCellIS
-    ISDestroy(&allPointIS) >> checkError;
+    ISDestroy(&allPointIS) >> utilities::PetscUtilities::checkError;
 }
 void ablate::domain::modifiers::FvmCheck::RestoreRange(DM, ablate::solver::Range& range) {
     if (range.is) {
-        ISRestorePointRange(range.is, &range.start, &range.end, &range.points) >> checkError;
-        ISDestroy(&range.is) >> checkError;
+        ISRestorePointRange(range.is, &range.start, &range.end, &range.points) >> utilities::PetscUtilities::checkError;
+        ISDestroy(&range.is) >> utilities::PetscUtilities::checkError;
     }
 }
 

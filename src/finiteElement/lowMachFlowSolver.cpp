@@ -1,6 +1,6 @@
 #include "lowMachFlowSolver.hpp"
 #include "lowMachFlow.h"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::finiteElement::LowMachFlowSolver::LowMachFlowSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                             std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
@@ -25,32 +25,32 @@ void ablate::finiteElement::LowMachFlowSolver::Setup() {
         PetscObject pressure;
         MatNullSpace nullspacePres;
 
-        DMGetField(subDomain->GetDM(), PRES, NULL, &pressure) >> checkError;
-        MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres) >> checkError;
-        PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres) >> checkError;
-        MatNullSpaceDestroy(&nullspacePres) >> checkError;
+        DMGetField(subDomain->GetDM(), PRES, NULL, &pressure) >> utilities::PetscUtilities::checkError;
+        MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres) >> utilities::PetscUtilities::checkError;
+        PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres) >> utilities::PetscUtilities::checkError;
+        MatNullSpaceDestroy(&nullspacePres) >> utilities::PetscUtilities::checkError;
     }
 
     PetscDS prob;
-    DMGetDS(subDomain->GetDM(), &prob) >> checkError;
+    DMGetDS(subDomain->GetDM(), &prob) >> utilities::PetscUtilities::checkError;
 
     // V, W, Q Test Function
-    PetscDSSetResidual(prob, VTEST, LowMachFlow_vIntegrandTestFunction, LowMachFlow_vIntegrandTestGradientFunction) >> checkError;
-    PetscDSSetResidual(prob, WTEST, LowMachFlow_wIntegrandTestFunction, LowMachFlow_wIntegrandTestGradientFunction) >> checkError;
-    PetscDSSetResidual(prob, QTEST, LowMachFlow_qIntegrandTestFunction, NULL) >> checkError;
+    PetscDSSetResidual(prob, VTEST, LowMachFlow_vIntegrandTestFunction, LowMachFlow_vIntegrandTestGradientFunction) >> utilities::PetscUtilities::checkError;
+    PetscDSSetResidual(prob, WTEST, LowMachFlow_wIntegrandTestFunction, LowMachFlow_wIntegrandTestGradientFunction) >> utilities::PetscUtilities::checkError;
+    PetscDSSetResidual(prob, QTEST, LowMachFlow_qIntegrandTestFunction, NULL) >> utilities::PetscUtilities::checkError;
 
-    PetscDSSetJacobian(prob, VTEST, VEL, LowMachFlow_g0_vu, LowMachFlow_g1_vu, NULL, LowMachFlow_g3_vu) >> checkError;
-    PetscDSSetJacobian(prob, VTEST, PRES, NULL, NULL, LowMachFlow_g2_vp, NULL) >> checkError;
-    PetscDSSetJacobian(prob, VTEST, TEMP, LowMachFlow_g0_vT, NULL, NULL, NULL) >> checkError;
-    PetscDSSetJacobian(prob, QTEST, VEL, LowMachFlow_g0_qu, LowMachFlow_g1_qu, NULL, NULL) >> checkError;
-    PetscDSSetJacobian(prob, QTEST, TEMP, LowMachFlow_g0_qT, LowMachFlow_g1_qT, NULL, NULL) >> checkError;
-    PetscDSSetJacobian(prob, WTEST, VEL, LowMachFlow_g0_wu, NULL, NULL, NULL) >> checkError;
-    PetscDSSetJacobian(prob, WTEST, TEMP, LowMachFlow_g0_wT, LowMachFlow_g1_wT, NULL, LowMachFlow_g3_wT) >> checkError;
+    PetscDSSetJacobian(prob, VTEST, VEL, LowMachFlow_g0_vu, LowMachFlow_g1_vu, NULL, LowMachFlow_g3_vu) >> utilities::PetscUtilities::checkError;
+    PetscDSSetJacobian(prob, VTEST, PRES, NULL, NULL, LowMachFlow_g2_vp, NULL) >> utilities::PetscUtilities::checkError;
+    PetscDSSetJacobian(prob, VTEST, TEMP, LowMachFlow_g0_vT, NULL, NULL, NULL) >> utilities::PetscUtilities::checkError;
+    PetscDSSetJacobian(prob, QTEST, VEL, LowMachFlow_g0_qu, LowMachFlow_g1_qu, NULL, NULL) >> utilities::PetscUtilities::checkError;
+    PetscDSSetJacobian(prob, QTEST, TEMP, LowMachFlow_g0_qT, LowMachFlow_g1_qT, NULL, NULL) >> utilities::PetscUtilities::checkError;
+    PetscDSSetJacobian(prob, WTEST, VEL, LowMachFlow_g0_wu, NULL, NULL, NULL) >> utilities::PetscUtilities::checkError;
+    PetscDSSetJacobian(prob, WTEST, TEMP, LowMachFlow_g0_wT, LowMachFlow_g1_wT, NULL, LowMachFlow_g3_wT) >> utilities::PetscUtilities::checkError;
 
     /* Setup constants */;
     PetscReal parameterArray[TOTAL_LOW_MACH_FLOW_PARAMETERS];
     parameters->Fill(TOTAL_LOW_MACH_FLOW_PARAMETERS, lowMachFlowParametersTypeNames, parameterArray, defaultParameters);
-    PetscDSSetConstants(prob, TOTAL_LOW_MACH_FLOW_PARAMETERS, parameterArray) >> checkError;
+    PetscDSSetConstants(prob, TOTAL_LOW_MACH_FLOW_PARAMETERS, parameterArray) >> utilities::PetscUtilities::checkError;
 }
 static PetscErrorCode zero(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nc, PetscScalar *u, void *ctx) {
     PetscInt d;
@@ -117,16 +117,16 @@ static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, ablate::finiteE
 void ablate::finiteElement::LowMachFlowSolver::Initialize() {
     ablate::finiteElement::FiniteElementSolver::Initialize();
 
-    DMSetNullSpaceConstructor(subDomain->GetDM(), PRES, createPressureNullSpace) >> checkError;
+    DMSetNullSpaceConstructor(subDomain->GetDM(), PRES, createPressureNullSpace) >> utilities::PetscUtilities::checkError;
     RegisterPreStep([&](TS ts, Solver &) { removeDiscretePressureNullspaceOnTs(ts, *this); });
 }
 
 void ablate::finiteElement::LowMachFlowSolver::CompleteFlowInitialization(DM dm, Vec u) {
     MatNullSpace nullsp;
 
-    createPressureNullSpace(dm, PRES, PRES, &nullsp) >> checkError;
-    MatNullSpaceRemove(nullsp, u) >> checkError;
-    MatNullSpaceDestroy(&nullsp) >> checkError;
+    createPressureNullSpace(dm, PRES, PRES, &nullsp) >> utilities::PetscUtilities::checkError;
+    MatNullSpaceRemove(nullsp, u) >> utilities::PetscUtilities::checkError;
+    MatNullSpaceDestroy(&nullsp) >> utilities::PetscUtilities::checkError;
 }
 
 #include "registrar.hpp"

@@ -418,13 +418,13 @@ ablate::eos::ChemTab::ChemTabSourceCalculator::ChemTabSourceCalculator(PetscInt 
 void ablate::eos::ChemTab::ChemTabSourceCalculator::AddSource(const ablate::solver::Range &cellRange, Vec locX, Vec locFVec) {
     // get access to the xArray, fArray
     PetscScalar *fArray;
-    VecGetArray(locFVec, &fArray) >> checkError;
+    VecGetArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
     const PetscScalar *xArray;
-    VecGetArrayRead(locX, &xArray) >> checkError;
+    VecGetArrayRead(locX, &xArray) >> utilities::PetscUtilities::checkError;
 
     // Get the solution dm
     DM dm;
-    VecGetDM(locFVec, &dm) >> checkError;
+    VecGetDM(locFVec, &dm) >> utilities::PetscUtilities::checkError;
 
     // March over each cell in the range
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
@@ -432,17 +432,17 @@ void ablate::eos::ChemTab::ChemTabSourceCalculator::AddSource(const ablate::solv
 
         // Get the current state variables for this cell
         PetscScalar *sourceAtCell = nullptr;
-        DMPlexPointLocalRef(dm, iCell, fArray, &sourceAtCell) >> checkError;
+        DMPlexPointLocalRef(dm, iCell, fArray, &sourceAtCell) >> utilities::PetscUtilities::checkError;
 
         // Get the current state variables for this cell
         const PetscScalar *solutionAtCell = nullptr;
-        DMPlexPointLocalRead(dm, iCell, xArray, &solutionAtCell) >> checkError;
+        DMPlexPointLocalRead(dm, iCell, xArray, &solutionAtCell) >> utilities::PetscUtilities::checkError;
 
         chemTabModel->ChemistrySource(solutionAtCell[densityOffset], solutionAtCell + densityProgressVariableOffset, sourceAtCell + densityEnergyOffset, sourceAtCell + densityProgressVariableOffset);
     }
     // cleanup
-    VecRestoreArray(locFVec, &fArray) >> checkError;
-    VecRestoreArrayRead(locX, &xArray) >> checkError;
+    VecRestoreArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(locX, &xArray) >> utilities::PetscUtilities::checkError;
 }
 
 #endif

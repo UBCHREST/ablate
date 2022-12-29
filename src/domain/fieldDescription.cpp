@@ -2,7 +2,7 @@
 #include <map>
 #include <regex>
 #include "utilities/mpiUtilities.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 #include "utilities/petscOptions.hpp"
 
 ablate::domain::FieldDescription::FieldDescription(std::string nameIn, std::string prefixIn, std::vector<std::string> componentsIn, ablate::domain::FieldLocation location,
@@ -26,7 +26,7 @@ PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
         case FieldType::FEM: {
             // determine if it is a simplex element
             PetscBool simplex;
-            DMPlexIsSimplex(dm, &simplex) >> checkError;
+            DMPlexIsSimplex(dm, &simplex) >> utilities::PetscUtilities::checkError;
             PetscInt simplexLoc = simplex ? 1 : 0;
             PetscInt simplexGlobal;
 
@@ -35,49 +35,49 @@ PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
 
             // Determine the number of dims
             PetscInt dim;
-            DMGetDimension(dm, &dim) >> checkError;
+            DMGetDimension(dm, &dim) >> utilities::PetscUtilities::checkError;
 
             // create a petsc fe
             PetscFE petscFE;
-            PetscFECreateDefault(PetscObjectComm((PetscObject)dm), dim, components.size(), simplexGlobal ? PETSC_TRUE : PETSC_FALSE, prefix.c_str(), PETSC_DEFAULT, &petscFE) >> checkError;
-            PetscObjectSetName((PetscObject)petscFE, name.c_str()) >> checkError;
-            PetscObjectSetOptions((PetscObject)petscFE, options) >> checkError;
+            PetscFECreateDefault(PetscObjectComm((PetscObject)dm), dim, components.size(), simplexGlobal ? PETSC_TRUE : PETSC_FALSE, prefix.c_str(), PETSC_DEFAULT, &petscFE) >> utilities::PetscUtilities::checkError;
+            PetscObjectSetName((PetscObject)petscFE, name.c_str()) >> utilities::PetscUtilities::checkError;
+            PetscObjectSetOptions((PetscObject)petscFE, options) >> utilities::PetscUtilities::checkError;
 
             // If this is not the first field, copy the quadrature locations
             // Check to see if there is already a petscFE object defined
             PetscInt numberFields;
-            DMGetNumFields(dm, &numberFields) >> checkError;
+            DMGetNumFields(dm, &numberFields) >> utilities::PetscUtilities::checkError;
             for (PetscInt f = 0; f < numberFields; f++) {
                 PetscObject obj;
-                DMGetField(dm, f, NULL, &obj) >> checkError;
+                DMGetField(dm, f, NULL, &obj) >> utilities::PetscUtilities::checkError;
                 PetscClassId id;
                 PetscObjectGetClassId(obj, &id);
 
                 if (id == PETSCFE_CLASSID) {
-                    PetscFECopyQuadrature((PetscFE)obj, petscFE) >> checkError;
+                    PetscFECopyQuadrature((PetscFE)obj, petscFE) >> utilities::PetscUtilities::checkError;
                 }
             }
             return (PetscObject)petscFE;
         }
         case FieldType::FVM: {
             PetscFV fvm;
-            PetscFVCreate(PetscObjectComm((PetscObject)dm), &fvm) >> checkError;
-            PetscObjectSetName((PetscObject)fvm, name.c_str()) >> checkError;
-            PetscObjectSetOptions((PetscObject)fvm, options) >> checkError;
+            PetscFVCreate(PetscObjectComm((PetscObject)dm), &fvm) >> utilities::PetscUtilities::checkError;
+            PetscObjectSetName((PetscObject)fvm, name.c_str()) >> utilities::PetscUtilities::checkError;
+            PetscObjectSetOptions((PetscObject)fvm, options) >> utilities::PetscUtilities::checkError;
 
-            PetscFVSetFromOptions(fvm) >> checkError;
-            PetscFVSetNumComponents(fvm, components.size()) >> checkError;
+            PetscFVSetFromOptions(fvm) >> utilities::PetscUtilities::checkError;
+            PetscFVSetNumComponents(fvm, components.size()) >> utilities::PetscUtilities::checkError;
 
             // Get the limiter
             PetscLimiter limiter;
-            PetscFVGetLimiter(fvm, &limiter) >> checkError;
-            PetscObjectSetOptions((PetscObject)limiter, options) >> checkError;
-            PetscLimiterSetFromOptions(limiter) >> checkError;
+            PetscFVGetLimiter(fvm, &limiter) >> utilities::PetscUtilities::checkError;
+            PetscObjectSetOptions((PetscObject)limiter, options) >> utilities::PetscUtilities::checkError;
+            PetscLimiterSetFromOptions(limiter) >> utilities::PetscUtilities::checkError;
 
             // Determine the number of dims
             PetscInt dim;
-            DMGetDimension(dm, &dim) >> checkError;
-            PetscFVSetSpatialDimension(fvm, dim) >> checkError;
+            DMGetDimension(dm, &dim) >> utilities::PetscUtilities::checkError;
+            PetscFVSetSpatialDimension(fvm, dim) >> utilities::PetscUtilities::checkError;
 
             // Add the field to the
             return (PetscObject)fvm;

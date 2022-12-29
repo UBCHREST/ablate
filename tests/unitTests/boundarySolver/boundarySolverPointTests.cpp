@@ -207,18 +207,18 @@ TEST_P(BoundarySolverPointTestFixture, ShouldComputeCorrectGradientsOnBoundary) 
 
         // Create a locFVector
         Vec gradVec;
-        DMCreateLocalVector(subDomain->GetDM(), &gradVec) >> checkError;
+        DMCreateLocalVector(subDomain->GetDM(), &gradVec) >> utilities::PetscUtilities::checkError;
 
         // evaluate
         boundarySolver->ComputeRHSFunction(0.0, globVec, gradVec);
 
         // Get raw access to the vector
         const PetscScalar* gradArray;
-        VecGetArrayRead(gradVec, &gradArray) >> checkError;
+        VecGetArrayRead(gradVec, &gradArray) >> utilities::PetscUtilities::checkError;
 
         // Get the offset for field
         PetscInt resultGradOffset;
-        PetscDSGetFieldOffset(boundarySolver->GetSubDomain().GetDiscreteSystem(), boundarySolver->GetSubDomain().GetField("resultGrad").subId, &resultGradOffset) >> checkError;
+        PetscDSGetFieldOffset(boundarySolver->GetSubDomain().GetDiscreteSystem(), boundarySolver->GetSubDomain().GetField("resultGrad").subId, &resultGradOffset) >> utilities::PetscUtilities::checkError;
 
         // get the exactGrads
         auto expectedFieldAGradient = ablate::mathFunctions::Create(GetParam().expectedFieldAGradient);
@@ -236,7 +236,7 @@ TEST_P(BoundarySolverPointTestFixture, ShouldComputeCorrectGradientsOnBoundary) 
 
             // Get the raw data at this point, this check assumes the order the fields
             const PetscScalar* data;
-            DMPlexPointLocalRead(boundarySolver->GetSubDomain().GetDM(), cell, gradArray, &data) >> checkError;
+            DMPlexPointLocalRead(boundarySolver->GetSubDomain().GetDM(), cell, gradArray, &data) >> utilities::PetscUtilities::checkError;
 
             // All the fluxes before the offset should be zero
             for (PetscInt i = 0; i < resultGradOffset; i++) {
@@ -272,13 +272,13 @@ TEST_P(BoundarySolverPointTestFixture, ShouldComputeCorrectGradientsOnBoundary) 
         }
 
         boundarySolver->RestoreRange(cellRange);
-        VecRestoreArrayRead(gradVec, &gradArray) >> checkError;
+        VecRestoreArrayRead(gradVec, &gradArray) >> utilities::PetscUtilities::checkError;
 
         // debug code
         DMViewFromOptions(mesh->GetDM(), nullptr, "-viewTestDM");
         DMViewFromOptions(mesh->GetDM(), nullptr, "-viewTestDMAlso");
 
-        VecDestroy(&gradVec) >> checkError;
+        VecDestroy(&gradVec) >> utilities::PetscUtilities::checkError;
 
         ablate::environment::RunEnvironment::Finalize();
         exit(0);

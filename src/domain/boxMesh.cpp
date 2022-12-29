@@ -3,7 +3,7 @@
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/petscOptions.hpp"
 #include <utility>
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::domain::BoxMesh::BoxMesh(const std::string& name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers,
                                  std::vector<int> faces, std::vector<double> lower, std::vector<double> upper, std::vector<std::string> boundary, bool simplex,
@@ -26,7 +26,7 @@ DM ablate::domain::BoxMesh::CreateBoxDM(const std::string& name, std::vector<int
     for (std::size_t d = 0; d < PetscMin(dimensions, boundary.size()); d++) {
         PetscBool found;
         PetscEnum index;
-        PetscEnumFind(DMBoundaryTypes, boundary[d].c_str(), &index, &found) >> checkError;
+        PetscEnumFind(DMBoundaryTypes, boundary[d].c_str(), &index, &found) >> utilities::PetscUtilities::checkError;
 
         if (found) {
             boundaryTypes[d] = (DMBoundaryType)index;
@@ -38,8 +38,8 @@ DM ablate::domain::BoxMesh::CreateBoxDM(const std::string& name, std::vector<int
     // Make copy with PetscInt
     std::vector<PetscInt> facesPetsc(faces.begin(), faces.end());
     DM dm;
-    DMPlexCreateBoxMesh(PETSC_COMM_WORLD, (PetscInt)dimensions, simplex ? PETSC_TRUE : PETSC_FALSE, &facesPetsc[0], &lower[0], &upper[0], &boundaryTypes[0], PETSC_TRUE, &dm) >> checkError;
-    PetscObjectSetName((PetscObject)dm, name.c_str()) >> ablate::checkError;
+    DMPlexCreateBoxMesh(PETSC_COMM_WORLD, (PetscInt)dimensions, simplex ? PETSC_TRUE : PETSC_FALSE, &facesPetsc[0], &lower[0], &upper[0], &boundaryTypes[0], PETSC_TRUE, &dm) >> utilities::PetscUtilities::checkError;
+    PetscObjectSetName((PetscObject)dm, name.c_str()) >> utilities::PetscUtilities::checkError;
     return dm;
 }
 

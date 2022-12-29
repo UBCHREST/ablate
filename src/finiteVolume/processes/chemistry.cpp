@@ -2,7 +2,7 @@
 
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 #include "utilities/vectorUtilities.hpp"
 
 ablate::finiteVolume::processes::Chemistry::Chemistry(std::shared_ptr<ablate::eos::ChemistryModel> chemistryModel) : chemistryModel(std::move(chemistryModel)) {}
@@ -85,7 +85,7 @@ PetscErrorCode ablate::finiteVolume::processes::Chemistry::AddChemistrySourceToF
 }
 
 void ablate::finiteVolume::processes::Chemistry::AddChemistrySourceToFlow(const FiniteVolumeSolver& solver, Vec locFVec) {
-    AddChemistrySourceToFlow(solver, solver.GetSubDomain().GetDM(), NAN, nullptr, locFVec, this) >> checkError;
+    AddChemistrySourceToFlow(solver, solver.GetSubDomain().GetDM(), NAN, nullptr, locFVec, this) >> utilities::PetscUtilities::checkError;
 }
 
 #include "registrar.hpp"

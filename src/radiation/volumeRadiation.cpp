@@ -15,12 +15,12 @@ void ablate::radiation::VolumeRadiation::Setup() {
 
     // check for ghost cells
     DMLabel ghostLabel;
-    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
+    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
 
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
         PetscInt ghost = -1;
-        if (ghostLabel) DMLabelGetValue(ghostLabel, iCell, &ghost) >> checkError;
+        if (ghostLabel) DMLabelGetValue(ghostLabel, iCell, &ghost) >> utilities::PetscUtilities::checkError;
         if (!(ghost >= 0)) radiationCellRange.Add(iCell);
     }
 
@@ -45,8 +45,8 @@ PetscErrorCode ablate::radiation::VolumeRadiation::PreRHSFunction(TS ts, PetscRe
 
     /** Only update the radiation solution if the sufficient interval has passed */
     PetscInt step;
-    TSGetStepNumber(ts, &step) >> checkError;
-    TSGetTime(ts, &time) >> checkError;
+    TSGetStepNumber(ts, &step) >> utilities::PetscUtilities::checkError;
+    TSGetTime(ts, &time) >> utilities::PetscUtilities::checkError;
     if (initialStage && interval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
         radiation->EvaluateGains(subDomain->GetSolutionVector(), subDomain->GetField("temperature"), subDomain->GetAuxVector());
     }

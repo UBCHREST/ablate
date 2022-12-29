@@ -1,5 +1,5 @@
 #include "dmViewFromOptions.hpp"
-#include <utilities/petscError.hpp>
+#include "utilities/petscUtilities.hpp"
 #include <utilities/petscOptions.hpp>
 #include <utility>
 #include "environment/runEnvironment.hpp"
@@ -9,7 +9,7 @@ ablate::monitors::DmViewFromOptions::DmViewFromOptions(Scope scope, std::string 
     : petscOptions(nullptr), optionName(optionNameIn.empty() ? "-CallDmViewFromOptions" : optionNameIn), scope(scope) {
     // Set the options
     if (!options.empty()) {
-        PetscOptionsCreate(&petscOptions) >> checkError;
+        PetscOptionsCreate(&petscOptions) >> utilities::PetscUtilities::checkError;
 
         // build the string
         ablate::environment::RunEnvironment::Get().ExpandVariables(options);
@@ -36,7 +36,7 @@ void ablate::monitors::DmViewFromOptions::Register(std::shared_ptr<solver::Solve
             throw std::invalid_argument("The DmViewFromOptions monitor can only be used with ablate::solver::Solver");
         }
 
-        DMViewFromOptions(flow->GetSubDomain().GetDM()) >> checkError;
+        DMViewFromOptions(flow->GetSubDomain().GetDM()) >> utilities::PetscUtilities::checkError;
     }
 }
 
@@ -72,7 +72,7 @@ PetscErrorCode ablate::monitors::DmViewFromOptions::CallDmViewFromOptions(TS ts,
 
     PetscFunctionReturn(0);
 }
-void ablate::monitors::DmViewFromOptions::Modify(DM& dm) { DMViewFromOptions(dm) >> checkError; }
+void ablate::monitors::DmViewFromOptions::Modify(DM& dm) { DMViewFromOptions(dm) >> utilities::PetscUtilities::checkError; }
 
 std::ostream& ablate::monitors::operator<<(std::ostream& os, const ablate::monitors::DmViewFromOptions::Scope& v) {
     switch (v) {

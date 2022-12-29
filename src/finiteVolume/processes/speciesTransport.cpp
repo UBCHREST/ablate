@@ -247,7 +247,7 @@ void ablate::finiteVolume::processes::SpeciesTransport::NormalizeSpecies(TS ts, 
 
     // Get the array vector
     PetscScalar *solutionArray;
-    VecGetArray(solVec, &solutionArray) >> checkError;
+    VecGetArray(solVec, &solutionArray) >> utilities::PetscUtilities::checkError;
 
     // March over each cell in this domain
     solver::Range cellRange;
@@ -258,9 +258,9 @@ void ablate::finiteVolume::processes::SpeciesTransport::NormalizeSpecies(TS ts, 
 
         // Get the euler and density field
         const PetscScalar *euler = nullptr;
-        DMPlexPointGlobalFieldRead(dm, cell, eulerFieldInfo.id, solutionArray, &euler) >> checkError;
+        DMPlexPointGlobalFieldRead(dm, cell, eulerFieldInfo.id, solutionArray, &euler) >> utilities::PetscUtilities::checkError;
         PetscScalar *densityYi;
-        DMPlexPointGlobalFieldRef(dm, cell, densityYiFieldInfo.id, solutionArray, &densityYi) >> checkError;
+        DMPlexPointGlobalFieldRef(dm, cell, densityYiFieldInfo.id, solutionArray, &densityYi) >> utilities::PetscUtilities::checkError;
 
         // Only update if in the global vector
         if (euler) {
@@ -294,7 +294,7 @@ void ablate::finiteVolume::processes::SpeciesTransport::NormalizeSpecies(TS ts, 
     }
 
     // cleanup
-    VecRestoreArray(solVec, &solutionArray) >> checkError;
+    VecRestoreArray(solVec, &solutionArray) >> utilities::PetscUtilities::checkError;
     solver.RestoreRange(cellRange);
 }
 

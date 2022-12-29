@@ -47,7 +47,7 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
             // get the solution vec
             auto solutionVec = fvSolver.GetSubDomain().GetSolutionVector();
             PetscScalar* solutionArray;
-            VecGetArray(solutionVec, &solutionArray) >> checkError;
+            VecGetArray(solutionVec, &solutionArray) >> utilities::PetscUtilities::checkError;
 
             auto dm = fvSolver.GetSubDomain().GetDM();
 
@@ -62,11 +62,11 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
                 // Get the original density
                 if (conservedValues) {
                     PetscReal originalDensity;
-                    densityFunction.function(conservedValues, &originalDensity, densityFunction.context.get()) >> checkError;
+                    densityFunction.function(conservedValues, &originalDensity, densityFunction.context.get()) >> utilities::PetscUtilities::checkError;
 
                     // compute the current sensibleInternalEnergy
                     PetscReal internalSensibleEnergy;
-                    internalSensibleEnergyFunction.function(conservedValues, &internalSensibleEnergy, internalSensibleEnergyFunction.context.get()) >> checkError;
+                    internalSensibleEnergyFunction.function(conservedValues, &internalSensibleEnergy, internalSensibleEnergyFunction.context.get()) >> utilities::PetscUtilities::checkError;
 
                     // compute the current velocity and species (if provided)
                     for (PetscInt n = 0; n < dim; n++) {
@@ -90,7 +90,7 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
             }
 
             // cleanup
-            VecRestoreArray(solutionVec, &solutionArray) >> checkError;
+            VecRestoreArray(solutionVec, &solutionArray) >> utilities::PetscUtilities::checkError;
             fvSolver.RestoreRange(cellRange);
         });
 
@@ -118,7 +118,7 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
             // get the solution vec
             auto solutionVec = fvSolver.GetSubDomain().GetSolutionVector();
             PetscScalar* solutionArray;
-            VecGetArray(solutionVec, &solutionArray) >> checkError;
+            VecGetArray(solutionVec, &solutionArray) >> utilities::PetscUtilities::checkError;
 
             auto dm = fvSolver.GetSubDomain().GetDM();
 
@@ -133,11 +133,11 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
                 // Get the original density
                 if (conservedValues) {
                     PetscReal originalDensity;
-                    densityFunction.function(conservedValues, &originalDensity, densityFunction.context.get()) >> checkError;
+                    densityFunction.function(conservedValues, &originalDensity, densityFunction.context.get()) >> utilities::PetscUtilities::checkError;
 
                     // compute the current sensibleInternalEnergy
                     PetscReal internalSensibleEnergy;
-                    internalSensibleEnergyFunction.function(conservedValues, &internalSensibleEnergy, internalSensibleEnergyFunction.context.get()) >> checkError;
+                    internalSensibleEnergyFunction.function(conservedValues, &internalSensibleEnergy, internalSensibleEnergyFunction.context.get()) >> utilities::PetscUtilities::checkError;
 
                     // compute the current velocity and species (if provided)
                     for (PetscInt n = 0; n < dim; n++) {
@@ -154,7 +154,7 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
             }
 
             // cleanup
-            VecRestoreArray(solutionVec, &solutionArray) >> checkError;
+            VecRestoreArray(solutionVec, &solutionArray) >> utilities::PetscUtilities::checkError;
             fvSolver.RestoreRange(cellRange);
         });
     }

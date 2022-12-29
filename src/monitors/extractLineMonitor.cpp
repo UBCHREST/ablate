@@ -2,7 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include "utilities/mpiUtilities.hpp"
-#include <utilities/petscError.hpp>
+#include "utilities/petscUtilities.hpp"
 #include "environment/runEnvironment.hpp"
 
 ablate::monitors::ExtractLineMonitor::ExtractLineMonitor(int interval, std::string prefix, std::vector<double> start, std::vector<double> end, std::vector<std::string> outputFields,
@@ -32,15 +32,15 @@ void ablate::monitors::ExtractLineMonitor::Register(std::shared_ptr<solver::Solv
 
     // get the min cell size
     PetscReal minCellRadius;
-    DMPlexGetGeometryFVM(flow->GetSubDomain().GetDM(), NULL, &cellGeomVec, &minCellRadius) >> checkError;
-    VecGetDM(cellGeomVec, &dmCell) >> checkError;
-    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+    DMPlexGetGeometryFVM(flow->GetSubDomain().GetDM(), NULL, &cellGeomVec, &minCellRadius) >> utilities::PetscUtilities::checkError;
+    VecGetDM(cellGeomVec, &dmCell) >> utilities::PetscUtilities::checkError;
+    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
 
     PetscMPIInt rank;
     MPI_Comm_rank(flow->GetSubDomain().GetComm(), &rank) >> utilities::MpiUtilities::checkError;
 
     PetscInt dim;
-    DMGetDimension(flow->GetSubDomain().GetDM(), &dim) >> checkError;
+    DMGetDimension(flow->GetSubDomain().GetDM(), &dim) >> utilities::PetscUtilities::checkError;
 
     // Now march over each subsegment in the line
     double ds = minCellRadius / 10.0;
@@ -58,24 +58,24 @@ void ablate::monitors::ExtractLineMonitor::Register(std::shared_ptr<solver::Solv
 
     // Create a location vector
     Vec locVec;
-    VecCreateSeq(PETSC_COMM_SELF, dim, &locVec) >> checkError;
-    VecSetBlockSize(locVec, dim) >> checkError;
+    VecCreateSeq(PETSC_COMM_SELF, dim, &locVec) >> utilities::PetscUtilities::checkError;
+    VecSetBlockSize(locVec, dim) >> utilities::PetscUtilities::checkError;
 
     while (s < L) {
         // Compute the current location
         for (PetscInt d = 0; d < dim; d++) {
-            VecSetValue(locVec, d, s * lineVec[d], INSERT_VALUES) >> checkError;
+            VecSetValue(locVec, d, s * lineVec[d], INSERT_VALUES) >> utilities::PetscUtilities::checkError;
         }
-        VecAssemblyBegin(locVec) >> checkError;
-        VecAssemblyEnd(locVec) >> checkError;
+        VecAssemblyBegin(locVec) >> utilities::PetscUtilities::checkError;
+        VecAssemblyEnd(locVec) >> utilities::PetscUtilities::checkError;
 
         // find the point in the mesh
         PetscSF cellSF = NULL;
-        DMLocatePoints(flow->GetSubDomain().GetDM(), locVec, DM_POINTLOCATION_NONE, &cellSF) >> checkError;
+        DMLocatePoints(flow->GetSubDomain().GetDM(), locVec, DM_POINTLOCATION_NONE, &cellSF) >> utilities::PetscUtilities::checkError;
 
         const PetscSFNode* cells;
         PetscInt numberFound;
-        PetscSFGetGraph(cellSF, NULL, &numberFound, NULL, &cells) >> checkError;
+        PetscSFGetGraph(cellSF, NULL, &numberFound, NULL, &cells) >> utilities::PetscUtilities::checkError;
         if (cells[0].rank == rank) {
             // search over the history of indexes
             if (std::find(indexLocations.begin(), indexLocations.end(), cells[0].index) == indexLocations.end()) {
@@ -84,7 +84,7 @@ void ablate::monitors::ExtractLineMonitor::Register(std::shared_ptr<solver::Solv
 
                 // get the center location of this cell
                 PetscFVCellGeom* cellGeom;
-                DMPlexPointLocalRead(dmCell, cells[0].index, cellGeomArray, &cellGeom) >> checkError;
+                DMPlexPointLocalRead(dmCell, cells[0].index, cellGeomArray, &cellGeom) >> utilities::PetscUtilities::checkError;
                 // figure out where this cell is along the line
                 double alongLine = 0.0;
                 for (PetscInt d = 0; d < dim; d++) {
@@ -93,11 +93,11 @@ void ablate::monitors::ExtractLineMonitor::Register(std::shared_ptr<solver::Solv
                 distanceAlongLine.push_back(PetscSqrtReal(alongLine));
             }
         }
-        PetscSFDestroy(&cellSF) >> checkError;
+        PetscSFDestroy(&cellSF) >> utilities::PetscUtilities::checkError;
         s += ds;
     }
-    VecDestroy(&locVec) >> checkError;
-    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+    VecDestroy(&locVec) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
 }
 
 static PetscErrorCode OutputCurveForField(std::ostream& stream, PetscInt fieldIndex, const ablate::domain::Field& fieldDescription, const std::vector<PetscInt>& indexLocations,

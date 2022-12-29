@@ -48,7 +48,7 @@ void ablate::monitors::MixtureFractionMonitor::Save(PetscViewer viewer, PetscInt
     // define a localFVec from the solution dm to compute the source terms
     Vec sourceTermVec = nullptr;
     if (chemistry) {
-        DMGetLocalVector(GetSolver()->GetSubDomain().GetDM(), &sourceTermVec) >> checkError;
+        DMGetLocalVector(GetSolver()->GetSubDomain().GetDM(), &sourceTermVec) >> utilities::PetscUtilities::checkError;
         VecZeroEntries(sourceTermVec);
         auto fvSolver = std::dynamic_pointer_cast<ablate::finiteVolume::FiniteVolumeSolver>(GetSolver());
         chemistry->AddChemistrySourceToFlow(*fvSolver, sourceTermVec);
@@ -57,29 +57,29 @@ void ablate::monitors::MixtureFractionMonitor::Save(PetscViewer viewer, PetscInt
     // Get the arrays for the global vectors
     const PetscScalar* solutionFieldArray;
     PetscScalar* monitorFieldArray;
-    VecGetArrayRead(GetSolver()->GetSubDomain().GetSolutionVector(), &solutionFieldArray) >> checkError;
-    VecGetArray(monitorSubDomain->GetSolutionVector(), &monitorFieldArray) >> checkError;
+    VecGetArrayRead(GetSolver()->GetSubDomain().GetSolutionVector(), &solutionFieldArray) >> utilities::PetscUtilities::checkError;
+    VecGetArray(monitorSubDomain->GetSolutionVector(), &monitorFieldArray) >> utilities::PetscUtilities::checkError;
 
     // check for the tmpLocalFArray
     const PetscScalar* sourceTermArray = nullptr;
     if (sourceTermVec) {
-        VecGetArrayRead(sourceTermVec, &sourceTermArray) >> checkError;
+        VecGetArrayRead(sourceTermVec, &sourceTermArray) >> utilities::PetscUtilities::checkError;
     }
 
     // March over each cell in the monitorDm
     PetscInt cStart, cEnd;
-    DMPlexGetHeightStratum(monitorSubDomain->GetDM(), 0, &cStart, &cEnd) >> checkError;
+    DMPlexGetHeightStratum(monitorSubDomain->GetDM(), 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
 
     // Get the cells we need to march over
     DMLabel solutionToMonitor;
-    DMPlexGetSubpointMap(monitorSubDomain->GetDM(), &solutionToMonitor) >> checkError;
+    DMPlexGetSubpointMap(monitorSubDomain->GetDM(), &solutionToMonitor) >> utilities::PetscUtilities::checkError;
 
     const PetscInt* monitorToSolution = nullptr;
     IS monitorToSolutionIs = nullptr;
     // if this is a submap, get the monitor to solution
     if (solutionToMonitor) {
-        DMPlexGetSubpointIS(monitorSubDomain->GetDM(), &monitorToSolutionIs) >> checkError;
-        ISGetIndices(monitorToSolutionIs, &monitorToSolution) >> checkError;
+        DMPlexGetSubpointIS(monitorSubDomain->GetDM(), &monitorToSolutionIs) >> utilities::PetscUtilities::checkError;
+        ISGetIndices(monitorToSolutionIs, &monitorToSolution) >> utilities::PetscUtilities::checkError;
     }
 
     // save time to get densityFunctionContext
@@ -90,19 +90,19 @@ void ablate::monitors::MixtureFractionMonitor::Save(PetscViewer viewer, PetscInt
 
         // Get the solutionField and monitorField
         const PetscScalar* solutionField = nullptr;
-        DMPlexPointGlobalRead(GetSolver()->GetSubDomain().GetDM(), solutionPt, solutionFieldArray, &solutionField) >> checkError;
+        DMPlexPointGlobalRead(GetSolver()->GetSubDomain().GetDM(), solutionPt, solutionFieldArray, &solutionField) >> utilities::PetscUtilities::checkError;
         PetscScalar* monitorField = nullptr;
-        DMPlexPointGlobalRead(monitorSubDomain->GetDM(), monitorPt, monitorFieldArray, &monitorField) >> checkError;
+        DMPlexPointGlobalRead(monitorSubDomain->GetDM(), monitorPt, monitorFieldArray, &monitorField) >> utilities::PetscUtilities::checkError;
 
         const PetscScalar* sourceTermField = nullptr;
         if (sourceTermArray) {
-            DMPlexPointGlobalRead(GetSolver()->GetSubDomain().GetDM(), solutionPt, sourceTermArray, &sourceTermField) >> checkError;
+            DMPlexPointGlobalRead(GetSolver()->GetSubDomain().GetDM(), solutionPt, sourceTermArray, &sourceTermField) >> utilities::PetscUtilities::checkError;
         }
         // Do not bother in ghost cells
         if (solutionField && monitorField) {
             // compute the density from the solutionPt
             PetscReal density;
-            densityFunction.function(solutionField, &density, densityFunctionContext) >> checkError;
+            densityFunction.function(solutionField, &density, densityFunctionContext) >> utilities::PetscUtilities::checkError;
 
             // Copy over and compute yi
             for (PetscInt sp = 0; sp < yiMonitorField.numberComponents; sp++) {
@@ -121,14 +121,14 @@ void ablate::monitors::MixtureFractionMonitor::Save(PetscViewer viewer, PetscInt
 
     // cleanup
     if (sourceTermVec) {
-        VecRestoreArrayRead(sourceTermVec, &sourceTermArray) >> checkError;
-        DMRestoreLocalVector(GetSolver()->GetSubDomain().GetDM(), &sourceTermVec) >> checkError;
+        VecRestoreArrayRead(sourceTermVec, &sourceTermArray) >> utilities::PetscUtilities::checkError;
+        DMRestoreLocalVector(GetSolver()->GetSubDomain().GetDM(), &sourceTermVec) >> utilities::PetscUtilities::checkError;
     }
     if (monitorToSolutionIs) {
-        ISRestoreIndices(monitorToSolutionIs, &monitorToSolution) >> checkError;
+        ISRestoreIndices(monitorToSolutionIs, &monitorToSolution) >> utilities::PetscUtilities::checkError;
     }
-    VecRestoreArrayRead(GetSolver()->GetSubDomain().GetSolutionVector(), &solutionFieldArray) >> checkError;
-    VecRestoreArray(monitorSubDomain->GetSolutionVector(), &monitorFieldArray) >> checkError;
+    VecRestoreArrayRead(GetSolver()->GetSubDomain().GetSolutionVector(), &solutionFieldArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArray(monitorSubDomain->GetSolutionVector(), &monitorFieldArray) >> utilities::PetscUtilities::checkError;
 
     // Call the base Save function only after the subdomain global function is updated
     FieldMonitor::Save(viewer, sequenceNumber, time);

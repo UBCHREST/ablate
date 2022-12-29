@@ -101,26 +101,26 @@ void ablate::monitors::Probes::Register(std::shared_ptr<solver::Solver> solver) 
 
         // Create the interpolant.  This uses PETSC_COMM_SELF because it should only work over local variables
         DMInterpolationInfo interpolant;
-        DMInterpolationCreate(PETSC_COMM_SELF, &interpolant) >> checkError;
-        DMInterpolationSetDim(interpolant, dim) >> checkError;
-        DMInterpolationSetDof(interpolant, field.numberComponents) >> checkError;
+        DMInterpolationCreate(PETSC_COMM_SELF, &interpolant) >> utilities::PetscUtilities::checkError;
+        DMInterpolationSetDim(interpolant, dim) >> utilities::PetscUtilities::checkError;
+        DMInterpolationSetDof(interpolant, field.numberComponents) >> utilities::PetscUtilities::checkError;
 
         // Add all local points to the interpolant
-        DMInterpolationAddPoints(interpolant, (PetscInt)localProbes.size(), coordinates.data()) >> checkError;
+        DMInterpolationAddPoints(interpolant, (PetscInt)localProbes.size(), coordinates.data()) >> utilities::PetscUtilities::checkError;
 
         // Get the subfield dm
         IS subIs;
         DM subDm;
         Vec locVec;
-        solver->GetSubDomain().GetFieldLocalVector(field, 0.0, &subIs, &locVec, &subDm) >> checkError;
+        solver->GetSubDomain().GetFieldLocalVector(field, 0.0, &subIs, &locVec, &subDm) >> utilities::PetscUtilities::checkError;
 
         // Finish the one time set up
         // The redundantPoints flag should not really matter because PETSC_COMM_SELF was used to init the interpolant
-        DMInterpolationSetUp(interpolant, subDm, PETSC_FALSE, PETSC_FALSE) >> checkError;
+        DMInterpolationSetUp(interpolant, subDm, PETSC_FALSE, PETSC_FALSE) >> utilities::PetscUtilities::checkError;
         interpolants.push_back(interpolant);
 
         // restore
-        solver->GetSubDomain().RestoreFieldLocalVector(field, &subIs, &locVec, &subDm) >> checkError;
+        solver->GetSubDomain().RestoreFieldLocalVector(field, &subIs, &locVec, &subDm) >> utilities::PetscUtilities::checkError;
 
         // convert the variable names to the variable names with components
         if (field.numberComponents > 0) {
@@ -143,7 +143,7 @@ void ablate::monitors::Probes::Register(std::shared_ptr<solver::Solver> solver) 
 
 ablate::monitors::Probes::~Probes() {
     for (auto &interpolant : interpolants) {
-        DMInterpolationDestroy(&interpolant) >> checkError;
+        DMInterpolationDestroy(&interpolant) >> utilities::PetscUtilities::checkError;
     }
 }
 

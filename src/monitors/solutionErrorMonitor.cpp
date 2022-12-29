@@ -1,6 +1,6 @@
 #include "solutionErrorMonitor.hpp"
 #include <monitors/logs/stdOut.hpp>
-#include <utilities/petscError.hpp>
+#include "utilities/petscUtilities.hpp"
 #include "mathFunctions/mathFunction.hpp"
 
 ablate::monitors::SolutionErrorMonitor::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope errorScope, ablate::monitors::SolutionErrorMonitor::Norm normType,
@@ -79,14 +79,14 @@ PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, Petsc
 std::vector<PetscReal> ablate::monitors::SolutionErrorMonitor::ComputeError(TS ts, PetscReal time, Vec u) {
     DM dm;
     PetscDS ds;
-    TSGetDM(ts, &dm) >> checkError;
-    DMGetDS(dm, &ds) >> checkError;
+    TSGetDM(ts, &dm) >> utilities::PetscUtilities::checkError;
+    DMGetDS(dm, &ds) >> utilities::PetscUtilities::checkError;
 
     // Get the number of fields
     PetscInt numberOfFields;
-    PetscDSGetNumFields(ds, &numberOfFields) >> checkError;
+    PetscDSGetNumFields(ds, &numberOfFields) >> utilities::PetscUtilities::checkError;
     PetscInt* numberComponentsPerField;
-    PetscDSGetComponents(ds, &numberComponentsPerField) >> checkError;
+    PetscDSGetComponents(ds, &numberComponentsPerField) >> utilities::PetscUtilities::checkError;
 
     // compute the total number of components
     PetscInt totalComponents = 0;
@@ -95,7 +95,7 @@ std::vector<PetscReal> ablate::monitors::SolutionErrorMonitor::ComputeError(TS t
     std::vector<ablate::mathFunctions::PetscFunction> exactFuncs(numberOfFields);
     std::vector<void*> exactCtxs(numberOfFields);
     for (auto f = 0; f < numberOfFields; ++f) {
-        PetscDSGetExactSolution(ds, f, &exactFuncs[f], &exactCtxs[f]) >> checkError;
+        PetscDSGetExactSolution(ds, f, &exactFuncs[f], &exactCtxs[f]) >> utilities::PetscUtilities::checkError;
         if (!exactFuncs[f]) {
             throw std::invalid_argument("The exact solution has not set");
         }
@@ -104,17 +104,17 @@ std::vector<PetscReal> ablate::monitors::SolutionErrorMonitor::ComputeError(TS t
 
     // Create an vector to hold the exact solution
     Vec exactVec;
-    VecDuplicate(u, &exactVec) >> checkError;
-    DMProjectFunction(dm, time, &exactFuncs[0], &exactCtxs[0], INSERT_ALL_VALUES, exactVec) >> checkError;
+    VecDuplicate(u, &exactVec) >> utilities::PetscUtilities::checkError;
+    DMProjectFunction(dm, time, &exactFuncs[0], &exactCtxs[0], INSERT_ALL_VALUES, exactVec) >> utilities::PetscUtilities::checkError;
 
     // Compute the error
-    VecAXPY(exactVec, -1.0, u) >> checkError;
+    VecAXPY(exactVec, -1.0, u) >> utilities::PetscUtilities::checkError;
 
     // If we treat this as a single vector or multiple components change how this is done
     totalComponents = errorScope == Scope::VECTOR ? 1 : totalComponents;
 
     // Update the block size
-    VecSetBlockSize(exactVec, totalComponents) >> checkError;
+    VecSetBlockSize(exactVec, totalComponents) >> utilities::PetscUtilities::checkError;
 
     // Compute the l2 errors
     std::vector<PetscReal> ferrors(totalComponents);
@@ -138,7 +138,7 @@ std::vector<PetscReal> ablate::monitors::SolutionErrorMonitor::ComputeError(TS t
     }
 
     // compute the norm along the stride
-    VecStrideNormAll(exactVec, petscNormType, &ferrors[0]) >> checkError;
+    VecStrideNormAll(exactVec, petscNormType, &ferrors[0]) >> utilities::PetscUtilities::checkError;
 
     // normalize the error if _norm
     if (normType == Norm::L1_NORM) {
@@ -158,7 +158,7 @@ std::vector<PetscReal> ablate::monitors::SolutionErrorMonitor::ComputeError(TS t
         }
     }
 
-    VecDestroy(&exactVec) >> checkError;
+    VecDestroy(&exactVec) >> utilities::PetscUtilities::checkError;
     return ferrors;
 }
 
