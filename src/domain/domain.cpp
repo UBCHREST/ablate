@@ -1,7 +1,7 @@
 #include "domain.hpp"
 #include <set>
 #include <typeinfo>
-#include <utilities/mpiError.hpp>
+#include "utilities/mpiUtilities.hpp"
 #include <utility>
 #include "monitors/logs/stdOut.hpp"
 #include "solver/solver.hpp"
@@ -316,10 +316,10 @@ bool ablate::domain::Domain::CheckFieldValues(Vec globSourceVector) {
     // do a global check
     auto localFailedPoints = (PetscMPIInt)failedPoints.size();
     PetscMPIInt globalFailedPoints;
-    MPI_Allreduce(&localFailedPoints, &globalFailedPoints, 1, MPI_INT, MPI_SUM, comm) >> checkMpiError;
+    MPI_Allreduce(&localFailedPoints, &globalFailedPoints, 1, MPI_INT, MPI_SUM, comm) >> utilities::MpiUtilities::checkError;
     if (globalFailedPoints) {
         PetscMPIInt rank;
-        MPI_Comm_rank(comm, &rank) >> checkMpiError;
+        MPI_Comm_rank(comm, &rank) >> utilities::MpiUtilities::checkError;
 
         std::stringstream failedPointsMessage;
         // march over each failed point

@@ -1,13 +1,13 @@
 #include "stdOut.hpp"
 #include <stdarg.h>
-#include <utilities/mpiError.hpp>
-#include <utilities/petscError.hpp>
+#include "utilities/mpiUtilities.hpp"
+#include "utilities/petscError.hpp"
 #include "nullLog.hpp"
 
 void ablate::monitors::logs::StdOut::Initialize(MPI_Comm comm) {
     Log::Initialize(comm);
     int rank;
-    MPI_Comm_rank(comm, &rank) >> checkMpiError;
+    MPI_Comm_rank(comm, &rank) >> utilities::MpiUtilities::checkError;
     output = rank == 0;
 }
 

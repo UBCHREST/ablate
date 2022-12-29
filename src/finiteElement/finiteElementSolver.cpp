@@ -3,8 +3,7 @@
 #include <petsc/private/dmpleximpl.h>
 #include <petscds.h>
 #include <petscfv.h>
-#include <utilities/mpiError.hpp>
-#include <utilities/petscError.hpp>
+#include "utilities/petscError.hpp"
 
 ablate::finiteElement::FiniteElementSolver::FiniteElementSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,

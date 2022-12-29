@@ -1,8 +1,8 @@
 #include "subDomain.hpp"
 #include <set>
 #include <sstream>
-#include <utilities/petscError.hpp>
-#include "utilities/mpiError.hpp"
+#include "utilities/petscError.hpp"
+#include "utilities/mpiUtilities.hpp"
 
 ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const std::vector<std::shared_ptr<FieldDescription>>& allAuxFields)
     : domain(domainIn),
@@ -498,7 +498,7 @@ bool ablate::domain::SubDomain::InRegion(const domain::Region& region) const {
 
     // Take the sum
     PetscInt globalSize;
-    MPI_Allreduce(&size, &globalSize, 1, MPIU_INT, MPIU_SUM, GetComm()) >> checkMpiError;
+    MPI_Allreduce(&size, &globalSize, 1, MPIU_INT, MPIU_SUM, GetComm()) >> ablate::utilities::MpiUtilities::checkError;
     return globalSize > 0;
 }
 

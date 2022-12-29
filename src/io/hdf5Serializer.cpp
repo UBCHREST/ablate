@@ -4,7 +4,7 @@
 #include <environment/runEnvironment.hpp>
 #include <fstream>
 #include <io/interval/interval.hpp>
-#include <utilities/mpiError.hpp>
+#include "utilities/mpiUtilities.hpp"
 #include "generators.hpp"
 #include "utilities/petscError.hpp"
 
@@ -89,7 +89,7 @@ void ablate::io::Hdf5Serializer::SaveMetadata(TS ts) {
     out << YAML::EndMap;
 
     int rank;
-    MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank) >> checkMpiError;
+    MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank) >> utilities::MpiUtilities::checkError;
     if (rank == 0) {
         auto restartFilePath = environment::RunEnvironment::Get().GetOutputDirectory() / "restart.rst";
         std::ofstream restartFile;

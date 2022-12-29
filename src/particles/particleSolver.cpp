@@ -5,7 +5,7 @@
 #include "particles/accessors/eulerianAccessor.hpp"
 #include "particles/accessors/rhsAccessor.hpp"
 #include "particles/accessors/swarmAccessor.hpp"
-#include "utilities/mpiError.hpp"
+#include "utilities/mpiUtilities.hpp"
 #include "utilities/vectorUtilities.hpp"
 
 ablate::particles::ParticleSolver::ParticleSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options, std::vector<FieldDescription> fields,
@@ -382,7 +382,7 @@ void ablate::particles::ParticleSolver::SwarmMigrate() {
     MPI_Comm comm;
     PetscObjectGetComm((PetscObject)particleTs, &comm) >> checkError;
     PetscMPIInt dmChangedAll = PETSC_FALSE;
-    MPI_Allreduce(&dmChangedLocal, &dmChangedAll, 1, MPI_INT, MPI_MAX, comm) >> checkMpiError;
+    MPI_Allreduce(&dmChangedLocal, &dmChangedAll, 1, MPI_INT, MPI_MAX, comm) >> ablate::utilities::MpiUtilities::checkError;
     dmChanged = dmChangedAll > 0;
 }
 
@@ -646,11 +646,11 @@ void ablate::particles::ParticleSolver::Save(PetscViewer viewer, PetscInt steps,
 
     // Get the particle info
     int rank;
-    MPI_Comm_rank(PetscObjectComm((PetscObject)GetParticleDM()), &rank) >> checkMpiError;
+    MPI_Comm_rank(PetscObjectComm((PetscObject)GetParticleDM()), &rank) >> ablate::utilities::MpiUtilities::checkError;
 
     // get the local number of particles
     PetscInt globalSize;
-    DMSwarmGetSize(GetParticleDM(), &globalSize) >> checkMpiError;
+    DMSwarmGetSize(GetParticleDM(), &globalSize) >> ablate::utilities::MpiUtilities::checkError;
 
     // record the number of particles per rank
     Vec particleCountVec;
@@ -695,8 +695,8 @@ void ablate::particles::ParticleSolver::Restore(PetscViewer viewer, PetscInt seq
 
     // Get the particle mpi, info
     int rank, size;
-    MPI_Comm_rank(PetscObjectComm((PetscObject)GetParticleDM()), &rank) >> checkMpiError;
-    MPI_Comm_size(PetscObjectComm((PetscObject)GetParticleDM()), &size) >> checkMpiError;
+    MPI_Comm_rank(PetscObjectComm((PetscObject)GetParticleDM()), &rank) >> ablate::utilities::MpiUtilities::checkError;
+    MPI_Comm_size(PetscObjectComm((PetscObject)GetParticleDM()), &size) >> ablate::utilities::MpiUtilities::checkError;
 
     // distribute the number of particles across all ranks
     PetscInt localSize = ((PetscInt)globalSize) / size;

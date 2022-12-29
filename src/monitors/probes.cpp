@@ -1,9 +1,8 @@
 #include "probes.hpp"
 #include <fstream>
 #include <regex>
-#include "environment/runEnvironment.hpp"
 #include "io/interval/fixedInterval.hpp"
-#include "utilities/mpiError.hpp"
+#include "utilities/mpiUtilities.hpp"
 #include "utilities/vectorUtilities.hpp"
 
 ablate::monitors::Probes::Probes(const std::shared_ptr<ablate::monitors::probes::ProbeInitializer> &initializer, std::vector<std::string> variableNames,
@@ -44,16 +43,16 @@ void ablate::monitors::Probes::Register(std::shared_ptr<solver::Solver> solver) 
 
         // Locate the points in the DM
         PetscSF cellSF = nullptr;
-        DMLocatePoints(solver->GetSubDomain().GetDM(), pointVec, DM_POINTLOCATION_REMOVE, &cellSF) >> checkMpiError;
+        DMLocatePoints(solver->GetSubDomain().GetDM(), pointVec, DM_POINTLOCATION_REMOVE, &cellSF) >> utilities::MpiUtilities::checkError;
         PetscInt numFound;
         const PetscSFNode *foundCells = nullptr;
         const PetscInt *foundPoints = nullptr;
-        PetscSFGetGraph(cellSF, nullptr, &numFound, &foundPoints, &foundCells) >> checkMpiError;
+        PetscSFGetGraph(cellSF, nullptr, &numFound, &foundPoints, &foundCells) >> utilities::MpiUtilities::checkError;
 
         // Let the lowest rank process own each point
         PetscMPIInt rank, size;
-        MPI_Comm_rank(solver->GetSubDomain().GetComm(), &rank) >> checkMpiError;
-        MPI_Comm_size(solver->GetSubDomain().GetComm(), &size) >> checkMpiError;
+        MPI_Comm_rank(solver->GetSubDomain().GetComm(), &rank) >> utilities::MpiUtilities::checkError;
+        MPI_Comm_size(solver->GetSubDomain().GetComm(), &size) >> utilities::MpiUtilities::checkError;
         std::vector<PetscMPIInt> foundProcs(globalPointsCount, size);
         std::vector<PetscMPIInt> globalProcs(globalPointsCount, size);
 
@@ -63,7 +62,7 @@ void ablate::monitors::Probes::Register(std::shared_ptr<solver::Solver> solver) 
             }
         }
         // Let the lowest rank process own each point
-        MPI_Allreduce(foundProcs.data(), globalProcs.data(), globalPointsCount, MPI_INT, MPI_MIN, solver->GetSubDomain().GetComm()) >> checkMpiError;
+        MPI_Allreduce(foundProcs.data(), globalProcs.data(), globalPointsCount, MPI_INT, MPI_MIN, solver->GetSubDomain().GetComm()) >> utilities::MpiUtilities::checkError;
 
         // throw error if location cannot be found and copy over the probes that this rank owns
         for (std::size_t p = 0; p < initializer->GetProbes().size(); p++) {

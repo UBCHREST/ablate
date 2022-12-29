@@ -1,11 +1,11 @@
 #include "serializable.hpp"
-#include "utilities/mpiError.hpp"
+#include "utilities/mpiUtilities.hpp"
 #include "utilities/petscError.hpp"
 
 void ablate::io::Serializable::SaveKeyValue(PetscViewer viewer, const char *name, PetscScalar value) {
     PetscMPIInt rank;
     MPI_Comm comm = PetscObjectComm((PetscObject)viewer);
-    MPI_Comm_rank(comm, &rank) >> checkMpiError;
+    MPI_Comm_rank(comm, &rank) >> utilities::MpiUtilities::checkError;
 
     // create a very simple vector
     Vec keyValueVec;
@@ -24,7 +24,7 @@ void ablate::io::Serializable::SaveKeyValue(PetscViewer viewer, const char *name
 void ablate::io::Serializable::RestoreKeyValue(PetscViewer viewer, const char *name, PetscScalar &value) {
     int rank;
     MPI_Comm comm = PetscObjectComm((PetscObject)viewer);
-    MPI_Comm_rank(comm, &rank) >> checkMpiError;
+    MPI_Comm_rank(comm, &rank) >> utilities::MpiUtilities::checkError;
 
     // load in the old alpha
     Vec keyValueVec;
@@ -39,6 +39,6 @@ void ablate::io::Serializable::RestoreKeyValue(PetscViewer viewer, const char *n
     }
 
     // Broadcast everywhere
-    MPI_Bcast(&value, 1, MPIU_SCALAR, 0, comm) >> checkMpiError;
+    MPI_Bcast(&value, 1, MPIU_SCALAR, 0, comm) >> utilities::MpiUtilities::checkError;
     VecDestroy(&keyValueVec) >> checkError;
 }

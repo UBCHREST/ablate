@@ -2,7 +2,7 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include "environment/runEnvironment.hpp"
-#include "utilities/mpiError.hpp"
+#include "utilities/mpiUtilities.hpp"
 #include "utilities/petscError.hpp"
 #include "utilities/temporaryWorkingDirectory.hpp"
 
@@ -90,7 +90,7 @@ std::filesystem::path ablate::environment::GitHub::Download(std::string urlPath,
 std::filesystem::path ablate::environment::GitHub::Locate(const std::vector<std::filesystem::path>&) {
     // Get the current rank
     PetscMPIInt rank;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkMpiError;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> utilities::MpiUtilities::checkError;
 
     std::filesystem::path localPath =
         ablate::environment::RunEnvironment::Get().GetOutputDirectory().empty() ? std::filesystem::temp_directory_path() / path : ablate::environment::RunEnvironment::Get().GetOutputDirectory();

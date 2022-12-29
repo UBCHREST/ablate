@@ -3,7 +3,7 @@
 #include "environment/runEnvironment.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
 #include "io/interval/fixedInterval.hpp"
-#include "utilities/mpiError.hpp"
+#include "utilities/mpiUtilities.hpp"
 
 ablate::monitors::CurveMonitor::CurveMonitor(std::shared_ptr<io::interval::Interval> intervalIn, std::string prefix)
     : interval(intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>()), filePrefix(prefix) {}
@@ -21,7 +21,7 @@ void ablate::monitors::CurveMonitor::Register(std::shared_ptr<solver::Solver> so
 
     // check the size
     int size;
-    MPI_Comm_size(solver->GetSubDomain().GetComm(), &size) >> checkMpiError;
+    MPI_Comm_size(solver->GetSubDomain().GetComm(), &size) >> utilities::MpiUtilities::checkError;
     if (size != 1) {
         throw std::runtime_error("The CurveMonitor monitor only works with a single mpi rank");
     }

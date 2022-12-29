@@ -5,7 +5,7 @@
 #include <domain/modifiers/tagLabelBoundary.hpp>
 #include <mathFunctions/geom/box.hpp>
 #include <stdexcept>
-#include <utilities/mpiError.hpp>
+#include "utilities/mpiUtilities.hpp"
 #include <utility>
 #include "utilities/petscError.hpp"
 

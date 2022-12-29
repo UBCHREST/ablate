@@ -1,7 +1,7 @@
 #include "boxMesh.hpp"
 #include <stdexcept>
-#include <utilities/mpiError.hpp>
-#include <utilities/petscOptions.hpp>
+#include "utilities/mpiUtilities.hpp"
+#include "utilities/petscOptions.hpp"
 #include <utility>
 #include "utilities/petscError.hpp"
 

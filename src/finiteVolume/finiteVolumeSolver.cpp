@@ -3,7 +3,7 @@
 #include "cellInterpolant.hpp"
 #include "faceInterpolant.hpp"
 #include "processes/process.hpp"
-#include "utilities/mpiError.hpp"
+#include "utilities/mpiUtilities.hpp"
 #include "utilities/petscError.hpp"
 
 ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
@@ -272,7 +272,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::EnforceTimeStep(TS ts, ablate::so
     MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank);
 
     PetscReal dtMinGlobal;
-    MPI_Allreduce(&dtMin, &dtMinGlobal, 1, MPIU_REAL, MPIU_MIN, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
+    MPI_Allreduce(&dtMin, &dtMinGlobal, 1, MPIU_REAL, MPIU_MIN, PetscObjectComm((PetscObject)ts)) >> ablate::utilities::MpiUtilities::checkError;
 
     // don't override the first time step if bigger
     if (timeStep > 0 || dtMinGlobal < currentDt) {
@@ -295,7 +295,7 @@ std::map<std::string, double> ablate::finiteVolume::FiniteVolumeSolver::ComputeP
     for (const auto& dtFunction : timeStepFunctions) {
         double dt = dtFunction.function(ts, *this, dtFunction.context);
         PetscReal dtMinGlobal;
-        MPI_Reduce(&dt, &dtMinGlobal, 1, MPIU_REAL, MPI_MIN, 0, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
+        MPI_Reduce(&dt, &dtMinGlobal, 1, MPIU_REAL, MPI_MIN, 0, PetscObjectComm((PetscObject)ts)) >> ablate::utilities::MpiUtilities::checkError;
         timeSteps[dtFunction.name] = dtMinGlobal;
     }
 

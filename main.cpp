@@ -2,7 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <parameters/petscPrefixOptions.hpp>
-#include <utilities/mpiError.hpp>
+#include "utilities/mpiUtilities.hpp"
 #include "builder.hpp"
 #include "environment/download.hpp"
 #include "environment/runEnvironment.hpp"
@@ -88,7 +88,7 @@ int main(int argc, char** args) {
 
         // Copy over the input file
         int rank;
-        MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkMpiError;
+        MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> utilities::MpiUtilities::checkError;
         if (rank == 0) {
             std::filesystem::path inputCopy = environment::RunEnvironment::Get().GetOutputDirectory() / filePath.filename();
             std::ofstream stream(inputCopy);

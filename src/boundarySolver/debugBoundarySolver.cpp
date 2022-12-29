@@ -3,7 +3,6 @@
 #include <set>
 #include "boundaryProcess.hpp"
 #include "environment/runEnvironment.hpp"
-#include "utilities/mpiError.hpp"
 #include "utilities/mpiUtilities.hpp"
 
 ablate::boundarySolver::DebugBoundarySolver::DebugBoundarySolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary,
@@ -20,7 +19,7 @@ void ablate::boundarySolver::DebugBoundarySolver::Setup() {
     // check to make sure that gradientStencils is not zero
     PetscMPIInt numberStencilLocal = (PetscMPIInt)gradientStencils.size();
     PetscMPIInt numberStencilGlobal;
-    MPI_Reduce(&numberStencilLocal, &numberStencilGlobal, 1, MPI_INT, MPI_SUM, 0, GetSubDomain().GetComm()) >> checkMpiError;
+    MPI_Reduce(&numberStencilLocal, &numberStencilGlobal, 1, MPI_INT, MPI_SUM, 0, GetSubDomain().GetComm()) >> utilities::MpiUtilities::checkError;
 
     utilities::MpiUtilities::Once(
         GetSubDomain().GetComm(),

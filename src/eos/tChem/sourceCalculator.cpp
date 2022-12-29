@@ -4,7 +4,7 @@
 #include "eos/tChem.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "ignitionZeroDTemperatureThreshold.hpp"
-#include "utilities/mpiError.hpp"
+#include "utilities/mpiUtilities.hpp"
 
 void ablate::eos::tChem::SourceCalculator::ChemistryConstraints::Set(const std::shared_ptr<ablate::parameters::Parameters>& options) {
     if (options) {
@@ -116,7 +116,7 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::solver::R
 
     // get the rank
     PetscMPIInt rank;
-    MPI_Comm_rank(PetscObjectComm((PetscObject)solutionDm), &rank) >> checkMpiError;
+    MPI_Comm_rank(PetscObjectComm((PetscObject)solutionDm), &rank) >> utilities::MpiUtilities::checkError;
 
     // get the flowSolution
     const PetscScalar* flowArray;

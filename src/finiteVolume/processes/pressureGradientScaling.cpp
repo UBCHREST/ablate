@@ -2,7 +2,7 @@
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/processes/flowProcess.hpp"
-#include "utilities/mpiError.hpp"
+#include "utilities/mpiUtilities.hpp"
 
 ablate::finiteVolume::processes::PressureGradientScaling::PressureGradientScaling(std::shared_ptr<eos::EOS> eos, double alphaInit, double domainLength, double maxAlphaAllowedIn,
                                                                                   double maxDeltaPressureFacIn, std::shared_ptr<ablate::monitors::logs::Log> log)

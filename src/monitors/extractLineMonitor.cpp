@@ -1,7 +1,7 @@
 #include "extractLineMonitor.hpp"
 #include <fstream>
 #include <iostream>
-#include <utilities/mpiError.hpp>
+#include "utilities/mpiUtilities.hpp"
 #include <utilities/petscError.hpp>
 #include "environment/runEnvironment.hpp"
 
@@ -20,7 +20,7 @@ void ablate::monitors::ExtractLineMonitor::Register(std::shared_ptr<solver::Solv
 
     // check the size
     int size;
-    MPI_Comm_size(flow->GetSubDomain().GetComm(), &size) >> checkMpiError;
+    MPI_Comm_size(flow->GetSubDomain().GetComm(), &size) >> utilities::MpiUtilities::checkError;
     if (size != 1) {
         throw std::runtime_error("The CurveMonitor monitor only works with a single mpi rank");
     }
@@ -37,7 +37,7 @@ void ablate::monitors::ExtractLineMonitor::Register(std::shared_ptr<solver::Solv
     VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
 
     PetscMPIInt rank;
-    MPI_Comm_rank(flow->GetSubDomain().GetComm(), &rank) >> checkMpiError;
+    MPI_Comm_rank(flow->GetSubDomain().GetComm(), &rank) >> utilities::MpiUtilities::checkError;
 
     PetscInt dim;
     DMGetDimension(flow->GetSubDomain().GetDM(), &dim) >> checkError;

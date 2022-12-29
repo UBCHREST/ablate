@@ -1,7 +1,7 @@
 #include "download.hpp"
 #include <utility>
 #include "environment/runEnvironment.hpp"
-#include "utilities/mpiError.hpp"
+#include "utilities/mpiUtilities.hpp"
 #include "utilities/petscError.hpp"
 #include "utilities/temporaryWorkingDirectory.hpp"
 

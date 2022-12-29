@@ -1,9 +1,9 @@
 #include "fieldDescription.hpp"
 #include <map>
 #include <regex>
-#include <utilities/mpiError.hpp>
-#include <utilities/petscError.hpp>
-#include <utilities/petscOptions.hpp>
+#include "utilities/mpiUtilities.hpp"
+#include "utilities/petscError.hpp"
+#include "utilities/petscOptions.hpp"
 
 ablate::domain::FieldDescription::FieldDescription(std::string nameIn, std::string prefixIn, std::vector<std::string> componentsIn, ablate::domain::FieldLocation location,
                                                    ablate::domain::FieldType type, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> optionsIn,
@@ -31,7 +31,7 @@ PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
             PetscInt simplexGlobal;
 
             // Assume true if any rank says true
-            MPI_Allreduce(&simplexLoc, &simplexGlobal, 1, MPIU_INT, MPIU_MAX, PetscObjectComm((PetscObject)dm)) >> checkMpiError;
+            MPI_Allreduce(&simplexLoc, &simplexGlobal, 1, MPIU_INT, MPIU_MAX, PetscObjectComm((PetscObject)dm)) >> ablate::utilities::MpiUtilities::checkError;
 
             // Determine the number of dims
             PetscInt dim;

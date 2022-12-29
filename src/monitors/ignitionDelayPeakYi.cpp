@@ -2,7 +2,7 @@
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/processes/navierStokesTransport.hpp"
 #include "monitors/logs/stdOut.hpp"
-#include "utilities/mpiError.hpp"
+#include "utilities/mpiUtilities.hpp"
 #include "utilities/petscError.hpp"
 
 ablate::monitors::IgnitionDelayPeakYi::IgnitionDelayPeakYi(std::string species, std::vector<double> location, std::shared_ptr<logs::Log> logIn, std::shared_ptr<logs::Log> historyLogIn)
@@ -34,7 +34,7 @@ void ablate::monitors::IgnitionDelayPeakYi::Register(std::shared_ptr<solver::Sol
 
     // check the size
     int size;
-    MPI_Comm_size(flow->GetSubDomain().GetComm(), &size) >> checkMpiError;
+    MPI_Comm_size(flow->GetSubDomain().GetComm(), &size) >> utilities::MpiUtilities::checkError;
     if (size != 1) {
         throw std::runtime_error("The IgnitionDelay monitor only works with a single mpi rank");
     }
@@ -65,7 +65,7 @@ void ablate::monitors::IgnitionDelayPeakYi::Register(std::shared_ptr<solver::Sol
     const PetscSFNode* cells;
     PetscInt numberFound;
     PetscMPIInt rank;
-    MPI_Comm_rank(flow->GetSubDomain().GetComm(), &rank) >> checkMpiError;
+    MPI_Comm_rank(flow->GetSubDomain().GetComm(), &rank) >> utilities::MpiUtilities::checkError;
 
     PetscSFGetGraph(cellSF, NULL, &numberFound, NULL, &cells) >> checkError;
     if (numberFound == 1) {

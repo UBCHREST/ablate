@@ -1,5 +1,4 @@
 #include "fileLog.hpp"
-#include <utilities/mpiError.hpp>
 #include <utilities/petscError.hpp>
 #include "environment/runEnvironment.hpp"
 
