@@ -291,7 +291,8 @@ INSTANTIATE_TEST_SUITE_P(
                                         .property1Value = 300.0,
                                         .property2Value = 101325.0,
                                         .velocity = {10.0, 20, 30},
-                                        .expectedValue = {994.090880767274, 994.090880767274 * 2.4291220726994300E+06, 994.090880767274 * 10, 994.090880767274 * 20, 994.090880767274 * 30}}
+                                        .yi = {1.0}, // alpha
+                                        .expectedValue = {1.1768292682, 1.1768292682 * (2.1525E+05 + 700), 1.1768292682 * 10, 1.1768292682 * 20, 1.1768292682 * 30}}
 //        (SGFieldFunctionTestParameters){.options = {{"gamma", "3.2"}, {"Cp", "100.2"}, {"p0", "3.5e6"}},
 //                                        .field = "euler",
 //                                        .property1 = ablate::eos::ThermodynamicProperty::Temperature,

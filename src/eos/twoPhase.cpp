@@ -274,9 +274,9 @@ ablate::eos::FieldFunction  ablate::eos::TwoPhase::GetFieldFunctionFunction(cons
                 }
                 kineticEnergy *= 0.5;
 
-                // how do I now what the offset is for the volumeFraction and densityVF fields, replace indexing
-                conserved[0] = alpha;
-                conserved[1] = alpha * rho1;
+//                // how do I now what the offset is for the volumeFraction and densityVF fields, replace indexing
+//                conserved[0] = alpha;
+//                conserved[1] = alpha * rho1;
                 conserved[ablate::finiteVolume::CompressibleFlowFields::RHO] = density;
                 conserved[ablate::finiteVolume::CompressibleFlowFields::RHOE] = density * (kineticEnergy + sensibleInternalEnergy);
 
@@ -298,24 +298,24 @@ ablate::eos::FieldFunction  ablate::eos::TwoPhase::GetFieldFunctionFunction(cons
             auto iep = [this](PetscReal internalSensibleEnergy, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
                 // Compute the density
                 PetscReal alpha = yi[0];
-                PetscReal density, cv1, cv2, rho1, rhoe;
+                PetscReal density; //, cv1, cv2, rho1, rhoe;
                 if (parameters.p01 == 0 && parameters.p02 == 0){
                     density = pressure/internalSensibleEnergy * (alpha/(parameters.gamma1-1) + (1 - alpha)/(parameters.gamma2-1));
-                    cv1 = parameters.rGas1 / (parameters.gamma1 - 1.0);
-                    cv2 = parameters.rGas2 / (parameters.gamma2 - 1.0);
-                    rhoe = pressure / (parameters.gamma1 - 1);
-                    rho1 = cv2/cv1 * density * rhoe / (density*internalSensibleEnergy + alpha * rhoe * (cv2/cv1 - 1));
+//                    cv1 = parameters.rGas1 / (parameters.gamma1 - 1.0);
+//                    cv2 = parameters.rGas2 / (parameters.gamma2 - 1.0);
+//                    rhoe = pressure / (parameters.gamma1 - 1);
+//                    rho1 = cv2/cv1 * density * rhoe / (density*internalSensibleEnergy + alpha * rhoe * (cv2/cv1 - 1));
                 } else if (parameters.p01 == 0 && parameters.p02 != 0){
                     density = 1/internalSensibleEnergy * (alpha * pressure / (parameters.gamma1 - 1) + (pressure + parameters.gamma2*parameters.p02)*(1-alpha)/(parameters.gamma2 - 1));
-                    cv1 = parameters.rGas1 / (parameters.gamma1 - 1.0);
-                    rhoe = pressure / (parameters.gamma1 - 1);
-                    PetscReal coeffs = parameters.Cp2/cv1/parameters.gamma2;
-                    rho1 = coeffs * density * rhoe / (density*internalSensibleEnergy + alpha*rhoe*(coeffs - 1) - parameters.p02*(1-alpha));
+//                    cv1 = parameters.rGas1 / (parameters.gamma1 - 1.0);
+//                    rhoe = pressure / (parameters.gamma1 - 1);
+//                    PetscReal coeffs = parameters.Cp2/cv1/parameters.gamma2;
+//                    rho1 = coeffs * density * rhoe / (density*internalSensibleEnergy + alpha*rhoe*(coeffs - 1) - parameters.p02*(1-alpha));
                 } else if (parameters.p01 != 0 && parameters.p02 != 0){
                     density = 1/internalSensibleEnergy * (alpha*(pressure + parameters.gamma1*parameters.p01)/(parameters.gamma1 - 1) + (pressure + parameters.gamma2 * parameters.p02)*(1 - alpha)/(parameters.gamma2 - 1));
-                    rhoe = (pressure + parameters.gamma1 * parameters.p01) / (parameters.gamma1 - 1);
-                    PetscReal coeffs = parameters.gamma1 * parameters.Cp2 / parameters.Cp1 / parameters.gamma2;
-                    rho1 = coeffs * density * (rhoe - parameters.p01) / (density*internalSensibleEnergy - parameters.p02*(1-alpha) - alpha*parameters.p01*coeffs + alpha*rhoe*(coeffs - 1));
+//                    rhoe = (pressure + parameters.gamma1 * parameters.p01) / (parameters.gamma1 - 1);
+//                    PetscReal coeffs = parameters.gamma1 * parameters.Cp2 / parameters.Cp1 / parameters.gamma2;
+//                    rho1 = coeffs * density * (rhoe - parameters.p01) / (density*internalSensibleEnergy - parameters.p02*(1-alpha) - alpha*parameters.p01*coeffs + alpha*rhoe*(coeffs - 1));
                 } else {
                     throw std::invalid_argument("no valid, TwoPhase::GetFieldFunction needs perfect/stiffened gas eos combination");
                 }
@@ -327,9 +327,9 @@ ablate::eos::FieldFunction  ablate::eos::TwoPhase::GetFieldFunctionFunction(cons
                 }
                 kineticEnergy *= 0.5;
 
-                // how do I now what the offset is for the volumeFraction and densityVF fields, replace indexing
-                conserved[0] = alpha;
-                conserved[1] = alpha * rho1;
+//                // how do I now what the offset is for the volumeFraction and densityVF fields, replace indexing
+//                conserved[0] = alpha;
+//                conserved[1] = alpha * rho1;
                 conserved[ablate::finiteVolume::CompressibleFlowFields::RHO] = density;
                 conserved[ablate::finiteVolume::CompressibleFlowFields::RHOE] = density * (kineticEnergy + internalSensibleEnergy);
 
@@ -372,7 +372,7 @@ ablate::eos::FieldFunction  ablate::eos::TwoPhase::GetFieldFunctionFunction(cons
                 }
                 PetscReal density = alpha * rho1 + (1 - alpha) * rho2;
                 for (PetscInt c = 0; c < parameters.numberSpecies; c++) {
-                    conserved[c] = density * yi[c];
+                    conserved[c] = density * yi[c+1]; // first one is alpha
                 }
             };
         } else if (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature) {
@@ -397,14 +397,14 @@ ablate::eos::FieldFunction  ablate::eos::TwoPhase::GetFieldFunctionFunction(cons
                 }
                 PetscReal density = alpha * rho1 + (1 - alpha) * rho2;
                 for (PetscInt c = 0; c < parameters.numberSpecies; c++) {
-                    conserved[c] = density * yi[c];
+                    conserved[c] = density * yi[c+1]; // first one is alpha
                 }
             };
         } else if (property1 == ThermodynamicProperty::InternalSensibleEnergy && property2 == ThermodynamicProperty::Pressure) {
             return [this](PetscReal internalSensibleEnergy, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
                 // Compute the density
                 PetscReal alpha = yi[0];
-                PetscReal density, cv1, cv2;
+                PetscReal density;
                 if (parameters.p01 == 0 && parameters.p02 == 0){
                     density = pressure/internalSensibleEnergy * (alpha/(parameters.gamma1-1) + (1 - alpha)/(parameters.gamma2-1));
                 } else if (parameters.p01 == 0 && parameters.p02 != 0){
@@ -415,14 +415,14 @@ ablate::eos::FieldFunction  ablate::eos::TwoPhase::GetFieldFunctionFunction(cons
                     throw std::invalid_argument("no valid, TwoPhase::GetFieldFunction needs perfect/stiffened gas eos combination");
                 }
                 for (PetscInt c = 0; c < parameters.numberSpecies; c++) {
-                    conserved[c] = density * yi[c];
+                    conserved[c] = density * yi[c+1]; // first one is alpha
                 }
             };
         } else if (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::InternalSensibleEnergy) {
             return [this](PetscReal pressure, PetscReal internalSensibleEnergy, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
                 // Compute the density
                 PetscReal alpha = yi[0];
-                PetscReal density, cv1, cv2, rho1, rhoe;
+                PetscReal density;
                 if (parameters.p01 == 0 && parameters.p02 == 0){
                     density = pressure/internalSensibleEnergy * (alpha/(parameters.gamma1-1) + (1 - alpha)/(parameters.gamma2-1));
                 } else if (parameters.p01 == 0 && parameters.p02 != 0){
@@ -433,7 +433,7 @@ ablate::eos::FieldFunction  ablate::eos::TwoPhase::GetFieldFunctionFunction(cons
                     throw std::invalid_argument("no valid, TwoPhase::GetFieldFunction needs perfect/stiffened gas eos combination");
                 }
                 for (PetscInt c = 0; c < parameters.numberSpecies; c++) {
-                    conserved[c] = density * yi[c];
+                    conserved[c] = density * yi[c+1]; // first one is alpha
                 }
             };
         }
