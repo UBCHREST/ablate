@@ -8,9 +8,9 @@
 //  xyz - Array containing the point
 //
 // Outputs:
-//  cell - The cell containing xyz. Will return -1 if this point is not in the DM
+//  cell - The cell containing xyz. Will return -1 if this point is not in the local part of the DM
 //
-// Note: This is adapted from DMInterpolationSetUp. It is unknown if this will work in parallel (if the cell is on another rank).
+// Note: This is adapted from DMInterpolationSetUp. If the cell containing the point is a ghost cell then this will return -1.
 PetscErrorCode DMPlexGetContainingCell(DM dm, PetscScalar *xyz, PetscInt *cell) {
   PetscSF         cellSF = NULL;
   Vec             pointVec;

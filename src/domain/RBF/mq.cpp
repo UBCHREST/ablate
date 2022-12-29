@@ -4,11 +4,7 @@ using namespace ablate::domain::rbf;
 
 /************ Begin Multiquadric Derived Class **********************/
 
-MQ::MQ(PetscInt p, PetscReal scale, bool hasDerivatives, bool hasInterpolation) : RBF(p, hasDerivatives, hasInterpolation), scale(scale) {
-
-  printf("IN MQ: %d %f %d %d", p, scale, hasDerivatives, hasInterpolation);
-//  PetscFinalize();
-  };
+MQ::MQ(PetscInt p, PetscReal scale, bool hasDerivatives, bool hasInterpolation) : RBF(p, hasDerivatives, hasInterpolation), scale(scale) {};
 
 
 // Multiquadric: sqrt(1+(er)^2)
