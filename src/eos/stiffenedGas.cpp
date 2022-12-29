@@ -26,7 +26,7 @@ ablate::eos::ThermodynamicFunction ablate::eos::StiffenedGas::GetThermodynamicFu
     // Look for the euler field
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
     if (eulerField == fields.end()) {
-        throw std::invalid_argument("The ablate::eos::PerfectGas requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
+        throw std::invalid_argument("The ablate::eos::StiffenedGas requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
     }
 
     return ThermodynamicFunction{.function = thermodynamicFunctions.at(property).first,
@@ -37,7 +37,7 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::StiffenedGas::GetTher
     // Look for the euler field
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
     if (eulerField == fields.end()) {
-        throw std::invalid_argument("The ablate::eos::PerfectGas requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
+        throw std::invalid_argument("The ablate::eos::StiffenedGas requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
     }
 
     return ThermodynamicTemperatureFunction{
@@ -111,7 +111,7 @@ ablate::eos::EOSFunction ablate::eos::StiffenedGas::GetFieldFunctionFunction(con
             }
         }
 
-        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::PerfectGas.");
+        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::StiffenedGas.");
 
     } else if (finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD == field && otherProperties == std::vector<std::string>{YI}) {
         if (property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) {
@@ -152,9 +152,9 @@ ablate::eos::EOSFunction ablate::eos::StiffenedGas::GetFieldFunctionFunction(con
             };
         }
 
-        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::PerfectGas.");
+        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::StiffenedGas.");
     } else {
-        throw std::invalid_argument("Unknown field type " + field + " for ablate::eos::PerfectGas.");
+        throw std::invalid_argument("Unknown field type " + field + " for ablate::eos::StiffenedGas.");
     }
 }
 
