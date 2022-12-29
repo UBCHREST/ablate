@@ -226,9 +226,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     // Add in species
     if (sublimation->massFractionsContext) {
         // Fill the source with the mass fractions
-        PetscErrorCode ierr =
-            sublimation->massFractionsFunction(dim, sublimation->currentTime, fg->centroid, sublimation->numberSpecies, source + sOff[DENSITY_YI_LOC], sublimation->massFractionsContext);
-        CHKERRQ(ierr);
+        PetscCall(sublimation->massFractionsFunction(dim, sublimation->currentTime, fg->centroid, sublimation->numberSpecies, source + sOff[DENSITY_YI_LOC], sublimation->massFractionsContext));
 
         // Scale the mass fractions by massFlux*area
         for (PetscInt sp = 0; sp < sublimation->numberSpecies; sp++) {

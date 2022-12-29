@@ -89,18 +89,15 @@ void ablate::monitors::IgnitionDelayPeakYi::Register(std::shared_ptr<solver::Sol
 
 PetscErrorCode ablate::monitors::IgnitionDelayPeakYi::MonitorIgnition(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
+
     DM dm;
     PetscDS ds;
-    ierr = TSGetDM(ts, &dm);
-    CHKERRQ(ierr);
-    ierr = DMGetDS(dm, &ds);
-    CHKERRQ(ierr);
+    PetscCall(TSGetDM(ts, &dm));
+    PetscCall(DMGetDS(dm, &ds));
 
     // Check for the number of DS, this should be relaxed
     PetscInt numberDS;
-    ierr = DMGetNumDS(dm, &numberDS);
-    CHKERRQ(ierr);
+    PetscCall(DMGetNumDS(dm, &numberDS));
     if (numberDS > 1) {
         SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "This monitor only supports a single DS in a DM");
     }
@@ -109,16 +106,13 @@ PetscErrorCode ablate::monitors::IgnitionDelayPeakYi::MonitorIgnition(TS ts, Pet
 
     // extract the gradLocalVec
     const PetscScalar* uArray;
-    ierr = VecGetArrayRead(u, &uArray);
-    CHKERRQ(ierr);
+    PetscCall(VecGetArrayRead(u, &uArray));
 
     // Get the euler and densityYi values
     const PetscScalar* eulerValues;
     const PetscScalar* densityYiValues;
-    ierr = DMPlexPointGlobalFieldRead(dm, monitor->cellOfInterest, monitor->eulerId, uArray, &eulerValues);
-    CHKERRQ(ierr);
-    ierr = DMPlexPointGlobalFieldRead(dm, monitor->cellOfInterest, monitor->yiId, uArray, &densityYiValues);
-    CHKERRQ(ierr);
+    PetscCall(DMPlexPointGlobalFieldRead(dm, monitor->cellOfInterest, monitor->eulerId, uArray, &eulerValues));
+    PetscCall(DMPlexPointGlobalFieldRead(dm, monitor->cellOfInterest, monitor->yiId, uArray, &densityYiValues));
 
     // Store the result
     double yi = densityYiValues[monitor->yiOffset] / eulerValues[ablate::finiteVolume::CompressibleFlowFields::RHO];
@@ -129,8 +123,7 @@ PetscErrorCode ablate::monitors::IgnitionDelayPeakYi::MonitorIgnition(TS ts, Pet
         monitor->historyLog->Printf("%" PetscInt_FMT " Time: %g Yi: %f\n", step, crtime, yi);
     }
 
-    ierr = VecRestoreArrayRead(u, &uArray);
-    CHKERRQ(ierr);
+    PetscCall(VecRestoreArrayRead(u, &uArray));
     PetscFunctionReturn(0);
 }
 

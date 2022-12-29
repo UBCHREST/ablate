@@ -51,13 +51,11 @@ static PetscErrorCode zero(PetscInt dim, PetscReal time, const PetscReal x[], Pe
 PetscErrorCode ablate::solver::Solver::DMPlexInsertBoundaryValues_Plex(DM dm, PetscDS prob, PetscBool insertEssential, Vec locX, PetscReal time, Vec faceGeomFVM, Vec cellGeomFVM, Vec gradFVM) {
     PetscObject isZero;
     PetscInt numBd, b;
-    PetscErrorCode ierr;
+
 
     PetscFunctionBegin;
-    ierr = PetscDSGetNumBoundary(prob, &numBd);
-    CHKERRQ(ierr);
-    ierr = PetscObjectQuery((PetscObject)locX, "__Vec_bc_zero__", &isZero);
-    CHKERRQ(ierr);
+    PetscCall(PetscDSGetNumBoundary(prob, &numBd));
+    PetscCall(PetscObjectQuery((PetscObject)locX, "__Vec_bc_zero__", &isZero));
     for (b = 0; b < numBd; ++b) {
         PetscWeakForm wf;
         DMBoundaryConditionType type;
@@ -72,13 +70,10 @@ PetscErrorCode ablate::solver::Solver::DMPlexInsertBoundaryValues_Plex(DM dm, Pe
         const PetscInt *ids;
         void *ctx;
 
-        ierr = PetscDSGetBoundary(prob, b, &wf, &type, &name, &label, &numids, &ids, &field, &Nc, &comps, &bvfunc, NULL, &ctx);
-        CHKERRQ(ierr);
+        PetscCall(PetscDSGetBoundary(prob, b, &wf, &type, &name, &label, &numids, &ids, &field, &Nc, &comps, &bvfunc, NULL, &ctx));
         if (insertEssential != (type & DM_BC_ESSENTIAL)) continue;
-        ierr = DMGetField(dm, field, NULL, &obj);
-        CHKERRQ(ierr);
-        ierr = PetscObjectGetClassId(obj, &id);
-        CHKERRQ(ierr);
+        PetscCall(DMGetField(dm, field, NULL, &obj));
+        PetscCall(PetscObjectGetClassId(obj, &id));
         if (id == PETSCFE_CLASSID) {
             switch (type) {
                     /* for FEM, there is no insertion to be done for non-essential boundary conditions */
@@ -86,22 +81,16 @@ PetscErrorCode ablate::solver::Solver::DMPlexInsertBoundaryValues_Plex(DM dm, Pe
                     PetscSimplePointFunc func = (PetscSimplePointFunc)bvfunc;
 
                     if (isZero) func = zero;
-                    ierr = DMPlexLabelAddCells(dm, label);
-                    CHKERRQ(ierr);
-                    ierr = DMPlexInsertBoundaryValuesEssential(dm, time, field, Nc, comps, label, numids, ids, func, ctx, locX);
-                    CHKERRQ(ierr);
-                    ierr = DMPlexLabelClearCells(dm, label);
-                    CHKERRQ(ierr);
+                    PetscCall(DMPlexLabelAddCells(dm, label));
+                    PetscCall(DMPlexInsertBoundaryValuesEssential(dm, time, field, Nc, comps, label, numids, ids, func, ctx, locX));
+                    PetscCall(DMPlexLabelClearCells(dm, label));
                 } break;
                 case DM_BC_ESSENTIAL_FIELD: {
                     PetscPointFunc func = (PetscPointFunc)bvfunc;
 
-                    ierr = DMPlexLabelAddCells(dm, label);
-                    CHKERRQ(ierr);
-                    ierr = DMPlexInsertBoundaryValuesEssentialField(dm, time, locX, field, Nc, comps, label, numids, ids, func, ctx, locX);
-                    CHKERRQ(ierr);
-                    ierr = DMPlexLabelClearCells(dm, label);
-                    CHKERRQ(ierr);
+                    PetscCall(DMPlexLabelAddCells(dm, label));
+                    PetscCall(DMPlexInsertBoundaryValuesEssentialField(dm, time, locX, field, Nc, comps, label, numids, ids, func, ctx, locX));
+                    PetscCall(DMPlexLabelClearCells(dm, label));
                 } break;
                 default:
                     break;
@@ -112,8 +101,7 @@ PetscErrorCode ablate::solver::Solver::DMPlexInsertBoundaryValues_Plex(DM dm, Pe
                     (PetscErrorCode(*)(PetscReal, const PetscReal *, const PetscReal *, const PetscScalar *, PetscScalar *, void *))bvfunc;
 
                 if (!faceGeomFVM) continue;
-                ierr = DMPlexInsertBoundaryValuesRiemann(dm, time, faceGeomFVM, cellGeomFVM, gradFVM, field, Nc, comps, label, numids, ids, func, ctx, locX);
-                CHKERRQ(ierr);
+                PetscCall(DMPlexInsertBoundaryValuesRiemann(dm, time, faceGeomFVM, cellGeomFVM, gradFVM, field, Nc, comps, label, numids, ids, func, ctx, locX));
             }
         } else
             SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "Unknown discretization type for field %" PetscInt_FMT, field);
@@ -125,14 +113,12 @@ PetscErrorCode ablate::solver::Solver::DMPlexInsertTimeDerivativeBoundaryValues_
                                                                                      Vec gradFVM) {
     PetscObject isZero;
     PetscInt numBd, b;
-    PetscErrorCode ierr;
+
 
     PetscFunctionBegin;
     if (!locX) PetscFunctionReturn(0);
-    ierr = PetscDSGetNumBoundary(prob, &numBd);
-    CHKERRQ(ierr);
-    ierr = PetscObjectQuery((PetscObject)locX, "__Vec_bc_zero__", &isZero);
-    CHKERRQ(ierr);
+    PetscCall(PetscDSGetNumBoundary(prob, &numBd));
+    PetscCall(PetscObjectQuery((PetscObject)locX, "__Vec_bc_zero__", &isZero));
     for (b = 0; b < numBd; ++b) {
         PetscWeakForm wf;
         DMBoundaryConditionType type;
@@ -147,13 +133,10 @@ PetscErrorCode ablate::solver::Solver::DMPlexInsertTimeDerivativeBoundaryValues_
         void (*bvfunc)(void);
         void *ctx;
 
-        ierr = PetscDSGetBoundary(prob, b, &wf, &type, &name, &label, &numids, &ids, &field, &Nc, &comps, NULL, &bvfunc, &ctx);
-        CHKERRQ(ierr);
+        PetscCall(PetscDSGetBoundary(prob, b, &wf, &type, &name, &label, &numids, &ids, &field, &Nc, &comps, NULL, &bvfunc, &ctx));
         if (insertEssential != (type & DM_BC_ESSENTIAL)) continue;
-        ierr = DMGetField(dm, field, NULL, &obj);
-        CHKERRQ(ierr);
-        ierr = PetscObjectGetClassId(obj, &id);
-        CHKERRQ(ierr);
+        PetscCall(DMGetField(dm, field, NULL, &obj));
+        PetscCall(PetscObjectGetClassId(obj, &id));
         if (id == PETSCFE_CLASSID) {
             switch (type) {
                     /* for FEM, there is no insertion to be done for non-essential boundary conditions */
@@ -161,22 +144,16 @@ PetscErrorCode ablate::solver::Solver::DMPlexInsertTimeDerivativeBoundaryValues_
                     PetscSimplePointFunc func_t = (PetscSimplePointFunc)bvfunc;
 
                     if (isZero) func_t = zero;
-                    ierr = DMPlexLabelAddCells(dm, label);
-                    CHKERRQ(ierr);
-                    ierr = DMPlexInsertBoundaryValuesEssential(dm, time, field, Nc, comps, label, numids, ids, func_t, ctx, locX);
-                    CHKERRQ(ierr);
-                    ierr = DMPlexLabelClearCells(dm, label);
-                    CHKERRQ(ierr);
+                    PetscCall(DMPlexLabelAddCells(dm, label));
+                    PetscCall(DMPlexInsertBoundaryValuesEssential(dm, time, field, Nc, comps, label, numids, ids, func_t, ctx, locX));
+                    PetscCall(DMPlexLabelClearCells(dm, label));
                 } break;
                 case DM_BC_ESSENTIAL_FIELD: {
                     PetscPointFunc func_t = (PetscPointFunc)bvfunc;
 
-                    ierr = DMPlexLabelAddCells(dm, label);
-                    CHKERRQ(ierr);
-                    ierr = DMPlexInsertBoundaryValuesEssentialField(dm, time, locX, field, Nc, comps, label, numids, ids, func_t, ctx, locX);
-                    CHKERRQ(ierr);
-                    ierr = DMPlexLabelClearCells(dm, label);
-                    CHKERRQ(ierr);
+                    PetscCall(DMPlexLabelAddCells(dm, label));
+                    PetscCall(DMPlexInsertBoundaryValuesEssentialField(dm, time, locX, field, Nc, comps, label, numids, ids, func_t, ctx, locX));
+                    PetscCall(DMPlexLabelClearCells(dm, label));
                 } break;
                 default:
                     break;

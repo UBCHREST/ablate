@@ -525,73 +525,57 @@ PetscErrorCode ablate::domain::SubDomain::GetFieldGlobalVector(const Field& fiel
     auto entireDm = GetFieldDM(field);
     auto entireVec = GetGlobalVec(field);
 
-    PetscErrorCode ierr;
-    ierr = DMCreateSubDM(entireDm, 1, &field.id, vecIs, subdm);
-    CHKERRQ(ierr);
+    PetscCall(DMCreateSubDM(entireDm, 1, &field.id, vecIs, subdm));
 
     // Get the sub vector
-    ierr = VecGetSubVector(entireVec, *vecIs, vec);
-    CHKERRQ(ierr);
+    PetscCall(VecGetSubVector(entireVec, *vecIs, vec));
     PetscFunctionReturn(0);
 }
 
 PetscErrorCode ablate::domain::SubDomain::RestoreFieldGlobalVector(const Field& field, IS* vecIs, Vec* vec, DM* subdm) {
     PetscFunctionBeginUser;
     auto entireVec = GetGlobalVec(field);
-    PetscErrorCode ierr;
-    ierr = VecRestoreSubVector(entireVec, *vecIs, vec);
-    CHKERRQ(ierr);
-    ierr = ISDestroy(vecIs);
-    CHKERRQ(ierr);
-    ierr = DMDestroy(subdm);
-    CHKERRQ(ierr);
+
+    PetscCall(VecRestoreSubVector(entireVec, *vecIs, vec));
+    PetscCall(ISDestroy(vecIs));
+    PetscCall(DMDestroy(subdm));
 
     PetscFunctionReturn(0);
 }
 
 PetscErrorCode ablate::domain::SubDomain::GetFieldLocalVector(const ablate::domain::Field& field, PetscReal time, IS* vecIs, Vec* vec, DM* subdm) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
+
     if (field.location == FieldLocation::SOL) {
         // Get the correct dm
         auto entireDm = GetDM();
         auto entireVec = GetSolutionVector();
 
         // Create a subDM
-        ierr = DMCreateSubDM(entireDm, 1, &field.id, vecIs, subdm);
-        CHKERRQ(ierr);
+        PetscCall(DMCreateSubDM(entireDm, 1, &field.id, vecIs, subdm));
 
         // Use a global vector to get the results
         Vec subGlobalVector;
-        ierr = VecGetSubVector(entireVec, *vecIs, &subGlobalVector);
-        CHKERRQ(ierr);
+        PetscCall(VecGetSubVector(entireVec, *vecIs, &subGlobalVector));
 
         // Make a local version of the vector
-        ierr = DMGetLocalVector(*subdm, vec);
-        CHKERRQ(ierr);
-        ierr = DMPlexInsertBoundaryValues(*subdm, PETSC_TRUE, *vec, time, nullptr, nullptr, nullptr);
-        CHKERRQ(ierr);
-        ierr = DMGlobalToLocalBegin(*subdm, subGlobalVector, INSERT_VALUES, *vec);
-        CHKERRQ(ierr);
-        ierr = DMGlobalToLocalEnd(*subdm, subGlobalVector, INSERT_VALUES, *vec);
-        CHKERRQ(ierr);
+        PetscCall(DMGetLocalVector(*subdm, vec));
+        PetscCall(DMPlexInsertBoundaryValues(*subdm, PETSC_TRUE, *vec, time, nullptr, nullptr, nullptr));
+        PetscCall(DMGlobalToLocalBegin(*subdm, subGlobalVector, INSERT_VALUES, *vec));
+        PetscCall(DMGlobalToLocalEnd(*subdm, subGlobalVector, INSERT_VALUES, *vec));
 
         // We have the filled local vec subdm, so clean up the subGlobalVector and vecIS
-        ierr = VecRestoreSubVector(entireVec, *vecIs, &subGlobalVector);
-        CHKERRQ(ierr);
-        ierr = ISDestroy(vecIs);
-        *vecIs = nullptr;
-        CHKERRQ(ierr);
+        PetscCall(VecRestoreSubVector(entireVec, *vecIs, &subGlobalVector));
+        PetscCall(ISDestroy(vecIs);
+        *vecIs = nullptr);
     } else if (field.location == FieldLocation::AUX) {
         auto entireDm = GetAuxDM();
         auto entireVec = GetAuxVector();
 
-        ierr = DMCreateSubDM(entireDm, 1, &field.id, vecIs, subdm);
-        CHKERRQ(ierr);
+        PetscCall(DMCreateSubDM(entireDm, 1, &field.id, vecIs, subdm));
 
         // Get the sub vector
-        ierr = VecGetSubVector(entireVec, *vecIs, vec);
-        CHKERRQ(ierr);
+        PetscCall(VecGetSubVector(entireVec, *vecIs, vec));
     } else {
         SETERRQ(GetComm(), PETSC_ERR_SUP, "%s", "Unknown field location");
     }
@@ -600,21 +584,16 @@ PetscErrorCode ablate::domain::SubDomain::GetFieldLocalVector(const ablate::doma
 }
 PetscErrorCode ablate::domain::SubDomain::RestoreFieldLocalVector(const ablate::domain::Field& field, IS* vecIs, Vec* vec, DM* subdm) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
+
     if (field.location == FieldLocation::SOL) {
         // In the Get call, the vecIS was already cleaned up and vec is only a localVec
-        ierr = DMRestoreLocalVector(*subdm, vec);
-        CHKERRQ(ierr);
-        ierr = DMDestroy(subdm);
-        CHKERRQ(ierr);
+        PetscCall(DMRestoreLocalVector(*subdm, vec));
+        PetscCall(DMDestroy(subdm));
     } else if (field.location == FieldLocation::AUX) {
         auto entireVec = GetAuxVector();
-        ierr = VecRestoreSubVector(entireVec, *vecIs, vec);
-        CHKERRQ(ierr);
-        ierr = ISDestroy(vecIs);
-        CHKERRQ(ierr);
-        ierr = DMDestroy(subdm);
-        CHKERRQ(ierr);
+        PetscCall(VecRestoreSubVector(entireVec, *vecIs, vec));
+        PetscCall(ISDestroy(vecIs));
+        PetscCall(DMDestroy(subdm));
     } else {
         SETERRQ(GetComm(), PETSC_ERR_SUP, "%s", "Unknown field location");
     }

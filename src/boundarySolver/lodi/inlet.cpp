@@ -58,12 +58,9 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
             boundaryVel[d] = boundaryValues[uOff[inletBoundary->eulerId] + finiteVolume::CompressibleFlowFields::RHOU + d] / boundaryDensity;
             boundaryNormalVelocity += boundaryVel[d] * fg->normal[d];
         }
-        PetscErrorCode ierr = inletBoundary->computeTemperature.function(boundaryValues, &boundaryTemperature, inletBoundary->computeTemperature.context.get());
-        CHKERRQ(ierr);
-        ierr = inletBoundary->computeSpeedOfSound.function(boundaryValues, boundaryTemperature, &boundarySpeedOfSound, inletBoundary->computeSpeedOfSound.context.get());
-        CHKERRQ(ierr);
-        ierr = inletBoundary->computePressureFromTemperature.function(boundaryValues, boundaryTemperature, &boundaryPressure, inletBoundary->computePressureFromTemperature.context.get());
-        CHKERRQ(ierr);
+        PetscCall(inletBoundary->computeTemperature.function(boundaryValues, &boundaryTemperature, inletBoundary->computeTemperature.context.get()));
+        PetscCall(inletBoundary->computeSpeedOfSound.function(boundaryValues, boundaryTemperature, &boundarySpeedOfSound, inletBoundary->computeSpeedOfSound.context.get()));
+        PetscCall(inletBoundary->computePressureFromTemperature.function(boundaryValues, boundaryTemperature, &boundaryPressure, inletBoundary->computePressureFromTemperature.context.get()));
     }
 
     // Map the boundary velocity into the normal coord system
@@ -82,8 +79,7 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
             stencilVel[s][d] = stencilValues[s][uOff[inletBoundary->eulerId] + finiteVolume::CompressibleFlowFields::RHOU + d] / stencilDensity[s];
             stencilNormalVelocity[s] += stencilVel[s][d] * fg->normal[d];
         }
-        PetscErrorCode ierr = inletBoundary->computePressure.function(stencilValues[s], &stencilPressure[s], inletBoundary->computePressure.context.get());
-        CHKERRQ(ierr);
+        PetscCall(inletBoundary->computePressure.function(stencilValues[s], &stencilPressure[s], inletBoundary->computePressure.context.get()));
     }
 
     // Interpolate the normal velocity gradient to the surface

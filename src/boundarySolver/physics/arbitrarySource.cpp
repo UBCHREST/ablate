@@ -18,8 +18,7 @@ void ablate::boundarySolver::physics::ArbitrarySource::Setup(ablate::boundarySol
 
     bSolver.RegisterPreStep([this](auto ts, auto &solver) {
         PetscFunctionBeginUser;
-        PetscErrorCode ierr = TSGetTime(ts, &(this->currentTime));
-        CHKERRQ(ierr);
+        PetscCall(TSGetTime(ts, &(this->currentTime)));
 
         PetscFunctionReturn(0);
     });

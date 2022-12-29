@@ -72,29 +72,22 @@ static PetscErrorCode SetInitialCondition(PetscInt dim, PetscReal time, const Pe
 
 static PetscErrorCode Extract1DPrimitives(DM dm, Vec v, std::map<std::string, std::vector<double>> &results) {
     Vec cellgeom;
-    PetscErrorCode ierr = DMPlexGetGeometryFVM(dm, NULL, &cellgeom, NULL);
-    CHKERRQ(ierr);
+    PetscCall(DMPlexGetGeometryFVM(dm, NULL, &cellgeom, NULL));
     PetscInt cStart, cEnd;
-    ierr = DMPlexGetSimplexOrBoxCells(dm, 0, &cStart, &cEnd);
-    CHKERRQ(ierr);
+    PetscCall(DMPlexGetSimplexOrBoxCells(dm, 0, &cStart, &cEnd));
     DM dmCell;
-    ierr = VecGetDM(cellgeom, &dmCell);
-    CHKERRQ(ierr);
+    PetscCall(VecGetDM(cellgeom, &dmCell));
     const PetscScalar *cgeom;
-    ierr = VecGetArrayRead(cellgeom, &cgeom);
-    CHKERRQ(ierr);
+    PetscCall(VecGetArrayRead(cellgeom, &cgeom));
     const PetscScalar *x;
-    ierr = VecGetArrayRead(v, &x);
-    CHKERRQ(ierr);
+    PetscCall(VecGetArrayRead(v, &x));
 
     for (PetscInt c = cStart; c < cEnd; ++c) {
         PetscFVCellGeom *cg;
         const PetscReal *xc;
 
-        ierr = DMPlexPointLocalRead(dmCell, c, cgeom, &cg);
-        CHKERRQ(ierr);
-        ierr = DMPlexPointGlobalFieldRead(dm, c, 0, x, &xc);
-        CHKERRQ(ierr);
+        PetscCall(DMPlexPointLocalRead(dmCell, c, cgeom, &cg));
+        PetscCall(DMPlexPointGlobalFieldRead(dm, c, 0, x, &xc));
         if (xc) {  // must be real cell and not ghost
             results["x"].push_back(cg->centroid[0]);
             PetscReal rho = xc[ablate::finiteVolume::CompressibleFlowFields::RHO];
@@ -106,10 +99,8 @@ static PetscErrorCode Extract1DPrimitives(DM dm, Vec v, std::map<std::string, st
         }
     }
 
-    ierr = VecRestoreArrayRead(cellgeom, &cgeom);
-    CHKERRQ(ierr);
-    ierr = VecRestoreArrayRead(v, &x);
-    CHKERRQ(ierr);
+    PetscCall(VecRestoreArrayRead(cellgeom, &cgeom));
+    PetscCall(VecRestoreArrayRead(v, &x));
     return 0;
 }
 

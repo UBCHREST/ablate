@@ -152,7 +152,7 @@ PetscErrorCode ablate::monitors::Probes::UpdateProbes(TS ts, PetscInt step, Pets
     PetscFunctionBegin;
     auto monitor = (ablate::monitors::Probes *)ctx;
     auto comm = PetscObjectComm((PetscObject)ts);
-    PetscErrorCode ierr;
+
 
     if (monitor->interval->Check(comm, step, time)) {
         // set the current time for each recorder
@@ -169,17 +169,14 @@ PetscErrorCode ablate::monitors::Probes::UpdateProbes(TS ts, PetscInt step, Pets
             IS subIs;
             DM subDm;
             Vec locVec;
-            ierr = monitor->GetSolver()->GetSubDomain().GetFieldLocalVector(field, 0.0, &subIs, &locVec, &subDm);
-            CHKERRQ(ierr);
+            PetscCall(monitor->GetSolver()->GetSubDomain().GetFieldLocalVector(field, 0.0, &subIs, &locVec, &subDm));
 
             // get a temp vector
             Vec interpValues;
-            ierr = DMInterpolationGetVector(monitor->interpolants[it], &interpValues);
-            CHKERRQ(ierr);
+            PetscCall(DMInterpolationGetVector(monitor->interpolants[it], &interpValues));
 
             // Interpolate
-            ierr = DMInterpolationEvaluate(monitor->interpolants[it], subDm, locVec, interpValues);
-            CHKERRQ(ierr);
+            PetscCall(DMInterpolationEvaluate(monitor->interpolants[it], subDm, locVec, interpValues));
 
             // Record each value
             const PetscScalar *interValuesArray;
@@ -194,10 +191,8 @@ PetscErrorCode ablate::monitors::Probes::UpdateProbes(TS ts, PetscInt step, Pets
 
             // restore
             VecRestoreArrayRead(interpValues, &interValuesArray);
-            ierr = DMInterpolationRestoreVector(monitor->interpolants[it], &interpValues);
-            CHKERRQ(ierr);
-            ierr = monitor->GetSolver()->GetSubDomain().RestoreFieldLocalVector(field, &subIs, &locVec, &subDm);
-            CHKERRQ(ierr);
+            PetscCall(DMInterpolationRestoreVector(monitor->interpolants[it], &interpValues));
+            PetscCall(monitor->GetSolver()->GetSubDomain().RestoreFieldLocalVector(field, &subIs, &locVec, &subDm));
         }
     }
 

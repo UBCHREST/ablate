@@ -572,45 +572,30 @@ PetscErrorCode ablate::particles::ParticleSolver::ComputeParticleExactSolution(T
 static PetscErrorCode DMSequenceViewTimeHDF5(DM dm, PetscViewer viewer) {
     Vec stamp;
     PetscMPIInt rank;
-    PetscErrorCode ierr;
 
     PetscFunctionBegin;
-
     // get the seqnum and value from the dm
     PetscInt seqnum;
     PetscReal value;
-    ierr = DMGetOutputSequenceNumber(dm, &seqnum, &value);
-    CHKERRMPI(ierr);
+    PetscCall(DMGetOutputSequenceNumber(dm, &seqnum, &value));
 
     if (seqnum < 0) {
         PetscFunctionReturn(0);
     }
-    ierr = MPI_Comm_rank(PetscObjectComm((PetscObject)viewer), &rank);
-    CHKERRMPI(ierr);
-    ierr = VecCreateMPI(PetscObjectComm((PetscObject)viewer), rank ? 0 : 1, 1, &stamp);
-    CHKERRQ(ierr);
-    ierr = VecSetBlockSize(stamp, 1);
-    CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)stamp, "time");
-    CHKERRQ(ierr);
+    PetscCallMPI(MPI_Comm_rank(PetscObjectComm((PetscObject)viewer), &rank));
+    PetscCall(VecCreateMPI(PetscObjectComm((PetscObject)viewer), rank ? 0 : 1, 1, &stamp));
+    PetscCall(VecSetBlockSize(stamp, 1));
+    PetscCall(PetscObjectSetName((PetscObject)stamp, "time"));
     if (!rank) {
-        ierr = VecSetValue(stamp, 0, value, INSERT_VALUES);
-        CHKERRQ(ierr);
+        PetscCall(VecSetValue(stamp, 0, value, INSERT_VALUES));
     }
-    ierr = VecAssemblyBegin(stamp);
-    CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(stamp);
-    CHKERRQ(ierr);
-    ierr = PetscViewerHDF5PushGroup(viewer, "/");
-    CHKERRQ(ierr);
-    ierr = PetscViewerHDF5SetTimestep(viewer, seqnum);
-    CHKERRQ(ierr);
-    ierr = VecView(stamp, viewer);
-    CHKERRQ(ierr);
-    ierr = PetscViewerHDF5PopGroup(viewer);
-    CHKERRQ(ierr);
-    ierr = VecDestroy(&stamp);
-    CHKERRQ(ierr);
+    PetscCall(VecAssemblyBegin(stamp));
+    PetscCall(VecAssemblyEnd(stamp));
+    PetscCall(PetscViewerHDF5PushGroup(viewer, "/"));
+    PetscCall(PetscViewerHDF5SetTimestep(viewer, seqnum));
+    PetscCall(VecView(stamp, viewer));
+    PetscCall(PetscViewerHDF5PopGroup(viewer));
+    PetscCall(VecDestroy(&stamp));
     PetscFunctionReturn(0);
 }
 

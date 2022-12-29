@@ -77,7 +77,7 @@ static PetscErrorCode ComputeEulerExact(PetscInt dim, PetscReal time, const Pets
 }
 TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
-        PetscErrorCode ierr;
+
 
         // initialize petsc and mpi
         ablate::environment::RunEnvironment::Initialize(argc, argv);

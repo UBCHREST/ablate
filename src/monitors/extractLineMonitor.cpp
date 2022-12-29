@@ -105,13 +105,11 @@ static PetscErrorCode OutputCurveForField(std::ostream& stream, PetscInt fieldIn
     PetscFunctionBeginUser;
     // Open the array
     const PetscScalar* uArray;
-    PetscErrorCode ierr = VecGetArrayRead(u, &uArray);
-    CHKERRQ(ierr);
+    PetscCall(VecGetArrayRead(u, &uArray));
 
     // Get the DM for the vec
     DM dm;
-    ierr = VecGetDM(u, &dm);
-    CHKERRQ(ierr);
+    PetscCall(VecGetDM(u, &dm));
 
     // Output each component
     for (PetscInt c = 0; c < fieldDescription.numberComponents; c++) {
@@ -124,33 +122,28 @@ static PetscErrorCode OutputCurveForField(std::ostream& stream, PetscInt fieldIn
 
             // extract the location
             const PetscScalar* values;
-            ierr = plexPointRead(dm, indexLocations[i], fieldIndex, uArray, &values);
-            CHKERRQ(ierr);
+            PetscCall(plexPointRead(dm, indexLocations[i], fieldIndex, uArray, &values));
 
             stream << values[c] << std::endl;
         }
         stream << std::endl;
     }
 
-    ierr = VecRestoreArrayRead(u, &uArray);
-    CHKERRQ(ierr);
+    PetscCall(VecRestoreArrayRead(u, &uArray));
     PetscFunctionReturn(0);
 }
 
 PetscErrorCode ablate::monitors::ExtractLineMonitor::OutputCurve(TS ts, PetscInt steps, PetscReal time, Vec u, void* mctx) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
+
     DM dm;
     PetscDS ds;
-    ierr = TSGetDM(ts, &dm);
-    CHKERRQ(ierr);
-    ierr = DMGetDS(dm, &ds);
-    CHKERRQ(ierr);
+    PetscCall(TSGetDM(ts, &dm));
+    PetscCall(DMGetDS(dm, &ds));
 
     // Check for the number of DS, this should be relaxed
     PetscInt numberDS;
-    ierr = DMGetNumDS(dm, &numberDS);
-    CHKERRQ(ierr);
+    PetscCall(DMGetNumDS(dm, &numberDS));
     if (numberDS > 1) {
         SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "This monitor only supports a single DS in a DM");
     }
@@ -175,8 +168,7 @@ PetscErrorCode ablate::monitors::ExtractLineMonitor::OutputCurve(TS ts, PetscInt
             auto fieldIndex = flow->GetSubDomain().GetField(fieldName).id;
             const auto& fieldDescription = flow->GetSubDomain().GetField(fieldName);
 
-            ierr = OutputCurveForField(curveFile, fieldIndex, fieldDescription, monitor->indexLocations, monitor->distanceAlongLine, DMPlexPointGlobalFieldRead, u);
-            CHKERRQ(ierr);
+            PetscCall(OutputCurveForField(curveFile, fieldIndex, fieldDescription, monitor->indexLocations, monitor->distanceAlongLine, DMPlexPointGlobalFieldRead, u));
         }
 
         // output each aux variable
@@ -184,13 +176,11 @@ PetscErrorCode ablate::monitors::ExtractLineMonitor::OutputCurve(TS ts, PetscInt
             auto fieldIndex = flow->GetSubDomain().GetField(fieldName).id;
             const auto& fieldDescription = flow->GetSubDomain().GetField(fieldName);
 
-            ierr = OutputCurveForField(curveFile, fieldIndex, fieldDescription, monitor->indexLocations, monitor->distanceAlongLine, DMPlexPointLocalFieldRead, flow->GetSubDomain().GetAuxVector());
-            CHKERRQ(ierr);
+            PetscCall(OutputCurveForField(curveFile, fieldIndex, fieldDescription, monitor->indexLocations, monitor->distanceAlongLine, DMPlexPointLocalFieldRead, flow->GetSubDomain().GetAuxVector()));
         }
 
         curveFile.close();
     }
-    CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 

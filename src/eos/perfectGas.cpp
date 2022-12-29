@@ -164,8 +164,7 @@ PetscErrorCode ablate::eos::PerfectGas::SpeedOfSoundTemperatureFunction(const Pe
     auto functionContext = (FunctionContext *)ctx;
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
     PetscReal p;
-    PetscErrorCode ierr = PressureTemperatureFunction(conserved, T, &p, ctx);
-    CHKERRQ(ierr);
+    PetscCall(PressureTemperatureFunction(conserved, T, &p, ctx));
 
     *speedOfSound = PetscSqrtReal(functionContext->parameters.gamma * (p) / density);
     PetscFunctionReturn(0);

@@ -10,12 +10,10 @@ PetscErrorCode ablate::eos::transport::Sutherland::SutherlandConductivityFunctio
     PetscFunctionBeginUser;
     const auto &[temperatureFunction, cpFunction] = *(std::pair<ThermodynamicFunction, ThermodynamicTemperatureFunction> *)ctx;
     PetscReal temperature, cp;
-    PetscErrorCode ierr;
 
-    ierr = temperatureFunction.function(conserved, &temperature, temperatureFunction.context.get());
-    CHKERRQ(ierr);
-    ierr = cpFunction.function(conserved, temperature, &cp, cpFunction.context.get());
-    CHKERRQ(ierr);
+
+    PetscCall(temperatureFunction.function(conserved, &temperature, temperatureFunction.context.get()));
+    PetscCall(cpFunction.function(conserved, temperature, &cp, cpFunction.context.get()));
 
     double mu = muo * PetscSqrtReal(temperature / to) * (temperature / to) * (to + so) / (temperature + so);
     *conductivity = mu * cp / pr;
@@ -25,10 +23,9 @@ PetscErrorCode ablate::eos::transport::Sutherland::SutherlandConductivityTempera
     PetscFunctionBeginUser;
     const auto cpFunction = (ThermodynamicTemperatureFunction *)ctx;
     PetscReal cp;
-    PetscErrorCode ierr;
 
-    ierr = cpFunction->function(conserved, temperature, &cp, cpFunction->context.get());
-    CHKERRQ(ierr);
+
+    PetscCall(cpFunction->function(conserved, temperature, &cp, cpFunction->context.get()));
 
     double mu = muo * PetscSqrtReal(temperature / to) * (temperature / to) * (to + so) / (temperature + so);
     *conductivity = mu * cp / pr;
@@ -38,10 +35,9 @@ PetscErrorCode ablate::eos::transport::Sutherland::SutherlandViscosityFunction(c
     PetscFunctionBeginUser;
     const auto temperatureFunction = (ThermodynamicFunction *)ctx;
     PetscReal temperature;
-    PetscErrorCode ierr;
 
-    ierr = temperatureFunction->function(conserved, &temperature, temperatureFunction->context.get());
-    CHKERRQ(ierr);
+
+    PetscCall(temperatureFunction->function(conserved, &temperature, temperatureFunction->context.get()));
     *viscosity = muo * PetscSqrtReal(temperature / to) * (temperature / to) * (to + so) / (temperature + so);
     PetscFunctionReturn(0);
 }
@@ -54,12 +50,10 @@ PetscErrorCode ablate::eos::transport::Sutherland::SutherlandDiffusivityFunction
     PetscFunctionBeginUser;
     const auto &[temperatureFunction, densityFunction] = *(std::pair<ThermodynamicFunction, ThermodynamicFunction> *)ctx;
     PetscReal temperature, density;
-    PetscErrorCode ierr;
 
-    ierr = temperatureFunction.function(conserved, &temperature, temperatureFunction.context.get());
-    CHKERRQ(ierr);
-    ierr = densityFunction.function(conserved, &density, densityFunction.context.get());
-    CHKERRQ(ierr);
+
+    PetscCall(temperatureFunction.function(conserved, &temperature, temperatureFunction.context.get()));
+    PetscCall(densityFunction.function(conserved, &density, densityFunction.context.get()));
 
     double mu = muo * PetscSqrtReal(temperature / to) * (temperature / to) * (to + so) / (temperature + so);
     *diffusivity = mu / density / sc;
@@ -69,8 +63,7 @@ PetscErrorCode ablate::eos::transport::Sutherland::SutherlandDiffusivityTemperat
     PetscFunctionBeginUser;
     const auto densityFunction = (ThermodynamicFunction *)ctx;
     PetscReal density;
-    PetscErrorCode ierr = densityFunction->function(conserved, &density, densityFunction->context.get());
-    CHKERRQ(ierr);
+    PetscCall(densityFunction->function(conserved, &density, densityFunction->context.get()));
     double mu = muo * PetscSqrtReal(temperature / to) * (temperature / to) * (to + so) / (temperature + so);
     *diffusivity = mu / density / sc;
     PetscFunctionReturn(0);

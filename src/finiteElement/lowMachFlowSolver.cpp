@@ -68,60 +68,49 @@ static PetscErrorCode constant(PetscInt dim, PetscReal time, const PetscReal x[]
 
 static PetscErrorCode createPressureNullSpace(DM dm, PetscInt ofield, PetscInt nfield, MatNullSpace *nullSpace) {
     Vec vec;
-    PetscErrorCode ierr;
+
 
     PetscFunctionBeginUser;
     // determine the number of fields from PETSC
     PetscInt numFields;
-    ierr = DMGetNumFields(dm, &numFields);
-    CHKERRQ(ierr);
+    PetscCall(DMGetNumFields(dm, &numFields));
 
     // Project to the field specified in nfield
     std::vector<PetscErrorCode (*)(PetscInt, PetscReal, const PetscReal[], PetscInt, PetscScalar *, void *)> funcs(numFields, zero);
     funcs[nfield] = constant;
-    ierr = DMCreateGlobalVector(dm, &vec);
-    CHKERRQ(ierr);
+    PetscCall(DMCreateGlobalVector(dm, &vec));
 
     // Get the label for this field
     DMLabel label;
     PetscObject field;
-    ierr = DMGetField(dm, nfield, &label, &field);
-    CHKERRQ(ierr);
+    PetscCall(DMGetField(dm, nfield, &label, &field));
 
     PetscInt ids[1] = {1};
     DMProjectFunctionLabel(dm, 0.0, label, 1, ids, -1, NULL, &funcs[0], NULL, INSERT_VALUES, vec);
 
-    ierr = VecNormalize(vec, NULL);
-    CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)vec, "Pressure Null Space");
-    CHKERRQ(ierr);
-    ierr = VecViewFromOptions(vec, NULL, "-pressure_nullspace_view");
-    CHKERRQ(ierr);
-    ierr = MatNullSpaceCreate(PetscObjectComm((PetscObject)dm), PETSC_FALSE, PRES, &vec, nullSpace);
-    CHKERRQ(ierr);
-    ierr = VecDestroy(&vec);
-    CHKERRQ(ierr);
+    PetscCall(VecNormalize(vec, NULL));
+    PetscCall(PetscObjectSetName((PetscObject)vec, "Pressure Null Space"));
+    PetscCall(VecViewFromOptions(vec, NULL, "-pressure_nullspace_view"));
+    PetscCall(MatNullSpaceCreate(PetscObjectComm((PetscObject)dm), PETSC_FALSE, PRES, &vec, nullSpace));
+    PetscCall(VecDestroy(&vec));
     PetscFunctionReturn(0);
 }
 
 /* Make the discrete pressure discretely divergence free */
 static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, ablate::finiteElement::LowMachFlowSolver &flow) {
     Vec u;
-    PetscErrorCode ierr;
+
     DM dm;
 
     PetscFunctionBegin;
-    ierr = TSGetDM(ts, &dm);
-    CHKERRQ(ierr);
-    ierr = TSGetSolution(ts, &u);
-    CHKERRQ(ierr);
+    PetscCall(TSGetDM(ts, &dm));
+    PetscCall(TSGetSolution(ts, &u));
     try {
         flow.CompleteFlowInitialization(dm, u);
     } catch (std::exception &exp) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exp.what());
     }
 
-    CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 

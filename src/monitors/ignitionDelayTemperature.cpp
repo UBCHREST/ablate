@@ -70,21 +70,17 @@ void ablate::monitors::IgnitionDelayTemperature::Register(std::shared_ptr<solver
 }
 PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
+
     DM dm;
     PetscDS ds;
-    ierr = TSGetDM(ts, &dm);
-    CHKERRQ(ierr);
-    ierr = DMGetDS(dm, &ds);
-    CHKERRQ(ierr);
+    PetscCall(TSGetDM(ts, &dm));
+    PetscCall(DMGetDS(dm, &ds));
     PetscInt dim;
-    ierr = DMGetDimension(dm, &dim);
-    CHKERRQ(ierr);
+    PetscCall(DMGetDimension(dm, &dim));
 
     // Check for the number of DS, this should be relaxed
     PetscInt numberDS;
-    ierr = DMGetNumDS(dm, &numberDS);
-    CHKERRQ(ierr);
+    PetscCall(DMGetNumDS(dm, &numberDS));
     if (numberDS > 1) {
         SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "This monitor only supports a single DS in a DM");
     }
@@ -93,13 +89,11 @@ PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts
 
     // extract the gradLocalVec
     const PetscScalar* uArray;
-    ierr = VecGetArrayRead(u, &uArray);
-    CHKERRQ(ierr);
+    PetscCall(VecGetArrayRead(u, &uArray));
 
     // Get the euler and densityYi values
     const PetscScalar* conserved;
-    ierr = DMPlexPointGlobalRead(dm, monitor->cellOfInterest, uArray, &conserved);
-    CHKERRQ(ierr);
+    PetscCall(DMPlexPointGlobalRead(dm, monitor->cellOfInterest, uArray, &conserved));
 
     // compute the temperature
     double T;
@@ -113,8 +107,7 @@ PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts
         monitor->historyLog->Printf("%" PetscInt_FMT " Time: %g Temperature: %f\n", step, crtime, T);
     }
 
-    ierr = VecRestoreArrayRead(u, &uArray);
-    CHKERRQ(ierr);
+    PetscCall(VecRestoreArrayRead(u, &uArray));
     PetscFunctionReturn(0);
 }
 

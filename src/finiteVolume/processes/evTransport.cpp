@@ -104,8 +104,7 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::AdvectionFlux(Petsc
         densityL = fieldL[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
         PetscReal temperatureL;
 
-        PetscErrorCode ierr = eulerAdvectionData->computeTemperature.function(fieldL, &temperatureL, eulerAdvectionData->computeTemperature.context.get());
-        CHKERRQ(ierr);
+        PetscCall(eulerAdvectionData->computeTemperature.function(fieldL, &temperatureL, eulerAdvectionData->computeTemperature.context.get()));
 
         // Get the velocity in this direction
         normalVelocityL = 0.0;
@@ -114,12 +113,9 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::AdvectionFlux(Petsc
             normalVelocityL += velocityL[d] * norm[d];
         }
 
-        ierr = eulerAdvectionData->computeInternalEnergy.function(fieldL, temperatureL, &internalEnergyL, eulerAdvectionData->computeInternalEnergy.context.get());
-        CHKERRQ(ierr);
-        ierr = eulerAdvectionData->computeSpeedOfSound.function(fieldL, temperatureL, &aL, eulerAdvectionData->computeSpeedOfSound.context.get());
-        CHKERRQ(ierr);
-        ierr = eulerAdvectionData->computePressure.function(fieldL, temperatureL, &pL, eulerAdvectionData->computePressure.context.get());
-        CHKERRQ(ierr);
+        PetscCall(eulerAdvectionData->computeInternalEnergy.function(fieldL, temperatureL, &internalEnergyL, eulerAdvectionData->computeInternalEnergy.context.get()));
+        PetscCall(eulerAdvectionData->computeSpeedOfSound.function(fieldL, temperatureL, &aL, eulerAdvectionData->computeSpeedOfSound.context.get()));
+        PetscCall(eulerAdvectionData->computePressure.function(fieldL, temperatureL, &pL, eulerAdvectionData->computePressure.context.get()));
     }
 
     PetscReal densityR;
@@ -132,8 +128,7 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::AdvectionFlux(Petsc
         densityR = fieldR[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
         PetscReal temperatureR;
 
-        PetscErrorCode ierr = eulerAdvectionData->computeTemperature.function(fieldR, &temperatureR, eulerAdvectionData->computeTemperature.context.get());
-        CHKERRQ(ierr);
+        PetscCall(eulerAdvectionData->computeTemperature.function(fieldR, &temperatureR, eulerAdvectionData->computeTemperature.context.get()));
 
         // Get the velocity in this direction
         normalVelocityR = 0.0;
@@ -142,12 +137,9 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::AdvectionFlux(Petsc
             normalVelocityR += velocityR[d] * norm[d];
         }
 
-        ierr = eulerAdvectionData->computeInternalEnergy.function(fieldR, temperatureR, &internalEnergyR, eulerAdvectionData->computeInternalEnergy.context.get());
-        CHKERRQ(ierr);
-        ierr = eulerAdvectionData->computeSpeedOfSound.function(fieldR, temperatureR, &aR, eulerAdvectionData->computeSpeedOfSound.context.get());
-        CHKERRQ(ierr);
-        ierr = eulerAdvectionData->computePressure.function(fieldR, temperatureR, &pR, eulerAdvectionData->computePressure.context.get());
-        CHKERRQ(ierr);
+        PetscCall(eulerAdvectionData->computeInternalEnergy.function(fieldR, temperatureR, &internalEnergyR, eulerAdvectionData->computeInternalEnergy.context.get()));
+        PetscCall(eulerAdvectionData->computeSpeedOfSound.function(fieldR, temperatureR, &aR, eulerAdvectionData->computeSpeedOfSound.context.get()));
+        PetscCall(eulerAdvectionData->computePressure.function(fieldR, temperatureR, &pR, eulerAdvectionData->computePressure.context.get()));
     }
 
     // get the face values

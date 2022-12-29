@@ -69,12 +69,10 @@ PetscErrorCode ablate::finiteElement::FiniteElementSolver::ComputeIFunction(Pets
     PetscFunctionBegin;
     DM plex;
     IS allcellIS;
-    PetscErrorCode ierr;
 
-    ierr = DMConvert(subDomain->GetDM(), DMPLEX, &plex);
-    CHKERRQ(ierr);
-    ierr = DMPlexGetAllCells_Internal(plex, &allcellIS);
-    CHKERRQ(ierr);
+
+    PetscCall(DMConvert(subDomain->GetDM(), DMPLEX, &plex));
+    PetscCall(DMPlexGetAllCells_Internal(plex, &allcellIS));
 
     IS cellIS;
     PetscFormKey key;
@@ -83,29 +81,21 @@ PetscErrorCode ablate::finiteElement::FiniteElementSolver::ComputeIFunction(Pets
     key.field = 0;
     key.part = 0;
     if (!key.label) {
-        ierr = PetscObjectReference((PetscObject)allcellIS);
-        CHKERRQ(ierr);
+        PetscCall(PetscObjectReference((PetscObject)allcellIS));
         cellIS = allcellIS;
     } else {
         IS pointIS;
 
         key.value = 1;
-        ierr = DMLabelGetStratumIS(key.label, key.value, &pointIS);
-        CHKERRQ(ierr);
-        ierr = ISIntersect_Caching_Internal(allcellIS, pointIS, &cellIS);
-        CHKERRQ(ierr);
-        ierr = ISDestroy(&pointIS);
-        CHKERRQ(ierr);
+        PetscCall(DMLabelGetStratumIS(key.label, key.value, &pointIS));
+        PetscCall(ISIntersect_Caching_Internal(allcellIS, pointIS, &cellIS));
+        PetscCall(ISDestroy(&pointIS));
     }
-    ierr = DMPlexComputeResidual_Internal(plex, key, cellIS, time, locX, locX_t, time, locF, nullptr);
-    CHKERRQ(ierr);
-    ierr = ISDestroy(&cellIS);
-    CHKERRQ(ierr);
+    PetscCall(DMPlexComputeResidual_Internal(plex, key, cellIS, time, locX, locX_t, time, locF, nullptr));
+    PetscCall(ISDestroy(&cellIS));
 
-    ierr = ISDestroy(&allcellIS);
-    CHKERRQ(ierr);
-    ierr = DMDestroy(&plex);
-    CHKERRQ(ierr);
+    PetscCall(ISDestroy(&allcellIS));
+    PetscCall(DMDestroy(&plex));
 
     PetscFunctionReturn(0);
 }
@@ -116,11 +106,10 @@ PetscErrorCode ablate::finiteElement::FiniteElementSolver::ComputeIJacobian(Pets
     DM plex;
     IS allcellIS;
     PetscBool hasJac, hasPrec;
-    PetscErrorCode ierr;
 
-    ierr = DMConvert(subDomain->GetDM(), DMPLEX, &plex);
-    ierr = DMPlexGetAllCells_Internal(plex, &allcellIS);
-    CHKERRQ(ierr);
+
+    PetscCall(DMConvert(subDomain->GetDM(), DMPLEX, &plex));
+    PetscCall(DMPlexGetAllCells_Internal(plex, &allcellIS));
 
     PetscDS ds = subDomain->GetDiscreteSystem();
     IS cellIS;
@@ -130,40 +119,28 @@ PetscErrorCode ablate::finiteElement::FiniteElementSolver::ComputeIJacobian(Pets
     key.field = 0;
     key.part = 0;
     if (!key.label) {
-        ierr = PetscObjectReference((PetscObject)allcellIS);
-        CHKERRQ(ierr);
+        PetscCall(PetscObjectReference((PetscObject)allcellIS));
         cellIS = allcellIS;
     } else {
         IS pointIS;
 
         key.value = 1;
-        ierr = DMLabelGetStratumIS(key.label, key.value, &pointIS);
-        CHKERRQ(ierr);
-        ierr = ISIntersect_Caching_Internal(allcellIS, pointIS, &cellIS);
-        CHKERRQ(ierr);
-        ierr = ISDestroy(&pointIS);
-        CHKERRQ(ierr);
+        PetscCall(DMLabelGetStratumIS(key.label, key.value, &pointIS));
+        PetscCall(ISIntersect_Caching_Internal(allcellIS, pointIS, &cellIS));
+        PetscCall(ISDestroy(&pointIS));
     }
-    ierr = PetscDSHasJacobian(ds, &hasJac);
-    CHKERRQ(ierr);
-    ierr = PetscDSHasJacobianPreconditioner(ds, &hasPrec);
-    CHKERRQ(ierr);
+    PetscCall(PetscDSHasJacobian(ds, &hasJac));
+    PetscCall(PetscDSHasJacobianPreconditioner(ds, &hasPrec));
     if (hasJac && hasPrec) {
-        ierr = MatZeroEntries(Jac);
-        CHKERRQ(ierr);
+        PetscCall(MatZeroEntries(Jac));
     }
-    ierr = MatZeroEntries(JacP);
-    CHKERRQ(ierr);
+    PetscCall(MatZeroEntries(JacP));
 
-    ierr = DMPlexComputeJacobian_Internal(plex, key, cellIS, time, X_tShift, locX, locX_t, Jac, JacP, nullptr);
-    CHKERRQ(ierr);
-    ierr = ISDestroy(&cellIS);
-    CHKERRQ(ierr);
+    PetscCall(DMPlexComputeJacobian_Internal(plex, key, cellIS, time, X_tShift, locX, locX_t, Jac, JacP, nullptr));
+    PetscCall(ISDestroy(&cellIS));
 
-    ierr = ISDestroy(&allcellIS);
-    CHKERRQ(ierr);
-    ierr = DMDestroy(&plex);
-    CHKERRQ(ierr);
+    PetscCall(ISDestroy(&allcellIS));
+    PetscCall(DMDestroy(&plex));
 
     PetscFunctionReturn(0);
 }
@@ -173,17 +150,13 @@ PetscErrorCode ablate::finiteElement::FiniteElementSolver::ComputeBoundary(Petsc
 
     DM plex;
     PetscDS ds = subDomain->GetDiscreteSystem();
-    PetscErrorCode ierr;
-    ierr = DMConvert(subDomain->GetDM(), DMPLEX, &plex);
-    CHKERRQ(ierr);
 
-    ierr = ablate::solver::Solver::DMPlexInsertBoundaryValues_Plex(plex, ds, PETSC_TRUE, locX, time, NULL, NULL, NULL);
-    CHKERRQ(ierr);
-    ierr = ablate::solver::Solver::DMPlexInsertTimeDerivativeBoundaryValues_Plex(plex, ds, PETSC_TRUE, locX_t, time, NULL, NULL, NULL);
-    CHKERRQ(ierr);
+    PetscCall(DMConvert(subDomain->GetDM(), DMPLEX, &plex));
 
-    ierr = DMDestroy(&plex);
-    CHKERRQ(ierr);
+    PetscCall(ablate::solver::Solver::DMPlexInsertBoundaryValues_Plex(plex, ds, PETSC_TRUE, locX, time, NULL, NULL, NULL));
+    PetscCall(ablate::solver::Solver::DMPlexInsertTimeDerivativeBoundaryValues_Plex(plex, ds, PETSC_TRUE, locX_t, time, NULL, NULL, NULL));
+
+    PetscCall(DMDestroy(&plex));
 
     PetscFunctionReturn(0);
 }

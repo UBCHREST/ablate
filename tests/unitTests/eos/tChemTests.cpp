@@ -166,8 +166,7 @@ TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputeProperty) {
     // compute the reference temperature for other calculations
     auto temperatureFunction = eos->GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, params.fields);
     PetscReal computedTemperature;
-    PetscErrorCode ierr = temperatureFunction.function(conservedValues.data(), &computedTemperature, temperatureFunction.context.get());
-    ASSERT_EQ(ierr, 0);
+    ASSERT_EQ(0, temperatureFunction.function(conservedValues.data(), &computedTemperature, temperatureFunction.context.get()));
 
     if (params.expectedTemperature) {
         ASSERT_LT(PetscAbs(computedTemperature - params.expectedTemperature.value()) / params.expectedTemperature.value(), 1E-5)
@@ -179,8 +178,7 @@ TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputeProperty) {
         // act/assert check for compute without temperature
         auto thermodynamicFunction = eos->GetThermodynamicFunction(thermodynamicProperty, params.fields);
         std::vector<PetscReal> computedProperty(expectedValue.size(), NAN);
-        ierr = thermodynamicFunction.function(conservedValues.data(), computedProperty.data(), thermodynamicFunction.context.get());
-        ASSERT_EQ(ierr, 0);
+        ASSERT_EQ(0, thermodynamicFunction.function(conservedValues.data(), computedProperty.data(), thermodynamicFunction.context.get()));
         for (std::size_t c = 0; c < expectedValue.size(); c++) {
             // perform a difference check is the expectedValue is zero
             if (expectedValue[c] == 0) {
@@ -194,9 +192,7 @@ TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputeProperty) {
 
         auto thermodynamicTemperatureFunction = eos->GetThermodynamicTemperatureFunction(thermodynamicProperty, params.fields);
         computedProperty = std::vector<PetscReal>(expectedValue.size(), NAN);
-        ierr = thermodynamicTemperatureFunction.function(conservedValues.data(), computedTemperature, computedProperty.data(), thermodynamicTemperatureFunction.context.get());
-
-        ASSERT_EQ(ierr, 0);
+        ASSERT_EQ(0, thermodynamicTemperatureFunction.function(conservedValues.data(), computedTemperature, computedProperty.data(), thermodynamicTemperatureFunction.context.get()));
         for (std::size_t c = 0; c < expectedValue.size(); c++) {
             if (expectedValue[c] == 0) {
                 ASSERT_LT(expectedValue[c], params.errorTolerance) << "The value for the temperature function of " << to_string(thermodynamicProperty) << " (" << expectedValue[c] << " vs "
@@ -237,8 +233,7 @@ TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputePropertyUsingMassFractio
     // compute the reference temperature for other calculations
     auto temperatureFunction = eos->GetThermodynamicMassFractionFunction(ablate::eos::ThermodynamicProperty::Temperature, fields);
     PetscReal computedTemperature;
-    PetscErrorCode ierr = temperatureFunction.function(conservedValues.data(), yi.data(), &computedTemperature, temperatureFunction.context.get());
-    ASSERT_EQ(ierr, 0);
+    ASSERT_EQ(0, temperatureFunction.function(conservedValues.data(), yi.data(), &computedTemperature, temperatureFunction.context.get()));
 
     if (params.expectedTemperature) {
         ASSERT_LT(PetscAbs(computedTemperature - params.expectedTemperature.value()) / params.expectedTemperature.value(), 1E-5)
@@ -250,8 +245,7 @@ TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputePropertyUsingMassFractio
         // act/assert check for compute without temperature
         auto thermodynamicFunction = eos->GetThermodynamicMassFractionFunction(thermodynamicProperty, fields);
         std::vector<PetscReal> computedProperty(expectedValue.size(), NAN);
-        ierr = thermodynamicFunction.function(conservedValues.data(), yi.data(), computedProperty.data(), thermodynamicFunction.context.get());
-        ASSERT_EQ(ierr, 0);
+        ASSERT_EQ(0, thermodynamicFunction.function(conservedValues.data(), yi.data(), computedProperty.data(), thermodynamicFunction.context.get()));
         for (std::size_t c = 0; c < expectedValue.size(); c++) {
             // perform a difference check is the expectedValue is zero
             if (expectedValue[c] == 0) {
@@ -265,9 +259,7 @@ TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputePropertyUsingMassFractio
 
         auto thermodynamicTemperatureFunction = eos->GetThermodynamicTemperatureMassFractionFunction(thermodynamicProperty, fields);
         computedProperty = std::vector<PetscReal>(expectedValue.size(), NAN);
-        ierr = thermodynamicTemperatureFunction.function(conservedValues.data(), yi.data(), computedTemperature, computedProperty.data(), thermodynamicTemperatureFunction.context.get());
-
-        ASSERT_EQ(ierr, 0);
+        ASSERT_EQ(0, thermodynamicTemperatureFunction.function(conservedValues.data(), yi.data(), computedTemperature, computedProperty.data(), thermodynamicTemperatureFunction.context.get()));
         for (std::size_t c = 0; c < expectedValue.size(); c++) {
             if (expectedValue[c] == 0) {
                 ASSERT_LT(expectedValue[c], params.errorTolerance) << "The value for the temperature function of " << to_string(thermodynamicProperty) << " (" << expectedValue[c] << " vs "

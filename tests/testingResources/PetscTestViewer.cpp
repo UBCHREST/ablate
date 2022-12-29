@@ -6,8 +6,7 @@ testingResources::PetscTestViewer::PetscTestViewer(MPI_Comm comm) {
     file = std::tmpfile();
 
     // Use this to create an ascii viewer
-    PetscErrorCode ierr = PetscViewerASCIIOpenWithFILE(comm, file, &viewer);
-    if (ierr > 0) {
+    if (PetscViewerASCIIOpenWithFILE(comm, file, &viewer) > 0) {
         throw std::runtime_error("cannot create PetscTestViewer");
     }
 }

@@ -6,7 +6,7 @@ ablate::monitors::FieldErrorMonitor::FieldErrorMonitor(std::shared_ptr<logs::Log
 
 PetscErrorCode ablate::monitors::FieldErrorMonitor::MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void *ctx) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
+
     FieldErrorMonitor *monitor = (FieldErrorMonitor *)ctx;
     // if this is the first time step init the log
     if (!monitor->log->Initialized()) {
@@ -18,8 +18,7 @@ PetscErrorCode ablate::monitors::FieldErrorMonitor::MonitorError(TS ts, PetscInt
 
     // Get the number of fields
     PetscInt numberOfFields;
-    ierr = DMGetNumFields(dm, &numberOfFields);
-    CHKERRQ(ierr);
+    PetscCall(DMGetNumFields(dm, &numberOfFields));
 
     // Get the exact funcs and contx
     std::vector<ablate::mathFunctions::PetscFunction> exactFuncs(numberOfFields, nullptr);
@@ -30,19 +29,16 @@ PetscErrorCode ablate::monitors::FieldErrorMonitor::MonitorError(TS ts, PetscInt
         // Determine the solution location
         auto solId = monitor->GetSolver()->GetSubDomain().GetField(field.name);
 
-        ierr = PetscDSGetExactSolution(ds, field.subId, &exactFuncs[solId.id], &ctxs[solId.id]);
-        CHKERRQ(ierr);
+        PetscCall(PetscDSGetExactSolution(ds, field.subId, &exactFuncs[solId.id], &ctxs[solId.id]));
     }
 
     // Store the errors
     std::vector<PetscReal> ferrors(numberOfFields);
-    ierr = DMComputeL2FieldDiff(dm, crtime, &exactFuncs[0], &ctxs[0], u, &ferrors[0]);
-    CHKERRQ(ierr);
+    PetscCall(DMComputeL2FieldDiff(dm, crtime, &exactFuncs[0], &ctxs[0], u, &ferrors[0]));
 
     monitor->log->Printf("Timestep: %04d time = %-8.4g \t ", (int)step, (double)crtime);
     monitor->log->Print("L_2 Error", ferrors, "%2.3g");
     monitor->log->Print("\n");
-    CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

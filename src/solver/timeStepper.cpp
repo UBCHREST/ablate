@@ -213,8 +213,7 @@ void ablate::solver::TimeStepper::Register(std::shared_ptr<ablate::solver::Solve
 PetscErrorCode ablate::solver::TimeStepper::TSPreStepFunction(TS ts) {
     PetscFunctionBeginUser;
     ablate::solver::TimeStepper* timeStepper;
-    PetscErrorCode ierr = TSGetApplicationContext(ts, &timeStepper);
-    CHKERRQ(ierr);
+    PetscCall(TSGetApplicationContext(ts, &timeStepper));
 
     for (auto& solver : timeStepper->solvers) {
         try {
@@ -254,8 +253,7 @@ PetscErrorCode ablate::solver::TimeStepper::TSPreStageFunction(TS ts, PetscReal 
 PetscErrorCode ablate::solver::TimeStepper::TSPostStepFunction(TS ts) {
     PetscFunctionBeginUser;
     ablate::solver::TimeStepper* timeStepper;
-    PetscErrorCode ierr = TSGetApplicationContext(ts, &timeStepper);
-    CHKERRQ(ierr);
+    PetscCall(TSGetApplicationContext(ts, &timeStepper));
 
     for (const auto& solver : timeStepper->solvers) {
         try {
@@ -271,8 +269,7 @@ PetscErrorCode ablate::solver::TimeStepper::TSPostStepFunction(TS ts) {
 PetscErrorCode ablate::solver::TimeStepper::TSPostEvaluateFunction(TS ts) {
     PetscFunctionBeginUser;
     ablate::solver::TimeStepper* timeStepper;
-    PetscErrorCode ierr = TSGetApplicationContext(ts, &timeStepper);
-    CHKERRQ(ierr);
+    PetscCall(TSGetApplicationContext(ts, &timeStepper));
 
     for (const auto& solver : timeStepper->solvers) {
         try {
@@ -297,11 +294,10 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeBoundaryFunctionLocal(D
 
 PetscErrorCode ablate::solver::TimeStepper::SolverComputeIFunctionLocal(DM, PetscReal time, Vec locX, Vec locX_t, Vec locF, void* timeStepperCtx) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
+
     auto timeStepper = (ablate::solver::TimeStepper*)timeStepperCtx;
     for (auto& solver : timeStepper->iFunctionSolvers) {
-        ierr = solver->ComputeIFunction(time, locX, locX_t, locF);
-        CHKERRQ(ierr);
+        PetscCall(solver->ComputeIFunction(time, locX, locX_t, locF));
     }
 
     PetscFunctionReturn(0);
@@ -309,11 +305,10 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeIFunctionLocal(DM, Pets
 
 PetscErrorCode ablate::solver::TimeStepper::SolverComputeIJacobianLocal(DM, PetscReal time, Vec locX, Vec locX_t, PetscReal X_tShift, Mat Jac, Mat JacP, void* timeStepperCtx) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
+
     auto timeStepper = (ablate::solver::TimeStepper*)timeStepperCtx;
     for (auto& solver : timeStepper->iFunctionSolvers) {
-        ierr = solver->ComputeIJacobian(time, locX, locX_t, X_tShift, Jac, JacP);
-        CHKERRQ(ierr);
+        PetscCall(solver->ComputeIJacobian(time, locX, locX_t, X_tShift, Jac, JacP));
     }
 
     PetscFunctionReturn(0);

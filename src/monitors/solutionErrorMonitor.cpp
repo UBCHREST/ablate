@@ -9,29 +9,24 @@ ablate::monitors::SolutionErrorMonitor::SolutionErrorMonitor(ablate::monitors::S
 
 PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
+
     DM dm;
     PetscDS ds;
-    ierr = TSGetDM(ts, &dm);
-    CHKERRQ(ierr);
-    ierr = DMGetDS(dm, &ds);
-    CHKERRQ(ierr);
+    PetscCall(TSGetDM(ts, &dm));
+    PetscCall(DMGetDS(dm, &ds));
 
     // Check for the number of DS, this should be relaxed
     PetscInt numberDS;
-    ierr = DMGetNumDS(dm, &numberDS);
-    CHKERRQ(ierr);
+    PetscCall(DMGetNumDS(dm, &numberDS));
     if (numberDS > 1) {
         SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "This monitor only supports a single DS in a DM");
     }
 
     // Get the number of fields
     PetscInt numberOfFields;
-    ierr = PetscDSGetNumFields(ds, &numberOfFields);
-    CHKERRQ(ierr);
+    PetscCall(PetscDSGetNumFields(ds, &numberOfFields));
     PetscInt* numberComponentsPerField;
-    ierr = PetscDSGetComponents(ds, &numberComponentsPerField);
-    CHKERRQ(ierr);
+    PetscCall(PetscDSGetComponents(ds, &numberComponentsPerField));
 
     SolutionErrorMonitor* errorMonitor = (SolutionErrorMonitor*)ctx;
 
@@ -63,8 +58,7 @@ PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, Petsc
             PetscInt fieldOffset = 0;
             for (PetscInt f = 0; f < numberOfFields; f++) {
                 PetscObject field;
-                ierr = DMGetField(dm, f, NULL, &field);
-                CHKERRQ(ierr);
+                PetscCall(DMGetField(dm, f, NULL, &field));
                 const char* name;
                 PetscObjectGetName((PetscObject)field, &name);
 

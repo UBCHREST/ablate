@@ -11,7 +11,7 @@ void ablate::monitors::ParticleCount::Register(std::shared_ptr<solver::Solver> m
 }
 PetscErrorCode ablate::monitors::ParticleCount::OutputParticleCount(TS ts, PetscInt steps, PetscReal time, Vec u, void *mctx) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
+
 
     auto monitor = (ablate::monitors::ParticleCount *)mctx;
 
@@ -22,8 +22,7 @@ PetscErrorCode ablate::monitors::ParticleCount::OutputParticleCount(TS ts, Petsc
         }
 
         PetscInt particleCount;
-        ierr = DMSwarmGetSize(monitor->particles->GetParticleDM(), &particleCount);
-        CHKERRQ(ierr);
+        PetscCall(DMSwarmGetSize(monitor->particles->GetParticleDM(), &particleCount));
 
         monitor->log->Printf("%s Count: %" PetscInt_FMT "\n", monitor->particles->GetSolverId().c_str(), particleCount);
     }

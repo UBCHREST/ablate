@@ -42,25 +42,19 @@ void ablate::monitors::DmViewFromOptions::Register(std::shared_ptr<solver::Solve
 
 PetscErrorCode ablate::monitors::DmViewFromOptions::DMViewFromOptions(DM dm) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
+
     PetscViewer viewer;
     PetscBool flg;
     PetscViewerFormat format;
 
-    ierr = PetscOptionsGetViewer(PetscObjectComm((PetscObject)dm), petscOptions, nullptr, optionName.c_str(), &viewer, &format, &flg);
-    CHKERRQ(ierr);
+    PetscCall(PetscOptionsGetViewer(PetscObjectComm((PetscObject)dm), petscOptions, nullptr, optionName.c_str(), &viewer, &format, &flg));
 
     if (flg) {
-        ierr = PetscViewerPushFormat(viewer, format);
-        CHKERRQ(ierr);
-        ierr = PetscObjectView((PetscObject)dm, viewer);
-        CHKERRQ(ierr);
-        ierr = PetscViewerFlush(viewer);
-        CHKERRQ(ierr);
-        ierr = PetscViewerPopFormat(viewer);
-        CHKERRQ(ierr);
-        ierr = PetscViewerDestroy(&viewer);
-        CHKERRQ(ierr);
+        PetscCall(PetscViewerPushFormat(viewer, format));
+        PetscCall(PetscObjectView((PetscObject)dm, viewer));
+        PetscCall(PetscViewerFlush(viewer));
+        PetscCall(PetscViewerPopFormat(viewer));
+        PetscCall(PetscViewerDestroy(&viewer));
     }
 
     PetscFunctionReturn(0);
@@ -68,16 +62,13 @@ PetscErrorCode ablate::monitors::DmViewFromOptions::DMViewFromOptions(DM dm) {
 
 PetscErrorCode ablate::monitors::DmViewFromOptions::CallDmViewFromOptions(TS ts, PetscInt, PetscReal, Vec, void* mctx) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
     DM dm;
-    ierr = TSGetDM(ts, &dm);
-    CHKERRQ(ierr);
+    PetscCall(TSGetDM(ts, &dm));
 
     auto monitor = (DmViewFromOptions*)mctx;
     if (monitor->scope == Scope::MONITOR) {
-        ierr = monitor->DMViewFromOptions(dm);
+        PetscCall(monitor->DMViewFromOptions(dm));
     }
-    CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

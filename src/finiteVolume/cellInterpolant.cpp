@@ -284,11 +284,10 @@ static PetscErrorCode DMPlexApplyLimiter_Internal(DM dm, DM dmCell, PetscLimiter
                                                   PetscReal* cellPhi, const PetscScalar* x, const PetscScalar* cellgeom, const PetscFVCellGeom* cg, const PetscScalar* cx, const PetscScalar* cgrad) {
     const PetscInt* children;
     PetscInt numChildren;
-    PetscErrorCode ierr;
+
 
     PetscFunctionBegin;
-    ierr = DMPlexGetTreeChildren(dm, face, &numChildren, &children);
-    CHKERRQ(ierr);
+    PetscCall(DMPlexGetTreeChildren(dm, face, &numChildren, &children));
     if (numChildren) {
         PetscInt c;
 
@@ -296,8 +295,7 @@ static PetscErrorCode DMPlexApplyLimiter_Internal(DM dm, DM dmCell, PetscLimiter
             PetscInt childFace = children[c];
 
             if (childFace >= fStart && childFace < fEnd) {
-                ierr = DMPlexApplyLimiter_Internal(dm, dmCell, lim, dim, dof, cell, field, childFace, fStart, fEnd, cellPhi, x, cellgeom, cg, cx, cgrad);
-                CHKERRQ(ierr);
+                PetscCall(DMPlexApplyLimiter_Internal(dm, dmCell, lim, dim, dof, cell, field, childFace, fStart, fEnd, cellPhi, x, cellgeom, cg, cx, cgrad));
             }
         }
     } else {
@@ -307,26 +305,21 @@ static PetscErrorCode DMPlexApplyLimiter_Internal(DM dm, DM dmCell, PetscLimiter
         PetscInt ncell, d;
         PetscReal v[3];
 
-        ierr = DMPlexGetSupport(dm, face, &fcells);
-        CHKERRQ(ierr);
+        PetscCall(DMPlexGetSupport(dm, face, &fcells));
         ncell = cell == fcells[0] ? fcells[1] : fcells[0];
         if (field >= 0) {
-            ierr = DMPlexPointLocalFieldRead(dm, ncell, field, x, &ncx);
-            CHKERRQ(ierr);
+            PetscCall(DMPlexPointLocalFieldRead(dm, ncell, field, x, &ncx));
         } else {
-            ierr = DMPlexPointLocalRead(dm, ncell, x, &ncx);
-            CHKERRQ(ierr);
+            PetscCall(DMPlexPointLocalRead(dm, ncell, x, &ncx));
         }
-        ierr = DMPlexPointLocalRead(dmCell, ncell, cellgeom, &ncg);
-        CHKERRQ(ierr);
+        PetscCall(DMPlexPointLocalRead(dmCell, ncell, cellgeom, &ncg));
         DMPlex_WaxpyD_Internal(dim, -1, cg->centroid, ncg->centroid, v);
         for (d = 0; d < dof; ++d) {
             /* We use the symmetric slope limited form of Berger, Aftosmis, and Murman 2005 */
             PetscReal denom = DMPlex_DotD_Internal(dim, &cgrad[d * dim], v);
             PetscReal phi, flim = 0.5 * PetscRealPart(ncx[d] - cx[d]) / denom;
 
-            ierr = PetscLimiterLimit(lim, flim, &phi);
-            CHKERRQ(ierr);
+            PetscCall(PetscLimiterLimit(lim, flim, &phi));
             cellPhi[d] = PetscMin(cellPhi[d], phi);
         }
     }

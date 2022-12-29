@@ -12,7 +12,7 @@ void ablate::monitors::ParticleAverage::Register(std::shared_ptr<solver::Solver>
 }
 PetscErrorCode ablate::monitors::ParticleAverage::OutputParticleAverage(TS ts, PetscInt steps, PetscReal time, Vec u, void *mctx) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
+
 
     auto monitor = (ablate::monitors::ParticleAverage *)mctx;
 
@@ -25,30 +25,25 @@ PetscErrorCode ablate::monitors::ParticleAverage::OutputParticleAverage(TS ts, P
         // Get the particle sizes
         PetscInt localParticleCount;
         PetscInt globalParticleCount;
-        ierr = DMSwarmGetLocalSize(monitor->particles->GetParticleDM(), &localParticleCount);
-        CHKERRQ(ierr);
-        ierr = DMSwarmGetSize(monitor->particles->GetParticleDM(), &globalParticleCount);
-        CHKERRQ(ierr);
+        PetscCall(DMSwarmGetLocalSize(monitor->particles->GetParticleDM(), &localParticleCount));
+        PetscCall(DMSwarmGetSize(monitor->particles->GetParticleDM(), &globalParticleCount));
 
         // compute the average particle location
         const PetscReal *coords;
         PetscInt dims;
         PetscReal avg[3] = {0.0, 0.0, 0.0};
-        ierr = DMSwarmGetField(monitor->particles->GetParticleDM(), DMSwarmPICField_coor, &dims, NULL, (void **)&coords);
-        CHKERRQ(ierr);
+        PetscCall(DMSwarmGetField(monitor->particles->GetParticleDM(), DMSwarmPICField_coor, &dims, NULL, (void **)&coords));
         for (PetscInt p = 0; p < localParticleCount; p++) {
             for (PetscInt n = 0; n < dims; n++) {
                 avg[n] += coords[p * dims + n] / PetscReal(globalParticleCount);
             }
         }
-        ierr = DMSwarmRestoreField(monitor->particles->GetParticleDM(), DMSwarmPICField_coor, &dims, NULL, (void **)&coords);
-        CHKERRQ(ierr);
+        PetscCall(DMSwarmRestoreField(monitor->particles->GetParticleDM(), DMSwarmPICField_coor, &dims, NULL, (void **)&coords));
 
         // sum across all ranks
         PetscReal globAvg[3] = {0.0, 0.0, 0.0};
         PetscMPIInt bufferSize;
-        ierr = PetscMPIIntCast(dims, &bufferSize);
-        CHKERRQ(ierr);
+        PetscCall(PetscMPIIntCast(dims, &bufferSize));
 
         int mpiErr = MPI_Reduce(avg, globAvg, bufferSize, MPIU_REAL, MPI_SUM, 0, PetscObjectComm((PetscObject)monitor->particles->GetParticleDM()));
         CHKERRMPI(mpiErr);
