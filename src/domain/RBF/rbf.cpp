@@ -443,7 +443,7 @@ RBF::~RBF() {}
 
 // This is done once
 void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
-printf("RBF: SETUP!\n");
+
 
   if ((!RBF::hasDerivatives) && (!RBF::hasInterpolation)) {
     throw std::runtime_error("ablate::domain::RBF requires either derivatives or interpolation.");
@@ -463,7 +463,7 @@ printf("RBF: SETUP!\n");
 
   // Set the minimum number of cells to get compute the RBF matrix
   RBF::minNumberCells = (PetscInt)floor(2*(RBF::nPoly));
-printf("%d\t%d\n", RBF::hasDerivatives, RBF::hasInterpolation);
+
   if (RBF::hasDerivatives) {
 
     // Now setup the derivatives required for curvature/normal calculations. This should probably move over to user-option

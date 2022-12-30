@@ -129,7 +129,7 @@ struct RBFSupportParameters_NeighborCells {
     bool meshSimplex;
     std::vector<PetscInt> centerCell;
     PetscInt numLevels;
-    PetscInt maxDistance;
+    PetscReal maxDistance;
     PetscInt minNumberCells;
     PetscBool useVertices;
     std::vector<PetscInt> expectedNumberOfCells;
@@ -179,8 +179,53 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
         ablate::environment::RunEnvironment::Finalize();
     EndWithMPI
 }
-// Note: The intended use is to use either levels/maxDist OR minNumberCells. Right now a check isn't done on only selecting one, but that might be added in the future.
 
+// One thing that is NOT being tested right now is periodicity.
+// This is the code used to generate the results. Modify as necessary. It would be relatively easy to automate the unit-test creation, but for right
+//  now it's done manually as the results need to be initially checked.
+//
+//
+//#include "domain/boxMesh.hpp"
+//#include "domain/modifiers/distributeWithGhostCells.hpp"
+//    auto mesh = std::make_shared<domain::BoxMesh>(
+//                "mesh",
+//                std::vector<std::shared_ptr<domain::FieldDescriptor>>{},
+//                std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(3)},
+//                std::vector<int>{10, 10},
+//                std::vector<double>{0.0, 0.0},
+//                std::vector<double>{1.0, 1.0},
+//                std::vector<std::string>{},
+//                false);
+
+
+//      DMViewFromOptions(mesh->GetDM(), NULL, "-dm_view");
+
+
+//      PetscMPIInt rank;
+//      MPI_Comm_rank(PetscObjectComm((PetscObject)mesh->GetDM()), &rank);
+
+//      PetscInt nCells, *cells;
+//      PetscInt centerCell = -1;
+//      if(rank==0) centerCell = 55;
+//      else centerCell = 55;
+//      PetscInt maxLevels = 2;
+//      PetscReal maxDist = -1;
+//      PetscInt minNumberCells = -1;
+
+//      DMPlexGetNeighborCells(mesh->GetDM(), centerCell, maxLevels, maxDist, minNumberCells, PETSC_TRUE, &nCells, &cells) >> ablate::checkError;
+//      printf("%d: center: %d\n", rank, centerCell);
+//      printf("%d: nCells: %d\n", rank, nCells);
+//      printf("%d: ", rank);
+//      for(int i=0;i<nCells;++i){
+//        printf("%d,", cells[i]);
+//      }
+//      printf("\n");
+
+
+//    PetscInt cell;
+//    PetscScalar xyz[2] = {0.55, 0.25};
+//    DMPlexGetContainingCell(mesh->GetDM(), xyz, &cell) >> ablate::checkError;
+//    printf("Cell: %d\n", cell);
 
 INSTANTIATE_TEST_SUITE_P(
     MeshTests, RBFSupportTestFixture_NeighborCells,
@@ -192,7 +237,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .meshSimplex = false,
                                               .centerCell = {25},
                                               .numLevels = -1,
-                                              .maxDistance = -1,
+                                              .maxDistance = -1.0,
                                               .minNumberCells = 25,
                                               .useVertices = PETSC_TRUE,
                                               .expectedNumberOfCells = {25},
@@ -205,7 +250,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .meshSimplex = false,
                                               .centerCell = {0},
                                               .numLevels = -1,
-                                              .maxDistance = -1,
+                                              .maxDistance = -1.0,
                                               .minNumberCells = 25,
                                               .useVertices = PETSC_TRUE,
                                               .expectedNumberOfCells = {25},
@@ -218,7 +263,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .meshSimplex = true,
                                               .centerCell = {199},
                                               .numLevels = -1,
-                                              .maxDistance = -1,
+                                              .maxDistance = -1.0,
                                               .minNumberCells = 25,
                                               .useVertices = PETSC_TRUE,
                                               .expectedNumberOfCells = {39},
@@ -231,7 +276,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .meshSimplex = true,
                                               .centerCell = {0},
                                               .numLevels = -1,
-                                              .maxDistance = -1,
+                                              .maxDistance = -1.0,
                                               .minNumberCells = 25,
                                               .useVertices = PETSC_TRUE,
                                               .expectedNumberOfCells = {34},
@@ -244,7 +289,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .meshSimplex = true,
                                               .centerCell = {56,19},
                                               .numLevels = -1,
-                                              .maxDistance = -1,
+                                              .maxDistance = -1.0,
                                               .minNumberCells = 10,
                                               .useVertices = PETSC_TRUE,
                                               .expectedNumberOfCells = {21,10},
@@ -257,7 +302,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .meshSimplex = false,
                                               .centerCell = {24, 4, 20, 0},
                                               .numLevels = -1,
-                                              .maxDistance = -1,
+                                              .maxDistance = -1.0,
                                               .minNumberCells = 9,
                                               .useVertices = PETSC_TRUE,
                                               .expectedNumberOfCells = {9,9,9,9},
@@ -274,7 +319,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .meshSimplex = false,
                                               .centerCell = {54},
                                               .numLevels = -1,
-                                              .maxDistance = -1,
+                                              .maxDistance = -1.0,
                                               .minNumberCells = 9,
                                               .useVertices = PETSC_FALSE,
                                               .expectedNumberOfCells = {13},
@@ -287,7 +332,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .meshSimplex = true,
                                               .centerCell = {199},
                                               .numLevels = -1,
-                                              .maxDistance = -1,
+                                              .maxDistance = -1.0,
                                               .minNumberCells = 9,
                                               .useVertices = PETSC_FALSE,
                                               .expectedNumberOfCells = {10},
@@ -300,7 +345,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .meshSimplex = false,
                                               .centerCell = {11, 34},
                                               .numLevels = -1,
-                                              .maxDistance = -1,
+                                              .maxDistance = -1.0,
                                               .minNumberCells = 9,
                                               .useVertices = PETSC_FALSE,
                                               .expectedNumberOfCells = {13, 12},
@@ -314,7 +359,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .meshSimplex = false,
                                               .centerCell = {25},
                                               .numLevels = -1,
-                                              .maxDistance = -1,
+                                              .maxDistance = -1.0,
                                               .minNumberCells = 20,
                                               .useVertices = PETSC_FALSE,
                                               .expectedNumberOfCells = {22},
@@ -327,13 +372,191 @@ INSTANTIATE_TEST_SUITE_P(
                                               .meshSimplex = true,
                                               .centerCell = {25},
                                               .numLevels = -1,
-                                              .maxDistance = -1,
+                                              .maxDistance = -1.0,
                                               .minNumberCells = 20,
                                               .useVertices = PETSC_FALSE,
                                               .expectedNumberOfCells = {32},
-                                              .expectedCellList = { {1,4,8,13,15,17,25,27,28,32,33,36,38,39,40,41,46,51,54,56,57,74,95,102,122,123,135,150,166,197,198,201}}}
+                                              .expectedCellList = { {1,4,8,13,15,17,25,27,28,32,33,36,38,39,40,41,46,51,54,56,57,74,95,102,122,123,135,150,166,197,198,201}}},
+                      (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DQuadDistanceEdge", .nproc = 1},
+                                              .meshFaces = {10, 10},
+                                              .meshStart = {0.0, 0.0},
+                                              .meshEnd = {1.0, 1.0},
+                                              .meshModifiers = std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
+                                              .meshSimplex = false,
+                                              .centerCell = {55},
+                                              .numLevels = -1,
+                                              .maxDistance = 0.28,
+                                              .minNumberCells = -1,
+                                              .useVertices = PETSC_FALSE,
+                                              .expectedNumberOfCells = {21},
+                                              .expectedCellList = { {34,35,36,43,44,45,46,47,53,54,55,56,57,63,64,65,66,67,74,75,76}}},
+                      (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DQuadDistanceVert", .nproc = 1},
+                                              .meshFaces = {10, 10},
+                                              .meshStart = {0.0, 0.0},
+                                              .meshEnd = {1.0, 1.0},
+                                              .meshModifiers = std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
+                                              .meshSimplex = false,
+                                              .centerCell = {55},
+                                              .numLevels = -1,
+                                              .maxDistance = 0.28,
+                                              .minNumberCells = -1,
+                                              .useVertices = PETSC_TRUE,
+                                              .expectedNumberOfCells = {21},
+                                              .expectedCellList = { {34,35,36,43,44,45,46,47,53,54,55,56,57,63,64,65,66,67,74,75,76}}},
+
+
+                      (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DQuadDistanceEdgeMPI", .nproc = 2},
+                                              .meshFaces = {10, 10},
+                                              .meshStart = {0.0, 0.0},
+                                              .meshEnd = {1.0, 1.0},
+                                              .meshModifiers = std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(3)},
+                                              .meshSimplex = false,
+                                              .centerCell = {25, 29},
+                                              .numLevels = -1,
+                                              .maxDistance = 0.28,
+                                              .minNumberCells = -1,
+                                              .useVertices = PETSC_FALSE,
+                                              .expectedNumberOfCells = {21, 21},
+                                              .expectedCellList = { {15,16,20,21,22,25,26,27,30,31,32,35,36,61,63,64,66,67,69,70,73},
+                                                                    {18,19,22,23,24,27,28,29,32,33,34,38,39,59,62,63,65,66,68,69,71}}},
+                      (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DQuadDistanceVertMPI", .nproc = 2},
+                                              .meshFaces = {10, 10},
+                                              .meshStart = {0.0, 0.0},
+                                              .meshEnd = {1.0, 1.0},
+                                              .meshModifiers = std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(3)},
+                                              .meshSimplex = false,
+                                              .centerCell = {25, 29},
+                                              .numLevels = -1,
+                                              .maxDistance = 0.28,
+                                              .minNumberCells = -1,
+                                              .useVertices = PETSC_TRUE,
+                                              .expectedNumberOfCells = {21, 21},
+                                              .expectedCellList = { {15,16,20,21,22,25,26,27,30,31,32,35,36,61,63,64,66,67,69,70,73},
+                                                                    {18,19,22,23,24,27,28,29,32,33,34,38,39,59,62,63,65,66,68,69,71}}},
+                      (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DTriDistanceEdge", .nproc = 1},
+                                              .meshFaces = {10, 10},
+                                              .meshStart = {0.0, 0.0},
+                                              .meshEnd = {1.0, 1.0},
+                                              .meshModifiers = std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
+                                              .meshSimplex = true,
+                                              .centerCell = {199},
+                                              .numLevels = -1,
+                                              .maxDistance = 0.14,
+                                              .minNumberCells = -1,
+                                              .useVertices = PETSC_FALSE,
+                                              .expectedNumberOfCells = {11},
+                                              .expectedCellList = { {40,73,76,79,80,98,111,149,150,159,199}}},
+                      (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DTriDistanceVert", .nproc = 1},
+                                              .meshFaces = {10, 10},
+                                              .meshStart = {0.0, 0.0},
+                                              .meshEnd = {1.0, 1.0},
+                                              .meshModifiers = std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
+                                              .meshSimplex = true,
+                                              .centerCell = {199},
+                                              .numLevels = -1,
+                                              .maxDistance = 0.14,
+                                              .minNumberCells = -1,
+                                              .useVertices = PETSC_TRUE,
+                                              .expectedNumberOfCells = {11},
+                                              .expectedCellList = { {40,73,76,79,80,98,111,149,150,159,199}}},
+
+                      (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DTriDistanceEdgeMPI", .nproc = 2},
+                                              .meshFaces = {10, 10},
+                                              .meshStart = {0.0, 0.0},
+                                              .meshEnd = {1.0, 1.0},
+                                              .meshModifiers = std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(3)},
+                                              .meshSimplex = true,
+                                              .centerCell = {60, 102},
+                                              .numLevels = -1,
+                                              .maxDistance = 0.14,
+                                              .minNumberCells = -1,
+                                              .useVertices = PETSC_FALSE,
+                                              .expectedNumberOfCells = {12, 11},
+                                              .expectedCellList = { {38,40,41,45,56,58,60,71,113,114,132,141},
+                                                                    {82,83,84,86,95,96,97,99,102,138,141}}},
+                      (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DTriDistanceVertMPI", .nproc = 2},
+                                              .meshFaces = {10, 10},
+                                              .meshStart = {0.0, 0.0},
+                                              .meshEnd = {1.0, 1.0},
+                                              .meshModifiers = std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(3)},
+                                              .meshSimplex = true,
+                                              .centerCell = {60, 102},
+                                              .numLevels = -1,
+                                              .maxDistance = 0.14,
+                                              .minNumberCells = -1,
+                                              .useVertices = PETSC_TRUE,
+                                              .expectedNumberOfCells = {12, 11},
+                                              .expectedCellList = { {38,40,41,45,56,58,60,71,113,114,132,141},
+                                                                    {82,83,84,86,95,96,97,99,102,138,141}}},
+                      (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DQuadLevelVert", .nproc = 1},
+                                              .meshFaces = {10, 10},
+                                              .meshStart = {0.0, 0.0},
+                                              .meshEnd = {1.0, 1.0},
+                                              .meshModifiers = std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(3)},
+                                              .meshSimplex = false,
+                                              .centerCell = {55},
+                                              .numLevels = 2,
+                                              .maxDistance = -1.0,
+                                              .minNumberCells = -1,
+                                              .useVertices = PETSC_TRUE,
+                                              .expectedNumberOfCells = {25},
+                                              .expectedCellList = { {33,34,35,36,37,43,44,45,46,47,53,54,55,56,57,63,64,65,66,67,73,74,75,76,77}}},
+                      (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DQuadLevelEdge", .nproc = 1},
+                                              .meshFaces = {10, 10},
+                                              .meshStart = {0.0, 0.0},
+                                              .meshEnd = {1.0, 1.0},
+                                              .meshModifiers = std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(3)},
+                                              .meshSimplex = false,
+                                              .centerCell = {55},
+                                              .numLevels = 2,
+                                              .maxDistance = -1.0,
+                                              .minNumberCells = -1,
+                                              .useVertices = PETSC_FALSE,
+                                              .expectedNumberOfCells = {13},
+                                              .expectedCellList = { {35,44,45,46,53,54,55,56,57,64,65,66,75}}}
                   ),
     [](const testing::TestParamInfo<RBFSupportParameters_NeighborCells>& info) { return info.param.mpiTestParameter.getTestName(); });
+
+
+
+
+struct RBFSupportParameters_ErrorChecking {
+    testingResources::MpiTestParameter mpiTestParameter;
+};
+
+class RBFSupportTestFixture_ErrorChecking : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<RBFSupportParameters_ErrorChecking> {
+   public:
+    void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
+};
+
+TEST_P(RBFSupportTestFixture_ErrorChecking, ShouldThrowErrorForTooManyInputs) {
+
+    StartWithMPI
+        {
+            // initialize petsc and mpi
+            ablate::environment::RunEnvironment::Initialize(argc, argv);
+            ablate::utilities::PetscUtilities::Initialize();
+
+
+            // Create the mesh
+            auto mesh = std::make_shared<domain::BoxMesh>(
+                        "mesh", std::vector<std::shared_ptr<domain::FieldDescriptor>>{}, std::vector<std::shared_ptr<domain::modifiers::Modifier>>{}, std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
+
+            PetscInt nCells, *cells;
+
+            EXPECT_ANY_THROW(DMPlexGetNeighborCells(mesh->GetDM(), 0, 1, 1.0, 1, PETSC_TRUE, &nCells, &cells)>> ablate::checkError);
+
+        }
+        ablate::environment::RunEnvironment::Finalize();
+    EndWithMPI
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    MeshTests, RBFSupportTestFixture_ErrorChecking,
+    testing::Values((RBFSupportParameters_ErrorChecking){.mpiTestParameter = {.testName = "SingleProc", .nproc = 1}},
+                      (RBFSupportParameters_ErrorChecking){.mpiTestParameter = {.testName = "DualProcs", .nproc = 2}}
+                  ),
+    [](const testing::TestParamInfo<RBFSupportParameters_ErrorChecking>& info) { return info.param.mpiTestParameter.getTestName(); });
 
 
 /********************   End unit tests for DMPlexGetNeighborCells    *************************/
