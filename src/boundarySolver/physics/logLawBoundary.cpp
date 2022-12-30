@@ -19,7 +19,7 @@ PetscErrorCode ablate::boundarySolver::physics::LogLawBoundary::UpdateBoundaryVe
     PetscReal stencilVel[3];
     PetscReal stencilNormalVelocity[3];
     PetscReal theta;
-    PetscReal tangVel;
+    PetscReal tangentialVel;
     PetscReal tangBoundaryVel;
 
     // map the stencil velocity in normal coord.
@@ -32,28 +32,28 @@ PetscErrorCode ablate::boundarySolver::physics::LogLawBoundary::UpdateBoundaryVe
     utilities::MathUtilities::ComputeTransformationMatrix(dim, fg->normal, transformationMatrix);
     ablate::utilities::MathUtilities::Multiply(dim, transformationMatrix, stencilVel, stencilNormalVelocity);
     PetscReal area = utilities::MathUtilities::MagVector(dim, fg->areas);
-
-    // calculate the new boundary velocity in normal coord for 2D.
+    //  Set normal velocity to zero
     logLawVel[0] = 0e+0;
+    // Calculate the new boundary velocity in normal coord. for 2D.
+    if (dim == 2) {
+        logLawVel[1] =
+            -fg->normal[1] * 0.5 * (1 / kappa) * 2 / (boundaryCell->volume * boundaryCell->volume / area * area) / (4 / (boundaryCell->volume * boundaryCell->volume / area * area) - 4 / (area)) +
+            0.5 * stencilNormalVelocity[1];
+    } else {  // for 3D
+        if (dim == 3) {
+            //  Map tangential velocities into the flow direction such that there is one velocity vector
+            theta = atan(stencilNormalVelocity[2] / stencilNormalVelocity[1]);
+            tangentialVel = stencilNormalVelocity[1] * cos(theta) + stencilNormalVelocity[2] * sin(theta);
 
-    logLawVel[1] =
-        -fg->normal[1] * 0.5 * (1 / kappa) * 2 / (boundaryCell->volume * boundaryCell->volume / area * area) / (4 / (boundaryCell->volume * boundaryCell->volume / area * area) - 4 / (area)) +
-        0.5 * stencilNormalVelocity[1];
+            // Calculate the tangential boundary velocity
+            tangBoundaryVel =
+                fg->normal[1] * 0.5 * (1 / kappa) * 2 / (boundaryCell->volume * boundaryCell->volume / area * area) / (4 / (boundaryCell->volume * boundaryCell->volume / area * area) - 4 / (area)) +
+                0.5 * tangentialVel;
 
-    // for 3D
-    if (dim == 3) {
-        // map tangential velocities into the flow direction such that there is one velocity vector
-        theta = atan(stencilNormalVelocity[2] / stencilNormalVelocity[1]);
-        tangVel = stencilNormalVelocity[1] * cos(theta) + stencilNormalVelocity[2] * sin(theta);
-
-        // calculate the tangential boundary velocity
-        tangBoundaryVel =
-            fg->normal[1] * 0.5 * (1 / kappa) * 2 / (boundaryCell->volume * boundaryCell->volume / area * area) / (4 / (boundaryCell->volume * boundaryCell->volume / area * area) - 4 / (area)) +
-            0.5 * tangVel;
-
-        // map the tangential boundary velocity into original normal coordinate system
-        logLawVel[1] = tangBoundaryVel * cos(theta);
-        logLawVel[2] = tangBoundaryVel * sin(theta);
+            // map the tangential boundary velocity into original normal coordinate system
+            logLawVel[1] = tangBoundaryVel * cos(theta);
+            logLawVel[2] = tangBoundaryVel * sin(theta);
+        }
     }
 
     // map the boundary velocities back into Cartesian coord.
