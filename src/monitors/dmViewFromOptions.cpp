@@ -1,5 +1,4 @@
 #include "dmViewFromOptions.hpp"
-#include <utilities/petscOptions.hpp>
 #include <utility>
 #include "environment/runEnvironment.hpp"
 #include "solver/solver.hpp"
@@ -22,7 +21,7 @@ ablate::monitors::DmViewFromOptions::DmViewFromOptions(std::string options, std:
 
 ablate::monitors::DmViewFromOptions::~DmViewFromOptions() {
     if (petscOptions) {
-        ablate::utilities::PetscOptionsDestroyAndCheck("DmViewFromOptions", &petscOptions);
+        ablate::utilities::PetscUtilities::PetscOptionsDestroyAndCheck("DmViewFromOptions", &petscOptions);
     }
 }
 void ablate::monitors::DmViewFromOptions::Register(std::shared_ptr<solver::Solver> monitorableObject) {

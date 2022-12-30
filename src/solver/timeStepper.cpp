@@ -1,6 +1,5 @@
 #include "timeStepper.hpp"
 #include <petscdm.h>
-#include "utilities/petscOptions.hpp"
 #include "utilities/petscUtilities.hpp"
 
 ablate::solver::TimeStepper::TimeStepper(std::shared_ptr<ablate::domain::Domain> domain, std::shared_ptr<ablate::parameters::Parameters> arguments, std::shared_ptr<io::Serializer> serializer,
@@ -34,7 +33,7 @@ ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<abl
     // append any prefix values
     if (arguments) {
         auto argumentMap = arguments->ToMap<std::string>();
-        ablate::utilities::PetscOptionsUtils::Set(name, argumentMap);
+        ablate::utilities::PetscUtilities::Set(name, argumentMap);
         // only set the option prefix if an argument was provided, else use global options
         TSSetOptionsPrefix(ts, name.c_str()) >> utilities::PetscUtilities::checkError;
     }

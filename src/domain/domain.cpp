@@ -6,7 +6,6 @@
 #include "subDomain.hpp"
 #include "utilities/demangler.hpp"
 #include "utilities/mpiUtilities.hpp"
-#include "utilities/petscOptions.hpp"
 #include "utilities/petscUtilities.hpp"
 
 ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptorsIn, std::vector<std::shared_ptr<modifiers::Modifier>> modifiersIn,
@@ -65,7 +64,7 @@ ablate::domain::Domain::~Domain() {
         VecDestroy(&solGlobalField) >> utilities::PetscUtilities::checkError;
     }
     if (petscOptions) {
-        ablate::utilities::PetscOptionsDestroyAndCheck("ablate::domain::Domain", &petscOptions);
+        ablate::utilities::PetscUtilities::PetscOptionsDestroyAndCheck("ablate::domain::Domain", &petscOptions);
     }
 }
 

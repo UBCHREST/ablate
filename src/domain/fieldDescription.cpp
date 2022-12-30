@@ -2,7 +2,6 @@
 #include <map>
 #include <regex>
 #include "utilities/mpiUtilities.hpp"
-#include "utilities/petscOptions.hpp"
 #include "utilities/petscUtilities.hpp"
 
 ablate::domain::FieldDescription::FieldDescription(std::string nameIn, std::string prefixIn, std::vector<std::string> componentsIn, ablate::domain::FieldLocation location,
@@ -107,7 +106,7 @@ std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::domain::F
 }
 ablate::domain::FieldDescription::~FieldDescription() {
     if (options) {
-        ablate::utilities::PetscOptionsDestroyAndCheck("Field " + name, &options);
+        ablate::utilities::PetscUtilities::PetscOptionsDestroyAndCheck("Field " + name, &options);
     }
 }
 

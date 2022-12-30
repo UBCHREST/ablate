@@ -6,7 +6,6 @@
 #include <utility>
 #include "environment/runEnvironment.hpp"
 #include "generators.hpp"
-#include "utilities/petscOptions.hpp"
 
 ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer(std::shared_ptr<ablate::io::interval::Interval> interval, std::shared_ptr<parameters::Parameters> options)
     : interval(std::move(interval)) {
@@ -64,7 +63,7 @@ ablate::io::Hdf5MultiFileSerializer::~Hdf5MultiFileSerializer() {
     }
 
     if (petscOptions) {
-        ablate::utilities::PetscOptionsDestroyAndCheck("ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer", &petscOptions);
+        ablate::utilities::PetscUtilities::PetscOptionsDestroyAndCheck("ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer", &petscOptions);
     }
 }
 

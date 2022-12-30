@@ -1,7 +1,8 @@
 #ifndef ABLATELIBRARY_PETSCUTILITIES_HPP
 #define ABLATELIBRARY_PETSCUTILITIES_HPP
 #include <petsc.h>
-
+#include <map>
+#include <string>
 namespace ablate::utilities {
 
 class PetscUtilities {
@@ -44,6 +45,35 @@ class PetscUtilities {
      */
     static inline utilities::PetscUtilities::ErrorChecker checkError;
 
+    /**
+     * Support for setting global petsc options with a prefix and options map
+     * @param prefix
+     * @param options
+     */
+    static void Set(const std::string& prefix, const std::map<std::string, std::string>& options);
+
+    /**
+     * Support for setting global petsc options with a msp
+     * @param prefix
+     * @param options
+     */
+    static void Set(const std::map<std::string, std::string>& options);
+
+    /**
+     * Set specific petsc options object
+     * @param petscOptions
+     * @param options
+     */
+    static void Set(PetscOptions petscOptions, const std::map<std::string, std::string>& options);
+
+    /**
+     * Clean up and check for unused options
+     * @param name
+     * @param options
+     */
+    static void PetscOptionsDestroyAndCheck(const std::string& name, PetscOptions* options);
+
+    // keep this class static
     PetscUtilities() = delete;
 };
 

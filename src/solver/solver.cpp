@@ -1,7 +1,6 @@
 #include "solver.hpp"
 #include <petsc/private/dmpleximpl.h>
 #include <regex>
-#include "utilities/petscOptions.hpp"
 #include "utilities/petscUtilities.hpp"
 
 ablate::solver::Solver::Solver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options)
@@ -15,7 +14,7 @@ ablate::solver::Solver::Solver(std::string solverId, std::shared_ptr<domain::Reg
 
 ablate::solver::Solver::~Solver() {
     if (petscOptions) {
-        ablate::utilities::PetscOptionsDestroyAndCheck(solverId, &petscOptions);
+        ablate::utilities::PetscUtilities::PetscOptionsDestroyAndCheck(solverId, &petscOptions);
     }
 }
 

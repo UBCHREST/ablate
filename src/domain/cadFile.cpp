@@ -1,5 +1,4 @@
 #include "cadFile.hpp"
-#include "utilities/petscOptions.hpp"
 #include "utilities/petscUtilities.hpp"
 
 ablate::domain::CadFile::CadFile(const std::string& nameIn, const std::filesystem::path& pathIn, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::string generator,
@@ -20,7 +19,7 @@ ablate::domain::CadFile::~CadFile() {
     }
     // cleanup
     if (surfacePetscOptions) {
-        ablate::utilities::PetscOptionsDestroyAndCheck("ablate::domain::CadFile::ReadDMFromCadFile", &surfacePetscOptions);
+        ablate::utilities::PetscUtilities::PetscOptionsDestroyAndCheck("ablate::domain::CadFile::ReadDMFromCadFile", &surfacePetscOptions);
     }
     if (surfaceDm) {
         DMDestroy(&surfaceDm) >> utilities::PetscUtilities::checkError;

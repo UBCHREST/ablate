@@ -1,7 +1,7 @@
 #include "mapParameters.hpp"
 #include <utility>
 
-ablate::parameters::MapParameters::MapParameters(std::map<std::string, std::string> values) : values(values) {}
+ablate::parameters::MapParameters::MapParameters(std::map<std::string, std::string> values) : values(std::move(values)) {}
 
 std::optional<std::string> ablate::parameters::MapParameters::GetString(std::string paramName) const {
     if (values.count(paramName)) {
