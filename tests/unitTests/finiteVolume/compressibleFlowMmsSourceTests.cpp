@@ -455,7 +455,6 @@ PetscErrorCode ComputeRHS(TS ts, DM dm, PetscReal t, Vec u, PetscInt blockSize, 
     MPI_Comm comm;
     Vec r;
 
-
     PetscFunctionBeginUser;
     Vec sol;
     PetscCall(VecDuplicate(u, &sol));
@@ -533,7 +532,6 @@ PetscErrorCode ComputeRHS(TS ts, DM dm, PetscReal t, Vec u, PetscInt blockSize, 
 
 TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
     StartWithMPI
-
 
         // initialize petsc and mpi
         ablate::environment::RunEnvironment::Initialize(argc, argv);

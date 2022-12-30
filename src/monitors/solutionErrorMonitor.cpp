@@ -1,7 +1,7 @@
 #include "solutionErrorMonitor.hpp"
 #include <monitors/logs/stdOut.hpp>
-#include "utilities/petscUtilities.hpp"
 #include "mathFunctions/mathFunction.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::monitors::SolutionErrorMonitor::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope errorScope, ablate::monitors::SolutionErrorMonitor::Norm normType,
                                                              std::shared_ptr<logs::Log> logIn)

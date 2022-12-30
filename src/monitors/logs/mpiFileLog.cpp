@@ -1,7 +1,7 @@
 #include "mpiFileLog.hpp"
+#include "environment/runEnvironment.hpp"
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/petscUtilities.hpp"
-#include "environment/runEnvironment.hpp"
 
 ablate::monitors::logs::MpiFileLog::MpiFileLog(std::string fileName)
     : outputPath(std::filesystem::path(fileName).is_absolute() ? std::filesystem::path(fileName) : ablate::environment::RunEnvironment::Get().GetOutputDirectory() / fileName), file(nullptr) {}

@@ -23,10 +23,10 @@ class PetscUtilities {
             }
 
            public:
-            PetscError(PetscErrorCode ierr) : std::runtime_error(GetMessage(ierr)) {}
+            explicit PetscError(PetscErrorCode ierr) : std::runtime_error(GetMessage(ierr)) {}
         };
 
-        inline friend void operator>>(PetscErrorCode ierr, const ErrorChecker& errorChecker) {
+        inline friend void operator>>(PetscErrorCode ierr, const ErrorChecker&) {
             if (ierr != 0) {
                 throw PetscError(ierr);
             }
@@ -44,7 +44,6 @@ class PetscUtilities {
      */
     static inline utilities::PetscUtilities::ErrorChecker checkError;
 
-   private:
     PetscUtilities() = delete;
 };
 

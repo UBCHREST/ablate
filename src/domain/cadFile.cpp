@@ -1,6 +1,6 @@
 #include "cadFile.hpp"
-#include "utilities/petscUtilities.hpp"
 #include "utilities/petscOptions.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::domain::CadFile::CadFile(const std::string& nameIn, const std::filesystem::path& pathIn, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::string generator,
                                  std::vector<std::shared_ptr<modifiers::Modifier>> modifiers, const std::shared_ptr<parameters::Parameters>& options,

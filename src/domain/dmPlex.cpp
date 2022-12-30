@@ -1,7 +1,6 @@
 #include "dmPlex.hpp"
-#include "utilities/petscUtilities.hpp"
-#include <utilities/petscOptions.hpp>
 #include <utility>
+#include "utilities/petscUtilities.hpp"
 
 ablate::domain::DMPlex::DMPlex(std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, const std::string& nameIn, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers,
                                std::shared_ptr<parameters::Parameters> options)

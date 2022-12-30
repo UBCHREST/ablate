@@ -10,7 +10,7 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerFunction(const Pe
     auto functionContext = (FunctionContext *)ctx;
     PetscReal temperature = 0;
     PetscReal density = 0;  //!< Variables to hold information gathered from the fields
-        //!< Standard PETSc error code returned by PETSc functions
+                            //!< Standard PETSc error code returned by PETSc functions
 
     PetscCall(functionContext->temperatureFunction.function(conserved, &temperature, functionContext->temperatureFunction.context.get()));  //!< Get the temperature value at this location
     if (temperature != 0) {
@@ -76,7 +76,7 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerTemperatureFuncti
     /** This model depends on mass fraction, temperature, and density in order to predict the absorption properties of the medium. */
     auto functionContext = (FunctionContext *)ctx;
     PetscReal density = 0;  //!< Variables to hold information gathered from the fields
-        //!< Standard PETSc error code returned by PETSc functions
+                            //!< Standard PETSc error code returned by PETSc functions
 
     if (temperature != 0) {
         PetscCall(functionContext->densityFunction.function(conserved, temperature, &density, functionContext->densityFunction.context.get()));  //!< Get the density value at this location

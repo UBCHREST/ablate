@@ -1,6 +1,6 @@
 #include "tagMeshBoundaryFaces.hpp"
-#include "utilities/petscUtilities.hpp"
 #include <utility>
+#include "utilities/petscUtilities.hpp"
 
 ablate::domain::modifiers::TagMeshBoundaryFaces::TagMeshBoundaryFaces(std::shared_ptr<domain::Region> region) : region(std::move(region)) {}
 

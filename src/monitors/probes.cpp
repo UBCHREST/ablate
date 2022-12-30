@@ -152,7 +152,6 @@ PetscErrorCode ablate::monitors::Probes::UpdateProbes(TS ts, PetscInt step, Pets
     auto monitor = (ablate::monitors::Probes *)ctx;
     auto comm = PetscObjectComm((PetscObject)ts);
 
-
     if (monitor->interval->Check(comm, step, time)) {
         // set the current time for each recorder
         for (auto &recorder : monitor->recorders) {

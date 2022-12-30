@@ -4,7 +4,6 @@
 #include <memory>
 #include <vector>
 #include "MpiTestFixture.hpp"
-#include "PetscTestErrorChecker.hpp"
 #include "convergenceTester.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
@@ -77,7 +76,6 @@ static PetscErrorCode ComputeEulerExact(PetscInt dim, PetscReal time, const Pets
 }
 TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
-
 
         // initialize petsc and mpi
         ablate::environment::RunEnvironment::Initialize(argc, argv);

@@ -12,7 +12,6 @@
 #include "domain/modifiers/tagLabelBoundary.hpp"
 #include "environment/runEnvironment.hpp"
 #include "eos/transport/constant.hpp"
-#include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
@@ -237,7 +236,8 @@ TEST_P(BoundarySolverFluxTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
 
         // Get the offset for field
         PetscInt resultGradOffset;
-        PetscDSGetFieldOffset(boundarySolver->GetSubDomain().GetDiscreteSystem(), boundarySolver->GetSubDomain().GetField("resultGrad").subId, &resultGradOffset) >> utilities::PetscUtilities::checkError;
+        PetscDSGetFieldOffset(boundarySolver->GetSubDomain().GetDiscreteSystem(), boundarySolver->GetSubDomain().GetField("resultGrad").subId, &resultGradOffset) >>
+            utilities::PetscUtilities::checkError;
 
         // get the exactGrads
         auto expectedFieldAGradient = ablate::mathFunctions::Create(GetParam().expectedFieldAGradient);

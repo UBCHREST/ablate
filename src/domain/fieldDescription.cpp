@@ -2,8 +2,8 @@
 #include <map>
 #include <regex>
 #include "utilities/mpiUtilities.hpp"
-#include "utilities/petscUtilities.hpp"
 #include "utilities/petscOptions.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::domain::FieldDescription::FieldDescription(std::string nameIn, std::string prefixIn, std::vector<std::string> componentsIn, ablate::domain::FieldLocation location,
                                                    ablate::domain::FieldType type, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> optionsIn,
@@ -39,7 +39,8 @@ PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
 
             // create a petsc fe
             PetscFE petscFE;
-            PetscFECreateDefault(PetscObjectComm((PetscObject)dm), dim, components.size(), simplexGlobal ? PETSC_TRUE : PETSC_FALSE, prefix.c_str(), PETSC_DEFAULT, &petscFE) >> utilities::PetscUtilities::checkError;
+            PetscFECreateDefault(PetscObjectComm((PetscObject)dm), dim, components.size(), simplexGlobal ? PETSC_TRUE : PETSC_FALSE, prefix.c_str(), PETSC_DEFAULT, &petscFE) >>
+                utilities::PetscUtilities::checkError;
             PetscObjectSetName((PetscObject)petscFE, name.c_str()) >> utilities::PetscUtilities::checkError;
             PetscObjectSetOptions((PetscObject)petscFE, options) >> utilities::PetscUtilities::checkError;
 

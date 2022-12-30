@@ -1,8 +1,7 @@
 #include "timeStepper.hpp"
 #include <petscdm.h>
-#include "utilities/mpiUtilities.hpp"
-#include "utilities/petscUtilities.hpp"
 #include "utilities/petscOptions.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::solver::TimeStepper::TimeStepper(std::shared_ptr<ablate::domain::Domain> domain, std::shared_ptr<ablate::parameters::Parameters> arguments, std::shared_ptr<io::Serializer> serializer,
                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions,

@@ -69,7 +69,6 @@ static PetscErrorCode constant(PetscInt dim, PetscReal time, const PetscReal x[]
 static PetscErrorCode createPressureNullSpace(DM dm, PetscInt ofield, PetscInt nfield, MatNullSpace *nullSpace) {
     Vec vec;
 
-
     PetscFunctionBeginUser;
     // determine the number of fields from PETSC
     PetscInt numFields;

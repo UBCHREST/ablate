@@ -1,8 +1,8 @@
 #include "subDomain.hpp"
 #include <set>
 #include <sstream>
-#include "utilities/petscUtilities.hpp"
 #include "utilities/mpiUtilities.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const std::vector<std::shared_ptr<FieldDescription>>& allAuxFields)
     : domain(domainIn),
@@ -566,8 +566,7 @@ PetscErrorCode ablate::domain::SubDomain::GetFieldLocalVector(const ablate::doma
 
         // We have the filled local vec subdm, so clean up the subGlobalVector and vecIS
         PetscCall(VecRestoreSubVector(entireVec, *vecIs, &subGlobalVector));
-        PetscCall(ISDestroy(vecIs);
-        *vecIs = nullptr);
+        PetscCall(ISDestroy(vecIs); *vecIs = nullptr);
     } else if (field.location == FieldLocation::AUX) {
         auto entireDm = GetAuxDM();
         auto entireVec = GetAuxVector();
@@ -613,7 +612,8 @@ void ablate::domain::SubDomain::SetsExactSolutions(const std::vector<std::shared
             auto fieldInfo = GetField(exactSolution->GetName());
 
             if (exactSolution->HasSolutionField()) {
-                PetscDSSetExactSolution(GetDiscreteSystem(), fieldInfo.subId, exactSolution->GetSolutionField().GetPetscFunction(), exactSolution->GetSolutionField().GetContext()) >> utilities::PetscUtilities::checkError;
+                PetscDSSetExactSolution(GetDiscreteSystem(), fieldInfo.subId, exactSolution->GetSolutionField().GetPetscFunction(), exactSolution->GetSolutionField().GetContext()) >>
+                    utilities::PetscUtilities::checkError;
             }
             if (exactSolution->HasTimeDerivative()) {
                 PetscDSSetExactSolutionTimeDerivative(GetDiscreteSystem(), fieldInfo.subId, exactSolution->GetTimeDerivative().GetPetscFunction(), exactSolution->GetTimeDerivative().GetContext()) >>
@@ -714,7 +714,8 @@ void ablate::domain::SubDomain::ProjectFieldFunctionsToLocalVector(const std::ve
         // Note the global DMProjectFunctionLabel can't be used because it overwrites unwritten values.
         // Project this field
         if (fieldLabel) {
-            DMProjectFunctionLabelLocal(dm, time, fieldLabel, 1, &fieldValue, -1, nullptr, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> utilities::PetscUtilities::checkError;
+            DMProjectFunctionLabelLocal(dm, time, fieldLabel, 1, &fieldValue, -1, nullptr, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >>
+                utilities::PetscUtilities::checkError;
         } else {
             DMProjectFunctionLocal(dm, time, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> utilities::PetscUtilities::checkError;
         }

@@ -61,14 +61,14 @@ void ablate::finiteElement::FiniteElementSolver::UpdateAuxFields(TS ts, ablate::
     TSGetTimeStep(ts, &dt) >> utilities::PetscUtilities::checkError;
 
     // Update the source terms
-    DMProjectFunctionLocal(fe.subDomain->GetAuxDM(), time + dt, &auxiliaryFieldFunctions[0], &auxiliaryFieldContexts[0], INSERT_ALL_VALUES, fe.subDomain->GetAuxVector()) >> utilities::PetscUtilities::checkError;
+    DMProjectFunctionLocal(fe.subDomain->GetAuxDM(), time + dt, &auxiliaryFieldFunctions[0], &auxiliaryFieldContexts[0], INSERT_ALL_VALUES, fe.subDomain->GetAuxVector()) >>
+        utilities::PetscUtilities::checkError;
 }
 
 PetscErrorCode ablate::finiteElement::FiniteElementSolver::ComputeIFunction(PetscReal time, Vec locX, Vec locX_t, Vec locF) {
     PetscFunctionBegin;
     DM plex;
     IS allcellIS;
-
 
     PetscCall(DMConvert(subDomain->GetDM(), DMPLEX, &plex));
     PetscCall(DMPlexGetAllCells_Internal(plex, &allcellIS));
@@ -105,7 +105,6 @@ PetscErrorCode ablate::finiteElement::FiniteElementSolver::ComputeIJacobian(Pets
     DM plex;
     IS allcellIS;
     PetscBool hasJac, hasPrec;
-
 
     PetscCall(DMConvert(subDomain->GetDM(), DMPLEX, &plex));
     PetscCall(DMPlexGetAllCells_Internal(plex, &allcellIS));

@@ -232,7 +232,6 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
     PetscReal ferrors[3];
     PetscInt f;
 
-
     PetscFunctionBeginUser;
     PetscCallAbort(PETSC_COMM_WORLD, TSGetDM(ts, &dm));
     PetscCallAbort(PETSC_COMM_WORLD, DMGetDS(dm, &ds));
@@ -269,7 +268,6 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
                        (double)ferrors[2],
                        particleCount));
     PetscCallAbort(PETSC_COMM_WORLD, PetscPrintf(PETSC_COMM_WORLD, "Avg Particle Location: [%2.3g, %2.3g, %2.3g]\n", (double)avg[0], (double)avg[1], (double)avg[2]));
-
     PetscFunctionReturn(0);
 }
 

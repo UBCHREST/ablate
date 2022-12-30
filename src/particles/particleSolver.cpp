@@ -634,7 +634,8 @@ void ablate::particles::ParticleSolver::Save(PetscViewer viewer, PetscInt steps,
 
                 for (std::size_t c = 0; c < field.components.size(); c++) {
                     std::string componentNameLabel = "componentName" + std::to_string(c);
-                    PetscViewerHDF5WriteObjectAttribute(viewer, (PetscObject)particleVector, componentNameLabel.c_str(), PETSC_STRING, field.components[c].c_str()) >> utilities::PetscUtilities::checkError;
+                    PetscViewerHDF5WriteObjectAttribute(viewer, (PetscObject)particleVector, componentNameLabel.c_str(), PETSC_STRING, field.components[c].c_str()) >>
+                        utilities::PetscUtilities::checkError;
                 }
 
                 PetscViewerHDF5PopGroup(viewer) >> utilities::PetscUtilities::checkError;

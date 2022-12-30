@@ -18,7 +18,6 @@ ablate::monitors::TurbFlowStats::TurbFlowStats(const std::vector<std::string> na
 PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
     PetscFunctionBeginUser;
 
-
     // Loads in context
     auto monitor = (ablate::monitors::TurbFlowStats*)ctx;
 

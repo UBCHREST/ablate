@@ -800,7 +800,8 @@ void ablate::boundarySolver::BoundarySolver::UpdateVariablesPreStep(TS, ablate::
 
                 // update
                 if (solPt) {
-                    function.function(dim, &stencilInfo.geometry, cg, inputOffsetsPointer, solPt, solStencilPt, auxOffsetsPointer, auxPt, auxStencilPt, function.context) >> utilities::PetscUtilities::checkError;
+                    function.function(dim, &stencilInfo.geometry, cg, inputOffsetsPointer, solPt, solStencilPt, auxOffsetsPointer, auxPt, auxStencilPt, function.context) >>
+                        utilities::PetscUtilities::checkError;
                 }
             }
         }

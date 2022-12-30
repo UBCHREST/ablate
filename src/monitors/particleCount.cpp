@@ -1,5 +1,6 @@
 #include "particleCount.hpp"
 #include <monitors/logs/stdOut.hpp>
+
 ablate::monitors::ParticleCount::ParticleCount(int interval, std::shared_ptr<logs::Log> logIn) : interval(interval), log(logIn ? logIn : std::make_shared<logs::StdOut>()) {}
 void ablate::monitors::ParticleCount::Register(std::shared_ptr<solver::Solver> monitorableObject) {
     ablate::monitors::Monitor::Register(monitorableObject);
@@ -11,7 +12,6 @@ void ablate::monitors::ParticleCount::Register(std::shared_ptr<solver::Solver> m
 }
 PetscErrorCode ablate::monitors::ParticleCount::OutputParticleCount(TS ts, PetscInt steps, PetscReal time, Vec u, void *mctx) {
     PetscFunctionBeginUser;
-
 
     auto monitor = (ablate::monitors::ParticleCount *)mctx;
 

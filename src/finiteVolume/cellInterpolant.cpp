@@ -285,7 +285,6 @@ static PetscErrorCode DMPlexApplyLimiter_Internal(DM dm, DM dmCell, PetscLimiter
     const PetscInt* children;
     PetscInt numChildren;
 
-
     PetscFunctionBegin;
     PetscCall(DMPlexGetTreeChildren(dm, face, &numChildren, &children));
     if (numChildren) {

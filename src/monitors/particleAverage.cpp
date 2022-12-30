@@ -13,7 +13,6 @@ void ablate::monitors::ParticleAverage::Register(std::shared_ptr<solver::Solver>
 PetscErrorCode ablate::monitors::ParticleAverage::OutputParticleAverage(TS ts, PetscInt steps, PetscReal time, Vec u, void *mctx) {
     PetscFunctionBeginUser;
 
-
     auto monitor = (ablate::monitors::ParticleAverage *)mctx;
 
     if (steps == 0 || monitor->interval == 0 || (steps % monitor->interval == 0)) {

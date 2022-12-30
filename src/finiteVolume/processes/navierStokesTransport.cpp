@@ -1,5 +1,4 @@
 #include "navierStokesTransport.hpp"
-
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/fluxCalculator/ausm.hpp"
@@ -257,7 +256,6 @@ PetscErrorCode ablate::finiteVolume::processes::NavierStokesTransport::Diffusion
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int T = 0;
     const int VEL = 1;
-
 
     auto flowParameters = (DiffusionData*)ctx;
 

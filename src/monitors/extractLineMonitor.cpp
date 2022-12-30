@@ -1,9 +1,9 @@
 #include "extractLineMonitor.hpp"
 #include <fstream>
 #include <iostream>
+#include "environment/runEnvironment.hpp"
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/petscUtilities.hpp"
-#include "environment/runEnvironment.hpp"
 
 ablate::monitors::ExtractLineMonitor::ExtractLineMonitor(int interval, std::string prefix, std::vector<double> start, std::vector<double> end, std::vector<std::string> outputFields,
                                                          std::vector<std::string> outputAuxFields)
@@ -176,7 +176,8 @@ PetscErrorCode ablate::monitors::ExtractLineMonitor::OutputCurve(TS ts, PetscInt
             auto fieldIndex = flow->GetSubDomain().GetField(fieldName).id;
             const auto& fieldDescription = flow->GetSubDomain().GetField(fieldName);
 
-            PetscCall(OutputCurveForField(curveFile, fieldIndex, fieldDescription, monitor->indexLocations, monitor->distanceAlongLine, DMPlexPointLocalFieldRead, flow->GetSubDomain().GetAuxVector()));
+            PetscCall(
+                OutputCurveForField(curveFile, fieldIndex, fieldDescription, monitor->indexLocations, monitor->distanceAlongLine, DMPlexPointLocalFieldRead, flow->GetSubDomain().GetAuxVector()));
         }
 
         curveFile.close();

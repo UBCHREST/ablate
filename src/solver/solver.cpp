@@ -1,8 +1,8 @@
 #include "solver.hpp"
 #include <petsc/private/dmpleximpl.h>
 #include <regex>
+#include "utilities/petscOptions.hpp"
 #include "utilities/petscUtilities.hpp"
-#include <utilities/petscOptions.hpp>
 
 ablate::solver::Solver::Solver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options)
     : solverId(std::move(solverId)), region(std::move(region)), petscOptions(nullptr) {
@@ -51,7 +51,6 @@ static PetscErrorCode zero(PetscInt dim, PetscReal time, const PetscReal x[], Pe
 PetscErrorCode ablate::solver::Solver::DMPlexInsertBoundaryValues_Plex(DM dm, PetscDS prob, PetscBool insertEssential, Vec locX, PetscReal time, Vec faceGeomFVM, Vec cellGeomFVM, Vec gradFVM) {
     PetscObject isZero;
     PetscInt numBd, b;
-
 
     PetscFunctionBegin;
     PetscCall(PetscDSGetNumBoundary(prob, &numBd));
@@ -113,7 +112,6 @@ PetscErrorCode ablate::solver::Solver::DMPlexInsertTimeDerivativeBoundaryValues_
                                                                                      Vec gradFVM) {
     PetscObject isZero;
     PetscInt numBd, b;
-
 
     PetscFunctionBegin;
     if (!locX) PetscFunctionReturn(0);

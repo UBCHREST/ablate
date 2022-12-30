@@ -46,7 +46,6 @@ TEST_P(PressureGradientScalingTestFixture, ShouldUpdatePgsCorrectly) {
     StartWithMPI
         // arrange
 
-
         // initialize petsc and mpi
         ablate::environment::RunEnvironment::Initialize(argc, argv);
         ablate::utilities::PetscUtilities::Initialize();

@@ -1,8 +1,8 @@
 #include "stdOut.hpp"
 #include <stdarg.h>
+#include "nullLog.hpp"
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/petscUtilities.hpp"
-#include "nullLog.hpp"
 
 void ablate::monitors::logs::StdOut::Initialize(MPI_Comm comm) {
     Log::Initialize(comm);

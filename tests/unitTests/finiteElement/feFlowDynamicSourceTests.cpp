@@ -48,7 +48,6 @@ static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     DM dm;
     PetscReal t;
 
-
     PetscFunctionBegin;
     PetscCall(TSGetDM(ts, &dm));
     PetscCall(TSGetTime(ts, &t));
@@ -78,7 +77,6 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
     PetscReal ferrors[3];
     PetscInt f;
 
-
     PetscFunctionBeginUser;
     PetscCall(TSGetDM(ts, &dm));
     PetscCall(DMGetDS(dm, &ds));
@@ -87,7 +85,9 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
         PetscCallAbort(PETSC_COMM_WORLD, PetscDSGetExactSolution(ds, f, &exactFuncs[f], &ctxs[f]));
     }
     PetscCallAbort(PETSC_COMM_WORLD, DMComputeL2FieldDiff(dm, crtime, exactFuncs, ctxs, u, ferrors));
-    PetscCallAbort(PETSC_COMM_WORLD, PetscPrintf(PETSC_COMM_WORLD, "Timestep: %04d time = %-8.4g \t L_2 Error: [%2.3g, %2.3g, %2.3g]\n", (int)step, (double)crtime, (double)ferrors[0], (double)ferrors[1], (double)ferrors[2]));
+    PetscCallAbort(
+        PETSC_COMM_WORLD,
+        PetscPrintf(PETSC_COMM_WORLD, "Timestep: %04d time = %-8.4g \t L_2 Error: [%2.3g, %2.3g, %2.3g]\n", (int)step, (double)crtime, (double)ferrors[0], (double)ferrors[1], (double)ferrors[2]));
 
     PetscFunctionReturn(0);
 }

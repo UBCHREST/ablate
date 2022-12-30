@@ -24,7 +24,7 @@ class MpiUtilities {
             explicit MpiError(int ierr) : std::runtime_error(GetMessage(ierr)) {}
         };
 
-        inline friend void operator>>(int ierr, const ErrorChecker &errorChecker) {
+        inline friend void operator>>(int ierr, const ErrorChecker &) {
             if (MPI_SUCCESS != ierr) {
                 throw MpiError(ierr);
             }
@@ -49,8 +49,7 @@ class MpiUtilities {
      */
     static inline utilities::MpiUtilities::ErrorChecker checkError;
 
-   private:
     MpiUtilities() = delete;
 };
 }  // namespace ablate::utilities
-#endif  // ABLATELIBRARY_PETSCUTILITIES_HPP
+#endif  // ABLATELIBRARY_MPIUTILITIES_HPP

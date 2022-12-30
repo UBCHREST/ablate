@@ -1,14 +1,13 @@
 #include "domain.hpp"
 #include <set>
 #include <typeinfo>
-#include "utilities/mpiUtilities.hpp"
 #include <utility>
-#include "monitors/logs/stdOut.hpp"
 #include "solver/solver.hpp"
 #include "subDomain.hpp"
 #include "utilities/demangler.hpp"
-#include "utilities/petscUtilities.hpp"
+#include "utilities/mpiUtilities.hpp"
 #include "utilities/petscOptions.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptorsIn, std::vector<std::shared_ptr<modifiers::Modifier>> modifiersIn,
                                const std::shared_ptr<parameters::Parameters>& options, bool setFromOptions)
@@ -235,7 +234,8 @@ void ablate::domain::Domain::ProjectFieldFunctions(const std::vector<std::shared
             DMLabelGetStratumIS(fieldLabel, fieldValue, &regionIS) >> utilities::PetscUtilities::checkError;
 
             if (regionIS) {
-                DMProjectFunctionLabelLocal(dm, time, fieldLabel, 1, &fieldValue, -1, nullptr, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> utilities::PetscUtilities::checkError;
+                DMProjectFunctionLabelLocal(dm, time, fieldLabel, 1, &fieldValue, -1, nullptr, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >>
+                    utilities::PetscUtilities::checkError;
                 ISDestroy(&regionIS) >> utilities::PetscUtilities::checkError;
             }
         } else {

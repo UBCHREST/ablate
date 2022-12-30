@@ -29,7 +29,7 @@ PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootTempera
                      //!< Standard PETSc error code returned by PETSc functions
 
     PetscCall(functionContext->densityFunction.function(conserved, temperature, &density, functionContext->densityFunction.context.get()));  //!< Get the density value at this location
-    PetscReal YinC = (functionContext->densityEVCOffset == -1) ? 0 : conserved[functionContext->densityEVCOffset] / density;  //!< Get the mass fraction of carbon here
+    PetscReal YinC = (functionContext->densityEVCOffset == -1) ? 0 : conserved[functionContext->densityEVCOffset] / density;                 //!< Get the mass fraction of carbon here
 
     PetscReal fv = density * YinC / rhoC;
 
