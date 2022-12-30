@@ -27,7 +27,7 @@ timestepper:
   # the domain/mesh must be specified at the start of a simulation
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
-    faces: [ 5,5,5]
+    faces: [ 5 ,5 ,5]
     lower: [ 0, 0, 0]
     upper: [ 0.565, 0.565 , 0.565]
     boundary: [ "PERIODIC", "PERIODIC", "PERIODIC", "PERIODIC" ]
@@ -81,9 +81,9 @@ timestepper:
             LO2: -pi/2
     # the density*ev field must be specified. The DensityExtraVariables class helps by computing density and each ev value using the specified list functions
     - !ablate::finiteVolume::fieldFunctions::DensityExtraVariables
+      # introduce initial value for tke
       name: tke
       state: *flowFieldState
-      # a list of functions used to describe the extra variable initialization
       functions:
         - .09 # ev1 is set to initial value for tke
 
