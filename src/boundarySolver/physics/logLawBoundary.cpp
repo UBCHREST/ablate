@@ -18,8 +18,9 @@ PetscErrorCode ablate::boundarySolver::physics::LogLawBoundary::UpdateBoundaryVe
     PetscArrayzero(logLawVel, 3);
     PetscReal stencilVel[3];
     PetscReal stencilNormalVelocity[3];
-    PetscReal tangVel_1;
-    PetscReal tangVel_2;
+    PetscReal theta;
+    PetscReal tangVel;
+    PetscReal tangBoundaryVel;
 
     // map the stencil velocity in normal coord.
     PetscReal stencilDensity = stencilValues[uOff[EULER_FIELD] + finiteVolume::CompressibleFlowFields::RHO];
@@ -41,35 +42,20 @@ PetscErrorCode ablate::boundarySolver::physics::LogLawBoundary::UpdateBoundaryVe
 
     // for 3D
     if (dim == 3) {
-        // if  vel_t2 >= vel_t1
-        if (abs(stencilNormalVelocity[2]) >= abs(stencilNormalVelocity[1])) {
-            tangVel_1 =
-                fg->normal[1] * 0.5 * (1 / kappa) * 2 / (boundaryCell->volume * boundaryCell->volume / area * area) / (4 / (boundaryCell->volume * boundaryCell->volume / area * area) - 4 / (area)) +
-                0.5 * stencilNormalVelocity[2];
+        // map tangential velocities into the flow direction such that there is one velocity vector
+        theta = atan(stencilNormalVelocity[2] / stencilNormalVelocity[1]);
+        tangVel = stencilNormalVelocity[1] * cos(theta) + stencilNormalVelocity[2] * sin(theta);
 
-            tangVel_2 = stencilNormalVelocity[1];
+        // calculate the tangential boundary velocity
+        tangBoundaryVel =
+            fg->normal[1] * 0.5 * (1 / kappa) * 2 / (boundaryCell->volume * boundaryCell->volume / area * area) / (4 / (boundaryCell->volume * boundaryCell->volume / area * area) - 4 / (area)) +
+            0.5 * tangVel;
 
-        } else {  // if vel_t1 > vel_t2
-            tangVel_1 =
-                fg->normal[1] * 0.5 * (1 / kappa) * 2 / (boundaryCell->volume * boundaryCell->volume / area * area) / (4 / (boundaryCell->volume * boundaryCell->volume / area * area) - 4 / (area)) +
-                0.5 * stencilNormalVelocity[1];
-
-            tangVel_2 = stencilNormalVelocity[2];
-        }
-        // calculate the magnitude of the tangential velocity
-        PetscReal magTangVel = sqrt(stencilNormalVelocity[1] * stencilNormalVelocity[1] + stencilNormalVelocity[2] * stencilNormalVelocity[2]);
-        // calculate the magnitude of new velocities
-        PetscReal newMagTangVel = sqrt(tangVel_1 * tangVel_1 + tangVel_2 * tangVel_2);
-
-        if (magTangVel == 0) {
-            logLawVel[1] = tangVel_1;
-            logLawVel[2] = tangVel_2;
-
-        } else {
-            logLawVel[1] = (newMagTangVel / magTangVel) * stencilNormalVelocity[1];
-            logLawVel[2] = (newMagTangVel / magTangVel) * stencilNormalVelocity[2];
-        }
+        // map the tangential boundary velocity into original normal coordinate system
+        logLawVel[1] = tangBoundaryVel * cos(theta);
+        logLawVel[2] = tangBoundaryVel * sin(theta);
     }
+
     // map the boundary velocities back into Cartesian coord.
     PetscReal boundaryVel[dim];
     PetscReal velocityCartSystem[dim];

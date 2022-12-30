@@ -55,7 +55,6 @@ INSTANTIATE_TEST_SUITE_P(
         // case 0
         (LogLawBoundaryTestParameters){
             .dim = 2, .fvFaceGeom = {.normal = {0, -1, NAN}, .areas = {0, 0.5, 0}}, .boundaryCell = {.volume = {0.5}}, .stencilValues = {1.7, 0, 10, 0}, .expectedResults = {4.191176, 0}},
-
         // case 1
         (LogLawBoundaryTestParameters){
             .dim = 2, .fvFaceGeom = {.normal = {0, -1, NAN}, .areas = {0, 0.5, 0}}, .boundaryCell = {.volume = {0.5}}, .stencilValues = {1.7, 0, 10, 0}, .expectedResults = {4.191176, 0}},
@@ -87,11 +86,11 @@ INSTANTIATE_TEST_SUITE_P(
                                        .fvFaceGeom = {.normal = {0, -1, 0}, .areas = {0, 0.5, 0}},
                                        .boundaryCell = {.volume = {0.05}},
                                        .stencilValues = {1.7, 0, 10, 5, 5},
-                                       .expectedResults = {4.13671793, 0, 2.0683589}},
+                                       .expectedResults = {3.503002595, 0, 1.75150129}},
         // case 7
         (LogLawBoundaryTestParameters){.dim = 3,
                                        .fvFaceGeom = {.normal = {0, 1, 0}, .areas = {0, 0.5, 0}},
                                        .boundaryCell = {.volume = {0.05}},
                                        .stencilValues = {1.7, 0, 5, 5, 10},
-                                       .expectedResults = {1.673359, 0, 3.34671821}}),
+                                       .expectedResults = {1.75150129, 0, 3.503002595}}),
     [](const testing::TestParamInfo<LogLawBoundaryTestParameters>& info) { return std::to_string(info.index); });
