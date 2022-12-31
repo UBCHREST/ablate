@@ -63,7 +63,6 @@ class VectorUtilities {
         return result;
     }
 
-
     /**
      * Fills an array based upon a key vector and map
      * @tparam T
