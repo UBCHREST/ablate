@@ -184,8 +184,6 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
                                                                              false,
                                                                              ablate::parameters::MapParameters::Create({{"dm_plex_hash_location", "true"}}));
 
-        DMView(domain->GetDM(), PETSC_VIEWER_STDOUT_WORLD);
-
         // Setup the flow data
         auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", ".4"}});
 
@@ -273,9 +271,6 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             VecRestoreArrayRead(rhs, &rhsArray) >> testErrorChecker;
             VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> testErrorChecker;
         }
-
-        DMViewFromOptions(radiation->GetSubDomain().GetAuxDM(), nullptr, "-viewdm");
-        VecViewFromOptions(auxVec, nullptr, "-viewvec");
 
         DMRestoreLocalVector(domain->GetDM(), &rhs);
         ablate::environment::RunEnvironment::Finalize();

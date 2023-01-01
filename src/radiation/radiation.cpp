@@ -118,6 +118,9 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
                 virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 0.1 * minCellRadius);
                 virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 0.1 * minCellRadius);
 
+                // Init hhere to default value
+                virtualcoord[ipart].hhere = 0.0;
+
                 /** Update the physical coordinate field so that the real particle location can be updated. */
                 /** Update the physical coordinate field so that the real particle location can be updated. */
                 UpdateCoordinates(ipart, virtualcoord, coord, 0.0);  //! adv value of 0.0 places the particle exactly where the virtual coordinates are.
@@ -373,11 +376,25 @@ void ablate::radiation::Radiation::UpdateCoordinates(PetscInt ipart, Virtualcoor
 }
 
 PetscReal ablate::radiation::Radiation::FaceIntersect(PetscInt ip, Virtualcoord* virtualcoord, PetscFVFaceGeom* faceGeom) const {
-    PetscReal ldotn = (virtualcoord[ip].xdir * faceGeom->normal[0]) + (virtualcoord[ip].ydir * faceGeom->normal[1]) + (virtualcoord[ip].zdir * faceGeom->normal[2]);
+    //!<(planeNormal.dot(planePoint) - planeNormal.dot(linePoint)) / planeNormal.dot(lineDirection.normalize())
+    PetscReal ldotn = 0.0;
+    PetscReal d = 0.0;
+    switch (dim) {
+        case 3:
+            ldotn += virtualcoord[ip].zdir * faceGeom->normal[2];
+            d += (faceGeom->normal[2] * faceGeom->centroid[2]) - (faceGeom->normal[2] * virtualcoord[ip].z);
+            [[fallthrough]];
+        case 2:
+            ldotn += virtualcoord[ip].ydir * faceGeom->normal[1];
+            d += (faceGeom->normal[1] * faceGeom->centroid[1]) - (faceGeom->normal[1] * virtualcoord[ip].y);
+            [[fallthrough]];
+        default:
+            ldotn += virtualcoord[ip].xdir * faceGeom->normal[0];
+            d += (faceGeom->normal[0] * faceGeom->centroid[0]) - (faceGeom->normal[0] * virtualcoord[ip].x);
+    }
+
     if (ldotn == 0) return 0;
-    PetscReal d = (((faceGeom->normal[0] * faceGeom->centroid[0]) + (faceGeom->normal[1] * faceGeom->centroid[1]) + (faceGeom->normal[2] * faceGeom->centroid[2])) -
-                   ((faceGeom->normal[0] * virtualcoord[ip].x) + (faceGeom->normal[1] * virtualcoord[ip].y) + (faceGeom->normal[2] * virtualcoord[ip].z))) /
-                  ldotn;  //!<(planeNormal.dot(planePoint) - planeNormal.dot(linePoint)) / planeNormal.dot(lineDirection.normalize())
+    d /= ldotn;
     if (d > minCellRadius * 1E-5) {
         return d;
     } else {
@@ -466,7 +483,6 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
             const PetscInt* cellFaces;
             DMPlexGetConeSize(subDomain.GetDM(), index[ipart], &numberFaces) >> checkError;
             DMPlexGetCone(subDomain.GetDM(), index[ipart], &cellFaces) >> checkError;  //!< Get the face geometry associated with the current cell
-            PetscReal path;
 
             /** Check every face for intersection with the segment.
              * The segment with the shortest path length for intersection will be the one that physically intercepts with the cell face and not with the nonphysical plane beyond the face.
@@ -479,7 +495,7 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
                  * Use the plane equation and ray segment equation in order to get the face intersection with the shortest path length
                  * This will be the next position of the search particle
                  * */
-                path = FaceIntersect(ipart, virtualcoords, faceGeom);  //!< Use plane intersection equation by getting the centroid and normal vector of the face
+                PetscReal path = FaceIntersect(ipart, virtualcoords, faceGeom);  //!< Use plane intersection equation by getting the centroid and normal vector of the face
 
                 /** Step 3: Take this path if it is shorter than the previous one, getting the shortest path.
                  * The path should never be zero if the forwardIntersect check is functioning properly.
