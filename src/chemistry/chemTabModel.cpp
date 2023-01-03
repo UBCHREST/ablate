@@ -7,12 +7,27 @@
 #include <yaml-cpp/yaml.h>
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include "finiteVolume/compressibleFlowFields.hpp"
 
 void NoOpDeallocator(void *data, size_t a, void *b) {}
 
+int checkpoint_id = 0;
+void pd(std::string str) {
+    std::cerr << str << std::endl << std::flush;
+    std::cerr << "at checkpoint id " << checkpoint_id++ << std::endl << std::flush;
+}
+
+// helper for reporting errors related to invalid sizes
+auto size_mismatch(std::string var_name, int given_value, int expected_value) {
+    std::ostringstream os;
+    os << "The given " << var_name << " value: " << given_value << ", does not match the expected/supported value: " << expected_value;
+    return std::invalid_argument(os.str());
+}
+
 ablate::eos::ChemTab::ChemTab(std::filesystem::path path) : ChemistryModel("ablate::chemistry::ChemTab") {
+    std::cerr << "entering constructor" << std::endl << std::flush;
     const char *tags = "serve";  // default model serving tag; can change in future
     int ntags = 1;
 
@@ -46,11 +61,14 @@ ablate::eos::ChemTab::ChemTab(std::filesystem::path path) : ChemistryModel("abla
     sessionOpts = TF_NewSessionOptions();
     runOpts = NULL;
     session = TF_LoadSessionFromSavedModel(sessionOpts, runOpts, rpath.c_str(), &tags, ntags, graph, NULL, status);
+    std::cerr << "done loading TF model" << std::endl << std::flush;
 
     std::fstream inputFileStream;
     // load the meta data from the weights.csv file
     inputFileStream.open(wpath.c_str(), std::ios::in);
+    std::cerr << "opened weight file" << std::endl << std::flush;
     ExtractMetaData(inputFileStream);
+    std::cerr << "extracted meta-data" << std::endl << std::flush;
     inputFileStream.close();
     // load the basis vectors from the weights.csv and weights_inv.csv files
     // first allocate memory for both weight matrices
@@ -83,6 +101,7 @@ ablate::eos::ChemTab::~ChemTab() {
     TF_DeleteSession(session, status);
     TF_DeleteSessionOptions(sessionOpts);
     TF_DeleteStatus(status);
+    pd("about to free inside ~ChemTabModel()");
     free(sourceEnergyScaler);
     for (std::size_t i = 0; i < speciesNames.size(); i++) free(Wmat[i]);
 
@@ -136,6 +155,7 @@ void ablate::eos::ChemTab::LoadBasisVectors(std::istream &inputStream, std::size
         for (std::size_t j = 0; j < cols; j++) {
             std::string val;
             getline(lineStream, val, ',');  // delimited by comma
+            // std::cerr << "pre-stod val: " << val << std::endl << std::flush;
             W[i][j] = std::stod(val);
         }
         i++;
@@ -154,9 +174,7 @@ void ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgr
     // size of progressVariables should match the expected number of
     // progressVariables
     if (progressVariablesSize != progressVariablesNames.size()) {
-        throw std::invalid_argument(
-            "The progressVariables size does not match the "
-            "supported number of progressVariables");
+        throw size_mismatch("progressVariables size", progressVariablesSize, ctModel->progressVariablesNames.size());
     }
     //********* Get Input tensor
     int numInputs = 1;
@@ -209,8 +227,11 @@ void ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgr
     
     // store inverted mass fractions
     for (size_t i = 0; i < massFractionsSize; i++) {
+        pd("mf loop checkpoint");
         massFractions[i] = (PetscReal)outputArray[i + 1];  // i+1 b/c i==0 is souener!
     }
+
+    pd("about to free inside ChemTabModelComputeFunction()");
 
     // store CPV sources
     outputArray = (float *)TF_TensorData(outputValues[0]);
@@ -250,7 +271,7 @@ void ablate::eos::ChemTab::ChemistrySource(PetscReal density, const PetscReal de
 
     // size of progressVariableSource should match the expected number of progressVariables (excluding zmix)
     if (progressVariableSourceSize != ctModel->progressVariablesNames.size() - 1) {
-        throw std::invalid_argument("The progressVariableSource size does not match the supported number of progressVariables");
+        throw size_mismatch("progressVariableSource size", progressVariableSourceSize, ctModel->progressVariablesNames.size());
     }
 
     // call model using generalized invokation method (usable for inversion & source computation)
@@ -268,15 +289,11 @@ void ablate::eos::ChemTab::ComputeProgressVariables(const PetscReal *massFractio
     // size of progressVariables should match the expected number of
     // progressVariables
     if (progressVariablesSize != progressVariablesNames.size()) {
-        throw std::invalid_argument(
-            "The progressVariables size does not match the "
-            "supported number of progressVariables");
+        throw size_mismatch("progressVariables size", progressVariablesSize, progressVariablesNames.size());
     }
     // size of massFractions should match the expected number of species
     if (massFractionsSize != speciesNames.size()) {
-        throw std::invalid_argument(
-            "The massFractions size does not match the "
-            "supported number of species");
+        throw size_mismatch("massFractions size", massFractionsSize, speciesNames.size());
     }
     for (size_t i = 0; i < progressVariablesNames.size(); i++) {
         PetscReal v = 0;
