@@ -261,21 +261,15 @@ bool ablate::domain::Domain::CheckFieldValues(Vec globSourceVector) {
     PetscInt pStart, pEnd;
     DMPlexGetChart(GetDM(), &pStart, &pEnd) >> checkError;
 
-    // get the global section
-    PetscSection globalSection;
-    DMGetSection(GetDM(), &globalSection) >> checkError;
-
     for (PetscInt p = pStart; p < pEnd; ++p) {
-        const PetscScalar* solutionAtP = nullptr;
-        DMPlexPointGlobalRead(GetDM(), p, solutionArray, &solutionAtP) >> checkError;
+        // Get the start/end point in the array
+        PetscInt pointStart;
+        PetscInt pointEnd;
 
-        // check each scalar for nan/inf
-        if (solutionAtP) {
-            PetscInt dof;
-            PetscSectionGetDof(globalSection, p, &dof);
-
-            for (PetscInt m = 0; m < dof; ++m) {
-                if (PetscIsInfOrNanScalar(solutionAtP[m])) {
+        DMPlexGetPointGlobal(GetDM(), p, &pointStart, &pointEnd) >> checkError;
+        if (pointStart >= 0 && pointEnd >= 0) {
+            for (PetscInt o = pointStart; o < pointEnd; ++o) {
+                if (PetscIsInfOrNanScalar(solutionArray[o])) {
                     failedPoints.insert(p);
                 }
             }
@@ -289,21 +283,15 @@ bool ablate::domain::Domain::CheckFieldValues(Vec globSourceVector) {
         VecGetArrayRead(globSourceVector, &sourceArray) >> checkError;
         VecGetDM(globSourceVector, &sourceDM) >> checkError;
 
-        // get the global section
-        PetscSection sourceSection;
-        DMGetSection(sourceDM, &sourceSection) >> checkError;
-
         for (PetscInt p = pStart; p < pEnd; ++p) {
-            const PetscScalar* sourceAtP = nullptr;
-            DMPlexPointGlobalRead(sourceDM, p, sourceArray, &sourceAtP) >> checkError;
+            // Get the start/end point in the array
+            PetscInt pointStart;
+            PetscInt pointEnd;
 
-            // check each scalar for nan/inf
-            if (sourceAtP) {
-                PetscInt dof;
-                PetscSectionGetDof(sourceSection, p, &dof);
-
-                for (PetscInt m = 0; m < dof; ++m) {
-                    if (PetscIsInfOrNanScalar(sourceAtP[m])) {
+            DMPlexGetPointGlobal(GetDM(), p, &pointStart, &pointEnd) >> checkError;
+            if (pointStart >= 0 && pointEnd >= 0) {
+                for (PetscInt o = pointStart; o < pointEnd; ++o) {
+                    if (PetscIsInfOrNanScalar(sourceArray[o])) {
                         failedPoints.insert(p);
                     }
                 }
