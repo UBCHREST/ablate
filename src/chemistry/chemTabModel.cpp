@@ -13,12 +13,6 @@
 
 void NoOpDeallocator(void *data, size_t a, void *b) {}
 
-int checkpoint_id = 0;
-void pd(std::string str) {
-    std::cerr << str << std::endl << std::flush;
-    std::cerr << "at checkpoint id " << checkpoint_id++ << std::endl << std::flush;
-}
-
 // helper for reporting errors related to invalid sizes
 auto size_mismatch(std::string var_name, int given_value, int expected_value) {
     std::ostringstream os;
@@ -70,7 +64,8 @@ ablate::eos::ChemTab::ChemTab(std::filesystem::path path) : ChemistryModel("abla
     ExtractMetaData(inputFileStream);
     std::cerr << "extracted meta-data" << std::endl << std::flush;
     inputFileStream.close();
-    // load the basis vectors from the weights.csv and weights_inv.csv files
+
+    // load the basis vectors from the weights.csv
     // first allocate memory for both weight matrices
     Wmat = (PetscReal **)malloc(speciesNames.size() * sizeof(PetscReal *));
     for (std::size_t i = 0; i < speciesNames.size(); i++) {
@@ -101,7 +96,6 @@ ablate::eos::ChemTab::~ChemTab() {
     TF_DeleteSession(session, status);
     TF_DeleteSessionOptions(sessionOpts);
     TF_DeleteStatus(status);
-    pd("about to free inside ~ChemTabModel()");
     free(sourceEnergyScaler);
     for (std::size_t i = 0; i < speciesNames.size(); i++) free(Wmat[i]);
 
@@ -167,13 +161,13 @@ void ablate::eos::ChemTab::LoadBasisVectors(std::istream &inputStream, std::size
     if (ptr != NULL) free(ptr);
 
 // TODO: break into smaller functions?
-void ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariable[], const std::size_t progressVariablesSize,
+void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariable[], const std::size_t progressVariablesSize,
                                  PetscReal *predictedSourceEnergy, PetscReal *progressVariableSource, const std::size_t progressVariableSourceSize,
                                  PetscReal *massFractions, std::size_t massFractionsSize, void *ctx) {
     auto ctModel = (ablate::eos::ChemTab*) ctx;
     // size of progressVariables should match the expected number of
     // progressVariables
-    if (progressVariablesSize != progressVariablesNames.size()) {
+    if (progressVariablesSize != ctModel->progressVariablesNames.size()) {
         throw size_mismatch("progressVariables size", progressVariablesSize, ctModel->progressVariablesNames.size());
     }
     //********* Get Input tensor
@@ -227,11 +221,8 @@ void ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgr
     
     // store inverted mass fractions
     for (size_t i = 0; i < massFractionsSize; i++) {
-        pd("mf loop checkpoint");
         massFractions[i] = (PetscReal)outputArray[i + 1];  // i+1 b/c i==0 is souener!
     }
-
-    pd("about to free inside ChemTabModelComputeFunction()");
 
     // store CPV sources
     outputArray = (float *)TF_TensorData(outputValues[0]);
