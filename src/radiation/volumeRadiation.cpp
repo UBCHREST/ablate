@@ -3,11 +3,11 @@
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "io/interval/fixedInterval.hpp"
 
-ablate::radiation::VolumeRadiation::VolumeRadiation(const std::string& solverId1, const std::shared_ptr<domain::Region>& region, std::shared_ptr<io::interval::Interval> intervalIn,
+ablate::radiation::VolumeRadiation::VolumeRadiation(const std::string& solverId1, const std::shared_ptr<domain::Region>& region, const std::shared_ptr<io::interval::Interval>& intervalIn,
                                                     std::shared_ptr<radiation::Radiation> radiationIn, const std::shared_ptr<parameters::Parameters>& options,
-                                                    std::shared_ptr<ablate::monitors::logs::Log> log)
+                                                    const std::shared_ptr<ablate::monitors::logs::Log>& log)
     : CellSolver(solverId1, region, options), interval((intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>())), radiation(std::move(radiationIn)) {}
-ablate::radiation::VolumeRadiation::~VolumeRadiation() {}
+ablate::radiation::VolumeRadiation::~VolumeRadiation() = default;
 
 void ablate::radiation::VolumeRadiation::Setup() {
     solver::Range cellRange;
@@ -85,10 +85,10 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
         const PetscInt iCell = range.GetPoint(c);  //!< Isolates the valid cells
 
         // compute absorptivity
-        DMPlexPointLocalRead(solDm, iCell, solArray, &sol) >> checkError;
+        DMPlexPointLocalRead(solDm, iCell, solArray, &sol) >> utilities::PetscUtilities::checkError;
 
         if (sol) {
-            DMPlexPointLocalFieldRead(auxDm, iCell, temperatureFieldInfo.id, auxArray, &temperature) >> checkError;
+            DMPlexPointLocalFieldRead(auxDm, iCell, temperatureFieldInfo.id, auxArray, &temperature) >> utilities::PetscUtilities::checkError;
 
             absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
 

@@ -177,15 +177,16 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
     }
     PetscCallAbort(PETSC_COMM_WORLD, DMSwarmRestoreField(tracerParticles->GetParticleDM(), DMSwarmPICField_coor, &dims, NULL, (void **)&coords));
 
-    PetscCallAbort(PETSC_COMM_WORLD, PetscPrintf(PETSC_COMM_WORLD,
-                       "Timestep: %04" PetscInt_FMT " time = %-8.4g \t L_2 Error: [%2.3g, %2.3g, %2.3g] ParticleCount: %" PetscInt_FMT "\n",
-                       step,
-                       (double)crtime,
-                       (double)ferrors[0],
-                       (double)ferrors[1],
-                       (double)ferrors[2],
-                       particleCount));
-    PetscCallAbort(PETSC_COMM_WORLD, (PETSC_COMM_WORLD, "Avg Particle Location: [%2.3g, %2.3g, %2.3g]\n", (double)avg[0], (double)avg[1], (double)avg[2]));
+    PetscCallAbort(PETSC_COMM_WORLD,
+                   PetscPrintf(PETSC_COMM_WORLD,
+                               "Timestep: %04" PetscInt_FMT " time = %-8.4g \t L_2 Error: [%2.3g, %2.3g, %2.3g] ParticleCount: %" PetscInt_FMT "\n",
+                               step,
+                               (double)crtime,
+                               (double)ferrors[0],
+                               (double)ferrors[1],
+                               (double)ferrors[2],
+                               particleCount));
+    PetscCallAbort(PETSC_COMM_WORLD, PetscPrintf(PETSC_COMM_WORLD, "Avg Particle Location: [%2.3g, %2.3g, %2.3g]\n", (double)avg[0], (double)avg[1], (double)avg[2]));
 
     PetscFunctionReturn(0);
 }
