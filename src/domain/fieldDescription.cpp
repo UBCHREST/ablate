@@ -31,7 +31,7 @@ PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
             PetscInt simplexGlobal;
 
             // Assume true if any rank says true
-            MPI_Allreduce(&simplexLoc, &simplexGlobal, 1, MPIU_INT, MPI_MAX, PetscObjectComm((PetscObject)dm)) >> checkMpiError;
+            MPI_Allreduce(&simplexLoc, &simplexGlobal, 1, MPIU_INT, MPIU_MAX, PetscObjectComm((PetscObject)dm)) >> checkMpiError;
 
             // Determine the number of dims
             PetscInt dim;

@@ -498,7 +498,7 @@ bool ablate::domain::SubDomain::InRegion(const domain::Region& region) const {
 
     // Take the sum
     PetscInt globalSize;
-    MPI_Allreduce(&size, &globalSize, 1, MPIU_INT, MPI_SUM, GetComm()) >> checkMpiError;
+    MPI_Allreduce(&size, &globalSize, 1, MPIU_INT, MPIU_SUM, GetComm()) >> checkMpiError;
     return globalSize > 0;
 }
 

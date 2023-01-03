@@ -382,8 +382,8 @@ void ablate::particles::ParticleSolver::SwarmMigrate() {
     MPI_Comm comm;
     PetscObjectGetComm((PetscObject)particleTs, &comm) >> checkError;
     PetscMPIInt dmChangedAll = PETSC_FALSE;
-    MPI_Allreduce(&dmChangedLocal, &dmChangedAll, 1, MPIU_INT, MPIU_MAX, comm) >> checkMpiError;
-    dmChanged = dmChangedAll == PETSC_TRUE;
+    MPI_Allreduce(&dmChangedLocal, &dmChangedAll, 1, MPI_INT, MPI_MAX, comm) >> checkMpiError;
+    dmChanged = dmChangedAll > 0;
 }
 
 void ablate::particles::ParticleSolver::MacroStepParticles(TS macroTS) {

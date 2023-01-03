@@ -37,8 +37,8 @@ void ablate::domain::Region::CheckForLabel(DM dm, MPI_Comm comm) const {
     DMLabel label = nullptr;
     DMGetLabel(dm, GetName().c_str(), &label) >> checkError;
 
-    int found = (label != nullptr);
-    int anyFound;
+    PetscMPIInt found = (PetscMPIInt)(label != nullptr);
+    PetscMPIInt anyFound;
 
     MPI_Allreduce(&found, &anyFound, 1, MPI_INT, MPI_MAX, comm) >> checkMpiError;
 

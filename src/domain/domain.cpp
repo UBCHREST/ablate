@@ -263,7 +263,7 @@ bool ablate::domain::Domain::CheckFieldValues(Vec globSourceVector) {
 
     // get the global section
     PetscSection globalSection;
-    DMGetSection(GetDM(), &globalSection) >> checkError;
+    DMGetGlobalSection(GetDM(), &globalSection) >> checkError;
 
     for (PetscInt p = pStart; p < pEnd; ++p) {
         const PetscScalar* solutionAtP = nullptr;
@@ -273,8 +273,9 @@ bool ablate::domain::Domain::CheckFieldValues(Vec globSourceVector) {
         if (solutionAtP) {
             PetscInt dof;
             PetscSectionGetDof(globalSection, p, &dof);
-
-            for (PetscInt m = 0; m < dof; ++m) {
+            PetscInt cdof;
+            PetscSectionGetConstraintDof(globalSection, p, &cdof);
+            for (PetscInt m = 0; m < (dof - cdof); ++m) {
                 if (PetscIsInfOrNanScalar(solutionAtP[m])) {
                     failedPoints.insert(p);
                 }
@@ -301,8 +302,9 @@ bool ablate::domain::Domain::CheckFieldValues(Vec globSourceVector) {
             if (sourceAtP) {
                 PetscInt dof;
                 PetscSectionGetDof(sourceSection, p, &dof);
-
-                for (PetscInt m = 0; m < dof; ++m) {
+                PetscInt cdof;
+                PetscSectionGetConstraintDof(globalSection, p, &cdof);
+                for (PetscInt m = 0; m < (dof - cdof); ++m) {
                     if (PetscIsInfOrNanScalar(sourceAtP[m])) {
                         failedPoints.insert(p);
                     }

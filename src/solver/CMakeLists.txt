@@ -13,4 +13,5 @@ target_sources(ablateLibrary
         cellSolver.hpp
         range.hpp
         dynamicRange.hpp
+        reverseRange.hpp
         )

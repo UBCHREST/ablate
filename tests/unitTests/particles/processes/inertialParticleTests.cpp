@@ -186,8 +186,8 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
     ierr = PetscPrintf(PETSC_COMM_WORLD,
-                       "Timestep: %04d time = %-8.4g \t L_2 Error: [%2.3g, %2.3g, %2.3g] ParticleCount: %d\n",
-                       (int)step,
+                       "Timestep: %04" PetscInt_FMT " time = %-8.4g \t L_2 Error: [%2.3g, %2.3g, %2.3g] ParticleCount: %" PetscInt_FMT "\n",
+                       step,
                        (double)crtime,
                        (double)ferrors[0],
                        (double)ferrors[1],

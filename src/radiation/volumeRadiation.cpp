@@ -27,6 +27,11 @@ void ablate::radiation::VolumeRadiation::Setup() {
     ablate::solver::CellSolver::Setup();
     radiation->Setup(radiationCellRange.GetRange(), GetSubDomain());  //!< Insert the cell range of the solver here
     RestoreRange(cellRange);
+
+    /**
+     * Begins radiation properties model
+     */
+    absorptivityFunction = radiation->GetRadiationModel()->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, subDomain->GetFields());
 }
 
 void ablate::radiation::VolumeRadiation::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) { ablate::solver::Solver::Register(subDomain); }
@@ -54,15 +59,43 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
     /** Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable. */
     const PetscScalar* rhsArray;
     VecGetArrayRead(rhs, &rhsArray);
-    const auto& eulerFieldInfo = subDomain->GetField("euler");
+    const auto& eulerFieldInfo = subDomain->GetField(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD);
+    const auto& temperatureFieldInfo = subDomain->GetField(ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD);
 
-    radiation->Solve(subDomain->GetSolutionVector(), subDomain->GetField("temperature"), subDomain->GetAuxVector());
+    /** Get the array of the solution vector. */
+    const PetscScalar* solArray;
+    DM solDm = subDomain->GetDM();
+    VecGetArrayRead(solVec, &solArray);
 
-    for (PetscInt c = radiationCellRange.GetRange().start; c < radiationCellRange.GetRange().end; ++c) {            //!< This will iterate only though local cells
-        const PetscInt iCell = radiationCellRange.GetRange().points ? radiationCellRange.GetRange().points[c] : c;  //!< Isolates the valid cells
-        PetscScalar* rhsValues;
-        DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
-        rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += radiation->GetIntensity(iCell);  //!< Loop through the cells and update the equation of state
+    /** Get the array of the aux vector. */
+    const PetscScalar* auxArray;
+    DM auxDm = subDomain->GetAuxDM();
+    VecGetArrayRead(subDomain->GetAuxGlobalVector(), &auxArray);
+
+    /** Declare the basic information*/
+    PetscReal* sol = nullptr;          //!< The solution value at any given location
+    PetscReal* temperature = nullptr;  //!< The temperature at any given location
+    double kappa = 1;                  //!< Absorptivity coefficient, property of each cell
+
+    auto absorptivityFunctionContext = absorptivityFunction.context.get();  //!< Get access to the absorption function
+
+    //!< This will iterate only though local cells
+    auto& range = radiationCellRange.GetRange();
+    for (PetscInt c = range.start; c < range.end; ++c) {
+        const PetscInt iCell = range.GetPoint(c);  //!< Isolates the valid cells
+
+        // compute absorptivity
+        DMPlexPointLocalRead(solDm, iCell, solArray, &sol) >> checkError;
+
+        if (sol) {
+            DMPlexPointLocalFieldRead(auxDm, iCell, temperatureFieldInfo.id, auxArray, &temperature) >> checkError;
+
+            absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
+
+            PetscScalar* rhsValues;
+            DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
+            rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += radiation->GetIntensity(c, range, *temperature, kappa);  //!< Loop through the cells and update the equation of state
+        }
     }
     VecRestoreArrayRead(rhs, &rhsArray);
     PetscFunctionReturn(0);

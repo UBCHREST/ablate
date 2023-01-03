@@ -272,7 +272,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::EnforceTimeStep(TS ts, ablate::so
     MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank);
 
     PetscReal dtMinGlobal;
-    MPI_Allreduce(&dtMin, &dtMinGlobal, 1, MPIU_REAL, MPI_MIN, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
+    MPI_Allreduce(&dtMin, &dtMinGlobal, 1, MPIU_REAL, MPIU_MIN, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
 
     // don't override the first time step if bigger
     if (timeStep > 0 || dtMinGlobal < currentDt) {

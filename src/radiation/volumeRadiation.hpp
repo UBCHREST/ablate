@@ -44,9 +44,13 @@ class VolumeRadiation : public solver::CellSolver, public solver::RHSFunction {
      */
     PetscErrorCode PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) override;
 
+   private:
     const std::shared_ptr<io::interval::Interval> interval;
     std::shared_ptr<ablate::radiation::Radiation> radiation;
     solver::DynamicRange radiationCellRange;
+
+    //! hold a pointer to the absorptivity function
+    eos::ThermodynamicTemperatureFunction absorptivityFunction;
 };
 }  // namespace ablate::radiation
 #endif  // ABLATELIBRARY_VOLUMERADIATION_HPP
