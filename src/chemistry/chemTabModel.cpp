@@ -209,7 +209,7 @@ void ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgr
     
     // store inverted mass fractions
     for (size_t i = 0; i < massFractionsSize; i++) {
-        massFractions[i] = (PetscReal)outputArray[i+1]; // i+1 b/c i==0 is souener!
+        massFractions[i] = (PetscReal)outputArray[i + 1];  // i+1 b/c i==0 is souener!
     }
 
     // store CPV sources
