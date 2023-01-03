@@ -199,14 +199,14 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeFunction(const PetscRea
 
     // store inverted mass fractions
     for (size_t i = 0; i < massFractionsSize; i++) {
-        massFractions[i] = (PetscReal)outputArray[i + 1]; //i+1 b/c i==0 is souener!
+        massFractions[i] = (PetscReal)outputArray[i + 1];  // i+1 b/c i==0 is souener!
     }
 
     // store CPV sources
     outputArray = (float *)TF_TensorData(outputValues[0]);
-    progressVariableSource[0]=0; // Zmix source is always 0!
+    progressVariableSource[0] = 0;  // Zmix source is always 0!
     for (size_t i = 0; i < progressVariableSourceSize; i++) {
-        progressVariableSource[i+1] = (PetscReal)outputArray[i]; // +1 b/c we are manually filling in Zmix source value (to 0)
+        progressVariableSource[i + 1] = (PetscReal)outputArray[i];  // +1 b/c we are manually filling in Zmix source value (to 0)
     }
     // free allocated vectors
     free(inputValues);
@@ -293,7 +293,7 @@ void ablate::chemistry::ChemTabModel::ComputeProgressVariables(const PetscReal *
             "supported number of species");
     }
     // the first entry in progressVariables corresponds to zMix and is fixed to 0
-    //progressVariables[0] = 0;
+    // progressVariables[0] = 0;
     for (size_t i = 0; i < progressVariablesNames.size(); i++) {
         PetscReal v = 0;
         for (size_t j = 0; j < speciesNames.size(); j++) {
