@@ -93,4 +93,4 @@ INSTANTIATE_TEST_SUITE_P(
                                        .boundaryCell = {.volume = 0.05},
                                        .stencilValues = {1.7, 0, 5, 5, 10},
                                        .expectedResults = {1.75150129, 0, 3.503002595}}),
-    [](const testing::TestParamInfo<LogLawBoundaryTestParameters>& info) { return std::to_string(info.index); });
+    [](const testing::TestParamInfo<LogLawBoundaryTestParameters>& info) { return std::to_string(info.index) + "_" + std::to_string(info.param.dim) + "D"; });
