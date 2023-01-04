@@ -16,6 +16,12 @@ class TwoPhaseEulerAdvection : public Process {
     inline const static std::string VOLUME_FRACTION_FIELD = eos::TwoPhase::VF;
     inline const static std::string DENSITY_VF_FIELD = ablate::finiteVolume::CompressibleFlowFields::CONSERVED + VOLUME_FRACTION_FIELD;
 
+    struct TimeStepData {
+        PetscReal cfl;
+        eos::ThermodynamicFunction computeSpeedOfSound; // **change**, this needs to twoPhase EOS
+    };
+    TimeStepData timeStepData;
+
    private:
     struct DecodeDataStructGas {
         PetscReal etot;

@@ -304,7 +304,7 @@ double ablate::finiteVolume::processes::TwoPhaseEulerAdvection::ComputeTimeStep(
 
     // Get the flow param
     auto timeStepData = (TimeStepData*)ctx;
-    auto advectionData = timeStepData->advectionData;
+//    auto advectionData = timeStepData->advectionData;
 
     // Get the fv geom
     PetscReal minCellRadius;
@@ -341,16 +341,16 @@ double ablate::finiteVolume::processes::TwoPhaseEulerAdvection::ComputeTimeStep(
             PetscReal rho = euler[CompressibleFlowFields::RHO];
 
             // Get the speed of sound from the eos
-            PetscReal temperature;
-            advectionData->computeTemperature.function(conserved, &temperature, advectionData->computeTemperature.context.get()) >> checkError;
+//            PetscReal temperature;
+//            advectionData->computeTemperature.function(conserved, &temperature, advectionData->computeTemperature.context.get()) >> checkError;
             PetscReal a;
-            advectionData->computeSpeedOfSound.function(conserved, temperature, &a, advectionData->computeSpeedOfSound.context.get()) >> checkError;
+            timeStepData->computeSpeedOfSound.function(conserved, &a, timeStepData->computeSpeedOfSound.context.get()) >> checkError;
 
             PetscReal velSum = 0.0;
             for (PetscInt d = 0; d < dim; d++) {
                 velSum += PetscAbsReal(euler[CompressibleFlowFields::RHOU + d]) / rho;
             }
-            PetscReal dt = advectionData->cfl * dx / (a + velSum);
+            PetscReal dt = timeStepData->cfl * dx / (a + velSum);
 
             dtMin = PetscMin(dtMin, dt);
         }
