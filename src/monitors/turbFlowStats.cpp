@@ -17,7 +17,6 @@ ablate::monitors::TurbFlowStats::TurbFlowStats(const std::vector<std::string> na
 
 PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
 
     // Loads in context
     auto monitor = (ablate::monitors::TurbFlowStats*)ctx;
@@ -32,8 +31,7 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
         std::vector<DM> fieldDM(monitor->fieldNames.size(), nullptr);
         for (std::size_t f = 0; f < monitor->fieldNames.size(); f++) {
             const auto& field = monitor->GetSolver()->GetSubDomain().GetField(monitor->fieldNames[f]);
-            ierr = monitor->GetSolver()->GetSubDomain().GetFieldGlobalVector(field, &vecIS[f], &vec[f], &fieldDM[f]);
-            CHKERRQ(ierr);
+            PetscCall(monitor->GetSolver()->GetSubDomain().GetFieldGlobalVector(field, &vecIS[f], &vec[f], &fieldDM[f]));
         }
 
         // Extract the main solution vector for the density calculation
@@ -59,18 +57,15 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
 
         // Extract the solution global array
         const PetscScalar* solDat;
-        ierr = VecGetArrayRead(solVec, &solDat);
-        CHKERRQ(ierr);
+        PetscCall(VecGetArrayRead(solVec, &solDat));
 
         // Extract the monitor array
         PetscScalar* monitorDat;
-        ierr = VecGetArray(monitorVec, &monitorDat);
-        CHKERRQ(ierr);
+        PetscCall(VecGetArray(monitorVec, &monitorDat));
 
         // Get the timestep from the TS
         PetscReal dt;
-        ierr = TSGetTimeStep(ts, &dt);
-        CHKERRQ(ierr);
+        PetscCall(TSGetTimeStep(ts, &dt));
 
         // Create pointers to the field and monitor data exterior to loop
         const PetscScalar* fieldDat;
@@ -80,8 +75,7 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
         // p - field component iterator
         for (std::size_t f = 0; f < monitor->fieldNames.size(); f++) {
             // Extract the field vector global array
-            ierr = VecGetArrayRead(vec[f], &fieldDat);
-            CHKERRQ(ierr);
+            PetscCall(VecGetArrayRead(vec[f], &fieldDat));
 
             //! Compute measures
             for (PetscInt c = cStart; c < cEnd; c++) {
@@ -92,16 +86,13 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
                 PetscScalar* monitorPt;
 
                 // Get field point data
-                ierr = DMPlexPointLocalRead(fieldDM[f], masterCell, fieldDat, &fieldPt);
-                CHKERRQ(ierr);
+                PetscCall(DMPlexPointLocalRead(fieldDM[f], masterCell, fieldDat, &fieldPt));
 
                 // Get solution point data
-                ierr = DMPlexPointLocalRead(solDM, masterCell, solDat, &solPt);
-                CHKERRQ(ierr);
+                PetscCall(DMPlexPointLocalRead(solDM, masterCell, solDat, &solPt));
 
                 // Get read/write access to point in monitor array
-                ierr = DMPlexPointGlobalRef(monitorDM, monitorCell, monitorDat, &monitorPt);
-                CHKERRQ(ierr);
+                PetscCall(DMPlexPointGlobalRef(monitorDM, monitorCell, monitorDat, &monitorPt));
 
                 if (monitorPt && solPt) {
                     // Get the density data from solution point data
@@ -136,22 +127,17 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
                     }
                 }
             }
-            ierr = VecRestoreArrayRead(vec[f], &fieldDat);
-            CHKERRQ(ierr);
+            PetscCall(VecRestoreArrayRead(vec[f], &fieldDat));
         }
         // Cleanup
         // Restore arrays
-        ierr = ISRestoreIndices(subpointIS, &subpointIndices);
-        CHKERRQ(ierr);
-        ierr = VecRestoreArrayRead(solVec, &solDat);
-        CHKERRQ(ierr);
-        ierr = VecRestoreArray(monitorVec, &monitorDat);
-        CHKERRQ(ierr);
+        PetscCall(ISRestoreIndices(subpointIS, &subpointIndices));
+        PetscCall(VecRestoreArrayRead(solVec, &solDat));
+        PetscCall(VecRestoreArray(monitorVec, &monitorDat));
         // Restore field vectors
         for (std::size_t f = 0; f < monitor->fieldNames.size(); f++) {
             const auto& field = monitor->GetSolver()->GetSubDomain().GetField(monitor->fieldNames[f]);
-            ierr = monitor->GetSolver()->GetSubDomain().RestoreFieldGlobalVector(field, &vecIS[f], &vec[f], &fieldDM[f]);
-            CHKERRQ(ierr);
+            PetscCall(monitor->GetSolver()->GetSubDomain().RestoreFieldGlobalVector(field, &vecIS[f], &vec[f], &fieldDM[f]));
         }
     }
     PetscFunctionReturn(0);

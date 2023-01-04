@@ -1,7 +1,7 @@
 #include "csvLog.hpp"
 #include <environment/runEnvironment.hpp>
 #include <regex>
-#include <utilities/petscError.hpp>
+#include "utilities/petscUtilities.hpp"
 
 static std::regex printfRegex("%[+-]*[0-9]*([.][0-9]+)?[cdefiosuxgCDEFIOUSUXG]");
 
@@ -16,7 +16,7 @@ ablate::monitors::logs::CsvLog::~CsvLog() {
 void ablate::monitors::logs::CsvLog::Initialize(MPI_Comm commIn) {
     Log::Initialize(commIn);
     comm = commIn;
-    PetscFOpen(comm, outputPath.c_str(), "a", &file) >> checkError;
+    PetscFOpen(comm, outputPath.c_str(), "a", &file) >> utilities::PetscUtilities::checkError;
 }
 void ablate::monitors::logs::CsvLog::Printf(const char *format, ...) {
     if (file) {
@@ -33,7 +33,7 @@ void ablate::monitors::logs::CsvLog::Printf(const char *format, ...) {
 
         va_list args;
         va_start(args, format);
-        PetscVFPrintf(file, formatString.c_str(), args) >> checkError;
+        PetscVFPrintf(file, formatString.c_str(), args) >> utilities::PetscUtilities::checkError;
         va_end(args);
     }
 }
@@ -43,8 +43,8 @@ void ablate::monitors::logs::CsvLog::Print(const char *name, std::size_t num, co
         const char *format = formatIn ? formatIn : "%g";
 
         for (std::size_t i = 0; i < num; i++) {
-            PetscFPrintf(PETSC_COMM_SELF, file, format, values[i]) >> checkError;
-            PetscFPrintf(PETSC_COMM_SELF, file, "%s", separator) >> checkError;
+            PetscFPrintf(PETSC_COMM_SELF, file, format, values[i]) >> utilities::PetscUtilities::checkError;
+            PetscFPrintf(PETSC_COMM_SELF, file, "%s", separator) >> utilities::PetscUtilities::checkError;
         }
     }
 }

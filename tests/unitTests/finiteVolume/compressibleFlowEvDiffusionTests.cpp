@@ -4,7 +4,6 @@
 #include <memory>
 #include <vector>
 #include "MpiTestFixture.hpp"
-#include "PetscTestErrorChecker.hpp"
 #include "convergenceTester.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
@@ -22,7 +21,6 @@
 #include "monitors/solutionErrorMonitor.hpp"
 #include "parameters/mapParameters.hpp"
 #include "solver/timeStepper.hpp"
-#include "utilities/petscOptions.hpp"
 #include "utilities/petscUtilities.hpp"
 
 typedef struct {
@@ -77,7 +75,6 @@ static PetscErrorCode ComputeEulerExact(PetscInt dim, PetscReal time, const Pets
 }
 TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
-        PetscErrorCode ierr;
 
         // initialize petsc and mpi
         ablate::environment::RunEnvironment::Initialize(argc, argv);
@@ -95,7 +92,7 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
             PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %" PetscInt_FMT "\n", l);
 
             // setup any global arguments
-            ablate::utilities::PetscOptionsUtils::Set({{"dm_plex_separate_marker", ""}, {"petsclimiter_type", "none"}});
+            ablate::utilities::PetscUtilities::Set({{"dm_plex_separate_marker", ""}, {"petsclimiter_type", "none"}});
 
             PetscInt initialNx = GetParam().initialNx;
 

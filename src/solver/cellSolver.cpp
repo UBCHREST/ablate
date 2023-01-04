@@ -6,10 +6,10 @@ ablate::solver::CellSolver::CellSolver(std::string solverId, std::shared_ptr<dom
 
 ablate::solver::CellSolver::~CellSolver() {
     if (cellGeomVec) {
-        VecDestroy(&cellGeomVec) >> checkError;
+        VecDestroy(&cellGeomVec) >> utilities::PetscUtilities::checkError;
     }
     if (faceGeomVec) {
-        VecDestroy(&faceGeomVec) >> checkError;
+        VecDestroy(&faceGeomVec) >> utilities::PetscUtilities::checkError;
     }
 }
 
@@ -42,7 +42,7 @@ void ablate::solver::CellSolver::UpdateAuxFields(PetscReal time, Vec locXVec, Ve
     DM plex;
     DM auxDM = GetSubDomain().GetAuxDM();
     // Convert to a dmplex
-    DMConvert(GetSubDomain().GetDM(), DMPLEX, &plex) >> checkError;
+    DMConvert(GetSubDomain().GetDM(), DMPLEX, &plex) >> utilities::PetscUtilities::checkError;
 
     // Get the valid cell range over this region
     solver::Range cellRange;
@@ -51,27 +51,27 @@ void ablate::solver::CellSolver::UpdateAuxFields(PetscReal time, Vec locXVec, Ve
     // Extract the cell geometry, and the dm that holds the information
     DM dmCell;
     const PetscScalar* cellGeomArray;
-    VecGetDM(cellGeomVec, &dmCell) >> checkError;
-    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+    VecGetDM(cellGeomVec, &dmCell) >> utilities::PetscUtilities::checkError;
+    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
 
     // extract the low flow and aux fields
     const PetscScalar* locFlowFieldArray;
-    VecGetArrayRead(locXVec, &locFlowFieldArray) >> checkError;
+    VecGetArrayRead(locXVec, &locFlowFieldArray) >> utilities::PetscUtilities::checkError;
 
     PetscScalar* localAuxFlowFieldArray;
-    VecGetArray(locAuxField, &localAuxFlowFieldArray) >> checkError;
+    VecGetArray(locAuxField, &localAuxFlowFieldArray) >> utilities::PetscUtilities::checkError;
 
     // Get the cell dim
     PetscInt dim = subDomain->GetDimensions();
 
     // determine the number of fields and the totDim
     PetscInt nf;
-    PetscDSGetNumFields(subDomain->GetDiscreteSystem(), &nf) >> checkError;
+    PetscDSGetNumFields(subDomain->GetDiscreteSystem(), &nf) >> utilities::PetscUtilities::checkError;
 
     PetscInt* uOffTotal;
-    PetscDSGetComponentOffsets(subDomain->GetDiscreteSystem(), &uOffTotal) >> checkError;
+    PetscDSGetComponentOffsets(subDomain->GetDiscreteSystem(), &uOffTotal) >> utilities::PetscUtilities::checkError;
     PetscInt* aOffTotal;
-    PetscDSGetComponentOffsets(subDomain->GetAuxDiscreteSystem(), &aOffTotal) >> checkError;
+    PetscDSGetComponentOffsets(subDomain->GetAuxDiscreteSystem(), &aOffTotal) >> utilities::PetscUtilities::checkError;
 
     // precompute the solution(u) and aux fields
     std::vector<std::vector<PetscInt>> uOff(auxFieldUpdateFunctionDescriptions.size());
@@ -94,28 +94,28 @@ void ablate::solver::CellSolver::UpdateAuxFields(PetscReal time, Vec locXVec, Ve
         // Get the cell location
         const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
-        DMPlexPointLocalRead(dmCell, cell, cellGeomArray, &cellGeom) >> checkError;
-        DMPlexPointLocalRead(plex, cell, locFlowFieldArray, &fieldValues) >> checkError;
-        DMPlexPointLocalRead(auxDM, cell, localAuxFlowFieldArray, &auxValues) >> checkError;
+        DMPlexPointLocalRead(dmCell, cell, cellGeomArray, &cellGeom) >> utilities::PetscUtilities::checkError;
+        DMPlexPointLocalRead(plex, cell, locFlowFieldArray, &fieldValues) >> utilities::PetscUtilities::checkError;
+        DMPlexPointLocalRead(auxDM, cell, localAuxFlowFieldArray, &auxValues) >> utilities::PetscUtilities::checkError;
 
         // for each function description
         for (std::size_t uf = 0; uf < auxFieldUpdateFunctionDescriptions.size(); uf++) {
             // If an update function was passed
             auxFieldUpdateFunctionDescriptions[uf].function(time, dim, cellGeom, uOff[uf].data(), fieldValues, aOff[uf].data(), auxValues, auxFieldUpdateFunctionDescriptions[uf].context) >>
-                checkError;
+                utilities::PetscUtilities::checkError;
         }
     }
 
-    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-    VecRestoreArrayRead(locXVec, &locFlowFieldArray) >> checkError;
-    VecRestoreArray(locAuxField, &localAuxFlowFieldArray) >> checkError;
+    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(locXVec, &locFlowFieldArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArray(locAuxField, &localAuxFlowFieldArray) >> utilities::PetscUtilities::checkError;
 
     RestoreRange(cellRange);
 
-    DMDestroy(&plex) >> checkError;
+    DMDestroy(&plex) >> utilities::PetscUtilities::checkError;
 }
 
 void ablate::solver::CellSolver::Setup() {
     // Compute the dm geometry
-    DMPlexComputeGeometryFVM(subDomain->GetDM(), &cellGeomVec, &faceGeomVec) >> checkError;
+    DMPlexComputeGeometryFVM(subDomain->GetDM(), &cellGeomVec, &faceGeomVec) >> utilities::PetscUtilities::checkError;
 }

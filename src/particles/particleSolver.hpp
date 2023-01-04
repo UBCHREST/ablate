@@ -195,10 +195,10 @@ class ParticleSolver : public solver::Solver, public io::Serializable {
     void GetField(const Field& field, T** values) {
         if (field.location == domain::FieldLocation::SOL) {
             // Get the solution vector
-            DMSwarmGetField(swarmDm, PackedSolution, nullptr, nullptr, (void**)values) >> checkError;
+            DMSwarmGetField(swarmDm, PackedSolution, nullptr, nullptr, (void**)values) >> utilities::PetscUtilities::checkError;
         } else {
             // get the raw field
-            DMSwarmGetField(swarmDm, field.name.c_str(), nullptr, nullptr, (void**)values) >> checkError;
+            DMSwarmGetField(swarmDm, field.name.c_str(), nullptr, nullptr, (void**)values) >> utilities::PetscUtilities::checkError;
         }
     }
 
@@ -209,10 +209,10 @@ class ParticleSolver : public solver::Solver, public io::Serializable {
     void RestoreField(const Field& field, T** values) {
         if (field.location == domain::FieldLocation::SOL) {
             // Get the solution vector
-            DMSwarmRestoreField(swarmDm, PackedSolution, nullptr, nullptr, (void**)values) >> checkError;
+            DMSwarmRestoreField(swarmDm, PackedSolution, nullptr, nullptr, (void**)values) >> utilities::PetscUtilities::checkError;
         } else {
             // get the raw field
-            DMSwarmRestoreField(swarmDm, field.name.c_str(), nullptr, nullptr, (void**)values) >> checkError;
+            DMSwarmRestoreField(swarmDm, field.name.c_str(), nullptr, nullptr, (void**)values) >> utilities::PetscUtilities::checkError;
         }
     }
 

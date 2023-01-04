@@ -1,7 +1,7 @@
 #include "region.hpp"
 #include <functional>
-#include "utilities/mpiError.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/mpiUtilities.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::domain::Region::Region(std::string name, int valueIn) : name(name), value(valueIn == 0 ? 1 : valueIn) {
     // Create a unique string
@@ -10,8 +10,8 @@ ablate::domain::Region::Region(std::string name, int valueIn) : name(name), valu
 }
 
 void ablate::domain::Region::CreateLabel(DM dm, DMLabel& regionLabel, PetscInt& regionValue) {
-    DMCreateLabel(dm, GetName().c_str()) >> checkError;
-    DMGetLabel(dm, GetName().c_str(), &regionLabel) >> checkError;
+    DMCreateLabel(dm, GetName().c_str()) >> utilities::PetscUtilities::checkError;
+    DMGetLabel(dm, GetName().c_str(), &regionLabel) >> utilities::PetscUtilities::checkError;
     regionValue = GetValue();
 }
 
@@ -19,14 +19,14 @@ void ablate::domain::Region::GetLabel(const std::shared_ptr<Region>& region, DM 
     regionLabel = nullptr;
     regionValue = PETSC_DECIDE;
     if (region) {
-        DMGetLabel(dm, region->GetName().c_str(), &regionLabel) >> checkError;
+        DMGetLabel(dm, region->GetName().c_str(), &regionLabel) >> utilities::PetscUtilities::checkError;
         regionValue = region->GetValue();
     }
 }
 
 void ablate::domain::Region::CheckForLabel(DM dm) const {
     DMLabel label = nullptr;
-    DMGetLabel(dm, GetName().c_str(), &label) >> checkError;
+    DMGetLabel(dm, GetName().c_str(), &label) >> utilities::PetscUtilities::checkError;
     if (label == nullptr) {
         throw std::invalid_argument("Unable to locate " + GetName() + " in domain");
     }
@@ -35,12 +35,12 @@ void ablate::domain::Region::CheckForLabel(DM dm) const {
 ;
 void ablate::domain::Region::CheckForLabel(DM dm, MPI_Comm comm) const {
     DMLabel label = nullptr;
-    DMGetLabel(dm, GetName().c_str(), &label) >> checkError;
+    DMGetLabel(dm, GetName().c_str(), &label) >> utilities::PetscUtilities::checkError;
 
     PetscMPIInt found = (PetscMPIInt)(label != nullptr);
     PetscMPIInt anyFound;
 
-    MPI_Allreduce(&found, &anyFound, 1, MPI_INT, MPI_MAX, comm) >> checkMpiError;
+    MPI_Allreduce(&found, &anyFound, 1, MPI_INT, MPI_MAX, comm) >> utilities::MpiUtilities::checkError;
 
     if (!anyFound) {
         throw std::invalid_argument("Unable to locate " + GetName() + " in domain");
@@ -52,7 +52,7 @@ bool ablate::domain::Region::InRegion(const std::shared_ptr<Region>& region, DM 
         return true;
     }
     PetscInt ptValue;
-    DMGetLabelValue(dm, region->name.c_str(), point, &ptValue) >> checkError;
+    DMGetLabelValue(dm, region->name.c_str(), point, &ptValue) >> utilities::PetscUtilities::checkError;
     return ptValue == region->value;
 }
 

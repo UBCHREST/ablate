@@ -3,11 +3,11 @@
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "io/interval/fixedInterval.hpp"
 
-ablate::radiation::VolumeRadiation::VolumeRadiation(const std::string& solverId1, const std::shared_ptr<domain::Region>& region, std::shared_ptr<io::interval::Interval> intervalIn,
+ablate::radiation::VolumeRadiation::VolumeRadiation(const std::string& solverId1, const std::shared_ptr<domain::Region>& region, const std::shared_ptr<io::interval::Interval>& intervalIn,
                                                     std::shared_ptr<radiation::Radiation> radiationIn, const std::shared_ptr<parameters::Parameters>& options,
-                                                    std::shared_ptr<ablate::monitors::logs::Log> log)
+                                                    const std::shared_ptr<ablate::monitors::logs::Log>& log)
     : CellSolver(solverId1, region, options), interval((intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>())), radiation(std::move(radiationIn)) {}
-ablate::radiation::VolumeRadiation::~VolumeRadiation() {}
+ablate::radiation::VolumeRadiation::~VolumeRadiation() = default;
 
 void ablate::radiation::VolumeRadiation::Setup() {
     solver::Range cellRange;
@@ -15,12 +15,12 @@ void ablate::radiation::VolumeRadiation::Setup() {
 
     // check for ghost cells
     DMLabel ghostLabel;
-    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
+    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
 
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
         PetscInt ghost = -1;
-        if (ghostLabel) DMLabelGetValue(ghostLabel, iCell, &ghost) >> checkError;
+        if (ghostLabel) DMLabelGetValue(ghostLabel, iCell, &ghost) >> utilities::PetscUtilities::checkError;
         if (!(ghost >= 0)) radiationCellRange.Add(iCell);
     }
 
@@ -45,8 +45,8 @@ PetscErrorCode ablate::radiation::VolumeRadiation::PreRHSFunction(TS ts, PetscRe
 
     /** Only update the radiation solution if the sufficient interval has passed */
     PetscInt step;
-    TSGetStepNumber(ts, &step) >> checkError;
-    TSGetTime(ts, &time) >> checkError;
+    TSGetStepNumber(ts, &step) >> utilities::PetscUtilities::checkError;
+    TSGetTime(ts, &time) >> utilities::PetscUtilities::checkError;
     if (initialStage && interval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
         radiation->EvaluateGains(subDomain->GetSolutionVector(), subDomain->GetField("temperature"), subDomain->GetAuxVector());
     }
@@ -85,10 +85,10 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
         const PetscInt iCell = range.GetPoint(c);  //!< Isolates the valid cells
 
         // compute absorptivity
-        DMPlexPointLocalRead(solDm, iCell, solArray, &sol) >> checkError;
+        DMPlexPointLocalRead(solDm, iCell, solArray, &sol) >> utilities::PetscUtilities::checkError;
 
         if (sol) {
-            DMPlexPointLocalFieldRead(auxDm, iCell, temperatureFieldInfo.id, auxArray, &temperature) >> checkError;
+            DMPlexPointLocalFieldRead(auxDm, iCell, temperatureFieldInfo.id, auxArray, &temperature) >> utilities::PetscUtilities::checkError;
 
             absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
 

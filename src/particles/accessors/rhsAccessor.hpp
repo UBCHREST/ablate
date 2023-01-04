@@ -5,7 +5,7 @@
 #include <map>
 #include "accessor.hpp"
 #include "particles/field.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 namespace ablate::particles::accessors {
 /**
@@ -25,13 +25,13 @@ class RhsAccessor : public Accessor<PetscReal> {
    public:
     RhsAccessor(bool cachePointData, const std::map<std::string, Field>& fieldsMap, Vec rhsVec) : Accessor(cachePointData), fieldsMap(fieldsMap), rhsVec(rhsVec) {
         // extract the array from the vector
-        VecGetArray(rhsVec, &rhsValues) >> checkError;
+        VecGetArray(rhsVec, &rhsValues) >> utilities::PetscUtilities::checkError;
     }
 
     /**
      * clean up the rhs values
      */
-    ~RhsAccessor() override { VecRestoreArray(rhsVec, &rhsValues) >> checkError; }
+    ~RhsAccessor() override { VecRestoreArray(rhsVec, &rhsValues) >> utilities::PetscUtilities::checkError; }
 
     /**
      * Create point data from the rhs field

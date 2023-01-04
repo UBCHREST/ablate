@@ -1,6 +1,6 @@
 #include "surface.hpp"
 #include <stdexcept>
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::mathFunctions::geom::Surface::Surface(const std::filesystem::path &meshPath, const std::shared_ptr<mathFunctions::MathFunction> &insideValues,
                                               const std::shared_ptr<mathFunctions::MathFunction> &outsideValues, int egadsVerboseLevel)
@@ -9,9 +9,9 @@ ablate::mathFunctions::geom::Surface::Surface(const std::filesystem::path &meshP
     if (!exists(meshPath)) {
         throw std::runtime_error("Cannot locate ablate::mathFunctions::geom::Surface::Surface file " + meshPath.string());
     }
-    EG_open(&context) >> checkError;
+    EG_open(&context) >> utilities::PetscUtilities::checkError;
     EG_setOutLevel(context, egadsVerboseLevel);
-    EG_loadModel(context, 0, meshPath.c_str(), &model) >> checkError;
+    EG_loadModel(context, 0, meshPath.c_str(), &model) >> utilities::PetscUtilities::checkError;
 }
 
 ablate::mathFunctions::geom::Surface::~Surface() {
@@ -29,7 +29,7 @@ bool ablate::mathFunctions::geom::Surface::InsideGeometry(const double *xyz, con
     int numberBodies;
     int oclass, mtype, *senses;
 
-    EG_getTopology(model, &geom, &oclass, &mtype, nullptr, &numberBodies, &bodies, &senses) >> checkError;
+    EG_getTopology(model, &geom, &oclass, &mtype, nullptr, &numberBodies, &bodies, &senses) >> utilities::PetscUtilities::checkError;
 
     // Make sure always supply 3D array
     double coord[3] = {0.0, 0.0, 0.0};

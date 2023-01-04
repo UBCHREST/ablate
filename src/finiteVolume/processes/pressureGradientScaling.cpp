@@ -2,7 +2,7 @@
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/processes/flowProcess.hpp"
-#include "utilities/mpiError.hpp"
+#include "utilities/mpiUtilities.hpp"
 
 ablate::finiteVolume::processes::PressureGradientScaling::PressureGradientScaling(std::shared_ptr<eos::EOS> eos, double alphaInit, double domainLength, double maxAlphaAllowedIn,
                                                                                   double maxDeltaPressureFacIn, std::shared_ptr<ablate::monitors::logs::Log> log)
@@ -33,8 +33,7 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
     // get the flowSolution from the ts
     Vec globFlowVec = flow.GetSubDomain().GetSolutionVector();
     const PetscScalar *flowArray;
-    PetscErrorCode ierr = VecGetArrayRead(globFlowVec, &flowArray);
-    CHKERRQ(ierr);
+    PetscCall(VecGetArrayRead(globFlowVec, &flowArray));
 
     // Get the valid cell range over this region
     solver::Range cellRange;
@@ -50,7 +49,7 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
     // check to see if there is a ghost label
     auto dm = flow.GetSubDomain().GetDM();
     DMLabel ghostLabel;
-    DMGetLabel(dm, "ghost", &ghostLabel) >> checkError;
+    DMGetLabel(dm, "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
 
     // March over each cell
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
@@ -71,8 +70,7 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
 
         // Get the current state variables for this cell
         const PetscScalar *conserved = nullptr;
-        ierr = DMPlexPointGlobalRead(flow.GetSubDomain().GetDM(), cell, flowArray, &conserved);
-        CHKERRQ(ierr);
+        PetscCall(DMPlexPointGlobalRead(flow.GetSubDomain().GetDM(), cell, flowArray, &conserved));
 
         // If valid cell
         if (conserved) {
@@ -83,12 +81,9 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
 
             // Decode the state to compute
             PetscReal temperature;
-            ierr = computeTemperature.function(conserved, &temperature, computeTemperature.context.get());
-            CHKERRQ(ierr);
-            ierr = computePressure.function(conserved, temperature, &p, computePressure.context.get());
-            CHKERRQ(ierr);
-            ierr = computeSpeedOfSound.function(conserved, temperature, &a, computeSpeedOfSound.context.get());
-            CHKERRQ(ierr);
+            PetscCall(computeTemperature.function(conserved, &temperature, computeTemperature.context.get()));
+            PetscCall(computePressure.function(conserved, temperature, &p, computePressure.context.get()));
+            PetscCall(computeSpeedOfSound.function(conserved, temperature, &a, computeSpeedOfSound.context.get()));
 
             PetscReal density = conserved[flowEulerId.offset + CompressibleFlowFields::RHO];
             PetscReal velMag = 0.0;
@@ -114,14 +109,11 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
     // Take the global values
     auto comm = flow.GetSubDomain().GetComm();
     PetscReal sumValues[2] = {pAvgLocal, (PetscReal)countLocal};
-    ierr = MPIU_Allreduce(MPI_IN_PLACE, sumValues, 2, MPIU_REAL, MPIU_SUM, comm);
-    CHKERRMPI(ierr);
+    PetscCallMPI(MPIU_Allreduce(MPI_IN_PLACE, sumValues, 2, MPIU_REAL, MPIU_SUM, comm));
     PetscReal maxValues[3] = {pMaxLocal, cMaxLocal, machMaxLocal};
-    ierr = MPIU_Allreduce(MPI_IN_PLACE, maxValues, 3, MPIU_REAL, MPIU_MAX, comm);
-    CHKERRMPI(ierr);
+    PetscCallMPI(MPIU_Allreduce(MPI_IN_PLACE, maxValues, 3, MPIU_REAL, MPIU_MAX, comm));
     PetscReal minValues[2] = {pMinLocal, alphaMaxLocal};
-    ierr = MPIU_Allreduce(MPI_IN_PLACE, minValues, 2, MPIU_REAL, MPIU_MIN, comm);
-    CHKERRMPI(ierr);
+    PetscCallMPI(MPIU_Allreduce(MPI_IN_PLACE, minValues, 2, MPIU_REAL, MPIU_MIN, comm));
 
     PetscReal alphaMax = minValues[1];
     PetscReal cMax = maxValues[1];
@@ -131,8 +123,7 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
 
     // Get the current timeStep from TS
     PetscReal dt;
-    ierr = TSGetTimeStep(flowTs, &dt);
-    CHKERRQ(ierr);
+    PetscCall(TSGetTimeStep(flowTs, &dt));
 
     // Update alpha
     PetscReal alphaOld = alpha;

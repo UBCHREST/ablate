@@ -3,8 +3,8 @@
 #include "cellInterpolant.hpp"
 #include "faceInterpolant.hpp"
 #include "processes/process.hpp"
-#include "utilities/mpiError.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/mpiUtilities.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                              std::vector<std::shared_ptr<processes::Process>> processes,
@@ -24,11 +24,11 @@ void ablate::finiteVolume::FiniteVolumeSolver::Setup() {
     }
 
     // Set the flux calculator solver for each component
-    PetscDSSetFromOptions(subDomain->GetDiscreteSystem()) >> checkError;
+    PetscDSSetFromOptions(subDomain->GetDiscreteSystem()) >> utilities::PetscUtilities::checkError;
 
     // Some petsc code assumes that a ghostLabel has created, so create one
     PetscBool ghostLabel;
-    DMHasLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
+    DMHasLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
     if (!ghostLabel) {
         throw std::runtime_error("The FiniteVolumeSolver expects ghost cells around the boundary even if the FiniteVolumeSolver region does not include the boundary.");
     }
@@ -50,9 +50,9 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
 
         // Get the number of boundary conditions and other info
         PetscInt numberBC;
-        PetscDSGetNumBoundary(flowProblem, &numberBC) >> checkError;
+        PetscDSGetNumBoundary(flowProblem, &numberBC) >> utilities::PetscUtilities::checkError;
         PetscInt numberAuxFields;
-        PetscDSGetNumFields(auxProblem, &numberAuxFields) >> checkError;
+        PetscDSGetNumFields(auxProblem, &numberAuxFields) >> utilities::PetscUtilities::checkError;
 
         for (PetscInt bc = 0; bc < numberBC; bc++) {
             DMBoundaryConditionType type;
@@ -63,12 +63,12 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
             const PetscInt* ids;
 
             // Get the boundary
-            PetscDSGetBoundary(flowProblem, bc, nullptr, &type, &name, &label, &numberIds, &ids, &field, nullptr, nullptr, nullptr, nullptr, nullptr) >> checkError;
+            PetscDSGetBoundary(flowProblem, bc, nullptr, &type, &name, &label, &numberIds, &ids, &field, nullptr, nullptr, nullptr, nullptr, nullptr) >> utilities::PetscUtilities::checkError;
 
             // If this is for euler and DM_BC_NATURAL_RIEMANN add it to the aux
             if (type == DM_BC_NATURAL_RIEMANN && field == 0) {
                 for (PetscInt af = 0; af < numberAuxFields; af++) {
-                    PetscDSAddBoundary(auxProblem, type, name, label, numberIds, ids, af, 0, nullptr, nullptr, nullptr, nullptr, nullptr) >> checkError;
+                    PetscDSAddBoundary(auxProblem, type, name, label, numberIds, ids, af, 0, nullptr, nullptr, nullptr, nullptr, nullptr) >> utilities::PetscUtilities::checkError;
                 }
             }
         }
@@ -84,18 +84,18 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
 
         // create a new label
         auto dm = GetSubDomain().GetDM();
-        DMCreateLabel(dm, solverRegionMinusGhost->GetName().c_str()) >> checkError;
+        DMCreateLabel(dm, solverRegionMinusGhost->GetName().c_str()) >> utilities::PetscUtilities::checkError;
         DMLabel solverRegionMinusGhostLabel;
         PetscInt solverRegionMinusGhostValue;
         domain::Region::GetLabel(solverRegionMinusGhost, dm, solverRegionMinusGhostLabel, solverRegionMinusGhostValue);
 
         // Get the ghost cell label
         DMLabel ghostLabel;
-        DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
+        DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
 
         // check if it is an exterior boundary cell ghost
         PetscInt boundaryCellStart;
-        DMPlexGetGhostCellStratum(dm, &boundaryCellStart, nullptr) >> checkError;
+        DMPlexGetGhostCellStratum(dm, &boundaryCellStart, nullptr) >> utilities::PetscUtilities::checkError;
 
         // march over every cell
         for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
@@ -104,11 +104,11 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
             // check if it is boundary ghost
             PetscInt isGhost = -1;
             if (ghostLabel) {
-                DMLabelGetValue(ghostLabel, cell, &isGhost) >> checkError;
+                DMLabelGetValue(ghostLabel, cell, &isGhost) >> utilities::PetscUtilities::checkError;
             }
 
             PetscInt owned;
-            DMPlexGetPointGlobal(dm, cell, &owned, nullptr) >> checkError;
+            DMPlexGetPointGlobal(dm, cell, &owned, nullptr) >> utilities::PetscUtilities::checkError;
             if (owned >= 0 && isGhost < 0 && (boundaryCellStart < 0 || cell < boundaryCellStart)) {
                 DMLabelSetValue(solverRegionMinusGhostLabel, cell, solverRegionMinusGhostValue);
             }
@@ -255,11 +255,11 @@ void ablate::finiteVolume::FiniteVolumeSolver::EnforceTimeStep(TS ts, ablate::so
     auto& flowFV = dynamic_cast<ablate::finiteVolume::FiniteVolumeSolver&>(solver);
     // Get the dm and current solution vector
     DM dm;
-    TSGetDM(ts, &dm) >> checkError;
+    TSGetDM(ts, &dm) >> utilities::PetscUtilities::checkError;
     PetscInt timeStep;
-    TSGetStepNumber(ts, &timeStep) >> checkError;
+    TSGetStepNumber(ts, &timeStep) >> utilities::PetscUtilities::checkError;
     PetscReal currentDt;
-    TSGetTimeStep(ts, &currentDt) >> checkError;
+    TSGetTimeStep(ts, &currentDt) >> utilities::PetscUtilities::checkError;
 
     // march over each calculator
     PetscReal dtMin = 1000.0;
@@ -272,11 +272,11 @@ void ablate::finiteVolume::FiniteVolumeSolver::EnforceTimeStep(TS ts, ablate::so
     MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank);
 
     PetscReal dtMinGlobal;
-    MPI_Allreduce(&dtMin, &dtMinGlobal, 1, MPIU_REAL, MPIU_MIN, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
+    MPI_Allreduce(&dtMin, &dtMinGlobal, 1, MPIU_REAL, MPIU_MIN, PetscObjectComm((PetscObject)ts)) >> ablate::utilities::MpiUtilities::checkError;
 
     // don't override the first time step if bigger
     if (timeStep > 0 || dtMinGlobal < currentDt) {
-        TSSetTimeStep(ts, dtMinGlobal) >> checkError;
+        TSSetTimeStep(ts, dtMinGlobal) >> utilities::PetscUtilities::checkError;
         if (PetscIsNanReal(dtMinGlobal)) {
             throw std::runtime_error("Invalid timestep selected for flow");
         }
@@ -295,7 +295,7 @@ std::map<std::string, double> ablate::finiteVolume::FiniteVolumeSolver::ComputeP
     for (const auto& dtFunction : timeStepFunctions) {
         double dt = dtFunction.function(ts, *this, dtFunction.context);
         PetscReal dtMinGlobal;
-        MPI_Reduce(&dt, &dtMinGlobal, 1, MPIU_REAL, MPI_MIN, 0, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
+        MPI_Reduce(&dt, &dtMinGlobal, 1, MPIU_REAL, MPI_MIN, 0, PetscObjectComm((PetscObject)ts)) >> ablate::utilities::MpiUtilities::checkError;
         timeSteps[dtFunction.name] = dtMinGlobal;
     }
 
@@ -336,7 +336,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::GetCellRangeWithoutGhost(solver::
     PetscInt solverRegionMinusGhostValue;
     domain::Region::GetLabel(solverRegionMinusGhost, GetSubDomain().GetDM(), solverRegionMinusGhostLabel, solverRegionMinusGhostValue);
 
-    DMLabelGetStratumIS(solverRegionMinusGhostLabel, solverRegionMinusGhostValue, &faceRange.is) >> checkError;
+    DMLabelGetStratumIS(solverRegionMinusGhostLabel, solverRegionMinusGhostValue, &faceRange.is) >> utilities::PetscUtilities::checkError;
     if (faceRange.is == nullptr) {
         // There are no points in this region, so skip
         faceRange.start = 0;
@@ -344,7 +344,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::GetCellRangeWithoutGhost(solver::
         faceRange.points = nullptr;
     } else {
         // Get the range
-        ISGetPointRange(faceRange.is, &faceRange.start, &faceRange.end, &faceRange.points) >> checkError;
+        ISGetPointRange(faceRange.is, &faceRange.start, &faceRange.end, &faceRange.points) >> utilities::PetscUtilities::checkError;
     }
 }
 

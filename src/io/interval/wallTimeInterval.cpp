@@ -1,5 +1,5 @@
 #include "wallTimeInterval.hpp"
-#include "utilities/mpiError.hpp"
+#include "utilities/mpiUtilities.hpp"
 
 ablate::io::interval::WallTimeInterval::WallTimeInterval(int timeInterval, std::function<std::chrono::time_point<std::chrono::system_clock>()> nowFunction)
     : timeInterval(timeInterval), now(nowFunction) {
@@ -14,7 +14,7 @@ bool ablate::io::interval::WallTimeInterval::Check(MPI_Comm comm, PetscInt steps
     int checkPoint = duration >= timeInterval;
 
     // Broadcast to all ranks from root (time can be different on different machines)
-    MPI_Bcast(&checkPoint, 1, MPI_INT, 0, comm) >> checkMpiError;
+    MPI_Bcast(&checkPoint, 1, MPI_INT, 0, comm) >> utilities::MpiUtilities::checkError;
 
     if (checkPoint) {
         previousTime = nowTime;

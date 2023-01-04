@@ -37,7 +37,7 @@ class SurfaceRadiation : public ablate::radiation::Radiation {
      */
     inline PetscReal GetSurfaceIntensity(PetscInt faceId, PetscReal temperature, PetscReal emissivity = 1.0) {
         // Compute the losses
-        PetscReal netIntensity = -4.0 * 0.5 /*face*/ * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
+        PetscReal netIntensity = -ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
 
         // add in precomputed gains
         netIntensity += evaluatedGains[indexLookup.GetAbsoluteIndex(faceId)];

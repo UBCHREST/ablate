@@ -7,12 +7,10 @@ PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootFunctio
     /** This model depends on mass fraction, temperature, and density in order to predict the absorption properties of the medium. */
     auto functionContext = (FunctionContext *)ctx;
     double temperature, density;  //!< Variables to hold information gathered from the fields
-    PetscErrorCode ierr;          //!< Standard PETSc error code returned by PETSc functions
+                                  //!< Standard PETSc error code returned by PETSc functions
 
-    ierr = functionContext->temperatureFunction.function(conserved, &temperature, functionContext->temperatureFunction.context.get());  //!< Get the temperature value at this location
-    CHKERRQ(ierr);
-    ierr = functionContext->densityFunction.function(conserved, temperature, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
-    CHKERRQ(ierr);
+    PetscCall(functionContext->temperatureFunction.function(conserved, &temperature, functionContext->temperatureFunction.context.get()));   //!< Get the temperature value at this location
+    PetscCall(functionContext->densityFunction.function(conserved, temperature, &density, functionContext->densityFunction.context.get()));  //!< Get the density value at this location
 
     PetscReal YinC = (functionContext->densityEVCOffset == -1) ? 0 : conserved[functionContext->densityEVCOffset] / density;  //!< Get the mass fraction of carbon here
 
@@ -27,13 +25,11 @@ PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootTempera
     PetscFunctionBeginUser;
     /** This model depends on mass fraction, temperature, and density in order to predict the absorption properties of the medium. */
     auto functionContext = (FunctionContext *)ctx;
-    double density;       //!< Variables to hold information gathered from the fields
-    PetscErrorCode ierr;  //!< Standard PETSc error code returned by PETSc functions
+    double density;  //!< Variables to hold information gathered from the fields
+                     //!< Standard PETSc error code returned by PETSc functions
 
-    ierr = functionContext->densityFunction.function(conserved, temperature, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
-    CHKERRQ(ierr);
-
-    PetscReal YinC = (functionContext->densityEVCOffset == -1) ? 0 : conserved[functionContext->densityEVCOffset] / density;  //!< Get the mass fraction of carbon here
+    PetscCall(functionContext->densityFunction.function(conserved, temperature, &density, functionContext->densityFunction.context.get()));  //!< Get the density value at this location
+    PetscReal YinC = (functionContext->densityEVCOffset == -1) ? 0 : conserved[functionContext->densityEVCOffset] / density;                 //!< Get the mass fraction of carbon here
 
     PetscReal fv = density * YinC / rhoC;
 

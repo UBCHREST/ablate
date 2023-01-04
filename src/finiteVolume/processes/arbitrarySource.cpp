@@ -18,8 +18,7 @@ PetscErrorCode ablate::finiteVolume::processes::ArbitrarySource::ComputeArbitrar
                                                                                         const PetscInt *aOff, const PetscScalar *a, PetscScalar *f, void *ctx) {
     PetscFunctionBegin;
     auto function = (PetscFunctionStruct *)ctx;
-    PetscErrorCode ierr = function->petscFunction(dim, time, cg->centroid, function->fieldSize, f, function->petscContext);
-    CHKERRQ(ierr);
+    PetscCall(function->petscFunction(dim, time, cg->centroid, function->fieldSize, f, function->petscContext));
     PetscFunctionReturn(0);
 }
 

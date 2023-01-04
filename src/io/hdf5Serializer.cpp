@@ -4,9 +4,10 @@
 #include <environment/runEnvironment.hpp>
 #include <fstream>
 #include <io/interval/interval.hpp>
-#include <utilities/mpiError.hpp>
+#include <iostream>
 #include "generators.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/mpiUtilities.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::io::Hdf5Serializer::Hdf5Serializer(std::shared_ptr<ablate::io::interval::Interval> interval) : interval(interval) {
     // Load the metadata from the file is available, otherwise set to 0
@@ -55,7 +56,7 @@ PetscErrorCode ablate::io::Hdf5Serializer::Hdf5SerializerSaveStateFunction(TS ts
         hdf5Serializer->time = time;
         hdf5Serializer->timeStep = steps;
         hdf5Serializer->sequenceNumber++;
-        TSGetTimeStep(ts, &(hdf5Serializer->dt)) >> checkError;
+        TSGetTimeStep(ts, &(hdf5Serializer->dt)) >> utilities::PetscUtilities::checkError;
 
         // Save this to a file
         hdf5Serializer->SaveMetadata(ts);
@@ -89,7 +90,7 @@ void ablate::io::Hdf5Serializer::SaveMetadata(TS ts) {
     out << YAML::EndMap;
 
     int rank;
-    MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank) >> checkMpiError;
+    MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank) >> utilities::MpiUtilities::checkError;
     if (rank == 0) {
         auto restartFilePath = environment::RunEnvironment::Get().GetOutputDirectory() / "restart.rst";
         std::ofstream restartFile;
@@ -118,7 +119,7 @@ ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::Hdf5ObjectSerializer(std::weak
         if (resume) {
             if (std::filesystem::exists(filePath)) {
                 StartEvent("PetscViewerHDF5Open");
-                PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_UPDATE, &petscViewer) >> checkError;
+                PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_UPDATE, &petscViewer) >> utilities::PetscUtilities::checkError;
                 EndEvent();
 
                 // Restore the simulation
@@ -129,7 +130,7 @@ ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::Hdf5ObjectSerializer(std::weak
                 throw std::runtime_error("Cannot resume simulation.  Unable to locate file: " + filePath.string());
             }
         } else {
-            PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_WRITE, &petscViewer) >> checkError;
+            PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_WRITE, &petscViewer) >> utilities::PetscUtilities::checkError;
         }
     }
 }
@@ -143,7 +144,7 @@ ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::~Hdf5ObjectSerializer() {
             xdmfGenerator::Generate(filePath);
         }
 
-        PetscViewerDestroy(&petscViewer) >> checkError;
+        PetscViewerDestroy(&petscViewer) >> utilities::PetscUtilities::checkError;
     }
 }
 

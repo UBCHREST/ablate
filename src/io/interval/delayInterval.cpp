@@ -1,5 +1,5 @@
 #include "delayInterval.hpp"
-#include "utilities/mpiError.hpp"
+#include "utilities/mpiUtilities.hpp"
 
 ablate::io::interval::DelayInterval::DelayInterval(std::shared_ptr<Interval> interval, double minimumSimulationTime, int minimumSimulationStep)
     : interval(interval), minimumSimulationTime(minimumSimulationTime), minimumSimulationStep(minimumSimulationStep) {}

@@ -1,9 +1,9 @@
 #include "createCoordinateSpace.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::domain::modifiers::CreateCoordinateSpace::CreateCoordinateSpace(int degree) : degree(degree) {}
 
-void ablate::domain::modifiers::CreateCoordinateSpace::Modify(DM &dm) { DMPlexCreateCoordinateSpace(dm, degree, nullptr) >> checkError; }
+void ablate::domain::modifiers::CreateCoordinateSpace::Modify(DM &dm) { DMPlexCreateCoordinateSpace(dm, degree, nullptr) >> utilities::PetscUtilities::checkError; }
 std::string ablate::domain::modifiers::CreateCoordinateSpace::ToString() const { return "ablate::domain::modifiers::CreateCoordinateSpace"; }
 
 #include "registrar.hpp"

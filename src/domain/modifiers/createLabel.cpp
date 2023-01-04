@@ -1,21 +1,21 @@
 #include "createLabel.hpp"
-#include <utilities/petscError.hpp>
+#include "utilities/petscUtilities.hpp"
 
 ablate::domain::modifiers::CreateLabel::CreateLabel(std::shared_ptr<domain::Region> region, std::shared_ptr<mathFunctions::MathFunction> function, int dmDepth)
     : region(region), function(function), dmHeight((PetscInt)dmDepth) {}
 
 void ablate::domain::modifiers::CreateLabel::Modify(DM &dm) {
-    DMCreateLabel(dm, region->GetName().c_str()) >> checkError;
+    DMCreateLabel(dm, region->GetName().c_str()) >> utilities::PetscUtilities::checkError;
 
     DMLabel newLabel;
-    DMGetLabel(dm, region->GetName().c_str(), &newLabel) >> checkError;
+    DMGetLabel(dm, region->GetName().c_str(), &newLabel) >> utilities::PetscUtilities::checkError;
 
     PetscInt cStart, cEnd;
-    DMPlexGetHeightStratum(dm, dmHeight, &cStart, &cEnd) >> checkError;
+    DMPlexGetHeightStratum(dm, dmHeight, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
 
     // Get the number of dimensions from the dm
     PetscInt nDims;
-    DMGetCoordinateDim(dm, &nDims) >> checkError;
+    DMGetCoordinateDim(dm, &nDims) >> utilities::PetscUtilities::checkError;
 
     // get the region value
     const auto labelValue = region->GetValue();
@@ -25,15 +25,15 @@ void ablate::domain::modifiers::CreateLabel::Modify(DM &dm) {
         PetscReal centroid[3];
 
         // get the center of the cell/face/vertex
-        DMPlexComputeCellGeometryFVM(dm, c, NULL, centroid, NULL) >> checkError;
+        DMPlexComputeCellGeometryFVM(dm, c, NULL, centroid, NULL) >> utilities::PetscUtilities::checkError;
 
         // determine if the point is positive or negative
         auto evalValue = function->Eval(centroid, nDims, 0.0);
         if (evalValue > 0) {
-            DMLabelSetValue(newLabel, c, labelValue) >> checkError;
+            DMLabelSetValue(newLabel, c, labelValue) >> utilities::PetscUtilities::checkError;
         }
     }
-    DMPlexLabelComplete(dm, newLabel) >> checkError;
+    DMPlexLabelComplete(dm, newLabel) >> utilities::PetscUtilities::checkError;
 }
 std::string ablate::domain::modifiers::CreateLabel::ToString() const { return "ablate::domain::modifiers::CreateLabel: " + region->ToString(); }
 
