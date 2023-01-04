@@ -22,7 +22,7 @@ int main(int argc, char** args) {
 
     // check to see if we should print version
     PetscBool printInfo = PETSC_FALSE;
-    PetscOptionsGetBool(nullptrptr, nullptrptr, "-version", &printInfo, nullptr) >> utilities::PetscUtilities::checkError;
+    PetscOptionsGetBool(nullptr, nullptr, "-version", &printInfo, nullptr) >> utilities::PetscUtilities::checkError;
     if (!printInfo) {
         PetscOptionsGetBool(nullptr, nullptr, "--info", &printInfo, nullptr) >> utilities::PetscUtilities::checkError;
     }
