@@ -835,7 +835,7 @@ PetscErrorCode ablate::eos::TwoPhase::SpecificHeatConstantVolumeTemperatureFunct
         at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1)/functionContext->parameters.gamma1 * functionContext->parameters.Cp1 * derived[5]); // stiffened gas eos
         at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1)/functionContext->parameters.gamma2 * functionContext->parameters.Cp2 * derived[5]); // stiffened gas eos
     } else{
-        throw std::invalid_argument("TwoPhase::SpecificHeatConstantVolumeFunction cannot calculate Cv_mix for other EOS, must be perfect/stiffened gas combination.");
+        throw std::invalid_argument("TwoPhase::SpecificHeatConstantVolumeTemperatureFunction cannot calculate Cv_mix for other EOS, must be perfect/stiffened gas combination.");
     }
     PetscReal rho1 = derived[0];
     PetscReal rho2 = derived[1]; // [rho1, rho2, e1, e2, p, T]
@@ -891,7 +891,7 @@ PetscErrorCode ablate::eos::TwoPhase::SpecificHeatConstantPressureTemperatureFun
         cp1 = parameters.Cp1;
         cp2 = parameters.Cp2;
     } else{
-        throw std::invalid_argument("TwoPhase::SpecificHeatConstantPressureFunction cannot calculate Cp_mix for other EOS, must be perfect/stiffened gas combination.");
+        throw std::invalid_argument("TwoPhase::SpecificHeatConstantPressureTemperatureFunction cannot calculate Cp_mix for other EOS, must be perfect/stiffened gas combination.");
     }
     // mixed specific heat constant pressure
     (*specificHeat) = Y1 * cp1 + Y2 * cp2;
