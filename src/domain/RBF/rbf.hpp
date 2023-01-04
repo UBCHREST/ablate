@@ -23,7 +23,11 @@ class RBF {
     PetscInt  nPoly = -1;               // The number of polynomial components to include
     PetscInt  minNumberCells = -1;      // Minimum number of cells needed to compute the RBF
     PetscBool useVertices = PETSC_TRUE; // Use vertices or edges/faces when computing neighbor cells
-    PetscInt  cStart = 0, cEnd = 0;     // The cell range
+
+
+    // Information from the subDomain cell range
+    PetscInt cStart = 0, cEnd = 0;  // The cell range
+    PetscInt *cellList;             // List of the cells to compute over. Length of cEnd - cStart
 
 
     // Derivative data
@@ -64,9 +68,6 @@ class RBF {
     /** SubDomain Register and Setup **/
     void Initialize(solver::Range cellRange);
     void Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain);
-//    void Register();
-//    void Modify(DM&) override;
-
 
     // Derivative stuff
     void SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVertices);
@@ -76,6 +77,12 @@ class RBF {
 
     // Interpolation stuff
     PetscReal Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]);
+
+    void GetRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::solver::Range &range) const;
+    void GetCellRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, ablate::solver::Range &range) const;
+    void RestoreRange(ablate::solver::Range &range) const;
+
+
 
 };
 

@@ -1,17 +1,7 @@
 #include "levelSetSolver.hpp"
 #include "LS-VOF.hpp"
-#include "domain/RBF/rbf.hpp"
-
-////#include <petsc/private/dmpleximpl.h>
-////#include "utilities/mpiError.hpp"
-////#include "utilities/petscError.hpp"
 
 using namespace ablate::levelSet;
-
-
-
-////ablate::levelSet::LevelSetSolver::LevelSetSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options)
-////    : Solver(std::move(solverId), std::move(region), std::move(options)) {}
 
 LevelSetSolver::LevelSetSolver(std::string solverId, std::shared_ptr<ablate::domain::Region> region, std::shared_ptr<ablate::parameters::Parameters> options,
 const std::shared_ptr<ablate::domain::rbf::RBF>& rbf) : Solver(solverId, region, options), rbf(rbf) {}
@@ -19,7 +9,6 @@ const std::shared_ptr<ablate::domain::rbf::RBF>& rbf) : Solver(solverId, region,
 
 // This is done once
 void LevelSetSolver::Setup() {
-
 
 // Make sure that the level set field has been created in the YAML file.
   if (!(subDomain->ContainsField(LevelSetFields::LEVELSET_FIELD))) {
@@ -42,6 +31,7 @@ void LevelSetSolver::Setup() {
 
 }
 
+// Done whenever the subDomain changes
 void LevelSetSolver::Initialize() {
 
   // Initialize the RBF data structures
@@ -158,7 +148,7 @@ void LevelSetSolver::ComputeAllNormal() {
   VecGetArray(auxVec, &array) >> ablate::checkError;
   for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
     PetscInt cell = cellRange.points ? cellRange.points[c] : c;
-    DMPlexPointLocalFieldRef(dm, cell, LevelSetSolver::normalField->id, array, &n);
+    DMPlexPointLocalFieldRef(dm, cell, LevelSetSolver::normalField->id, array, &n) >> ablate::checkError;
     LevelSetSolver::Normal(cell, n);
   }
   VecRestoreArray(auxVec, &array) >> ablate::checkError;
