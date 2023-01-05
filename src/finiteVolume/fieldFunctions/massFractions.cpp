@@ -4,7 +4,7 @@
 #include "utilities/vectorUtilities.hpp"
 
 ablate::finiteVolume::fieldFunctions::MassFractions::MassFractions(std::shared_ptr<ablate::eos::EOS> eos, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> massFractionFieldFunctionsIn)
-    : ablate::mathFunctions::FieldFunction("yi", std::make_shared<ablate::mathFunctions::FunctionPointer>(ablate::finiteVolume::fieldFunctions::MassFractions::ComputeYiFunction, this)),
+    : ablate::mathFunctions::FieldFunction(eos::EOS::YI, std::make_shared<ablate::mathFunctions::FunctionPointer>(ablate::finiteVolume::fieldFunctions::MassFractions::ComputeYiFunction, this)),
       massFractionFieldFunctions(massFractionFieldFunctionsIn) {
     const auto &species = eos->GetSpecies();
 

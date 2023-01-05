@@ -42,7 +42,7 @@ timestepper:
         pressure: 101325.0
         velocity: [ 0.0 ]
         # the mass fractions must be specified to compute rho, e, etc.
-        massFractions: !ablate::finiteVolume::fieldFunctions::MassFractions
+        other: !ablate::finiteVolume::fieldFunctions::MassFractions
           # the mass fraction class allows for a subset of mass fractions to be specified.  The rest are assumed zero
           eos: *eos
           values:

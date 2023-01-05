@@ -40,9 +40,9 @@ struct ThermodynamicTemperatureFunction {
 };
 
 /**
- * Simple function representing the context and function for computing a field from two specified properties, velocity, and Yi
+ * Simple function representing the context and function for computing a field from two specified properties, velocity, and other properties as specified
  */
-using FieldFunction = std::function<void(PetscReal property1, PetscReal property2, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[])>;
+using EOSFunction = std::function<void(PetscReal property1, PetscReal property2, PetscInt dim, const PetscReal velocity[], const PetscReal other[], PetscReal conserved[])>;
 
 /**
  * The equation of state is designed to to compute thermodynamic properties based upon the conserved field variables being solved.  This can range from euler & densityYi and  euler & progresses
@@ -55,6 +55,12 @@ class EOS {
    public:
     explicit EOS(std::string typeIn) : type(std::move(typeIn)){};
     virtual ~EOS() = default;
+
+    // Some known extra properties
+    // the conserved (density*yi) solution field for species mass fractions
+    inline const static std::string YI = "Yi";
+    // progress fields are used by the eos/chemistry model to transport required non species
+    inline const static std::string PROGRESS = "Progress";
 
     /**
      * Print the details of this eos
@@ -84,7 +90,8 @@ class EOS {
      * @param property1
      * @param property2
      */
-    [[nodiscard]] virtual FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const = 0;
+    [[nodiscard]] virtual EOSFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2,
+                                                               std::vector<std::string> otherProperties) const = 0;
 
     /**
      * Required species to utilize the equation of state
