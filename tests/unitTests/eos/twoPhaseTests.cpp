@@ -10,7 +10,6 @@
 struct TwoPhaseEOSTestCreateAndViewParameters {
     std::shared_ptr<ablate::eos::EOS> eos1;
     std::shared_ptr<ablate::eos::EOS> eos2;
-    std::vector<std::string> species = {};
     std::string expectedView;
 };
 class TwoPhaseTestCreateAndViewFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TwoPhaseEOSTestCreateAndViewParameters> {};
@@ -19,7 +18,7 @@ TEST_P(TwoPhaseTestCreateAndViewFixture, ShouldCreateAndView) {
     // arrange
     auto eos1 = GetParam().eos1;
     auto eos2 = GetParam().eos2;
-    std::shared_ptr<ablate::eos::EOS> twoPhaseEos = std::make_shared<ablate::eos::TwoPhase>(eos1, eos2, GetParam().species);
+    std::shared_ptr<ablate::eos::EOS> twoPhaseEos = std::make_shared<ablate::eos::TwoPhase>(eos1, eos2);
 
     std::stringstream outputStream;
 
@@ -40,11 +39,11 @@ INSTANTIATE_TEST_SUITE_P(TwoPhaseEOSTests, TwoPhaseTestCreateAndViewFixture,
                                                                   .expectedView = "EOS: twoPhase\nEOS: perfectGas\n\tgamma: 3.2\n\tRgas: 100.2\nEOS: stiffenedGas\n\tgamma: 2.1\n\tCp: 204.7\n\tp0: 3.5e+06\n"},
                                          (TwoPhaseEOSTestCreateAndViewParameters){.eos1 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Cp", "100.2"},{"p0","9.9e5"}})),
                                                                   .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "2.1"}, {"Cp", "204.7"},{"p0","3.5e6"}})),
-                                                                  .expectedView = "EOS: twoPhase\nEOS: stiffenedGas\n\tgamma: 3.2\n\tCp: 100.2\n\tp0: 990000\nEOS: stiffenedGas\n\tgamma: 2.1\n\tCp: 204.7\n\tp0: 3.5e+06\n"},
-                                         (TwoPhaseEOSTestCreateAndViewParameters){.eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
-                                                                  .eos2 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}})),
-                                                                  .species = {"O2","N2"},
-                                                                  .expectedView = "EOS: twoPhase\nEOS: perfectGas\n\tgamma: 1.4\n\tRgas: 287\nEOS: perfectGas\n\tgamma: 3.2\n\tRgas: 100.2\n\tspecies: O2, N2\n"}),
+                                                                  .expectedView = "EOS: twoPhase\nEOS: stiffenedGas\n\tgamma: 3.2\n\tCp: 100.2\n\tp0: 990000\nEOS: stiffenedGas\n\tgamma: 2.1\n\tCp: 204.7\n\tp0: 3.5e+06\n"}),
+//                                         (TwoPhaseEOSTestCreateAndViewParameters){.eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
+//                                                                  .eos2 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}})),
+//                                                                  .species = {"O2","N2"},
+//                                                                  .expectedView = "EOS: twoPhase\nEOS: perfectGas\n\tgamma: 1.4\n\tRgas: 287\nEOS: perfectGas\n\tgamma: 3.2\n\tRgas: 100.2\n\tspecies: O2, N2\n"}),
                          [](const testing::TestParamInfo<TwoPhaseEOSTestCreateAndViewParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -67,7 +66,7 @@ TEST_P(TPThermodynamicPropertyTestFixture, ShouldComputeProperty) {
     // arrange
     auto eos1 = GetParam().eos1;
     auto eos2 = GetParam().eos2;
-    std::shared_ptr<ablate::eos::EOS> twoPhaseEos = std::make_shared<ablate::eos::TwoPhase>(eos1, eos2, GetParam().species);
+    std::shared_ptr<ablate::eos::EOS> twoPhaseEos = std::make_shared<ablate::eos::TwoPhase>(eos1, eos2);
 
     // get the test params
     const auto& params = GetParam();
@@ -237,21 +236,21 @@ TEST(TwoPhaseEOSTests, TwoPhaseShouldReportNoSpeciesByDefault) {
     // assert
     ASSERT_EQ(0, species.size());
 }
-
-TEST(TwoPhaseEOSTests, TwoPhaseShouldReportSpeciesWhenProvided) {
-    // arrange
-    auto eos1 = nullptr;
-    auto eos2 = nullptr;
-    std::shared_ptr<ablate::eos::EOS> twoPhaseEos = std::make_shared<ablate::eos::TwoPhase>(eos1, eos2, std::vector<std::string>{"N2", "H2"});
-
-    // act
-    auto species = twoPhaseEos->GetSpecies();
-
-    // assert
-    ASSERT_EQ(2, species.size());
-    ASSERT_EQ("N2", species[0]);
-    ASSERT_EQ("H2", species[1]);
-}
+//
+//TEST(TwoPhaseEOSTests, TwoPhaseShouldReportSpeciesWhenProvided) {
+//    // arrange
+//    auto eos1 = nullptr;
+//    auto eos2 = nullptr;
+//    std::shared_ptr<ablate::eos::EOS> twoPhaseEos = std::make_shared<ablate::eos::TwoPhase>(eos1, eos2, std::vector<std::string>{"N2", "H2"});
+//
+//    // act
+//    auto species = twoPhaseEos->GetSpecies();
+//
+//    // assert
+//    ASSERT_EQ(2, species.size());
+//    ASSERT_EQ("N2", species[0]);
+//    ASSERT_EQ("H2", species[1]);
+//}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Two Phase EOS FieldFunctionTests
@@ -260,7 +259,6 @@ struct TPFieldFunctionTestParameters {
     // eos init
     std::shared_ptr<ablate::eos::EOS> eos1;
     std::shared_ptr<ablate::eos::EOS> eos2;
-    std::vector<std::string> species = {};
 
     // field function init
     std::string field;
@@ -271,7 +269,7 @@ struct TPFieldFunctionTestParameters {
     PetscReal property1Value;
     PetscReal property2Value;
     std::vector<PetscReal> velocity;
-    std::vector<PetscReal> yi;
+    std::vector<PetscReal> otherProperties;
     std::vector<PetscReal> expectedValue;
 };
 
@@ -281,15 +279,15 @@ TEST_P(TPFieldFunctionTestFixture, ShouldComputeField) {
     // arrange
     auto eos1 = GetParam().eos1;
     auto eos2 = GetParam().eos2;
-    std::shared_ptr<ablate::eos::EOS> twoPhaseEos = std::make_shared<ablate::eos::TwoPhase>(eos1, eos2, GetParam().species);
+    std::shared_ptr<ablate::eos::EOS> twoPhaseEos = std::make_shared<ablate::eos::TwoPhase>(eos1, eos2);
 
     // get the test params
     const auto& params = GetParam();
     std::vector<PetscReal> actualValue(params.expectedValue.size(), NAN);
 
     // act
-    auto stateFunction = twoPhaseEos->GetFieldFunctionFunction(params.field, params.property1, params.property2);
-    stateFunction(params.property1Value, params.property2Value, params.velocity.size(), params.velocity.data(), params.yi.data(), actualValue.data());
+    auto stateFunction = twoPhaseEos->GetFieldFunctionFunction(params.field, params.property1, params.property2, {ablate::eos::EOS::VF,ablate::eos::EOS::YI});
+    stateFunction(params.property1Value, params.property2Value, params.velocity.size(), params.velocity.data(), params.otherProperties.data(), actualValue.data());
 
     // assert
     for (std::size_t c = 0; c < params.expectedValue.size(); c++) {
@@ -308,7 +306,7 @@ INSTANTIATE_TEST_SUITE_P(
                                         .property1Value = 300.0,
                                         .property2Value = 101325.0,
                                         .velocity = {10.0, 20, 30},
-                                        .yi = {1.0}, // alpha
+                                        .otherProperties = {1.0}, // alpha
                                         .expectedValue = {1.1768292682, 1.1768292682 * (2.1525E+05 + 700), 1.1768292682 * 10, 1.1768292682 * 20, 1.1768292682 * 30}}
 //        (SGFieldFunctionTestParameters){.options = {{"gamma", "3.2"}, {"Cp", "100.2"}, {"p0", "3.5e6"}},
 //                                        .field = "euler",

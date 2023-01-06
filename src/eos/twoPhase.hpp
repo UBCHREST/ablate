@@ -11,7 +11,7 @@ class TwoPhase : public EOS { // , public std::enabled_shared_from_this<TwoPhase
    private:
     const std::shared_ptr<eos::EOS> eos1;
     const std::shared_ptr<eos::EOS> eos2;
-    // this mixed eos does not allow species
+    // this mixed eos does not allow species, get species from eos1 eos2
     const std::vector<std::string> species;
     struct Parameters {
         PetscReal gamma1;
@@ -22,7 +22,10 @@ class TwoPhase : public EOS { // , public std::enabled_shared_from_this<TwoPhase
         PetscReal rGas2;
         PetscReal Cp2;
         PetscReal p02;
-        PetscInt numberSpecies;
+        PetscInt numberSpecies1;
+        std::vector<std::string> species1;
+        PetscInt numberSpecies2;
+        std::vector<std::string> species2;
     };
     Parameters parameters;
     struct FunctionContext {
@@ -67,16 +70,16 @@ class TwoPhase : public EOS { // , public std::enabled_shared_from_this<TwoPhase
         {ThermodynamicProperty::SpeciesSensibleEnthalpy, {SpeciesSensibleEnthalpyFunction, SpeciesSensibleEnthalpyTemperatureFunction}}};
 
    public:
-    explicit TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<eos::EOS> eos2, std::vector<std::string> species = {});
+    explicit TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<eos::EOS> eos2);
     void View(std::ostream& stream) const override;
 
     ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
 
     ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
 
-    FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const override;
+    EOSFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2, std::vector<std::string> otherProperties) const override;
 
-    const std::vector<std::string>& GetSpeciesVariables() const override { return species; }
+    const std::vector<std::string>& GetSpeciesVariables() const override { return species; } // need to modify this
     [[nodiscard]] virtual const std::vector<std::string>& GetProgressVariables() const override { return ablate::utilities::VectorUtilities::Empty<std::string>; }
 };
 } // namespace ablate::eos

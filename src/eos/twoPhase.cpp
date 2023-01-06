@@ -144,8 +144,8 @@ static inline PetscReal SimpleStiffStiffDecode(PetscInt dim, const PetscReal *in
     return *out;
 }
 
-ablate::eos::TwoPhase::TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<eos::EOS> eos2, std::vector<std::string> species)
-    : EOS("twoPhase"), eos1(std::move(eos1)), eos2(std::move(eos2)), species(species) {
+ablate::eos::TwoPhase::TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<eos::EOS> eos2)
+    : EOS("twoPhase"), eos1(std::move(eos1)), eos2(std::move(eos2)) {
     // set parameter values
     if (this->eos1 && this->eos2){
         // check if both perfect gases, use analytical solution
@@ -161,6 +161,10 @@ ablate::eos::TwoPhase::TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<
             parameters.rGas2 = perfectGasEos2->GetGasConstant();
             parameters.p01 = 0;
             parameters.p02 = 0;
+            parameters.numberSpecies1 = perfectGasEos1->GetSpeciesVariables().size();
+            parameters.species1 = perfectGasEos1->GetSpeciesVariables();
+            parameters.numberSpecies2 = perfectGasEos2->GetSpeciesVariables().size();
+            parameters.species2 = perfectGasEos2->GetSpeciesVariables();
         } else if (perfectGasEos1 && stiffenedGasEos2) {
             parameters.gamma1 = perfectGasEos1->GetSpecificHeatRatio();
             parameters.rGas1 = perfectGasEos1->GetGasConstant();
@@ -168,6 +172,10 @@ ablate::eos::TwoPhase::TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<
             parameters.gamma2 = stiffenedGasEos2->GetSpecificHeatRatio();
             parameters.Cp2 = stiffenedGasEos2->GetSpecificHeatCp();
             parameters.p02 = stiffenedGasEos2->GetReferencePressure();
+            parameters.numberSpecies1 = perfectGasEos1->GetSpeciesVariables().size();
+            parameters.species1 = perfectGasEos1->GetSpeciesVariables();
+            parameters.numberSpecies2 = perfectGasEos2->GetSpeciesVariables().size();
+            parameters.species2 = perfectGasEos2->GetSpeciesVariables();
         } else if (stiffenedGasEos1 && stiffenedGasEos2) {
             parameters.gamma1 = stiffenedGasEos1->GetSpecificHeatRatio();
             parameters.Cp1 = stiffenedGasEos1->GetSpecificHeatCp();
@@ -175,17 +183,24 @@ ablate::eos::TwoPhase::TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<
             parameters.gamma2 = stiffenedGasEos2->GetSpecificHeatRatio();
             parameters.Cp2 = stiffenedGasEos2->GetSpecificHeatCp();
             parameters.p02 = stiffenedGasEos2->GetReferencePressure();
+            parameters.numberSpecies1 = perfectGasEos1->GetSpeciesVariables().size();
+            parameters.species1 = perfectGasEos1->GetSpeciesVariables();
+            parameters.numberSpecies2 = perfectGasEos2->GetSpeciesVariables().size();
+            parameters.species2 = perfectGasEos2->GetSpeciesVariables();
         }
     } else{
         // defaults to air (perfect) and water (stiffened)
         parameters.gamma1 = 1.4;
-        parameters.rGas1 = 287.0;
+        parameters.rGas1 = 287.0; // Cp1 not populated
         parameters.p01 = 0;
-        parameters.gamma2 = 1.932;
+        parameters.gamma2 = 1.932; // rGas2 not populated
         parameters.Cp2 = 8095.08;
         parameters.p02 = 1.1645e9;
+        parameters.numberSpecies1 = 0;
+        parameters.species1 = {};
+        parameters.numberSpecies2 = 0;
+        parameters.species2 = {};
     }
-    parameters.numberSpecies = species.size();;  // not used here, need to add support for species eventually
 }
 
 void ablate::eos::TwoPhase::View(std::ostream &stream) const {
@@ -193,13 +208,6 @@ void ablate::eos::TwoPhase::View(std::ostream &stream) const {
     if (eos1 && eos2){
         stream << *eos1;
         stream << *eos2;
-    }
-    if (!species.empty()) {
-        stream << "\tspecies: " << species.front();
-        for (std::size_t i = 1; i < species.size(); i++) {
-            stream << ", " << species[i];
-        }
-        stream << std::endl;
     }
 }
 
@@ -230,10 +238,15 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::TwoPhase::GetThermody
     };
 }
 
-ablate::eos::FieldFunction  ablate::eos::TwoPhase::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1, ablate::eos::ThermodynamicProperty property2) const {
+ablate::eos::EOSFunction ablate::eos::TwoPhase::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1, ablate::eos::ThermodynamicProperty property2,
+                                                                         std::vector<std::string> otherProperties) const {
+    if (otherProperties != std::vector<std::string>{VF} || otherProperties != std::vector<std::string>{VF,YI} ){//VF not in otherProperties){
+        throw std::invalid_argument("ablate::eos::TwoPhase expects other properties to include VF (volume fraction) as first entry");
+    }
+
     if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field) {
-        // temperature & pressure & alpha (** note: using yi vector to store volume fraction, first yi is alpha **)
-        // Not: This function is used for initializing fields from P,T,v,yi instead of conserved variables
+        // temperature & pressure & alpha (** note: need volume fraction in otherProperties to back out conserved variables **)
+        // Not: This function is used for initializing fields from P,T,vel instead of conserved variables
         //      -> this would mean need to add option: if (field == densityVF)
         if ((property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) ||
             (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature)) {
