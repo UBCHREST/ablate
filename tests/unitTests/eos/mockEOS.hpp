@@ -33,7 +33,8 @@ class MockEOS : public ablate::eos::EOS {
 
     MOCK_METHOD(ablate::eos::ThermodynamicFunction, GetThermodynamicFunction, (ablate::eos::ThermodynamicProperty, const std::vector<ablate::domain::Field>&), (const, override));
     MOCK_METHOD(ablate::eos::ThermodynamicTemperatureFunction, GetThermodynamicTemperatureFunction, (ablate::eos::ThermodynamicProperty, const std::vector<ablate::domain::Field>&), (const, override));
-    MOCK_METHOD(ablate::eos::FieldFunction, GetFieldFunctionFunction, (const std::string& field, ablate::eos::ThermodynamicProperty, ablate::eos::ThermodynamicProperty), (const, override));
+    MOCK_METHOD(ablate::eos::EOSFunction, GetFieldFunctionFunction, (const std::string& field, ablate::eos::ThermodynamicProperty, ablate::eos::ThermodynamicProperty, std::vector<std::string>),
+                (const, override));
 
     static ablate::eos::ThermodynamicFunction CreateMockThermodynamicFunction(std::function<void(const PetscReal[], PetscReal*)> function) {
         return ablate::eos::ThermodynamicFunction{.function = MockThermodynamicFunction, .context = std::make_shared<std::function<void(const PetscReal[], PetscReal*)>>(function)};

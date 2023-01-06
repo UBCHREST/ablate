@@ -259,7 +259,7 @@ TEST_P(PGFieldFunctionTestFixture, ShouldComputeField) {
     std::vector<PetscReal> actualValue(params.expectedValue.size(), NAN);
 
     // act
-    auto stateFunction = eos->GetFieldFunctionFunction(params.field, params.property1, params.property2);
+    auto stateFunction = eos->GetFieldFunctionFunction(params.field, params.property1, params.property2, {ablate::eos::EOS::YI});
     stateFunction(params.property1Value, params.property2Value, params.velocity.size(), params.velocity.data(), params.yi.data(), actualValue.data());
 
     // assert

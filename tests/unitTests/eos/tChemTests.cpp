@@ -579,9 +579,9 @@ TEST_P(TChemFieldFunctionTestFixture, ShouldComputeField) {
     std::vector<PetscReal> actualDensityYiValue(eos->GetSpecies().size(), NAN);
 
     // act
-    auto stateEulerFunction = eos->GetFieldFunctionFunction("euler", params.property1, params.property2);
+    auto stateEulerFunction = eos->GetFieldFunctionFunction("euler", params.property1, params.property2, {ablate::eos::EOS::YI});
     stateEulerFunction(params.property1Value, params.property2Value, (PetscInt)params.velocity.size(), params.velocity.data(), yi.data(), actualEulerValue.data());
-    auto stateDensityYiFunction = eos->GetFieldFunctionFunction("densityYi", params.property1, params.property2);
+    auto stateDensityYiFunction = eos->GetFieldFunctionFunction("densityYi", params.property1, params.property2, {ablate::eos::EOS::YI});
     stateDensityYiFunction(params.property1Value, params.property2Value, (PetscInt)params.velocity.size(), params.velocity.data(), yi.data(), actualDensityYiValue.data());
 
     // assert

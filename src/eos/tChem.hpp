@@ -120,7 +120,8 @@ class TChem : public ChemistryModel, public std::enable_shared_from_this<ablate:
      * @param property1
      * @param property2
      */
-    [[nodiscard]] FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const override;
+    [[nodiscard]] EOSFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2,
+                                                       std::vector<std::string> otherProperties) const override;
 
     /**
      * Species supported by this EOS

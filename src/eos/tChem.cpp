@@ -727,7 +727,12 @@ void ablate::eos::TChem::FillWorkingVectorFromMassFractions(double density, doub
     }
 }
 
-ablate::eos::FieldFunction ablate::eos::TChem::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1, ablate::eos::ThermodynamicProperty property2) const {
+ablate::eos::EOSFunction ablate::eos::TChem::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1, ablate::eos::ThermodynamicProperty property2,
+                                                                      std::vector<std::string> otherProperties) const {
+    if (otherProperties != std::vector<std::string>{YI}) {
+        throw std::invalid_argument("ablate::eos::TChem expects the other properties to be Yi (Species Mass Fractions)");
+    }
+
     if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field) {
         if ((property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) ||
             (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature)) {

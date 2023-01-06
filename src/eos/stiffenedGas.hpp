@@ -125,7 +125,7 @@ class StiffenedGas : public EOS {
      * @param property1
      * @param property2
      */
-    FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const override;
+    EOSFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2, std::vector<std::string> otherProperties) const override;
 
     /**
      * returns the species supported by this EOS

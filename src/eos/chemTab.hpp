@@ -220,7 +220,8 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @param property1
      * @param property2
      */
-    [[nodiscard]] eos::FieldFunction GetFieldFunctionFunction(const std::string& field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2) const override;
+    [[nodiscard]] eos::EOSFunction GetFieldFunctionFunction(const std::string& field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2,
+                                                            std::vector<std::string> otherProperties) const override;
 };
 
 #else
@@ -247,7 +248,8 @@ class ChemTab : public ChemistryModel {
         throw std::runtime_error(errorMessage);
     }
 
-    [[nodiscard]] eos::FieldFunction GetFieldFunctionFunction(const std::string& field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2) const override {
+    [[nodiscard]] eos::EOSFunction GetFieldFunctionFunction(const std::string& field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2,
+                                                            std::vector<std::string> otherProperties) const override {
         throw std::runtime_error(errorMessage);
     }
 
