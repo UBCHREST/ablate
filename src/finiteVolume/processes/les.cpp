@@ -69,7 +69,7 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesMomentumFlux(PetscInt di
 
     turbulence = aux[aOff[TKE_FIELD]];
     // Bound TKE field if it is gone unbounded.
-    turbulence = fmax(0, turbulence);
+    turbulence = PetscMax(0, turbulence);
 
     PetscCall(LesViscosity(dim, fg, field + uOff[euler], turbulence, muT));
     // Compute the LES stress tensor tau
@@ -107,7 +107,7 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesEnergyFlux(PetscInt dim,
 
     PetscReal turbulence = aux[aOff[TKE_FIELD]];
     // Bound TKE field if it is gone unbounded.
-    turbulence = fmax(0, turbulence);
+    turbulence = PetscMax(0, turbulence);
 
     // Compute the les stress tensor LESTau
     PetscCall(LesViscosity(dim, fg, field + uOff[euler], turbulence, muT));
@@ -147,7 +147,7 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesTkeFlux(PetscInt dim, co
 
     PetscReal turbulence = aux[aOff[TKE_FIELD]];
     // Bound TKE field if it is gone unbounded.
-    turbulence = fmax(0, turbulence);
+    turbulence = PetscMax(0, turbulence);
     PetscCall(LesViscosity(dim, fg, field + uOff[euler], turbulence, muT));
 
     // Compute the LES stress tensor tau
@@ -188,7 +188,7 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesEvFlux(PetscInt dim, con
     auto numberComponents = *(PetscInt*)ctx;
     PetscReal turbulence = aux[aOff[TKE_FIELD]];
     // Bound TKE field if it is gone unbounded.
-    turbulence = fmax(0, turbulence);
+    turbulence = PetscMax(0, turbulence);
     PetscCall(LesViscosity(dim, fg, field + uOff[euler], turbulence, muT));
 
     // species/ev equations
