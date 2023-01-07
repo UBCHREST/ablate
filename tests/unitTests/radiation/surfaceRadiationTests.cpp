@@ -31,6 +31,7 @@ struct RadiationTestParameters {
     std::function<std::shared_ptr<ablate::radiation::Radiation>(std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn)> radiationFactory;
     std::string emitLabel;
     const char* detectLabel;
+    bool perpendicular;
 };
 
 class RadiationTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<RadiationTestParameters> {
@@ -38,14 +39,26 @@ class RadiationTestFixture : public testingResources::MpiTestFixture, public ::t
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
 
-static PetscReal ComputeParallelViewFactor() {
+static PetscReal ComputeParallelViewFactor(PetscReal X, PetscReal Y, PetscReal L) {
     /** Computes the analytical solution for the view factor between two parallel plates based on the geometric dimensions
      * */
+    PetscReal Xbar = X / L;  //! Non-dimensional parameters for the view factor calculation
+    PetscReal Ybar = Y / L;
+
+    return (2 / (ablate::utilities::Constants::pi * Xbar * Ybar)) *
+           (sqrt(log(((1 + Xbar * Xbar) * (1 + Ybar * Ybar)) / (1 + (Xbar * Xbar) + (Ybar * Ybar)))) + (Xbar * sqrt(1 + (Ybar * Ybar)) * atan((Xbar) / sqrt(1 + (Ybar * Ybar)))) +
+            (Ybar * sqrt(1 + (Xbar * Xbar)) * atan((Ybar) / sqrt(1 + (Xbar * Xbar)))) - (Xbar * atan(Xbar)) - (Ybar * atan(Ybar)));
 }
 
-static PetscReal ComputePerpendicularViewFactor() {
+static PetscReal ComputePerpendicularViewFactor(PetscReal X, PetscReal Y, PetscReal Z) {
     /** Computes the analytical solution for the view factor between two perpendicular plates based on the geometric dimensions
      * */
+    PetscReal H = Z / X;  //! Non-dimensional parameters for the view factor calculation
+    PetscReal W = Y / X;
+    return (1 / (ablate::utilities::Constants::pi * W)) *
+           ((W * atan(1 / W)) + (H * atan(1 / H)) - (sqrt(H * H + W * W) * atan(1 / sqrt(H * H + W * W))) +
+            0.25 * log((((1 + W * W) * (1 + H * H))) / (1 + W * W + H * H)) * pow(((W * W) * (1 + W * W + H * H)) / ((1 + W * W) * (W * W + H * H)), W * W) *
+                pow(((H * H) * (1 + H * H + W * W)) / ((1 + H * H) * (H * H + W * W)), H * H));
 }
 
 TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
@@ -130,7 +143,8 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         ablate::solver::Range meshFaceRange;
         PetscInt depth;
         DMPlexGetDepth(domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->GetDM(), &depth) >> testErrorChecker;
-        /** Get the range of the  */
+
+        /** Get the range of the cells in the boundary region */
         {
             IS allPointIS;
             DMGetStratumIS(domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->GetDM(), "dim", depth, &allPointIS) >> testErrorChecker;
@@ -166,6 +180,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             // Clean up the allCellIS
             ISDestroy(&allPointIS) >> testErrorChecker;
         }
+
         //!< Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solver.
         ablate::solver::DynamicRange faceRange;
         for (PetscInt c = meshFaceRange.start; c < meshFaceRange.end; ++c) {
@@ -194,8 +209,8 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             VecGetArrayRead(rhs, &rhsArray) >> testErrorChecker;
 
             /// Declare L2 norm variables
-            PetscReal radsum = 0.0;
-            // TODO: The radiation must be summed for the faces in the irradiated region.
+            PetscReal computationalQ = 0.0;
+            //! The radiation must be summed for the faces in the irradiated region.
 
             //  March over each stored value in the surface radiation result and sum them to determine the total irradiation to that surface.
             for (PetscInt c = meshFaceRange.start; c < meshFaceRange.end; ++c) {
@@ -208,18 +223,26 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
                     // extract the result from the stored solver value
                     /// Summing of the irradiation
-                    radsum += radiationModel->origin[iFace].intensity;
+                    computationalQ += radiationModel->origin[iFace].intensity;
                 }
             }
-            /// Compute the L2 Norm error
-            //            double N = (cellRange.end - cellRange.start);
-            //            double l2 = sqrt(l2sum) / N;
 
-            //            PetscPrintf(MPI_COMM_WORLD, "L2 Norm: %f\n", sqrt(l2sum) / N);
+            /// Compute the analytical solution for the view factor
+            PetscReal analyticalViewFactor =
+                (GetParam().perpendicular)
+                    ? ComputePerpendicularViewFactor(GetParam().meshEnd[1], GetParam().meshEnd[2], GetParam().meshEnd[3])
+                    : ComputeParallelViewFactor(GetParam().meshEnd[1], GetParam().meshEnd[2], GetParam().meshEnd[3]);  //! Compute the view factor from the emit label to the detect label
+
+            PetscReal analyticalQ = analyticalViewFactor;  //! The amount of radiation from the emit region to the detect region
+
             //! Compute the difference between the analytical and computational solutions
-            PetscReal error = 0;
+            PetscReal error = (analyticalQ - computationalQ) / computationalQ;
 
-            if (error > 1) {
+            //! Print the error between the two solutions
+            PetscPrintf(MPI_COMM_WORLD, "Error: %f\n", error);
+
+            //! Check that the error is below the specified threshold
+            if (error > 0.02) {
                 FAIL() << "Radiation test error exceeded.";
             }
 
@@ -265,8 +288,9 @@ INSTANTIATE_TEST_SUITE_P(
                                           auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
                                           return std::make_shared<ablate::radiation::SurfaceRadiation>("radiationBase", interiorLabel, 15, radiationModelIn, nullptr);
                                       },
-                                  .emitLabel = "boundaryCellsLeft",      //! Label of the region from which the radiation is emitted
-                                  .detectLabel = "boundaryCellsRight"},  //! Label of the region where the radiation is detected by the surface solver
+                                  .emitLabel = "boundaryCellsLeft",  //! Label of the region from which the radiation is emitted
+                                  .detectLabel = "boundaryCellsRight",
+                                  .perpendicular = false},  //! Label of the region where the radiation is detected by the surface solver
         (RadiationTestParameters){.mpiTestParameter = {.testName = "Perpendicular Plates 1 proc.", .nproc = 1},
                                   .meshFaces = {20, 20, 20},
                                   .meshStart = {0, 0, 0},
@@ -291,8 +315,9 @@ INSTANTIATE_TEST_SUITE_P(
                                           auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
                                           return std::make_shared<ablate::radiation::SurfaceRadiation>("radiationBase", interiorLabel, 15, radiationModelIn, nullptr);
                                       },
-                                  .emitLabel = "boundaryCellsLeft",      //! Label of the region from which the radiation is emitted
-                                  .detectLabel = "boundaryCellsRight"},  //! Label of the region where the radiation is detected by the surface solver
+                                  .emitLabel = "boundaryCellsLeft",  //! Label of the region from which the radiation is emitted
+                                  .detectLabel = "boundaryCellsRight",
+                                  .perpendicular = true},  //! Label of the region where the radiation is detected by the surface solver
         (RadiationTestParameters){.mpiTestParameter = {.testName = "Parallel Plates 2 proc.", .nproc = 2},
                                   .meshFaces = {20, 20, 20},
                                   .meshStart = {0, 0, 0},
@@ -317,8 +342,9 @@ INSTANTIATE_TEST_SUITE_P(
                                           auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
                                           return std::make_shared<ablate::radiation::SurfaceRadiation>("radiationBase", interiorLabel, 15, radiationModelIn, nullptr);
                                       },
-                                  .emitLabel = "boundaryCellsLeft",      //! Label of the region from which the radiation is emitted
-                                  .detectLabel = "boundaryCellsRight"},  //! Label of the region where the radiation is detected by the surface solver
+                                  .emitLabel = "boundaryCellsLeft",  //! Label of the region from which the radiation is emitted
+                                  .detectLabel = "boundaryCellsRight",
+                                  .perpendicular = false},  //! Label of the region where the radiation is detected by the surface solver
         (RadiationTestParameters){.mpiTestParameter = {.testName = "Perpendicular Plates 2 proc.", .nproc = 2},
                                   .meshFaces = {20, 20, 20},
                                   .meshStart = {0, 0, 0},
@@ -342,6 +368,7 @@ INSTANTIATE_TEST_SUITE_P(
                                       [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
                                           return std::make_shared<ablate::radiation::SurfaceRadiation>("radiationBase", ablate::domain::Region::ENTIREDOMAIN, 15, radiationModelIn, nullptr);
                                       },
-                                  .emitLabel = "boundaryCellsLeft",       //! Label of the region from which the radiation is emitted
-                                  .detectLabel = "boundaryCellsRight"}),  //! Label of the region where the radiation is detected by the surface solver
+                                  .emitLabel = "boundaryCellsLeft",  //! Label of the region from which the radiation is emitted
+                                  .detectLabel = "boundaryCellsRight",
+                                  .perpendicular = true}),  //! Label of the region where the radiation is detected by the surface solver
     [](const testing::TestParamInfo<RadiationTestParameters>& info) { return info.param.mpiTestParameter.getTestName(); });
