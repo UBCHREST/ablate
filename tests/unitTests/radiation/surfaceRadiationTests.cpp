@@ -119,9 +119,9 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->ProjectFieldFunctionsToLocalVector(GetParam().initialization(), auxVec);
 
         // Setup the rhs for the test
-        Vec rhs;
-        DMGetLocalVector(domain->GetDM(), &rhs) >> testErrorChecker;
-        VecZeroEntries(rhs) >> testErrorChecker;
+        //        Vec rhs;
+        //        DMGetLocalVector(domain->GetDM(), &rhs) >> testErrorChecker;
+        //        VecZeroEntries(rhs) >> testErrorChecker;
 
         // Apply the rhs function for the radiation solver
         //        radiationModel->PreRHSFunction(timeStepper.GetTS(), 0.0, true, nullptr) >> testErrorChecker;
@@ -196,17 +196,15 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
         // For each cell, compare the rhs against the expected
         {
-            // get the cell geometry
-            Vec cellGeomVec;
-            DM dmCell;
-            const PetscScalar* cellGeomArray;
-            DMPlexGetGeometryFVM(domain->GetDM(), nullptr, &cellGeomVec, nullptr) >> testErrorChecker;
-            VecGetDM(cellGeomVec, &dmCell) >> testErrorChecker;
-            VecGetArrayRead(cellGeomVec, &cellGeomArray) >> testErrorChecker;
+            // get the face geometry
+            Vec faceGeomVec;
+            DM faceDm;
+            const PetscScalar* faceGeomArray;
+            DMPlexGetGeometryFVM(domain->GetDM(), nullptr, &faceGeomVec, nullptr) >> testErrorChecker;
+            VecGetDM(faceGeomVec, &faceDm) >> testErrorChecker;
+            VecGetArrayRead(faceGeomVec, &faceGeomArray) >> testErrorChecker;
 
-            // extract the rhsArray
-            const PetscScalar* rhsArray;
-            VecGetArrayRead(rhs, &rhsArray) >> testErrorChecker;
+            PetscInt dim = domain->GetDimensions();
 
             /// Declare L2 norm variables
             PetscReal computationalQ = 0.0;
@@ -216,24 +214,32 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             for (PetscInt c = meshFaceRange.start; c < meshFaceRange.end; ++c) {
                 const PetscInt iFace = meshFaceRange.points ? meshFaceRange.points[c] : c;
 
-                if (ablate::domain::Region::InRegion(detectRegion, dmCell, iFace)) {
-                    // Get the cell center
-                    PetscFVCellGeom* cellGeom;
-                    DMPlexPointLocalRead(dmCell, iFace, cellGeomArray, &cellGeom) >> testErrorChecker;
+                if (ablate::domain::Region::InRegion(detectRegion, faceDm, iFace)) {
+                    // Get the face normal information for extracting the face area from the mesh
+                    PetscFVFaceGeom* faceGeom;
+                    DMPlexPointLocalRead(faceDm, iFace, faceGeomArray, &faceGeom) >> testErrorChecker;
+
+                    //! Get the area of the face for which the radiation flux is being read
+                    PetscReal faceArea = 0;
+                    for (int i = 0; i++; i < dim) {
+                        faceArea += faceGeom->normal[i] * faceGeom->normal[i];  //! Add the square of the normal for every dimension that exists.
+                    }
 
                     // extract the result from the stored solver value
                     /// Summing of the irradiation
-                    computationalQ += radiationModel->origin[iFace].intensity;
+                    computationalQ += radiationModel->origin[iFace].intensity * faceArea;  //! Get the average of the radiation heat flux to the surface.
                 }
             }
 
             /// Compute the analytical solution for the view factor
             PetscReal analyticalViewFactor =
-                (GetParam().perpendicular)
-                    ? ComputePerpendicularViewFactor(GetParam().meshEnd[1], GetParam().meshEnd[2], GetParam().meshEnd[3])
-                    : ComputeParallelViewFactor(GetParam().meshEnd[1], GetParam().meshEnd[2], GetParam().meshEnd[3]);  //! Compute the view factor from the emit label to the detect label
+                (GetParam().perpendicular)  //! If the test is a perpendicular plate test, use the perpendicular analytical solution
+                    ? ComputePerpendicularViewFactor(GetParam().meshEnd[1] - GetParam().meshStart[1], GetParam().meshEnd[2] - GetParam().meshStart[2], GetParam().meshEnd[3] - GetParam().meshStart[3])
+                    : ComputeParallelViewFactor(GetParam().meshEnd[1] - GetParam().meshStart[1],
+                                                GetParam().meshEnd[2] - GetParam().meshStart[2],
+                                                GetParam().meshEnd[3] - GetParam().meshStart[3]);  //! Compute the view factor from the emit label to the detect label
 
-            PetscReal analyticalQ = analyticalViewFactor;  //! The amount of radiation from the emit region to the detect region
+            PetscReal analyticalQ = analyticalViewFactor * 1 * 1;  //! The amount of radiation from the emit region to the detect region TODO: Multiply by the area and radiosity of the emit surface
 
             //! Compute the difference between the analytical and computational solutions
             PetscReal error = (analyticalQ - computationalQ) / computationalQ;
@@ -246,8 +252,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
                 FAIL() << "Radiation test error exceeded.";
             }
 
-            VecRestoreArrayRead(rhs, &rhsArray) >> testErrorChecker;
-            VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> testErrorChecker;
+            VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> testErrorChecker;
         }
 
         DMViewFromOptions(domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->GetAuxDM(), nullptr, "-viewdm");
@@ -255,7 +260,12 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
         // TODO: Return the face ranges and other cleanup that might be necessary
 
-        DMRestoreLocalVector(domain->GetDM(), &rhs);
+        //! Restore the range associated with the mesh
+        if (meshFaceRange.is) {
+            ISRestorePointRange(meshFaceRange.is, &meshFaceRange.start, &meshFaceRange.end, &meshFaceRange.points) >> testErrorChecker;
+            ISDestroy(&meshFaceRange.is) >> testErrorChecker;
+        }
+
         ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
@@ -286,7 +296,7 @@ INSTANTIATE_TEST_SUITE_P(
                                   .radiationFactory =
                                       [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
                                           auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
-                                          return std::make_shared<ablate::radiation::SurfaceRadiation>("radiationBase", interiorLabel, 15, radiationModelIn, nullptr);
+                                          return std::make_shared<ablate::radiation::SurfaceRadiation>("radiationBase", interiorLabel, 50, radiationModelIn, nullptr);
                                       },
                                   .emitLabel = "boundaryCellsLeft",  //! Label of the region from which the radiation is emitted
                                   .detectLabel = "boundaryCellsRight",
@@ -313,7 +323,7 @@ INSTANTIATE_TEST_SUITE_P(
                                   .radiationFactory =
                                       [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
                                           auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
-                                          return std::make_shared<ablate::radiation::SurfaceRadiation>("radiationBase", interiorLabel, 15, radiationModelIn, nullptr);
+                                          return std::make_shared<ablate::radiation::SurfaceRadiation>("radiationBase", interiorLabel, 50, radiationModelIn, nullptr);
                                       },
                                   .emitLabel = "boundaryCellsLeft",  //! Label of the region from which the radiation is emitted
                                   .detectLabel = "boundaryCellsRight",
@@ -340,7 +350,7 @@ INSTANTIATE_TEST_SUITE_P(
                                   .radiationFactory =
                                       [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
                                           auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
-                                          return std::make_shared<ablate::radiation::SurfaceRadiation>("radiationBase", interiorLabel, 15, radiationModelIn, nullptr);
+                                          return std::make_shared<ablate::radiation::SurfaceRadiation>("radiationBase", interiorLabel, 50, radiationModelIn, nullptr);
                                       },
                                   .emitLabel = "boundaryCellsLeft",  //! Label of the region from which the radiation is emitted
                                   .detectLabel = "boundaryCellsRight",
@@ -366,7 +376,7 @@ INSTANTIATE_TEST_SUITE_P(
                                   .expectedResult = ablate::mathFunctions::Create("x + y"),
                                   .radiationFactory =
                                       [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
-                                          return std::make_shared<ablate::radiation::SurfaceRadiation>("radiationBase", ablate::domain::Region::ENTIREDOMAIN, 15, radiationModelIn, nullptr);
+                                          return std::make_shared<ablate::radiation::SurfaceRadiation>("radiationBase", ablate::domain::Region::ENTIREDOMAIN, 50, radiationModelIn, nullptr);
                                       },
                                   .emitLabel = "boundaryCellsLeft",  //! Label of the region from which the radiation is emitted
                                   .detectLabel = "boundaryCellsRight",
