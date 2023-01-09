@@ -160,7 +160,7 @@ void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_
         subDomain->CreateSubDomainStructures();
     }
 
-    // set all values to nan to allow for a output check
+    // set all values to nan to allow for an output check
     if (!initializations.empty()) {
         VecSet(solGlobalField, NAN) >> utilities::PetscUtilities::checkError;
     }
