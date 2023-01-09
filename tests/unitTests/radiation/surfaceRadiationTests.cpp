@@ -7,6 +7,7 @@
 #include "convergenceTester.hpp"
 #include "domain/boxMeshBoundaryCells.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
+#include "domain/modifiers/tagLabelInterface.hpp"
 #include "environment/runEnvironment.hpp"
 #include "eos/perfectGas.hpp"
 #include "eos/radiationProperties/constant.hpp"
@@ -69,6 +70,7 @@ TEST_P(SurfaceRadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         //! Create regions for the test
         auto emitRegion = std::make_shared<ablate::domain::Region>(GetParam().emitLabel);
         auto detectRegion = std::make_shared<ablate::domain::Region>(GetParam().detectLabel);
+        auto detectFaceRegion = std::make_shared<ablate::domain::Region>("detectFaceRegion");
 
         // keep track of history
         testingResources::ConvergenceTester l2History("l2");
@@ -88,7 +90,7 @@ TEST_P(SurfaceRadiationTestFixture, ShouldComputeCorrectSourceTerm) {
                                                                              false,
                                                                              ablate::parameters::MapParameters::Create({{"dm_plex_hash_location", "true"}}));
 
-//        domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->GetField("temperature");
+        //        domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->GetField("temperature");
         DMView(domain->GetDM(), PETSC_VIEWER_STDOUT_WORLD);
 
         // Setup the flow data
@@ -106,11 +108,10 @@ TEST_P(SurfaceRadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             GetParam().radiationFactory(radiationPropertiesModel);  //! This is the surface radiation solver which must be slightly modified in order to produce the view factor problem.
         auto interiorLabel =
             std::make_shared<ablate::domain::Region>("interiorCells");  //! Use only the interior cell region for the region of the radiation solver in order to pass boundary conditions
-        //        auto radiation = std::make_shared<ablate::radiation::VolumeRadiation>("radiation", interiorLabel, nullptr, radiationModel, nullptr, nullptr);
 
         //! Initialize the subdomains so that the fields are accessible
         std::vector<std::shared_ptr<ablate::solver::Solver>> solvers = {};  //! Empty list of solvers for the initialization
-//        auto fieldFunctions = GetParam().initialization();
+                                                                            //        auto fieldFunctions = GetParam().initialization();
         domain->InitializeSubDomains(solvers,
                                      {std::make_shared<ablate::mathFunctions::FieldFunction>("euler", std::make_shared<ablate::mathFunctions::ConstantValue>(0.0))},
                                      {});  //! Set up the subdomains for use with the surface radiation
@@ -118,6 +119,9 @@ TEST_P(SurfaceRadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         // force the aux variables of temperature to a known value
         auto auxVec = domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->GetAuxVector();
         domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->ProjectFieldFunctionsToLocalVector(GetParam().initialization(), auxVec);
+
+        //! Create a detect faces region by using the detect boundary cells interface with the interior region
+        ablate::domain::modifiers::TagLabelInterface(detectRegion, interiorLabel, detectFaceRegion).Modify(domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->GetDM());
 
         // Setup the rhs for the test
         //        Vec rhs;
@@ -137,7 +141,9 @@ TEST_P(SurfaceRadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         DMGetLabel(domain->GetSubDomain(interiorLabel)->GetDM(), "ghost", &ghostLabel) >> testErrorChecker;
 
         DMLabel detectLabel;
-        DMGetLabel(domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->GetDM(), GetParam().detectLabel, &detectLabel);
+        //        PetscInt detectValue;
+        //        detectFaceRegion->GetLabel(detectFaceRegion, domain->GetDM(), detectLabel, detectValue);
+        DMGetLabel(domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->GetDM(), "detectFaceRegion", &detectLabel);
 
         /** Get the face range of the entire mesh so that the faces with the correct label can be isolated out of it
          * */
@@ -183,29 +189,32 @@ TEST_P(SurfaceRadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         }
 
         //!< Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solver.
-        ablate::solver::DynamicRange faceRange;
-        for (PetscInt c = meshFaceRange.start; c < meshFaceRange.end; ++c) {
-            const PetscInt iFace = meshFaceRange.points ? meshFaceRange.points[c] : c;  //!< Isolates the valid cells
-            PetscInt ghost = -1;
-            PetscInt detect = -1;
-            if (ghostLabel) DMLabelGetValue(ghostLabel, iFace, &ghost) >> testErrorChecker;
-            if (detectLabel) DMLabelGetValue(detectLabel, iFace, &detect) >> testErrorChecker;
-            if ((ghost < 0) && (detect >= 1)) faceRange.Add(iFace);  //!< Add each ID to the range that the radiation solver will use
-        }
-        radiationModel->Setup(faceRange.GetRange(), *(domain->GetSubDomain(interiorLabel)));
-        radiationModel->Initialize(faceRange.GetRange(), *(domain->GetSubDomain(interiorLabel)));  //!< Pass the non-dynamic range into the radiation solver.
-        radiationModel->EvaluateGains(domain->GetSolutionVector(), domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->GetField("temperature"), domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->GetAuxVector());
+        //        ablate::solver::DynamicRange faceRange;
+        //        for (PetscInt c = meshFaceRange.start; c < meshFaceRange.end; ++c) {
+        //            const PetscInt iFace = meshFaceRange.points ? meshFaceRange.points[c] : c;  //!< Isolates the valid cells
+        //            PetscInt ghost = -1;
+        //            PetscInt detect = 1;
+        //            if (ghostLabel) DMLabelGetValue(ghostLabel, iFace, &ghost) >> testErrorChecker;
+        //            if (detectLabel) DMLabelGetValue(detectLabel, iFace, &detect) >> testErrorChecker;
+        //            if ((ghost < 0) && (detect >= 1)) faceRange.Add(iFace);  //!< Add each ID to the range that the radiation solver will use
+        //        }
+
+        // get the face geometry
+        Vec faceGeomVec;
+        DM faceDm;
+        const PetscScalar* faceGeomArray;
+        DMPlexGetGeometryFVM(domain->GetDM(), nullptr, &faceGeomVec, nullptr) >> testErrorChecker;
+        VecGetDM(faceGeomVec, &faceDm) >> testErrorChecker;
+        VecGetArrayRead(faceGeomVec, &faceGeomArray) >> testErrorChecker;
+
+        radiationModel->Setup(meshFaceRange, *(domain->GetSubDomain(interiorLabel)));
+        radiationModel->Initialize(meshFaceRange, *(domain->GetSubDomain(interiorLabel)));  //!< Pass the non-dynamic range into the radiation solver.
+        radiationModel->EvaluateGains(domain->GetSolutionVector(),
+                                      domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->GetField("temperature"),
+                                      domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->GetAuxVector());
 
         // For each cell, compare the rhs against the expected
         {
-            // get the face geometry
-            Vec faceGeomVec;
-            DM faceDm;
-            const PetscScalar* faceGeomArray;
-            DMPlexGetGeometryFVM(domain->GetDM(), nullptr, &faceGeomVec, nullptr) >> testErrorChecker;
-            VecGetDM(faceGeomVec, &faceDm) >> testErrorChecker;
-            VecGetArrayRead(faceGeomVec, &faceGeomArray) >> testErrorChecker;
-
             PetscInt dim = domain->GetDimensions();
 
             /// Declare L2 norm variables
@@ -229,7 +238,9 @@ TEST_P(SurfaceRadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
                     // extract the result from the stored solver value
                     /// Summing of the irradiation
-                    computationalQ += radiationModel->origin[].intensity * faceArea;  //! Get the average of the radiation heat flux to the surface.
+                    PetscReal temperature = 0;                                                                        //! Set the emission temperature of this face to zero
+                    PetscReal kappa = 1;                                                                              //! Set the emissivity of the face to 1 (black)
+                    computationalQ += radiationModel->GetIntensity(c, meshFaceRange, temperature, kappa) * faceArea;  //! Get the average of the radiation heat flux to the surface.
                 }
             }
 
