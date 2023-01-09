@@ -1,5 +1,6 @@
 #include "twoPhase.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "finiteVolume/processes/twoPhaseEulerAdvection.hpp"
 
 #include "eos/perfectGas.hpp"
 #include "eos/stiffenedGas.hpp"
@@ -165,6 +166,7 @@ ablate::eos::TwoPhase::TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<
             parameters.species1 = perfectGasEos1->GetSpeciesVariables();
             parameters.numberSpecies2 = perfectGasEos2->GetSpeciesVariables().size();
             parameters.species2 = perfectGasEos2->GetSpeciesVariables();
+//            species = parameters.species1;
         } else if (perfectGasEos1 && stiffenedGasEos2) {
             parameters.gamma1 = perfectGasEos1->GetSpecificHeatRatio();
             parameters.rGas1 = perfectGasEos1->GetGasConstant();
@@ -174,8 +176,8 @@ ablate::eos::TwoPhase::TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<
             parameters.p02 = stiffenedGasEos2->GetReferencePressure();
             parameters.numberSpecies1 = perfectGasEos1->GetSpeciesVariables().size();
             parameters.species1 = perfectGasEos1->GetSpeciesVariables();
-            parameters.numberSpecies2 = perfectGasEos2->GetSpeciesVariables().size();
-            parameters.species2 = perfectGasEos2->GetSpeciesVariables();
+            parameters.numberSpecies2 = stiffenedGasEos2->GetSpeciesVariables().size();
+            parameters.species2 = stiffenedGasEos2->GetSpeciesVariables();
         } else if (stiffenedGasEos1 && stiffenedGasEos2) {
             parameters.gamma1 = stiffenedGasEos1->GetSpecificHeatRatio();
             parameters.Cp1 = stiffenedGasEos1->GetSpecificHeatCp();
@@ -183,13 +185,13 @@ ablate::eos::TwoPhase::TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<
             parameters.gamma2 = stiffenedGasEos2->GetSpecificHeatRatio();
             parameters.Cp2 = stiffenedGasEos2->GetSpecificHeatCp();
             parameters.p02 = stiffenedGasEos2->GetReferencePressure();
-            parameters.numberSpecies1 = perfectGasEos1->GetSpeciesVariables().size();
-            parameters.species1 = perfectGasEos1->GetSpeciesVariables();
-            parameters.numberSpecies2 = perfectGasEos2->GetSpeciesVariables().size();
-            parameters.species2 = perfectGasEos2->GetSpeciesVariables();
+            parameters.numberSpecies1 = stiffenedGasEos1->GetSpeciesVariables().size();
+            parameters.species1 = stiffenedGasEos1->GetSpeciesVariables();
+            parameters.numberSpecies2 = stiffenedGasEos2->GetSpeciesVariables().size();
+            parameters.species2 = stiffenedGasEos2->GetSpeciesVariables();
         }
     } else{
-        // defaults to air (perfect) and water (stiffened)
+        // defaults to air (perfect) and water (stiffened) with no species
         parameters.gamma1 = 1.4;
         parameters.rGas1 = 287.0; // Cp1 not populated
         parameters.p01 = 0;
@@ -240,8 +242,8 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::TwoPhase::GetThermody
 
 ablate::eos::EOSFunction ablate::eos::TwoPhase::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1, ablate::eos::ThermodynamicProperty property2,
                                                                          std::vector<std::string> otherProperties) const {
-    if (otherProperties != std::vector<std::string>{VF} || otherProperties != std::vector<std::string>{VF,YI} ){//VF not in otherProperties){
-        throw std::invalid_argument("ablate::eos::TwoPhase expects other properties to include VF (volume fraction) as first entry");
+    if (otherProperties != std::vector<std::string>{VF} && otherProperties != std::vector<std::string>{VF,YI} ){//VF not in otherProperties){
+        throw std::invalid_argument("ablate::eos::TwoPhase expects other properties to include VF (volume fraction) as first entry, and optionally, YI (species) as second entry");
     }
 
     if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field) {
@@ -289,9 +291,9 @@ ablate::eos::EOSFunction ablate::eos::TwoPhase::GetFieldFunctionFunction(const s
                 }
                 kineticEnergy *= 0.5;
 
-//                // how do I now what the offset is for the volumeFraction and densityVF fields, replace indexing
-//                conserved[0] = alpha;
-//                conserved[1] = alpha * rho1;
+                //                // how do I now what the offset is for the volumeFraction and densityVF fields, replace indexing
+                //                conserved[0] = alpha;
+                //                conserved[1] = alpha * rho1;
                 conserved[ablate::finiteVolume::CompressibleFlowFields::RHO] = density;
                 conserved[ablate::finiteVolume::CompressibleFlowFields::RHOE] = density * (kineticEnergy + sensibleInternalEnergy);
 
@@ -313,24 +315,26 @@ ablate::eos::EOSFunction ablate::eos::TwoPhase::GetFieldFunctionFunction(const s
             auto iep = [this](PetscReal internalSensibleEnergy, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
                 // Compute the density
                 PetscReal alpha = yi[0];
-                PetscReal density; //, cv1, cv2, rho1, rhoe;
-                if (parameters.p01 == 0 && parameters.p02 == 0){
-                    density = pressure/internalSensibleEnergy * (alpha/(parameters.gamma1-1) + (1 - alpha)/(parameters.gamma2-1));
-//                    cv1 = parameters.rGas1 / (parameters.gamma1 - 1.0);
-//                    cv2 = parameters.rGas2 / (parameters.gamma2 - 1.0);
-//                    rhoe = pressure / (parameters.gamma1 - 1);
-//                    rho1 = cv2/cv1 * density * rhoe / (density*internalSensibleEnergy + alpha * rhoe * (cv2/cv1 - 1));
-                } else if (parameters.p01 == 0 && parameters.p02 != 0){
-                    density = 1/internalSensibleEnergy * (alpha * pressure / (parameters.gamma1 - 1) + (pressure + parameters.gamma2*parameters.p02)*(1-alpha)/(parameters.gamma2 - 1));
-//                    cv1 = parameters.rGas1 / (parameters.gamma1 - 1.0);
-//                    rhoe = pressure / (parameters.gamma1 - 1);
-//                    PetscReal coeffs = parameters.Cp2/cv1/parameters.gamma2;
-//                    rho1 = coeffs * density * rhoe / (density*internalSensibleEnergy + alpha*rhoe*(coeffs - 1) - parameters.p02*(1-alpha));
-                } else if (parameters.p01 != 0 && parameters.p02 != 0){
-                    density = 1/internalSensibleEnergy * (alpha*(pressure + parameters.gamma1*parameters.p01)/(parameters.gamma1 - 1) + (pressure + parameters.gamma2 * parameters.p02)*(1 - alpha)/(parameters.gamma2 - 1));
-//                    rhoe = (pressure + parameters.gamma1 * parameters.p01) / (parameters.gamma1 - 1);
-//                    PetscReal coeffs = parameters.gamma1 * parameters.Cp2 / parameters.Cp1 / parameters.gamma2;
-//                    rho1 = coeffs * density * (rhoe - parameters.p01) / (density*internalSensibleEnergy - parameters.p02*(1-alpha) - alpha*parameters.p01*coeffs + alpha*rhoe*(coeffs - 1));
+                PetscReal density;  //, cv1, cv2, rho1, rhoe;
+                if (parameters.p01 == 0 && parameters.p02 == 0) {
+                    density = pressure / internalSensibleEnergy * (alpha / (parameters.gamma1 - 1) + (1 - alpha) / (parameters.gamma2 - 1));
+                    //                    cv1 = parameters.rGas1 / (parameters.gamma1 - 1.0);
+                    //                    cv2 = parameters.rGas2 / (parameters.gamma2 - 1.0);
+                    //                    rhoe = pressure / (parameters.gamma1 - 1);
+                    //                    rho1 = cv2/cv1 * density * rhoe / (density*internalSensibleEnergy + alpha * rhoe * (cv2/cv1 - 1));
+                } else if (parameters.p01 == 0 && parameters.p02 != 0) {
+                    density = 1 / internalSensibleEnergy * (alpha * pressure / (parameters.gamma1 - 1) + (pressure + parameters.gamma2 * parameters.p02) * (1 - alpha) / (parameters.gamma2 - 1));
+                    //                    cv1 = parameters.rGas1 / (parameters.gamma1 - 1.0);
+                    //                    rhoe = pressure / (parameters.gamma1 - 1);
+                    //                    PetscReal coeffs = parameters.Cp2/cv1/parameters.gamma2;
+                    //                    rho1 = coeffs * density * rhoe / (density*internalSensibleEnergy + alpha*rhoe*(coeffs - 1) - parameters.p02*(1-alpha));
+                } else if (parameters.p01 != 0 && parameters.p02 != 0) {
+                    density =
+                        1 / internalSensibleEnergy *
+                        (alpha * (pressure + parameters.gamma1 * parameters.p01) / (parameters.gamma1 - 1) + (pressure + parameters.gamma2 * parameters.p02) * (1 - alpha) / (parameters.gamma2 - 1));
+                    //                    rhoe = (pressure + parameters.gamma1 * parameters.p01) / (parameters.gamma1 - 1);
+                    //                    PetscReal coeffs = parameters.gamma1 * parameters.Cp2 / parameters.Cp1 / parameters.gamma2;
+                    //                    rho1 = coeffs * density * (rhoe - parameters.p01) / (density*internalSensibleEnergy - parameters.p02*(1-alpha) - alpha*parameters.p01*coeffs + alpha*rhoe*(coeffs - 1));
                 } else {
                     throw std::invalid_argument("no valid, TwoPhase::GetFieldFunction needs perfect/stiffened gas eos combination");
                 }
@@ -342,9 +346,9 @@ ablate::eos::EOSFunction ablate::eos::TwoPhase::GetFieldFunctionFunction(const s
                 }
                 kineticEnergy *= 0.5;
 
-//                // how do I now what the offset is for the volumeFraction and densityVF fields, replace indexing
-//                conserved[0] = alpha;
-//                conserved[1] = alpha * rho1;
+                //                // how do I now what the offset is for the volumeFraction and densityVF fields, replace indexing
+                //                conserved[0] = alpha;
+                //                conserved[1] = alpha * rho1;
                 conserved[ablate::finiteVolume::CompressibleFlowFields::RHO] = density;
                 conserved[ablate::finiteVolume::CompressibleFlowFields::RHOE] = density * (kineticEnergy + internalSensibleEnergy);
 
@@ -363,6 +367,80 @@ ablate::eos::EOSFunction ablate::eos::TwoPhase::GetFieldFunctionFunction(const s
         }
 
         throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::TwoPhase.");
+
+    } else if (finiteVolume::processes::TwoPhaseEulerAdvection::DENSITY_VF_FIELD == field) {
+        //      -> this would mean need to add option: if (field == densityVF)
+        if ((property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) ||
+            (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature)) {
+            auto tp = [this](PetscReal temperature, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                // Compute the density and internal energy for first fluid
+                //  ***** cannot back out density from pressure and temperature only for two fluids, need alpha as input to this *****
+                PetscReal alpha = yi[0];
+                PetscReal rho1;
+                if (parameters.p01 == 0) {
+                    rho1 = pressure / (temperature * parameters.rGas1);
+                } else if (parameters.p01 != 0) {
+                    rho1 = (pressure + parameters.p01) / (parameters.gamma1 - 1) * parameters.gamma1 / parameters.Cp1 / temperature;
+                } else {
+                    throw std::invalid_argument("p01 value not valid, TwoPhase::GetFieldFunction needs perfect/stiffened gas eos combination");
+                }
+
+                conserved[0] = alpha * rho1;
+
+            };
+            if (property1 == ThermodynamicProperty::Temperature) {
+                return tp;
+            } else {
+                return [tp](PetscReal pressure, PetscReal temperature, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                    tp(temperature, pressure, dim, velocity, yi, conserved);
+                };
+            }
+        }
+        // pressure & energy & alpha
+        if ((property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::InternalSensibleEnergy) ||
+            (property1 == ThermodynamicProperty::InternalSensibleEnergy && property2 == ThermodynamicProperty::Pressure)) {
+            auto iep = [this](PetscReal internalSensibleEnergy, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                // Compute the density
+                PetscReal alpha = yi[0];
+                PetscReal density, cv1, cv2, rho1, rhoe;
+                if (parameters.p01 == 0 && parameters.p02 == 0) {
+                    density = pressure / internalSensibleEnergy * (alpha / (parameters.gamma1 - 1) + (1 - alpha) / (parameters.gamma2 - 1));
+                    cv1 = parameters.rGas1 / (parameters.gamma1 - 1.0);
+                    cv2 = parameters.rGas2 / (parameters.gamma2 - 1.0);
+                    rhoe = pressure / (parameters.gamma1 - 1);
+                    rho1 = cv2/cv1 * density * rhoe / (density*internalSensibleEnergy + alpha * rhoe * (cv2/cv1 - 1));
+                } else if (parameters.p01 == 0 && parameters.p02 != 0) {
+                    density = 1 / internalSensibleEnergy * (alpha * pressure / (parameters.gamma1 - 1) + (pressure + parameters.gamma2 * parameters.p02) * (1 - alpha) / (parameters.gamma2 - 1));
+                    cv1 = parameters.rGas1 / (parameters.gamma1 - 1.0);
+                    rhoe = pressure / (parameters.gamma1 - 1);
+                    PetscReal coeffs = parameters.Cp2/cv1/parameters.gamma2;
+                    rho1 = coeffs * density * rhoe / (density*internalSensibleEnergy + alpha*rhoe*(coeffs - 1) - parameters.p02*(1-alpha));
+                } else if (parameters.p01 != 0 && parameters.p02 != 0) {
+                    density =
+                        1 / internalSensibleEnergy *
+                        (alpha * (pressure + parameters.gamma1 * parameters.p01) / (parameters.gamma1 - 1) + (pressure + parameters.gamma2 * parameters.p02) * (1 - alpha) / (parameters.gamma2 - 1));
+                    rhoe = (pressure + parameters.gamma1 * parameters.p01) / (parameters.gamma1 - 1);
+                    PetscReal coeffs = parameters.gamma1 * parameters.Cp2 / parameters.Cp1 / parameters.gamma2;
+                    rho1 = coeffs * density * (rhoe - parameters.p01) / (density*internalSensibleEnergy - parameters.p02*(1-alpha) - alpha*parameters.p01*coeffs + alpha*rhoe*(coeffs - 1));
+                } else {
+                    throw std::invalid_argument("no valid, TwoPhase::GetFieldFunction needs perfect/stiffened gas eos combination");
+                }
+
+                conserved[0] = alpha * rho1;
+
+            };
+
+            if (property1 == ThermodynamicProperty::InternalSensibleEnergy) {
+                return iep;
+            } else {
+                return [iep](PetscReal pressure, PetscReal internalSensibleEnergy, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                    iep(internalSensibleEnergy, pressure, dim, velocity, yi, conserved);
+                };
+            }
+        }
+
+        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::TwoPhase.");
+
 
     } else if (finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD == field) {
         if (property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) {
@@ -385,9 +463,12 @@ ablate::eos::EOSFunction ablate::eos::TwoPhase::GetFieldFunctionFunction(const s
                 } else {
                     throw std::invalid_argument(" p02 value not valid, TwoPhase::GetFieldFunction needs perfect/stiffened gas eos combination");
                 }
-                PetscReal density = alpha * rho1 + (1 - alpha) * rho2;
-                for (PetscInt c = 0; c < parameters.numberSpecies; c++) {
-                    conserved[c] = density * yi[c+1]; // first one is alpha
+//                PetscReal density = alpha * rho1 + (1 - alpha) * rho2;
+                for (PetscInt c = 1; c < parameters.numberSpecies1; c++) {
+                    conserved[c] = rho1 * yi[c]; // first one is alpha
+                }
+                for (PetscInt c = 1 + parameters.numberSpecies1; c < parameters.numberSpecies2; c++) {
+                    conserved[c] = rho2 * yi[c]; // first one is alpha
                 }
             };
         } else if (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature) {
@@ -411,7 +492,7 @@ ablate::eos::EOSFunction ablate::eos::TwoPhase::GetFieldFunctionFunction(const s
                     throw std::invalid_argument(" p02 value not valid, TwoPhase::GetFieldFunction needs perfect/stiffened gas eos combination");
                 }
                 PetscReal density = alpha * rho1 + (1 - alpha) * rho2;
-                for (PetscInt c = 0; c < parameters.numberSpecies; c++) {
+                for (PetscInt c = 0; c < parameters.numberSpecies1 + parameters.numberSpecies2; c++) {
                     conserved[c] = density * yi[c+1]; // first one is alpha
                 }
             };
@@ -429,7 +510,7 @@ ablate::eos::EOSFunction ablate::eos::TwoPhase::GetFieldFunctionFunction(const s
                 } else {
                     throw std::invalid_argument("no valid, TwoPhase::GetFieldFunction needs perfect/stiffened gas eos combination");
                 }
-                for (PetscInt c = 0; c < parameters.numberSpecies; c++) {
+                for (PetscInt c = 0; c < parameters.numberSpecies1 + parameters.numberSpecies2; c++) {
                     conserved[c] = density * yi[c+1]; // first one is alpha
                 }
             };
@@ -447,7 +528,7 @@ ablate::eos::EOSFunction ablate::eos::TwoPhase::GetFieldFunctionFunction(const s
                 } else {
                     throw std::invalid_argument("no valid, TwoPhase::GetFieldFunction needs perfect/stiffened gas eos combination");
                 }
-                for (PetscInt c = 0; c < parameters.numberSpecies; c++) {
+                for (PetscInt c = 0; c < parameters.numberSpecies1 + parameters.numberSpecies2; c++) {
                     conserved[c] = density * yi[c+1]; // first one is alpha
                 }
             };
@@ -455,7 +536,7 @@ ablate::eos::EOSFunction ablate::eos::TwoPhase::GetFieldFunctionFunction(const s
 
         throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::StiffenedGas.");
     } else {
-        throw std::invalid_argument("Unknown field type " + field + " for ablate::eos::StiffenedGas.");
+        throw std::invalid_argument("Unknown field type " + field + " for ablate::eos::TwoPhase.");
     }
     return 0;
 }
@@ -1062,7 +1143,7 @@ PetscErrorCode ablate::eos::TwoPhase::SpeedOfSoundTemperatureFunction(const Pets
 PetscErrorCode ablate::eos::TwoPhase::SpeciesSensibleEnthalpyFunction(const PetscReal *conserved, PetscReal *hi, void *ctx) {
     PetscFunctionBeginUser;
     const auto &parameters = ((FunctionContext *)ctx)->parameters;
-    for (PetscInt s = 0; s < parameters.numberSpecies; s++) {
+    for (PetscInt s = 0; s < parameters.numberSpecies1 + parameters.numberSpecies2; s++) {
         hi[s] = 0.0;
     }
     PetscFunctionReturn(0);

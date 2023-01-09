@@ -39,11 +39,10 @@ INSTANTIATE_TEST_SUITE_P(TwoPhaseEOSTests, TwoPhaseTestCreateAndViewFixture,
                                                                   .expectedView = "EOS: twoPhase\nEOS: perfectGas\n\tgamma: 3.2\n\tRgas: 100.2\nEOS: stiffenedGas\n\tgamma: 2.1\n\tCp: 204.7\n\tp0: 3.5e+06\n"},
                                          (TwoPhaseEOSTestCreateAndViewParameters){.eos1 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Cp", "100.2"},{"p0","9.9e5"}})),
                                                                   .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "2.1"}, {"Cp", "204.7"},{"p0","3.5e6"}})),
-                                                                  .expectedView = "EOS: twoPhase\nEOS: stiffenedGas\n\tgamma: 3.2\n\tCp: 100.2\n\tp0: 990000\nEOS: stiffenedGas\n\tgamma: 2.1\n\tCp: 204.7\n\tp0: 3.5e+06\n"}),
-//                                         (TwoPhaseEOSTestCreateAndViewParameters){.eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
-//                                                                  .eos2 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}})),
-//                                                                  .species = {"O2","N2"},
-//                                                                  .expectedView = "EOS: twoPhase\nEOS: perfectGas\n\tgamma: 1.4\n\tRgas: 287\nEOS: perfectGas\n\tgamma: 3.2\n\tRgas: 100.2\n\tspecies: O2, N2\n"}),
+                                                                  .expectedView = "EOS: twoPhase\nEOS: stiffenedGas\n\tgamma: 3.2\n\tCp: 100.2\n\tp0: 990000\nEOS: stiffenedGas\n\tgamma: 2.1\n\tCp: 204.7\n\tp0: 3.5e+06\n"},
+                                         (TwoPhaseEOSTestCreateAndViewParameters){.eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}}), std::vector<std::string>{"O2","N2"}),
+                                                                  .eos2 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}}), std::vector<std::string>{"CO2","CO"}),
+                                                                  .expectedView = "EOS: twoPhase\nEOS: perfectGas\n\tgamma: 1.4\n\tRgas: 287\n\tspecies: O2, N2\nEOS: perfectGas\n\tgamma: 3.2\n\tRgas: 100.2\n\tspecies: CO2, CO\n"}),
                          [](const testing::TestParamInfo<TwoPhaseEOSTestCreateAndViewParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -52,7 +51,6 @@ INSTANTIATE_TEST_SUITE_P(TwoPhaseEOSTests, TwoPhaseTestCreateAndViewFixture,
 struct TPTestParameters {
     std::shared_ptr<ablate::eos::EOS> eos1;
     std::shared_ptr<ablate::eos::EOS> eos2;
-    std::vector<std::string> species = {};
     ablate::eos::ThermodynamicProperty thermodynamicProperty;
     std::vector<ablate::domain::Field> fields;
     std::vector<PetscReal> conservedValues;
@@ -209,13 +207,12 @@ INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, TPThermodynamicPropertyTestFixtur
                                                             .conservedValues = {562.751433810914, 562.751433810914 * (1264395.3714915595 + 700), 562.751433810914 * 10, 562.751433810914 * 20, 562.751433810914 * 30, 313.2832080200501, 0.4},
                                                             .expectedValue = {1923.136104523659}},
 
-                                         (TPTestParameters){.eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
-                                                            .eos2 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}})),
-                                                            .species = std::vector<std::string>{"O2", "CH4", "N2"},
+                                         (TPTestParameters){.eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}}), std::vector<std::string>{"CO2"}),
+                                                            .eos2 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}}), std::vector<std::string>{"O2", "CH4", "N2"}),
                                                             .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpeciesSensibleEnthalpy,
                                                             .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0}, ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5}, ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
                                                             .conservedValues = {998.7, 998.7 * 2.5E6, 998.7 * 10, 998.7 * -20, 998.7 * 30, 998.7, 1.0},
-                                                            .expectedValue = std::vector<PetscReal>{0.0, 0.0, 0.0}}
+                                                            .expectedValue = std::vector<PetscReal>{0.0, 0.0, 0.0, 0.0}}
 
                                          ),
 
@@ -298,16 +295,36 @@ TEST_P(TPFieldFunctionTestFixture, ShouldComputeField) {
 INSTANTIATE_TEST_SUITE_P(
     TwoPhaseEOSTests, TPFieldFunctionTestFixture,
     testing::Values(
-        (TPFieldFunctionTestParameters){.eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
-                                        .eos2 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}})),
-                                        .field = "euler",
+//        (TPFieldFunctionTestParameters){.eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
+//                                        .eos2 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}})),
+//                                        .field = "euler",
+//                                        .property1 = ablate::eos::ThermodynamicProperty::Temperature,
+//                                        .property2 = ablate::eos::ThermodynamicProperty::Pressure,
+//                                        .property1Value = 300.0,
+//                                        .property2Value = 101325.0,
+//                                        .velocity = {10.0, 20, 30},
+//                                        .otherProperties = {1.0}, // alpha
+//                                        .expectedValue = {1.1768292682, 1.1768292682 * (2.1525E+05 + 700), 1.1768292682 * 10, 1.1768292682 * 20, 1.1768292682 * 30}},
+//        (TPFieldFunctionTestParameters){.eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
+//                                        .eos2 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}})),
+//                                        .field = "densityVF",
+//                                        .property1 = ablate::eos::ThermodynamicProperty::Temperature,
+//                                        .property2 = ablate::eos::ThermodynamicProperty::Pressure,
+//                                        .property1Value = 300.0,
+//                                        .property2Value = 101325.0,
+//                                        .velocity = {10.0, 20, 30},
+//                                        .otherProperties = {1.0}, // alpha
+//                                        .expectedValue = {1.1768292682}},
+        (TPFieldFunctionTestParameters){.eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}}), std::vector<std::string>{"CO2"}),
+                                        .eos2 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}}), std::vector<std::string>{"O2", "CH4", "N2"}),
+                                        .field = "densityYi",
                                         .property1 = ablate::eos::ThermodynamicProperty::Temperature,
                                         .property2 = ablate::eos::ThermodynamicProperty::Pressure,
                                         .property1Value = 300.0,
                                         .property2Value = 101325.0,
                                         .velocity = {10.0, 20, 30},
-                                        .otherProperties = {1.0}, // alpha
-                                        .expectedValue = {1.1768292682, 1.1768292682 * (2.1525E+05 + 700), 1.1768292682 * 10, 1.1768292682 * 20, 1.1768292682 * 30}}
+                                        .otherProperties = {1.0, 1.0, .1, .3, .6}, // alpha, (CO2), (O2, CH4, N2)
+                                        .expectedValue = {1.1768292682926829, 0.1 * 3.370758483033932, 0.3 * 3.370758483033932, 0.6 * 3.370758483033932}}
 //        (SGFieldFunctionTestParameters){.options = {{"gamma", "3.2"}, {"Cp", "100.2"}, {"p0", "3.5e6"}},
 //                                        .field = "euler",
 //                                        .property1 = ablate::eos::ThermodynamicProperty::Temperature,

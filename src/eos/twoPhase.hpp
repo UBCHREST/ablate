@@ -12,7 +12,7 @@ class TwoPhase : public EOS { // , public std::enabled_shared_from_this<TwoPhase
     const std::shared_ptr<eos::EOS> eos1;
     const std::shared_ptr<eos::EOS> eos2;
     // this mixed eos does not allow species, get species from eos1 eos2
-    const std::vector<std::string> species;
+    std::vector<std::string> species;
     struct Parameters {
         PetscReal gamma1;
         PetscReal rGas1;
