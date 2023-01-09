@@ -71,6 +71,8 @@ TEST_P(SurfaceRadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         auto emitRegion = std::make_shared<ablate::domain::Region>(GetParam().emitLabel);
         auto detectRegion = std::make_shared<ablate::domain::Region>(GetParam().detectLabel);
         auto detectFaceRegion = std::make_shared<ablate::domain::Region>("detectFaceRegion");
+        auto interiorLabel =
+            std::make_shared<ablate::domain::Region>("interiorCells");  //! Use only the interior cell region for the region of the radiation solver in order to pass boundary conditions
 
         // keep track of history
         testingResources::ConvergenceTester l2History("l2");
@@ -83,7 +85,9 @@ TEST_P(SurfaceRadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         auto domain = std::make_shared<ablate::domain::BoxMeshBoundaryCells>("simpleMesh",
                                                                              fieldDescriptors,
                                                                              std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
-                                                                             std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
+                                                                             std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{
+                                                                                 std::make_shared<ablate::domain::modifiers::TagLabelInterface>(detectRegion, interiorLabel, detectFaceRegion)
+                                                                             },
                                                                              GetParam().meshFaces,
                                                                              GetParam().meshStart,
                                                                              GetParam().meshEnd,
@@ -106,8 +110,6 @@ TEST_P(SurfaceRadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         auto radiationPropertiesModel = std::make_shared<ablate::eos::radiationProperties::Constant>(0.0);  //! A transparent domain will enable a surface exchange solution.
         auto radiationModel =
             GetParam().radiationFactory(radiationPropertiesModel);  //! This is the surface radiation solver which must be slightly modified in order to produce the view factor problem.
-        auto interiorLabel =
-            std::make_shared<ablate::domain::Region>("interiorCells");  //! Use only the interior cell region for the region of the radiation solver in order to pass boundary conditions
 
         //! Initialize the subdomains so that the fields are accessible
         std::vector<std::shared_ptr<ablate::solver::Solver>> solvers = {};  //! Empty list of solvers for the initialization
@@ -119,9 +121,6 @@ TEST_P(SurfaceRadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         // force the aux variables of temperature to a known value
         auto auxVec = domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->GetAuxVector();
         domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->ProjectFieldFunctionsToLocalVector(GetParam().initialization(), auxVec);
-
-        //! Create a detect faces region by using the detect boundary cells interface with the interior region
-        ablate::domain::modifiers::TagLabelInterface(detectRegion, interiorLabel, detectFaceRegion).Modify(domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->GetDM());
 
         // Setup the rhs for the test
         //        Vec rhs;
@@ -150,6 +149,7 @@ TEST_P(SurfaceRadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         ablate::solver::Range meshFaceRange;
         PetscInt depth;
         DMPlexGetDepth(domain->GetSubDomain(ablate::domain::Region::ENTIREDOMAIN)->GetDM(), &depth) >> testErrorChecker;
+        depth = depth - 1;
 
         /** Get the range of the cells in the boundary region */
         {
