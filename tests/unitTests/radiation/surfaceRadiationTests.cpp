@@ -1,4 +1,3 @@
-#include <petsc.h>
 #include <petsc/private/dmpleximpl.h>
 #include <mathFunctions/functionFactory.hpp>
 #include <memory>
