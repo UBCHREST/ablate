@@ -357,9 +357,6 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     // Create a mpi data type to allow reducing the remoteRayCalculation to raySegmentSummary
     MPI_Type_contiguous(2, MPIU_REAL, &carrierMpiType) >> utilities::MpiUtilities::checkError;
     MPI_Type_commit(&carrierMpiType) >> utilities::MpiUtilities::checkError;
-
-    // set up the reverse lookup for faces
-    indexLookup = solver::ReverseRange(cellRange);
 }
 
 PetscReal ablate::radiation::Radiation::FlameIntensity(double epsilon, double temperature) { /** Gets the flame intensity based on temperature and emissivity (black body intensity) */

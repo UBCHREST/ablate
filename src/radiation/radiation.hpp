@@ -6,7 +6,6 @@
 #include "eos/radiationProperties/radiationProperties.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
 #include "io/interval/interval.hpp"
-#include "solver/reverseRange.hpp"
 #include "monitors/logs/log.hpp"
 #include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
@@ -17,9 +16,6 @@ namespace ablate::radiation {
 
 class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver provides cell based functionality, right hand side function compatibility with
                                                               //!< finite element/ volume, loggable allows for the timing and tracking of events
-   protected:
-    //! used to look up from the face id to range index
-    solver::ReverseRange indexLookup;
 
    public:
     /**
@@ -76,12 +72,12 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * @param kappa the absorptivity of the cell
      * @return
      */
-    inline PetscReal GetIntensity(PetscInt index, PetscReal temperature, PetscReal kappa) {
+    inline PetscReal GetIntensity(PetscInt index, const solver::Range& cellRange, PetscReal temperature, PetscReal kappa) {
         // Compute the losses
         PetscReal netIntensity = -4.0 * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
 
         // add in precomputed gains
-        netIntensity += evaluatedGains[indexLookup.GetAbsoluteIndex(index)];
+        netIntensity += evaluatedGains[index - cellRange.start];
 
         // scale by kappa
         netIntensity *= kappa;

@@ -2,11 +2,16 @@
 #define ABLATELIBRARY_SURFACERADIATION_HPP
 
 #include "radiation.hpp"
+#include "solver/reverseRange.hpp"
 #include "utilities/constants.hpp"
 
 namespace ablate::radiation {
 
 class SurfaceRadiation : public ablate::radiation::Radiation {
+   private:
+    //! used to look up from the face id to range index
+    solver::ReverseRange indexLookup;
+
    public:
     SurfaceRadiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
                      std::shared_ptr<ablate::monitors::logs::Log> = {});
