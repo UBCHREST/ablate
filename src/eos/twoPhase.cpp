@@ -166,7 +166,6 @@ ablate::eos::TwoPhase::TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<
             parameters.species1 = perfectGasEos1->GetSpeciesVariables();
             parameters.numberSpecies2 = perfectGasEos2->GetSpeciesVariables().size();
             parameters.species2 = perfectGasEos2->GetSpeciesVariables();
-//            species = parameters.species1;
         } else if (perfectGasEos1 && stiffenedGasEos2) {
             parameters.gamma1 = perfectGasEos1->GetSpecificHeatRatio();
             parameters.rGas1 = perfectGasEos1->GetGasConstant();
@@ -190,6 +189,13 @@ ablate::eos::TwoPhase::TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<
             parameters.numberSpecies2 = stiffenedGasEos2->GetSpeciesVariables().size();
             parameters.species2 = stiffenedGasEos2->GetSpeciesVariables();
         }
+        species.resize(parameters.numberSpecies1+parameters.numberSpecies2);
+        for (PetscInt c = 0; c < parameters.numberSpecies1; c++){
+            species[c] = parameters.species1[c];
+        }
+        for (PetscInt c = parameters.numberSpecies1; c < parameters.numberSpecies1 + parameters.numberSpecies2; c++){
+            species[c] = parameters.species2[c-parameters.numberSpecies1];
+        }
     } else{
         // defaults to air (perfect) and water (stiffened) with no species
         parameters.gamma1 = 1.4;
@@ -202,6 +208,7 @@ ablate::eos::TwoPhase::TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<
         parameters.species1 = {};
         parameters.numberSpecies2 = 0;
         parameters.species2 = {};
+        species = {};
     }
 }
 

@@ -233,21 +233,22 @@ TEST(TwoPhaseEOSTests, TwoPhaseShouldReportNoSpeciesByDefault) {
     // assert
     ASSERT_EQ(0, species.size());
 }
-//
-//TEST(TwoPhaseEOSTests, TwoPhaseShouldReportSpeciesWhenProvided) {
-//    // arrange
-//    auto eos1 = nullptr;
-//    auto eos2 = nullptr;
-//    std::shared_ptr<ablate::eos::EOS> twoPhaseEos = std::make_shared<ablate::eos::TwoPhase>(eos1, eos2, std::vector<std::string>{"N2", "H2"});
-//
-//    // act
-//    auto species = twoPhaseEos->GetSpecies();
-//
-//    // assert
-//    ASSERT_EQ(2, species.size());
-//    ASSERT_EQ("N2", species[0]);
-//    ASSERT_EQ("H2", species[1]);
-//}
+
+TEST(TwoPhaseEOSTests, TwoPhaseShouldReportSpeciesWhenProvided) {
+    // arrange
+    auto eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}}), std::vector<std::string>{"H2","O2"});
+    auto eos2 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}}), std::vector<std::string>{"N2"});
+    std::shared_ptr<ablate::eos::EOS> twoPhaseEos = std::make_shared<ablate::eos::TwoPhase>(eos1, eos2);
+
+    // act
+    auto species = twoPhaseEos->GetSpecies();
+
+    // assert
+    ASSERT_EQ(3, species.size());
+    ASSERT_EQ("H2", species[0]);
+    ASSERT_EQ("O2", species[1]);
+    ASSERT_EQ("N2", species[2]);
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Two Phase EOS FieldFunctionTests
