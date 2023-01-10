@@ -183,7 +183,7 @@ TEST_P(SurfaceRadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             PetscInt dim = domain->GetDimensions();
 
             /// Declare L2 norm variables
-            PetscReal computationalQ = 0.0;
+            double computationalQ = 0.0;
             //! The radiation must be summed for the faces in the irradiated region.
 
             //  March over each stored value in the surface radiation result and sum them to determine the total irradiation to that surface.
@@ -217,19 +217,28 @@ TEST_P(SurfaceRadiationTestFixture, ShouldComputeCorrectSourceTerm) {
                                                 GetParam().meshEnd[1] - GetParam().meshStart[1],
                                                 GetParam().meshEnd[2] - GetParam().meshStart[2]);  //! Compute the view factor from the emit label to the detect label
 
-            PetscReal analyticalQ = 0.2 * 1 * //! View factor is abour 0.2 for both cases. Parallel view factor computation must be fixed.
-                                    (radiationModel->FlameIntensity(1, 1000) * //! Calculate the radiosity of the emission surface.
+            PetscReal analyticalQ = 0.2 * 1 *                                   //! View factor is abour 0.2 for both cases. Parallel view factor computation must be fixed.
+                                    (radiationModel->FlameIntensity(1, 1000) *  //! Calculate the radiosity of the emission surface.
                                      ablate::utilities::Constants::pi);  //! The amount of radiation from the emit region to the detect region. Multiply by the area and radiosity of the emit surface
 
-            //! Compute the difference between the analytical and computational solutions.
-            PetscReal error = (analyticalQ - computationalQ) / computationalQ;
+            //! Reduce the computationalQ result to sum across all processes.
+            int rank = 0;
+            double sumComputationalQ = 0;
+            MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+            MPI_Reduce(&computationalQ, &sumComputationalQ, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
-            //! Print the error between the two solutions.
-            PetscPrintf(MPI_COMM_WORLD, "Error: %f\n", error);
+            if (rank == 0) {
+                //! Compute the difference between the analytical and computational solutions.
+                PetscReal error = (analyticalQ - sumComputationalQ) / computationalQ;
 
-            //! Check that the error is below the specified threshold.
-            if (error > 0.075) {
-                FAIL() << "Radiation test error exceeded.";
+                //! Print the error between the two solutions.
+                printf("Error: %f\n", error);
+                printf("Results: %f %f\n", analyticalQ, sumComputationalQ);
+
+                //! Check that the error is below the specified threshold.
+                if (abs(error) > 0.075) {
+                    FAIL() << "Radiation test error exceeded.";
+                }
             }
         }
 
@@ -304,7 +313,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                      .emitLabel = "boundaryCellsLeft",  //! Label of the region from which the radiation is emitted
                                                      .detectLabel = "boundaryCellsTop",
                                                      .perpendicular = true},  //! Label of the region where the radiation is detected by the surface solver
-                    (SurfaceRadiationTestParameters){.mpiTestParameter = {.testName = "Parallel Plates 2 proc.", .nproc = 2},
+                    (SurfaceRadiationTestParameters){.mpiTestParameter = {.testName = "Parallel Plates 2 proc.", .nproc = 3},
                                                      .meshFaces = {10, 10, 10},
                                                      .meshStart = {0, 0, 0},
                                                      .meshEnd = {1, 1, 1},
@@ -330,7 +339,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                      .emitLabel = "boundaryCellsLeft",  //! Label of the region from which the radiation is emitted
                                                      .detectLabel = "boundaryCellsRight",
                                                      .perpendicular = false},  //! Label of the region where the radiation is detected by the surface solver
-                    (SurfaceRadiationTestParameters){.mpiTestParameter = {.testName = "Perpendicular Plates 2 proc.", .nproc = 2},
+                    (SurfaceRadiationTestParameters){.mpiTestParameter = {.testName = "Perpendicular Plates 2 proc.", .nproc = 3},
                                                      .meshFaces = {10, 10, 10},
                                                      .meshStart = {0, 0, 0},
                                                      .meshEnd = {1, 1, 1},
