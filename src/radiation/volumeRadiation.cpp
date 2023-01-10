@@ -94,7 +94,7 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
 
             PetscScalar* rhsValues;
             DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
-            rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += radiation->GetIntensity(c, range, *temperature, kappa);  //!< Loop through the cells and update the equation of state
+            rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += radiation->GetIntensity(iCell, *temperature, kappa);  //!< Loop through the cells and update the equation of state
         }
     }
     VecRestoreArrayRead(rhs, &rhsArray);

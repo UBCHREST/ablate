@@ -2,16 +2,11 @@
 #define ABLATELIBRARY_SURFACERADIATION_HPP
 
 #include "radiation.hpp"
-#include "solver/reverseRange.hpp"
 #include "utilities/constants.hpp"
 
 namespace ablate::radiation {
 
 class SurfaceRadiation : public ablate::radiation::Radiation {
-   private:
-    //! used to look up from the face id to range index
-    solver::ReverseRange indexLookup;
-
    public:
     SurfaceRadiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
                      std::shared_ptr<ablate::monitors::logs::Log> = {});
@@ -37,7 +32,7 @@ class SurfaceRadiation : public ablate::radiation::Radiation {
      */
     inline PetscReal GetSurfaceIntensity(PetscInt faceId, PetscReal temperature, PetscReal emissivity = 1.0) {
         // Compute the losses
-        PetscReal netIntensity = -ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
+        PetscReal netIntensity = -2 * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
 
         // add in precomputed gains
         netIntensity += evaluatedGains[indexLookup.GetAbsoluteIndex(faceId)];

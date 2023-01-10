@@ -53,8 +53,7 @@ void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRa
     EndEvent();
     ablate::radiation::Radiation::Initialize(cellRange, subDomain);
 
-    // set up the reverse lookup for faces
-    indexLookup = solver::ReverseRange(cellRange);
+
 }
 
 PetscReal ablate::radiation::SurfaceRadiation::SurfaceComponent(const PetscReal normal[], PetscInt iCell, PetscInt nphi, PetscInt ntheta) {
