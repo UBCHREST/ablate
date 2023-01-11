@@ -111,7 +111,8 @@ ablate::eos::EOSFunction ablate::eos::StiffenedGas::GetFieldFunctionFunction(con
             }
         }
 
-        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::StiffenedGas.");
+        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field +
+                                    " for ablate::eos::StiffenedGas.");
 
     } else if (finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD == field && otherProperties == std::vector<std::string>{YI}) {
         if (property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) {
@@ -152,7 +153,8 @@ ablate::eos::EOSFunction ablate::eos::StiffenedGas::GetFieldFunctionFunction(con
             };
         }
 
-        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::StiffenedGas.");
+        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field +
+                                    " for ablate::eos::StiffenedGas.");
     } else {
         throw std::invalid_argument("Unknown field type " + field + " for ablate::eos::StiffenedGas.");
     }
