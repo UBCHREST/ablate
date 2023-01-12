@@ -35,6 +35,21 @@ class TwoPhase : public EOS {  // , public std::enabled_shared_from_this<TwoPhas
         PetscInt volumeFractionOffset;
         Parameters parameters;
     };
+    struct DecodeIn {
+        PetscReal alpha;
+        PetscReal alphaRho1;
+        PetscReal rho;
+        PetscReal e;
+        Parameters parameters;
+    };
+    struct DecodeOut {
+        PetscReal rho1;
+        PetscReal rho2;
+        PetscReal e1;
+        PetscReal e2;
+        PetscReal p;
+        PetscReal T;
+    };
     // bunch of functions here
     static PetscErrorCode DensityFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode PressureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);

@@ -7,16 +7,16 @@
 
 // equation of state for equilibrium mixture of two imiscible fluids with perfect gas or stiffened gas equations of state
 // reference Menikoff (2007) "Empirical Equations of States for Solids", book chapter in ShockWave Science and Technology Reference Library: Volume 2
-static inline PetscReal SimpleGasGasDecode(PetscInt dim, const PetscReal *in, PetscReal *out) {
+static inline void SimpleGasGasDecode(PetscInt dim, const struct DecodeIn in, PetscReal *out) {
     // decode using known alpha
-    PetscReal alpha = in[0];
-    PetscReal alpha1rho1 = in[1];
-    PetscReal rho = in[2];
-    PetscReal e = in[3];
-    PetscReal gamma1 = in[4];
-    PetscReal gamma2 = in[5];
-    PetscReal R1 = in[6];
-    PetscReal R2 = in[7];
+    PetscReal alpha = in->alpha;
+    PetscReal alpha1rho1 = in.alphaRho1;
+    PetscReal rho = in->rho;
+    PetscReal e = in->e;
+    PetscReal gamma1 = in->parameters.gamma1;
+    PetscReal gamma2 = in->parameters.gamma2;
+    PetscReal R1 = in->parameters.R1;
+    PetscReal R2 = in->parameters.R2;
     PetscReal cv1 = R1 / (gamma1 - 1);
     PetscReal cv2 = R2 / (gamma2 - 1);
     PetscReal Y1 = alpha1rho1 / rho;
@@ -44,12 +44,12 @@ static inline PetscReal SimpleGasGasDecode(PetscInt dim, const PetscReal *in, Pe
         p = (gamma1 - 1) * rho1 * e1;
         T = e1 / cv1;
     }
-    out[0] = rho1;
-    out[1] = rho2;
-    out[2] = e1;
-    out[3] = e2;
-    out[4] = p;
-    out[5] = T;
+    out->rho1 = rho1;
+    out.rho2 = rho2;
+    out.e1 = e1;
+    out.e2 = e2;
+    out.p = p;
+    out.T = T;
     return *out;
 }
 
@@ -596,31 +596,22 @@ PetscErrorCode ablate::eos::TwoPhase::PressureFunction(const PetscReal *conserve
 
     // compute internal energy
     PetscReal internalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - ke;
-    PetscReal derived[6];
-    PetscReal in[10];
-    in[0] = conserved[functionContext->volumeFractionOffset];
-    in[1] = conserved[functionContext->densityVFOffset];
-    in[2] = density;
-    in[3] = internalEnergy;
-    in[4] = functionContext->parameters.gamma1;
-    in[5] = functionContext->parameters.gamma2;
+    DecodeOut decodeOut;
+    DecodeIn decodeIn;
+    decodeIn.alpha = conserved[functionContext->volumeFractionOffset];
+    decodeIn.alphaRho1 = conserved[functionContext->densityVFOffset];
+    decodeIn.rho = density;
+    decodeIn.e = internalEnergy;
+    decodeIn.parameters = functionContext->parameters;
+
     if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 == 0) {
-        in[6] = functionContext->parameters.rGas1;
-        in[7] = functionContext->parameters.rGas2;
-        SimpleGasGasDecode(functionContext->dim, in, derived);
+        SimpleGasGasDecode(functionContext->dim, decodeIn, decodeOut);
     } else if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 != 0) {
-        in[6] = functionContext->parameters.rGas1;
-        in[7] = functionContext->parameters.Cp2;
-        in[8] = functionContext->parameters.p02;
-        SimpleGasStiffDecode(functionContext->dim, in, derived);
+        SimpleGasStiffDecode(functionContext->dim, decodeIn, decodeOut);
     } else if (functionContext->parameters.p01 != 0 && functionContext->parameters.p02 != 0) {
-        in[6] = functionContext->parameters.Cp1;
-        in[7] = functionContext->parameters.Cp2;
-        in[8] = functionContext->parameters.p01;
-        in[9] = functionContext->parameters.p02;
-        SimpleStiffStiffDecode(functionContext->dim, in, derived);
+        SimpleStiffStiffDecode(functionContext->dim, decodeIn, decodeOut);
     }
-    *p = derived[4];  // [rho1, rho2, e1, e2, p, T]
+    *p = decodeOut.p;  // [rho1, rho2, e1, e2, p, T]
     PetscFunctionReturn(0);
 }
 
