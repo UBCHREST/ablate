@@ -42,7 +42,7 @@ timestepper:
         pressure: 101325.0
         velocity: [ 0.0 ]
         # the mass fractions must be specified to compute rho, e, etc.
-        massFractions: !ablate::finiteVolume::fieldFunctions::MassFractions
+        other: !ablate::finiteVolume::fieldFunctions::MassFractions
           # the mass fraction class allows for a subset of mass fractions to be specified.  The rest are assumed zero
           eos: *eos
           values:
@@ -61,8 +61,8 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
   id: reactingFlowODE
   options: {}
   processes:
-    # without advection/diffusion the tChemReactions process is the only one needed
-    - !ablate::finiteVolume::processes::TChemReactions
+    # without advection/diffusion the Chemistry process is the only one needed
+    - !ablate::finiteVolume::processes::Chemistry
       eos: *eos
   boundaryConditions: []
   monitors:

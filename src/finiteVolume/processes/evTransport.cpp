@@ -2,70 +2,67 @@
 #include <utilities/mathUtilities.hpp>
 #include "finiteVolume/compressibleFlowFields.hpp"
 
-ablate::finiteVolume::processes::EVTransport::EVTransport(std::string conserved, std::string nonConserved, std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn,
+ablate::finiteVolume::processes::EVTransport::EVTransport(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn,
                                                           std::shared_ptr<eos::transport::TransportModel> transportModelIn)
-    : conserved(std::move(conserved)),
-      nonConserved(std::move(nonConserved)),
-      fluxCalculator(std::move(fluxCalcIn)),
-      eos(std::move(eosIn)),
-      transportModel(std::move(transportModelIn)),
-      advectionData() {
-    if (fluxCalculator) {
-        // set the decode state function
-        advectionData.numberEV = 0;
-
-        // extract the difference function from fluxDifferencer object
-        advectionData.fluxCalculatorFunction = fluxCalculator->GetFluxCalculatorFunction();
-        advectionData.fluxCalculatorCtx = fluxCalculator->GetFluxCalculatorContext();
-    }
-
-    if (transportModel) {
-        // set the eos functions
-        diffusionData.numberEV = 0;
-        diffusionData.speciesSpeciesSensibleEnthalpy.resize(eos->GetSpecies().size());
-    } else {
-        diffusionData.diffFunction.function = nullptr;
-    }
-
-    numberEV = 0;
-}
+    : fluxCalculator(std::move(fluxCalcIn)), eos(std::move(eosIn)), transportModel(std::move(transportModelIn)) {}
 
 void ablate::finiteVolume::processes::EVTransport::Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) {
-    if (flow.GetSubDomain().ContainsField(conserved)) {
+    const auto &evConservedFields = flow.GetSubDomain().GetFields(domain::FieldLocation::SOL, CompressibleFlowFields::EV_TAG);
+
+    for (auto &evConservedField : evConservedFields) {
+        // increase the size of the stored data
+        auto &advectionData = advectionDatas.emplace_back();
+        auto &numberEV = numberEVs.emplace_back();
+        auto &diffusionData = diffusionDatas.emplace_back();
+
         // determine the number of components in the ev
-        auto conservedForm = flow.GetSubDomain().GetField(conserved);
-        advectionData.numberEV = conservedForm.numberComponents;
-        numberEV = conservedForm.numberComponents;
-        diffusionData.numberEV = conservedForm.numberComponents;
+        advectionData.numberEV = evConservedField.numberComponents;
+        numberEV = evConservedField.numberComponents;
+        diffusionData.numberEV = evConservedField.numberComponents;
+
+        // Get the nonConserved form
+        auto nonConserved = evConservedField.name.substr(CompressibleFlowFields::CONSERVED.length());
+
         if (!flow.GetSubDomain().ContainsField(nonConserved)) {
-            throw std::invalid_argument("The ablate::finiteVolume::processes::EVTransport process expects the conserved (" + conserved + ") and non-conserved (" + nonConserved +
+            throw std::invalid_argument("The ablate::finiteVolume::processes::EVTransport process expects the conserved (" + evConservedField.name + ") and non-conserved (" + nonConserved +
                                         ") extra variables to be in the flow.");
         }
 
         if (fluxCalculator) {
+            // extract the difference function from fluxDifferencer object
+            advectionData.fluxCalculatorFunction = fluxCalculator->GetFluxCalculatorFunction();
+            advectionData.fluxCalculatorCtx = fluxCalculator->GetFluxCalculatorContext();
+
             // set decode state functions
             advectionData.computeTemperature = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature, flow.GetSubDomain().GetFields());
             advectionData.computeInternalEnergy = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::InternalSensibleEnergy, flow.GetSubDomain().GetFields());
             advectionData.computeSpeedOfSound = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SpeedOfSound, flow.GetSubDomain().GetFields());
             advectionData.computePressure = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Pressure, flow.GetSubDomain().GetFields());
 
-            flow.RegisterRHSFunction(AdvectionFlux, &advectionData, conserved, {CompressibleFlowFields::EULER_FIELD, conserved}, {});
+            flow.RegisterRHSFunction(AdvectionFlux, &advectionData, evConservedField.name, {CompressibleFlowFields::EULER_FIELD, evConservedField.name}, {});
         }
 
         if (transportModel) {
+            diffusionData.speciesSpeciesSensibleEnthalpy.resize(eos->GetSpecies().size());
+
             diffusionData.diffFunction = transportModel->GetTransportFunction(eos::transport::TransportProperty::Diffusivity, flow.GetSubDomain().GetFields());
 
             if (diffusionData.diffFunction.function) {
                 if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::YI_FIELD)) {
-                    flow.RegisterRHSFunction(
-                        DiffusionEVFlux, &diffusionData, conserved, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD}, {nonConserved, CompressibleFlowFields::YI_FIELD});
+                    flow.RegisterRHSFunction(DiffusionEVFlux,
+                                             &diffusionData,
+                                             evConservedField.name,
+                                             {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
+                                             {nonConserved, CompressibleFlowFields::YI_FIELD});
                 } else {
-                    flow.RegisterRHSFunction(DiffusionEVFlux, &diffusionData, conserved, {CompressibleFlowFields::EULER_FIELD}, {nonConserved});
+                    flow.RegisterRHSFunction(DiffusionEVFlux, &diffusionData, evConservedField.name, {CompressibleFlowFields::EULER_FIELD}, {nonConserved});
                 }
             }
+        } else {
+            diffusionData.diffFunction.function = nullptr;
         }
 
-        flow.RegisterAuxFieldUpdate(UpdateEVField, &numberEV, std::vector<std::string>{nonConserved}, {CompressibleFlowFields::EULER_FIELD, conserved});
+        flow.RegisterAuxFieldUpdate(UpdateEVField, &numberEV, std::vector<std::string>{nonConserved}, {CompressibleFlowFields::EULER_FIELD, evConservedField.name});
     }
 }
 
@@ -107,8 +104,7 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::AdvectionFlux(Petsc
         densityL = fieldL[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
         PetscReal temperatureL;
 
-        PetscErrorCode ierr = eulerAdvectionData->computeTemperature.function(fieldL, &temperatureL, eulerAdvectionData->computeTemperature.context.get());
-        CHKERRQ(ierr);
+        PetscCall(eulerAdvectionData->computeTemperature.function(fieldL, &temperatureL, eulerAdvectionData->computeTemperature.context.get()));
 
         // Get the velocity in this direction
         normalVelocityL = 0.0;
@@ -117,12 +113,9 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::AdvectionFlux(Petsc
             normalVelocityL += velocityL[d] * norm[d];
         }
 
-        ierr = eulerAdvectionData->computeInternalEnergy.function(fieldL, temperatureL, &internalEnergyL, eulerAdvectionData->computeInternalEnergy.context.get());
-        CHKERRQ(ierr);
-        ierr = eulerAdvectionData->computeSpeedOfSound.function(fieldL, temperatureL, &aL, eulerAdvectionData->computeSpeedOfSound.context.get());
-        CHKERRQ(ierr);
-        ierr = eulerAdvectionData->computePressure.function(fieldL, temperatureL, &pL, eulerAdvectionData->computePressure.context.get());
-        CHKERRQ(ierr);
+        PetscCall(eulerAdvectionData->computeInternalEnergy.function(fieldL, temperatureL, &internalEnergyL, eulerAdvectionData->computeInternalEnergy.context.get()));
+        PetscCall(eulerAdvectionData->computeSpeedOfSound.function(fieldL, temperatureL, &aL, eulerAdvectionData->computeSpeedOfSound.context.get()));
+        PetscCall(eulerAdvectionData->computePressure.function(fieldL, temperatureL, &pL, eulerAdvectionData->computePressure.context.get()));
     }
 
     PetscReal densityR;
@@ -135,8 +128,7 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::AdvectionFlux(Petsc
         densityR = fieldR[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
         PetscReal temperatureR;
 
-        PetscErrorCode ierr = eulerAdvectionData->computeTemperature.function(fieldR, &temperatureR, eulerAdvectionData->computeTemperature.context.get());
-        CHKERRQ(ierr);
+        PetscCall(eulerAdvectionData->computeTemperature.function(fieldR, &temperatureR, eulerAdvectionData->computeTemperature.context.get()));
 
         // Get the velocity in this direction
         normalVelocityR = 0.0;
@@ -145,12 +137,9 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::AdvectionFlux(Petsc
             normalVelocityR += velocityR[d] * norm[d];
         }
 
-        ierr = eulerAdvectionData->computeInternalEnergy.function(fieldR, temperatureR, &internalEnergyR, eulerAdvectionData->computeInternalEnergy.context.get());
-        CHKERRQ(ierr);
-        ierr = eulerAdvectionData->computeSpeedOfSound.function(fieldR, temperatureR, &aR, eulerAdvectionData->computeSpeedOfSound.context.get());
-        CHKERRQ(ierr);
-        ierr = eulerAdvectionData->computePressure.function(fieldR, temperatureR, &pR, eulerAdvectionData->computePressure.context.get());
-        CHKERRQ(ierr);
+        PetscCall(eulerAdvectionData->computeInternalEnergy.function(fieldR, temperatureR, &internalEnergyR, eulerAdvectionData->computeInternalEnergy.context.get()));
+        PetscCall(eulerAdvectionData->computeSpeedOfSound.function(fieldR, temperatureR, &aR, eulerAdvectionData->computeSpeedOfSound.context.get()));
+        PetscCall(eulerAdvectionData->computePressure.function(fieldR, temperatureR, &pR, eulerAdvectionData->computePressure.context.get()));
     }
 
     // get the face values
@@ -207,7 +196,6 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::DiffusionEVFlux(Pet
 
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::EVTransport, "diffusion/advection for the specified EV",
-         ARG(std::string, "conserved", "the name of the conserved (density*ev) of the variable"), ARG(std::string, "nonConserved", "the name of the non-conserved (ev) of the variable"),
          ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"),
          OPT(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculator (default is no advection)"),
          OPT(ablate::eos::transport::TransportModel, "transport", "the diffusion transport model (default is no diffusion)"));

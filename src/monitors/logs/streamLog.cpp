@@ -1,5 +1,5 @@
 #include "streamLog.hpp"
-#include <utilities/mpiError.hpp>
+#include "utilities/mpiUtilities.hpp"
 ablate::monitors::logs::StreamLog::StreamLog(std::ostream& stream) : stream(stream) {}
 
 void ablate::monitors::logs::StreamLog::Initialize(MPI_Comm comm) { Log::Initialize(comm); }

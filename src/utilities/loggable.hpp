@@ -2,7 +2,7 @@
 #define ABLATELIBRARY_LOGGABLE_HPP
 #include <petsc.h>
 #include "demangler.hpp"
-#include "petscError.hpp"
+#include "petscUtilities.hpp"
 
 namespace ablate::utilities {
 template <class T>
@@ -17,7 +17,7 @@ class Loggable {
     Loggable() {
         if (petscClassId == 0) {
             auto className = utilities::Demangler::Demangle(typeid(T).name());
-            PetscClassIdRegister(className.c_str(), &petscClassId) >> checkError;
+            PetscClassIdRegister(className.c_str(), &petscClassId) >> utilities::PetscUtilities::checkError;
         }
     }
 
@@ -25,14 +25,14 @@ class Loggable {
 
     inline PetscLogEvent RegisterEvent(const char* eventName) {
         PetscLogEvent eventId;
-        PetscLogEventRegister(eventName, petscClassId, &eventId) >> checkError;
+        PetscLogEventRegister(eventName, petscClassId, &eventId) >> utilities::PetscUtilities::checkError;
         return eventId;
     }
 
     inline void StartEvent(const char* eventName) {
         if (activeEvent == PETSC_DECIDE) {
-            PetscLogEventRegister(eventName, petscClassId, &activeEvent) >> checkError;
-            PetscLogEventBegin(activeEvent, 0, 0, 0, 0) >> checkError;
+            PetscLogEventRegister(eventName, petscClassId, &activeEvent) >> utilities::PetscUtilities::checkError;
+            PetscLogEventBegin(activeEvent, 0, 0, 0, 0) >> utilities::PetscUtilities::checkError;
         } else {
             throw std::runtime_error("Cannot Start Event, an event is already active.");
         }

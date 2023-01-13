@@ -1,6 +1,5 @@
 target_sources(ablateLibrary
         PRIVATE
-        petscOptions.cpp
         mathUtilities.cpp
         demangler.cpp
         petscUtilities.cpp
@@ -8,10 +7,7 @@ target_sources(ablateLibrary
         mpiUtilities.cpp
 
         PUBLIC
-        petscError.hpp
-        mpiError.hpp
         intErrorChecker.hpp
-        petscOptions.hpp
         demangler.hpp
         loggable.hpp
         mathUtilities.hpp
@@ -21,4 +17,5 @@ target_sources(ablateLibrary
         mpiUtilities.hpp
         temporaryWorkingDirectory.hpp
         constants.hpp
+        stringUtilities.hpp
         )

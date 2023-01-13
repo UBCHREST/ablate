@@ -8,6 +8,7 @@ target_sources(ablateLibrary
         parsedSeries.cpp
         linearTable.cpp
         formula.cpp
+        formulaBase.cpp
 
         PUBLIC
         simpleFormula.hpp
@@ -20,6 +21,7 @@ target_sources(ablateLibrary
         parsedSeries.hpp
         linearTable.hpp
         formula.hpp
+        formulaBase.hpp
         )
 
 add_subdirectory(geom)

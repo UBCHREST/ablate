@@ -1,7 +1,8 @@
 #ifndef ABLATELIBRARY_PARSEDSERIES_HPP
 #define ABLATELIBRARY_PARSEDSERIES_HPP
 #include <muParser.h>
-#include "mathFunction.hpp"
+#include "formulaBase.hpp"
+#include "parameters/parameters.hpp"
 
 namespace ablate::mathFunctions {
 /**
@@ -9,15 +10,15 @@ namespace ablate::mathFunctions {
  * Note that the lower and upper bound are inclusive.
  */
 
-class ParsedSeries : public MathFunction {
+class ParsedSeries : public FormulaBase {
    private:
-    mutable double coordinate[3] = {0, 0, 0};
-    mutable double time = 0.0;
+    // The local count for the series
     mutable double i = 0;
 
-    mu::Parser parser;
-    const std::string formula;
+    //! the lower bound for the series
     const int lowerBound;
+
+    //! the lower bound for the series
     const int upperBound;
 
    private:
@@ -27,7 +28,14 @@ class ParsedSeries : public MathFunction {
     ParsedSeries(const ParsedSeries&) = delete;
     void operator=(const ParsedSeries&) = delete;
 
-    explicit ParsedSeries(std::string functionString, int lowerBound = 1, int upperBound = 1000);
+    /**
+     * A formula that can be used with to compute a series
+     * @param functionString see ParsedFunction for details on the string formatting
+     * @param lowerBound the inclusive lower bound of summation (m)
+     * @param upperBound the inclusive upper bound of summation (n)
+     * @param constants
+     */
+    explicit ParsedSeries(std::string functionString, int lowerBound = 1, int upperBound = 1000, const std::shared_ptr<ablate::parameters::Parameters>& constants = {});
 
     double Eval(const double& x, const double& y, const double& z, const double& t) const override;
 

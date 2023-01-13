@@ -6,10 +6,10 @@
 #include <mathFunctions/fieldFunction.hpp>
 #include <memory>
 #include <string>
-#include <utilities/petscError.hpp>
 #include "domain.hpp"
 #include "fieldDescription.hpp"
 #include "io/serializable.hpp"
+#include "utilities/petscUtilities.hpp"
 
 namespace ablate::domain {
 
@@ -130,6 +130,14 @@ class SubDomain : public io::Serializable {
     [[nodiscard]] inline const std::vector<Field>& GetFields(FieldLocation type = FieldLocation::SOL) const { return fieldsByType.at(type); }
 
     /**
+     * returns all fields of a certain type with a specific tag.  This can be costly and should be used only for setup
+     * @param type
+     * @param tag
+     * @return
+     */
+    [[nodiscard]] std::vector<Field> GetFields(FieldLocation type, std::string_view tag) const;
+
+    /**
      * gets the dm corresponding to a field location (aux/sol)
      * @param field
      * @return
@@ -197,7 +205,7 @@ class SubDomain : public io::Serializable {
             return true;
         }
         PetscInt ptValue;
-        DMLabelGetValue(label, point, &ptValue) >> checkError;
+        DMLabelGetValue(label, point, &ptValue) >> utilities::PetscUtilities::checkError;
         return ptValue == labelValue;
     }
 
@@ -381,9 +389,10 @@ class SubDomain : public io::Serializable {
     void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 
     /**
-     * checks each point in this subdomain for nan/inf and reports information.  True is returned if an error is found.
+     * This checks for whether the label describing the subdomain exists. If it does, use DMPlexFilter. If not, use DMClone to return new DM.
+     * @param inDM
      */
-    bool CheckSolution();
+    void CreateEmptySubDM(DM* inDM, std::shared_ptr<domain::Region> region = {});
 };
 
 }  // namespace ablate::domain

@@ -1,6 +1,6 @@
 #include "leastSquaresAverage.hpp"
 #include "utilities/mathUtilities.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 void ablate::finiteVolume::stencil::LeastSquaresAverage::Generate(PetscInt face, ablate::finiteVolume::stencil::Stencil& stencil, const domain::SubDomain& subDomain,
                                                                   const std::shared_ptr<domain::Region> solverRegion, DM cellDM, const PetscScalar* cellGeomArray, DM faceDM,
@@ -10,13 +10,13 @@ void ablate::finiteVolume::stencil::LeastSquaresAverage::Generate(PetscInt face,
 
     // compute the grad calculator if needed
     if (!gradientCalculator) {
-        PetscFVCreate(PETSC_COMM_SELF, &gradientCalculator) >> checkError;
+        PetscFVCreate(PETSC_COMM_SELF, &gradientCalculator) >> utilities::PetscUtilities::checkError;
         // Set least squares as the default type
-        PetscFVSetType(gradientCalculator, PETSCFVLEASTSQUARES) >> checkError;
+        PetscFVSetType(gradientCalculator, PETSCFVLEASTSQUARES) >> utilities::PetscUtilities::checkError;
         // Set any other required options
-        PetscFVSetFromOptions(gradientCalculator) >> checkError;
-        PetscFVSetNumComponents(gradientCalculator, 1) >> checkError;
-        PetscFVSetSpatialDimension(gradientCalculator, dim) >> checkError;
+        PetscFVSetFromOptions(gradientCalculator) >> utilities::PetscUtilities::checkError;
+        PetscFVSetNumComponents(gradientCalculator, 1) >> utilities::PetscUtilities::checkError;
+        PetscFVSetSpatialDimension(gradientCalculator, dim) >> utilities::PetscUtilities::checkError;
     }
 
     PetscInt numCells;
@@ -81,22 +81,22 @@ void ablate::finiteVolume::stencil::LeastSquaresAverage::ComputeNeighborCellSten
     PetscInt numberCellFaces;
     const PetscInt* cellFaces;
 
-    DMPlexGetConeSize(dm, cell, &numberCellFaces) >> checkError;
-    DMPlexGetCone(dm, cell, &cellFaces) >> checkError;
+    DMPlexGetConeSize(dm, cell, &numberCellFaces) >> utilities::PetscUtilities::checkError;
+    DMPlexGetCone(dm, cell, &cellFaces) >> utilities::PetscUtilities::checkError;
 
     PetscFVCellGeom* cellGeom;
-    DMPlexPointLocalRead(cellDM, cell, cellGeomArray, &cellGeom) >> checkError;
+    DMPlexPointLocalRead(cellDM, cell, cellGeomArray, &cellGeom) >> utilities::PetscUtilities::checkError;
 
     // March over each face connected to this cell
     for (PetscInt f = 0; f < numberCellFaces; f++) {
         // determine if there are two cells connected
         PetscInt numFaceCells;
         const PetscInt* neighborCells;
-        DMPlexGetSupportSize(dm, cellFaces[f], &numFaceCells) >> checkError;
+        DMPlexGetSupportSize(dm, cellFaces[f], &numFaceCells) >> utilities::PetscUtilities::checkError;
         if (numFaceCells != 2) {
             continue;
         }
-        DMPlexGetSupport(dm, cellFaces[f], &neighborCells) >> checkError;
+        DMPlexGetSupport(dm, cellFaces[f], &neighborCells) >> utilities::PetscUtilities::checkError;
         // determine which one is the neighbor
         PetscInt neighborCell = neighborCells[0] == cell ? neighborCells[1] : neighborCells[0];
 
@@ -122,7 +122,7 @@ void ablate::finiteVolume::stencil::LeastSquaresAverage::ComputeNeighborCellSten
         // Compute gradients
         if (stencil.stencilSize > maxFaces) {
             maxFaces = stencil.stencilSize;
-            PetscFVLeastSquaresSetMaxFaces(gradientCalculator, maxFaces) >> checkError;
+            PetscFVLeastSquaresSetMaxFaces(gradientCalculator, maxFaces) >> utilities::PetscUtilities::checkError;
         }
 
         // compute the distance between the cell centers and the face

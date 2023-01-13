@@ -12,6 +12,13 @@ struct Range {
     PetscInt start;
     PetscInt end;
     const PetscInt* points = nullptr;
+
+    /**
+     * Get the point for the index i
+     * @param i
+     * @return
+     */
+    inline PetscInt GetPoint(PetscInt i) const { return points ? points[i] : i; }
 };
 }  // namespace ablate::solver
 #endif  // ABLATELIBRARY_RANGE_HPP

@@ -2,7 +2,7 @@
 #include <fstream>
 #include <utility>
 #include "utilities/mathUtilities.hpp"
-#include "utilities/mpiError.hpp"
+#include "utilities/mpiUtilities.hpp"
 
 ablate::monitors::probes::Rake::Rake(std::string name, std::vector<double> start, std::vector<double> end, int number)
     : rakeName(std::move(name)), rakePath(ablate::environment::RunEnvironment::Get().GetOutputDirectory() / rakeName) {
@@ -44,7 +44,7 @@ ablate::monitors::probes::Rake::Rake(std::string name, std::vector<double> start
 void ablate::monitors::probes::Rake::Report(MPI_Comm comm) const {
     // Get the rank
     PetscMPIInt rank;
-    MPI_Comm_rank(comm, &rank) >> checkMpiError;
+    MPI_Comm_rank(comm, &rank) >> utilities::MpiUtilities::checkError;
     if (rank == 0) {
         std::ofstream probeFile;
         probeFile.open(GetDirectory() / (rakeName + ".txt"));

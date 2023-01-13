@@ -5,6 +5,7 @@ target_sources(ablateLibrary
         streamLog.cpp
         fileLog.cpp
         stdOut.cpp
+        mpiFileLog.cpp
 
         PUBLIC
         log.hpp
@@ -12,4 +13,6 @@ target_sources(ablateLibrary
         streamLog.hpp
         fileLog.hpp
         stdOut.hpp
+        nullLog.hpp
+        mpiFileLog.hpp
         )

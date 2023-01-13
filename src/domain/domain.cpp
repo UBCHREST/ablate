@@ -1,27 +1,27 @@
 #include "domain.hpp"
+#include <set>
 #include <typeinfo>
-#include <utilities/mpiError.hpp>
 #include <utility>
-#include "monitors/logs/stdOut.hpp"
 #include "solver/solver.hpp"
 #include "subDomain.hpp"
 #include "utilities/demangler.hpp"
-#include "utilities/petscError.hpp"
-#include "utilities/petscOptions.hpp"
+#include "utilities/mpiUtilities.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptorsIn, std::vector<std::shared_ptr<modifiers::Modifier>> modifiersIn,
-                               const std::shared_ptr<parameters::Parameters>& options)
+                               const std::shared_ptr<parameters::Parameters>& options, bool setFromOptions)
     : dm(dmIn), name(std::move(name)), comm(PetscObjectComm((PetscObject)dm)), fieldDescriptors(std::move(fieldDescriptorsIn)), solGlobalField(nullptr), modifiers(std::move(modifiersIn)) {
     // if provided, convert options to a petscOptions
     if (options) {
-        PetscOptionsCreate(&petscOptions) >> checkError;
+        PetscOptionsCreate(&petscOptions) >> utilities::PetscUtilities::checkError;
         options->Fill(petscOptions);
     }
 
     // Apply petsc options to the domain
-    PetscObjectSetOptions((PetscObject)dm, petscOptions) >> checkError;
-    DMSetFromOptions(dm) >> checkError;
-
+    PetscObjectSetOptions((PetscObject)dm, petscOptions) >> utilities::PetscUtilities::checkError;
+    if (setFromOptions) {
+        DMSetFromOptions(dm) >> utilities::PetscUtilities::checkError;
+    }
     // update the dm with the modifiers
     for (auto& modifier : modifiers) {
         modifier->Modify(dm);
@@ -46,11 +46,11 @@ ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::share
     }
 
     // Set up the global DS
-    DMCreateDS(dm) >> checkError;
+    DMCreateDS(dm) >> utilities::PetscUtilities::checkError;
 
     // based upon the ds divisions in the dm, create a subDomain for each
     PetscInt numberDS;
-    DMGetNumDS(dm, &numberDS) >> checkError;
+    DMGetNumDS(dm, &numberDS) >> utilities::PetscUtilities::checkError;
 
     // March over each ds and create a subDomain
     for (PetscInt ds = 0; ds < numberDS; ds++) {
@@ -61,10 +61,10 @@ ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::share
 ablate::domain::Domain::~Domain() {
     // clean up the petsc objects
     if (solGlobalField) {
-        VecDestroy(&solGlobalField) >> checkError;
+        VecDestroy(&solGlobalField) >> utilities::PetscUtilities::checkError;
     }
     if (petscOptions) {
-        ablate::utilities::PetscOptionsDestroyAndCheck("ablate::domain::Domain", &petscOptions);
+        ablate::utilities::PetscUtilities::PetscOptionsDestroyAndCheck("ablate::domain::Domain", &petscOptions);
     }
 }
 
@@ -77,7 +77,7 @@ void ablate::domain::Domain::RegisterField(const ablate::domain::FieldDescriptio
     // Look up the label for this field
     DMLabel label = nullptr;
     if (fieldDescription.region) {
-        DMGetLabel(dm, fieldDescription.region->GetName().c_str(), &label) >> checkError;
+        DMGetLabel(dm, fieldDescription.region->GetName().c_str(), &label) >> utilities::PetscUtilities::checkError;
         if (label == nullptr) {
             throw std::invalid_argument("Cannot locate label " + fieldDescription.region->GetName() + " for field " + fieldDescription.name);
         }
@@ -98,23 +98,23 @@ void ablate::domain::Domain::RegisterField(const ablate::domain::FieldDescriptio
 
 PetscInt ablate::domain::Domain::GetDimensions() const noexcept {
     PetscInt dim;
-    DMGetDimension(dm, &dim) >> checkError;
+    DMGetDimension(dm, &dim) >> utilities::PetscUtilities::checkError;
     return dim;
 }
 
 void ablate::domain::Domain::CreateStructures() {
     // Setup the solve with the ts
-    DMPlexCreateClosureIndex(dm, nullptr) >> checkError;
-    DMCreateGlobalVector(dm, &(solGlobalField)) >> checkError;
-    PetscObjectSetName((PetscObject)solGlobalField, "solution") >> checkError;
+    DMPlexCreateClosureIndex(dm, nullptr) >> utilities::PetscUtilities::checkError;
+    DMCreateGlobalVector(dm, &(solGlobalField)) >> utilities::PetscUtilities::checkError;
+    PetscObjectSetName((PetscObject)solGlobalField, "solution") >> utilities::PetscUtilities::checkError;
 
     // add the names to each of the components in the dm section
     PetscSection section;
-    DMGetLocalSection(dm, &section) >> checkError;
+    DMGetLocalSection(dm, &section) >> utilities::PetscUtilities::checkError;
     for (const auto& field : fields) {
         if (field.numberComponents > 1) {
             for (PetscInt c = 0; c < field.numberComponents; c++) {
-                PetscSectionSetComponentName(section, field.id, c, field.components[c].c_str()) >> checkError;
+                PetscSectionSetComponentName(section, field.id, c, field.components[c].c_str()) >> utilities::PetscUtilities::checkError;
             }
         }
     }
@@ -147,10 +147,13 @@ void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_
         solver->Register(GetSubDomain(solver->GetRegion()));
     }
 
+    StartEvent("Domain::Setup");
     // Setup each of the fields
     for (auto& solver : solvers) {
         solver->Setup();
     }
+    EndEvent();
+
     // Create the global structures
     CreateStructures();
     for (auto& subDomain : subDomains) {
@@ -159,21 +162,23 @@ void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_
 
     // set all values to nan to allow for a output check
     if (!initializations.empty()) {
-        VecSet(solGlobalField, NAN) >> checkError;
+        VecSet(solGlobalField, NAN) >> utilities::PetscUtilities::checkError;
     }
 
     // Set the initial conditions for each field specified
     ProjectFieldFunctions(initializations, solGlobalField);
 
     // do a sanity check to make sure that all points were initialized
-    if (!initializations.empty() && CheckSolution()) {
+    if (!initializations.empty() && CheckFieldValues()) {
         throw std::runtime_error("Field values at points in the domain were not initialized.");
     }
 
     // Initialize each solver
+    StartEvent("Domain::Initialize");
     for (auto& solver : solvers) {
         solver->Initialize();
     }
+    EndEvent();
 
     // Set the exact solutions if the field in lives in each subDomain
     for (auto& subDomain : subDomains) {
@@ -190,12 +195,12 @@ std::vector<std::weak_ptr<ablate::io::Serializable>> ablate::domain::Domain::Get
 
 void ablate::domain::Domain::ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, Vec globVec, PetscReal time) {
     PetscInt numberFields;
-    DMGetNumFields(dm, &numberFields) >> checkError;
+    DMGetNumFields(dm, &numberFields) >> utilities::PetscUtilities::checkError;
 
     // get a local vector for the work
     Vec locVec;
-    DMGetLocalVector(dm, &locVec) >> checkError;
-    DMGlobalToLocal(dm, globVec, INSERT_VALUES, locVec) >> checkError;
+    DMGetLocalVector(dm, &locVec) >> utilities::PetscUtilities::checkError;
+    DMGlobalToLocal(dm, globVec, INSERT_VALUES, locVec) >> utilities::PetscUtilities::checkError;
 
     for (auto& fieldFunction : fieldFunctions) {
         // Size up the field projects
@@ -211,10 +216,10 @@ void ablate::domain::Domain::ProjectFieldFunctions(const std::vector<std::shared
         PetscInt fieldValue = 0;
         if (const auto& region = fieldFunction->GetRegion()) {
             fieldValue = region->GetValue();
-            DMGetLabel(dm, region->GetName().c_str(), &fieldLabel) >> checkError;
+            DMGetLabel(dm, region->GetName().c_str(), &fieldLabel) >> utilities::PetscUtilities::checkError;
         } else {
             PetscObject fieldTemp;
-            DMGetField(dm, fieldId.id, &fieldLabel, &fieldTemp) >> checkError;
+            DMGetField(dm, fieldId.id, &fieldLabel, &fieldTemp) >> utilities::PetscUtilities::checkError;
             if (fieldLabel) {
                 fieldValue = 1;  // this is temporary until petsc allows fields to be defined with values beside 1
             }
@@ -225,26 +230,175 @@ void ablate::domain::Domain::ProjectFieldFunctions(const std::vector<std::shared
         if (fieldLabel) {
             // make sure that some of this field exists here
             IS regionIS;
-            DMLabelGetStratumIS(fieldLabel, fieldValue, &regionIS) >> checkError;
+            DMLabelGetStratumIS(fieldLabel, fieldValue, &regionIS) >> utilities::PetscUtilities::checkError;
 
             if (regionIS) {
-                DMProjectFunctionLabelLocal(dm, time, fieldLabel, 1, &fieldValue, -1, nullptr, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> checkError;
-                ISDestroy(&regionIS) >> checkError;
+                DMProjectFunctionLabelLocal(dm, time, fieldLabel, 1, &fieldValue, -1, nullptr, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >>
+                    utilities::PetscUtilities::checkError;
+                ISDestroy(&regionIS) >> utilities::PetscUtilities::checkError;
             }
         } else {
-            DMProjectFunctionLocal(dm, time, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> checkError;
+            DMProjectFunctionLocal(dm, time, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> utilities::PetscUtilities::checkError;
         }
     }
 
     // push the results back to the global vector
-    DMLocalToGlobal(dm, locVec, INSERT_VALUES, globVec) >> checkError;
-    DMRestoreLocalVector(dm, &locVec) >> checkError;
+    DMLocalToGlobal(dm, locVec, INSERT_VALUES, globVec) >> utilities::PetscUtilities::checkError;
+    DMRestoreLocalVector(dm, &locVec) >> utilities::PetscUtilities::checkError;
 }
 
-bool ablate::domain::Domain::CheckSolution() {
-    bool error = false;
-    for (auto& subdomain : subDomains) {
-        error = subdomain->CheckSolution() | error;
+bool ablate::domain::Domain::CheckFieldValues(Vec globSourceVector) {
+    // create a set of points that have failed
+    std::set<PetscInt> failedPoints;
+
+    // Get the solution and aux info
+    Vec solutionVec = GetSolutionVector();
+    const PetscScalar* solutionArray;
+    VecGetArrayRead(solutionVec, &solutionArray) >> utilities::PetscUtilities::checkError;
+
+    // march over point in the domain
+    PetscInt pStart, pEnd;
+    DMPlexGetChart(GetDM(), &pStart, &pEnd) >> utilities::PetscUtilities::checkError;
+
+    // get the global section
+    PetscSection globalSection;
+    DMGetGlobalSection(GetDM(), &globalSection) >> ablate::utilities::PetscUtilities::checkError;
+
+    for (PetscInt p = pStart; p < pEnd; ++p) {
+        const PetscScalar* solutionAtP = nullptr;
+        DMPlexPointGlobalRead(GetDM(), p, solutionArray, &solutionAtP) >> utilities::PetscUtilities::checkError;
+
+        // check each scalar for nan/inf
+        if (solutionAtP) {
+            PetscInt dof;
+            PetscSectionGetDof(globalSection, p, &dof);
+            PetscInt cdof;
+            PetscSectionGetConstraintDof(globalSection, p, &cdof);
+            for (PetscInt m = 0; m < (dof - cdof); ++m) {
+                if (PetscIsInfOrNanScalar(solutionAtP[m])) {
+                    failedPoints.insert(p);
+                }
+            }
+        }
     }
-    return error;
+
+    // If the global source vector is provided also check it
+    const PetscScalar* sourceArray;
+    DM sourceDM = nullptr;
+    if (globSourceVector) {
+        VecGetArrayRead(globSourceVector, &sourceArray) >> utilities::PetscUtilities::checkError;
+        VecGetDM(globSourceVector, &sourceDM) >> utilities::PetscUtilities::checkError;
+
+        // get the global section
+        PetscSection sourceSection;
+        DMGetSection(sourceDM, &sourceSection) >> utilities::PetscUtilities::checkError;
+
+        for (PetscInt p = pStart; p < pEnd; ++p) {
+            const PetscScalar* sourceAtP = nullptr;
+            DMPlexPointGlobalRead(sourceDM, p, sourceArray, &sourceAtP) >> utilities::PetscUtilities::checkError;
+
+            // check each scalar for nan/inf
+            if (sourceAtP) {
+                PetscInt dof;
+                PetscSectionGetDof(sourceSection, p, &dof);
+                PetscInt cdof;
+                PetscSectionGetConstraintDof(globalSection, p, &cdof);
+                for (PetscInt m = 0; m < (dof - cdof); ++m) {
+                    if (PetscIsInfOrNanScalar(sourceAtP[m])) {
+                        failedPoints.insert(p);
+                    }
+                }
+            }
+        }
+    }
+
+    // do a global check
+    auto localFailedPoints = (PetscMPIInt)failedPoints.size();
+    PetscMPIInt globalFailedPoints;
+    MPI_Allreduce(&localFailedPoints, &globalFailedPoints, 1, MPI_INT, MPI_SUM, comm) >> utilities::MpiUtilities::checkError;
+    if (globalFailedPoints) {
+        PetscMPIInt rank;
+        MPI_Comm_rank(comm, &rank) >> utilities::MpiUtilities::checkError;
+
+        std::stringstream failedPointsMessage;
+        // march over each failed point
+        for (auto& p : failedPoints) {
+            // Get the coordinate
+            PetscReal centroid[3] = {0.0, 0.0, 0.0};
+            DMPlexComputeCellGeometryFVM(GetDM(), p, nullptr, centroid, nullptr) >> utilities::PetscUtilities::checkError;
+
+            failedPointsMessage << "Nan/Inf Point (" << p << ") at [" << centroid[0] << "," << centroid[1] << ", " << centroid[2] << "] on rank " << rank << std::endl;
+
+            // output the labels at this point
+            PetscInt numberLabels;
+            DMGetNumLabels(GetDM(), &numberLabels);
+            failedPointsMessage << "\tLabels: ";
+            for (PetscInt l = 0; l < numberLabels; l++) {
+                DMLabel labelCheck;
+                DMGetLabelByNum(GetDM(), l, &labelCheck) >> utilities::PetscUtilities::checkError;
+                const char* labelName;
+                DMGetLabelName(GetDM(), l, &labelName) >> utilities::PetscUtilities::checkError;
+                PetscInt labelCheckValue;
+                DMLabelGetValue(labelCheck, p, &labelCheckValue) >> utilities::PetscUtilities::checkError;
+                PetscInt labelDefaultValue;
+                DMLabelGetDefaultValue(labelCheck, &labelDefaultValue) >> utilities::PetscUtilities::checkError;
+                if (labelDefaultValue != labelCheckValue) {
+                    failedPointsMessage << labelName << "(" << labelCheckValue << ") ";
+                }
+            }
+            failedPointsMessage << std::endl;
+
+            // check each local field
+            for (const auto& field : GetFields()) {
+                {
+                    PetscSection section;
+                    DMGetGlobalSection(GetDM(), &section) >> utilities::PetscUtilities::checkError;
+
+                    // make sure that this field lives at this point
+                    PetscInt dof;
+                    PetscSectionGetFieldDof(section, p, field.id, &dof) >> utilities::PetscUtilities::checkError;
+
+                    // get the value at the point
+                    const PetscScalar* solutionAtP = nullptr;
+                    DMPlexPointGlobalFieldRead(GetDM(), p, field.id, solutionArray, &solutionAtP) >> utilities::PetscUtilities::checkError;
+                    if (dof) {
+                        failedPointsMessage << '\t' << field.name << ":" << std::endl;
+                        for (PetscInt c = 0; c < dof; ++c) {
+                            failedPointsMessage << "\t\t[" << c << "]: " << solutionAtP[c] << std::endl;
+                        }
+                    }
+                }
+
+                if (globSourceVector) {
+                    PetscSection section;
+                    DMGetGlobalSection(sourceDM, &section) >> utilities::PetscUtilities::checkError;
+
+                    // make sure that this field lives at this point
+                    PetscInt dof;
+                    PetscSectionGetFieldDof(section, p, field.id, &dof) >> utilities::PetscUtilities::checkError;
+
+                    // get the value at the point
+                    const PetscScalar* sourceAtP = nullptr;
+                    DMPlexPointGlobalFieldRead(sourceDM, p, field.id, sourceArray, &sourceAtP) >> utilities::PetscUtilities::checkError;
+                    if (dof) {
+                        failedPointsMessage << '\t' << field.name << " source:" << std::endl;
+                        for (PetscInt c = 0; c < dof; ++c) {
+                            failedPointsMessage << "\t\t[" << c << "]: " << sourceAtP[c] << std::endl;
+                        }
+                    }
+                }
+            }
+        }
+
+        PetscSynchronizedPrintf(comm, "%s", failedPointsMessage.str().c_str()) >> utilities::PetscUtilities::checkError;
+        PetscSynchronizedFlush(comm, PETSC_STDOUT) >> utilities::PetscUtilities::checkError;
+    }
+
+    // cleanup
+    VecRestoreArrayRead(solutionVec, &solutionArray) >> utilities::PetscUtilities::checkError;
+    if (globSourceVector) {
+        VecRestoreArrayRead(globSourceVector, &sourceArray) >> utilities::PetscUtilities::checkError;
+    }
+
+    return (bool)globalFailedPoints;
 }

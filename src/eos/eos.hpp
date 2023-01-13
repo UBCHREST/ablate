@@ -27,22 +27,22 @@ enum class ThermodynamicProperty {
  * Simple struct representing the context and function for computing any thermodynamic value when temperature is not available.
  */
 struct ThermodynamicFunction {
-    PetscErrorCode (*function)(const PetscReal conserved[], PetscReal* property, void* ctx);
-    std::shared_ptr<void> context;
+    PetscErrorCode (*function)(const PetscReal conserved[], PetscReal* property, void* ctx) = nullptr;
+    std::shared_ptr<void> context = nullptr;
 };
 
 /**
  * Simple struct representing the context and function for computing any thermodynamic value when temperature is available.
  */
 struct ThermodynamicTemperatureFunction {
-    PetscErrorCode (*function)(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
-    std::shared_ptr<void> context;
+    PetscErrorCode (*function)(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx) = nullptr;
+    std::shared_ptr<void> context = nullptr;
 };
 
 /**
- * Simple function representing the context and function for computing a field from two specified properties, velocity, and Yi
+ * Simple function representing the context and function for computing a field from two specified properties, velocity, and other properties as specified
  */
-using FieldFunction = std::function<void(PetscReal property1, PetscReal property2, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[])>;
+using EOSFunction = std::function<void(PetscReal property1, PetscReal property2, PetscInt dim, const PetscReal velocity[], const PetscReal other[], PetscReal conserved[])>;
 
 /**
  * The equation of state is designed to to compute thermodynamic properties based upon the conserved field variables being solved.  This can range from euler & densityYi and  euler & progresses
@@ -55,6 +55,12 @@ class EOS {
    public:
     explicit EOS(std::string typeIn) : type(std::move(typeIn)){};
     virtual ~EOS() = default;
+
+    // Some known extra properties
+    // the conserved (density*yi) solution field for species mass fractions
+    inline const static std::string YI = "Yi";
+    // progress fields are used by the eos/chemistry model to transport required non species
+    inline const static std::string PROGRESS = "Progress";
 
     /**
      * Print the details of this eos
@@ -84,14 +90,28 @@ class EOS {
      * @param property1
      * @param property2
      */
-    [[nodiscard]] virtual FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const = 0;
+    [[nodiscard]] virtual EOSFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2,
+                                                               std::vector<std::string> otherProperties) const = 0;
 
     /**
-     * Species supported by this EOS
+     * Required species to utilize the equation of state
      * species model functions
      * @return
      */
-    [[nodiscard]] virtual const std::vector<std::string>& GetSpecies() const = 0;
+    [[nodiscard]] virtual const std::vector<std::string>& GetSpeciesVariables() const = 0;
+
+    /**
+     * Returns a vector of all extra variables required to utilize the equation of state
+     * @return
+     */
+    [[nodiscard]] virtual const std::vector<std::string>& GetProgressVariables() const = 0;
+
+    /**
+     * Species known by this equation of state.  This list is used for the FieldFunction calculations. This can be the same as the GetSpeciesVariables.
+     * species model functions
+     * @return
+     */
+    [[nodiscard]] virtual const std::vector<std::string>& GetSpecies() const { return GetSpeciesVariables(); }
 
     /**
      * Support function for printing any eos

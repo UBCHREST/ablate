@@ -1,6 +1,7 @@
 import argparse
 import pathlib
 import re
+import shutil
 from dataclasses import dataclass
 
 import inflection
@@ -104,49 +105,62 @@ def create_example_files(example_input_directory, example_output_directory):
             example_meta_datas = []
 
             # make sure that there are input files here
-            yaml_files = example_directory.glob("*.yaml")
+            yaml_files = len(list(example_directory.glob("*.yaml")))
             if yaml_files:
                 # create the directory
                 output_category_directory = example_output_directory / example_directory.stem
                 output_category_directory.mkdir(parents=True, exist_ok=True)
 
-                for yaml_file in example_directory.glob("*.yaml"):
-                    # compute the metadata
-                    example_title = inflection.humanize(inflection.underscore(yaml_file.stem))
-                    example_doc_url = f'./{example_output_directory.name}/{example_directory.name}/{yaml_file.stem}.html'
-                    example_file_url = BaseExampleUrl + example_directory.name + "/" + yaml_file.name
-                    example_meta_datas.append(ExampleMetaData(example_title, example_doc_url, example_file_url))
+                # copy over and convert yaml file
+                for file in example_directory.glob("*"):
+                    if file.suffix == '.yaml':
+                        # compute the metadata
+                        example_title = inflection.humanize(inflection.underscore(file.stem))
+                        example_doc_url = f'./{example_output_directory.name}/{example_directory.name}/{file.stem}.html'
+                        example_file_url = BaseExampleUrl + example_directory.name + "/" + file.name
+                        example_meta_datas.append(ExampleMetaData(example_title, example_doc_url, example_file_url))
 
-                    # copy over the input as markdown
-                    header_region = True
-                    with open(yaml_file, 'r') as yaml_file_input:
-                        with open(output_category_directory / (yaml_file.stem + '.md'), 'w') as markdown_file:
-                            # output the header information
-                            markdown_file.write('---\n')
-                            markdown_file.write('layout: default\n')
-                            markdown_file.write(f'title: {example_title}\n')
-                            markdown_file.write(f'parent: {ExamplesTitle}\n')
-                            markdown_file.write(f'grand_parent: {SimulationsTitle}\n')
-                            markdown_file.write('nav_exclude: true\n')
-                            markdown_file.write('---\n')
+                        # copy over the input as markdown
+                        header_region = True
+                        with open(file, 'r') as yaml_file_input:
+                            with open(output_category_directory / (file.stem + '.md'), 'w') as markdown_file:
+                                # output the header information
+                                markdown_file.write('---\n')
+                                markdown_file.write('layout: default\n')
+                                markdown_file.write(f'title: {example_title}\n')
+                                markdown_file.write(f'parent: {ExamplesTitle}\n')
+                                markdown_file.write(f'grand_parent: {SimulationsTitle}\n')
+                                markdown_file.write('nav_exclude: true\n')
+                                markdown_file.write('---\n')
 
-                            # copy over each row
-                            for row in yaml_file_input:
-                                if header_region:
-                                    # check to see if we are done with header region
-                                    if row.startswith('---'):
-                                        header_region = False
-                                        markdown_file.write(
-                                            f'\n[{example_directory.name + "/" + yaml_file.name}]({example_file_url})\n')
-                                        markdown_file.write("```yaml\n")
+                                # copy over each row
+                                for row in yaml_file_input:
+                                    if header_region:
+                                        # check to see if we are done with header region
+                                        if row.startswith('---'):
+                                            header_region = False
+                                            markdown_file.write(
+                                                f'\n[{example_directory.name + "/" + file.name}]({example_file_url})\n')
+                                            markdown_file.write("```yaml\n")
 
-                                if header_region:
-                                    markdown_file.write(row.replace("#", "", 1).replace(" ", "", 1))
-                                else:
-                                    markdown_file.write(row)
+                                    if header_region:
+                                        markdown_file.write(row.replace("#", "", 1).replace(" ", "", 1))
+                                    else:
+                                        markdown_file.write(row)
 
-                            # close off input
-                            markdown_file.write("\n```")
+                                # close off input
+                                markdown_file.write("\n```")
+
+                    # just copy the file
+                    else:
+                        import os
+                        relative_path = os.path.relpath(file, example_directory)
+                        # check if directory
+                        if file.is_dir():
+                            shutil.copytree(file, output_category_directory / relative_path, dirs_exist_ok=True)
+                        else:
+                            # old fashion file copy
+                            shutil.copy(file, output_category_directory / relative_path)
 
             if example_meta_datas:
                 categories_meta_data[example_category_title] = example_meta_datas

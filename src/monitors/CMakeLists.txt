@@ -14,6 +14,12 @@ target_sources(ablateLibrary
         physicsTimeStep.cpp
         probes.cpp
         rocketMonitor.cpp
+        turbFlowStats.cpp
+        boundarySolverMonitor.cpp
+        fieldMonitor.cpp
+        mixtureFractionMonitor.cpp
+        mixtureFractionCalculator.cpp
+
         PUBLIC
         monitor.hpp
         fieldErrorMonitor.hpp
@@ -30,6 +36,11 @@ target_sources(ablateLibrary
         physicsTimeStep.hpp
         probes.hpp
         rocketMonitor.hpp
+        turbFlowStats.hpp
+        fieldMonitor.hpp
+        mixtureFractionMonitor.hpp
+        boundarySolverMonitor.hpp
+        mixtureFractionCalculator.hpp
         )
 
 add_subdirectory(logs)

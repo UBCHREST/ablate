@@ -4,9 +4,10 @@
 #include <environment/runEnvironment.hpp>
 #include <fstream>
 #include <io/interval/interval.hpp>
-#include <utilities/mpiError.hpp>
+#include <iostream>
 #include "generators.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/mpiUtilities.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::io::Hdf5Serializer::Hdf5Serializer(std::shared_ptr<ablate::io::interval::Interval> interval) : interval(interval) {
     // Load the metadata from the file is available, otherwise set to 0
@@ -19,6 +20,14 @@ ablate::io::Hdf5Serializer::Hdf5Serializer(std::shared_ptr<ablate::io::interval:
         dt = yaml["dt"].as<PetscReal>();
         timeStep = yaml["timeStep"].as<PetscInt>();
         sequenceNumber = yaml["sequenceNumber"].as<PetscInt>();
+
+        // check for restart info warning
+        auto version = yaml["version"];
+        if (version.IsDefined()) {
+            if (version.as<std::string>() != environment::RunEnvironment::GetVersion()) {
+                std::cout << "Warning: Restarting simulation using a different version of ABLATE " << version.as<std::string>() << " vs. " << environment::RunEnvironment::GetVersion();
+            }
+        }
     } else {
         resumed = false;
         time = NAN;
@@ -47,7 +56,7 @@ PetscErrorCode ablate::io::Hdf5Serializer::Hdf5SerializerSaveStateFunction(TS ts
         hdf5Serializer->time = time;
         hdf5Serializer->timeStep = steps;
         hdf5Serializer->sequenceNumber++;
-        TSGetTimeStep(ts, &(hdf5Serializer->dt)) >> checkError;
+        TSGetTimeStep(ts, &(hdf5Serializer->dt)) >> utilities::PetscUtilities::checkError;
 
         // Save this to a file
         hdf5Serializer->SaveMetadata(ts);
@@ -65,6 +74,7 @@ PetscErrorCode ablate::io::Hdf5Serializer::Hdf5SerializerSaveStateFunction(TS ts
 }
 
 void ablate::io::Hdf5Serializer::SaveMetadata(TS ts) {
+    PetscFunctionBeginUser;
     YAML::Emitter out;
     out << YAML::BeginMap;
     out << YAML::Key << "time";
@@ -75,10 +85,12 @@ void ablate::io::Hdf5Serializer::SaveMetadata(TS ts) {
     out << YAML::Value << timeStep;
     out << YAML::Key << "sequenceNumber";
     out << YAML::Value << sequenceNumber;
+    out << YAML::Key << "version";
+    out << YAML::Value << std::string(environment::RunEnvironment::GetVersion());
     out << YAML::EndMap;
 
     int rank;
-    MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank) >> checkMpiError;
+    MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank) >> utilities::MpiUtilities::checkError;
     if (rank == 0) {
         auto restartFilePath = environment::RunEnvironment::Get().GetOutputDirectory() / "restart.rst";
         std::ofstream restartFile;
@@ -86,6 +98,7 @@ void ablate::io::Hdf5Serializer::SaveMetadata(TS ts) {
         restartFile << out.c_str();
         restartFile.close();
     }
+    PetscFunctionReturnVoid();
 }
 
 void ablate::io::Hdf5Serializer::RestoreTS(TS ts) {
@@ -106,7 +119,7 @@ ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::Hdf5ObjectSerializer(std::weak
         if (resume) {
             if (std::filesystem::exists(filePath)) {
                 StartEvent("PetscViewerHDF5Open");
-                PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_UPDATE, &petscViewer) >> checkError;
+                PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_UPDATE, &petscViewer) >> utilities::PetscUtilities::checkError;
                 EndEvent();
 
                 // Restore the simulation
@@ -117,7 +130,7 @@ ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::Hdf5ObjectSerializer(std::weak
                 throw std::runtime_error("Cannot resume simulation.  Unable to locate file: " + filePath.string());
             }
         } else {
-            PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_WRITE, &petscViewer) >> checkError;
+            PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_WRITE, &petscViewer) >> utilities::PetscUtilities::checkError;
         }
     }
 }
@@ -131,14 +144,16 @@ ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::~Hdf5ObjectSerializer() {
             xdmfGenerator::Generate(filePath);
         }
 
-        PetscViewerDestroy(&petscViewer) >> checkError;
+        PetscViewerDestroy(&petscViewer) >> utilities::PetscUtilities::checkError;
     }
 }
 
 void ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::Save(PetscInt sn, PetscReal t) {
+    PetscFunctionBeginUser;
     if (auto serializableObject = serializable.lock()) {
         serializableObject->Save(petscViewer, sn, t);
     }
+    PetscFunctionReturnVoid();
 }
 
 #include "registrar.hpp"

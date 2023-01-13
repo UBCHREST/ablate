@@ -1,6 +1,5 @@
 #include "cellInitializer.hpp"
-#include "registrar.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::particles::initializers::CellInitializer::CellInitializer(int particlesPerCellPerDim) : particlesPerCell(particlesPerCellPerDim) {}
 
@@ -8,12 +7,12 @@ void ablate::particles::initializers::CellInitializer::Initialize(ablate::domain
     PetscInt particlesPerCellLocal = (PetscInt)this->particlesPerCell;
 
     PetscInt cStart, cEnd;
-    DMPlexGetHeightStratum(flow.GetDM(), 0, &cStart, &cEnd) >> checkError;
-    DMSwarmSetLocalSizes(particleDm, (cEnd - cStart) * particlesPerCellLocal, 0) >> checkError;
+    DMPlexGetHeightStratum(flow.GetDM(), 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
+    DMSwarmSetLocalSizes(particleDm, (cEnd - cStart) * particlesPerCellLocal, 0) >> utilities::PetscUtilities::checkError;
 
     // set the cell ids
     PetscInt *cellid;
-    DMSwarmGetField(particleDm, DMSwarmPICField_cellid, NULL, NULL, (void **)&cellid) >> checkError;
+    DMSwarmGetField(particleDm, DMSwarmPICField_cellid, NULL, NULL, (void **)&cellid) >> utilities::PetscUtilities::checkError;
     for (PetscInt c = cStart; c < cEnd; ++c) {
         for (PetscInt p = 0; p < particlesPerCellLocal; ++p) {
             const PetscInt n = c * particlesPerCellLocal + p;
@@ -21,9 +20,10 @@ void ablate::particles::initializers::CellInitializer::Initialize(ablate::domain
         }
     }
 
-    DMSwarmRestoreField(particleDm, DMSwarmPICField_cellid, NULL, NULL, (void **)&cellid) >> checkError;
-    DMSwarmSetPointCoordinatesRandom(particleDm, particlesPerCellLocal) >> checkError;
+    DMSwarmRestoreField(particleDm, DMSwarmPICField_cellid, NULL, NULL, (void **)&cellid) >> utilities::PetscUtilities::checkError;
+    DMSwarmSetPointCoordinatesRandom(particleDm, particlesPerCellLocal) >> utilities::PetscUtilities::checkError;
 }
 
+#include "registrar.hpp"
 REGISTER(ablate::particles::initializers::Initializer, ablate::particles::initializers::CellInitializer, "simple cell initializer that puts particles in every element",
          ARG(int, "particlesPerCellPerDim", "particles per cell per dimension"));

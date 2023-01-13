@@ -12,8 +12,8 @@ elseif (NOT (DEFINED Tines_DIR|CACHE{Tines_DIR}|ENV{Tines_DIR}))
     set(TINES_SUNDIALS_WARNING OFF CACHE BOOL "" FORCE)
 
     FetchContent_Declare(tines
-            GIT_REPOSITORY https://github.com/UBCHREST/Tines.git
-            GIT_TAG main
+            GIT_REPOSITORY https://github.com/sandialabs/Tines.git
+            GIT_TAG a718f2c
             SOURCE_SUBDIR src
             )
     FetchContent_MakeAvailable(tines)
@@ -33,6 +33,7 @@ elseif (NOT (DEFINED Tines_DIR|CACHE{Tines_DIR}|ENV{Tines_DIR}))
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
             INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+            PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
             )
     # check for openblas
     if (OPENBLAS_INSTALL_PATH)
@@ -58,8 +59,8 @@ if (NOT (DEFINED TChem_DIR|CACHE{TChem_DIR}|ENV{TChem_DIR}))
     set(TCHEM_ENABLE_PYTHON OFF CACHE BOOL "" FORCE)
 
     FetchContent_Declare(tchem
-            GIT_REPOSITORY https://github.com/UBCHREST/TChem.git
-            GIT_TAG main
+            GIT_REPOSITORY https://github.com/sandialabs/TChem.git
+            GIT_TAG 6b4a97f
             SOURCE_SUBDIR src
             )
     FetchContent_MakeAvailable(tchem)

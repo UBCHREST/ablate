@@ -1,13 +1,17 @@
 #include "sublimation.hpp"
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "io/interval/fixedInterval.hpp"
+#include "solver/dynamicRange.hpp"
 #include "utilities/mathUtilities.hpp"
 
 using fp = ablate::finiteVolume::CompressibleFlowFields;
 
 ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
                                                           const std::shared_ptr<ablate::mathFunctions::FieldFunction> &massFractions, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux,
-                                                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling, bool disablePressure)
+                                                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling, bool diffusionFlame,
+                                                          std::shared_ptr<ablate::radiation::SurfaceRadiation> radiationIn, const std::shared_ptr<io::interval::Interval> &intervalIn,
+                                                          const double emissivityIn)
     : latentHeatOfFusion(latentHeatOfFusion),
       transportModel(std::move(transportModel)),
       eos(std::move(eos)),
@@ -15,41 +19,44 @@ ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOf
       massFractions(massFractions),
       massFractionsFunction(massFractions ? massFractions->GetFieldFunction()->GetPetscFunction() : nullptr),
       massFractionsContext(massFractions ? massFractions->GetFieldFunction()->GetContext() : nullptr),
-      disablePressure(disablePressure),
-      pressureGradientScaling(std::move(pressureGradientScaling)) {}
+      diffusionFlame(diffusionFlame),
+      pressureGradientScaling(std::move(pressureGradientScaling)),
+      radiation(std::move(radiationIn)),
+      radiationInterval((intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>())),
+      emissivity(emissivityIn == 0 ? 1.0 : emissivityIn) {}
 
-void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
+void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
     // check for species
+    std::vector<std::string> inputFields = {finiteVolume::CompressibleFlowFields::EULER_FIELD};
+    // check for density yi field
     if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD)) {
-        bSolver.RegisterFunction(SublimationFunction,
-                                 this,
-                                 {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD},
-                                 {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD},
-                                 {finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
-                                 BoundarySolver::BoundarySourceType::Flux);
-
-        numberSpecies = bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD).numberComponents;
-
-    } else {
-        bSolver.RegisterFunction(SublimationFunction,
-                                 this,
-                                 {finiteVolume::CompressibleFlowFields::EULER_FIELD},
-                                 {finiteVolume::CompressibleFlowFields::EULER_FIELD},
-                                 {finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
-                                 BoundarySolver::BoundarySourceType::Flux);
+        inputFields.push_back(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD);
     }
 
+    // register the required sublimantion function
+    bSolver.RegisterFunction(SublimationFunction, this, inputFields, inputFields, {finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD}, BoundarySolver::BoundarySourceType::Flux);
+
+    // Register an optional output function
+    bSolver.RegisterFunction(SublimationOutputFunction,
+                             this,
+                             {"conduction", "extraRad", "regressionMassFlux", "radiation"},
+                             inputFields,
+                             {finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
+                             BoundarySolver::BoundarySourceType::Face);
+
+    numberSpecies = bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD).numberComponents;
+
     // extract the effectiveConductivity and viscosity model
-    effectiveConductivity = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Conductivity, bSolver.GetSubDomain().GetFields());
-    viscosityFunction = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Viscosity, bSolver.GetSubDomain().GetFields());
+    if (transportModel) {
+        effectiveConductivity = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Conductivity, bSolver.GetSubDomain().GetFields());
+        viscosityFunction = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Viscosity, bSolver.GetSubDomain().GetFields());
+    }
 
     // If there is a additionalHeatFlux function, we need to update time
     if (additionalHeatFlux || massFractions) {
         bSolver.RegisterPreStep([this](auto ts, auto &solver) {
             PetscFunctionBeginUser;
-            PetscErrorCode ierr = TSGetTime(ts, &(this->currentTime));
-            CHKERRQ(ierr);
-
+            PetscCall(TSGetTime(ts, &(this->currentTime)));
             PetscFunctionReturn(0);
         });
     }
@@ -58,7 +65,7 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
         // set decode state functions
         computeTemperatureFunction = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Temperature, bSolver.GetSubDomain().GetFields());
         // add in aux update variables
-        bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField,
+        bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::NavierStokesTransport::UpdateAuxTemperatureField,
                                        &computeTemperatureFunction,
                                        std::vector<std::string>{finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
                                        {});
@@ -72,6 +79,27 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
         if (!massFractionsFunction) {
             throw std::invalid_argument("The massFractions must be specified for ablate::boundarySolver::physics::Sublimation when DENSITY_YI_FIELD is active.");
         }
+    }
+}
+
+void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
+    /** Initialize the radiation solver with the face geometry of the boundary solver in order to solve for surface flux */
+    if (radiation) {
+        // check for ghost cells
+        DMLabel ghostLabel;
+        DMGetLabel(bSolver.GetSubDomain().GetDM(), "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
+
+        //!< Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solver.
+        solver::DynamicRange faceRange;
+        for (const auto &i : bSolver.GetBoundaryGeometry()) {
+            PetscInt ghost = -1;
+            if (ghostLabel) DMLabelGetValue(ghostLabel, i.geometry.faceId, &ghost) >> utilities::PetscUtilities::checkError;
+            if (!(ghost >= 0)) faceRange.Add(i.geometry.faceId);  //!< Add each ID to the range that the radiation solver will use
+        }
+        radiation->Setup(faceRange.GetRange(), bSolver.GetSubDomain());
+        radiation->Initialize(faceRange.GetRange(), bSolver.GetSubDomain());  //!< Pass the non-dynamic range into the radiation solver
+
+        bSolver.RegisterPreRHSFunction(SublimationPreRHS, this);
     }
 }
 
@@ -92,18 +120,27 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     for (PetscInt s = 0; s < stencilSize; s++) {
         stencilTemperature[s] = stencilAuxValues[s][aOff[TEMPERATURE_LOC]];
     }
+    PetscReal boundaryTemperature = auxValues[aOff[TEMPERATURE_LOC]];
 
     // compute dTdn
     PetscReal dTdn;
     BoundarySolver::ComputeGradientAlongNormal(dim, fg, auxValues[aOff[TEMPERATURE_LOC]], stencilSize, stencilTemperature.data(), stencilWeights, dTdn);
 
     // compute the effectiveConductivity
-    PetscReal effectiveConductivity;
-    PetscCall(sublimation->effectiveConductivity.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &effectiveConductivity, sublimation->effectiveConductivity.context.get()));
+    PetscReal effectiveConductivity = 0.0;
+    if (sublimation->effectiveConductivity.function) {
+        PetscCall(sublimation->effectiveConductivity.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &effectiveConductivity, sublimation->effectiveConductivity.context.get()));
+    }
 
-    // compute the heat flux
-    PetscReal heatFluxIntoSolid = -dTdn * effectiveConductivity;
-    PetscReal sublimationHeatFlux = PetscMax(0.0, heatFluxIntoSolid);  // note that q = -dTdn as dTdN faces into the solid
+    // Use the solution from the radiation solve.
+    PetscReal radIntensity = 0;
+    if (sublimation->radiation) {
+        radIntensity = sublimation->radiation->GetSurfaceIntensity(fg->faceId, boundaryTemperature, sublimation->emissivity);
+    }
+
+    // compute the heat flux. Add the radiation heat flux for this face intensity if the radiation solver exists
+    PetscReal conductionIntoSolid = -dTdn * effectiveConductivity;
+    PetscReal sublimationHeatFlux = PetscMax(0.0, conductionIntoSolid + radIntensity);  // note that q = -dTdn as dTdN faces into the solid
     // If there is an additional heat flux compute and add value
     if (sublimation->additionalHeatFlux) {
         sublimationHeatFlux += sublimation->additionalHeatFlux->Eval(fg->centroid, (int)dim, sublimation->currentTime);
@@ -144,35 +181,38 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     }
 
     // compute the effectiveConductivity
-    PetscReal viscosity;
-    PetscCall(sublimation->viscosityFunction.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &viscosity, sublimation->viscosityFunction.context.get()));
+    PetscReal viscosity = 0.0;
+    if (sublimation->viscosityFunction.function) {
+        PetscCall(sublimation->viscosityFunction.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &viscosity, sublimation->viscosityFunction.context.get()));
+    }
 
     // Compute the stress tensor tau
     PetscReal tau[9];  // Maximum size without symmetry
-    PetscCall(ablate::finiteVolume::processes::EulerTransport::CompressibleFlowComputeStressTensor(dim, viscosity, gradBoundaryVelocity, tau));
+    PetscCall(ablate::finiteVolume::processes::NavierStokesTransport::CompressibleFlowComputeStressTensor(dim, viscosity, gradBoundaryVelocity, tau));
 
     // Add the source term, kg/s for rho
     source[sOff[EULER_LOC] + fp::RHO] = massFlux * area;
 
     // Add each momentum flux
-    PetscReal momentumFlux = massFlux * massFlux / boundaryDensity;
+    PetscReal momentumFlux = 0.0;
 
     // compute the pressure on the face.  The first pressure in the stencil is always the node pressure on the face
     PetscReal boundaryPressure = 0.0;
-    if (!sublimation->disablePressure) {
+    if (!sublimation->diffusionFlame) {
         PetscCall(sublimation->computePressure.function(stencilValues[0], stencilAuxValues[0][aOff[TEMPERATURE_LOC]], &boundaryPressure, sublimation->computePressure.context.get()));
+        momentumFlux = massFlux * massFlux / boundaryDensity;
         if (sublimation->pressureGradientScaling) {
             boundaryPressure /= PetscSqr(sublimation->pressureGradientScaling->GetAlpha());
         }
-    }
 
-    // And the mom flux for each dir by g
-    for (PetscInt dir = 0; dir < dim; dir++) {
-        source[sOff[EULER_LOC] + fp::RHOU + dir] = momentumFlux * -fg->areas[dir] - boundaryPressure * fg->areas[dir];
+        // And the mom flux for each dir by g
+        for (PetscInt dir = 0; dir < dim; dir++) {
+            source[sOff[EULER_LOC] + fp::RHOU + dir] = momentumFlux * -fg->areas[dir] - boundaryPressure * fg->areas[dir];
 
-        // March over each direction for the viscus flux
-        for (PetscInt d = 0; d < dim; ++d) {
-            source[sOff[EULER_LOC] + fp::RHOU + dir] += fg->areas[d] * tau[dir * dim + d];  // This is tau[c][d]
+            // March over each direction for the viscus flux
+            for (PetscInt d = 0; d < dim; ++d) {
+                source[sOff[EULER_LOC] + fp::RHOU + dir] += fg->areas[d] * tau[dir * dim + d];  // This is tau[c][d]
+            }
         }
     }
 
@@ -181,14 +221,12 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     PetscCall(sublimation->computeSensibleEnthalpy.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &sensibleEnthalpy, sublimation->computeSensibleEnthalpy.context.get()));
 
     // Energy term
-    source[sOff[EULER_LOC] + fp::RHOE] = (massFlux * sensibleEnthalpy - heatFluxIntoSolid) * area;
+    source[sOff[EULER_LOC] + fp::RHOE] = (massFlux * sensibleEnthalpy - conductionIntoSolid) * area;
 
     // Add in species
     if (sublimation->massFractionsContext) {
         // Fill the source with the mass fractions
-        PetscErrorCode ierr =
-            sublimation->massFractionsFunction(dim, sublimation->currentTime, fg->centroid, sublimation->numberSpecies, source + sOff[DENSITY_YI_LOC], sublimation->massFractionsContext);
-        CHKERRQ(ierr);
+        PetscCall(sublimation->massFractionsFunction(dim, sublimation->currentTime, fg->centroid, sublimation->numberSpecies, source + sOff[DENSITY_YI_LOC], sublimation->massFractionsContext));
 
         // Scale the mass fractions by massFlux*area
         for (PetscInt sp = 0; sp < sublimation->numberSpecies; sp++) {
@@ -198,13 +236,84 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
 
     PetscFunctionReturn(0);
 }
-void ablate::boundarySolver::physics::Sublimation::Initialize(PetscInt numberSpeciesIn) {
+
+PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationOutputFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg,
+                                                                                       const PetscFVCellGeom *boundaryCell, const PetscInt *uOff, const PetscScalar *boundaryValues,
+                                                                                       const PetscScalar **stencilValues, const PetscInt *aOff, const PetscScalar *auxValues,
+                                                                                       const PetscScalar **stencilAuxValues, PetscInt stencilSize, const PetscInt *stencil,
+                                                                                       const PetscScalar *stencilWeights, const PetscInt *sOff, PetscScalar *source, void *ctx) {
+    PetscFunctionBeginUser;
+    // Mark the locations
+    const int TEMPERATURE_LOC = 0;
+    auto sublimation = (Sublimation *)ctx;
+
+    // Store indexes to the expected output variables
+    const int CONDUCTION_LOC = 0;
+    const int EXTRA_RAD_LOC = 1;
+    const int REGRESSION_MASS_FLUX_LOC = 2;
+    const int RAD_LOC = 3;
+
+    // extract the temperature
+    std::vector<PetscReal> stencilTemperature(stencilSize, 0);
+    for (PetscInt s = 0; s < stencilSize; s++) {
+        stencilTemperature[s] = stencilAuxValues[s][aOff[TEMPERATURE_LOC]];
+    }
+    PetscReal boundaryTemperature = auxValues[aOff[TEMPERATURE_LOC]];
+
+    // compute dTdn
+    PetscReal dTdn;
+    BoundarySolver::ComputeGradientAlongNormal(dim, fg, auxValues[aOff[TEMPERATURE_LOC]], stencilSize, stencilTemperature.data(), stencilWeights, dTdn);
+
+    // compute the effectiveConductivity
+    PetscReal effectiveConductivity = 0.0;
+    if (sublimation->effectiveConductivity.function) {
+        PetscCall(sublimation->effectiveConductivity.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &effectiveConductivity, sublimation->effectiveConductivity.context.get()));
+    }
+
+    PetscReal radIntensity = 0;
+    if (sublimation->radiation) {
+        radIntensity = sublimation->radiation->GetSurfaceIntensity(fg->faceId, boundaryTemperature, sublimation->emissivity);
+    }
+
+    // compute the heat flux
+    PetscReal heatFluxIntoSolid = -dTdn * effectiveConductivity;
+    source[sOff[RAD_LOC]] = radIntensity;
+    source[sOff[CONDUCTION_LOC]] = heatFluxIntoSolid;
+    PetscReal sublimationHeatFlux = PetscMax(0.0, heatFluxIntoSolid + radIntensity);  // note that q = -dTdn as dTdN faces into the solid
+    // If there is an additional heat flux compute and add value
+    PetscReal additionalHeatFlux = 0.0;
+    if (sublimation->additionalHeatFlux) {
+        additionalHeatFlux = sublimation->additionalHeatFlux->Eval(fg->centroid, (int)dim, sublimation->currentTime);
+        sublimationHeatFlux += additionalHeatFlux;
+    }
+    source[sOff[EXTRA_RAD_LOC]] = additionalHeatFlux;
+
+    // Compute the massFlux (we can only remove mass)
+    source[sOff[REGRESSION_MASS_FLUX_LOC]] = sublimationHeatFlux / sublimation->latentHeatOfFusion;
+
+    PetscFunctionReturn(0);
+}
+
+void ablate::boundarySolver::physics::Sublimation::Setup(PetscInt numberSpeciesIn) {
     numberSpecies = numberSpeciesIn;
     // for test code, extract the effectiveConductivity model without any fields
     effectiveConductivity = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Conductivity, {});
     viscosityFunction = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Viscosity, {});
     computeSensibleEnthalpy = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SensibleEnthalpy, {});
     computePressure = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Pressure, {});
+}
+
+PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationPreRHS(BoundarySolver &solver, TS ts, PetscReal time, bool initialStage, Vec locX, void *ctx) {
+    PetscFunctionBegin;
+    auto sublimation = (Sublimation *)ctx;
+    PetscInt step;
+    TSGetStepNumber(ts, &step) >> utilities::PetscUtilities::checkError;
+    TSGetTime(ts, &time) >> utilities::PetscUtilities::checkError;
+    if (initialStage && sublimation->radiationInterval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
+        sublimation->radiation->EvaluateGains(
+            solver.GetSubDomain().GetSolutionVector(), solver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD), solver.GetSubDomain().GetAuxVector());
+    }
+    PetscFunctionReturn(0);
 }
 
 void ablate::boundarySolver::physics::Sublimation::UpdateSpecies(TS ts, ablate::solver::Solver &solver) {
@@ -221,13 +330,13 @@ void ablate::boundarySolver::physics::Sublimation::UpdateSpecies(TS ts, ablate::
 
     // get the time from the ts
     PetscReal time;
-    TSGetTime(ts, &time) >> checkError;
+    TSGetTime(ts, &time) >> utilities::PetscUtilities::checkError;
 
     // Get the array vector
     PetscScalar *solutionArray;
-    VecGetArray(solVec, &solutionArray) >> checkError;
+    VecGetArray(solVec, &solutionArray) >> utilities::PetscUtilities::checkError;
     PetscScalar *auxArray;
-    VecGetArray(auxVec, &auxArray) >> checkError;
+    VecGetArray(auxVec, &auxArray) >> utilities::PetscUtilities::checkError;
 
     // March over each cell in this domain
     solver::Range cellRange;
@@ -238,22 +347,22 @@ void ablate::boundarySolver::physics::Sublimation::UpdateSpecies(TS ts, ablate::
     Vec cellGeomVec;
     const PetscScalar *cellGeomArray;
     DM cellGeomDm;
-    DMPlexGetDataFVM(dm, nullptr, &cellGeomVec, nullptr, nullptr) >> checkError;
-    VecGetDM(cellGeomVec, &cellGeomDm) >> checkError;
-    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+    DMPlexGetDataFVM(dm, nullptr, &cellGeomVec, nullptr, nullptr) >> utilities::PetscUtilities::checkError;
+    VecGetDM(cellGeomVec, &cellGeomDm) >> utilities::PetscUtilities::checkError;
+    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
 
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
         PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
         // Get the euler and density field
         const PetscScalar *euler = nullptr;
-        DMPlexPointGlobalFieldRead(dm, cell, eulerFieldInfo.id, solutionArray, &euler) >> checkError;
+        DMPlexPointGlobalFieldRead(dm, cell, eulerFieldInfo.id, solutionArray, &euler) >> utilities::PetscUtilities::checkError;
         PetscScalar *densityYi;
-        DMPlexPointGlobalFieldRef(dm, cell, densityYiFieldInfo.id, solutionArray, &densityYi) >> checkError;
+        DMPlexPointGlobalFieldRef(dm, cell, densityYiFieldInfo.id, solutionArray, &densityYi) >> utilities::PetscUtilities::checkError;
         PetscScalar *yi;
-        DMPlexPointLocalFieldRead(auxDm, cell, yiFieldInfo.id, auxArray, &yi) >> checkError;
+        DMPlexPointLocalFieldRead(auxDm, cell, yiFieldInfo.id, auxArray, &yi) >> utilities::PetscUtilities::checkError;
         PetscFVCellGeom *cellGeom;
-        DMPlexPointLocalRead(cellGeomDm, cell, cellGeomArray, &cellGeom) >> checkError;
+        DMPlexPointLocalRead(cellGeomDm, cell, cellGeomArray, &cellGeom) >> utilities::PetscUtilities::checkError;
 
         // compute the mass fractions on the boundary
         massFractionsFunction(dim, time, cellGeom->centroid, yiFieldInfo.numberComponents, yi, massFractionsContext);
@@ -270,18 +379,20 @@ void ablate::boundarySolver::physics::Sublimation::UpdateSpecies(TS ts, ablate::
     }
 
     // cleanup
-    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-    VecRestoreArray(auxVec, &auxArray) >> checkError;
-    VecRestoreArray(solVec, &solutionArray) >> checkError;
+    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArray(auxVec, &auxArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArray(solVec, &solutionArray) >> utilities::PetscUtilities::checkError;
     solver.RestoreRange(cellRange);
 }
 
 #include "registrar.hpp"
 REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::physics::Sublimation, "Adds in the euler/yi sources for a sublimating material.  Should be used with a LODI boundary.",
          ARG(double, "latentHeatOfFusion", "the latent heat of fusion [J/kg]"),
-         ARG(ablate::eos::transport::TransportModel, "transportModel", "the effective conductivity model to compute heat flux to the surface [W/(m⋅K)]"),
+         OPT(ablate::eos::transport::TransportModel, "transportModel", "the effective conductivity model to compute heat flux to the surface [W/(m⋅K)]"),
          ARG(ablate::eos::EOS, "eos", "the eos used to compute temperature on the boundary"),
          OPT(ablate::mathFunctions::FieldFunction, "massFractions", "the species to deposit the off gas mass to (required if solving species)"),
          OPT(ablate::mathFunctions::MathFunction, "additionalHeatFlux", "additional normal heat flux into the solid function"),
          OPT(ablate::finiteVolume::processes::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"),
-         OPT(bool, "disablePressure", "disables the pressure contribution to the momentum equation. Should be true when advection is not solved. (Default is false)"));
+         OPT(bool, "diffusionFlame", "disables contribution to the momentum equation. Should be true when advection is not solved. (Default is false)"),
+         OPT(ablate::radiation::SurfaceRadiation, "radiation", "radiation instance for the sublimation solver to calculate heat flux"),
+         OPT(ablate::io::interval::Interval, "radiationInterval", "number of time steps between the radiation solves"), OPT(double, "emissivity", "radiation property of the fuel surface"));

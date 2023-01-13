@@ -1,5 +1,5 @@
 #include "essential.hpp"
-#include <utilities/petscError.hpp>
+#include "utilities/petscUtilities.hpp"
 
 PetscErrorCode ablate::finiteElement::boundaryConditions::Essential::BoundaryValueFunction(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt Nf, PetscScalar *u, void *ctx) {
     auto boundary = (Essential *)ctx;
@@ -27,7 +27,7 @@ void *ablate::finiteElement::boundaryConditions::Essential::GetContext() { retur
 
 void ablate::finiteElement::boundaryConditions::Essential::SetupBoundary(DM dm, PetscDS problem, PetscInt fieldId) {
     DMLabel label;
-    DMGetLabel(dm, labelName.c_str(), &label) >> checkError;
+    DMGetLabel(dm, labelName.c_str(), &label) >> utilities::PetscUtilities::checkError;
     PetscDSAddBoundary(problem,
                        DM_BC_ESSENTIAL,
                        GetBoundaryName().c_str(),
@@ -41,7 +41,7 @@ void ablate::finiteElement::boundaryConditions::Essential::SetupBoundary(DM dm, 
                        (void (*)(void))GetBoundaryTimeDerivativeFunction(),
                        GetContext(),
                        NULL) >>
-        checkError;
+        utilities::PetscUtilities::checkError;
 }
 
 #include "registrar.hpp"

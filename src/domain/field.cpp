@@ -33,27 +33,18 @@ std::istream& ablate::domain::operator>>(std::istream& is, ablate::domain::Field
 }
 
 ablate::domain::Field ablate::domain::Field::FromFieldDescription(const ablate::domain::FieldDescription& fieldDescription, PetscInt id, PetscInt subId, PetscInt offset) {
-    return ablate::domain::Field{
-        .name = fieldDescription.name,
-        .numberComponents = (PetscInt)fieldDescription.components.size(),
-        .components = fieldDescription.components,
-        .id = id,
-        .subId = subId,
-        .offset = offset,
-        .location = fieldDescription.location,
-        .type = fieldDescription.type,
-    };
+    return ablate::domain::Field{.name = fieldDescription.name,
+                                 .numberComponents = (PetscInt)fieldDescription.components.size(),
+                                 .components = fieldDescription.components,
+                                 .id = id,
+                                 .subId = subId,
+                                 .offset = offset,
+                                 .location = fieldDescription.location,
+                                 .type = fieldDescription.type,
+                                 .tags = std::set<std::string>(fieldDescription.tags.begin(), fieldDescription.tags.end())};
 }
 
-ablate::domain::Field ablate::domain::Field::CreateSubField(PetscInt newSubId, PetscInt offset) const {
+ablate::domain::Field ablate::domain::Field::CreateSubField(PetscInt newSubId, PetscInt newOffset) const {
     return ablate::domain::Field{
-        .name = name,
-        .numberComponents = numberComponents,
-        .components = components,
-        .id = id,
-        .subId = newSubId,
-        .offset = offset,
-        .location = location,
-        .type = type,
-    };
+        .name = name, .numberComponents = numberComponents, .components = components, .id = id, .subId = newSubId, .offset = newOffset, .location = location, .type = type, .tags = tags};
 }

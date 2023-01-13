@@ -86,7 +86,7 @@ timestepper:
         temperature: 300
         velocity: "0.0, 0.0"
         # individual mass fractions must be passed to the flow field state to compute density, energy, etc.
-        massFractions: !ablate::finiteVolume::fieldFunctions::MassFractions
+        other: !ablate::finiteVolume::fieldFunctions::MassFractions
           &massFractions
           eos: *eos
           values:
@@ -195,5 +195,7 @@ solvers:
         eos: *eos
         pgs: *pgs
         massFractions: *massFractions
-
+    monitors:
+      # a monitor is needed to write to a hdf5
+      - !ablate::monitors::BoundarySolverMonitor
 

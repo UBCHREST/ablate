@@ -7,7 +7,7 @@ ablate::monitors::MaxMinAverage::MaxMinAverage(const std::string& fieldName, std
 
 PetscErrorCode ablate::monitors::MaxMinAverage::MonitorMaxMinAverage(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
+
     auto monitor = (ablate::monitors::MaxMinAverage*)ctx;
 
     if (monitor->interval->Check(PetscObjectComm((PetscObject)ts), step, crtime)) {
@@ -16,8 +16,7 @@ PetscErrorCode ablate::monitors::MaxMinAverage::MonitorMaxMinAverage(TS ts, Pets
         IS vecIs;
         Vec vec;
         DM subDm;
-        ierr = monitor->GetSolver()->GetSubDomain().GetFieldGlobalVector(field, &vecIs, &vec, &subDm);
-        CHKERRQ(ierr);
+        PetscCall(monitor->GetSolver()->GetSubDomain().GetFieldGlobalVector(field, &vecIs, &vec, &subDm));
 
         // get the comm for this monitor
         auto comm = PetscObjectComm((PetscObject)vec);
@@ -29,12 +28,10 @@ PetscErrorCode ablate::monitors::MaxMinAverage::MonitorMaxMinAverage(TS ts, Pets
 
         // Get the local size of the vec
         PetscInt locSize;
-        ierr = VecGetLocalSize(vec, &locSize);
-        CHKERRQ(ierr);
+        PetscCall(VecGetLocalSize(vec, &locSize));
 
         const PetscScalar* data;
-        ierr = VecGetArrayRead(vec, &data);
-        CHKERRQ(ierr);
+        PetscCall(VecGetArrayRead(vec, &data));
 
         // Determine the number of data points
         PetscInt pts = locSize / field.numberComponents;
@@ -64,14 +61,12 @@ PetscErrorCode ablate::monitors::MaxMinAverage::MonitorMaxMinAverage(TS ts, Pets
 
         // Take the avg
         PetscInt globSize;
-        ierr = VecGetSize(vec, &globSize);
-        CHKERRQ(ierr);
+        PetscCall(VecGetSize(vec, &globSize));
         for (auto& avgComp : avgGlob) {
             avgComp /= (globSize / field.numberComponents);
         }
 
-        ierr = VecRestoreArrayRead(vec, &data);
-        CHKERRQ(ierr);
+        PetscCall(VecRestoreArrayRead(vec, &data));
 
         // if this is the first time step init the log
         if (!monitor->log->Initialized()) {
@@ -86,8 +81,7 @@ PetscErrorCode ablate::monitors::MaxMinAverage::MonitorMaxMinAverage(TS ts, Pets
         monitor->log->Print("\n");
         monitor->log->Print("\tavg", avgGlob.size(), &avgGlob[0], "%2.3g");
         monitor->log->Print("\n");
-        ierr = monitor->GetSolver()->GetSubDomain().RestoreFieldGlobalVector(field, &vecIs, &vec, &subDm);
-        CHKERRQ(ierr);
+        PetscCall(monitor->GetSolver()->GetSubDomain().RestoreFieldGlobalVector(field, &vecIs, &vec, &subDm));
     }
     PetscFunctionReturn(0);
 }

@@ -1,14 +1,13 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
-#include <parameters/petscPrefixOptions.hpp>
-#include <utilities/mpiError.hpp>
 #include "builder.hpp"
 #include "environment/download.hpp"
 #include "environment/runEnvironment.hpp"
 #include "listing.hpp"
 #include "localPath.hpp"
-#include "utilities/petscError.hpp"
+#include "parameters/petscPrefixOptions.hpp"
+#include "utilities/mpiUtilities.hpp"
 #include "utilities/petscUtilities.hpp"
 #include "yamlParser.hpp"
 
@@ -23,9 +22,9 @@ int main(int argc, char** args) {
 
     // check to see if we should print version
     PetscBool printInfo = PETSC_FALSE;
-    PetscOptionsGetBool(NULL, NULL, "-version", &printInfo, NULL) >> checkError;
+    PetscOptionsGetBool(nullptr, nullptr, "-version", &printInfo, nullptr) >> utilities::PetscUtilities::checkError;
     if (!printInfo) {
-        PetscOptionsGetBool(NULL, NULL, "--info", &printInfo, NULL) >> checkError;
+        PetscOptionsGetBool(nullptr, nullptr, "--info", &printInfo, nullptr) >> utilities::PetscUtilities::checkError;
     }
     if (printInfo) {
         Builder::PrintInfo(std::cout);
@@ -33,7 +32,7 @@ int main(int argc, char** args) {
     }
 
     PetscBool printVersion = PETSC_FALSE;
-    PetscOptionsGetBool(NULL, NULL, "--version", &printVersion, NULL) >> checkError;
+    PetscOptionsGetBool(nullptr, nullptr, "--version", &printVersion, nullptr) >> utilities::PetscUtilities::checkError;
     if (printVersion) {
         Builder::PrintVersion(std::cout);
         return 0;
@@ -41,14 +40,14 @@ int main(int argc, char** args) {
 
     PetscInt delay = -1;
     PetscBool delaySpecified;
-    PetscOptionsGetInt(NULL, NULL, "--delay", &delay, &delaySpecified) >> checkError;
+    PetscOptionsGetInt(nullptr, nullptr, "--delay", &delay, &delaySpecified) >> utilities::PetscUtilities::checkError;
     if (delaySpecified) {
-        PetscSleep(delay) >> checkError;
+        PetscSleep(delay) >> utilities::PetscUtilities::checkError;
     }
 
     // check to see if we should print options
     PetscBool printParserOptions = PETSC_FALSE;
-    PetscOptionsGetBool(NULL, NULL, "--help", &printParserOptions, NULL) >> checkError;
+    PetscOptionsGetBool(nullptr, nullptr, "--help", &printParserOptions, nullptr) >> utilities::PetscUtilities::checkError;
     if (printParserOptions) {
         std::cout << cppParser::Listing::Get() << std::endl;
         return 0;
@@ -57,7 +56,7 @@ int main(int argc, char** args) {
     // check to see if we should print options
     char filename[PETSC_MAX_PATH_LEN] = "";
     PetscBool fileSpecified = PETSC_FALSE;
-    PetscOptionsGetString(NULL, NULL, "--input", filename, PETSC_MAX_PATH_LEN, &fileSpecified) >> checkError;
+    PetscOptionsGetString(nullptr, nullptr, "--input", filename, PETSC_MAX_PATH_LEN, &fileSpecified) >> utilities::PetscUtilities::checkError;
     if (!fileSpecified) {
         throw std::invalid_argument("the --input must be specified");
     }
@@ -88,7 +87,7 @@ int main(int argc, char** args) {
 
         // Copy over the input file
         int rank;
-        MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkMpiError;
+        MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> utilities::MpiUtilities::checkError;
         if (rank == 0) {
             std::filesystem::path inputCopy = environment::RunEnvironment::Get().GetOutputDirectory() / filePath.filename();
             std::ofstream stream(inputCopy);

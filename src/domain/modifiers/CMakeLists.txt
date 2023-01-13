@@ -10,7 +10,17 @@ target_sources(ablateLibrary
         subtractLabel.cpp
         tagLabelInterface.cpp
         labelSupport.cpp
+        extrudeLabel.cpp
         tagMeshBoundaryFaces.cpp
+        completeLabel.cpp
+        dmPlexCheck.cpp
+        fvmCheck.cpp
+        meshMapper.cpp
+        createCoordinateSpace.cpp
+        translate.cpp
+        onePointClusteringMapper.cpp
+        edgeClusteringMapper.cpp
+        twoPointClusteringMapper.cpp
 
         PUBLIC
         modifier.hpp
@@ -23,5 +33,15 @@ target_sources(ablateLibrary
         subtractLabel.hpp
         tagLabelInterface.hpp
         labelSupport.hpp
+        extrudeLabel.hpp
         tagMeshBoundaryFaces.hpp
+        completeLabel.hpp
+        dmPlexCheck.hpp
+        fvmCheck.hpp
+        meshMapper.hpp
+        createCoordinateSpace.hpp
+        translate.hpp
+        onePointClusteringMapper.hpp
+        edgeClusteringMapper.hpp
+        twoPointClusteringMapper.hpp
         )

@@ -1,5 +1,5 @@
 #include "boxInitializer.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::particles::initializers::BoxInitializer::BoxInitializer(std::vector<double> lowerBound, std::vector<double> upperBound, int particlesPerDim)
     : lowerBound(lowerBound), upperBound(upperBound), particlesPerDim(particlesPerDim){};
@@ -23,7 +23,7 @@ void ablate::particles::initializers::BoxInitializer::Initialize(ablate::domain:
     }
 
     PetscInt dim;
-    DMGetDimension(particleDm, &dim) >> checkError;
+    DMGetDimension(particleDm, &dim) >> utilities::PetscUtilities::checkError;
 
     PetscInt Np = 1;
     PetscInt *cellid, n[3];
@@ -31,7 +31,7 @@ void ablate::particles::initializers::BoxInitializer::Initialize(ablate::domain:
     PetscScalar *coords;
     PetscMPIInt rank;
 
-    DMSetFromOptions(particleDm) >> checkError;
+    DMSetFromOptions(particleDm) >> utilities::PetscUtilities::checkError;
     MPI_Comm_rank(PetscObjectComm((PetscObject)particleDm), &rank);
 
     for (PetscInt d = 0; d < dim; ++d) {
@@ -45,9 +45,9 @@ void ablate::particles::initializers::BoxInitializer::Initialize(ablate::domain:
         Np = 0;
     }
 
-    DMSwarmSetLocalSizes(particleDm, Np, 0) >> checkError;
-    DMSetFromOptions(particleDm) >> checkError;
-    DMSwarmGetField(particleDm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords) >> checkError;
+    DMSwarmSetLocalSizes(particleDm, Np, 0) >> utilities::PetscUtilities::checkError;
+    DMSetFromOptions(particleDm) >> utilities::PetscUtilities::checkError;
+    DMSwarmGetField(particleDm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords) >> utilities::PetscUtilities::checkError;
     if (rank == 0) {
         switch (dim) {
             case 2:
@@ -81,13 +81,13 @@ void ablate::particles::initializers::BoxInitializer::Initialize(ablate::domain:
                 throw std::runtime_error("Do not support particle layout in dimension " + std::to_string(dim));
         }
     }
-    DMSwarmRestoreField(particleDm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords) >> checkError;
-    DMSwarmGetField(particleDm, DMSwarmPICField_cellid, NULL, NULL, (void **)&cellid) >> checkError;
+    DMSwarmRestoreField(particleDm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords) >> utilities::PetscUtilities::checkError;
+    DMSwarmGetField(particleDm, DMSwarmPICField_cellid, NULL, NULL, (void **)&cellid) >> utilities::PetscUtilities::checkError;
     for (PetscInt p = 0; p < Np; ++p) {
         cellid[p] = 0;
     }
-    DMSwarmRestoreField(particleDm, DMSwarmPICField_cellid, NULL, NULL, (void **)&cellid) >> checkError;
-    DMSwarmMigrate(particleDm, PETSC_TRUE) >> checkError;
+    DMSwarmRestoreField(particleDm, DMSwarmPICField_cellid, NULL, NULL, (void **)&cellid) >> utilities::PetscUtilities::checkError;
+    DMSwarmMigrate(particleDm, PETSC_TRUE) >> utilities::PetscUtilities::checkError;
 }
 
 #include "registrar.hpp"

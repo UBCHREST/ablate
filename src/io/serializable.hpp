@@ -1,6 +1,9 @@
 #ifndef ABLATELIBRARY_SERIALIZABLE_HPP
 #define ABLATELIBRARY_SERIALIZABLE_HPP
 
+#include <petsc.h>
+#include <string>
+
 namespace ablate::io {
 /**
  * This class gives the option to serialize/save restore.  A bool is used at startup to determine if it should be save/restored
@@ -12,13 +15,13 @@ class Serializable {
      * boolean used to determined if this object should be serialized at runtime
      * @return
      */
-    virtual bool Serialize() const { return true; }
+    [[nodiscard]] virtual bool Serialize() const { return true; }
 
     /**
      * only required function, returns the id of the object.  Should be unique for the simulation
      * @return
      */
-    virtual const std::string& GetId() const = 0;
+    [[nodiscard]] virtual const std::string& GetId() const = 0;
 
     /**
      * Save the state to the PetscViewer
@@ -35,6 +38,50 @@ class Serializable {
      * @param time
      */
     virtual void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) = 0;
+
+   protected:
+    /**
+     * helper function to save PetscScalar to a PetscViewer. It is assumed to be the same value across all mpi ranks
+     * @param viewer
+     * @param name
+     * @param value
+     */
+    static void SaveKeyValue(PetscViewer viewer, const char* name, PetscScalar value);
+
+    /**
+     * helper function to restore PetscScalar to a PetscViewer. The same value is returned on all mpi ranks
+     * @param viewer
+     * @param name
+     * @param value
+     */
+    static void RestoreKeyValue(PetscViewer viewer, const char* name, PetscScalar& value);
+
+    /**
+     * Helper function to save a single key/value pair to the PetscViewer.  It is assumed to be the same value across all mpi ranks
+     * @tparam T
+     * @param viewer
+     * @param name
+     * @param value
+     */
+    template <class T>
+    static inline void SaveKeyValue(PetscViewer viewer, const char* name, T value) {
+        auto tempValue = (PetscScalar)value;
+        SaveKeyValue(viewer, name, tempValue);
+    }
+
+    /**
+     * Helper function to save a restore key/value pair to the PetscViewer.  It is assumed to be the same value across all mpi ranks
+     * @tparam T
+     * @param viewer
+     * @param name
+     * @param value
+     */
+    template <class T>
+    static inline void RestoreKeyValue(PetscViewer viewer, const char* name, T& value) {
+        PetscScalar tempValue = {};
+        RestoreKeyValue(viewer, name, tempValue);
+        value = (T)tempValue;
+    }
 };
 }  // namespace ablate::io
 

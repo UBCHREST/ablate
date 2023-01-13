@@ -9,8 +9,8 @@ ablate::boundarySolver::lodi::Inlet::Inlet(std::shared_ptr<eos::EOS> eos, std::s
                                            std::shared_ptr<ablate::mathFunctions::MathFunction> prescribedVelocity)
     : LODIBoundary(std::move(eos), std::move(pressureGradientScaling)), prescribedVelocity(std::move(prescribedVelocity)) {}
 
-void ablate::boundarySolver::lodi::Inlet::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
-    ablate::boundarySolver::lodi::LODIBoundary::Initialize(bSolver);
+void ablate::boundarySolver::lodi::Inlet::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
+    ablate::boundarySolver::lodi::LODIBoundary::Setup(bSolver);
 
     bSolver.RegisterFunction(InletFunction, this, fieldNames, fieldNames, {});
 
@@ -23,7 +23,7 @@ void ablate::boundarySolver::lodi::Inlet::Initialize(ablate::boundarySolver::Bou
         bSolver.RegisterPreStep([&bSolver, updateFieldFunction](auto ts, auto &solver) {
             // Get the current time
             PetscReal time;
-            TSGetTime(ts, &time) >> checkError;
+            TSGetTime(ts, &time) >> utilities::PetscUtilities::checkError;
 
             bSolver.InsertFieldFunctions({updateFieldFunction}, time);
         });
@@ -58,12 +58,9 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
             boundaryVel[d] = boundaryValues[uOff[inletBoundary->eulerId] + finiteVolume::CompressibleFlowFields::RHOU + d] / boundaryDensity;
             boundaryNormalVelocity += boundaryVel[d] * fg->normal[d];
         }
-        PetscErrorCode ierr = inletBoundary->computeTemperature.function(boundaryValues, &boundaryTemperature, inletBoundary->computeTemperature.context.get());
-        CHKERRQ(ierr);
-        ierr = inletBoundary->computeSpeedOfSound.function(boundaryValues, boundaryTemperature, &boundarySpeedOfSound, inletBoundary->computeSpeedOfSound.context.get());
-        CHKERRQ(ierr);
-        ierr = inletBoundary->computePressureFromTemperature.function(boundaryValues, boundaryTemperature, &boundaryPressure, inletBoundary->computePressureFromTemperature.context.get());
-        CHKERRQ(ierr);
+        PetscCall(inletBoundary->computeTemperature.function(boundaryValues, &boundaryTemperature, inletBoundary->computeTemperature.context.get()));
+        PetscCall(inletBoundary->computeSpeedOfSound.function(boundaryValues, boundaryTemperature, &boundarySpeedOfSound, inletBoundary->computeSpeedOfSound.context.get()));
+        PetscCall(inletBoundary->computePressureFromTemperature.function(boundaryValues, boundaryTemperature, &boundaryPressure, inletBoundary->computePressureFromTemperature.context.get()));
     }
 
     // Map the boundary velocity into the normal coord system
@@ -82,8 +79,7 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
             stencilVel[s][d] = stencilValues[s][uOff[inletBoundary->eulerId] + finiteVolume::CompressibleFlowFields::RHOU + d] / stencilDensity[s];
             stencilNormalVelocity[s] += stencilVel[s][d] * fg->normal[d];
         }
-        PetscErrorCode ierr = inletBoundary->computePressure.function(stencilValues[s], &stencilPressure[s], inletBoundary->computePressure.context.get());
-        CHKERRQ(ierr);
+        PetscCall(inletBoundary->computePressure.function(stencilValues[s], &stencilPressure[s], inletBoundary->computePressure.context.get()));
     }
 
     // Interpolate the normal velocity gradient to the surface
@@ -152,9 +148,9 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
                             boundarySensibleEnthalpy,
                             velNormPrim,
                             speedOfSoundPrim,
-                            boundaryDensityYi /* PetscReal* Yi*/,
-                            inletBoundary->nEvEqs > 0 ? boundaryValues + uOff[inletBoundary->evId] : nullptr /* PetscReal* EV*/,
-                            &scriptL[0],
+                            boundaryValues,
+                            uOff,
+                            scriptL.data(),
                             transformationMatrix,
                             source);
 
@@ -183,7 +179,7 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::UpdateVelocityFunction(Petsc
     PetscScalar sensibleEnergy = internalEnergy - kineticEnergy;
 
     // Update velocity
-    velocityFunction->GetPetscFunction()(dim, time, x, dim, velocity, velocityFunction->GetContext()) >> checkError;
+    velocityFunction->GetPetscFunction()(dim, time, x, dim, velocity, velocityFunction->GetContext()) >> utilities::PetscUtilities::checkError;
 
     // Update the momentum terms
     kineticEnergy = 0.0;

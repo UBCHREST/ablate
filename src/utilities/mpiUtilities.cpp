@@ -1,15 +1,14 @@
 #include "mpiUtilities.hpp"
-#include "mpiError.hpp"
 
 void ablate::utilities::MpiUtilities::RoundRobin(MPI_Comm comm, std::function<void(int)> function) {
     int size = 1;
     int rank = 0;
 
     int mpiInitialized;
-    MPI_Initialized(&mpiInitialized) >> checkMpiError;
+    MPI_Initialized(&mpiInitialized) >> utilities::MpiUtilities::checkError;
     if (mpiInitialized) {
-        MPI_Comm_rank(comm, &rank) >> checkMpiError;
-        MPI_Comm_size(comm, &size) >> checkMpiError;
+        MPI_Comm_rank(comm, &rank) >> utilities::MpiUtilities::checkError;
+        MPI_Comm_size(comm, &size) >> utilities::MpiUtilities::checkError;
     }
 
     // call each function one at a time
@@ -23,21 +22,21 @@ void ablate::utilities::MpiUtilities::RoundRobin(MPI_Comm comm, std::function<vo
     }
 }
 
-void ablate::utilities::MpiUtilities::Once(MPI_Comm comm, std::function<void()> function) {
+void ablate::utilities::MpiUtilities::Once(MPI_Comm comm, std::function<void()> function, int root) {
     int rank = 0;
 
     int mpiInitialized;
-    MPI_Initialized(&mpiInitialized) >> checkMpiError;
+    MPI_Initialized(&mpiInitialized) >> utilities::MpiUtilities::checkError;
     if (mpiInitialized) {
-        MPI_Comm_rank(comm, &rank) >> checkMpiError;
+        MPI_Comm_rank(comm, &rank) >> utilities::MpiUtilities::checkError;
     }
 
     // call each function one at a time
-    if (rank == 0) {
+    if (rank == root) {
         function();
     }
 
     if (mpiInitialized) {
-        MPI_Barrier(comm) >> checkMpiError;
+        MPI_Barrier(comm) >> utilities::MpiUtilities::checkError;
     }
 }

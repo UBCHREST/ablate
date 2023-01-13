@@ -4,6 +4,7 @@
 #include <memory>
 #include "eos.hpp"
 #include "parameters/parameters.hpp"
+#include "utilities/vectorUtilities.hpp"
 
 namespace ablate::eos {
 
@@ -116,13 +117,20 @@ class PerfectGas : public EOS {
      * @param property1
      * @param property2
      */
-    [[nodiscard]] FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const override;
+    [[nodiscard]] EOSFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2,
+                                                       std::vector<std::string> otherProperties) const override;
 
     /**
      * returns the species supported by this EOS
      * @return
      */
-    [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { return species; }
+    [[nodiscard]] const std::vector<std::string>& GetSpeciesVariables() const override { return species; }
+
+    /**
+     * Returns a vector of all extra variables required to utilize the equation of state
+     * @return
+     */
+    [[nodiscard]] virtual const std::vector<std::string>& GetProgressVariables() const override { return ablate::utilities::VectorUtilities::Empty<std::string>; }
 };
 
 }  // namespace ablate::eos

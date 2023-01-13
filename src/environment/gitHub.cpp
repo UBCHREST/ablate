@@ -2,8 +2,8 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include "environment/runEnvironment.hpp"
-#include "utilities/mpiError.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/mpiUtilities.hpp"
+#include "utilities/petscUtilities.hpp"
 #include "utilities/temporaryWorkingDirectory.hpp"
 
 ablate::environment::GitHub::GitHub(std::string repository, std::string path, std::string gitHubToken) : repository(repository), path(path), gitHubToken(gitHubToken) {}
@@ -35,7 +35,7 @@ std::filesystem::path ablate::environment::GitHub::Download(std::string urlPath,
     // download the file
     char meatDataFilePath[PETSC_MAX_PATH_LEN];
     PetscBool found;
-    PetscFileRetrieve(PETSC_COMM_WORLD, metaDataUrl.c_str(), meatDataFilePath, PETSC_MAX_PATH_LEN, &found) >> checkError;
+    PetscFileRetrieve(PETSC_COMM_WORLD, metaDataUrl.c_str(), meatDataFilePath, PETSC_MAX_PATH_LEN, &found) >> utilities::PetscUtilities::checkError;
     if (!found) {
         throw std::runtime_error("unable to locate metadata for " + urlPath + " in repo " + repository);
     }
@@ -77,7 +77,7 @@ std::filesystem::path ablate::environment::GitHub::Download(std::string urlPath,
         downloadUrl += " -H ignore:/";
         downloadUrl += metaData["name"];
 
-        PetscFileRetrieve(PETSC_COMM_SELF, downloadUrl.c_str(), meatDataFilePath, PETSC_MAX_PATH_LEN, &found) >> checkError;
+        PetscFileRetrieve(PETSC_COMM_SELF, downloadUrl.c_str(), meatDataFilePath, PETSC_MAX_PATH_LEN, &found) >> utilities::PetscUtilities::checkError;
         if (!found) {
             throw std::runtime_error("unable to locate file at " + downloadUrl);
         }
@@ -90,7 +90,7 @@ std::filesystem::path ablate::environment::GitHub::Download(std::string urlPath,
 std::filesystem::path ablate::environment::GitHub::Locate(const std::vector<std::filesystem::path>&) {
     // Get the current rank
     PetscMPIInt rank;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkMpiError;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> utilities::MpiUtilities::checkError;
 
     std::filesystem::path localPath =
         ablate::environment::RunEnvironment::Get().GetOutputDirectory().empty() ? std::filesystem::temp_directory_path() / path : ablate::environment::RunEnvironment::Get().GetOutputDirectory();

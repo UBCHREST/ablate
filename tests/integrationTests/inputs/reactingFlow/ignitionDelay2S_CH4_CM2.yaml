@@ -31,6 +31,8 @@ timestepper:
         eos: &eos !ablate::eos::TChem # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked
           mechFile: ../mechanisms/2S_CH4_CM2.mech.dat
           thermoFile: ../mechanisms/2S_CH4_CM2.thermo.dat
+          options:
+            dtDefault: 1E-8;
 
   # set the initial conditions of the flow field
   initialization:
@@ -43,7 +45,7 @@ timestepper:
         pressure: 101325.0
         velocity: [ 0.0 ]
         # the mass fractions must be specified to compute rho, e, etc.
-        massFractions: !ablate::finiteVolume::fieldFunctions::MassFractions
+        other: !ablate::finiteVolume::fieldFunctions::MassFractions
           # the mass fraction class allows for a subset of mass fractions to be specified.  The rest are assumed zero
           eos: *eos
           values:
@@ -62,11 +64,9 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
   id: reactingFlowODE
   options: {}
   processes:
-    # without advection/diffusion the tChemReactions process is the only one needed
-    - !ablate::finiteVolume::processes::TChemReactions
-      eos: *eos # must be a tChem eos
-      options:
-        dtDefault: 1E-8;
+    # without advection/diffusion the Chemistry process is the only one needed
+    - !ablate::finiteVolume::processes::Chemistry
+      eos: *eos
   boundaryConditions: []
   monitors:
     # the IgnitionDelayTemperature monitor computes and store the amount of time it took to reach the specified temperature

@@ -1,6 +1,7 @@
 #include "constantPressureFix.hpp"
 
 #include <utility>
+#include "eos/chemTab.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 
 ablate::finiteVolume::processes::ConstantPressureFix::ConstantPressureFix(std::shared_ptr<eos::EOS> eos, double pressure) : pressure(pressure), eos(std::move(eos)) {}
@@ -10,18 +11,27 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
     densityFunction = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Density, fv.GetSubDomain().GetFields());
     internalSensibleEnergyFunction = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::InternalSensibleEnergy, fv.GetSubDomain().GetFields());
 
-    eulerFromEnergyAndPressure =
-        eos->GetFieldFunctionFunction(finiteVolume::CompressibleFlowFields::EULER_FIELD, eos::ThermodynamicProperty::InternalSensibleEnergy, eos::ThermodynamicProperty::Pressure);
-    densityYiFromEnergyAndPressure =
-        eos->GetFieldFunctionFunction(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD, eos::ThermodynamicProperty::InternalSensibleEnergy, eos::ThermodynamicProperty::Pressure);
+    // determine which field exists depending upon the os
+    std::string conservedOtherProperties = "";
+    std::string otherProperties = "";
+    if (!eos->GetProgressVariables().empty()) {
+        conservedOtherProperties = finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD;
+        otherProperties = finiteVolume::CompressibleFlowFields::PROGRESS_FIELD;
+    } else if (!eos->GetSpeciesVariables().empty()) {
+        conservedOtherProperties = finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD;
+        otherProperties = finiteVolume::CompressibleFlowFields::YI_FIELD;
+    }
 
-    fv.RegisterPostEvaluate([this](TS ts, ablate::solver::Solver& fvSolver) {
+    eulerFromEnergyAndPressure =
+        eos->GetFieldFunctionFunction(finiteVolume::CompressibleFlowFields::EULER_FIELD, eos::ThermodynamicProperty::InternalSensibleEnergy, eos::ThermodynamicProperty::Pressure, {otherProperties});
+
+    fv.RegisterPostEvaluate([this, conservedOtherProperties](TS ts, ablate::solver::Solver& fvSolver) {
         // get access to the underlying data for the flow
         const auto& eulerId = fvSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD);
         PetscInt densityYiOffset = PETSC_DECIDE;
         PetscInt numberSpecies = 0;
-        if (fvSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD)) {
-            const auto& densityYiId = fvSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD);
+        if (fvSolver.GetSubDomain().ContainsField(conservedOtherProperties)) {
+            const auto& densityYiId = fvSolver.GetSubDomain().GetField(conservedOtherProperties);
             numberSpecies = densityYiId.numberComponents;
             densityYiOffset = densityYiId.offset;
         }
@@ -38,7 +48,7 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
         // get the solution vec
         auto solutionVec = fvSolver.GetSubDomain().GetSolutionVector();
         PetscScalar* solutionArray;
-        VecGetArray(solutionVec, &solutionArray) >> checkError;
+        VecGetArray(solutionVec, &solutionArray) >> utilities::PetscUtilities::checkError;
 
         auto dm = fvSolver.GetSubDomain().GetDM();
 
@@ -51,28 +61,31 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
             DMPlexPointGlobalRead(dm, cell, solutionArray, &conservedValues);
 
             // Get the original density
-            PetscReal originalDensity;
-            densityFunction.function(conservedValues, &originalDensity, densityFunction.context.get()) >> checkError;
+            if (conservedValues) {
+                PetscReal originalDensity;
+                densityFunction.function(conservedValues, &originalDensity, densityFunction.context.get()) >> utilities::PetscUtilities::checkError;
 
-            // compute the current sensibleInternalEnergy
-            PetscReal internalSensibleEnergy;
-            internalSensibleEnergyFunction.function(conservedValues, &internalSensibleEnergy, internalSensibleEnergyFunction.context.get()) >> checkError;
+                // compute the current sensibleInternalEnergy
+                PetscReal internalSensibleEnergy;
+                internalSensibleEnergyFunction.function(conservedValues, &internalSensibleEnergy, internalSensibleEnergyFunction.context.get()) >> utilities::PetscUtilities::checkError;
 
-            // compute the current velocity and species (if provided)
-            for (PetscInt n = 0; n < dim; n++) {
-                velocityScratch[n] = conservedValues[eulerId.offset + finiteVolume::CompressibleFlowFields::RHOU + n] / originalDensity;
+                // compute the current velocity and species (if provided)
+                for (PetscInt n = 0; n < dim; n++) {
+                    velocityScratch[n] = conservedValues[eulerId.offset + finiteVolume::CompressibleFlowFields::RHOU + n] / originalDensity;
+                }
+                // Note: this may not be in Yi.  It could be progress variable when using chemtab
+                for (PetscInt s = 0; s < numberSpecies; s++) {
+                    yiScratch[s] = conservedValues[densityYiOffset + s] / originalDensity;
+                }
+
+                // use the eos to compute the new conserved forms based upon the current internal energy, velocity, yi and a constant pressure
+                eulerFromEnergyAndPressure(internalSensibleEnergy, pressure, dim, velocityScratch, yiScratch.data(), conservedValues + eulerId.offset);
+                densityYiFromEnergyAndPressure(internalSensibleEnergy, pressure, dim, velocityScratch, yiScratch.data(), conservedValues + densityYiOffset);
             }
-            for (PetscInt s = 0; s < numberSpecies; s++) {
-                yiScratch[s] = conservedValues[densityYiOffset + s] / originalDensity;
-            }
-
-            // use the eos to compute the new conserved forms based upon the current internal energy, velocity, yi and a constant pressure
-            eulerFromEnergyAndPressure(internalSensibleEnergy, pressure, dim, velocityScratch, yiScratch.data(), conservedValues + eulerId.offset);
-            densityYiFromEnergyAndPressure(internalSensibleEnergy, pressure, dim, velocityScratch, yiScratch.data(), conservedValues + densityYiOffset);
         }
 
         // cleanup
-        VecRestoreArray(solutionVec, &solutionArray) >> checkError;
+        VecRestoreArray(solutionVec, &solutionArray) >> utilities::PetscUtilities::checkError;
         fvSolver.RestoreRange(cellRange);
     });
 }

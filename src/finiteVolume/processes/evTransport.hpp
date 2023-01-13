@@ -9,15 +9,12 @@
 namespace ablate::finiteVolume::processes {
 /**
  * This class is used to transport any arbitrary extra variable (EV) with a given diffusion coefficient.
- * The variable are assumed to be stored in a conserved form (densityEV) in the solution vector and a
- * non conserved form (EV) in the aux vector.
+ * The variable are assumed to be stored in a conserved form in the solution vector and a
+ * non conserved form in the aux vector.  This is applied to all fields tagged as an ev
  */
 
 class EVTransport : public FlowProcess {
    private:
-    // store the conserved and non conserved form of the ev.
-    const std::string conserved;
-    const std::string nonConserved;
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculator;
     const std::shared_ptr<eos::EOS> eos;
     const std::shared_ptr<eos::transport::TransportModel> transportModel;
@@ -37,7 +34,6 @@ class EVTransport : public FlowProcess {
         ablate::finiteVolume::fluxCalculator::FluxCalculatorFunction fluxCalculatorFunction;
         void* fluxCalculatorCtx;
     };
-    AdvectionData advectionData;
 
     struct DiffusionData {
         /* number of extra species */
@@ -49,14 +45,14 @@ class EVTransport : public FlowProcess {
         /* store a scratch space for speciesSpeciesSensibleEnthalpy */
         std::vector<PetscReal> speciesSpeciesSensibleEnthalpy;
     };
-    DiffusionData diffusionData;
 
-    // Store ctx needed for static function diffusion function passed to PETSc
-    PetscInt numberEV;
+    // Store an AdvectionData, diffusionData, and numberEV for each ev field
+    std::vector<AdvectionData> advectionDatas;
+    std::vector<DiffusionData> diffusionDatas;
+    std::vector<PetscInt> numberEVs;
 
    public:
-    explicit EVTransport(std::string conserved, std::string nonConserved, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {},
-                         std::shared_ptr<eos::transport::TransportModel> transportModel = {});
+    explicit EVTransport(std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {}, std::shared_ptr<eos::transport::TransportModel> transportModel = {});
 
     /**
      * public function to link this process with the flow
@@ -72,7 +68,7 @@ class EVTransport : public FlowProcess {
 
    private:
     /**
-     * This computes the species transfer for species diffusion fluxy
+     * This computes the species transfer for species diffusion flux
      * f = "densityYi"
      * u = {"euler"}
      * a = {"yi", "T"}

@@ -1,5 +1,11 @@
 #include "log.hpp"
 
+ablate::monitors::logs::Log::~Log() {
+    if (ostream) {
+        ostream->flush();
+    }
+}
+
 void ablate::monitors::logs::Log::Print(const char* name, std::size_t num, const double* values, const char* formatIn) {
     // print the name
     Printf("%s: ", name);
@@ -25,3 +31,11 @@ void ablate::monitors::logs::Log::Print(const char* name, std::size_t num, const
 }
 
 void ablate::monitors::logs::Log::Print(const char* name, const std::vector<double>& values, const char* format) { Print(name, values.size(), &values[0], format); }
+
+std::ostream& ablate::monitors::logs::Log::GetStream() {
+    if (!ostream) {
+        ostreambuf = std::make_unique<DefaultOutBuffer>(*this);
+        ostream = std::make_unique<std::ostream>(ostreambuf.get());
+    }
+    return *ostream;
+}

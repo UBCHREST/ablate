@@ -18,6 +18,6 @@ bool ablate::mathFunctions::geom::Box::InsideGeometry(const double *xyz, const i
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::mathFunctions::MathFunction, ablate::mathFunctions::geom::Box, "assigns a uniform value to all points inside the box", ARG(std::vector<double>, "lower", "the box lower corner"),
+REGISTER(ablate::mathFunctions::geom::Geometry, ablate::mathFunctions::geom::Box, "assigns a uniform value to all points inside the box", ARG(std::vector<double>, "lower", "the box lower corner"),
          ARG(std::vector<double>, "upper", "the box upper corner"), OPT(ablate::mathFunctions::MathFunction, "insideValues", "the values for inside the sphere, defaults to 1"),
          OPT(ablate::mathFunctions::MathFunction, "outsideValues", "the outside values, defaults to zero"));

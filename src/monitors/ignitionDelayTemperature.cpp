@@ -1,9 +1,9 @@
 #include "ignitionDelayTemperature.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
-#include "finiteVolume/processes/eulerTransport.hpp"
+#include "finiteVolume/processes/navierStokesTransport.hpp"
 #include "monitors/logs/stdOut.hpp"
-#include "utilities/mpiError.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/mpiUtilities.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::monitors::IgnitionDelayTemperature::IgnitionDelayTemperature(std::shared_ptr<eos::EOS> eosIn, std::vector<double> location, double thresholdTemperatureIn, std::shared_ptr<logs::Log> logIn,
                                                                      std::shared_ptr<logs::Log> historyLogIn)
@@ -29,7 +29,7 @@ void ablate::monitors::IgnitionDelayTemperature::Register(std::shared_ptr<solver
 
     // check the size
     int size;
-    MPI_Comm_size(flow->GetSubDomain().GetComm(), &size) >> checkMpiError;
+    MPI_Comm_size(flow->GetSubDomain().GetComm(), &size) >> utilities::MpiUtilities::checkError;
     if (size != 1) {
         throw std::runtime_error("The IgnitionDelay monitor only works with a single mpi rank");
     }
@@ -39,17 +39,17 @@ void ablate::monitors::IgnitionDelayTemperature::Register(std::shared_ptr<solver
 
     // Convert the location to a vec
     Vec locVec;
-    VecCreateSeqWithArray(flow->GetSubDomain().GetComm(), location.size(), location.size(), &location[0], &locVec) >> checkError;
+    VecCreateSeqWithArray(flow->GetSubDomain().GetComm(), location.size(), location.size(), &location[0], &locVec) >> utilities::PetscUtilities::checkError;
 
     // Get all points still in this mesh
     PetscSF cellSF = NULL;
-    DMLocatePoints(flow->GetSubDomain().GetDM(), locVec, DM_POINTLOCATION_NONE, &cellSF) >> checkError;
+    DMLocatePoints(flow->GetSubDomain().GetDM(), locVec, DM_POINTLOCATION_NONE, &cellSF) >> utilities::PetscUtilities::checkError;
     const PetscSFNode* cells;
     PetscInt numberFound;
     PetscMPIInt rank;
-    MPI_Comm_rank(flow->GetSubDomain().GetComm(), &rank) >> checkMpiError;
+    MPI_Comm_rank(flow->GetSubDomain().GetComm(), &rank) >> utilities::MpiUtilities::checkError;
 
-    PetscSFGetGraph(cellSF, NULL, &numberFound, NULL, &cells) >> checkError;
+    PetscSFGetGraph(cellSF, NULL, &numberFound, NULL, &cells) >> utilities::PetscUtilities::checkError;
     if (numberFound == 1) {
         if (cells[0].rank == rank) {
             cellOfInterest = cells[0].index;
@@ -59,8 +59,8 @@ void ablate::monitors::IgnitionDelayTemperature::Register(std::shared_ptr<solver
     }
 
     // restore
-    PetscSFDestroy(&cellSF) >> checkError;
-    VecDestroy(&locVec) >> checkError;
+    PetscSFDestroy(&cellSF) >> utilities::PetscUtilities::checkError;
+    VecDestroy(&locVec) >> utilities::PetscUtilities::checkError;
 
     // init the log(s)
     log->Initialize(flow->GetSubDomain().GetComm());
@@ -70,21 +70,17 @@ void ablate::monitors::IgnitionDelayTemperature::Register(std::shared_ptr<solver
 }
 PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
+
     DM dm;
     PetscDS ds;
-    ierr = TSGetDM(ts, &dm);
-    CHKERRQ(ierr);
-    ierr = DMGetDS(dm, &ds);
-    CHKERRQ(ierr);
+    PetscCall(TSGetDM(ts, &dm));
+    PetscCall(DMGetDS(dm, &ds));
     PetscInt dim;
-    ierr = DMGetDimension(dm, &dim);
-    CHKERRQ(ierr);
+    PetscCall(DMGetDimension(dm, &dim));
 
     // Check for the number of DS, this should be relaxed
     PetscInt numberDS;
-    ierr = DMGetNumDS(dm, &numberDS);
-    CHKERRQ(ierr);
+    PetscCall(DMGetNumDS(dm, &numberDS));
     if (numberDS > 1) {
         SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "This monitor only supports a single DS in a DM");
     }
@@ -93,13 +89,11 @@ PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts
 
     // extract the gradLocalVec
     const PetscScalar* uArray;
-    ierr = VecGetArrayRead(u, &uArray);
-    CHKERRQ(ierr);
+    PetscCall(VecGetArrayRead(u, &uArray));
 
     // Get the euler and densityYi values
     const PetscScalar* conserved;
-    ierr = DMPlexPointGlobalRead(dm, monitor->cellOfInterest, uArray, &conserved);
-    CHKERRQ(ierr);
+    PetscCall(DMPlexPointGlobalRead(dm, monitor->cellOfInterest, uArray, &conserved));
 
     // compute the temperature
     double T;
@@ -113,8 +107,7 @@ PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts
         monitor->historyLog->Printf("%" PetscInt_FMT " Time: %g Temperature: %f\n", step, crtime, T);
     }
 
-    ierr = VecRestoreArrayRead(u, &uArray);
-    CHKERRQ(ierr);
+    PetscCall(VecRestoreArrayRead(u, &uArray));
     PetscFunctionReturn(0);
 }
 

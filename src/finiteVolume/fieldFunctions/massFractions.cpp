@@ -1,9 +1,10 @@
 #include "massFractions.hpp"
 #include <algorithm>
 #include <mathFunctions/functionPointer.hpp>
+#include "utilities/vectorUtilities.hpp"
 
 ablate::finiteVolume::fieldFunctions::MassFractions::MassFractions(std::shared_ptr<ablate::eos::EOS> eos, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> massFractionFieldFunctionsIn)
-    : ablate::mathFunctions::FieldFunction("yi", std::make_shared<ablate::mathFunctions::FunctionPointer>(ablate::finiteVolume::fieldFunctions::MassFractions::ComputeYiFunction, this)),
+    : ablate::mathFunctions::FieldFunction(eos::EOS::YI, std::make_shared<ablate::mathFunctions::FunctionPointer>(ablate::finiteVolume::fieldFunctions::MassFractions::ComputeYiFunction, this)),
       massFractionFieldFunctions(massFractionFieldFunctionsIn) {
     const auto &species = eos->GetSpecies();
 
@@ -17,7 +18,7 @@ ablate::finiteVolume::fieldFunctions::MassFractions::MassFractions(std::shared_p
         if (it != species.end()) {
             massFractionFunctions[std::distance(species.begin(), it)] = yiFunction->GetFieldFunction();
         } else {
-            throw std::invalid_argument("Cannot find field species " + yiFunction->GetName());
+            throw std::invalid_argument("Cannot find field species " + yiFunction->GetName() + ". Valid species names are: " + ablate::utilities::VectorUtilities::Concatenate(species));
         }
     }
 }

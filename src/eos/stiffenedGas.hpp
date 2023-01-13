@@ -4,6 +4,8 @@
 #include <memory>
 #include "eos.hpp"
 #include "parameters/parameters.hpp"
+#include "utilities/vectorUtilities.hpp"
+
 namespace ablate::eos {
 
 class StiffenedGas : public EOS {
@@ -123,9 +125,19 @@ class StiffenedGas : public EOS {
      * @param property1
      * @param property2
      */
-    FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const override;
+    EOSFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2, std::vector<std::string> otherProperties) const override;
 
-    const std::vector<std::string>& GetSpecies() const override { return species; }
+    /**
+     * returns the species supported by this EOS
+     * @return
+     */
+    const std::vector<std::string>& GetSpeciesVariables() const override { return species; }
+
+    /**
+     * Returns a vector of all extra variables required to utilize the equation of state
+     * @return
+     */
+    [[nodiscard]] virtual const std::vector<std::string>& GetProgressVariables() const override { return ablate::utilities::VectorUtilities::Empty<std::string>; }
 };
 
 }  // namespace ablate::eos

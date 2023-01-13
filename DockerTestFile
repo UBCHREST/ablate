@@ -14,6 +14,7 @@ ENV PATH="${PETSC_DIR}/${PETSC_ARCH}/bin:$PATH"
 # provide hook to disable tensorflow
 ARG ENABLE_TENSOR_FLOW=1
 ENV TENSORFLOW_DIR=${ENABLE_TENSOR_FLOW:+${TENSORFLOW_DIR}}
+ENV TF_ENABLE_ONEDNN_OPTS=0
 
 # Copy over the source
 COPY . /source
@@ -28,5 +29,4 @@ run python3 /source/docs/ablateDevGenerator.py  --rootDir=/source/ --ablateExe=/
 
 # Specify Entry Point for tests
 ENV CTEST_OUTPUT_ON_FAILURE=ON
-CMD ["ctest"]
-CMD bash -c "echo 'Running Tests for ${PETSC_ARCH}' && make format-check && ctest"
+CMD bash -c "echo 'Running Tests for ${PETSC_ARCH}' && make format-check && ctest -L 'unitTests|integrationTests'"

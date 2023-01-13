@@ -13,6 +13,7 @@
 #include "io/serializable.hpp"
 #include "mathFunctions/fieldFunction.hpp"
 #include "region.hpp"
+#include "utilities/loggable.hpp"
 
 namespace ablate::solver {
 // forward declare the Solver
@@ -23,10 +24,10 @@ namespace ablate::domain {
 // forward declare the subDomain
 class SubDomain;
 
-class Domain {
+class Domain : private utilities::Loggable<Domain> {
    protected:
     Domain(DM dm, std::string name, std::vector<std::shared_ptr<FieldDescriptor>>, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers,
-           const std::shared_ptr<parameters::Parameters>& options = {});
+           const std::shared_ptr<parameters::Parameters>& options = {}, bool setFromOptions = true);
     virtual ~Domain();
 
     // The primary dm
@@ -60,7 +61,7 @@ class Domain {
     PetscOptions petscOptions = nullptr;
 
    public:
-    [[nodiscard]] std::string GetName() const { return name; }
+    [[nodiscard]] const std::string& GetName() const { return name; }
 
     inline DM& GetDM() noexcept { return dm; }
 
@@ -78,7 +79,12 @@ class Domain {
 
     [[nodiscard]] PetscInt GetDimensions() const noexcept;
 
-    void InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations,
+    /**
+     * Setup the local data storage
+     * @param solvers
+     * @param initializations
+     */
+    void InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers = {}, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations = {},
                               const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& = {});
 
     /**
@@ -109,12 +115,12 @@ class Domain {
      */
     [[nodiscard]] inline const Field& GetField(int fieldId) const { return fields[fieldId]; }
 
-    [[nodiscard]] inline const Field& GetField(const std::string& fieldName) const {
+    [[nodiscard]] inline const Field& GetField(const std::string_view& fieldName) const {
         auto field = std::find_if(fields.begin(), fields.end(), [&fieldName](auto field) { return field.name == fieldName; });
         if (field != fields.end()) {
             return *field;
         } else {
-            throw std::invalid_argument("Cannot locate field with name " + fieldName + " in domain " + name);
+            throw std::invalid_argument("Cannot locate field with name " + std::string(fieldName) + " in domain " + name);
         }
     }
 
@@ -127,9 +133,10 @@ class Domain {
 
     /**
      * checks check point in this domain for nan/inf in the solution aux vectors
+     * @param globSourceVector optional source vector to also check
      * @return bool True is returned if an error is found.
      */
-    bool CheckSolution();
+    bool CheckFieldValues(Vec globSourceVector = nullptr);
 };
 }  // namespace ablate::domain
 #endif  // ABLATELIBRARY_DOMAIN_H

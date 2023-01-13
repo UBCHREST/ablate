@@ -16,7 +16,7 @@ class Inlet : public LODIBoundary {
     explicit Inlet(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {},
                    std::shared_ptr<ablate::mathFunctions::MathFunction> prescribedVelocity = {});
 
-    void Initialize(ablate::boundarySolver::BoundarySolver& bSolver) override;
+    void Setup(ablate::boundarySolver::BoundarySolver& bSolver) override;
 
     static PetscErrorCode InletFunction(PetscInt dim, const boundarySolver::BoundarySolver::BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell, const PetscInt uOff[],
                                         const PetscScalar* boundaryValues, const PetscScalar* stencilValues[], const PetscInt aOff[], const PetscScalar* auxValues,
