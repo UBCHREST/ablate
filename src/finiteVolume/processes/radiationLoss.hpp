@@ -30,7 +30,7 @@ class RadiationLoss : public Process {
     std::vector<PetscFunctionStruct> petscFunctions;
 
    public:
-    explicit RadiationLoss(std::map<std::string, std::shared_ptr<ablate::mathFunctions::MathFunction>> functions);
+    explicit RadiationLoss(std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn);
 
     /**
      * public function to link this process with the fvm solver
@@ -60,7 +60,7 @@ class RadiationLoss : public Process {
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
 
     //! hold a pointer to the absorptivity function
-    static eos::ThermodynamicTemperatureFunction absorptivityFunction;
+    eos::ThermodynamicTemperatureFunction absorptivityFunction;
 };
 
 }  // namespace ablate::finiteVolume::processes
