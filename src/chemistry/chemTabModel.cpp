@@ -2,14 +2,21 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
 #ifdef WITH_TENSORFLOW
 
-using namespace std;
-
 void NoOpDeallocator(void *data, size_t a, void *b) {}
 
+// helper for reporting errors related to invalid sizes
+auto size_mismatch(std::string var_name, int given_value, int expected_value) {
+    std::ostringstream os;
+    os << "The given " << var_name << " value: " << given_value << ", does not match the expected/supported value: " << expected_value;
+    return std::invalid_argument(os.str());
+}
+
 ablate::chemistry::ChemTabModel::ChemTabModel(std::filesystem::path path) {
+    std::cerr << "entering constructor" << std::endl << std::flush;
     const char *tags = "serve";  // default model serving tag; can change in future
     int ntags = 1;
 
@@ -18,10 +25,9 @@ ablate::chemistry::ChemTabModel::ChemTabModel(std::filesystem::path path) {
         throw std::runtime_error("Cannot locate ChemTabModel Folder " + path.string());
     }
 
-    //TODO: use metadata.yaml file here!
+    // TODO: use metadata.yaml file here?
     const std::string rpath = path / "regressor";
     const std::string wpath = path / "weights.csv";
-    //const std::string ipath = path / "weights_inv.csv";
 
     // Check for missing files
     if (!std::filesystem::exists(rpath)) {
@@ -36,12 +42,6 @@ ablate::chemistry::ChemTabModel::ChemTabModel(std::filesystem::path path) {
             "specified ChemTabModel Folder " +
             path.string());
     }
-    //if (!std::filesystem::exists(ipath)) {
-    //    throw std::runtime_error(
-    //        "The 'weights_inv.csv' file cannot be located in "
-    //        "the specified ChemTabModel Folder " +
-    //        path.string());
-    //}
 
     // Load the source energy predictor model first
     graph = TF_NewGraph();
@@ -49,13 +49,17 @@ ablate::chemistry::ChemTabModel::ChemTabModel(std::filesystem::path path) {
     sessionOpts = TF_NewSessionOptions();
     runOpts = NULL;
     session = TF_LoadSessionFromSavedModel(sessionOpts, runOpts, rpath.c_str(), &tags, ntags, graph, NULL, status);
+    std::cerr << "done loading TF model" << std::endl << std::flush;
 
     std::fstream inputFileStream;
     // load the meta data from the weights.csv file
     inputFileStream.open(wpath.c_str(), std::ios::in);
+    std::cerr << "opened weight file" << std::endl << std::flush;
     ExtractMetaData(inputFileStream);
+    std::cerr << "extracted meta-data" << std::endl << std::flush;
     inputFileStream.close();
-    // load the basis vectors from the weights.csv and weights_inv.csv files
+
+    // load the basis vectors from the weights.csv
     // first allocate memory for both weight matrices
     Wmat = (PetscReal **)malloc(speciesNames.size() * sizeof(PetscReal *));
     for (std::size_t i = 0; i < speciesNames.size(); i++) {
@@ -64,13 +68,6 @@ ablate::chemistry::ChemTabModel::ChemTabModel(std::filesystem::path path) {
     inputFileStream.open(wpath.c_str(), std::ios::in);
     LoadBasisVectors(inputFileStream, progressVariablesNames.size(), Wmat);
     inputFileStream.close();
-    //iWmat = (PetscReal **)malloc(progressVariablesNames.size() * sizeof(PetscReal *));
-    //for (std::size_t i = 0; i < progressVariablesNames.size(); i++) {
-    //    iWmat[i] = (PetscReal *)malloc(speciesNames.size() * sizeof(PetscReal));
-    //}
-    //inputFileStream.open(ipath.c_str(), std::ios::in);
-    //LoadBasisVectors(inputFileStream, speciesNames.size(), iWmat);
-    //inputFileStream.close();
 }
 
 ablate::chemistry::ChemTabModel::~ChemTabModel() {
@@ -81,8 +78,6 @@ ablate::chemistry::ChemTabModel::~ChemTabModel() {
     free(sourceEnergyScaler);
     for (std::size_t i = 0; i < speciesNames.size(); i++) free(Wmat[i]);
     free(Wmat);
-    //for (std::size_t i = 0; i < progressVariablesNames.size(); i++) free(iWmat[i]);
-    //free(iWmat);
 }
 
 // trim from both ends (in place)
@@ -97,8 +92,6 @@ void ablate::chemistry::ChemTabModel::ExtractMetaData(std::istream &inputStream)
     std::getline(inputStream, line);
     int i = 0;
 
-    // push the Zmix name as the first "progress variables" name
-    progressVariablesNames.push_back("zmix");
     // get the progress variable names (skipping the first one)
     std::stringstream headerStream(line);
     while (headerStream.good()) {
@@ -134,22 +127,25 @@ void ablate::chemistry::ChemTabModel::LoadBasisVectors(std::istream &inputStream
         for (std::size_t j = 0; j < cols; j++) {
             std::string val;
             getline(lineStream, val, ',');  // delimited by comma
+            // std::cerr << "pre-stod val: " << val << std::endl << std::flush;
             W[i][j] = std::stod(val);
         }
         i++;
     }
 }
 
+// avoids freeing null pointers
+#define safe_free(ptr) \
+    if (ptr != NULL) free(ptr);
+
+// TODO: break into smaller functions?
 void ablate::chemistry::ChemTabModel::ChemTabModelComputeFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal *predictedSourceEnergy,
                                                                   PetscReal *progressVariableSource, const std::size_t progressVariableSourceSize, PetscReal *massFractions,
                                                                   std::size_t massFractionsSize, void *ctx) {
     auto ctModel = (ablate::chemistry::ChemTabModel *)ctx;
-    // size of progressVariables should match the expected number of
-    // progressVariables
+    // size of progressVariables should match the expected number of progressVariables
     if (progressVariablesSize != ctModel->progressVariablesNames.size()) {
-        throw std::invalid_argument(
-            "The progressVariables size does not match the "
-            "supported number of progressVariables");
+        throw size_mismatch("progressVariables size", progressVariablesSize, ctModel->progressVariablesNames.size());
     }
     //********* Get Input tensor
     int numInputs = 1;
@@ -202,51 +198,24 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeFunction(const PetscRea
 
     // store inverted mass fractions
     for (size_t i = 0; i < massFractionsSize; i++) {
-        massFractions[i] = (PetscReal)outputArray[i + 1]; //i+1 b/c i==0 is souener!
+        massFractions[i] = (PetscReal)outputArray[i + 1];  // i+1 b/c i==0 is souener!
     }
 
     // store CPV sources
     outputArray = (float *)TF_TensorData(outputValues[0]);
-    progressVariableSource[0]=0; // Zmix source is always 0!
-    for (size_t i = 0; i < progressVariableSourceSize; i++) {
-        progressVariableSource[i+1] = (PetscReal)outputArray[i]; // +1 b/c we are manually filling in Zmix source value (to 0)
-    }
-    // free allocated vectors
-    free(inputValues);
-    free(outputValues);
-    free(input);
-    free(output);
-}
+    if (progressVariableSource != NULL) progressVariableSource[0] = 0;  // Zmix source is always 0!
 
-// void ablate::chemistry::ChemTabModel::ChemTabModelComputeMassFractionsFunction(const PetscReal *progressVariables, std::size_t progressVariablesSize, PetscReal *massFractions,
-//                                                                               std::size_t massFractionsSize, void *ctx) {
-//    // y = inv(W)'C
-//    // for now the mass fractions will be obtained using the inverse of the
-//    // weights. Will be replaced by a ML predictive model in the next iteration
-//    auto ctModel = (ChemTabModel *)ctx;
-//    // size of progressVariables should match the expected number of
-//    // progressVariables
-//    if (progressVariablesSize != ctModel->progressVariablesNames.size()) {
-//        throw std::invalid_argument(
-//            "The progressVariables size does not match the "
-//            "supported number of progressVariables");
-//    }
-//    // size of massFractions should match the expected number of species
-//    if (massFractionsSize != ctModel->speciesNames.size()) {
-//        throw std::invalid_argument(
-//            "The massFractions size does not match the "
-//            "supported number of species");
-//    }
-//    for (size_t i = 0; i < ctModel->speciesNames.size(); i++) {
-//        PetscReal v = 0;
-//        // j starts from 1 because the first entry in progressVariables is assumed
-//        // to be zMix
-//        for (size_t j = 1; j < ctModel->progressVariablesNames.size(); j++) {
-//            v += ctModel->iWmat[j - 1][i] * progressVariables[j];
-//        }
-//        massFractions[i] = v;
-//    }
-//}
+    // -1 b/c we don't want to go out of bounds with the +1 below, also int is to prevent integer overflow
+    for (size_t i = 0; (int)i < ((int)progressVariableSourceSize) - 1; i++) {
+        progressVariableSource[i + 1] = (PetscReal)outputArray[i];  // +1 b/c we are manually filling in Zmix source value (to 0)
+    }
+
+    // free allocated vectors
+    safe_free(inputValues);
+    safe_free(outputValues);
+    safe_free(input);
+    safe_free(output);
+}
 
 void ablate::chemistry::ChemTabModel::ChemTabModelComputeMassFractionsFunction(const PetscReal *progressVariables, std::size_t progressVariablesSize, PetscReal *massFractions,
                                                                                std::size_t massFractionsSize, void *ctx) {
@@ -267,7 +236,7 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeSourceFunction(const Pe
     auto ctModel = (ChemTabModel *)ctx;
     // size of progressVariableSource should match the expected number of progressVariables (excluding zmix)
     if (progressVariableSourceSize != ctModel->progressVariablesNames.size()) {
-        throw std::invalid_argument("The progressVariableSource size does not match the supported number of progressVariables");
+        throw size_mismatch("progressVariableSource size", progressVariableSourceSize, ctModel->progressVariablesNames.size());
     }
 
     // call model using generalized invokation method (usable for inversion & source computation)
@@ -285,18 +254,14 @@ void ablate::chemistry::ChemTabModel::ComputeProgressVariables(const PetscReal *
     // size of progressVariables should match the expected number of
     // progressVariables
     if (progressVariablesSize != progressVariablesNames.size()) {
-        throw std::invalid_argument(
-            "The progressVariables size does not match the "
-            "supported number of progressVariables");
+        throw size_mismatch("progressVariables size", progressVariablesSize, progressVariablesNames.size());
     }
     // size of massFractions should match the expected number of species
     if (massFractionsSize != speciesNames.size()) {
-        throw std::invalid_argument(
-            "The massFractions size does not match the "
-            "supported number of species");
+        throw size_mismatch("massFractions size", massFractionsSize, speciesNames.size());
     }
     // the first entry in progressVariables corresponds to zMix and is fixed to 0
-    //progressVariables[0] = 0;
+    // progressVariables[0] = 0;
     for (size_t i = 0; i < progressVariablesNames.size(); i++) {
         PetscReal v = 0;
         for (size_t j = 0; j < speciesNames.size(); j++) {
