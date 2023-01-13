@@ -88,6 +88,8 @@ INSTANTIATE_TEST_SUITE_P(ReactingFlow, IntegrationTestsSpecifier,
 
                              (MpiTestParameter){
                                  .testName = "inputs/reactingFlow/simpleReactingFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/reactingFlow/simpleReactingFlow.txt", .arguments = ""},
+                             (MpiTestParameter){
+                                 .testName = "inputs/reactingFlow/sampleDiffusionFlame.yaml", .nproc = 1, .expectedOutputFile = "outputs/reactingFlow/sampleDiffusionFlame.txt", .arguments = ""},
                              (MpiTestParameter){.testName = "inputs/reactingFlow/ignitionDelayGriMech.yaml",
                                                 .nproc = 1,
                                                 .arguments = "",
