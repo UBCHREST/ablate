@@ -8,6 +8,7 @@ target_sources(unitTests
         parsedSeriesTests.cpp
         linearInterpolatorTests.cpp
         formulaTests.cpp
+        linearTests.cpp
         )
 
 add_subdirectory(geom)

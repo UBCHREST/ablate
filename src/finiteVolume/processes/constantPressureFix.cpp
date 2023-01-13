@@ -25,6 +25,9 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
     eulerFromEnergyAndPressure =
         eos->GetFieldFunctionFunction(finiteVolume::CompressibleFlowFields::EULER_FIELD, eos::ThermodynamicProperty::InternalSensibleEnergy, eos::ThermodynamicProperty::Pressure, {otherProperties});
 
+    densityYiFromEnergyAndPressure =
+        eos->GetFieldFunctionFunction(conservedOtherProperties, eos::ThermodynamicProperty::InternalSensibleEnergy, eos::ThermodynamicProperty::Pressure, {otherProperties});
+
     fv.RegisterPostEvaluate([this, conservedOtherProperties](TS ts, ablate::solver::Solver& fvSolver) {
         // get access to the underlying data for the flow
         const auto& eulerId = fvSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD);
