@@ -54,38 +54,94 @@ class TwoPhase : public EOS {  // , public std::enabled_shared_from_this<TwoPhas
     };
 
    private:
-    // bunch of functions here
+    // functions for all cases
     static PetscErrorCode DensityFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
-    static PetscErrorCode PressureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
-    static PetscErrorCode TemperatureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode InternalSensibleEnergyFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
-    static PetscErrorCode SensibleEnthalpyFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
-    static PetscErrorCode SpecificHeatConstantVolumeFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
-    static PetscErrorCode SpecificHeatConstantPressureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
-    static PetscErrorCode SpeedOfSoundFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode SpeciesSensibleEnthalpyFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
 
     static PetscErrorCode DensityTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
-    static PetscErrorCode PressureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
-    static PetscErrorCode TemperatureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode InternalSensibleEnergyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
-    static PetscErrorCode SensibleEnthalpyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
-    static PetscErrorCode SpecificHeatConstantVolumeTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
-    static PetscErrorCode SpecificHeatConstantPressureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
-    static PetscErrorCode SpeedOfSoundTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode SpeciesSensibleEnthalpyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+
+    // functions for GasGas case
+    static PetscErrorCode PressureFunctionGasGas(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode TemperatureFunctionGasGas(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SensibleEnthalpyFunctionGasGas(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantVolumeFunctionGasGas(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantPressureFunctionGasGas(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpeedOfSoundFunctionGasGas(const PetscReal conserved[], PetscReal* property, void* ctx);
+
+    static PetscErrorCode PressureTemperatureFunctionGasGas(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode TemperatureTemperatureFunctionGasGas(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SensibleEnthalpyTemperatureFunctionGasGas(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantVolumeTemperatureFunctionGasGas(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantPressureTemperatureFunctionGasGas(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SpeedOfSoundTemperatureFunctionGasGas(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+
+    // functions for GasLiquid
+    static PetscErrorCode PressureFunctionGasLiquid(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode TemperatureFunctionGasLiquid(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SensibleEnthalpyFunctionGasLiquid(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantVolumeFunctionGasLiquid(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantPressureFunctionGasLiquid(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpeedOfSoundFunctionGasLiquid(const PetscReal conserved[], PetscReal* property, void* ctx);
+
+    static PetscErrorCode PressureTemperatureFunctionGasLiquid(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode TemperatureTemperatureFunctionGasLiquid(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SensibleEnthalpyTemperatureFunctionGasLiquid(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantVolumeTemperatureFunctionGasLiquid(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantPressureTemperatureFunctionGasLiquid(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SpeedOfSoundTemperatureFunctionGasLiquid(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+
+    // functions for LiquidLiquid
+    static PetscErrorCode PressureFunctionLiquidLiquid(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode TemperatureFunctionLiquidLiquid(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SensibleEnthalpyFunctionLiquidLiquid(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantVolumeFunctionLiquidLiquid(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantPressureFunctionLiquidLiquid(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpeedOfSoundFunctionLiquidLiquid(const PetscReal conserved[], PetscReal* property, void* ctx);
+
+    static PetscErrorCode PressureTemperatureFunctionLiquidLiquid(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode TemperatureTemperatureFunctionLiquidLiquid(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SensibleEnthalpyTemperatureFunctionLiquidLiquid(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantVolumeTemperatureFunctionLiquidLiquid(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantPressureTemperatureFunctionLiquidLiquid(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SpeedOfSoundTemperatureFunctionLiquidLiquid(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
 
     using ThermodynamicStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal* property, void* ctx);
     using ThermodynamicTemperatureStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
-    std::map<ThermodynamicProperty, std::pair<ThermodynamicStaticFunction, ThermodynamicTemperatureStaticFunction>> thermodynamicFunctions = {
+    // map for GasGas case
+    std::map<ThermodynamicProperty, std::pair<ThermodynamicStaticFunction, ThermodynamicTemperatureStaticFunction>> thermodynamicFunctionsGasGas = {
         {ThermodynamicProperty::Density, {DensityFunction, DensityTemperatureFunction}},
-        {ThermodynamicProperty::Pressure, {PressureFunction, PressureTemperatureFunction}},
-        {ThermodynamicProperty::Temperature, {TemperatureFunction, TemperatureTemperatureFunction}},
+        {ThermodynamicProperty::Pressure, {PressureFunctionGasGas, PressureTemperatureFunctionGasGas}},
+        {ThermodynamicProperty::Temperature, {TemperatureFunctionGasGas, TemperatureTemperatureFunctionGasGas}},
         {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction, InternalSensibleEnergyTemperatureFunction}},
-        {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyFunction, SensibleEnthalpyTemperatureFunction}},
-        {ThermodynamicProperty::SpecificHeatConstantVolume, {SpecificHeatConstantVolumeFunction, SpecificHeatConstantVolumeTemperatureFunction}},
-        {ThermodynamicProperty::SpecificHeatConstantPressure, {SpecificHeatConstantPressureFunction, SpecificHeatConstantPressureTemperatureFunction}},
-        {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundFunction, SpeedOfSoundTemperatureFunction}},
+        {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyFunctionGasGas, SensibleEnthalpyTemperatureFunctionGasGas}},
+        {ThermodynamicProperty::SpecificHeatConstantVolume, {SpecificHeatConstantVolumeFunctionGasGas, SpecificHeatConstantVolumeTemperatureFunctionGasGas}},
+        {ThermodynamicProperty::SpecificHeatConstantPressure, {SpecificHeatConstantPressureFunctionGasGas, SpecificHeatConstantPressureTemperatureFunctionGasGas}},
+        {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundFunctionGasGas, SpeedOfSoundTemperatureFunctionGasGas}},
+        {ThermodynamicProperty::SpeciesSensibleEnthalpy, {SpeciesSensibleEnthalpyFunction, SpeciesSensibleEnthalpyTemperatureFunction}}};
+    // map for GasLiquid case
+    std::map<ThermodynamicProperty, std::pair<ThermodynamicStaticFunction, ThermodynamicTemperatureStaticFunction>> thermodynamicFunctionsGasLiquid = {
+        {ThermodynamicProperty::Density, {DensityFunction, DensityTemperatureFunction}},
+        {ThermodynamicProperty::Pressure, {PressureFunctionGasLiquid, PressureTemperatureFunctionGasLiquid}},
+        {ThermodynamicProperty::Temperature, {TemperatureFunctionGasLiquid, TemperatureTemperatureFunctionGasLiquid}},
+        {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction, InternalSensibleEnergyTemperatureFunction}},
+        {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyFunctionGasLiquid, SensibleEnthalpyTemperatureFunctionGasLiquid}},
+        {ThermodynamicProperty::SpecificHeatConstantVolume, {SpecificHeatConstantVolumeFunctionGasLiquid, SpecificHeatConstantVolumeTemperatureFunctionGasLiquid}},
+        {ThermodynamicProperty::SpecificHeatConstantPressure, {SpecificHeatConstantPressureFunctionGasLiquid, SpecificHeatConstantPressureTemperatureFunctionGasLiquid}},
+        {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundFunctionGasLiquid, SpeedOfSoundTemperatureFunctionGasLiquid}},
+        {ThermodynamicProperty::SpeciesSensibleEnthalpy, {SpeciesSensibleEnthalpyFunction, SpeciesSensibleEnthalpyTemperatureFunction}}};
+    // map for LiquidLiquid case
+    std::map<ThermodynamicProperty, std::pair<ThermodynamicStaticFunction, ThermodynamicTemperatureStaticFunction>> thermodynamicFunctionsLiquidLiquid = {
+        {ThermodynamicProperty::Density, {DensityFunction, DensityTemperatureFunction}},
+        {ThermodynamicProperty::Pressure, {PressureFunctionLiquidLiquid, PressureTemperatureFunctionLiquidLiquid}},
+        {ThermodynamicProperty::Temperature, {TemperatureFunctionLiquidLiquid, TemperatureTemperatureFunctionLiquidLiquid}},
+        {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction, InternalSensibleEnergyTemperatureFunction}},
+        {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyFunctionLiquidLiquid, SensibleEnthalpyTemperatureFunctionLiquidLiquid}},
+        {ThermodynamicProperty::SpecificHeatConstantVolume, {SpecificHeatConstantVolumeFunctionLiquidLiquid, SpecificHeatConstantVolumeTemperatureFunctionLiquidLiquid}},
+        {ThermodynamicProperty::SpecificHeatConstantPressure, {SpecificHeatConstantPressureFunctionLiquidLiquid, SpecificHeatConstantPressureTemperatureFunctionLiquidLiquid}},
+        {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundFunctionLiquidLiquid, SpeedOfSoundTemperatureFunctionLiquidLiquid}},
         {ThermodynamicProperty::SpeciesSensibleEnthalpy, {SpeciesSensibleEnthalpyFunction, SpeciesSensibleEnthalpyTemperatureFunction}}};
 
    public:
