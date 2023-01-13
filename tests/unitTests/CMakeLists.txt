@@ -1,4 +1,4 @@
-add_executable(unitTests "")
+add_executable(unitTests "" eos/transport/twoPhaseTransportTests.cpp)
 target_link_libraries(unitTests PUBLIC GTest::gtest GTest::gmock ablateLibrary testingResources CHREST::cppParserTestLibrary)
 
 target_sources(unitTests

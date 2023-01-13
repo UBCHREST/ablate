@@ -11,6 +11,15 @@ class TwoPhaseTransport : public TransportModel { //};, std::enable_shared_from_
    private:
     const std::shared_ptr<eos::transport::TransportModel> transportModel1;
     const std::shared_ptr<eos::transport::TransportModel> transportModel2;
+    struct Contexts {
+        PetscReal k1;
+        PetscReal k2;
+        PetscReal mu1;
+        PetscReal mu2;
+        PetscReal diff1; // diffusivity will always be zero for immiscible fluids
+        PetscReal diff2;
+        PetscInt vfOffset;
+    };
 
     /**
      * Allow specification/disable of certain properties
@@ -31,10 +40,10 @@ class TwoPhaseTransport : public TransportModel { //};, std::enable_shared_from_
     static PetscErrorCode TwoPhaseConductivityTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
     static PetscErrorCode TwoPhaseViscosityFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode TwoPhaseViscosityTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
-    //    static PetscErrorCode TwoPhaseDiffusivityFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
-    //    static PetscErrorCode TwoPhaseDiffusivityTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
-    //    static PetscErrorCode TwoPhaseZeroFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
-    //    static PetscErrorCode TwoPhaseZeroTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
+    static PetscErrorCode TwoPhaseDiffusivityFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode TwoPhaseDiffusivityTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
+    static PetscErrorCode TwoPhaseZeroFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode TwoPhaseZeroTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
     /** @} */
 
    public:

@@ -80,6 +80,7 @@ INSTANTIATE_TEST_SUITE_P(
 
         (MpiTestParameter){
             .testName = "inputs/volumeOfFluids/twoGasAdvectingDiscontinuity.yaml", .nproc = 1, .expectedOutputFile = "outputs/volumeOfFluids/twoGasAdvectingDiscontinuity.txt", .arguments = ""},
+        (MpiTestParameter){.testName = "inputs/volumeOfFluids/twoPhaseCouetteFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/volumeOfFluids/twoPhaseCouetteFlow.txt", .arguments = ""},
         (MpiTestParameter){.testName = "inputs/volumeOfFluids/waterGravity.yaml", .nproc = 1, .expectedOutputFile = "outputs/volumeOfFluids/waterGravity.txt", .arguments = ""}),
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
