@@ -38,7 +38,7 @@ if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 endif ()
 
 # Create the library for ablate
-add_library(ablateLibrary SHARED src/finiteVolume/processes/radiationLoss.cpp src/finiteVolume/processes/radiationLoss.hpp)
+add_library(ablateLibrary SHARED)
 
 # Load in the subdirectories for the ablate library
 add_subdirectory(src)
