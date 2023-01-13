@@ -109,25 +109,25 @@ TEST_P(TPThermodynamicPropertyTestFixture, ShouldComputeProperty) {
 INSTANTIATE_TEST_SUITE_P(
     StiffenedGasEOSTests, TPThermodynamicPropertyTestFixture,
     testing::Values(
-//        (TPTestParameters){
-//            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
-//            .eos2 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}})),
-//            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
-//            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
-//                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
-//                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
-//            .conservedValues = {998.7, 998.7 * 2.5E6, 998.7 * 10, 998.7 * -20, 998.7 * 30, 998.7, 1.0},  // rho, rhoE, rhoU, rhoV, rhoW, rhoAlpha, alpha
-//            .expectedValue = {2499300.0}},
-//        (TPTestParameters){
-//            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
-//            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-//                {"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}})),
-//            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpeedOfSound,
-//            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
-//                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
-//                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
-//            .conservedValues = {497.6255949738395, 497.6255949738395 * (2425840.672019258 + 700), 497.6255949738395 * 10, 497.6255949738395 * -20, 497.6255949738395 * 30, 0.5807200929152149, 0.5},
-//            .expectedValue = {20.04845783548275}},
+        (TPTestParameters){
+            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
+            .eos2 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}})),
+            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
+            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
+                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
+                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
+            .conservedValues = {998.7, 998.7 * 2.5E6, 998.7 * 10, 998.7 * -20, 998.7 * 30, 998.7, 1.0},  // rho, rhoE, rhoU, rhoV, rhoW, rhoAlpha, alpha
+            .expectedValue = {2499300.0}},
+        (TPTestParameters){
+            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
+            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                {"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}})),
+            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpeedOfSound,
+            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
+                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
+                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
+            .conservedValues = {497.6255949738395, 497.6255949738395 * (2425840.672019258 + 700), 497.6255949738395 * 10, 497.6255949738395 * -20, 497.6255949738395 * 30, 0.5807200929152149, 0.5},
+            .expectedValue = {20.04845783548275}},
         (TPTestParameters){
             .eos1 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
                 {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
@@ -138,166 +138,166 @@ INSTANTIATE_TEST_SUITE_P(
                        ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
                        ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
             .conservedValues = {836.105406428622, 836.105406428622 * (1762250.2589397137 + 700), 836.105406428622 * 10, 836.105406428622 * -20, 836.105406428622 * 30, 537.8784815000674, 0.7},
-            .expectedValue = {100000.00000023842}}
-//        (TPTestParameters){
-//            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
-//            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-//                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
-//            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
-//            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2},
-//                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
-//                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
-//            .conservedValues = {NAN, NAN, 538.8183311241276, 538.8183311241276 * 1390590.2017535304, 0.0, 0.9398496240601503, 0.3},
-//            .expectedValue = {1390590.2017535304}},
-//        (TPTestParameters){
-//            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
-//            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-//                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
-//            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpeedOfSound,
-//            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2},
-//                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
-//                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
-//            .conservedValues = {NAN, NAN, 538.8183311241276, 538.8183311241276 * 1390590.2017535304, 0.0, 0.9398496240601503, 0.3},
-//            .expectedValue = {24.87318022730244}},
-//        (TPTestParameters){
-//            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
-//            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-//                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
-//            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::Density,
-//            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2},
-//                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
-//                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
-//            .conservedValues = {NAN, NAN, 538.8183311241276, 538.8183311241276 * 1390590.2017535304, 0.0, 0.9398496240601503, 0.3},
-//            .expectedValue = {538.8183311241276}},
-//        (TPTestParameters){
-//            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
-//            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-//                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
-//            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::Pressure,
-//            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2},
-//                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
-//                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
-//            .conservedValues = {NAN, NAN, 636.2369625573178, 636.2369625573178 * 806491.803515885, 0.0, 469.92481203007515, 0.6},
-//            .expectedValue = {50000000.00000003}},
-//
-//        (TPTestParameters){
-//            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
-//            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-//                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
-//            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::Temperature,
-//            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
-//                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
-//                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
-//            .conservedValues = {462.2918312607095, 462.2918312607095 * (1389315.828178823 + 700), 462.2918312607095 * 10, 462.2918312607095 * 20, 462.2918312607095 * 30, 1.2531328320802004, 0.4},
-//            .expectedValue = {300}},
-//        (TPTestParameters){
-//            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
-//            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-//                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
-//            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::Temperature,
-//            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2},
-//                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
-//                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
-//            .conservedValues = {NAN, NAN, 562.751433810914, 562.751433810914 * 1264395.3714915595, 0.0, 313.2832080200501, 0.4},
-//            .expectedValue = {600}},
-//
-//        (TPTestParameters){
-//            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
-//            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-//                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
-//            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
-//            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
-//                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
-//                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
-//            .conservedValues = {462.2918312607095, 462.2918312607095 * (1389315.828178823 + 700), 462.2918312607095 * 10, 462.2918312607095 * 20, 462.2918312607095 * 30, 1.2531328320802004, 0.4},
-//            .expectedTemperature = 300.0,
-//            .expectedValue = {1389315.828178823}},
-//        (TPTestParameters){
-//            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
-//            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-//                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
-//            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
-//            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2},
-//                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
-//                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
-//            .conservedValues = {NAN, NAN, 562.751433810914, 562.751433810914 * 1264395.3714915595, 0.0, 313.2832080200501, 0.4},
-//            .expectedTemperature = 600.0,
-//            .expectedValue = {1264395.3714915595}},
-//        (TPTestParameters){
-//            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
-//            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-//                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
-//            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SensibleEnthalpy,
-//            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
-//                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
-//                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
-//            .conservedValues = {462.2918312607095, 462.2918312607095 * (1389315.828178823 + 700), 462.2918312607095 * 10, 462.2918312607095 * 20, 462.2918312607095 * 30, 1.2531328320802004, 0.4},
-//            .expectedTemperature = 300.0,
-//            .expectedValue = {1389532.1417566063}},
-//        (TPTestParameters){
-//            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
-//            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-//                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
-//            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SensibleEnthalpy,
-//            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 2},
-//                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 7},
-//                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 8}},
-//            .conservedValues = {NAN, NAN, 562.751433810914, 562.751433810914 * (1264395.3714915595 + 700), 562.751433810914 * 10, 562.751433810914 * 20, 562.751433810914 * 30, 313.2832080200501, 0.4},
-//            .expectedTemperature = 600.0,
-//            .expectedValue = {1353244.5453824254}},
-//
-//        (TPTestParameters){
-//            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
-//            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-//                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
-//            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure,
-//            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
-//                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
-//                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
-//            .conservedValues = {462.2918312607095, 462.2918312607095 * (1389315.828178823 + 700), 462.2918312607095 * 10, 462.2918312607095 * 20, 462.2918312607095 * 30, 1.2531328320802004, 0.4},
-//            .expectedValue = {4631.773805855355}},
-//        (TPTestParameters){
-//            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
-//            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-//                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
-//            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume,
-//            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
-//                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
-//                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
-//            .conservedValues = {462.2918312607095, 462.2918312607095 * (1389315.828178823 + 700), 462.2918312607095 * 10, 462.2918312607095 * 20, 462.2918312607095 * 30, 1.2531328320802004, 0.4},
-//            .expectedValue = {4629.971638016732}},
-//        (TPTestParameters){
-//            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
-//            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-//                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
-//            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure,
-//            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
-//                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
-//                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
-//            .conservedValues = {562.751433810914, 562.751433810914 * (1264395.3714915595 + 700), 562.751433810914 * 10, 562.751433810914 * 20, 562.751433810914 * 30, 313.2832080200501, 0.4},
-//            .expectedValue = {2255.407575637376}},
-//        (TPTestParameters){
-//            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
-//            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-//                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
-//            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume,
-//            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
-//                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
-//                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
-//            .conservedValues = {562.751433810914, 562.751433810914 * (1264395.3714915595 + 700), 562.751433810914 * 10, 562.751433810914 * 20, 562.751433810914 * 30, 313.2832080200501, 0.4},
-//            .expectedValue = {1923.136104523659}},
-//
-//        (TPTestParameters){
-//            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}}),
-//                                                              std::vector<std::string>{"CO2"}),
-//            .eos2 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}}),
-//                                                              std::vector<std::string>{"O2", "CH4", "N2"}),
-//            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpeciesSensibleEnthalpy,
-//            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
-//                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
-//                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
-//            .conservedValues = {998.7, 998.7 * 2.5E6, 998.7 * 10, 998.7 * -20, 998.7 * 30, 998.7, 1.0},
-//            .expectedValue = std::vector<PetscReal>{0.0, 0.0, 0.0, 0.0}}
+            .expectedValue = {100000.00000023842}},
+        (TPTestParameters){
+            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
+            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
+            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
+            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2},
+                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
+                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
+            .conservedValues = {NAN, NAN, 538.8183311241276, 538.8183311241276 * 1390590.2017535304, 0.0, 0.9398496240601503, 0.3},
+            .expectedValue = {1390590.2017535304}},
+        (TPTestParameters){
+            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
+            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
+            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpeedOfSound,
+            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2},
+                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
+                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
+            .conservedValues = {NAN, NAN, 538.8183311241276, 538.8183311241276 * 1390590.2017535304, 0.0, 0.9398496240601503, 0.3},
+            .expectedValue = {24.87318022730244}},
+        (TPTestParameters){
+            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
+            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
+            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::Density,
+            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2},
+                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
+                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
+            .conservedValues = {NAN, NAN, 538.8183311241276, 538.8183311241276 * 1390590.2017535304, 0.0, 0.9398496240601503, 0.3},
+            .expectedValue = {538.8183311241276}},
+        (TPTestParameters){
+            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
+            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
+            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::Pressure,
+            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2},
+                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
+                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
+            .conservedValues = {NAN, NAN, 636.2369625573178, 636.2369625573178 * 806491.803515885, 0.0, 469.92481203007515, 0.6},
+            .expectedValue = {50000000.00000003}},
+
+        (TPTestParameters){
+            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
+            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
+            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::Temperature,
+            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
+                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
+                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
+            .conservedValues = {462.2918312607095, 462.2918312607095 * (1389315.828178823 + 700), 462.2918312607095 * 10, 462.2918312607095 * 20, 462.2918312607095 * 30, 1.2531328320802004, 0.4},
+            .expectedValue = {300}},
+        (TPTestParameters){
+            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
+            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
+            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::Temperature,
+            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2},
+                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
+                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
+            .conservedValues = {NAN, NAN, 562.751433810914, 562.751433810914 * 1264395.3714915595, 0.0, 313.2832080200501, 0.4},
+            .expectedValue = {600}},
+
+        (TPTestParameters){
+            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
+            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
+            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
+            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
+                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
+                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
+            .conservedValues = {462.2918312607095, 462.2918312607095 * (1389315.828178823 + 700), 462.2918312607095 * 10, 462.2918312607095 * 20, 462.2918312607095 * 30, 1.2531328320802004, 0.4},
+            .expectedTemperature = 300.0,
+            .expectedValue = {1389315.828178823}},
+        (TPTestParameters){
+            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
+            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
+            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
+            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2},
+                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
+                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
+            .conservedValues = {NAN, NAN, 562.751433810914, 562.751433810914 * 1264395.3714915595, 0.0, 313.2832080200501, 0.4},
+            .expectedTemperature = 600.0,
+            .expectedValue = {1264395.3714915595}},
+        (TPTestParameters){
+            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
+            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
+            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SensibleEnthalpy,
+            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
+                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
+                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
+            .conservedValues = {462.2918312607095, 462.2918312607095 * (1389315.828178823 + 700), 462.2918312607095 * 10, 462.2918312607095 * 20, 462.2918312607095 * 30, 1.2531328320802004, 0.4},
+            .expectedTemperature = 300.0,
+            .expectedValue = {1389532.1417566063}},
+        (TPTestParameters){
+            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
+            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
+            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SensibleEnthalpy,
+            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 2},
+                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 7},
+                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 8}},
+            .conservedValues = {NAN, NAN, 562.751433810914, 562.751433810914 * (1264395.3714915595 + 700), 562.751433810914 * 10, 562.751433810914 * 20, 562.751433810914 * 30, 313.2832080200501, 0.4},
+            .expectedTemperature = 600.0,
+            .expectedValue = {1353244.5453824254}},
+
+        (TPTestParameters){
+            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
+            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
+            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure,
+            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
+                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
+                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
+            .conservedValues = {462.2918312607095, 462.2918312607095 * (1389315.828178823 + 700), 462.2918312607095 * 10, 462.2918312607095 * 20, 462.2918312607095 * 30, 1.2531328320802004, 0.4},
+            .expectedValue = {4631.773805855355}},
+        (TPTestParameters){
+            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
+            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
+            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume,
+            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
+                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
+                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
+            .conservedValues = {462.2918312607095, 462.2918312607095 * (1389315.828178823 + 700), 462.2918312607095 * 10, 462.2918312607095 * 20, 462.2918312607095 * 30, 1.2531328320802004, 0.4},
+            .expectedValue = {4629.971638016732}},
+        (TPTestParameters){
+            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
+            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
+            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure,
+            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
+                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
+                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
+            .conservedValues = {562.751433810914, 562.751433810914 * (1264395.3714915595 + 700), 562.751433810914 * 10, 562.751433810914 * 20, 562.751433810914 * 30, 313.2832080200501, 0.4},
+            .expectedValue = {2255.407575637376}},
+        (TPTestParameters){
+            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
+            .eos2 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                {"gamma", "2.31015"}, {"Cp", "4643.4015"}, {"p0", "6.0695E8"}})),
+            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume,
+            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
+                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
+                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
+            .conservedValues = {562.751433810914, 562.751433810914 * (1264395.3714915595 + 700), 562.751433810914 * 10, 562.751433810914 * 20, 562.751433810914 * 30, 313.2832080200501, 0.4},
+            .expectedValue = {1923.136104523659}},
+
+        (TPTestParameters){
+            .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}}),
+                                                              std::vector<std::string>{"CO2"}),
+            .eos2 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}}),
+                                                              std::vector<std::string>{"O2", "CH4", "N2"}),
+            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpeciesSensibleEnthalpy,
+            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
+                       ablate::domain::Field{.name = "densityVF", .numberComponents = 1, .offset = 5},
+                       ablate::domain::Field{.name = "volumeFraction", .numberComponents = 1, .offset = 6}},
+            .conservedValues = {998.7, 998.7 * 2.5E6, 998.7 * 10, 998.7 * -20, 998.7 * 30, 998.7, 1.0},
+            .expectedValue = std::vector<PetscReal>{0.0, 0.0, 0.0, 0.0}}
 
         ),
 

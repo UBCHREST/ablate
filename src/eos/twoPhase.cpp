@@ -7,16 +7,16 @@
 
 // equation of state for equilibrium mixture of two imiscible fluids with perfect gas or stiffened gas equations of state
 // reference Menikoff (2007) "Empirical Equations of States for Solids", book chapter in ShockWave Science and Technology Reference Library: Volume 2
-static inline void SimpleGasGasDecode(PetscInt dim, const struct DecodeIn in, PetscReal *out) {
+static inline void SimpleGasGasDecode(PetscInt dim, ablate::eos::TwoPhase::DecodeIn *in, ablate::eos::TwoPhase::DecodeOut *out) {
     // decode using known alpha
     PetscReal alpha = in->alpha;
-    PetscReal alpha1rho1 = in.alphaRho1;
+    PetscReal alpha1rho1 = in->alphaRho1;
     PetscReal rho = in->rho;
     PetscReal e = in->e;
     PetscReal gamma1 = in->parameters.gamma1;
     PetscReal gamma2 = in->parameters.gamma2;
-    PetscReal R1 = in->parameters.R1;
-    PetscReal R2 = in->parameters.R2;
+    PetscReal R1 = in->parameters.rGas1;
+    PetscReal R2 = in->parameters.rGas2;
     PetscReal cv1 = R1 / (gamma1 - 1);
     PetscReal cv2 = R2 / (gamma2 - 1);
     PetscReal Y1 = alpha1rho1 / rho;
@@ -45,25 +45,24 @@ static inline void SimpleGasGasDecode(PetscInt dim, const struct DecodeIn in, Pe
         T = e1 / cv1;
     }
     out->rho1 = rho1;
-    out.rho2 = rho2;
-    out.e1 = e1;
-    out.e2 = e2;
-    out.p = p;
-    out.T = T;
-    return *out;
+    out->rho2 = rho2;
+    out->e1 = e1;
+    out->e2 = e2;
+    out->p = p;
+    out->T = T;
 }
 
-static inline PetscReal SimpleGasStiffDecode(PetscInt dim, const PetscReal *in, PetscReal *out) {
+static inline void SimpleGasStiffDecode(PetscInt dim, ablate::eos::TwoPhase::DecodeIn *in, ablate::eos::TwoPhase::DecodeOut *out) {
     // decode using known alpha
-    PetscReal alpha = in[0];
-    PetscReal alpha1rho1 = in[1];
-    PetscReal rho = in[2];
-    PetscReal e = in[3];
-    PetscReal gamma1 = in[4];
-    PetscReal gamma2 = in[5];
-    PetscReal R1 = in[6];
-    PetscReal cp2 = in[7];
-    PetscReal p02 = in[8];
+    PetscReal alpha = in->alpha;
+    PetscReal alpha1rho1 = in->alphaRho1;
+    PetscReal rho = in->rho;
+    PetscReal e = in->e;
+    PetscReal gamma1 = in->parameters.gamma1;
+    PetscReal gamma2 = in->parameters.gamma2;
+    PetscReal R1 = in->parameters.rGas1;
+    PetscReal cp2 = in->parameters.Cp2;
+    PetscReal p02 = in->parameters.p02;
     PetscReal cv1 = R1 / (gamma1 - 1);
     PetscReal Y1 = alpha1rho1 / rho;
     PetscReal Y2 = (rho - alpha1rho1) / rho;
@@ -90,27 +89,26 @@ static inline PetscReal SimpleGasStiffDecode(PetscInt dim, const PetscReal *in, 
         p = (gamma1 - 1) * rho1 * e1;
         T = e1 / cv1;
     }
-    out[0] = rho1;
-    out[1] = rho2;
-    out[2] = e1;
-    out[3] = e2;
-    out[4] = p;
-    out[5] = T;
-    return *out;
+    out->rho1 = rho1;
+    out->rho2 = rho2;
+    out->e1 = e1;
+    out->e2 = e2;
+    out->p = p;
+    out->T = T;
 }
 
-static inline PetscReal SimpleStiffStiffDecode(PetscInt dim, const PetscReal *in, PetscReal *out) {
+static inline void SimpleStiffStiffDecode(PetscInt dim, ablate::eos::TwoPhase::DecodeIn *in, ablate::eos::TwoPhase::DecodeOut *out) {
     // decode using known alpha
-    PetscReal alpha = in[0];
-    PetscReal alpha1rho1 = in[1];
-    PetscReal rho = in[2];
-    PetscReal e = in[3];
-    PetscReal gamma1 = in[4];
-    PetscReal gamma2 = in[5];
-    PetscReal cp1 = in[6];
-    PetscReal cp2 = in[7];
-    PetscReal p01 = in[8];
-    PetscReal p02 = in[9];
+    PetscReal alpha = in->alpha;
+    PetscReal alpha1rho1 = in->alphaRho1;
+    PetscReal rho = in->rho;
+    PetscReal e = in->e;
+    PetscReal gamma1 = in->parameters.gamma1;
+    PetscReal gamma2 = in->parameters.gamma2;
+    PetscReal cp1 = in->parameters.Cp1;
+    PetscReal cp2 = in->parameters.Cp2;
+    PetscReal p01 = in->parameters.p01;
+    PetscReal p02 = in->parameters.p02;
     PetscReal Y1 = alpha1rho1 / rho;
     PetscReal Y2 = (rho - alpha1rho1) / rho;
     PetscReal T, p, rho1, rho2, e1, e2;  // initiate output variables
@@ -136,13 +134,12 @@ static inline PetscReal SimpleStiffStiffDecode(PetscInt dim, const PetscReal *in
         p = (gamma1 - 1) * rho1 * e1 - gamma1 * p01;
         T = gamma1 / cp1 * (e1 - p01 / rho1);
     }
-    out[0] = rho1;
-    out[1] = rho2;
-    out[2] = e1;
-    out[3] = e2;
-    out[4] = p;
-    out[5] = T;
-    return *out;
+    out->rho1 = rho1;
+    out->rho2 = rho2;
+    out->e1 = e1;
+    out->e2 = e2;
+    out->p = p;
+    out->T = T;
 }
 
 ablate::eos::TwoPhase::TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<eos::EOS> eos2) : EOS("twoPhase"), eos1(std::move(eos1)), eos2(std::move(eos2)) {
@@ -605,11 +602,11 @@ PetscErrorCode ablate::eos::TwoPhase::PressureFunction(const PetscReal *conserve
     decodeIn.parameters = functionContext->parameters;
 
     if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 == 0) {
-        SimpleGasGasDecode(functionContext->dim, decodeIn, decodeOut);
+        SimpleGasGasDecode(functionContext->dim, &decodeIn, &decodeOut);
     } else if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 != 0) {
-        SimpleGasStiffDecode(functionContext->dim, decodeIn, decodeOut);
+        SimpleGasStiffDecode(functionContext->dim, &decodeIn, &decodeOut);
     } else if (functionContext->parameters.p01 != 0 && functionContext->parameters.p02 != 0) {
-        SimpleStiffStiffDecode(functionContext->dim, decodeIn, decodeOut);
+        SimpleStiffStiffDecode(functionContext->dim, &decodeIn, &decodeOut);
     }
     *p = decodeOut.p;  // [rho1, rho2, e1, e2, p, T]
     PetscFunctionReturn(0);
@@ -629,31 +626,22 @@ PetscErrorCode ablate::eos::TwoPhase::PressureTemperatureFunction(const PetscRea
 
     // compute internal energy
     PetscReal internalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - ke;
-    PetscReal derived[6];
-    PetscReal in[10];
-    in[0] = conserved[functionContext->volumeFractionOffset];
-    in[1] = conserved[functionContext->densityVFOffset];
-    in[2] = density;
-    in[3] = internalEnergy;
-    in[4] = functionContext->parameters.gamma1;
-    in[5] = functionContext->parameters.gamma2;
+    DecodeOut decodeOut;
+    DecodeIn decodeIn;
+    decodeIn.alpha = conserved[functionContext->volumeFractionOffset];
+    decodeIn.alphaRho1 = conserved[functionContext->densityVFOffset];
+    decodeIn.rho = density;
+    decodeIn.e = internalEnergy;
+    decodeIn.parameters = functionContext->parameters;
+
     if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 == 0) {
-        in[6] = functionContext->parameters.rGas1;
-        in[7] = functionContext->parameters.rGas2;
-        SimpleGasGasDecode(functionContext->dim, in, derived);
+        SimpleGasGasDecode(functionContext->dim, &decodeIn, &decodeOut);
     } else if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 != 0) {
-        in[6] = functionContext->parameters.rGas1;
-        in[7] = functionContext->parameters.Cp2;
-        in[8] = functionContext->parameters.p02;
-        SimpleGasStiffDecode(functionContext->dim, in, derived);
+        SimpleGasStiffDecode(functionContext->dim, &decodeIn, &decodeOut);
     } else if (functionContext->parameters.p01 != 0 && functionContext->parameters.p02 != 0) {
-        in[6] = functionContext->parameters.Cp1;
-        in[7] = functionContext->parameters.Cp2;
-        in[8] = functionContext->parameters.p01;
-        in[9] = functionContext->parameters.p02;
-        SimpleStiffStiffDecode(functionContext->dim, in, derived);
+        SimpleStiffStiffDecode(functionContext->dim, &decodeIn, &decodeOut);
     }
-    *p = derived[4];  // [rho1, rho2, e1, e2, p, T]
+    *p = decodeOut.p;  // [rho1, rho2, e1, e2, p, T]
     PetscFunctionReturn(0);
 }
 
@@ -671,31 +659,22 @@ PetscErrorCode ablate::eos::TwoPhase::TemperatureFunction(const PetscReal *conse
 
     // compute internal energy
     PetscReal internalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - ke;
-    PetscReal derived[6];
-    PetscReal in[10];
-    in[0] = conserved[functionContext->volumeFractionOffset];
-    in[1] = conserved[functionContext->densityVFOffset];
-    in[2] = density;
-    in[3] = internalEnergy;
-    in[4] = functionContext->parameters.gamma1;
-    in[5] = functionContext->parameters.gamma2;
+    DecodeOut decodeOut;
+    DecodeIn decodeIn;
+    decodeIn.alpha = conserved[functionContext->volumeFractionOffset];
+    decodeIn.alphaRho1 = conserved[functionContext->densityVFOffset];
+    decodeIn.rho = density;
+    decodeIn.e = internalEnergy;
+    decodeIn.parameters = functionContext->parameters;
+
     if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 == 0) {
-        in[6] = functionContext->parameters.rGas1;
-        in[7] = functionContext->parameters.rGas2;
-        SimpleGasGasDecode(functionContext->dim, in, derived);
+        SimpleGasGasDecode(functionContext->dim, &decodeIn, &decodeOut);
     } else if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 != 0) {
-        in[6] = functionContext->parameters.rGas1;
-        in[7] = functionContext->parameters.Cp2;
-        in[8] = functionContext->parameters.p02;
-        SimpleGasStiffDecode(functionContext->dim, in, derived);
+        SimpleGasStiffDecode(functionContext->dim, &decodeIn, &decodeOut);
     } else if (functionContext->parameters.p01 != 0 && functionContext->parameters.p02 != 0) {
-        in[6] = functionContext->parameters.Cp1;
-        in[7] = functionContext->parameters.Cp2;
-        in[8] = functionContext->parameters.p01;
-        in[9] = functionContext->parameters.p02;
-        SimpleStiffStiffDecode(functionContext->dim, in, derived);
+        SimpleStiffStiffDecode(functionContext->dim, &decodeIn, &decodeOut);
     }
-    *temperature = derived[5];  // [rho1, rho2, e1, e2, p, T]
+    *temperature = decodeOut.T;
     PetscFunctionReturn(0);
 }
 
@@ -744,41 +723,22 @@ PetscErrorCode ablate::eos::TwoPhase::SensibleEnthalpyFunction(const PetscReal *
     PetscReal sensibleInternalEnergy;
     InternalSensibleEnergyFunction(conserved, &sensibleInternalEnergy, ctx);
 
-    // get kinetic energy for internal energy calculation
-    PetscReal ke = 0.0;
-    for (PetscInt d = 0; d < functionContext->dim; d++) {
-        ke += PetscSqr(conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density);
-    }
-    ke *= 0.5;
+    DecodeOut decodeOut;
+    DecodeIn decodeIn;
+    decodeIn.alpha = conserved[functionContext->volumeFractionOffset];
+    decodeIn.alphaRho1 = conserved[functionContext->densityVFOffset];
+    decodeIn.rho = density;
+    decodeIn.e = sensibleInternalEnergy;
+    decodeIn.parameters = functionContext->parameters;
 
-    // compute internal energy
-    PetscReal internalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - ke;
-    // simple decode to compute pressure
-    PetscReal derived[6];
-    PetscReal in[10];
-    in[0] = conserved[functionContext->volumeFractionOffset];
-    in[1] = conserved[functionContext->densityVFOffset];
-    in[2] = density;
-    in[3] = internalEnergy;
-    in[4] = functionContext->parameters.gamma1;
-    in[5] = functionContext->parameters.gamma2;
     if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 == 0) {
-        in[6] = functionContext->parameters.rGas1;
-        in[7] = functionContext->parameters.rGas2;
-        SimpleGasGasDecode(functionContext->dim, in, derived);
+        SimpleGasGasDecode(functionContext->dim, &decodeIn, &decodeOut);
     } else if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 != 0) {
-        in[6] = functionContext->parameters.rGas1;
-        in[7] = functionContext->parameters.Cp2;
-        in[8] = functionContext->parameters.p02;
-        SimpleGasStiffDecode(functionContext->dim, in, derived);
+        SimpleGasStiffDecode(functionContext->dim, &decodeIn, &decodeOut);
     } else if (functionContext->parameters.p01 != 0 && functionContext->parameters.p02 != 0) {
-        in[6] = functionContext->parameters.Cp1;
-        in[7] = functionContext->parameters.Cp2;
-        in[8] = functionContext->parameters.p01;
-        in[9] = functionContext->parameters.p02;
-        SimpleStiffStiffDecode(functionContext->dim, in, derived);
+        SimpleStiffStiffDecode(functionContext->dim, &decodeIn, &decodeOut);
     }
-    PetscReal p = derived[4];  // [rho1, rho2, e1, e2, p, T]
+    PetscReal p = decodeOut.p;  // [rho1, rho2, e1, e2, p, T]
 
     // compute enthalpy
     *sensibleEnthalpy = sensibleInternalEnergy + p / density;
@@ -794,41 +754,22 @@ PetscErrorCode ablate::eos::TwoPhase::SensibleEnthalpyTemperatureFunction(const 
     PetscReal sensibleInternalEnergy;
     InternalSensibleEnergyFunction(conserved, &sensibleInternalEnergy, ctx);
 
-    // get kinetic energy for internal energy calculation
-    PetscReal ke = 0.0;
-    for (PetscInt d = 0; d < functionContext->dim; d++) {
-        ke += PetscSqr(conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density);
-    }
-    ke *= 0.5;
+    DecodeOut decodeOut;
+    DecodeIn decodeIn;
+    decodeIn.alpha = conserved[functionContext->volumeFractionOffset];
+    decodeIn.alphaRho1 = conserved[functionContext->densityVFOffset];
+    decodeIn.rho = density;
+    decodeIn.e = sensibleInternalEnergy;
+    decodeIn.parameters = functionContext->parameters;
 
-    // compute internal energy
-    PetscReal internalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - ke;
-    // simple decode to compute pressure
-    PetscReal derived[6];
-    PetscReal in[10];
-    in[0] = conserved[functionContext->volumeFractionOffset];
-    in[1] = conserved[functionContext->densityVFOffset];
-    in[2] = density;
-    in[3] = internalEnergy;
-    in[4] = functionContext->parameters.gamma1;
-    in[5] = functionContext->parameters.gamma2;
     if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 == 0) {
-        in[6] = functionContext->parameters.rGas1;
-        in[7] = functionContext->parameters.rGas2;
-        SimpleGasGasDecode(functionContext->dim, in, derived);
+        SimpleGasGasDecode(functionContext->dim, &decodeIn, &decodeOut);
     } else if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 != 0) {
-        in[6] = functionContext->parameters.rGas1;
-        in[7] = functionContext->parameters.Cp2;
-        in[8] = functionContext->parameters.p02;
-        SimpleGasStiffDecode(functionContext->dim, in, derived);
+        SimpleGasStiffDecode(functionContext->dim, &decodeIn, &decodeOut);
     } else if (functionContext->parameters.p01 != 0 && functionContext->parameters.p02 != 0) {
-        in[6] = functionContext->parameters.Cp1;
-        in[7] = functionContext->parameters.Cp2;
-        in[8] = functionContext->parameters.p01;
-        in[9] = functionContext->parameters.p02;
-        SimpleStiffStiffDecode(functionContext->dim, in, derived);
+        SimpleStiffStiffDecode(functionContext->dim, &decodeIn, &decodeOut);
     }
-    PetscReal p = derived[4];  // [rho1, rho2, e1, e2, p, T]
+    PetscReal p = decodeOut.p;  // [rho1, rho2, e1, e2, p, T]
 
     // compute enthalpy
     *sensibleEnthalpy = sensibleInternalEnergy + p / density;
@@ -851,49 +792,40 @@ PetscErrorCode ablate::eos::TwoPhase::SpecificHeatConstantVolumeFunction(const P
     // compute internal energy
     PetscReal internalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - ke;
     // simple decode to compute pressure
-    PetscReal derived[6];
-    PetscReal in[10];
-    in[0] = conserved[functionContext->volumeFractionOffset];
-    in[1] = conserved[functionContext->densityVFOffset];
-    in[2] = density;
-    in[3] = internalEnergy;
-    in[4] = functionContext->parameters.gamma1;
-    in[5] = functionContext->parameters.gamma2;
+    DecodeOut decodeOut;
+    DecodeIn decodeIn;
+    decodeIn.alpha = conserved[functionContext->volumeFractionOffset];
+    decodeIn.alphaRho1 = conserved[functionContext->densityVFOffset];
+    decodeIn.rho = density;
+    decodeIn.e = internalEnergy;
+    decodeIn.parameters = functionContext->parameters;
+
     PetscReal cv1, cv2, at1, at2;  // initialize variables for at_mix
     if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 == 0) {
-        in[6] = functionContext->parameters.rGas1;
-        in[7] = functionContext->parameters.rGas2;
-        SimpleGasGasDecode(functionContext->dim, in, derived);
+        SimpleGasGasDecode(functionContext->dim, &decodeIn, &decodeOut);
         // isothermal sound speeds
         cv1 = functionContext->parameters.rGas1 / (functionContext->parameters.gamma1 - 1);
         cv2 = functionContext->parameters.rGas2 / (functionContext->parameters.gamma2 - 1);
-        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) * cv1 * derived[5]);  // ideal gas eos
-        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) * cv2 * derived[5]);  // ideal gas eos
+        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) * cv1 * decodeOut.T);  // ideal gas eos
+        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) * cv2 * decodeOut.T);  // ideal gas eos
     } else if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 != 0) {
-        in[6] = functionContext->parameters.rGas1;
-        in[7] = functionContext->parameters.Cp2;
-        in[8] = functionContext->parameters.p02;
-        SimpleGasStiffDecode(functionContext->dim, in, derived);
+        SimpleGasStiffDecode(functionContext->dim, &decodeIn, &decodeOut);
         cv1 = functionContext->parameters.rGas1 / (functionContext->parameters.gamma1 - 1);
         cv2 = functionContext->parameters.Cp2 / functionContext->parameters.gamma2;
-        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) * cv1 * derived[5]);                                                                   // ideal gas eos
-        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) / functionContext->parameters.gamma2 * functionContext->parameters.Cp2 * derived[5]);  // stiffened gas eos
+        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) * cv1 * decodeOut.T);                                                                   // ideal gas eos
+        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) / functionContext->parameters.gamma2 * functionContext->parameters.Cp2 * decodeOut.T);  // stiffened gas eos
     } else if (functionContext->parameters.p01 != 0 && functionContext->parameters.p02 != 0) {
-        in[6] = functionContext->parameters.Cp1;
-        in[7] = functionContext->parameters.Cp2;
-        in[8] = functionContext->parameters.p01;
-        in[9] = functionContext->parameters.p02;
-        SimpleStiffStiffDecode(functionContext->dim, in, derived);
+        SimpleStiffStiffDecode(functionContext->dim, &decodeIn, &decodeOut);
         cv1 = functionContext->parameters.Cp1 / functionContext->parameters.gamma1;
         cv2 = functionContext->parameters.Cp2 / functionContext->parameters.gamma2;
-        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) / functionContext->parameters.gamma1 * functionContext->parameters.Cp1 * derived[5]);  // stiffened gas eos
-        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) / functionContext->parameters.gamma2 * functionContext->parameters.Cp2 * derived[5]);  // stiffened gas eos
+        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) / functionContext->parameters.gamma1 * functionContext->parameters.Cp1 * decodeOut.T);  // stiffened gas eos
+        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) / functionContext->parameters.gamma2 * functionContext->parameters.Cp2 * decodeOut.T);  // stiffened gas eos
     } else {
         throw std::invalid_argument("TwoPhase::SpecificHeatConstantVolumeFunction cannot calculate Cv_mix for other EOS, must be perfect/stiffened gas combination.");
     }
-    PetscReal rho1 = derived[0];
-    PetscReal rho2 = derived[1];
-    PetscReal T = derived[5];  // [rho1, rho2, e1, e2, p, T]
+    PetscReal rho1 = decodeOut.rho1;
+    PetscReal rho2 = decodeOut.rho2;
+    PetscReal T = decodeOut.T;  // [rho1, rho2, e1, e2, p, T]
     PetscReal gamma1 = functionContext->parameters.gamma1;
     PetscReal gamma2 = functionContext->parameters.gamma2;
     PetscReal Y1 = conserved[functionContext->densityVFOffset] / density;
@@ -921,48 +853,39 @@ PetscErrorCode ablate::eos::TwoPhase::SpecificHeatConstantVolumeTemperatureFunct
     // compute internal energy
     PetscReal internalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - ke;
     // simple decode to compute pressure
-    PetscReal derived[6];
-    PetscReal in[10];
-    in[0] = conserved[functionContext->volumeFractionOffset];
-    in[1] = conserved[functionContext->densityVFOffset];
-    in[2] = density;
-    in[3] = internalEnergy;
-    in[4] = functionContext->parameters.gamma1;
-    in[5] = functionContext->parameters.gamma2;
+    DecodeOut decodeOut;
+    DecodeIn decodeIn;
+    decodeIn.alpha = conserved[functionContext->volumeFractionOffset];
+    decodeIn.alphaRho1 = conserved[functionContext->densityVFOffset];
+    decodeIn.rho = density;
+    decodeIn.e = internalEnergy;
+    decodeIn.parameters = functionContext->parameters;
+
     PetscReal cv1, cv2, at1, at2;  // initialize variables for at_mix
     if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 == 0) {
-        in[6] = functionContext->parameters.rGas1;
-        in[7] = functionContext->parameters.rGas2;
-        SimpleGasGasDecode(functionContext->dim, in, derived);
+        SimpleGasGasDecode(functionContext->dim, &decodeIn, &decodeOut);
         // isothermal sound speeds
         cv1 = functionContext->parameters.rGas1 / (functionContext->parameters.gamma1 - 1);
         cv2 = functionContext->parameters.rGas2 / (functionContext->parameters.gamma2 - 1);
-        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) * cv1 * derived[5]);  // ideal gas eos
-        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) * cv2 * derived[5]);  // ideal gas eos
+        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) * cv1 * T);  // ideal gas eos
+        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) * cv2 * T);  // ideal gas eos
     } else if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 != 0) {
-        in[6] = functionContext->parameters.rGas1;
-        in[7] = functionContext->parameters.Cp2;
-        in[8] = functionContext->parameters.p02;
-        SimpleGasStiffDecode(functionContext->dim, in, derived);
+        SimpleGasStiffDecode(functionContext->dim, &decodeIn, &decodeOut);
         cv1 = functionContext->parameters.rGas1 / (functionContext->parameters.gamma1 - 1);
         cv2 = functionContext->parameters.Cp2 / functionContext->parameters.gamma2;
-        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) * cv1 * derived[5]);                                                                   // ideal gas eos
-        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) / functionContext->parameters.gamma2 * functionContext->parameters.Cp2 * derived[5]);  // stiffened gas eos
+        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) * cv1 * T);                                                                   // ideal gas eos
+        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) / functionContext->parameters.gamma2 * functionContext->parameters.Cp2 * T);  // stiffened gas eos
     } else if (functionContext->parameters.p01 != 0 && functionContext->parameters.p02 != 0) {
-        in[6] = functionContext->parameters.Cp1;
-        in[7] = functionContext->parameters.Cp2;
-        in[8] = functionContext->parameters.p01;
-        in[9] = functionContext->parameters.p02;
-        SimpleStiffStiffDecode(functionContext->dim, in, derived);
+        SimpleStiffStiffDecode(functionContext->dim, &decodeIn, &decodeOut);
         cv1 = functionContext->parameters.Cp1 / functionContext->parameters.gamma1;
         cv2 = functionContext->parameters.Cp2 / functionContext->parameters.gamma2;
-        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) / functionContext->parameters.gamma1 * functionContext->parameters.Cp1 * derived[5]);  // stiffened gas eos
-        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) / functionContext->parameters.gamma2 * functionContext->parameters.Cp2 * derived[5]);  // stiffened gas eos
+        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) / functionContext->parameters.gamma1 * functionContext->parameters.Cp1 * T);  // stiffened gas eos
+        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) / functionContext->parameters.gamma2 * functionContext->parameters.Cp2 * T);  // stiffened gas eos
     } else {
-        throw std::invalid_argument("TwoPhase::SpecificHeatConstantVolumeTemperatureFunction cannot calculate Cv_mix for other EOS, must be perfect/stiffened gas combination.");
+        throw std::invalid_argument("TwoPhase::SpecificHeatConstantVolumeFunction cannot calculate Cv_mix for other EOS, must be perfect/stiffened gas combination.");
     }
-    PetscReal rho1 = derived[0];
-    PetscReal rho2 = derived[1];  // [rho1, rho2, e1, e2, p, T]
+    PetscReal rho1 = decodeOut.rho1;
+    PetscReal rho2 = decodeOut.rho2;
     PetscReal gamma1 = functionContext->parameters.gamma1;
     PetscReal gamma2 = functionContext->parameters.gamma2;
     PetscReal Y1 = conserved[functionContext->densityVFOffset] / density;
@@ -1039,49 +962,40 @@ PetscErrorCode ablate::eos::TwoPhase::SpeedOfSoundFunction(const PetscReal *cons
     // compute internal energy
     PetscReal internalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - ke;
     // simple decode to compute pressure
-    PetscReal derived[6];
-    PetscReal in[10];
-    in[0] = conserved[functionContext->volumeFractionOffset];
-    in[1] = conserved[functionContext->densityVFOffset];
-    in[2] = density;
-    in[3] = internalEnergy;
-    in[4] = functionContext->parameters.gamma1;
-    in[5] = functionContext->parameters.gamma2;
+    DecodeOut decodeOut;
+    DecodeIn decodeIn;
+    decodeIn.alpha = conserved[functionContext->volumeFractionOffset];
+    decodeIn.alphaRho1 = conserved[functionContext->densityVFOffset];
+    decodeIn.rho = density;
+    decodeIn.e = internalEnergy;
+    decodeIn.parameters = functionContext->parameters;
+
     PetscReal cv1, cv2, at1, at2;  // initialize variables for at_mix
     if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 == 0) {
-        in[6] = functionContext->parameters.rGas1;
-        in[7] = functionContext->parameters.rGas2;
-        SimpleGasGasDecode(functionContext->dim, in, derived);
+        SimpleGasGasDecode(functionContext->dim, &decodeIn, &decodeOut);
         // isothermal sound speeds
         cv1 = functionContext->parameters.rGas1 / (functionContext->parameters.gamma1 - 1);
         cv2 = functionContext->parameters.rGas2 / (functionContext->parameters.gamma2 - 1);
-        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) * cv1 * derived[5]);  // ideal gas eos
-        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) * cv2 * derived[5]);  // ideal gas eos
+        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) * cv1 * decodeOut.T);  // ideal gas eos
+        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) * cv2 * decodeOut.T);  // ideal gas eos
     } else if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 != 0) {
-        in[6] = functionContext->parameters.rGas1;
-        in[7] = functionContext->parameters.Cp2;
-        in[8] = functionContext->parameters.p02;
-        SimpleGasStiffDecode(functionContext->dim, in, derived);
+        SimpleGasStiffDecode(functionContext->dim, &decodeIn, &decodeOut);
         cv1 = functionContext->parameters.rGas1 / (functionContext->parameters.gamma1 - 1);
         cv2 = functionContext->parameters.Cp2 / functionContext->parameters.gamma2;
-        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) * cv1 * derived[5]);                                                                   // ideal gas eos
-        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) / functionContext->parameters.gamma2 * functionContext->parameters.Cp2 * derived[5]);  // stiffened gas eos
+        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) * cv1 * decodeOut.T);                                                                   // ideal gas eos
+        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) / functionContext->parameters.gamma2 * functionContext->parameters.Cp2 * decodeOut.T);  // stiffened gas eos
     } else if (functionContext->parameters.p01 != 0 && functionContext->parameters.p02 != 0) {
-        in[6] = functionContext->parameters.Cp1;
-        in[7] = functionContext->parameters.Cp2;
-        in[8] = functionContext->parameters.p01;
-        in[9] = functionContext->parameters.p02;
-        SimpleStiffStiffDecode(functionContext->dim, in, derived);
+        SimpleStiffStiffDecode(functionContext->dim, &decodeIn, &decodeOut);
         cv1 = functionContext->parameters.Cp1 / functionContext->parameters.gamma1;
         cv2 = functionContext->parameters.Cp2 / functionContext->parameters.gamma2;
-        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) / functionContext->parameters.gamma1 * functionContext->parameters.Cp1 * derived[5]);  // stiffened gas eos
-        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) / functionContext->parameters.gamma2 * functionContext->parameters.Cp2 * derived[5]);  // stiffened gas eos
+        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) / functionContext->parameters.gamma1 * functionContext->parameters.Cp1 * decodeOut.T);  // stiffened gas eos
+        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) / functionContext->parameters.gamma2 * functionContext->parameters.Cp2 * decodeOut.T);  // stiffened gas eos
     } else {
         throw std::invalid_argument("TwoPhase::SpecificHeatConstantVolumeFunction cannot calculate Cv_mix for other EOS, must be perfect/stiffened gas combination.");
     }
-    PetscReal rho1 = derived[0];
-    PetscReal rho2 = derived[1];
-    PetscReal T = derived[5];  // [rho1, rho2, e1, e2, p, T]
+    PetscReal rho1 = decodeOut.rho1;
+    PetscReal rho2 = decodeOut.rho2;
+    PetscReal T = decodeOut.T;  // [rho1, rho2, e1, e2, p, T]
     PetscReal gamma1 = functionContext->parameters.gamma1;
     PetscReal gamma2 = functionContext->parameters.gamma2;
     PetscReal Y1 = conserved[functionContext->densityVFOffset] / density;
@@ -1114,48 +1028,39 @@ PetscErrorCode ablate::eos::TwoPhase::SpeedOfSoundTemperatureFunction(const Pets
     // compute internal energy
     PetscReal internalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - ke;
     // simple decode to compute pressure
-    PetscReal derived[6];
-    PetscReal in[10];
-    in[0] = conserved[functionContext->volumeFractionOffset];
-    in[1] = conserved[functionContext->densityVFOffset];
-    in[2] = density;
-    in[3] = internalEnergy;
-    in[4] = functionContext->parameters.gamma1;
-    in[5] = functionContext->parameters.gamma2;
+    DecodeOut decodeOut;
+    DecodeIn decodeIn;
+    decodeIn.alpha = conserved[functionContext->volumeFractionOffset];
+    decodeIn.alphaRho1 = conserved[functionContext->densityVFOffset];
+    decodeIn.rho = density;
+    decodeIn.e = internalEnergy;
+    decodeIn.parameters = functionContext->parameters;
+
     PetscReal cv1, cv2, at1, at2;  // initialize variables for at_mix
     if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 == 0) {
-        in[6] = functionContext->parameters.rGas1;
-        in[7] = functionContext->parameters.rGas2;
-        SimpleGasGasDecode(functionContext->dim, in, derived);
+        SimpleGasGasDecode(functionContext->dim, &decodeIn, &decodeOut);
         // isothermal sound speeds
         cv1 = functionContext->parameters.rGas1 / (functionContext->parameters.gamma1 - 1);
         cv2 = functionContext->parameters.rGas2 / (functionContext->parameters.gamma2 - 1);
-        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) * cv1 * derived[5]);  // ideal gas eos
-        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) * cv2 * derived[5]);  // ideal gas eos
+        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) * cv1 * T);  // ideal gas eos
+        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) * cv2 * T);  // ideal gas eos
     } else if (functionContext->parameters.p01 == 0 && functionContext->parameters.p02 != 0) {
-        in[6] = functionContext->parameters.rGas1;
-        in[7] = functionContext->parameters.Cp2;
-        in[8] = functionContext->parameters.p02;
-        SimpleGasStiffDecode(functionContext->dim, in, derived);
+        SimpleGasStiffDecode(functionContext->dim, &decodeIn, &decodeOut);
         cv1 = functionContext->parameters.rGas1 / (functionContext->parameters.gamma1 - 1);
         cv2 = functionContext->parameters.Cp2 / functionContext->parameters.gamma2;
-        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) * cv1 * derived[5]);                                                                   // ideal gas eos
-        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) / functionContext->parameters.gamma2 * functionContext->parameters.Cp2 * derived[5]);  // stiffened gas eos
+        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) * cv1 * T);                                                                   // ideal gas eos
+        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) / functionContext->parameters.gamma2 * functionContext->parameters.Cp2 * T);  // stiffened gas eos
     } else if (functionContext->parameters.p01 != 0 && functionContext->parameters.p02 != 0) {
-        in[6] = functionContext->parameters.Cp1;
-        in[7] = functionContext->parameters.Cp2;
-        in[8] = functionContext->parameters.p01;
-        in[9] = functionContext->parameters.p02;
-        SimpleStiffStiffDecode(functionContext->dim, in, derived);
+        SimpleStiffStiffDecode(functionContext->dim, &decodeIn, &decodeOut);
         cv1 = functionContext->parameters.Cp1 / functionContext->parameters.gamma1;
         cv2 = functionContext->parameters.Cp2 / functionContext->parameters.gamma2;
-        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) / functionContext->parameters.gamma1 * functionContext->parameters.Cp1 * derived[5]);  // stiffened gas eos
-        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) / functionContext->parameters.gamma2 * functionContext->parameters.Cp2 * derived[5]);  // stiffened gas eos
+        at1 = PetscSqrtReal((functionContext->parameters.gamma1 - 1) / functionContext->parameters.gamma1 * functionContext->parameters.Cp1 * T);  // stiffened gas eos
+        at2 = PetscSqrtReal((functionContext->parameters.gamma2 - 1) / functionContext->parameters.gamma2 * functionContext->parameters.Cp2 * T);  // stiffened gas eos
     } else {
         throw std::invalid_argument("TwoPhase::SpecificHeatConstantVolumeFunction cannot calculate Cv_mix for other EOS, must be perfect/stiffened gas combination.");
     }
-    PetscReal rho1 = derived[0];
-    PetscReal rho2 = derived[1];  // [rho1, rho2, e1, e2, p, T]
+    PetscReal rho1 = decodeOut.rho1;
+    PetscReal rho2 = decodeOut.rho2;  // [rho1, rho2, e1, e2, p, T]
     PetscReal gamma1 = functionContext->parameters.gamma1;
     PetscReal gamma2 = functionContext->parameters.gamma2;
     PetscReal Y1 = conserved[functionContext->densityVFOffset] / density;
