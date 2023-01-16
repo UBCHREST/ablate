@@ -1,13 +1,13 @@
 #ifndef ABLATELIBRARY_TWOPHASETRANSPORT_HPP
 #define ABLATELIBRARY_TWOPHASETRANSPORT_HPP
-#include "transportModel.hpp"
 #include "constant.hpp"
 #include "sutherland.hpp"
-//#include "parameters/parameters.hpp"
+#include "transportModel.hpp"
+// #include "parameters/parameters.hpp"
 
 namespace ablate::eos::transport {
 
-class TwoPhaseTransport : public TransportModel { //};, std::enable_shared_from_this<TwoPhaseTransport> {
+class TwoPhaseTransport : public TransportModel {  //};, std::enable_shared_from_this<TwoPhaseTransport> {
    private:
     const std::shared_ptr<eos::transport::TransportModel> transportModel1;
     const std::shared_ptr<eos::transport::TransportModel> transportModel2;
@@ -16,7 +16,7 @@ class TwoPhaseTransport : public TransportModel { //};, std::enable_shared_from_
         PetscReal k2;
         PetscReal mu1;
         PetscReal mu2;
-        PetscReal diff1; // diffusivity will always be zero for immiscible fluids
+        PetscReal diff1;  // diffusivity will always be zero for immiscible fluids
         PetscReal diff2;
         PetscInt vfOffset;
     };
@@ -25,7 +25,6 @@ class TwoPhaseTransport : public TransportModel { //};, std::enable_shared_from_
      * Allow specification/disable of certain properties
      **/
     const std::vector<TransportProperty> enabledProperties;
-
 
     /** @name Direct and Temperature Based Transport Properties Functions
      * These functions are used to compute the thermodynamic properties.
@@ -66,7 +65,6 @@ class TwoPhaseTransport : public TransportModel { //};, std::enable_shared_from_
     [[nodiscard]] ThermodynamicTemperatureFunction GetTransportTemperatureFunction(TransportProperty property, const std::vector<domain::Field>& fields) const override;
 };
 
-} // namespace ablate::eos::transport
-
+}  // namespace ablate::eos::transport
 
 #endif  // ABLATELIBRARY_TWOPHASETRANSPORT_HPP

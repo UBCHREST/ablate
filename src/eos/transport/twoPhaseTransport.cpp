@@ -1,12 +1,15 @@
 #include "twoPhaseTransport.hpp"
-//#include "finiteVolume/processes/twoPhaseEulerAdvection.hpp"
+// #include "finiteVolume/processes/twoPhaseEulerAdvection.hpp"
 #include "constant.hpp"
 #include "sutherland.hpp"
 
 // pass in transport model for each fluid, call in code
-ablate::eos::transport::TwoPhaseTransport::TwoPhaseTransport(std::shared_ptr<TransportModel> transportModel1, std::shared_ptr<TransportModel> transportModel2, const std::vector<TransportProperty> &enabledPropertiesIn)
-    : transportModel1(std::move(transportModel1)), transportModel2(std::move(transportModel2)),
-      enabledProperties(enabledPropertiesIn.empty() ? std::vector<TransportProperty>{TransportProperty::Conductivity, TransportProperty::Viscosity, TransportProperty::Diffusivity} : enabledPropertiesIn) {}
+ablate::eos::transport::TwoPhaseTransport::TwoPhaseTransport(std::shared_ptr<TransportModel> transportModel1, std::shared_ptr<TransportModel> transportModel2,
+                                                             const std::vector<TransportProperty> &enabledPropertiesIn)
+    : transportModel1(std::move(transportModel1)),
+      transportModel2(std::move(transportModel2)),
+      enabledProperties(enabledPropertiesIn.empty() ? std::vector<TransportProperty>{TransportProperty::Conductivity, TransportProperty::Viscosity, TransportProperty::Diffusivity}
+                                                    : enabledPropertiesIn) {}
 
 PetscErrorCode ablate::eos::transport::TwoPhaseTransport::TwoPhaseConductivityFunction(const PetscReal *conserved, PetscReal *conductivity, void *ctx) {
     PetscFunctionBeginUser;
@@ -17,9 +20,9 @@ PetscErrorCode ablate::eos::transport::TwoPhaseTransport::TwoPhaseConductivityFu
     conductivity2 = contexts->k2;
     PetscInt vfOffset = contexts->vfOffset;
     // get alpha from conserved variables
-    PetscReal alpha = conserved[vfOffset]; // check index for volumeFraction after pre-stage implementation
+    PetscReal alpha = conserved[vfOffset];  // check index for volumeFraction after pre-stage implementation
 
-    *conductivity = alpha*conductivity1 + (1-alpha)*conductivity2; // for mu and k, not sure about diff
+    *conductivity = alpha * conductivity1 + (1 - alpha) * conductivity2;  // for mu and k, not sure about diff
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::transport::TwoPhaseTransport::TwoPhaseConductivityTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *conductivity, void *ctx) {
@@ -32,9 +35,9 @@ PetscErrorCode ablate::eos::transport::TwoPhaseTransport::TwoPhaseConductivityTe
     conductivity2 = contexts->k2;
     PetscInt vfOffset = contexts->vfOffset;
     // get alpha from conserved variables
-    PetscReal alpha = conserved[vfOffset]; // check index for volumeFraction after pre-stage implementation
+    PetscReal alpha = conserved[vfOffset];  // check index for volumeFraction after pre-stage implementation
 
-    *conductivity = alpha*conductivity1 + (1-alpha)*conductivity2; // for mu and k, not sure about diff
+    *conductivity = alpha * conductivity1 + (1 - alpha) * conductivity2;  // for mu and k, not sure about diff
     PetscFunctionReturn(0);
 }
 
@@ -47,9 +50,9 @@ PetscErrorCode ablate::eos::transport::TwoPhaseTransport::TwoPhaseViscosityFunct
     viscosity2 = contexts->mu2;
     PetscInt vfOffset = contexts->vfOffset;
     // get alpha from conserved variables
-    PetscReal alpha = conserved[vfOffset]; // check index for volumeFraction after pre-stage implementation
+    PetscReal alpha = conserved[vfOffset];  // check index for volumeFraction after pre-stage implementation
 
-    *viscosity = alpha*viscosity1 + (1-alpha)*viscosity2; // for mu and k, not sure about diff
+    *viscosity = alpha * viscosity1 + (1 - alpha) * viscosity2;  // for mu and k, not sure about diff
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::transport::TwoPhaseTransport::TwoPhaseViscosityTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *viscosity, void *ctx) {
@@ -61,15 +64,15 @@ PetscErrorCode ablate::eos::transport::TwoPhaseTransport::TwoPhaseViscosityTempe
     viscosity2 = contexts->mu2;
     PetscInt vfOffset = contexts->vfOffset;
     // get alpha from conserved variables
-    PetscReal alpha = conserved[vfOffset]; // check index for volumeFraction after pre-stage implementation
+    PetscReal alpha = conserved[vfOffset];  // check index for volumeFraction after pre-stage implementation
 
-    *viscosity = alpha*viscosity1 + (1-alpha)*viscosity2; // for mu and k, not sure about diff
+    *viscosity = alpha * viscosity1 + (1 - alpha) * viscosity2;  // for mu and k, not sure about diff
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::eos::transport::TwoPhaseTransport::TwoPhaseDiffusivityFunction(const PetscReal *conserved, PetscReal *diffusivity, void *ctx){
+PetscErrorCode ablate::eos::transport::TwoPhaseTransport::TwoPhaseDiffusivityFunction(const PetscReal *conserved, PetscReal *diffusivity, void *ctx) {
     PetscFunctionBeginUser;
-    *diffusivity = 0.0; // not sure if this is correct. diffusivity between immiscible two phase should be zero?
+    *diffusivity = 0.0;  // not sure if this is correct. diffusivity between immiscible two phase should be zero?
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::transport::TwoPhaseTransport::TwoPhaseDiffusivityTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *diffusivity, void *ctx) {
@@ -89,13 +92,13 @@ PetscErrorCode ablate::eos::transport::TwoPhaseTransport::TwoPhaseZeroTemperatur
 }
 
 ablate::eos::ThermodynamicFunction ablate::eos::transport::TwoPhaseTransport::GetTransportFunction(ablate::eos::transport::TransportProperty property, const std::vector<domain::Field> &fields) const {
-    if (!std::count(enabledProperties.begin(), enabledProperties.end(), property)) { // check if properties are there
+    if (!std::count(enabledProperties.begin(), enabledProperties.end(), property)) {  // check if properties are there
         return ThermodynamicFunction{.function = TwoPhaseZeroFunction, .context = nullptr};
     }
-    auto conductivityFunction1 =  this->transportModel1->GetTransportFunction(ablate::eos::transport::TransportProperty::Conductivity, {});
-    auto conductivityFunction2 =  this->transportModel2->GetTransportFunction(ablate::eos::transport::TransportProperty::Conductivity, {});
-    auto viscosityFunction1 =  this->transportModel1->GetTransportFunction(ablate::eos::transport::TransportProperty::Viscosity, {});
-    auto viscosityFunction2 =  this->transportModel2->GetTransportFunction(ablate::eos::transport::TransportProperty::Viscosity, {});
+    auto conductivityFunction1 = this->transportModel1->GetTransportFunction(ablate::eos::transport::TransportProperty::Conductivity, {});
+    auto conductivityFunction2 = this->transportModel2->GetTransportFunction(ablate::eos::transport::TransportProperty::Conductivity, {});
+    auto viscosityFunction1 = this->transportModel1->GetTransportFunction(ablate::eos::transport::TransportProperty::Viscosity, {});
+    auto viscosityFunction2 = this->transportModel2->GetTransportFunction(ablate::eos::transport::TransportProperty::Viscosity, {});
     PetscReal k1, k2, mu1, mu2;
     conductivityFunction1.function(nullptr, &k1, conductivityFunction1.context.get());
     conductivityFunction2.function(nullptr, &k2, conductivityFunction2.context.get());
@@ -105,11 +108,11 @@ ablate::eos::ThermodynamicFunction ablate::eos::transport::TwoPhaseTransport::Ge
     fieldDim = fields.size();
     Contexts contexts;
 
-    if (fieldDim == 0){
+    if (fieldDim == 0) {
         contexts.vfOffset = 0;
-    } else{
-        for (PetscInt i=0; i < fieldDim; i++){
-            if (fields[i].name == "volumeFraction"){
+    } else {
+        for (PetscInt i = 0; i < fieldDim; i++) {
+            if (fields[i].name == "volumeFraction") {
                 ind = i;
             }
         }
@@ -121,13 +124,16 @@ ablate::eos::ThermodynamicFunction ablate::eos::transport::TwoPhaseTransport::Ge
     contexts.mu1 = mu1;
     contexts.mu2 = mu2;
 
-    switch (property) { // not sure about how needs to be changed
+    switch (property) {  // not sure about how needs to be changed
         case TransportProperty::Conductivity:
-            return ThermodynamicFunction{.function = TwoPhaseConductivityFunction, .context = std::make_shared<struct Contexts>(contexts)};//std::make_shared<ThermodynamicTemperatureFunction>(eos->GetThermodynamicTemperatureFunction)}; // enable share from this (pointer to individual transport models)
+            return ThermodynamicFunction{
+                .function = TwoPhaseConductivityFunction,
+                .context = std::make_shared<struct Contexts>(
+                    contexts)};  // std::make_shared<ThermodynamicTemperatureFunction>(eos->GetThermodynamicTemperatureFunction)}; // enable share from this (pointer to individual transport models)
         case TransportProperty::Viscosity:
-            return ThermodynamicFunction{.function = TwoPhaseViscosityFunction, .context = std::make_shared<struct Contexts>(contexts)};//std::make_shared<double>(mu)};
+            return ThermodynamicFunction{.function = TwoPhaseViscosityFunction, .context = std::make_shared<struct Contexts>(contexts)};  // std::make_shared<double>(mu)};
         case TransportProperty::Diffusivity:
-            return ThermodynamicFunction{.function = TwoPhaseDiffusivityFunction, .context = nullptr};//std::make_shared<double>(diff)};
+            return ThermodynamicFunction{.function = TwoPhaseDiffusivityFunction, .context = nullptr};  // std::make_shared<double>(diff)};
         default:
             throw std::invalid_argument("Unknown transport property ablate::eos::transport::TwoPhase");
     }
@@ -139,10 +145,10 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::transport::TwoPhaseTr
     if (!std::count(enabledProperties.begin(), enabledProperties.end(), property)) {
         return ThermodynamicTemperatureFunction{.function = TwoPhaseZeroTemperatureFunction, .context = nullptr};
     }
-    auto conductivityFunction1 =  this->transportModel1->GetTransportFunction(ablate::eos::transport::TransportProperty::Conductivity, {});
-    auto conductivityFunction2 =  this->transportModel2->GetTransportFunction(ablate::eos::transport::TransportProperty::Conductivity, {});
-    auto viscosityFunction1 =  this->transportModel1->GetTransportFunction(ablate::eos::transport::TransportProperty::Viscosity, {});
-    auto viscosityFunction2 =  this->transportModel2->GetTransportFunction(ablate::eos::transport::TransportProperty::Viscosity, {});
+    auto conductivityFunction1 = this->transportModel1->GetTransportFunction(ablate::eos::transport::TransportProperty::Conductivity, {});
+    auto conductivityFunction2 = this->transportModel2->GetTransportFunction(ablate::eos::transport::TransportProperty::Conductivity, {});
+    auto viscosityFunction1 = this->transportModel1->GetTransportFunction(ablate::eos::transport::TransportProperty::Viscosity, {});
+    auto viscosityFunction2 = this->transportModel2->GetTransportFunction(ablate::eos::transport::TransportProperty::Viscosity, {});
     PetscReal k1, k2, mu1, mu2;
     conductivityFunction1.function(nullptr, &k1, conductivityFunction1.context.get());
     conductivityFunction2.function(nullptr, &k2, conductivityFunction2.context.get());
@@ -152,11 +158,11 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::transport::TwoPhaseTr
     fieldDim = fields.size();
     Contexts contexts;
 
-    if (fieldDim == 0){
+    if (fieldDim == 0) {
         contexts.vfOffset = 0;
-    } else{
-        for (PetscInt i=0; i < fieldDim; i++){
-            if (fields[i].name == "volumeFraction"){
+    } else {
+        for (PetscInt i = 0; i < fieldDim; i++) {
+            if (fields[i].name == "volumeFraction") {
                 ind = i;
             }
         }
@@ -167,14 +173,12 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::transport::TwoPhaseTr
     contexts.k2 = k2;
     contexts.mu1 = mu1;
     contexts.mu2 = mu2;
-//    contexts.diff1 = 0.0;
-//    contexts.diff2 = 0.0;
-
-
+    //    contexts.diff1 = 0.0;
+    //    contexts.diff2 = 0.0;
 
     switch (property) {
         case TransportProperty::Conductivity:
-            return ThermodynamicTemperatureFunction{.function = TwoPhaseConductivityTemperatureFunction, .context = std::make_shared<struct Contexts>(contexts)}; // might need different context
+            return ThermodynamicTemperatureFunction{.function = TwoPhaseConductivityTemperatureFunction, .context = std::make_shared<struct Contexts>(contexts)};  // might need different context
         case TransportProperty::Viscosity:
             return ThermodynamicTemperatureFunction{.function = TwoPhaseViscosityTemperatureFunction, .context = std::make_shared<struct Contexts>(contexts)};
         case TransportProperty::Diffusivity:
@@ -186,5 +190,5 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::transport::TwoPhaseTr
 
 #include "registrar.hpp"
 REGISTER(ablate::eos::transport::TransportModel, ablate::eos::transport::TwoPhaseTransport, "transport model for two fluids VOF",
-         ARG(ablate::eos::transport::TransportModel, "transport1","Transport model for fluid 1"), ARG(ablate::eos::transport::TransportModel,"transport2","Transport model for fluid 2"),
+         ARG(ablate::eos::transport::TransportModel, "transport1", "Transport model for fluid 1"), ARG(ablate::eos::transport::TransportModel, "transport2", "Transport model for fluid 2"),
          OPT(std::vector<EnumWrapper<ablate::eos::transport::TransportProperty>>, "enabledProperties", "list of enabled properties. When empty or default all properties are enabled."));
