@@ -298,9 +298,9 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Multipha
 double ablate::finiteVolume::processes::TwoPhaseEulerAdvection::ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx) {
     // Get the dm and current solution vector
     DM dm;
-    TSGetDM(ts, &dm) >> ablate::utilities::PetscUtilities::checkError;
+    TSGetDM(ts, &dm) >> utilities::PetscUtilities::checkError;
     Vec v;
-    TSGetSolution(ts, &v) >> ablate::utilities::PetscUtilities::checkError;
+    TSGetSolution(ts, &v) >> utilities::PetscUtilities::checkError;
 
     // Get the flow param
     auto timeStepData = (TimeStepData*)ctx;
@@ -308,18 +308,18 @@ double ablate::finiteVolume::processes::TwoPhaseEulerAdvection::ComputeTimeStep(
 
     // Get the fv geom
     PetscReal minCellRadius;
-    DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius) >> ablate::utilities::PetscUtilities::checkError;
+    DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius) >> utilities::PetscUtilities::checkError;
 
     // Get the valid cell range over this region
     solver::Range cellRange;
     flow.GetCellRange(cellRange);
 
     const PetscScalar* x;
-    VecGetArrayRead(v, &x) >> ablate::utilities::PetscUtilities::checkError;
+    VecGetArrayRead(v, &x) >> utilities::PetscUtilities::checkError;
 
     // Get the dim from the dm
     PetscInt dim;
-    DMGetDimension(dm, &dim) >> ablate::utilities::PetscUtilities::checkError;
+    DMGetDimension(dm, &dim) >> utilities::PetscUtilities::checkError;
 
     // assume the smallest cell is the limiting factor for now
     const PetscReal dx = 2.0 * minCellRadius;
@@ -334,8 +334,8 @@ double ablate::finiteVolume::processes::TwoPhaseEulerAdvection::ComputeTimeStep(
 
         const PetscReal* euler;
         const PetscReal* conserved = NULL;
-        DMPlexPointGlobalFieldRead(dm, cell, eulerId, x, &euler) >> ablate::utilities::PetscUtilities::checkError;
-        DMPlexPointGlobalRead(dm, cell, x, &conserved) >> ablate::utilities::PetscUtilities::checkError;
+        DMPlexPointGlobalFieldRead(dm, cell, eulerId, x, &euler) >> utilities::PetscUtilities::checkError;
+        DMPlexPointGlobalRead(dm, cell, x, &conserved) >> utilities::PetscUtilities::checkError;
 
         if (euler) {  // must be real cell and not ghost
             PetscReal rho = euler[CompressibleFlowFields::RHO];
@@ -344,7 +344,7 @@ double ablate::finiteVolume::processes::TwoPhaseEulerAdvection::ComputeTimeStep(
 //            PetscReal temperature;
 //            advectionData->computeTemperature.function(conserved, &temperature, advectionData->computeTemperature.context.get()) >> checkError;
             PetscReal a;
-            timeStepData->computeSpeedOfSound.function(conserved, &a, timeStepData->computeSpeedOfSound.context.get()) >> ablate::utilities::PetscUtilities::checkError;
+            timeStepData->computeSpeedOfSound.function(conserved, &a, timeStepData->computeSpeedOfSound.context.get()) >> utilities::PetscUtilities::checkError;
 
             PetscReal velSum = 0.0;
             for (PetscInt d = 0; d < dim; d++) {
@@ -355,7 +355,7 @@ double ablate::finiteVolume::processes::TwoPhaseEulerAdvection::ComputeTimeStep(
             dtMin = PetscMin(dtMin, dt);
         }
     }
-    VecRestoreArrayRead(v, &x) >> ablate::utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(v, &x) >> utilities::PetscUtilities::checkError;
     flow.RestoreRange(cellRange);
     return dtMin;
 }
