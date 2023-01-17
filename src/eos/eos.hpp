@@ -61,8 +61,6 @@ class EOS {
     inline const static std::string YI = "Yi";
     // progress fields are used by the eos/chemistry model to transport required non species
     inline const static std::string PROGRESS = "Progress";
-    // conserved field volume fraction for twoPhase
-    inline const static std::string VF = "VolumeFraction";
 
     /**
      * Print the details of this eos
