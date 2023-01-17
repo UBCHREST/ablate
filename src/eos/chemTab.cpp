@@ -161,10 +161,10 @@ void ablate::eos::ChemTab::LoadBasisVectors(std::istream &inputStream, std::size
     if (ptr != NULL) free(ptr);
 
 // TODO: break into smaller functions?
-void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariable[], const std::size_t progressVariablesSize,
-                                 PetscReal *predictedSourceEnergy, PetscReal *progressVariableSource, const std::size_t progressVariableSourceSize,
-                                 PetscReal *massFractions, std::size_t massFractionsSize, void *ctx) {
-    auto ctModel = (ablate::eos::ChemTab*) ctx;
+void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariable[], const std::size_t progressVariablesSize, PetscReal *predictedSourceEnergy,
+                                                       PetscReal *progressVariableSource, const std::size_t progressVariableSourceSize, PetscReal *massFractions, std::size_t massFractionsSize,
+                                                       void *ctx) {
+    auto ctModel = (ablate::eos::ChemTab *)ctx;
     // size of progressVariables should match the expected number of
     // progressVariables
     if (progressVariablesSize != ctModel->progressVariablesNames.size()) {
@@ -214,11 +214,11 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
     //********** Extract source predictions
 
     // store physical variables (e.g. souener & mass fractions)
-    float *outputArray; // Dwyer: as counter intuitive as it may be static dependents come second, it did pass its tests!
+    float *outputArray;  // Dwyer: as counter intuitive as it may be static dependents come second, it did pass its tests!
     outputArray = (float *)TF_TensorData(outputValues[1]);
     PetscReal p = (PetscReal)outputArray[0];
-    if (predictedSourceEnergy!=NULL) *predictedSourceEnergy += p;
-    
+    if (predictedSourceEnergy != NULL) *predictedSourceEnergy += p;
+
     // store inverted mass fractions
     for (size_t i = 0; i < massFractionsSize; i++) {
         massFractions[i] = (PetscReal)outputArray[i + 1];  // i+1 b/c i==0 is souener!
@@ -240,8 +240,7 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
     safe_free(output);
 }
 
-void ablate::eos::ChemTab::ComputeMassFractions(std::size_t numSpecies, std::size_t numProgressVariables, const PetscReal *progressVariables, PetscReal *massFractions,
-                                                PetscReal density) {
+void ablate::eos::ChemTab::ComputeMassFractions(std::size_t numSpecies, std::size_t numProgressVariables, const PetscReal *progressVariables, PetscReal *massFractions, PetscReal density) {
     auto ctModel = this;
     // size of massFractions should match the expected number of species
     if (massFractionsSize != ctModel->speciesNames.size()) {
@@ -249,7 +248,7 @@ void ablate::eos::ChemTab::ComputeMassFractions(std::size_t numSpecies, std::siz
             "The massFractions size does not match the "
             "supported number of species");
     }
-    
+
     // call model using generalized invocation method (usable for inversion & source computation)
     ChemTabModelComputeFunction(density, progressVariables, numProgressVariables, NULL, NULL, 0, massFractions, numSpecies, (*void)ctModel);
 }
@@ -266,14 +265,14 @@ void ablate::eos::ChemTab::ChemistrySource(PetscReal density, const PetscReal de
     }
 
     // call model using generalized invokation method (usable for inversion & source computation)
-    ChemTabModelComputeFunction(density, densityProgressVariable, progressVariablesSize, densityEnergySource, progressVariableSource, progressVariableSourceSize, NULL, 0, (void*)ctModel);
+    ChemTabModelComputeFunction(density, densityProgressVariable, progressVariablesSize, densityEnergySource, progressVariableSource, progressVariableSourceSize, NULL, 0, (void *)ctModel);
 }
-//void ChemTabModelComputeFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal *predictedSourceEnergy,
+// void ChemTabModelComputeFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal *predictedSourceEnergy,
 //                                 PetscReal *progressVariableSource, const std::size_t progressVariableSourceSize,
 //                                 PetscReal *massFractions, std::size_t massFractionsSize, void *ctx) {
 
-//const std::vector<std::string> &ablate::chemistry::ChemTabModel::GetSpecies() const { return speciesNames; }
-//const std::vector<std::string> &ablate::chemistry::ChemTabModel::GetProgressVariables() const { return progressVariablesNames; }
+// const std::vector<std::string> &ablate::chemistry::ChemTabModel::GetSpecies() const { return speciesNames; }
+// const std::vector<std::string> &ablate::chemistry::ChemTabModel::GetProgressVariables() const { return progressVariablesNames; }
 
 void ablate::eos::ChemTab::ComputeProgressVariables(const PetscReal *massFractions, std::size_t massFractionsSize, PetscReal *progressVariables, std::size_t progressVariablesSize) const {
     // c = W'y

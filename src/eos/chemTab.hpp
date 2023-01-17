@@ -31,22 +31,19 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
     PetscReal** Wmat = nullptr;
     PetscReal* sourceEnergyScaler = nullptr;
 
-
-
     /**
      * private implementations of support functions
      */
     void ExtractMetaData(std::istream& inputStream);
     void LoadBasisVectors(std::istream& inputStream, std::size_t columns, PetscReal** W);
-    static void ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariable[], const std::size_t progressVariablesSize,
-                                            PetscReal *predictedSourceEnergy, PetscReal *progressVariableSource, const std::size_t progressVariableSourceSize,
-                                            PetscReal *massFractions, std::size_t massFractionsSize, void *ctx)
+    static void ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariable[], const std::size_t progressVariablesSize, PetscReal* predictedSourceEnergy,
+                                            PetscReal* progressVariableSource, const std::size_t progressVariableSourceSize, PetscReal* massFractions, std::size_t massFractionsSize, void* ctx)
 
-    /**
-     * The source calculator is used to do batch processing for chemistry model.  This is a bad implementation
-     * that calls each node one at a time.
-     */
-    class ChemTabSourceCalculator : public ChemistryModel::SourceCalculator {
+        /**
+         * The source calculator is used to do batch processing for chemistry model.  This is a bad implementation
+         * that calls each node one at a time.
+         */
+        class ChemTabSourceCalculator : public ChemistryModel::SourceCalculator {
        private:
         //! Store the offset for each of the required variables
         const PetscInt densityOffset;
