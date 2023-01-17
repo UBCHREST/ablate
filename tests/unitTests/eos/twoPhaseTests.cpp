@@ -371,7 +371,7 @@ TEST_P(TPFieldFunctionTestFixture, ShouldComputeField) {
     std::vector<PetscReal> actualValue(params.expectedValue.size(), NAN);
 
     // act
-    auto stateFunction = twoPhaseEos->GetFieldFunctionFunction(params.field, params.property1, params.property2, {ablate::eos::EOS::VF, ablate::eos::EOS::YI});
+    auto stateFunction = twoPhaseEos->GetFieldFunctionFunction(params.field, params.property1, params.property2, {ablate::eos::TwoPhase::VF, ablate::eos::EOS::YI});
     stateFunction(params.property1Value, params.property2Value, params.velocity.size(), params.velocity.data(), params.otherProperties.data(), actualValue.data());
 
     // assert

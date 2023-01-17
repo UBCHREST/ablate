@@ -4,15 +4,18 @@
 #include <petsc.h>
 #include "eos/perfectGas.hpp"
 #include "eos/stiffenedGas.hpp"
+#include "eos/twoPhase.hpp"
 #include "finiteVolume/fluxCalculator/fluxCalculator.hpp"
 #include "process.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 
 namespace ablate::finiteVolume::processes {
 
 class TwoPhaseEulerAdvection : public Process {
    public:
-    inline const static std::string DENSITY_VF_FIELD = "densityVF";
-    inline const static std::string VOLUME_FRACTION_FIELD = "volumeFraction";
+    inline const static std::string VOLUME_FRACTION_FIELD = eos::TwoPhase::VF;
+    inline const static std::string DENSITY_VF_FIELD = ablate::finiteVolume::CompressibleFlowFields::CONSERVED + VOLUME_FRACTION_FIELD;
+
 
    private:
     struct DecodeDataStructGas {

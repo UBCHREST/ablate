@@ -8,6 +8,8 @@
 #include "parameters/parameters.hpp"
 namespace ablate::eos {
 class TwoPhase : public EOS {  // , public std::enabled_shared_from_this<TwoPhase>
+   public:
+    inline const static std::string VF = "volumeFraction";
    private:
     const std::shared_ptr<eos::EOS> eos1;
     const std::shared_ptr<eos::EOS> eos2;
