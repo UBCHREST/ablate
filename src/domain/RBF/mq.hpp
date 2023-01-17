@@ -3,19 +3,20 @@
 
 #include "rbf.hpp"
 
+#define __RBF_MQ_DEFAULT_PARAM 0.1
+
 namespace ablate::domain::rbf {
 
 class MQ: virtual public RBF {
   private:
     const PetscReal scale = -1;
 
-    PetscReal InternalVal(PetscReal x[], PetscReal y[]);
-    PetscReal InternalDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz);
   public:
     MQ(PetscInt p = 4, PetscReal scale = 0.1, bool hasDerivatives = false, bool hasInterpolation = false);
 
-    PetscReal RBFVal(PetscReal x[], PetscReal y[]) override {return InternalVal(std::move(x), std::move(y)); }
-    PetscReal RBFDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) override {return InternalDer(std::move(x), std::move(dx), std::move(dy), std::move(dz)); }
+    PetscReal RBFVal(PetscReal x[], PetscReal y[]) override;
+    PetscReal RBFDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) override;
+
 };
 
 

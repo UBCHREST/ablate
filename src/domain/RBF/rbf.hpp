@@ -6,7 +6,6 @@
 #include "rbfSupport.hpp"
 
 #define __RBF_DEFAULT_POLYORDER 4
-#define __RBF_DEFAULT_PARAM 0.1
 
 namespace ablate::domain::rbf {
 
@@ -53,17 +52,11 @@ class RBF {
     PetscReal DistanceSquared(PetscReal x[], PetscReal y[]);
     PetscReal DistanceSquared(PetscReal x[]);
 
-    // These will be overwritten in the derived classes
-    virtual PetscReal RBFVal(PetscReal x[], PetscReal y[]) = 0;
-    virtual PetscReal RBFDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) = 0;
-
-
   public:
 
     RBF(PetscInt polyOrder, bool hasDerivatives, bool hasInterpolation);
 
     ~RBF();
-
 
     /** SubDomain Register and Setup **/
     void Initialize(solver::Range cellRange);
@@ -72,16 +65,23 @@ class RBF {
     // Derivative stuff
     void SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVertices);
     void SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]);
-    PetscReal EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz);  // Evaluate a derivative
     void SetupDerivativeStencils();   // Setup all derivative stencils. Useful if someone wants to remove setup cost when testing
+
+    PetscReal EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz);  // Evaluate a derivative
+    PetscReal EvalDer(DM dm, Vec vec, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz);
 
     // Interpolation stuff
     PetscReal Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]);
+    PetscReal Interpolate(DM dm, Vec f, PetscReal xEval[3]);
 
+    // To make setup easier
     void GetRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::solver::Range &range) const;
     void GetCellRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, ablate::solver::Range &range) const;
     void RestoreRange(ablate::solver::Range &range) const;
 
+    // These will be overwritten in the derived classes
+    virtual PetscReal RBFVal(PetscReal x[], PetscReal y[]) = 0;   // Radial function evaluated using the distance between two points
+    virtual PetscReal RBFDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) = 0; // Derivative of the radial function assuming that the center point is at zero.
 
 
 };

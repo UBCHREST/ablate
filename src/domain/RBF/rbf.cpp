@@ -280,12 +280,30 @@ void RBF::SetupDerivativeStencils() {
 // dx, dy, dz - The derivatives
 PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz){
 
-  PetscInt  derID = -1, nDer = RBF::nDer, *dxyz = RBF::dxyz;
+
+  PetscMPIInt       size;
+  PetscReal         *wt = nullptr;
+  PetscScalar       val = 0.0, *f;
+  const PetscScalar *array;
+  PetscInt          nStencil = -1, *lst = nullptr;
+  PetscInt          derID = -1, nDer = RBF::nDer, *dxyz = RBF::dxyz;
+  Vec               vec = subDomain->GetVec(*field);
+  DM                dm  = subDomain->GetFieldDM(*field);
+
+  MPI_Comm_size(PetscObjectComm((PetscObject)dm), &size);
+  if (field->location==FieldLocation::SOL && size>1) {
+    // Only global vectors of SOL fields are stored in the subDomain. The subDomain needs to be augmented to also store the local vector of SOL fields
+    //  before this function can work on them. One work around is to copy the SOL field into a dummy AUX field and work on that.
+    throw std::runtime_error("ablate::domain::RBF::EvalDer does not work on SOL fields in parallel. A local vector needs to be obtained first.");
+  }
+
+
+
   // Search for the particular index. Probably need to do something different in the future to avoid re-doing the same calculation many times
   while ((dxyz[++derID*3 + 0] != dx || dxyz[derID*3 + 1] != dy || dxyz[derID*3 + 2] != dz) && derID<nDer){ }
 
   if (derID==nDer) {
-    throw std::invalid_argument("Derivative of (" + std::to_string(dx) + ", " + std::to_string(dy) + ", " + std::to_string(dz) + ") is not setup.");
+    throw std::invalid_argument("RBF: Derivative of (" + std::to_string(dx) + ", " + std::to_string(dy) + ", " + std::to_string(dz) + ") is not setup.");
   }
 
   // If the stencil hasn't been setup yet do so
@@ -293,12 +311,10 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt 
     RBF::SetupDerivativeStencils(c);
   }
 
-  PetscReal         *wt = RBF::stencilWeights[c];
-  PetscInt          nStencil = RBF::nStencil[c], *lst = RBF::stencilList[c];
-  Vec               vec = subDomain->GetVec(*field);
-  DM                dm  = subDomain->GetFieldDM(*field);
-  PetscScalar       val = 0.0, *f;
-  const PetscScalar *array;
+  wt = RBF::stencilWeights[c];
+  nStencil = RBF::nStencil[c];
+  lst = RBF::stencilList[c];
+
   VecGetArrayRead(vec, &array) >> checkError;
 
   for (PetscInt i = 0; i < nStencil; ++i) {
@@ -328,14 +344,22 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt 
 // xEval - The location to interpolate at
 PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]) {
 
-  Mat         A;
-  Vec         weights, rhs;
-  PetscInt    i, c, nCells, *lst;
-  PetscScalar *vals;
+
+  PetscMPIInt       size;
+  PetscInt          i, c, nCells, *lst;
+  PetscScalar       *vals;
   const PetscScalar *fvals;
-  PetscReal   *x, x0[3];
-  Vec         f = subDomain->GetVec(*field);
-  DM          dm  = subDomain->GetFieldDM(*field);
+  PetscReal         *x, x0[3];
+  Mat               A;
+  Vec               weights, rhs, f = subDomain->GetVec(*field);
+  DM                dm  = subDomain->GetFieldDM(*field);
+
+  MPI_Comm_size(PetscObjectComm((PetscObject)dm), &size);
+  if (field->location==FieldLocation::SOL && size>1) {
+    // Only global vectors of SOL fields are stored in the subDomain. The subDomain needs to be augmented to also store the local vector of SOL fields
+    //  before this function can work on them. One work around is to copy the SOL field into a dummy AUX field and work on that.
+    throw std::runtime_error("ablate::domain::RBF::Interpolate does not work on SOL fields in parallel. A local vector needs to be obtained first.");
+  }
 
   DMPlexGetContainingCell(dm, xEval, &c) >> ablate::checkError;
 
@@ -424,10 +448,8 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
 /************ End Interpolation Code **********************/
 
 
-/************ Constructor, Setup, and Initialization Code **********************/
 
-
-
+/************ Begin Ablate support Code **********************/
 // Return the range of DMPlex objects at a given depth in a subDomain and region. This is pulled from ablate::solver::Solver::GetRange
 //    which already has the subDomain and region information.
 //    Note: This seems like it should be in ablate::domain and the solver will call this. Need to talk to Matt. M about it.
@@ -483,9 +505,15 @@ void RBF::RestoreRange(ablate::solver::Range &range) const {
         ISDestroy(&range.is) >> checkError;
     }
 }
+/************ End Ablate support Code **********************/
+
+
+
+
+/************ Constructor, Setup, and Initialization Code **********************/
 
 RBF::RBF(PetscInt polyOrder, bool hasDerivatives, bool hasInterpolation) :
-    polyOrder(polyOrder == 0 ? __RBF_DEFAULT_POLYORDER : polyOrder),
+    polyOrder(polyOrder < 1 ? __RBF_DEFAULT_POLYORDER : polyOrder),
     hasDerivatives(hasDerivatives),
     hasInterpolation(hasInterpolation) {}
 
@@ -505,7 +533,9 @@ void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
 
   // The number of polynomial values is (p+2)(p+1)/2 in 2D and (p+3)(p+2)(p+1)/6 in 3D
   PetscInt p = RBF::polyOrder;
-  if (dim == 2) {
+  if (dim == 1) {
+    RBF::nPoly = p+1;
+  } else if (dim == 2) {
     RBF::nPoly = (p+2)*(p+1)/2;
   } else {
     RBF::nPoly = (p+3)*(p+2)*(p+1)/6;
@@ -520,19 +550,23 @@ void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
     PetscInt nDer = 0;
     PetscInt dx[10], dy[10], dz[10];
 
-    nDer = ( dim == 2 ) ? 5 : 10;
-    PetscInt i = 0;
-    dx[i] = 1; dy[i] = 0; dz[i++] = 0;
-    dx[i] = 0; dy[i] = 1; dz[i++] = 0;
-    dx[i] = 2; dy[i] = 0; dz[i++] = 0;
-    dx[i] = 0; dy[i] = 2; dz[i++] = 0;
-    dx[i] = 1; dy[i] = 1; dz[i++] = 0;
+    if (dim >= 1) {
+      dx[nDer] = 1; dy[nDer] = 0; dz[nDer++] = 0;
+      dx[nDer] = 2; dy[nDer] = 0; dz[nDer++] = 0;
+    }
+
+    if ( dim >= 2) {
+      dx[nDer] = 0; dy[nDer] = 1; dz[nDer++] = 0;
+      dx[nDer] = 0; dy[nDer] = 2; dz[nDer++] = 0;
+      dx[nDer] = 1; dy[nDer] = 1; dz[nDer++] = 0;
+    }
+
     if( dim == 3) {
-      dx[i] = 0; dy[i] = 0; dz[i++] = 1;
-      dx[i] = 0; dy[i] = 0; dz[i++] = 2;
-      dx[i] = 1; dy[i] = 0; dz[i++] = 1;
-      dx[i] = 0; dy[i] = 1; dz[i++] = 1;
-      dx[i] = 1; dy[i] = 1; dz[i++] = 1;
+      dx[nDer] = 0; dy[nDer] = 0; dz[nDer++] = 1;
+      dx[nDer] = 0; dy[nDer] = 0; dz[nDer++] = 2;
+      dx[nDer] = 1; dy[nDer] = 0; dz[nDer++] = 1;
+      dx[nDer] = 0; dy[nDer] = 1; dz[nDer++] = 1;
+      dx[nDer] = 1; dy[nDer] = 1; dz[nDer++] = 1;
     }
     SetDerivatives(nDer, dx, dy, dz);
   }
