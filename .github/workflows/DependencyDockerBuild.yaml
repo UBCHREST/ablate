@@ -96,11 +96,11 @@ jobs:
           # Repeat for the latest tag
           echo "image: $IMAGE_ID:latest" > config.latest.yaml
           echo "manifests:" >> config.latest.yaml
-          echo "  - image: $IMAGE_ID-arm64:$TF_VERSION " >> config.latest.yaml
+          echo "  - image: $IMAGE_ID-arm64:latest " >> config.latest.yaml
           echo "    platform: " >> config.latest.yaml
           echo "      architecture: arm64 " >> config.latest.yaml
           echo "      os: linux " >> config.latest.yaml
-          echo "  - image: $IMAGE_ID-amd64:$TF_VERSION " >> config.latest.yaml
+          echo "  - image: $IMAGE_ID-amd64:latest " >> config.latest.yaml
           echo "    platform: " >> config.latest.yaml
           echo "      architecture: amd64 " >> config.latest.yaml
           echo "      os: linux " >> config.latest.yaml
@@ -108,4 +108,3 @@ jobs:
           # Generate the manifest and push
           manifest-tool/manifest-tool push from-spec config.latest.yaml
 
-  
