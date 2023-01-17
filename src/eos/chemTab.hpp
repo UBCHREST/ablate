@@ -39,12 +39,15 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
     static void ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariable[], const std::size_t progressVariablesSize, PetscReal* predictedSourceEnergy,
                                             PetscReal* progressVariableSource, const std::size_t progressVariableSourceSize, PetscReal* massFractions, std::size_t massFractionsSize, void* ctx);
 
+    // Dwyer: How does this do batch exactly?
+    // Dwyer: Oh... Maybe it doesn't and it needs me to do it.
     /**
      * The source calculator is used to do batch processing for chemistry model.  This is a bad implementation
      * that calls each node one at a time.
      */
     class ChemTabSourceCalculator : public ChemistryModel::SourceCalculator {
        private:
+        // Dwyer: what are these offsets into? As in pointers? Or what?
         //! Store the offset for each of the required variables
         const PetscInt densityOffset;
         const PetscInt densityEnergyOffset;
@@ -54,6 +57,8 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
 
        public:
         ChemTabSourceCalculator(PetscInt densityOffset, PetscInt densityEnergyOffset, PetscInt densityProgressVariableOffset, std::shared_ptr<ChemTab> chemTabModel);
+        // Dwyer: what does this mean? Are you saying I don't need to reimplement it or something?
+        // Dwyer: how do we use dt? Is it a change of variables? I don't even know what the dt was from the original dataset... 
         /**
          * There is no need to precompute source for the chemtab model
          */
@@ -99,6 +104,8 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
         ablate::eos::TChem::ThermodynamicTemperatureMassFractionFunction tChemFunction;
     };
 
+    // Dwyer: again why? Is this like something the user would want to do with the Yi
+    // values & now its being pushed behind a wall of abstraction?
     /**
      * static call to compute yi and call baseline tChem function
      * @param conserved
@@ -108,6 +115,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      */
     static PetscErrorCode ChemTabThermodynamicFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
 
+    // Dwyer: why exactly are we computing the baseline tChem function?
     /**
      * static call to compute yi and call baseline tChem function
      * @param conserved
@@ -117,6 +125,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      */
     static PetscErrorCode ChemTabThermodynamicTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
 
+    // Dwyer: I'm sorry what? Are these mass fractions or CPVs?
     /**
      * helper function to compute the mass fractions = from the mass fractions progress variables
      * @param massFractions
@@ -132,24 +141,28 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
     explicit ChemTab(std::filesystem::path path);
     ~ChemTab() override;
 
+    // Dwyer: does this mean that it should return CPV names not species??
     /**
      * As far as other parts of the code is concerned the chemTabEos does not expect species to be transported
      * @return
      */
     [[nodiscard]] const std::vector<std::string>& GetSpeciesVariables() const override { return ablate::utilities::VectorUtilities::Empty<std::string>; }
 
+    // Dwyer: what is a field function?
     /**
      * List of species used for the field function initialization.
      * @return
      */
     [[nodiscard]] const std::vector<std::string>& GetFieldFunctionProperties() const override { return referenceEOS->GetFieldFunctionProperties(); }
 
+    // Dwyer: Right... But if so then how do we initialize? We need to start from the physics at some point right? 
     /**
      * As far as other parts of the code is concerned the chemTabEos does not expect species
      * @return
      */
     [[nodiscard]] const std::vector<std::string>& GetProgressVariables() const override { return progressVariablesNames; }
 
+    // Dwyer: I'm not sure how these input variables should be used? Should they be inputs to the reference EOS?
     /**
      * Single function to compute the source terms for a single point
      * @param fields
@@ -158,6 +171,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      */
     void ChemistrySource(PetscReal density, const PetscReal densityProgressVariable[], PetscReal* densityEnergySource, PetscReal* progressVariableSource) const;
 
+    // What are the fields in this context?
     /**
      * Single function to produce ChemistryFunction calculator based upon the available fields and sources.
      * @param fields in the conserved/source arrays
@@ -219,6 +233,8 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
                                                             std::vector<std::string> otherProperties) const override;
 };
 
+
+// Dwyer: so this is irrelevant just essentially a big runtime exception thrower when tensorflow isn't present
 #else
 class ChemTab : public ChemistryModel {
    public:
