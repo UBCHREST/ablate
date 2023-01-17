@@ -3,6 +3,7 @@
 #include "cellInterpolant.hpp"
 #include "faceInterpolant.hpp"
 #include "processes/process.hpp"
+#include "utilities/constants.hpp"
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/petscUtilities.hpp"
 
@@ -262,15 +263,12 @@ void ablate::finiteVolume::FiniteVolumeSolver::EnforceTimeStep(TS ts, ablate::so
     TSGetTimeStep(ts, &currentDt) >> utilities::PetscUtilities::checkError;
 
     // march over each calculator
-    PetscReal dtMin = 1000.0;
+    PetscReal dtMin = ablate::utilities::Constants::large;
     for (const auto& dtFunction : flowFV.timeStepFunctions) {
         dtMin = PetscMin(dtMin, dtFunction.function(ts, flowFV, dtFunction.context));
     }
 
-    // take the min across all ranks
-    PetscMPIInt rank;
-    MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank);
-
+    // global all -reduce
     PetscReal dtMinGlobal;
     MPI_Allreduce(&dtMin, &dtMinGlobal, 1, MPIU_REAL, MPIU_MIN, PetscObjectComm((PetscObject)ts)) >> ablate::utilities::MpiUtilities::checkError;
 
