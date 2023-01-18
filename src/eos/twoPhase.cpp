@@ -220,7 +220,8 @@ ablate::eos::ThermodynamicFunction ablate::eos::TwoPhase::GetThermodynamicFuncti
     // Look for the euler field
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
     auto densityVFField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DENSITY_VF_FIELD; });
-    auto volumeFractionField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::processes::TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD; });
+    auto volumeFractionField =
+        std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::processes::TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD; });
     // maybe need to throw error for not having densityVF or volumeFraction fields
     if (eulerField == fields.end()) {
         throw std::invalid_argument("The ablate::eos::TwoPhase requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
@@ -259,7 +260,8 @@ ablate::eos::ThermodynamicFunction ablate::eos::TwoPhase::GetThermodynamicFuncti
 ablate::eos::ThermodynamicTemperatureFunction ablate::eos::TwoPhase::GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
     auto densityVFField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DENSITY_VF_FIELD; });
-    auto volumeFractionField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::processes::TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD; });
+    auto volumeFractionField =
+        std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::processes::TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD; });
     if (eulerField == fields.end()) {
         throw std::invalid_argument("The ablate::eos::TwoPhase requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
     }
