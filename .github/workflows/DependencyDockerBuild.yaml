@@ -90,9 +90,6 @@ jobs:
           IMAGE_ID=ghcr.io/${{ github.repository }}/$IMAGE_NAME${{matrix.compiler.id}}${{matrix.indices.id}}
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
    
-          # Generate the manifest and push
-          manifest-tool/manifest-tool push from-spec config.version.yaml
-          
           # Repeat for the latest tag
           echo "image: $IMAGE_ID:latest" > config.latest.yaml
           echo "manifests:" >> config.latest.yaml
