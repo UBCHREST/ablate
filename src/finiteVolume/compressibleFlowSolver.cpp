@@ -18,7 +18,7 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                                  // create assumed processes for compressible flow
                                  std::make_shared<ablate::finiteVolume::processes::NavierStokesTransport>(
                                      parameters, eosIn, fluxCalculatorIn, transport, utilities::VectorUtilities::Find<ablate::finiteVolume::processes::PressureGradientScaling>(additionalProcesses)),
-                                 std::make_shared<ablate::finiteVolume::processes::SpeciesTransport>(eosIn, fluxCalculatorIn, transport),
+                                 std::make_shared<ablate::finiteVolume::processes::SpeciesTransport>(eosIn, fluxCalculatorIn, transport, parameters),
                                  std::make_shared<ablate::finiteVolume::processes::EVTransport>(eosIn, fluxCalculatorIn, transport),
                              },
                              additionalProcesses),

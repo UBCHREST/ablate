@@ -46,11 +46,25 @@ class SpeciesTransport : public FlowProcess {
     };
     DiffusionData diffusionData;
 
+    //! methods and functions to compute diffusion based time stepping
+    struct DiffusionTimeStepData {
+        /* number of gas species */
+        PetscInt numberSpecies;
+
+        //! stability factor for condition time step. 0 (default) does not compute factor
+        PetscReal stabilityFactor;
+
+        /* diffusivity */
+        eos::ThermodynamicTemperatureFunction diffFunction;
+    };
+    DiffusionTimeStepData diffusionTimeStepData;
+
     // Store ctx needed for static function diffusion function passed to PETSc
     PetscInt numberSpecies;
 
    public:
-    explicit SpeciesTransport(std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {}, std::shared_ptr<eos::transport::TransportModel> transportModel = {});
+    explicit SpeciesTransport(std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {}, std::shared_ptr<eos::transport::TransportModel> transportModel = {},
+                              const std::shared_ptr<parameters::Parameters>& parametersIn = {});
 
     /**
      * public function to link this process with the flow
@@ -100,6 +114,9 @@ class SpeciesTransport : public FlowProcess {
      */
     static PetscErrorCode AdvectionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscScalar fieldL[], const PetscScalar fieldR[], const PetscInt aOff[],
                                         const PetscScalar auxL[], const PetscScalar auxR[], PetscScalar* flux, void* ctx);
+
+    // static function to compute the conduction based time step
+    static double ComputeViscousDiffusionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
 };
 
 }  // namespace ablate::finiteVolume::processes

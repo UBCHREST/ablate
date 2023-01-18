@@ -10,6 +10,7 @@ target_sources(ablateLibrary
         formula.cpp
         formulaBase.cpp
         linear.cpp
+        peak.cpp
 
         PUBLIC
         simpleFormula.hpp
@@ -24,6 +25,7 @@ target_sources(ablateLibrary
         formula.hpp
         formulaBase.hpp
         linear.hpp
+        peak.hpp
         )
 
 add_subdirectory(geom)

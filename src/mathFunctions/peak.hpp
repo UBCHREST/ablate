@@ -1,40 +1,46 @@
-#ifndef ABLATELIBRARY_LINEAR_FUNTION_HPP
-#define ABLATELIBRARY_LINEAR_FUNTION_HPP
+#ifndef ABLATELIBRARY_PEAK_FUNTION_HPP
+#define ABLATELIBRARY_PEAK_FUNTION_HPP
 #include <muParser.h>
 #include "formulaBase.hpp"
 
 namespace ablate::mathFunctions {
 /**
- * Linear functions in x, y, or z
+ * Peak functions in x, y, or z
  */
 
-class Linear : public MathFunction {
+class Peak : public MathFunction {
    private:
     const std::vector<double> startValue;
+    const std::vector<double> peakValue;
     const std::vector<double> endValue;
     const double start;
+    const double peak;
     const double end;
     const int dir;
 
-    static PetscErrorCode LinearPetscFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
+    static PetscErrorCode PeakPetscFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
 
     /**
-     * Helper function to do the interpolation
+     *
      * @param x
-     * @param x0
-     * @param x1
-     * @param y0
-     * @param y1
+     * @param xS the start location
+     * @param xP the peak location
+     * @param xE the end location
+     * @param yS the start value
+     * @param yP the peak value
+     * @param yE the end value
      * @return
      */
-    inline static double Interpolate(double x, double x0, double x1, double y0, double y1) {
-        if (x < x0) {
-            return y0;
-        } else if (x > x1) {
-            return y1;
+    inline static double Interpolate(double x, double xS, double xP, double xE, double yS, double yP, double yE) {
+        if (x < xS) {
+            return yS;
+        } else if (x > xE) {
+            return yE;
+        } else if (x < xP) {
+            return yS + (x - xS) * (yP - yS) / (xP - xS);
+        } else {
+            return yP + (x - xP) * (yE - yP) / (xE - xP);
         }
-
-        return y0 + (x - x0) * (y1 - y0) / (x1 - x0);
     }
 
     /**
@@ -60,18 +66,18 @@ class Linear : public MathFunction {
     }
 
    public:
-    Linear(const Linear&) = delete;
-    void operator=(const Linear&) = delete;
+    Peak(const Peak&) = delete;
+    void operator=(const Peak&) = delete;
 
     /**
-     * Linear function from start to end with the specified start and end values
+     * Peak function from start to end with the specified start and end values
      * @param startValue
      * @param endValue
      * @param start
      * @param end
      * @param dir 0, 1, 2
      */
-    explicit Linear(std::vector<double> startValue, std::vector<double> endValue, double start, double end, int dir);
+    explicit Peak(std::vector<double> startValue, std::vector<double> peakValue, std::vector<double> endValue, double start, double peak, double end, int dir);
 
     double Eval(const double& x, const double& y, const double& z, const double& t) const override;
 
@@ -83,7 +89,7 @@ class Linear : public MathFunction {
 
     void* GetContext() override { return this; }
 
-    PetscFunction GetPetscFunction() override { return LinearPetscFunction; }
+    PetscFunction GetPetscFunction() override { return PeakPetscFunction; }
 };
 }  // namespace ablate::mathFunctions
 
