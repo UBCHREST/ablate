@@ -38,7 +38,7 @@ if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 endif ()
 
 # Create the library for ablate
-add_library(ablateLibrary SHARED src/eos/transport/twoPhaseTransport.cpp src/eos/transport/twoPhaseTransport.hpp)
+add_library(ablateLibrary SHARED)
 
 # Load in the subdirectories for the ablate library
 add_subdirectory(src)
