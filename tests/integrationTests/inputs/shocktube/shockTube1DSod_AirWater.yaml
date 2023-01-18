@@ -25,7 +25,7 @@ timestepper:
           parameters:
             gamma: 0
             Rgas: 0
-      - name: densityVF
+      - name: densityvolumeFraction
         type: FVM
       - name: volumeFraction
         type: FVM
@@ -40,7 +40,7 @@ timestepper:
         x < 0.5 ? 2500000000.0 : 2414070815.450644,
         0
     - &rhoAlpha
-      fieldName: densityVF
+      fieldName: densityvolumeFraction
       field: "x < 0.5 ? 11307.222318647702 : 0.0"
     - &alpha
       fieldName: volumeFraction
