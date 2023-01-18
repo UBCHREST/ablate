@@ -2,9 +2,9 @@
 #define ABLATELIBRARY_RADIATIONLOSS_HPP
 
 #include "eos/radiationProperties/radiationProperties.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include "process.hpp"
 #include "utilities/constants.hpp"
-#include "finiteVolume/compressibleFlowFields.hpp"
 
 namespace ablate::finiteVolume::processes {
 /**
@@ -19,7 +19,7 @@ class RadiationLoss : public Process {
      * @return
      */
     static PetscErrorCode ComputeRadiationLoss(PetscInt dim, PetscReal time, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[],
-                                                 PetscScalar f[], void* ctx);
+                                               PetscScalar f[], void* ctx);
 
    public:
     explicit RadiationLoss(std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, double tInfinityIn = 300);
@@ -39,7 +39,6 @@ class RadiationLoss : public Process {
      * @return
      */
     static inline PetscReal GetIntensity(PetscReal tInfinity, PetscReal temperature, PetscReal kappa) {
-
         tInfinity = PetscMax(tInfinity, (temperature - 500));
 
         // Compute the losses
