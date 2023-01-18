@@ -36,8 +36,8 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      */
     void ExtractMetaData(std::istream& inputStream);
     void LoadBasisVectors(std::istream& inputStream, std::size_t columns, PetscReal** W);
-    static void ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariable[], const std::size_t progressVariablesSize, PetscReal* predictedSourceEnergy,
-                                            PetscReal* progressVariableSource, const std::size_t progressVariableSourceSize, PetscReal* massFractions, std::size_t massFractionsSize, void* ctx);
+    void ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariable[], const std::size_t progressVariablesSize, PetscReal* predictedSourceEnergy,
+                                     PetscReal* progressVariableSource, const std::size_t progressVariableSourceSize, PetscReal* massFractions, std::size_t massFractionsSize) const;
 
     // Dwyer: How does this do batch exactly?
     // Dwyer: Oh... Maybe it doesn't and it needs me to do it.
@@ -85,6 +85,8 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
 
         // Hold the context for the baseline tChem function
         ablate::eos::TChem::ThermodynamicMassFractionFunction tChemFunction;
+
+        const ChemTab* ctx=nullptr;
     };
 
     /**
@@ -102,6 +104,8 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
 
         // Hold the context for the baseline tChem function
         ablate::eos::TChem::ThermodynamicTemperatureMassFractionFunction tChemFunction;
+        
+        const ChemTab* ctx=nullptr;
     };
 
     // Dwyer: again why? Is this like something the user would want to do with the Yi
@@ -134,8 +138,9 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @param progressVariablesSize
      * @param density allows for this function to be used with density*progress variables
      */
-    static void ComputeMassFractions(std::size_t numSpecies, std::size_t numProgressVariables, PetscReal** iWmat, const PetscReal* progressVariables, PetscReal* massFractions,
-                                     PetscReal density = 1.0);
+    static void ComputeMassFractions(const ChemTab* ctx, std::size_t numSpecies, std::size_t numProgressVariables, const PetscReal* progressVariables, PetscReal* massFractions, PetscReal density = 1.0) {
+        ctx->ComputeMassFractions(progressVariables, numProgressVariables, massFractions, numSpecies, density);
+    }
 
    public:
     explicit ChemTab(std::filesystem::path path);

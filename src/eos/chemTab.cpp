@@ -162,7 +162,7 @@ void ablate::eos::ChemTab::LoadBasisVectors(std::istream &inputStream, std::size
 
 // TODO: break into smaller functions?
 void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariable[], const std::size_t progressVariablesSize, PetscReal *predictedSourceEnergy,
-                                                       PetscReal *progressVariableSource, const std::size_t progressVariableSourceSize, PetscReal *massFractions, std::size_t massFractionsSize) {
+                                                       PetscReal *progressVariableSource, const std::size_t progressVariableSourceSize, PetscReal *massFractions, std::size_t massFractionsSize) const {
     // size of progressVariables should match the expected number of
     // progressVariables
     if (progressVariablesSize != progressVariablesNames.size()) {
@@ -238,8 +238,7 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
     safe_free(output);
 }
 
-void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize, PetscReal density = 1.0) const {
-//void ablate::eos::ChemTab::ComputeMassFractions(std::size_t numSpecies, std::size_t numProgressVariables, const PetscReal *progressVariables, PetscReal *massFractions, PetscReal density) {
+void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize, PetscReal density) const {
     // size of massFractions should match the expected number of species
     if (massFractionsSize != speciesNames.size()) {
         throw std::invalid_argument(
@@ -248,11 +247,41 @@ void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal* progressVariabl
     }
 
     // call model using generalized invocation method (usable for inversion & source computation)
-    ChemTabModelComputeFunction(density, progressVariables, numProgressVariables, NULL, NULL, 0, massFractions, numSpecies);
+    ChemTabModelComputeFunction(density, progressVariables, progressVariablesSize, NULL, NULL, 0, massFractions, massFractionsSize);
 }
 
-//ComputeMassFractions(std::size_t numSpecies, std::size_t numProgressVariables, const PetscReal *progressVariables, PetscReal *massFractions, PetscReal density) {
-//    
+//void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal *progressVariables, std::size_t progressVariablesSize, PetscReal *massFractions, std::size_t massFractionsSize,
+//                                                PetscReal density) const {
+//    // y = inv(W)'C
+//    // for now the mass fractions will be obtained using the inverse of the
+//    // weights. Will be replaced by a ML predictive model in the next iteration
+//    // size of progressVariables should match the expected number of
+//    // progressVariables
+//    if (progressVariablesSize != progressVariablesNames.size()) {
+//        throw std::invalid_argument(
+//            "The progressVariables size does not match the "
+//            "supported number of progressVariables");
+//    }
+//    // size of massFractions should match the expected number of species
+//    if (massFractionsSize != speciesNames.size()) {
+//        throw std::invalid_argument(
+//            "The massFractions size does not match the "
+//            "supported number of species");
+//    }
+//    ComputeMassFractions(speciesNames.size(), progressVariablesNames.size(), iWmat, progressVariables, massFractions, density);
+//}
+//
+//void ablate::eos::ChemTab::ComputeMassFractions(std::size_t numSpecies, std::size_t numProgressVariables, PetscReal **iWmat, const PetscReal *progressVariables, PetscReal *massFractions,
+//                                                PetscReal density) {
+//    for (size_t i = 0; i < numSpecies; i++) {
+//        PetscReal v = 0;
+//        // j starts from 1 because the first entry in progressVariables is assumed
+//        // to be zMix
+//        for (size_t j = 1; j < numProgressVariables; j++) {
+//            v += iWmat[j - 1][i] * progressVariables[j] / density;
+//        }
+//        massFractions[i] = v;
+//    }
 //}
 
 void ablate::eos::ChemTab::ChemistrySource(PetscReal density, const PetscReal densityProgressVariable[], PetscReal *densityEnergySource, PetscReal *progressVariableSource) const {
@@ -314,8 +343,11 @@ PetscErrorCode ablate::eos::ChemTab::ChemTabThermodynamicFunction(const PetscRea
     PetscFunctionBeginUser;
     auto functionContext = (ThermodynamicFunctionContext *)ctx;
 
+    //void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize, PetscReal density = 1.0) 
+
     // fill the mass fractions
-    ComputeMassFractions(functionContext->numberSpecies,
+    ComputeMassFractions(functionContext->ctx,
+                         functionContext->numberSpecies,
                          functionContext->numberProgressVariables,
                          conserved + functionContext->progressOffset,
                          functionContext->yiScratch.data(),
@@ -332,7 +364,8 @@ PetscErrorCode ablate::eos::ChemTab::ChemTabThermodynamicTemperatureFunction(con
     auto functionContext = (ThermodynamicTemperatureFunctionContext *)ctx;
 
     // fill the mass fractions
-    ComputeMassFractions(functionContext->numberSpecies,
+    ComputeMassFractions(functionContext->ctx,
+                         functionContext->numberSpecies,
                          functionContext->numberProgressVariables,
                          conserved + functionContext->progressOffset,
                          functionContext->yiScratch.data(),
@@ -363,7 +396,8 @@ ablate::eos::ThermodynamicFunction ablate::eos::ChemTab::GetThermodynamicFunctio
                                                                                                .densityOffset = eulerField->offset + (std::size_t)ablate::finiteVolume::CompressibleFlowFields::RHO,
                                                                                                .progressOffset = (std::size_t)densityProgressField->offset,
                                                                                                .yiScratch = std::vector<PetscReal>(speciesNames.size()),
-                                                                                               .tChemFunction = referenceEOS->GetThermodynamicMassFractionFunction(property, fields)})};
+                                                                                               .tChemFunction = referenceEOS->GetThermodynamicMassFractionFunction(property, fields),
+                                                                                               .ctx=this})};
 }
 
 ablate::eos::EOSFunction ablate::eos::ChemTab::GetFieldFunctionFunction(const std::string &field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2,
@@ -444,7 +478,8 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::ChemTab::GetThermodyn
                                                                                         .densityOffset = eulerField->offset + (std::size_t)ablate::finiteVolume::CompressibleFlowFields::RHO,
                                                                                         .progressOffset = (std::size_t)densityProgressField->offset,
                                                                                         .yiScratch = std::vector<PetscReal>(speciesNames.size()),
-                                                                                        .tChemFunction = referenceEOS->GetThermodynamicTemperatureMassFractionFunction(property, fields)})};
+                                                                                        .tChemFunction = referenceEOS->GetThermodynamicTemperatureMassFractionFunction(property, fields),
+                                                                                        .ctx=this})};
 }
 
 ablate::eos::ChemTab::ChemTabSourceCalculator::ChemTabSourceCalculator(PetscInt densityOffset, PetscInt densityEnergyOffset, PetscInt densityProgressVariableOffset,
