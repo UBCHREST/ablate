@@ -3,11 +3,10 @@
 #include "constant.hpp"
 #include "sutherland.hpp"
 #include "transportModel.hpp"
-// #include "parameters/parameters.hpp"
 
 namespace ablate::eos::transport {
 
-class TwoPhaseTransport : public TransportModel {  //};, std::enable_shared_from_this<TwoPhaseTransport> {
+class TwoPhaseTransport : public TransportModel {
    private:
     const std::shared_ptr<eos::transport::TransportModel> transportModel1;
     const std::shared_ptr<eos::transport::TransportModel> transportModel2;

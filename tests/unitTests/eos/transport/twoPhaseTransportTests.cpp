@@ -23,10 +23,8 @@ TEST_P(TwoPhaseTransportTestFixture, ShouldComputeCorrectDirectConductivity) {
     auto transport1 = GetParam().transport1;
     auto transport2 = GetParam().transport2;
 
-    //    std::vector<ablate::domain::Field> fields;
-
     auto twoPhaseModel = std::make_shared<ablate::eos::transport::TwoPhaseTransport>(transport1, transport2);
-    auto conductivityFunction = twoPhaseModel->GetTransportFunction(ablate::eos::transport::TransportProperty::Conductivity, {});  // fields);
+    auto conductivityFunction = twoPhaseModel->GetTransportFunction(ablate::eos::transport::TransportProperty::Conductivity, {});
 
     // ACT
     PetscReal computedk = NAN;
@@ -77,13 +75,5 @@ INSTANTIATE_TEST_SUITE_P(TwoPhaseTransportTests, TwoPhaseTransportTestFixture,
                                                                            .conservedIn = {0.75},
                                                                            .expectedConductivity = 1.5,
                                                                            .expectedViscosity = 2.5,
-                                                                           .expectedDiffusivity = 0.0}
-                                         //                         (TwoPhaseTransportTestParameters){
-                                         //                            .transport1 =
-                                         //                            std::make_shared<ablate::eos::transport::Sutherland>(std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string,
-                                         //                            std::string>{{"gamma","1.4"},{"rGas","287"}}))), // Cp .transport2 =
-                                         //                            std::make_shared<ablate::eos::transport::Sutherland>(std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string,
-                                         //                            std::string>{{"gamma","1.43"},{"rGas","106.4"}}))), // Cp .conservedIn = {0.75}, .expectedConductivity = 1.5, .expectedViscosity
-                                         //                            = 2.5, .expectedDiffusivity = 0.0}
-                                         ),
+                                                                           .expectedDiffusivity = 0.0}),
                          [](const testing::TestParamInfo<TwoPhaseTransportTestParameters>& info) { return std::to_string(info.index); });
