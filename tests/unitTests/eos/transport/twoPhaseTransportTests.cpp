@@ -1,10 +1,7 @@
 #include "PetscTestFixture.hpp"
-#include "eos/perfectGas.hpp"
 #include "eos/transport/constant.hpp"
-#include "eos/transport/sutherland.hpp"
 #include "eos/transport/twoPhaseTransport.hpp"
 #include "gtest/gtest.h"
-#include "parameters/mapParameters.hpp"
 
 struct TwoPhaseTransportTestParameters {
     std::shared_ptr<ablate::eos::transport::TransportModel> transport1;

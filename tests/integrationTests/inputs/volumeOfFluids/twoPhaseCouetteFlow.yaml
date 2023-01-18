@@ -29,7 +29,7 @@ timestepper:
           parameters:
             gamma: 0
             Rgas: 0
-      - name: densityVF
+      - name: densityvolumeFraction
         type: FVM
       - name: volumeFraction
         type: FVM
@@ -43,7 +43,7 @@ timestepper:
         y > 0.5 ? 1.1614401858304297*(215250.0) : 994.0897497618486*(2428423.405461103),
         0.0,
         0.0
-    - fieldName: densityVF
+    - fieldName: densityvolumeFraction
       field: "y > 0.5 ? 1.1614401858304297 : 0.0"
     - fieldName: volumeFraction # additional field alpha to initialize
       field: "y > 0.5 ? 1.0 : 0.0 "
@@ -98,7 +98,7 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
       boundaryName: "stationary densityVF"
       labelIds: [ 1 ]
       boundaryValue:
-        fieldName: densityVF
+        fieldName: densityvolumeFraction
         field: "1.1614401858304297"
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "stationary vf"
@@ -116,7 +116,7 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
       boundaryName: "moving densityVF"
       labelIds: [ 3 ]
       boundaryValue:
-        fieldName: densityVF
+        fieldName: densityvolumeFraction
         field: "0.0"
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "moving vf"
