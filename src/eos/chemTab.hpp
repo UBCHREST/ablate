@@ -232,7 +232,7 @@ class ChemTab : public ChemistryModel {
 
     [[nodiscard]] const std::vector<std::string>& GetSpeciesVariables() const override { throw std::runtime_error(errorMessage); }
 
-    [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { throw std::runtime_error(errorMessage); }
+    [[nodiscard]] const std::vector<std::string>& GetFieldFunctionProperties() const override { throw std::runtime_error(errorMessage); }
 
     [[nodiscard]] const std::vector<std::string>& GetProgressVariables() const override { throw std::runtime_error(errorMessage); }
 
