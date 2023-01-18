@@ -6,7 +6,6 @@ target_sources(ablateLibrary
         densityMassFractions.cpp
         densityExtraVariables.cpp
         densityProgressVariables.cpp
-        densityVolumeFraction.cpp
 
         PUBLIC
         compressibleFlowState.hpp
@@ -15,5 +14,4 @@ target_sources(ablateLibrary
         densityMassFractions.hpp
         densityExtraVariables.hpp
         densityProgressVariables.hpp
-        densityVolumeFraction.hpp
         )
