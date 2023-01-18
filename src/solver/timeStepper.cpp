@@ -1,6 +1,7 @@
 #include "timeStepper.hpp"
 #include <petscdm.h>
 #include "utilities/petscUtilities.hpp"
+#include "adaptPhysics.hpp"
 
 ablate::solver::TimeStepper::TimeStepper(std::shared_ptr<ablate::domain::Domain> domain, std::shared_ptr<ablate::parameters::Parameters> arguments, std::shared_ptr<io::Serializer> serializer,
                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions,
@@ -12,14 +13,19 @@ ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<abl
                                          std::shared_ptr<ablate::io::Serializer> serializerIn, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations,
                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances,
                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances, bool verboseSourceCheck)
-    : name(nameIn.empty() ? "timeStepper" : nameIn),
+    : utilities::StaticInitializer([] {
+          AdaptPhysics::Register();
+      }),
+      name(nameIn.empty() ? "timeStepper" : nameIn),
       domain(domain),
       serializer(serializerIn),
       verboseSourceCheck(verboseSourceCheck),
       initializations(initializations),
       exactSolutions(exactSolutions),
       absoluteTolerances(absoluteTolerances),
-      relativeTolerances(relativeTolerances) {
+      relativeTolerances(relativeTolerances)
+
+{
     // create an instance of the ts
     TSCreate(PETSC_COMM_WORLD, &ts) >> utilities::PetscUtilities::checkError;
 

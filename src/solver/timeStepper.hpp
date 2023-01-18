@@ -14,9 +14,10 @@
 #include "rhsFunction.hpp"
 #include "solver.hpp"
 #include "utilities/loggable.hpp"
+#include "utilities/staticInitializer.hpp"
 
 namespace ablate::solver {
-class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private utilities::Loggable<TimeStepper> {
+class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private utilities::Loggable<TimeStepper>, private utilities::StaticInitializer{
    private:
     TS ts;                                                                           /** The PETSC time stepper**/
     std::string name;                                                                /** the name for this time stepper **/
