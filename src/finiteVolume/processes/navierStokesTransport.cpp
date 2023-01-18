@@ -23,7 +23,7 @@ ablate::finiteVolume::processes::NavierStokesTransport::NavierStokesTransport(co
         advectionData.fluxCalculatorFunction = fluxCalculator->GetFluxCalculatorFunction();
         advectionData.fluxCalculatorCtx = fluxCalculator->GetFluxCalculatorContext();
     }
-    advectionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
+    advectionData.numberSpecies = (PetscInt)eos->GetSpeciesVariables().size();
 
     timeStepData.advectionData = &advectionData;
     timeStepData.pgs = std::move(pgs);

@@ -103,7 +103,7 @@ TEST_P(TChemGetSpeciesFixture, ShouldGetCorrectSpecies) {
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
 
     // act
-    auto species = eos->GetSpecies();
+    auto species = eos->GetSpeciesVariables();
 
     // assert the output is as expected
     ASSERT_EQ(species, GetParam().expectedSpecies);
@@ -158,7 +158,7 @@ TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputeProperty) {
                                                                                                                     return field.name == "euler";
                                                                                                                 })->offset);
     FillDensityMassFraction(*std::find_if(params.fields.begin(), params.fields.end(), [](const auto& field) { return field.name == "densityYi"; }),
-                            eos->GetSpecies(),
+                            eos->GetSpeciesVariables(),
                             params.yiMap,
                             params.conservedEulerValues[0],
                             conservedValues);
@@ -223,8 +223,8 @@ TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputePropertyUsingMassFractio
                                                                                                                     return field.name == "euler";
                                                                                                                 })->offset);
     // Size and fill species
-    std::vector<PetscReal> yi(eos->GetSpecies().size(), 0.0);
-    FillMassFraction(eos->GetSpecies(), params.yiMap, yi);
+    std::vector<PetscReal> yi(eos->GetSpeciesVariables().size(), 0.0);
+    FillMassFraction(eos->GetSpeciesVariables(), params.yiMap, yi);
 
     // copy remove densityYi from the list in the params
     std::vector<ablate::domain::Field> fields;
@@ -571,12 +571,12 @@ class TChemFieldFunctionTestFixture : public testingResources::PetscTestFixture,
 TEST_P(TChemFieldFunctionTestFixture, ShouldComputeField) {
     // arrange
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
-    auto yi = GetMassFraction(eos->GetSpecies(), GetParam().yiMap);
+    auto yi = GetMassFraction(eos->GetSpeciesVariables(), GetParam().yiMap);
 
     // get the test params
     const auto& params = GetParam();
     std::vector<PetscReal> actualEulerValue(params.expectedEulerValue.size(), NAN);
-    std::vector<PetscReal> actualDensityYiValue(eos->GetSpecies().size(), NAN);
+    std::vector<PetscReal> actualDensityYiValue(eos->GetSpeciesVariables().size(), NAN);
 
     // act
     auto stateEulerFunction = eos->GetFieldFunctionFunction("euler", params.property1, params.property2, {ablate::eos::EOS::YI});

@@ -21,9 +21,10 @@ std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::finiteVol
             VELOCITY_FIELD, VELOCITY_FIELD, std::vector<std::string>{"vel" + domain::FieldDescription::DIMENSION}, domain::FieldLocation::AUX, domain::FieldType::FVM, region, auxFieldOptions)};
 
     if (!eos->GetSpeciesVariables().empty()) {
+        flowFields.emplace_back(std::make_shared<domain::FieldDescription>(
+            DENSITY_YI_FIELD, DENSITY_YI_FIELD, eos->GetSpeciesVariables(), domain::FieldLocation::SOL, domain::FieldType::FVM, region, conservedFieldOptions));
         flowFields.emplace_back(
-            std::make_shared<domain::FieldDescription>(DENSITY_YI_FIELD, DENSITY_YI_FIELD, eos->GetSpecies(), domain::FieldLocation::SOL, domain::FieldType::FVM, region, conservedFieldOptions));
-        flowFields.emplace_back(std::make_shared<domain::FieldDescription>(YI_FIELD, YI_FIELD, eos->GetSpecies(), domain::FieldLocation::AUX, domain::FieldType::FVM, region, auxFieldOptions));
+            std::make_shared<domain::FieldDescription>(YI_FIELD, YI_FIELD, eos->GetSpeciesVariables(), domain::FieldLocation::AUX, domain::FieldType::FVM, region, auxFieldOptions));
     }
 
     if (!eos->GetProgressVariables().empty()) {

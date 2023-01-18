@@ -81,7 +81,7 @@ ablate::eos::ChemTab::ChemTab(std::filesystem::path path) : ChemistryModel("abla
     referenceEOS = std::make_shared<ablate::eos::TChem>(mechanismPath);
 
     // make sure that the species list is the same
-    auto &referenceEOSSpecies = referenceEOS->GetSpecies();
+    auto &referenceEOSSpecies = referenceEOS->GetSpeciesVariables();
     if (referenceEOSSpecies.size() != speciesNames.size()) {
         throw std::invalid_argument("The ReferenceEOS species and chemTab species are expected to be the same.");
     }

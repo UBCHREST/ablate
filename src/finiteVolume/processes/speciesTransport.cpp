@@ -11,7 +11,7 @@ ablate::finiteVolume::processes::SpeciesTransport::SpeciesTransport(std::shared_
 
     if (fluxCalculator) {
         // set the decode state function
-        advectionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
+        advectionData.numberSpecies = (PetscInt)eos->GetSpeciesVariables().size();
 
         // extract the difference function from fluxDifferencer object
         advectionData.fluxCalculatorFunction = fluxCalculator->GetFluxCalculatorFunction();
@@ -20,14 +20,14 @@ ablate::finiteVolume::processes::SpeciesTransport::SpeciesTransport(std::shared_
 
     if (transportModel) {
         // set the eos functions
-        diffusionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
-        diffusionData.speciesSpeciesSensibleEnthalpy.resize(eos->GetSpecies().size());
+        diffusionData.numberSpecies = (PetscInt)eos->GetSpeciesVariables().size();
+        diffusionData.speciesSpeciesSensibleEnthalpy.resize(eos->GetSpeciesVariables().size());
 
         // Add in the time stepping
         diffusionTimeStepData.stabilityFactor = parameters->Get<PetscReal>("speciesStabilityFactor", 0.0);
     }
 
-    numberSpecies = (PetscInt)eos->GetSpecies().size();
+    numberSpecies = (PetscInt)eos->GetSpeciesVariables().size();
 }
 
 void ablate::finiteVolume::processes::SpeciesTransport::Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) {

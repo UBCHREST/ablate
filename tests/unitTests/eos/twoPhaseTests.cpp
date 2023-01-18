@@ -306,17 +306,16 @@ INSTANTIATE_TEST_SUITE_P(
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// EOS get species tests
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-TEST(TwoPhaseEOSTests, TwoPhaseShouldReportNoSpeciesByDefault) {
+TEST(TwoPhaseEOSTests, TwoPhaseShouldReportNoSpeciesEctByDefault) {
     // arrange
     auto eos1 = nullptr;
     auto eos2 = nullptr;
     std::shared_ptr<ablate::eos::EOS> twoPhaseEos = std::make_shared<ablate::eos::TwoPhase>(eos1, eos2);
 
-    // act
-    auto species = twoPhaseEos->GetSpecies();
-
-    // assert
-    ASSERT_EQ(0, species.size());
+    // act // assert
+    ASSERT_EQ(0, twoPhaseEos->GetFieldFunctionProperties().size());
+    ASSERT_EQ(0, twoPhaseEos->GetSpeciesVariables().size());
+    ASSERT_EQ(0, twoPhaseEos->GetProgressVariables().size());
 }
 
 TEST(TwoPhaseEOSTests, TwoPhaseShouldReportSpeciesWhenProvided) {
@@ -328,7 +327,7 @@ TEST(TwoPhaseEOSTests, TwoPhaseShouldReportSpeciesWhenProvided) {
     std::shared_ptr<ablate::eos::EOS> twoPhaseEos = std::make_shared<ablate::eos::TwoPhase>(eos1, eos2);
 
     // act
-    auto species = twoPhaseEos->GetSpecies();
+    auto species = twoPhaseEos->GetSpeciesVariables();
 
     // assert
     ASSERT_EQ(3, species.size());
