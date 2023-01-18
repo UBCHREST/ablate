@@ -1,7 +1,6 @@
 #include <memory>
 #include "gtest/gtest.h"
 #include "mathFunctions/linear.hpp"
-#include "mathFunctions/simpleFormula.hpp"
 #include "mockFactory.hpp"
 #include "registrar.hpp"
 
@@ -23,8 +22,8 @@ TEST(LinearTests, ShouldBeCreatedFromRegistar) {
     auto instance = createMethod(mockFactory);
 
     // assert
-    ASSERT_TRUE(instance != nullptr) << " should create an instance of the Parameters";
-    ASSERT_TRUE(std::dynamic_pointer_cast<ablate::mathFunctions::Linear>(instance) != nullptr) << " should be an instance of FactoryParameters";
+    ASSERT_TRUE(instance != nullptr) << " should create an instance of the MathFunction";
+    ASSERT_TRUE(std::dynamic_pointer_cast<ablate::mathFunctions::Linear>(instance) != nullptr) << " should be an instance of Linear";
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
