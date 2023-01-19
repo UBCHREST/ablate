@@ -14,10 +14,15 @@
 void NoOpDeallocator(void *data, size_t a, void *b) {}
 
 // helper for reporting errors related to invalid sizes
-auto size_mismatch(std::string var_name, int given_value, int expected_value) {
+auto value_mismatch(std::string var_name, std::string given_value, std::string expected_value) {
     std::ostringstream os;
-    os << "The given " << var_name << " value: " << given_value << ", does not match the expected/supported value: " << expected_value;
+    os << "The given " << var_name << " value: " << given_value << ", does not match the expected/supported value: " << expected_value << std::endl;
     return std::invalid_argument(os.str());
+}
+
+// helper for reporting errors related to invalid sizes
+auto value_mismatch(std::string var_name, int given_value, int expected_value) {
+    return value_mismatch(var_name, std::to_string(given_value), std::to_string(expected_value));
 }
 
 ablate::eos::ChemTab::ChemTab(std::filesystem::path path) : ChemistryModel("ablate::chemistry::ChemTab") {
@@ -82,11 +87,11 @@ ablate::eos::ChemTab::ChemTab(std::filesystem::path path) : ChemistryModel("abla
     // make sure that the species list is the same
     auto &referenceEOSSpecies = referenceEOS->GetSpeciesVariables();
     if (referenceEOSSpecies.size() != speciesNames.size()) {
-        throw std::invalid_argument("The ReferenceEOS species and chemTab species are expected to be the same.");
+        throw value_mismatch("chemTab species sizes", speciesNames.size(), referenceEOSSpecies.size());
     }
     for (std::size_t s = 0; s < speciesNames.size(); s++) {
         if (speciesNames[s] != referenceEOSSpecies[s]) {
-            throw std::invalid_argument("The ReferenceEOS species and chemTab species are expected to be the same.");
+            throw value_mismatch("species", speciesNames[s], referenceEOSSpecies[s]);
         }
     }
 }
@@ -156,6 +161,9 @@ void ablate::eos::ChemTab::LoadBasisVectors(std::istream &inputStream, std::size
     }
 }
 
+#include <iostream>
+using namespace std;
+
 // avoids freeing null pointers
 #define safe_free(ptr) \
     if (ptr != NULL) free(ptr);
@@ -166,7 +174,7 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
     // size of progressVariables should match the expected number of
     // progressVariables
     if (progressVariablesSize != progressVariablesNames.size()) {
-        throw size_mismatch("progressVariables size", progressVariablesSize, progressVariablesNames.size());
+        throw value_mismatch("progressVariables size", progressVariablesSize, progressVariablesNames.size());
     }
     //********* Get Input tensor
     int numInputs = 1;
@@ -229,6 +237,7 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
     // -1 b/c we don't want to go out of bounds with the +1 below, also int is to prevent integer overflow
     for (size_t i = 0; (int)i < ((int)progressVariableSourceSize) - 1; i++) {
         progressVariableSource[i + 1] = (PetscReal)outputArray[i];  // +1 b/c we are manually filling in Zmix source value (to 0)
+        cerr << "progressVariableSource["<< i+1 <<"]: " << progressVariableSource[i + 1] << endl << flush; 
     }
 
     // free allocated vectors
@@ -250,67 +259,30 @@ void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal* progressVariabl
     ChemTabModelComputeFunction(density, progressVariables, progressVariablesSize, NULL, NULL, 0, massFractions, massFractionsSize);
 }
 
-//void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal *progressVariables, std::size_t progressVariablesSize, PetscReal *massFractions, std::size_t massFractionsSize,
-//                                                PetscReal density) const {
-//    // y = inv(W)'C
-//    // for now the mass fractions will be obtained using the inverse of the
-//    // weights. Will be replaced by a ML predictive model in the next iteration
-//    // size of progressVariables should match the expected number of
-//    // progressVariables
-//    if (progressVariablesSize != progressVariablesNames.size()) {
-//        throw std::invalid_argument(
-//            "The progressVariables size does not match the "
-//            "supported number of progressVariables");
-//    }
-//    // size of massFractions should match the expected number of species
-//    if (massFractionsSize != speciesNames.size()) {
-//        throw std::invalid_argument(
-//            "The massFractions size does not match the "
-//            "supported number of species");
-//    }
-//    ComputeMassFractions(speciesNames.size(), progressVariablesNames.size(), iWmat, progressVariables, massFractions, density);
-//}
-//
-//void ablate::eos::ChemTab::ComputeMassFractions(std::size_t numSpecies, std::size_t numProgressVariables, PetscReal **iWmat, const PetscReal *progressVariables, PetscReal *massFractions,
-//                                                PetscReal density) {
-//    for (size_t i = 0; i < numSpecies; i++) {
-//        PetscReal v = 0;
-//        // j starts from 1 because the first entry in progressVariables is assumed
-//        // to be zMix
-//        for (size_t j = 1; j < numProgressVariables; j++) {
-//            v += iWmat[j - 1][i] * progressVariables[j] / density;
-//        }
-//        massFractions[i] = v;
-//    }
-//}
-
 void ablate::eos::ChemTab::ChemistrySource(PetscReal density, const PetscReal densityProgressVariable[], PetscReal *densityEnergySource, PetscReal *progressVariableSource) const {
     auto progressVariablesSize = progressVariablesNames.size();
-    auto progressVariableSourceSize = progressVariablesNames.size() - 1;
+    auto progressVariableSourceSize = progressVariablesNames.size();
     // these variables used to be supplied manually... now they aren't for some reason? kind of defeats the purpose in some of the tests...
 
     // size of progressVariableSource should match the expected number of progressVariables (excluding zmix)
-    if (progressVariableSourceSize != progressVariablesNames.size() - 1) {
-        throw size_mismatch("progressVariableSource size", progressVariableSourceSize, progressVariablesNames.size());
+    if (progressVariableSourceSize != progressVariablesNames.size()) {
+        throw value_mismatch("progressVariableSource size", progressVariableSourceSize, progressVariablesNames.size());
     }
 
     // call model using generalized invokation method (usable for inversion & source computation)
     ChemTabModelComputeFunction(density, densityProgressVariable, progressVariablesSize, densityEnergySource, progressVariableSource, progressVariableSourceSize, NULL, 0);
 }
-// void ChemTabModelComputeFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal *predictedSourceEnergy,
-//                                 PetscReal *progressVariableSource, const std::size_t progressVariableSourceSize,
-//                                 PetscReal *massFractions, std::size_t massFractionsSize, void *ctx) {
 
 void ablate::eos::ChemTab::ComputeProgressVariables(const PetscReal *massFractions, std::size_t massFractionsSize, PetscReal *progressVariables, std::size_t progressVariablesSize) const {
     // c = W'y
     // size of progressVariables should match the expected number of
     // progressVariables
     if (progressVariablesSize != progressVariablesNames.size()) {
-        throw size_mismatch("progressVariables size", progressVariablesSize, progressVariablesNames.size());
+        throw value_mismatch("progressVariables size", progressVariablesSize, progressVariablesNames.size());
     }
     // size of massFractions should match the expected number of species
     if (massFractionsSize != speciesNames.size()) {
-        throw size_mismatch("massFractions size", massFractionsSize, speciesNames.size());
+        throw value_mismatch("massFractions size", massFractionsSize, speciesNames.size());
     }
     for (size_t i = 0; i < progressVariablesNames.size(); i++) {
         PetscReal v = 0;

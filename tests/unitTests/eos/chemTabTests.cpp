@@ -148,6 +148,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectSource) {
         assert_float_close(expectedSourceEnergy, actualSourceEnergy) << "The sourceEnergy is incorrect for model " << testTarget["testName"].as<std::string>();
 
         for (std::size_t r = 0; r < expectedSourceProgress.size(); r++) {
+            std::cerr << "expected source: " << expectedSourceProgress[r] << " actual source: " << actualSourceProgress[r] << std::endl << std::flush;
             assert_float_close(expectedSourceProgress[r], actualSourceProgress[r]) << " the percent difference of (" << expectedSourceProgress[r] << ", " << actualSourceProgress[r]
                                                                                    << ") should be less than 5.0E-6 for index [" << r << "] for model " << testTarget["testName"].as<std::string>();
         }
