@@ -55,7 +55,7 @@ TEST_P(CompressibleFlowStateTestFixture, ShouldComputeCorrectMassFractions) {
     auto computeStateFunction = flowState.GetFieldFunction("densityYi");
 
     // act //assert
-    std::vector<PetscScalar> densityYi(eos->GetSpecies().size());
+    std::vector<PetscScalar> densityYi(eos->GetSpeciesVariables().size());
     ASSERT_EQ(0, computeStateFunction->GetPetscFunction()(location.size(), 0.0, &location[0], params.expectedEuler.size(), &densityYi[0], computeStateFunction->GetContext()));
     for (std::size_t i = 0; i < densityYi.size(); i++) {
         ASSERT_NEAR(densityYi[i], params.expectedDensityYi[i], 1E-3);

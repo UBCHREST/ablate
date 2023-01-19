@@ -26,7 +26,7 @@ void ablate::eos::tChem::SourceCalculator::ChemistryConstraints::Set(const std::
 
 ablate::eos::tChem::SourceCalculator::SourceCalculator(const std::vector<domain::Field>& fields, const std::shared_ptr<TChem> eosIn,
                                                        ablate::eos::tChem::SourceCalculator::ChemistryConstraints constraints, const solver::Range& cellRange)
-    : chemistryConstraints(constraints), eos(eosIn), numberSpecies(eosIn->GetSpecies().size()) {
+    : chemistryConstraints(constraints), eos(eosIn), numberSpecies(eosIn->GetSpeciesVariables().size()) {
     // determine the number of required cells
     std::size_t numberCells = cellRange.end - cellRange.start;
 

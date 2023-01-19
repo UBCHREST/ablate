@@ -46,7 +46,7 @@ std::shared_ptr<ablate::mathFunctions::MathFunction> ablate::finiteVolume::field
         PetscCall(velocityFunction->GetPetscFunction()(dim, time, x, dim, velocity, velocityFunction->GetContext()));
 
         // compute the mass fraction at this location
-        std::vector<PetscReal> otherProperties(eos->GetSpecies().size());
+        std::vector<PetscReal> otherProperties(eos->GetFieldFunctionProperties().size());
         if (otherPropertyFunction) {
             PetscCall(
                 otherPropertyFunction->GetSolutionField().GetPetscFunction()(dim, time, x, otherProperties.size(), otherProperties.data(), otherPropertyFunction->GetSolutionField().GetContext()));
