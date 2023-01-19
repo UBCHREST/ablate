@@ -3,4 +3,5 @@ target_sources(unitTests
         constantTests.cpp
         sutherlandTests.cpp
         twoPhaseTransportTests.cpp
+        mockTransportModel.hpp
         )
