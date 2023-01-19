@@ -200,16 +200,15 @@ INSTANTIATE_TEST_SUITE_P(PerfectGasEOSTests, PGThermodynamicPropertyTestFixture,
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// EOS get species tests
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-TEST(PerfectGasEOSTests, PerfectGasShouldReportNoSpeciesByDefault) {
+TEST(PerfectGasEOSTests, PerfectGasShouldReportNoSpeciesEctByDefault) {
     // arrange
     auto parameters = std::make_shared<ablate::parameters::MapParameters>();
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters);
 
-    // act
-    auto species = eos->GetSpecies();
-
-    // assert
-    ASSERT_EQ(0, species.size());
+    // act //assert
+    ASSERT_EQ(0, eos->GetSpeciesVariables().size());
+    ASSERT_EQ(0, eos->GetFieldFunctionProperties().size());
+    ASSERT_EQ(0, eos->GetProgressVariables().size());
 }
 
 TEST(PerfectGasEOSTests, PerfectGasShouldReportSpeciesWhenProvided) {
@@ -218,7 +217,7 @@ TEST(PerfectGasEOSTests, PerfectGasShouldReportSpeciesWhenProvided) {
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters, std::vector<std::string>{"N2", "H2"});
 
     // act
-    auto species = eos->GetSpecies();
+    auto species = eos->GetSpeciesVariables();
 
     // assert
     ASSERT_EQ(2, species.size());

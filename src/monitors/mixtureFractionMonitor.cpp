@@ -15,11 +15,12 @@ void ablate::monitors::MixtureFractionMonitor::Register(std::shared_ptr<solver::
         std::make_shared<domain::FieldDescription>("zMix", "zMix", domain::FieldDescription::ONECOMPONENT, domain::FieldLocation::SOL, domain::FieldType::FVM),
         std::make_shared<domain::FieldDescription>(ablate::finiteVolume::CompressibleFlowFields::YI_FIELD,
                                                    ablate::finiteVolume::CompressibleFlowFields::YI_FIELD,
-                                                   mixtureFractionCalculator->GetEos()->GetSpecies(),
+                                                   mixtureFractionCalculator->GetEos()->GetSpeciesVariables(),
                                                    domain::FieldLocation::SOL,
                                                    domain::FieldType::FVM),
         std::make_shared<domain::FieldDescription>("densityEnergySource", "energySource", domain::FieldDescription::ONECOMPONENT, domain::FieldLocation::SOL, domain::FieldType::FVM),
-        std::make_shared<domain::FieldDescription>("densityYiSource", "densityYiSource", mixtureFractionCalculator->GetEos()->GetSpecies(), domain::FieldLocation::SOL, domain::FieldType::FVM)};
+        std::make_shared<domain::FieldDescription>(
+            "densityYiSource", "densityYiSource", mixtureFractionCalculator->GetEos()->GetSpeciesVariables(), domain::FieldLocation::SOL, domain::FieldType::FVM)};
 
     // get the required function to compute density
     densityFunction = mixtureFractionCalculator->GetEos()->GetThermodynamicFunction(eos::ThermodynamicProperty::Density, solverIn->GetSubDomain().GetFields());

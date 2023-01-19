@@ -78,7 +78,7 @@ TEST_P(ChemTabModelTestFixture, ShouldReturnCorrectSpeciesAndVariables) {
 
         // act
         auto actualSpeciesVariables = chemTabModel.GetSpeciesVariables();
-        auto actualSpecies = chemTabModel.GetSpecies();
+        auto actualSpecies = chemTabModel.GetFieldFunctionProperties();
         auto actualProgressVariables = chemTabModel.GetProgressVariables();
 
         // assert
@@ -307,7 +307,7 @@ TEST_P(ChemTabFieldFunctionTestFixture, ShouldComputeFieldFromYi) {
     // build a new reference eos
     auto metadata = YAML::LoadFile(std::filesystem::path(GetParam().modelPath) / "metadata.yaml");
     auto tchem = std::make_shared<ablate::eos::TChem>(std::filesystem::path(GetParam().modelPath) / metadata["mechanism"].as<std::string>());
-    auto yi = GetMassFraction(tchem->GetSpecies(), GetParam().yiMap);
+    auto yi = GetMassFraction(tchem->GetFieldFunctionProperties(), GetParam().yiMap);
 
     // get the test params
     const auto& params = GetParam();
@@ -345,7 +345,7 @@ TEST_P(ChemTabFieldFunctionTestFixture, ShouldComputeFieldFromProgressVariable) 
     // build a new reference eos
     auto metadata = YAML::LoadFile(std::filesystem::path(GetParam().modelPath) / "metadata.yaml");
     auto tchem = std::make_shared<ablate::eos::TChem>(std::filesystem::path(GetParam().modelPath) / metadata["mechanism"].as<std::string>());
-    auto yi = GetMassFraction(tchem->GetSpecies(), GetParam().yiMap);
+    auto yi = GetMassFraction(tchem->GetFieldFunctionProperties(), GetParam().yiMap);
 
     // get the test params
     const auto& params = GetParam();

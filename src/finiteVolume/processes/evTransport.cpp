@@ -43,7 +43,7 @@ void ablate::finiteVolume::processes::EVTransport::Setup(ablate::finiteVolume::F
         }
 
         if (transportModel) {
-            diffusionData.speciesSpeciesSensibleEnthalpy.resize(eos->GetSpecies().size());
+            diffusionData.speciesSpeciesSensibleEnthalpy.resize(eos->GetSpeciesVariables().size());
 
             diffusionData.diffFunction = transportModel->GetTransportFunction(eos::transport::TransportProperty::Diffusivity, flow.GetSubDomain().GetFields());
 

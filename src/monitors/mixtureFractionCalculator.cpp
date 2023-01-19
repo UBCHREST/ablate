@@ -52,7 +52,7 @@ ablate::monitors::MixtureFractionCalculator::MixtureFractionCalculator(const std
     }
 
     // next determine mixFracMassCoeff
-    const auto& species = eos->GetSpecies();
+    const auto& species = eos->GetSpeciesVariables();
     zMixCoefficients.resize(species.size(), 0.0);
     for (std::size_t s = 0; s < species.size(); s++) {
         const auto& speciesName = species[s];
@@ -78,7 +78,7 @@ ablate::monitors::MixtureFractionCalculator::MixtureFractionCalculator(const std
 std::map<std::string, double> ablate::monitors::MixtureFractionCalculator::ToMassFractionMap(const std::shared_ptr<ablate::eos::EOS>& eos,
                                                                                              const std::shared_ptr<ablate::mathFunctions::FieldFunction>& massFractions) {
     // set up the memory
-    const auto& species = eos->GetSpecies();
+    const auto& species = eos->GetSpeciesVariables();
     std::vector<double> yiValues(species.size(), 0);
 
     // evaluate

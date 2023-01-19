@@ -193,16 +193,15 @@ INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, SGThermodynamicPropertyTestFixtur
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// EOS get species tests
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-TEST(StiffenedGasEOSTests, StiffenedGasShouldReportNoSpeciesByDefault) {
+TEST(StiffenedGasEOSTests, StiffenedGasShouldReportNoSpeciesEctByDefault) {
     // arrange
     auto parameters = std::make_shared<ablate::parameters::MapParameters>();
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::StiffenedGas>(parameters);
 
     // act
-    auto species = eos->GetSpecies();
-
-    // assert
-    ASSERT_EQ(0, species.size());
+    ASSERT_EQ(0, eos->GetSpeciesVariables().size());
+    ASSERT_EQ(0, eos->GetFieldFunctionProperties().size());
+    ASSERT_EQ(0, eos->GetProgressVariables().size());
 }
 
 TEST(StiffenedGasEOSTests, StiffenedGasShouldReportSpeciesWhenProvided) {
@@ -211,7 +210,7 @@ TEST(StiffenedGasEOSTests, StiffenedGasShouldReportSpeciesWhenProvided) {
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::StiffenedGas>(parameters, std::vector<std::string>{"N2", "H2"});
 
     // act
-    auto species = eos->GetSpecies();
+    auto species = eos->GetSpeciesVariables();
 
     // assert
     ASSERT_EQ(2, species.size());
