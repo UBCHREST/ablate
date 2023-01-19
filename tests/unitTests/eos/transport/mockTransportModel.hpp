@@ -28,7 +28,8 @@ class MockTransportModel : public ablate::eos::transport::TransportModel {
     MockTransportModel() {}
 
     MOCK_METHOD(ablate::eos::ThermodynamicFunction, GetTransportFunction, (ablate::eos::transport::TransportProperty, const std::vector<ablate::domain::Field>&), (const, override));
-    MOCK_METHOD(ablate::eos::ThermodynamicTemperatureFunction, GetTransportTemperatureFunction, (ablate::eos::transport::TransportProperty, const std::vector<ablate::domain::Field>&), (const, override));
+    MOCK_METHOD(ablate::eos::ThermodynamicTemperatureFunction, GetTransportTemperatureFunction, (ablate::eos::transport::TransportProperty, const std::vector<ablate::domain::Field>&),
+                (const, override));
 
     static ablate::eos::ThermodynamicFunction CreateMockThermodynamicFunction(std::function<void(const PetscReal[], PetscReal*)> function) {
         return ablate::eos::ThermodynamicFunction{.function = MockThermodynamicFunction, .context = std::make_shared<std::function<void(const PetscReal[], PetscReal*)>>(function)};
@@ -39,6 +40,6 @@ class MockTransportModel : public ablate::eos::transport::TransportModel {
                                                              .context = std::make_shared<std::function<void(const PetscReal[], PetscReal temperature, PetscReal*)>>(function)};
     }
 };
-}  // namespace ablateTesting::eos
+}  // namespace ablateTesting::eos::transport
 
 #endif  // ABLATELIBRARY_MOCKTRANSPORTMODEL_HPP
