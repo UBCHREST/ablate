@@ -10,7 +10,8 @@ timestepper:
     ts_max_time: 0.1463
     ts_dt: 1e-6
     ts_max_steps: 100
-    ts_adapt_type: physics # overwrite and set the time step based upon the CFL constraint
+    ts_adapt_type: physics
+    ts_adapt_safety: 1.0
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
     faces: [ 5 ]

@@ -1,4 +1,4 @@
-Timestep: 0000 time = 0        dt = 0.1
+Timestep: 0000 time = (.*) dt = (.*)<expects> <.1 <.1
 Timestep: 0001 time = (.*) dt = (.*)<expects> <.1 <.1
 Timestep: 0002 time = (.*) dt = (.*)<expects> <.1 <.1
 Timestep: 0003 time = (.*) dt = (.*)<expects> <.1 <.1

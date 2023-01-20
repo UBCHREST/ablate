@@ -136,7 +136,7 @@ void ablate::solver::TimeStepper::Solve() {
     if (adapt) {
         TSAdaptType adaptType;
         TSAdaptGetType(adapt, &adaptType) >> ablate::utilities::PetscUtilities::checkError;
-        if (auto adaptInitializer = adaptInitializers[std::string(adaptType)]){
+        if (auto adaptInitializer = adaptInitializers[std::string(adaptType)]) {
             adaptInitializer(ts, adapt);
         }
     }

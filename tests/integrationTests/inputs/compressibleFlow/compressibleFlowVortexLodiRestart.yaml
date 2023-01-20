@@ -48,6 +48,7 @@ timestepper:
     ts_adapt_type: physics # overwrite and set the time step based upon the CFL constraint
     ts_max_steps: 10
     ts_max_time: 0.002655211423
+    ts_adapt_safety: 1.0
 
     # the BoxMeshBoundaryCells domain adds an extra layer of boundary cells to the outside of the domain and
     # tags these cells with special labels

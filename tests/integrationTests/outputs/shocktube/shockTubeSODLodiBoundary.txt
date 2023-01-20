@@ -1,22 +1,22 @@
 Timestep: 0000 time = (.*) dt = (.*)<expects> =0       n1e-06
-Timestep: 0001 time = (.*) dt = (.*)<expects> n1e-06   n1e-06
-Timestep: 0002 time = (.*) dt = (.*)<expects> n0.04228 n0.0422838
-Timestep: 0003 time = (.*) dt = (.*)<expects> n0.0773  n0.035018
-Timestep: 0004 time = (.*) dt = (.*)<expects> n0.1091  n0.0317786
-Timestep: 0005 time = (.*) dt = (.*)<expects> n0.1393  n0.0302372
-Timestep: 0006 time = (.*) dt = (.*)<expects> n0.1687  n0.0293647
-Timestep: 0007 time = (.*) dt = (.*)<expects> n0.1975  n0.0288507
-Timestep: 0008 time = (.*) dt = (.*)<expects> n0.2261  n0.0285627
-Timestep: 0009 time = (.*) dt = (.*)<expects> n0.2545  n0.0284327
-Timestep: 0010 time = (.*) dt = (.*)<expects> n0.283   n0.0284215
-Timestep: 0011 time = (.*) dt = (.*)<expects> n0.3115  n0.0285047
-Timestep: 0012 time = (.*) dt = (.*)<expects> n0.3401  n0.0286659
-Timestep: 0013 time = (.*) dt = (.*)<expects> n0.369   n0.0288935
-Timestep: 0014 time = (.*) dt = (.*)<expects> n0.3982  n0.029179
-Timestep: 0015 time = (.*) dt = (.*)<expects> n0.4277  n0.0295155
+Timestep: 0001 time = (.*) dt = (.*)<expects> n1e-06   n0.0422838
+Timestep: 0002 time = (.*) dt = (.*)<expects> n0.04228 n0.035018
+Timestep: 0003 time = (.*) dt = (.*)<expects> n0.0773  n0.0317786
+Timestep: 0004 time = (.*) dt = (.*)<expects> n0.1091  n0.0302372
+Timestep: 0005 time = (.*) dt = (.*)<expects> n0.1393  n0.0293647
+Timestep: 0006 time = (.*) dt = (.*)<expects> n0.1687  n0.0288507
+Timestep: 0007 time = (.*) dt = (.*)<expects> n0.1975  n0.0285627
+Timestep: 0008 time = (.*) dt = (.*)<expects> n0.2261  n0.0284327
+Timestep: 0009 time = (.*) dt = (.*)<expects> n0.2545  n0.0284215
+Timestep: 0010 time = (.*) dt = (.*)<expects> n0.283   n0.0285047
+Timestep: 0011 time = (.*) dt = (.*)<expects> n0.3115  n0.0286659
+Timestep: 0012 time = (.*) dt = (.*)<expects> n0.3401  n0.0288935
+Timestep: 0013 time = (.*) dt = (.*)<expects> n0.369   n0.029179
+Timestep: 0014 time = (.*) dt = (.*)<expects> n0.3982  n0.0295155
+Timestep: 0015 time = (.*) dt = (.*)<expects> n0.4277  n0.0298973
 Timestep: 0016 time = (.*) dt = (.*)<expects> n0.4576  n0.0211965
-Timestep: 0017 time = (.*) dt = (.*)<expects> n0.4879  n0.0120734
-Timestep: 0018 time = (.*) dt = (.*)<expects> n0.5187  n0.0307774
+Timestep: 0017 time = (.*) dt = (.*)<expects> n0.4788  n0.0211965
+Timestep: 0018 time = (.*) dt = (.*)<expects> n0.5  n0.0309666
 ResultFiles:
 flow solver.0.curve
 flow solver.1.curve

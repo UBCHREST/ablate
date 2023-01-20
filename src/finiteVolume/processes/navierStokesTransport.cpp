@@ -288,7 +288,7 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeConduction
 
     // Get the valid cell range over this region
     solver::Range cellRange;
-    flow.GetCellRange(cellRange);
+    flow.GetCellRangeWithoutGhost(cellRange);
 
     // Get the solution data
     const PetscScalar* x;
@@ -367,7 +367,7 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeViscousDif
 
     // Get the valid cell range over this region
     solver::Range cellRange;
-    flow.GetCellRange(cellRange);
+    flow.GetCellRangeWithoutGhost(cellRange);
 
     // Get the solution data
     const PetscScalar* x;

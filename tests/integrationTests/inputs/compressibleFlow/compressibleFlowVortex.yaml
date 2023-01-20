@@ -16,6 +16,7 @@ timestepper:
     ts_type: rk
     ts_adapt_type: physics # overwrite and set the time step based upon the CFL constraint
     ts_max_steps: 25
+    ts_adapt_safety: 1.0
   # sets a single box domain with periodic boundary conditions
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
