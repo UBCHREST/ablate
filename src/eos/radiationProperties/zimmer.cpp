@@ -39,7 +39,6 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerFunction(const Pe
         kappaCO2 = kapparef * pow(10, kappaCO2);
 
         /** Computing the Planck mean absorption coefficient for CH4 and CO
-         * The relationship is different with enough significance to use different models above or below 750 K.
          * */
         for (int j = 0; j < 5; j++) {
             kappaCH4 += CH4_coeff.at(j) * pow(temperature, j);
@@ -107,7 +106,6 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerTemperatureFuncti
         kappaCO2 = kapparef * pow(10, kappaCO2);
 
         /** Computing the Planck mean absorption coefficient for CH4 and CO
-         * The relationship is different with enough significance to use different models above or below 750 K.
          * */
         for (int j = 0; j < 5; j++) {
             kappaCH4 += CH4_coeff.at(j) * pow(temperature, j);
