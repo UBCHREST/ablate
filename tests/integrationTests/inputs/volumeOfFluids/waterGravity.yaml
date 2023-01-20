@@ -80,7 +80,6 @@ solvers:
           eosR: *eosWater
       - !ablate::finiteVolume::processes::Gravity
         vector: [ -9.81 ]
-    computePhysicsTimeStep: true
     monitors:
       - !ablate::monitors::TimeStepMonitor
         log: !ablate::monitors::logs::CsvLog

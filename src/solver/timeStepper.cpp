@@ -1,7 +1,7 @@
 #include "timeStepper.hpp"
 #include <petscdm.h>
-#include "utilities/petscUtilities.hpp"
 #include "adaptPhysics.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::solver::TimeStepper::TimeStepper(std::shared_ptr<ablate::domain::Domain> domain, std::shared_ptr<ablate::parameters::Parameters> arguments, std::shared_ptr<io::Serializer> serializer,
                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions,
@@ -13,9 +13,7 @@ ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<abl
                                          std::shared_ptr<ablate::io::Serializer> serializerIn, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations,
                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances,
                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances, bool verboseSourceCheck)
-    : utilities::StaticInitializer([] {
-          AdaptPhysics::Register();
-      }),
+    : utilities::StaticInitializer([] { AdaptPhysics::Register(); }),
       name(nameIn.empty() ? "timeStepper" : nameIn),
       domain(domain),
       serializer(serializerIn),
@@ -120,8 +118,8 @@ void ablate::solver::TimeStepper::Initialize() {
         Vec solutionVec = domain->GetSolutionVector();
 
         // set the ts from options
-        TSSetFromOptions(ts) >> utilities::PetscUtilities::checkError;
         TSSetSolution(ts, solutionVec) >> utilities::PetscUtilities::checkError;
+        TSSetFromOptions(ts) >> utilities::PetscUtilities::checkError;
     }
     EndEvent();
 }
@@ -132,6 +130,16 @@ void ablate::solver::TimeStepper::Solve() {
 
     // Call initialize, this will only initialize if it has not been called
     Initialize();
+
+    TSAdapt adapt = nullptr;
+    TSGetAdapt(ts, &adapt) >> ablate::utilities::PetscUtilities::checkError;
+    if (adapt) {
+        TSAdaptType adaptType;
+        TSAdaptGetType(adapt, &adaptType) >> ablate::utilities::PetscUtilities::checkError;
+        if (auto adaptInitializer = adaptInitializers[std::string(adaptType)]){
+            adaptInitializer(ts, adapt);
+        }
+    }
 
     // Get the solution vector
     Vec solutionVec = domain->GetSolutionVector();
@@ -211,6 +219,9 @@ void ablate::solver::TimeStepper::Register(std::shared_ptr<ablate::solver::Solve
     }
     if (auto interface = std::dynamic_pointer_cast<BoundaryFunction>(solver)) {
         boundaryFunctionSolvers.push_back(interface);
+    }
+    if (auto interface = std::dynamic_pointer_cast<PhysicsTimeStepFunction>(solver)) {
+        physicsTimeStepFunctionSolvers.push_back(interface);
     }
 }
 
@@ -373,6 +384,23 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunction(TS ts, Pets
         timeStepper->domain->CheckFieldValues(F);
         timeStepper->EndEvent();
     }
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::solver::TimeStepper::ComputePhysicsTimeStep(PetscReal* dt) {
+    PetscFunctionBeginUser;
+    PetscReal localDtMin = PETSC_INFINITY;
+    try {
+        for (auto& timeStepFunction : physicsTimeStepFunctionSolvers) {
+            localDtMin = PetscMin(timeStepFunction->ComputePhysicsTimeStep(ts), localDtMin);
+        }
+    } catch (std::exception& exp) {
+        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exp.what());
+    }
+
+    // Take the global min
+    PetscCallMPI(MPI_Allreduce(&localDtMin, dt, 1, MPIU_REAL, MPIU_MIN, PetscObjectComm((PetscObject)ts)));
 
     PetscFunctionReturn(0);
 }

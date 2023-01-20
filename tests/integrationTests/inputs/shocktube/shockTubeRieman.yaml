@@ -10,7 +10,7 @@ timestepper:
     ts_max_time: 0.1463
     ts_dt: 1e-6
     ts_max_steps: 100
-    ts_adapt_type: none
+    ts_adapt_type: physics # overwrite and set the time step based upon the CFL constraint
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
     faces: [ 5 ]
@@ -40,7 +40,6 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
   id: SOD Problem
   parameters:
     cfl: .25
-  computePhysicsTimeStep: true
   eos: *eos
   fluxCalculator: !ablate::finiteVolume::fluxCalculator::Rieman
     eos: *eos

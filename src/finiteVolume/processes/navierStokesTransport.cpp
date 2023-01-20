@@ -218,7 +218,7 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeCflTimeSte
 
     // Get the valid cell range over this region
     solver::Range cellRange;
-    flow.GetCellRange(cellRange);
+    flow.GetCellRangeWithoutGhost(cellRange);
 
     const PetscScalar* x;
     VecGetArrayRead(v, &x) >> utilities::PetscUtilities::checkError;

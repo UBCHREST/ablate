@@ -20,7 +20,12 @@ namespace processes {
 class Process;
 }
 
-class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction, public io::Serializable, public solver::BoundaryFunction, private utilities::Loggable<FiniteVolumeSolver> {
+class FiniteVolumeSolver : public solver::CellSolver,
+                           public solver::RHSFunction,
+                           public io::Serializable,
+                           public solver::BoundaryFunction,
+                           public solver::PhysicsTimeStepFunction,
+                           private utilities::Loggable<FiniteVolumeSolver> {
    public:
     using PreRHSFunctionDefinition = PetscErrorCode (*)(const FiniteVolumeSolver&, TS ts, PetscReal time, bool initialStage, Vec locX, void* ctx);
     using RHSArbitraryFunction = PetscErrorCode (*)(const FiniteVolumeSolver&, DM dm, PetscReal time, Vec locXVec, Vec locFVec, void* ctx);
@@ -48,14 +53,10 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     std::vector<std::pair<PreRHSFunctionDefinition, void*>> preRhsFunctions;
 
     // functions to update the timestep
-    const bool computePhysicsTimeStep;
     std::vector<ComputeTimeStepDescription> timeStepFunctions;
 
     // Hold the flow processes.  This is mostly just to hold a pointer to them
     std::vector<std::shared_ptr<processes::Process>> processes;
-
-    // static function to update the flowfield
-    static void EnforceTimeStep(TS ts, ablate::solver::Solver& solver);
 
     // store the boundary conditions
     const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
@@ -71,7 +72,7 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
 
    public:
     FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<processes::Process>> flowProcesses,
-                       std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, bool computePhysicsTimeStep = false);
+                       std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions);
 
     /** SubDomain Register and Setup **/
     void Setup() override;
@@ -155,9 +156,14 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     void RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx, std::string name);
 
     /**
-     * Computes the individual time steps useful for output/debugging.  This does not enforce the time step
+     * Computes the individual time steps useful for output/debugging.
      */
-    std::map<std::string, double> ComputePhysicsTimeSteps(TS);
+    std::map<std::string, double> ComputePhysicsTimeSteps(TS) override;
+
+    /**
+     * Computes the physics based time step.  Each rank may return a different value, a global reduction will be done.
+     */
+    double ComputePhysicsTimeStep(TS) override;
 
     /**
      * Returns true if any of the processes are marked as serializable

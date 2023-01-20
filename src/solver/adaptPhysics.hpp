@@ -33,21 +33,20 @@ class AdaptPhysics {
      * @param adapt
      * @return
      */
-    static PetscErrorCode TSAdaptCreate(TSAdapt adapt) {
-        PetscFunctionBegin;
-        adapt->ops->choose = TSAdaptChoose;
+    static PetscErrorCode TSAdaptCreate(TSAdapt adapt);
 
-        // Set default behavior needed by the physics adapt
-        PetscCall(TSAdaptSetAlwaysAccept(adapt, PETSC_TRUE));
-
-        PetscFunctionReturn(0);
-    }
+    /**
+     * Compute the initial time step based upon physics
+     * @param adapt
+     * @return
+     */
+    static void AdaptInitializer(TS ts, TSAdapt adapt);
 
    public:
     /**
      * Function to register the ts adapt with petsc
      */
-    static void Register() { TSAdaptRegister(name, TSAdaptCreate) >> ablate::utilities::PetscUtilities::checkError; }
+    static void Register();
 
     /**
      * Prevent this class from being used in an non static way

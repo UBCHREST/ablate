@@ -7,7 +7,7 @@
 ablate::finiteVolume::processes::PressureGradientScaling::PressureGradientScaling(std::shared_ptr<eos::EOS> eos, double alphaInit, double domainLength, double maxAlphaAllowedIn,
                                                                                   double maxDeltaPressureFacIn, std::shared_ptr<ablate::monitors::logs::Log> log)
     : eos(std::move(eos)),
-      maxAlphaAllowed(maxAlphaAllowedIn > 1.0 ? maxAlphaAllowedIn : 100.0),
+      maxAlphaAllowed(maxAlphaAllowedIn >= 1.0 ? maxAlphaAllowedIn : 100.0),
       maxDeltaPressureFac(maxDeltaPressureFacIn > 0.0 ? maxDeltaPressureFacIn : 0.05),
       domainLength(domainLength),
       log(std::move(log)),

@@ -15,7 +15,7 @@ timestepper:
     interval: 0
   arguments:
     ts_type: rk
-    ts_adapt_type: none
+    ts_adapt_type: physics # overwrite and set the time step based upon the CFL constraint
     ts_max_steps: 10
 
   # the domain/mesh must be specified at the start of a simulation
@@ -95,7 +95,6 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
     name: fluidFlow
   parameters:
     cfl: 0.25
-  computePhysicsTimeStep: true
   fluxCalculator: !ablate::finiteVolume::fluxCalculator::Ausm
   transport: !ablate::eos::transport::Sutherland
     eos: *eos

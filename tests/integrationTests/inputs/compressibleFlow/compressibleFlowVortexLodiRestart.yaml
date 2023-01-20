@@ -45,7 +45,7 @@ timestepper:
   # time stepper specific input arguments.
   arguments:
     ts_type: rk
-    ts_adapt_type: none # dynamic time step adapting is turned off so that computePhysicsTimeStep is used
+    ts_adapt_type: physics # overwrite and set the time step based upon the CFL constraint
     ts_max_steps: 10
     ts_max_time: 0.002655211423
 
@@ -142,8 +142,6 @@ solvers:
     # share the existing eos with the compressible flow solver
     eos: *eos
 
-    # overwrite and set the time step based upon the CFL constraint
-    computePhysicsTimeStep: true
   # use a boundary solver to update the cells in the boundaryCellsLeft region to represent an inlet
   - !ablate::boundarySolver::BoundarySolver
     id: inlet

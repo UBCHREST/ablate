@@ -14,7 +14,7 @@ timestepper:
   # time stepper specific input arguments.  By default, the time stepper will use TSADAPTBASIC
   arguments:
     ts_type: rk
-    ts_adapt_type: none
+    ts_adapt_type: physics # overwrite and set the time step based upon the CFL constraint
     ts_max_steps: 25
   # sets a single box domain with periodic boundary conditions
   domain: !ablate::domain::BoxMesh
@@ -62,9 +62,6 @@ timestepper:
 # this problem uses a single solver (!ablate::finiteVolume::CompressibleFlowSolver)
 solver: !ablate::finiteVolume::CompressibleFlowSolver
   id: vortexFlowField
-
-  # overwrite and set the time step based upon the CFL constraint
-  computePhysicsTimeStep: true
 
   # a flux calculator must be specified to so solver for advection
   fluxCalculator: !ablate::finiteVolume::fluxCalculator::Ausm
