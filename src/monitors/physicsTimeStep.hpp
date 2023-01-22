@@ -2,10 +2,10 @@
 #define ABLATELIBRARY_PHYSICSTIMESTEP_HPP
 
 #include <memory>
-#include "finiteVolume/finiteVolumeSolver.hpp"
 #include "io/interval/interval.hpp"
 #include "monitor.hpp"
 #include "monitors/logs/log.hpp"
+#include "solver/physicsTimeStepFunction.hpp"
 
 namespace ablate::monitors {
 
@@ -17,7 +17,7 @@ class PhysicsTimeStep : public Monitor {
     static PetscErrorCode ReportPhysicsTimeStep(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx);
     const std::shared_ptr<logs::Log> log;
     const std::shared_ptr<io::interval::Interval> interval;
-    std::shared_ptr<ablate::finiteVolume::FiniteVolumeSolver> fvmSolver;
+    std::shared_ptr<ablate::solver::PhysicsTimeStepFunction> solver;
 
    public:
     explicit PhysicsTimeStep(std::shared_ptr<logs::Log> log = {}, std::shared_ptr<io::interval::Interval> interval = {});

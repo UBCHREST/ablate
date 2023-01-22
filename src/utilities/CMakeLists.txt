@@ -18,4 +18,5 @@ target_sources(ablateLibrary
         temporaryWorkingDirectory.hpp
         constants.hpp
         stringUtilities.hpp
+        staticInitializer.hpp
         )

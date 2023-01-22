@@ -10,7 +10,8 @@ timestepper:
     ts_max_time: 0.5
     ts_dt: 1e-6
     ts_max_steps: 1000000
-    ts_adapt_type: none
+    ts_adapt_type: physics
+    ts_adapt_safety: 1.0
   domain: !ablate::domain::BoxMeshBoundaryCells
     name: simpleBoxField
     faces: [ 5 ]
@@ -43,7 +44,6 @@ solvers:
     parameters:
       cfl: .25
     eos: *eos
-    computePhysicsTimeStep: true
     fluxCalculator: !ablate::finiteVolume::fluxCalculator::Rieman
       eos: *eos
     monitors:

@@ -327,7 +327,7 @@ double ablate::finiteVolume::processes::SpeciesTransport::ComputeViscousDiffusio
 
     // Get the valid cell range over this region
     solver::Range cellRange;
-    flow.GetCellRange(cellRange);
+    flow.GetCellRangeWithoutGhost(cellRange);
 
     // Get the solution data
     const PetscScalar *x;

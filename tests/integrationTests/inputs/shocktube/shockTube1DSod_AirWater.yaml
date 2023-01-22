@@ -70,7 +70,7 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
       fluxCalculatorLiquidLiquid: !ablate::finiteVolume::fluxCalculator::RiemannStiff
         eosL: *eosWater
         eosR: *eosWater
-  computePhysicsTimeStep: true
+
   boundaryConditions:
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "air walls euler"
