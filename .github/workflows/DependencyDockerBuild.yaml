@@ -58,6 +58,7 @@ jobs:
                --load \
                --tag $IMAGE_ID:latest \
                --file DockerDependencyFile
+          
                #                      --platform ${{matrix.arch.platform}} \
                
                docker image inspect $IMAGE_ID:latest
