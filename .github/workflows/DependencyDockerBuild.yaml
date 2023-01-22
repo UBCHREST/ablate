@@ -44,27 +44,25 @@ jobs:
 
       - name: Build image
         run: |
-               # define the image id and petsc image id
-               PETSC_IMAGE_ID=$PETSC_IMAGE_NAME${{matrix.compiler.id}}${{matrix.indices.id}}:latest
-               IMAGE_ID=ghcr.io/${{ github.repository }}/$IMAGE_NAME${{matrix.compiler.id}}${{matrix.indices.id}}${{matrix.arch.id}}
-               IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
-               
-               echo IMAGE_ID=$IMAGE_ID
-               echo PETSC_IMAGE_ID=$PETSC_IMAGE_ID
-               
-               # Build the image
-               docker buildx build .\
-               --build-arg PETSC_BASE_IMAGE=${PETSC_IMAGE_ID} \
-               --load \
-               --tag $IMAGE_ID:latest \
-               --file DockerDependencyFile
+          # define the image id and petsc image id
+          PETSC_IMAGE_ID=$PETSC_IMAGE_NAME${{matrix.compiler.id}}${{matrix.indices.id}}:latest
+          IMAGE_ID=ghcr.io/${{ github.repository }}/$IMAGE_NAME${{matrix.compiler.id}}${{matrix.indices.id}}${{matrix.arch.id}}
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+
+          echo IMAGE_ID=$IMAGE_ID
+          echo PETSC_IMAGE_ID=$PETSC_IMAGE_ID
+
+          # Build the image
+          docker buildx build .\
+            --build-arg PETSC_BASE_IMAGE=${PETSC_IMAGE_ID} \
+            --load \
+            --tag $IMAGE_ID:latest \
+            --file DockerDependencyFile 
           
-               #                      --platform ${{matrix.arch.platform}} \
-               
-               docker image inspect $IMAGE_ID:latest
-  
-  
-  # Push the latest tag if everything build
+          docker image inspect $IMAGE_ID:latest
+          #                      --platform ${{matrix.arch.platform}} \
+
+# Push the latest tag if everything build
 #  push-latest:
 #    needs: [build]
 #    runs-on: ubuntu-latest
