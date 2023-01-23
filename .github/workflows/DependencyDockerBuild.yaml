@@ -52,11 +52,12 @@ jobs:
 
           # Build the image
           docker buildx build .\
+            --provenance false \
             --build-arg PETSC_BASE_IMAGE=${PETSC_IMAGE_ID} \
             --push \
             --tag $IMAGE_ID:latest \
-            --file DockerDependencyFile 
-  
+            --file DockerDependencyFile
+
   # Push the latest tag if everything build
   push-latest:
     needs: [build]
