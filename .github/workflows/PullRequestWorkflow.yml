@@ -38,6 +38,7 @@ jobs:
           ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies${{matrix.compiler.id}}${{matrix.indices.id}}:latest
 
           docker buildx build .\
+            --provenance=false \
             --file DockerTestFile \
             --tag framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} \
             --build-arg PETSC_BUILD_ARCH='${{ matrix.petscConfig }}' \
