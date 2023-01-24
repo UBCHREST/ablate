@@ -4,7 +4,6 @@
 #include <memory>
 #include <vector>
 #include "MpiTestFixture.hpp"
-#include "PetscTestErrorChecker.hpp"
 #include "convergenceTester.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
@@ -22,7 +21,6 @@
 #include "monitors/solutionErrorMonitor.hpp"
 #include "parameters/mapParameters.hpp"
 #include "solver/timeStepper.hpp"
-#include "utilities/petscOptions.hpp"
 #include "utilities/petscUtilities.hpp"
 
 typedef struct {
@@ -77,7 +75,6 @@ static PetscErrorCode ComputeEulerExact(PetscInt dim, PetscReal time, const Pets
 }
 TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
-        PetscErrorCode ierr;
 
         // initialize petsc and mpi
         ablate::environment::RunEnvironment::Initialize(argc, argv);
@@ -95,15 +92,15 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
             PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %" PetscInt_FMT "\n", l);
 
             // setup any global arguments
-            ablate::utilities::PetscOptionsUtils::Set({{"dm_plex_separate_marker", ""}, {"petsclimiter_type", "none"}});
+            ablate::utilities::PetscUtilities::Set({{"dm_plex_separate_marker", ""}, {"petsclimiter_type", "none"}});
 
             PetscInt initialNx = GetParam().initialNx;
 
             // create a mock eos
             std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
             auto species = std::vector<std::string>();
-            EXPECT_CALL(*eos, GetSpecies()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(species));
-            EXPECT_CALL(*eos, GetExtraVariables()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(ablate::utilities::VectorUtilities::Empty<std::string>));
+            EXPECT_CALL(*eos, GetSpeciesVariables()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(species));
+            EXPECT_CALL(*eos, GetProgressVariables()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(ablate::utilities::VectorUtilities::Empty<std::string>));
             EXPECT_CALL(*eos, GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Temperature, testing::_))
                 .Times(::testing::AtLeast(1))
                 .WillRepeatedly(

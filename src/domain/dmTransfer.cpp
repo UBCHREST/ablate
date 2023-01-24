@@ -1,12 +1,12 @@
 #include "dmTransfer.hpp"
 
 #include <utility>
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 static std::string getPetscObjectName(DM dm) {
     const char* name;
-    PetscObjectName((PetscObject)dm) >> ablate::checkError;
-    PetscObjectGetName((PetscObject)dm, &name) >> ablate::checkError;
+    PetscObjectName((PetscObject)dm) >> ablate::utilities::PetscUtilities::checkError;
+    PetscObjectGetName((PetscObject)dm, &name) >> ablate::utilities::PetscUtilities::checkError;
     return {name};
 }
 
@@ -16,6 +16,6 @@ ablate::domain::DMTransfer::DMTransfer(DM dm, std::vector<std::shared_ptr<FieldD
 
 ablate::domain::DMTransfer::~DMTransfer() {
     if (dm) {
-        DMDestroy(&dm) >> checkError;
+        DMDestroy(&dm) >> utilities::PetscUtilities::checkError;
     }
 }

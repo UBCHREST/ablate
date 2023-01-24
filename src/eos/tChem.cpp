@@ -334,10 +334,8 @@ PetscErrorCode ablate::eos::TChem::PressureFunction(const PetscReal *conserved, 
     PetscFunctionBeginUser;
 
     PetscReal temperature;
-    PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
-    CHKERRQ(ierr);
-    ierr = PressureTemperatureFunction(conserved, temperature, pressure, ctx);
-    CHKERRQ(ierr);
+    PetscCall(TemperatureFunction(conserved, &temperature, ctx));
+    PetscCall(PressureTemperatureFunction(conserved, temperature, pressure, ctx));
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::TChem::PressureTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *pressure, void *ctx) {
@@ -365,10 +363,8 @@ PetscErrorCode ablate::eos::TChem::PressureMassFractionFunction(const PetscReal 
     PetscFunctionBeginUser;
 
     PetscReal temperature;
-    PetscErrorCode ierr = TemperatureMassFractionFunction(conserved, yi, &temperature, ctx);
-    CHKERRQ(ierr);
-    ierr = PressureTemperatureMassFractionFunction(conserved, yi, temperature, pressure, ctx);
-    CHKERRQ(ierr);
+    PetscCall(TemperatureMassFractionFunction(conserved, yi, &temperature, ctx));
+    PetscCall(PressureTemperatureMassFractionFunction(conserved, yi, temperature, pressure, ctx));
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::TChem::PressureTemperatureMassFractionFunction(const PetscReal *conserved, const PetscReal *yi, PetscReal temperature, PetscReal *pressure, void *ctx) {
@@ -395,10 +391,8 @@ PetscErrorCode ablate::eos::TChem::PressureTemperatureMassFractionFunction(const
 PetscErrorCode ablate::eos::TChem::SensibleEnthalpyFunction(const PetscReal *conserved, PetscReal *sensibleEnthalpy, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal temperature;
-    PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
-    CHKERRQ(ierr);
-    ierr = SensibleEnthalpyTemperatureFunction(conserved, temperature, sensibleEnthalpy, ctx);
-    CHKERRQ(ierr);
+    PetscCall(TemperatureFunction(conserved, &temperature, ctx));
+    PetscCall(SensibleEnthalpyTemperatureFunction(conserved, temperature, sensibleEnthalpy, ctx));
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::TChem::SensibleEnthalpyTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *sensibleEnthalpy, void *ctx) {
@@ -429,10 +423,8 @@ PetscErrorCode ablate::eos::TChem::SensibleEnthalpyTemperatureFunction(const Pet
 PetscErrorCode ablate::eos::TChem::SensibleEnthalpyMassFractionFunction(const PetscReal *conserved, const PetscReal *yi, PetscReal *sensibleEnthalpy, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal temperature;
-    PetscErrorCode ierr = TemperatureMassFractionFunction(conserved, yi, &temperature, ctx);
-    CHKERRQ(ierr);
-    ierr = SensibleEnthalpyTemperatureMassFractionFunction(conserved, yi, temperature, sensibleEnthalpy, ctx);
-    CHKERRQ(ierr);
+    PetscCall(TemperatureMassFractionFunction(conserved, yi, &temperature, ctx));
+    PetscCall(SensibleEnthalpyTemperatureMassFractionFunction(conserved, yi, temperature, sensibleEnthalpy, ctx));
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::TChem::SensibleEnthalpyTemperatureMassFractionFunction(const PetscReal *conserved, const PetscReal *yi, PetscReal temperature, PetscReal *sensibleEnthalpy, void *ctx) {
@@ -463,10 +455,8 @@ PetscErrorCode ablate::eos::TChem::SensibleEnthalpyTemperatureMassFractionFuncti
 PetscErrorCode ablate::eos::TChem::SpeedOfSoundFunction(const PetscReal *conserved, PetscReal *speedOfSound, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal temperature;
-    PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
-    CHKERRQ(ierr);
-    ierr = SpeedOfSoundTemperatureFunction(conserved, temperature, speedOfSound, ctx);
-    CHKERRQ(ierr);
+    PetscCall(TemperatureFunction(conserved, &temperature, ctx));
+    PetscCall(SpeedOfSoundTemperatureFunction(conserved, temperature, speedOfSound, ctx));
     PetscFunctionReturn(0);
 }
 
@@ -493,10 +483,8 @@ PetscErrorCode ablate::eos::TChem::SpeedOfSoundTemperatureFunction(const PetscRe
 PetscErrorCode ablate::eos::TChem::SpeedOfSoundMassFractionFunction(const PetscReal *conserved, const PetscReal *yi, PetscReal *speedOfSound, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal temperature;
-    PetscErrorCode ierr = TemperatureMassFractionFunction(conserved, yi, &temperature, ctx);
-    CHKERRQ(ierr);
-    ierr = SpeedOfSoundTemperatureMassFractionFunction(conserved, yi, temperature, speedOfSound, ctx);
-    CHKERRQ(ierr);
+    PetscCall(TemperatureMassFractionFunction(conserved, yi, &temperature, ctx));
+    PetscCall(SpeedOfSoundTemperatureMassFractionFunction(conserved, yi, temperature, speedOfSound, ctx));
     PetscFunctionReturn(0);
 }
 
@@ -523,10 +511,8 @@ PetscErrorCode ablate::eos::TChem::SpeedOfSoundTemperatureMassFractionFunction(c
 PetscErrorCode ablate::eos::TChem::SpecificHeatConstantPressureFunction(const PetscReal *conserved, PetscReal *cp, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal temperature;
-    PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
-    CHKERRQ(ierr);
-    ierr = SpecificHeatConstantPressureTemperatureFunction(conserved, temperature, cp, ctx);
-    CHKERRQ(ierr);
+    PetscCall(TemperatureFunction(conserved, &temperature, ctx));
+    PetscCall(SpecificHeatConstantPressureTemperatureFunction(conserved, temperature, cp, ctx));
     PetscFunctionReturn(0);
 }
 
@@ -554,10 +540,8 @@ PetscErrorCode ablate::eos::TChem::SpecificHeatConstantPressureTemperatureFuncti
 PetscErrorCode ablate::eos::TChem::SpecificHeatConstantPressureMassFractionFunction(const PetscReal *conserved, const PetscReal *yi, PetscReal *cp, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal temperature;
-    PetscErrorCode ierr = TemperatureMassFractionFunction(conserved, yi, &temperature, ctx);
-    CHKERRQ(ierr);
-    ierr = SpecificHeatConstantPressureTemperatureMassFractionFunction(conserved, yi, temperature, cp, ctx);
-    CHKERRQ(ierr);
+    PetscCall(TemperatureMassFractionFunction(conserved, yi, &temperature, ctx));
+    PetscCall(SpecificHeatConstantPressureTemperatureMassFractionFunction(conserved, yi, temperature, cp, ctx));
     PetscFunctionReturn(0);
 }
 
@@ -585,10 +569,8 @@ PetscErrorCode ablate::eos::TChem::SpecificHeatConstantPressureTemperatureMassFr
 PetscErrorCode ablate::eos::TChem::SpecificHeatConstantVolumeFunction(const PetscReal *conserved, PetscReal *cv, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal temperature;
-    PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
-    CHKERRQ(ierr);
-    ierr = SpecificHeatConstantVolumeTemperatureFunction(conserved, temperature, cv, ctx);
-    CHKERRQ(ierr);
+    PetscCall(TemperatureFunction(conserved, &temperature, ctx));
+    PetscCall(SpecificHeatConstantVolumeTemperatureFunction(conserved, temperature, cv, ctx));
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::TChem::SpecificHeatConstantVolumeTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *cv, void *ctx) {
@@ -614,10 +596,8 @@ PetscErrorCode ablate::eos::TChem::SpecificHeatConstantVolumeTemperatureFunction
 PetscErrorCode ablate::eos::TChem::SpecificHeatConstantVolumeMassFractionFunction(const PetscReal *conserved, const PetscReal *yi, PetscReal *cv, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal temperature;
-    PetscErrorCode ierr = TemperatureMassFractionFunction(conserved, yi, &temperature, ctx);
-    CHKERRQ(ierr);
-    ierr = SpecificHeatConstantVolumeTemperatureMassFractionFunction(conserved, yi, temperature, cv, ctx);
-    CHKERRQ(ierr);
+    PetscCall(TemperatureMassFractionFunction(conserved, yi, &temperature, ctx));
+    PetscCall(SpecificHeatConstantVolumeTemperatureMassFractionFunction(conserved, yi, temperature, cv, ctx));
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::TChem::SpecificHeatConstantVolumeTemperatureMassFractionFunction(const PetscReal *conserved, const PetscReal *yi, PetscReal temperature, PetscReal *cv, void *ctx) {
@@ -642,10 +622,8 @@ PetscErrorCode ablate::eos::TChem::SpecificHeatConstantVolumeTemperatureMassFrac
 PetscErrorCode ablate::eos::TChem::SpeciesSensibleEnthalpyFunction(const PetscReal *conserved, PetscReal *hi, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal temperature;
-    PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
-    CHKERRQ(ierr);
-    ierr = SpeciesSensibleEnthalpyTemperatureFunction(conserved, temperature, hi, ctx);
-    CHKERRQ(ierr);
+    PetscCall(TemperatureFunction(conserved, &temperature, ctx));
+    PetscCall(SpeciesSensibleEnthalpyTemperatureFunction(conserved, temperature, hi, ctx));
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::TChem::SpeciesSensibleEnthalpyTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal *hi, void *ctx) {
@@ -675,10 +653,8 @@ PetscErrorCode ablate::eos::TChem::SpeciesSensibleEnthalpyTemperatureFunction(co
 PetscErrorCode ablate::eos::TChem::SpeciesSensibleEnthalpyMassFractionFunction(const PetscReal *conserved, const PetscReal *yi, PetscReal *hi, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal temperature;
-    PetscErrorCode ierr = TemperatureMassFractionFunction(conserved, yi, &temperature, ctx);
-    CHKERRQ(ierr);
-    ierr = SpeciesSensibleEnthalpyTemperatureMassFractionFunction(conserved, yi, temperature, hi, ctx);
-    CHKERRQ(ierr);
+    PetscCall(TemperatureMassFractionFunction(conserved, yi, &temperature, ctx));
+    PetscCall(SpeciesSensibleEnthalpyTemperatureMassFractionFunction(conserved, yi, temperature, hi, ctx));
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::TChem::SpeciesSensibleEnthalpyTemperatureMassFractionFunction(const PetscReal conserved[], const PetscReal *yi, PetscReal temperature, PetscReal *hi, void *ctx) {
@@ -751,7 +727,12 @@ void ablate::eos::TChem::FillWorkingVectorFromMassFractions(double density, doub
     }
 }
 
-ablate::eos::FieldFunction ablate::eos::TChem::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1, ablate::eos::ThermodynamicProperty property2) const {
+ablate::eos::EOSFunction ablate::eos::TChem::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1, ablate::eos::ThermodynamicProperty property2,
+                                                                      std::vector<std::string> otherProperties) const {
+    if (otherProperties != std::vector<std::string>{YI}) {
+        throw std::invalid_argument("ablate::eos::TChem expects the other properties to be Yi (Species Mass Fractions)");
+    }
+
     if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field) {
         if ((property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) ||
             (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature)) {
@@ -885,7 +866,7 @@ ablate::eos::FieldFunction ablate::eos::TChem::GetFieldFunctionFunction(const st
             }
         }
 
-        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::PerfectGas.");
+        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::TChem.");
     } else if (finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD == field) {
         if ((property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) ||
             (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature)) {
@@ -991,9 +972,9 @@ ablate::eos::FieldFunction ablate::eos::TChem::GetFieldFunctionFunction(const st
             }
         }
 
-        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::PerfectGas.");
+        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::TChem.");
     } else {
-        throw std::invalid_argument("Unknown field type " + field + " for ablate::eos::PerfectGas.");
+        throw std::invalid_argument("Unknown field type " + field + " for ablate::eos::TChem.");
     }
 }
 

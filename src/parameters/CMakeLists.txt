@@ -5,6 +5,7 @@ target_sources(ablateLibrary
         factoryParameters.cpp
         petscOptionParameters.cpp
         petscPrefixOptions.cpp
+
         PUBLIC
         parameters.hpp
         parameterException.hpp
@@ -12,4 +13,5 @@ target_sources(ablateLibrary
         factoryParameters.hpp
         petscOptionParameters.hpp
         petscPrefixOptions.hpp
+        emptyParameters.hpp
         )

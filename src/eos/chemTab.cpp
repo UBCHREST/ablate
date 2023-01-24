@@ -1,13 +1,14 @@
 #include "chemTab.hpp"
-#include <yaml-cpp/yaml.h>
-#include <algorithm>
+
 #include <eos/tChem.hpp>
 #include <fstream>
+
+#ifdef WITH_TENSORFLOW
+#include <yaml-cpp/yaml.h>
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include "finiteVolume/compressibleFlowFields.hpp"
-
-#ifdef WITH_TENSORFLOW
 
 void NoOpDeallocator(void *data, size_t a, void *b) {}
 
@@ -78,6 +79,17 @@ ablate::eos::ChemTab::ChemTab(std::filesystem::path path) : ChemistryModel("abla
     // create a reference equation of state given the mechanism provided in the metedata file
     const std::string mechanismPath = path / metadata["mechanism"].as<std::string>();
     referenceEOS = std::make_shared<ablate::eos::TChem>(mechanismPath);
+
+    // make sure that the species list is the same
+    auto &referenceEOSSpecies = referenceEOS->GetSpeciesVariables();
+    if (referenceEOSSpecies.size() != speciesNames.size()) {
+        throw std::invalid_argument("The ReferenceEOS species and chemTab species are expected to be the same.");
+    }
+    for (std::size_t s = 0; s < speciesNames.size(); s++) {
+        if (speciesNames[s] != referenceEOSSpecies[s]) {
+            throw std::invalid_argument("The ReferenceEOS species and chemTab species are expected to be the same.");
+        }
+    }
 }
 
 ablate::eos::ChemTab::~ChemTab() {
@@ -148,7 +160,8 @@ void ablate::eos::ChemTab::LoadBasisVectors(std::istream &inputStream, std::size
     }
 }
 
-void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal *progressVariables, std::size_t progressVariablesSize, PetscReal *massFractions, std::size_t massFractionsSize) const {
+void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal *progressVariables, std::size_t progressVariablesSize, PetscReal *massFractions, std::size_t massFractionsSize,
+                                                PetscReal density) const {
     // y = inv(W)'C
     // for now the mass fractions will be obtained using the inverse of the
     // weights. Will be replaced by a ML predictive model in the next iteration
@@ -165,7 +178,7 @@ void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal *progressVariabl
             "The massFractions size does not match the "
             "supported number of species");
     }
-    ComputeMassFractions(speciesNames.size(), progressVariablesNames.size(), iWmat, progressVariables, massFractions);
+    ComputeMassFractions(speciesNames.size(), progressVariablesNames.size(), iWmat, progressVariables, massFractions, density);
 }
 
 void ablate::eos::ChemTab::ComputeMassFractions(std::size_t numSpecies, std::size_t numProgressVariables, PetscReal **iWmat, const PetscReal *progressVariables, PetscReal *massFractions,
@@ -282,19 +295,15 @@ std::shared_ptr<ablate::eos::ChemistryModel::SourceCalculator> ablate::eos::Chem
         throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
     }
 
-    auto densityEvField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD; });
-    if (densityEvField == fields.end()) {
-        throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD Field");
+    auto densityProgressField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD; });
+    if (densityProgressField == fields.end()) {
+        throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD Field");
     }
 
-    auto zMixIter = std::find(densityEvField->components.begin(), densityEvField->components.end(), "zmix");
-    if (zMixIter == densityEvField->components.end()) {
-        throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD Field contain zMix and other progress variables");
-    }
-    auto zMixOffset = densityEvField->offset + std::distance(densityEvField->components.begin(), zMixIter);
-
-    return std::make_shared<ChemTabSourceCalculator>(
-        eulerField->offset + ablate::finiteVolume::CompressibleFlowFields::RHO, eulerField->offset + ablate::finiteVolume::CompressibleFlowFields::RHOE, zMixOffset, shared_from_this());
+    return std::make_shared<ChemTabSourceCalculator>(eulerField->offset + ablate::finiteVolume::CompressibleFlowFields::RHO,
+                                                     eulerField->offset + ablate::finiteVolume::CompressibleFlowFields::RHOE,
+                                                     densityProgressField->offset,
+                                                     shared_from_this());
 }
 PetscErrorCode ablate::eos::ChemTab::ChemTabThermodynamicFunction(const PetscReal *conserved, PetscReal *property, void *ctx) {
     PetscFunctionBeginUser;
@@ -304,7 +313,7 @@ PetscErrorCode ablate::eos::ChemTab::ChemTabThermodynamicFunction(const PetscRea
     ComputeMassFractions(functionContext->numberSpecies,
                          functionContext->numberProgressVariables,
                          functionContext->iWmat,
-                         conserved + functionContext->zMixOffset,
+                         conserved + functionContext->progressOffset,
                          functionContext->yiScratch.data(),
                          conserved[functionContext->densityOffset]);
 
@@ -322,7 +331,7 @@ PetscErrorCode ablate::eos::ChemTab::ChemTabThermodynamicTemperatureFunction(con
     ComputeMassFractions(functionContext->numberSpecies,
                          functionContext->numberProgressVariables,
                          functionContext->iWmat,
-                         conserved + functionContext->zMixOffset,
+                         conserved + functionContext->progressOffset,
                          functionContext->yiScratch.data(),
                          conserved[functionContext->densityOffset]);
 
@@ -331,6 +340,7 @@ PetscErrorCode ablate::eos::ChemTab::ChemTabThermodynamicTemperatureFunction(con
 
     PetscFunctionReturn(0);
 }
+
 ablate::eos::ThermodynamicFunction ablate::eos::ChemTab::GetThermodynamicFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
     // Look for the euler field
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
@@ -338,27 +348,81 @@ ablate::eos::ThermodynamicFunction ablate::eos::ChemTab::GetThermodynamicFunctio
         throw std::invalid_argument("The ablate::eos::TChem requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
     }
 
-    auto densityEvField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD; });
-    if (densityEvField == fields.end()) {
-        throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD Field");
+    auto densityProgressField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD; });
+    if (densityProgressField == fields.end()) {
+        throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD Field");
     }
-
-    auto zMixIter = std::find(densityEvField->components.begin(), densityEvField->components.end(), "zmix");
-    if (zMixIter == densityEvField->components.end()) {
-        throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD Field contain zMix and other progress variables");
-    }
-    auto zMixOffset = densityEvField->offset + std::distance(densityEvField->components.begin(), zMixIter);
 
     return ThermodynamicFunction{
         .function = ChemTabThermodynamicFunction,
         .context = std::make_shared<ThermodynamicFunctionContext>(ThermodynamicFunctionContext{.numberSpecies = speciesNames.size(),
                                                                                                .numberProgressVariables = progressVariablesNames.size(),
                                                                                                .densityOffset = eulerField->offset + (std::size_t)ablate::finiteVolume::CompressibleFlowFields::RHO,
-                                                                                               .zMixOffset = (std::size_t)zMixOffset,
+                                                                                               .progressOffset = (std::size_t)densityProgressField->offset,
                                                                                                .yiScratch = std::vector<PetscReal>(speciesNames.size()),
                                                                                                .tChemFunction = referenceEOS->GetThermodynamicMassFractionFunction(property, fields),
                                                                                                .iWmat = iWmat})};
 }
+
+ablate::eos::EOSFunction ablate::eos::ChemTab::GetFieldFunctionFunction(const std::string &field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2,
+                                                                        std::vector<std::string> otherProperties) const {
+    if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field && otherProperties == std::vector<std::string>{YI}) {
+        return referenceEOS->GetFieldFunctionFunction(field, property1, property2, otherProperties);
+    } else if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field && otherProperties == std::vector<std::string>{PROGRESS}) {
+        auto eulerFunction = referenceEOS->GetFieldFunctionFunction(finiteVolume::CompressibleFlowFields::EULER_FIELD, property1, property2, {YI});
+
+        return [=](PetscReal property1, PetscReal property2, PetscInt dim, const PetscReal velocity[], const PetscReal progress[], PetscReal conserved[]) {
+            // Compute the mass fractions from progress
+            std::vector<PetscReal> yi(speciesNames.size());
+
+            // compute the progress variables and put into conserved for now
+            ComputeMassFractions(progress, progressVariablesNames.size(), yi.data(), speciesNames.size());
+
+            // Scale the progress variables by density
+            eulerFunction(property1, property2, dim, velocity, yi.data(), conserved);
+        };
+    } else if (finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD == field && otherProperties == std::vector<std::string>{YI}) {
+        // get the euler field because we need density
+        auto eulerFunction = referenceEOS->GetFieldFunctionFunction(finiteVolume::CompressibleFlowFields::EULER_FIELD, property1, property2, otherProperties);
+
+        return [=](PetscReal property1, PetscReal property2, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+            // Compute euler
+            PetscReal euler[ablate::finiteVolume::CompressibleFlowFields::RHOW + 1];  // Max size for euler
+            eulerFunction(property1, property2, dim, velocity, yi, euler);
+
+            // compute the progress variables and put into conserved for now
+            ComputeProgressVariables(yi, speciesNames.size(), conserved, progressVariablesNames.size());
+
+            // Scale the progress variables by density
+            for (std::size_t p = 0; p < progressVariablesNames.size(); p++) {
+                conserved[p] *= euler[ablate::finiteVolume::CompressibleFlowFields::RHO];
+            }
+        };
+    } else if (finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD == field && otherProperties == std::vector<std::string>{PROGRESS}) {
+        // get the euler field because we need density
+        auto eulerFunction = referenceEOS->GetFieldFunctionFunction(finiteVolume::CompressibleFlowFields::EULER_FIELD, property1, property2, {YI});
+
+        return [=](PetscReal property1, PetscReal property2, PetscInt dim, const PetscReal velocity[], const PetscReal progress[], PetscReal conserved[]) {
+            // Compute the mass fractions from progress
+            PetscReal yi[speciesNames.size()];
+
+            // compute the progress variables and put into conserved for now
+            ComputeMassFractions(progress, progressVariablesNames.size(), yi, speciesNames.size());
+
+            // Compute euler
+            PetscReal euler[ablate::finiteVolume::CompressibleFlowFields::RHOW + 1];  // Max size for euler
+            eulerFunction(property1, property2, dim, velocity, yi, euler);
+
+            // Scale the progress variables by density
+            for (std::size_t p = 0; p < progressVariablesNames.size(); p++) {
+                conserved[p] = euler[ablate::finiteVolume::CompressibleFlowFields::RHO] * progress[p];
+            }
+        };
+    } else {
+        throw std::invalid_argument("Unknown field type " + field + " and otherProperties " + ablate::utilities::VectorUtilities::Concatenate(otherProperties) + " for ablate::eos::ChemTab.");
+    }
+}
+
 ablate::eos::ThermodynamicTemperatureFunction ablate::eos::ChemTab::GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
     // Look for the euler field
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
@@ -366,23 +430,17 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::ChemTab::GetThermodyn
         throw std::invalid_argument("The ablate::eos::TChem requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
     }
 
-    auto densityEvField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD; });
-    if (densityEvField == fields.end()) {
-        throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD Field");
+    auto densityProgressField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD; });
+    if (densityProgressField == fields.end()) {
+        throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD Field");
     }
-
-    auto zMixIter = std::find(densityEvField->components.begin(), densityEvField->components.end(), "zmix");
-    if (zMixIter == densityEvField->components.end()) {
-        throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD Field contain zMix and other progress variables");
-    }
-    auto zMixOffset = densityEvField->offset + std::distance(densityEvField->components.begin(), zMixIter);
 
     return ThermodynamicTemperatureFunction{.function = ChemTabThermodynamicTemperatureFunction,
                                             .context = std::make_shared<ThermodynamicTemperatureFunctionContext>(
                                                 ThermodynamicTemperatureFunctionContext{.numberSpecies = speciesNames.size(),
                                                                                         .numberProgressVariables = progressVariablesNames.size(),
                                                                                         .densityOffset = eulerField->offset + (std::size_t)ablate::finiteVolume::CompressibleFlowFields::RHO,
-                                                                                        .zMixOffset = (std::size_t)zMixOffset,
+                                                                                        .progressOffset = (std::size_t)densityProgressField->offset,
                                                                                         .yiScratch = std::vector<PetscReal>(speciesNames.size()),
                                                                                         .tChemFunction = referenceEOS->GetThermodynamicTemperatureMassFractionFunction(property, fields),
                                                                                         .iWmat = iWmat})};
@@ -395,13 +453,13 @@ ablate::eos::ChemTab::ChemTabSourceCalculator::ChemTabSourceCalculator(PetscInt 
 void ablate::eos::ChemTab::ChemTabSourceCalculator::AddSource(const ablate::solver::Range &cellRange, Vec locX, Vec locFVec) {
     // get access to the xArray, fArray
     PetscScalar *fArray;
-    VecGetArray(locFVec, &fArray) >> checkError;
+    VecGetArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
     const PetscScalar *xArray;
-    VecGetArrayRead(locX, &xArray) >> checkError;
+    VecGetArrayRead(locX, &xArray) >> utilities::PetscUtilities::checkError;
 
     // Get the solution dm
     DM dm;
-    VecGetDM(locFVec, &dm) >> checkError;
+    VecGetDM(locFVec, &dm) >> utilities::PetscUtilities::checkError;
 
     // March over each cell in the range
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
@@ -409,17 +467,17 @@ void ablate::eos::ChemTab::ChemTabSourceCalculator::AddSource(const ablate::solv
 
         // Get the current state variables for this cell
         PetscScalar *sourceAtCell = nullptr;
-        DMPlexPointLocalRef(dm, iCell, fArray, &sourceAtCell) >> checkError;
+        DMPlexPointLocalRef(dm, iCell, fArray, &sourceAtCell) >> utilities::PetscUtilities::checkError;
 
         // Get the current state variables for this cell
         const PetscScalar *solutionAtCell = nullptr;
-        DMPlexPointLocalRead(dm, iCell, xArray, &solutionAtCell) >> checkError;
+        DMPlexPointLocalRead(dm, iCell, xArray, &solutionAtCell) >> utilities::PetscUtilities::checkError;
 
         chemTabModel->ChemistrySource(solutionAtCell[densityOffset], solutionAtCell + densityProgressVariableOffset, sourceAtCell + densityEnergyOffset, sourceAtCell + densityProgressVariableOffset);
     }
     // cleanup
-    VecRestoreArray(locFVec, &fArray) >> checkError;
-    VecRestoreArrayRead(locX, &xArray) >> checkError;
+    VecRestoreArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(locX, &xArray) >> utilities::PetscUtilities::checkError;
 }
 
 #endif

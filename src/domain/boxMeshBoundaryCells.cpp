@@ -1,13 +1,12 @@
 #include "boxMeshBoundaryCells.hpp"
-#include <domain/modifiers/createLabel.hpp>
-#include <domain/modifiers/distributeWithGhostCells.hpp>
-#include <domain/modifiers/mergeLabels.hpp>
-#include <domain/modifiers/tagLabelBoundary.hpp>
-#include <mathFunctions/geom/box.hpp>
 #include <stdexcept>
-#include <utilities/mpiError.hpp>
 #include <utility>
-#include "utilities/petscError.hpp"
+#include "domain/modifiers/createLabel.hpp"
+#include "domain/modifiers/distributeWithGhostCells.hpp"
+#include "domain/modifiers/mergeLabels.hpp"
+#include "domain/modifiers/tagLabelBoundary.hpp"
+#include "mathFunctions/geom/box.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::domain::BoxMeshBoundaryCells::BoxMeshBoundaryCells(const std::string& name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors,
                                                            std::vector<std::shared_ptr<modifiers::Modifier>> preModifiers, std::vector<std::shared_ptr<modifiers::Modifier>> postModifiers,
@@ -55,8 +54,9 @@ DM ablate::domain::BoxMeshBoundaryCells::CreateBoxDM(const std::string& name, st
     // Make copy with PetscInt
     std::vector<PetscInt> facesPetsc(faces.begin(), faces.end());
     DM dm;
-    DMPlexCreateBoxMesh(PETSC_COMM_WORLD, (PetscInt)dimensions, simplex ? PETSC_TRUE : PETSC_FALSE, &facesPetsc[0], &lower[0], &upper[0], nullptr, PETSC_TRUE, &dm) >> checkError;
-    PetscObjectSetName((PetscObject)dm, name.c_str()) >> ablate::checkError;
+    DMPlexCreateBoxMesh(PETSC_COMM_WORLD, (PetscInt)dimensions, simplex ? PETSC_TRUE : PETSC_FALSE, &facesPetsc[0], &lower[0], &upper[0], nullptr, PETSC_TRUE, &dm) >>
+        utilities::PetscUtilities::checkError;
+    PetscObjectSetName((PetscObject)dm, name.c_str()) >> utilities::PetscUtilities::checkError;
     return dm;
 }
 std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>> ablate::domain::BoxMeshBoundaryCells::AddBoundaryModifiers(std::vector<double> lower, std::vector<double> upper,

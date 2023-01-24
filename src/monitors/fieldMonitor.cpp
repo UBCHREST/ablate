@@ -19,7 +19,7 @@ void ablate::monitors::FieldMonitor::Register(std::string id, std::shared_ptr<so
     solverIn->GetSubDomain().CreateEmptySubDM(&subDm, solverIn->GetRegion());
 
     // name the subDm
-    PetscObjectSetName((PetscObject)subDm, id.c_str()) >> checkError;
+    PetscObjectSetName((PetscObject)subDm, id.c_str()) >> utilities::PetscUtilities::checkError;
 
     // Create a domain
     monitorDomain = std::make_shared<ablate::domain::DMTransfer>(subDm, fieldDescriptors);
@@ -31,7 +31,7 @@ void ablate::monitors::FieldMonitor::Register(std::string id, std::shared_ptr<so
     monitorSubDomain = monitorDomain->GetSubDomain(nullptr);
 
     // remove the name for this vector
-    PetscObjectSetName((PetscObject)monitorSubDomain->GetSolutionVector(), "monitor") >> checkError;
+    PetscObjectSetName((PetscObject)monitorSubDomain->GetSolutionVector(), "monitor") >> utilities::PetscUtilities::checkError;
 }
 
 void ablate::monitors::FieldMonitor::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {

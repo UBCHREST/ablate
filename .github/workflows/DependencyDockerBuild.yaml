@@ -52,11 +52,12 @@ jobs:
 
           # Build the image
           docker buildx build .\
+            --provenance false \
             --build-arg PETSC_BASE_IMAGE=${PETSC_IMAGE_ID} \
             --push \
             --tag $IMAGE_ID:latest \
-            --file DockerDependencyFile 
-  
+            --file DockerDependencyFile
+
   # Push the latest tag if everything build
   push-latest:
     needs: [build]
@@ -75,19 +76,33 @@ jobs:
       - name: Log into registry
         run: echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ secrets.DOCKER_USER }} --password-stdin
 
-      - name: Run Test image
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '>=1.18.10'
+
+      - name: Build Manifest Tool
         run: |
-          # Define the base image id
+          git clone https://github.com/estesp/manifest-tool
+          cd manifest-tool && make binary
+          cd ..
+
+      - name: Build and push manifest
+        run: |
           IMAGE_ID=ghcr.io/${{ github.repository }}/$IMAGE_NAME${{matrix.compiler.id}}${{matrix.indices.id}}
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+   
+          # Repeat for the latest tag
+          echo "image: $IMAGE_ID:latest" > config.latest.yaml
+          echo "manifests:" >> config.latest.yaml
+          echo "  - image: $IMAGE_ID-arm64:latest " >> config.latest.yaml
+          echo "    platform: " >> config.latest.yaml
+          echo "      architecture: arm64 " >> config.latest.yaml
+          echo "      os: linux " >> config.latest.yaml
+          echo "  - image: $IMAGE_ID-amd64:latest " >> config.latest.yaml
+          echo "    platform: " >> config.latest.yaml
+          echo "      architecture: amd64 " >> config.latest.yaml
+          echo "      os: linux " >> config.latest.yaml
+          
+          # Generate the manifest and push
+          manifest-tool/manifest-tool push from-spec config.latest.yaml
 
-          # tag as latest
-          docker manifest create \
-            $IMAGE_ID:latest \
-            --amend $IMAGE_ID-arm64:latest \
-            --amend $IMAGE_ID-amd64:latest 
-
-          # push
-          docker manifest push $IMAGE_ID:latest
-
-  

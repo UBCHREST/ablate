@@ -11,12 +11,20 @@
 #include "domain/domain.hpp"
 #include "iFunction.hpp"
 #include "monitors/monitor.hpp"
+#include "physicsTimeStepFunction.hpp"
 #include "rhsFunction.hpp"
 #include "solver.hpp"
 #include "utilities/loggable.hpp"
+#include "utilities/staticInitializer.hpp"
 
 namespace ablate::solver {
-class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private utilities::Loggable<TimeStepper> {
+class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private utilities::Loggable<TimeStepper>, private utilities::StaticInitializer {
+   public:
+    /**
+     * Optional initializer that can be called for TS before the first time step (TSSolve)
+     */
+    using AdaptInitializer = std::function<void(TS ts, TSAdapt adapt)>;
+
    private:
     TS ts;                                                                           /** The PETSC time stepper**/
     std::string name;                                                                /** the name for this time stepper **/
@@ -40,22 +48,24 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
     // If true, uses a slow nan/inf check at each source term for each evaluation
     const bool verboseSourceCheck;
 
-    // Static calls to be passed to the Petsc TS
     /**
-     * The TSPreStepFunction is used to call both th PreStep (once) and PreStage (as need calls).
+     * The TSPre*Function is used to call both th PreStep (once) and PreStage (as need calls).
+     *
      * @param ts
      * @param stagetime
      * @return
      */
+    ///@{
     static PetscErrorCode TSPreStageFunction(TS ts, PetscReal stagetime);
     static PetscErrorCode TSPreStepFunction(TS ts);
     static PetscErrorCode TSPostStepFunction(TS ts);
     static PetscErrorCode TSPostEvaluateFunction(TS ts);
-
+    ///@}
     // store a list of functions for each evaluation type
     std::vector<std::shared_ptr<IFunction>> iFunctionSolvers;
     std::vector<std::shared_ptr<RHSFunction>> rhsFunctionSolvers;
     std::vector<std::shared_ptr<BoundaryFunction>> boundaryFunctionSolvers;
+    std::vector<std::shared_ptr<PhysicsTimeStepFunction>> physicsTimeStepFunctionSolvers;
 
     // support for function residual/jacobian evaluation
     static PetscErrorCode SolverComputeBoundaryFunctionLocal(DM dm, PetscReal time, Vec locX, Vec locX_t, void *timeStepperCtx);
@@ -73,6 +83,9 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances;
+
+    //! hold a list of static AdaptInitializers
+    static inline std::map<std::string, AdaptInitializer> adaptInitializers;
 
    public:
     /**
@@ -123,11 +136,24 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
      */
     void Solve();
 
+    /**
+     * Computes the physics based time step that can be used to control the adaptive time step
+     * @return
+     */
+    PetscErrorCode ComputePhysicsTimeStep(PetscReal *dt);
+
     void Register(std::shared_ptr<ablate::solver::Solver> solver, std::vector<std::shared_ptr<monitors::Monitor>> = {});
 
     double GetTime() const;
 
     const std::string &GetName() const { return name; }
+
+    /**
+     * Function to register the adapt by name
+     * @param adaptName This must be the same same used to create the class
+     * @param adaptInitializer
+     */
+    static void RegisterAdaptInitializer(std::string adaptName, AdaptInitializer adaptInitializer) { adaptInitializers[adaptName] = adaptInitializer; }
 };
 }  // namespace ablate::solver
 

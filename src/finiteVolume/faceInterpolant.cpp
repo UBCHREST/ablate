@@ -8,20 +8,20 @@ ablate::finiteVolume::FaceInterpolant::FaceInterpolant(const std::shared_ptr<abl
                                                        Vec cellGeomVec)
     : subDomain(subDomain) {
     auto ds = subDomain->GetDiscreteSystem();
-    PetscDSGetTotalDimension(ds, &solTotalSize) >> checkError;
+    PetscDSGetTotalDimension(ds, &solTotalSize) >> utilities::PetscUtilities::checkError;
     CreateFaceDm(solTotalSize, subDomain->GetDM(), faceSolutionDm);
     CreateFaceDm(solTotalSize * subDomain->GetDimensions(), subDomain->GetDM(), faceSolutionGradDm);
 
     auto auxDs = subDomain->GetAuxDiscreteSystem();
     if (auxDs) {
-        PetscDSGetTotalDimension(auxDs, &auxTotalSize) >> checkError;
+        PetscDSGetTotalDimension(auxDs, &auxTotalSize) >> utilities::PetscUtilities::checkError;
         CreateFaceDm(auxTotalSize, subDomain->GetDM(), faceAuxDm);
         CreateFaceDm(auxTotalSize * subDomain->GetDimensions(), subDomain->GetDM(), faceAuxGradDm);
     }
 
     // Size up the stencil
     PetscInt fStart, fEnd;
-    DMPlexGetHeightStratum(subDomain->GetDM(), 1, &fStart, &fEnd) >> checkError;
+    DMPlexGetHeightStratum(subDomain->GetDM(), 1, &fStart, &fEnd) >> utilities::PetscUtilities::checkError;
     stencils.resize(fEnd - fStart);
 
     // extract the dm
@@ -37,20 +37,20 @@ ablate::finiteVolume::FaceInterpolant::FaceInterpolant(const std::shared_ptr<abl
 
     // Get the geometry for the mesh
     DM faceDM, cellDM;
-    VecGetDM(faceGeomVec, &faceDM) >> checkError;
-    VecGetDM(cellGeomVec, &cellDM) >> checkError;
+    VecGetDM(faceGeomVec, &faceDM) >> utilities::PetscUtilities::checkError;
+    VecGetDM(cellGeomVec, &cellDM) >> utilities::PetscUtilities::checkError;
     const PetscScalar* cellGeomArray;
     const PetscScalar* faceGeomArray;
-    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
+    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
 
     // perform some fv and mpi ghost cell checks
     PetscInt gcStart;
-    DMPlexGetGhostCellStratum(dm, &gcStart, nullptr) >> checkError;
+    DMPlexGetGhostCellStratum(dm, &gcStart, nullptr) >> utilities::PetscUtilities::checkError;
 
     // check for ghost cells
     DMLabel ghostLabel;
-    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
+    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
 
     // Compute the stencil for each face
     PetscInt iFace = 0;
@@ -59,17 +59,17 @@ ablate::finiteVolume::FaceInterpolant::FaceInterpolant(const std::shared_ptr<abl
 
         // make sure that this is a valid face
         PetscInt ghost, nsupp, nchild;
-        DMLabelGetValue(ghostLabel, face, &ghost) >> checkError;
-        DMPlexGetSupportSize(subDomain->GetDM(), face, &nsupp) >> checkError;
-        DMPlexGetTreeChildren(subDomain->GetDM(), face, &nchild, nullptr) >> checkError;
+        DMLabelGetValue(ghostLabel, face, &ghost) >> utilities::PetscUtilities::checkError;
+        DMPlexGetSupportSize(subDomain->GetDM(), face, &nsupp) >> utilities::PetscUtilities::checkError;
+        DMPlexGetTreeChildren(subDomain->GetDM(), face, &nchild, nullptr) >> utilities::PetscUtilities::checkError;
         if (ghost >= 0 || nsupp > 2 || nchild > 0) continue;
 
         faceStencilGenerator->Generate(face, stencil, *subDomain, solverRegion, cellDM, cellGeomArray, faceDM, faceGeomArray);
     }
 
     // clean up the geom
-    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-    VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
 }
 
 ablate::finiteVolume::FaceInterpolant::~FaceInterpolant() {
@@ -89,43 +89,43 @@ ablate::finiteVolume::FaceInterpolant::~FaceInterpolant() {
 
 void ablate::finiteVolume::FaceInterpolant::CreateFaceDm(PetscInt totalDim, DM dm, DM& newDm) {
     PetscInt fStart, fEnd;
-    DMPlexGetHeightStratum(dm, 1, &fStart, &fEnd) >> checkError;
+    DMPlexGetHeightStratum(dm, 1, &fStart, &fEnd) >> utilities::PetscUtilities::checkError;
 
     // create a face solution dm for that is the required number of variables per face
     PetscSection solutionSection;
-    DMClone(dm, &newDm) >> checkError;
-    PetscSectionCreate(PetscObjectComm((PetscObject)dm), &solutionSection) >> checkError;
+    DMClone(dm, &newDm) >> utilities::PetscUtilities::checkError;
+    PetscSectionCreate(PetscObjectComm((PetscObject)dm), &solutionSection) >> utilities::PetscUtilities::checkError;
 
-    PetscSectionSetChart(solutionSection, fStart, fEnd) >> checkError;
+    PetscSectionSetChart(solutionSection, fStart, fEnd) >> utilities::PetscUtilities::checkError;
     for (PetscInt f = fStart; f < fEnd; ++f) {
-        PetscSectionSetDof(solutionSection, f, totalDim) >> checkError;
+        PetscSectionSetDof(solutionSection, f, totalDim) >> utilities::PetscUtilities::checkError;
     }
 
-    PetscSectionSetUp(solutionSection) >> checkError;
-    DMSetLocalSection(newDm, solutionSection) >> checkError;
-    PetscSectionDestroy(&solutionSection) >> checkError;
+    PetscSectionSetUp(solutionSection) >> utilities::PetscUtilities::checkError;
+    DMSetLocalSection(newDm, solutionSection) >> utilities::PetscUtilities::checkError;
+    PetscSectionDestroy(&solutionSection) >> utilities::PetscUtilities::checkError;
 }
 
 void ablate::finiteVolume::FaceInterpolant::GetInterpolatedFaceVectors(Vec solutionVec, Vec auxVec, Vec& faceSolutionVec, Vec& faceAuxVec, Vec& faceSolutionGradVec, Vec& faceAuxGradVec) {
     // Compute the stencil for each face
     auto dim = subDomain->GetDimensions();
     PetscInt fEnd;
-    DMPlexGetHeightStratum(subDomain->GetDM(), 1, &globalFaceStart, &fEnd) >> checkError;
+    DMPlexGetHeightStratum(subDomain->GetDM(), 1, &globalFaceStart, &fEnd) >> utilities::PetscUtilities::checkError;
     stencils.resize(fEnd - globalFaceStart);
 
     // Size the return vectors
-    DMGetLocalVector(faceSolutionDm, &faceSolutionVec) >> checkError;
-    DMGetLocalVector(faceSolutionGradDm, &faceSolutionGradVec) >> checkError;
+    DMGetLocalVector(faceSolutionDm, &faceSolutionVec) >> utilities::PetscUtilities::checkError;
+    DMGetLocalVector(faceSolutionGradDm, &faceSolutionGradVec) >> utilities::PetscUtilities::checkError;
     if (auxTotalSize) {
-        DMGetLocalVector(faceAuxDm, &faceAuxVec) >> checkError;
-        DMGetLocalVector(faceAuxGradDm, &faceAuxGradVec) >> checkError;
+        DMGetLocalVector(faceAuxDm, &faceAuxVec) >> utilities::PetscUtilities::checkError;
+        DMGetLocalVector(faceAuxGradDm, &faceAuxGradVec) >> utilities::PetscUtilities::checkError;
     }
 
     // Extract each of the dms needed
     DM solutionDm, auxDm;
-    VecGetDM(solutionVec, &solutionDm) >> checkError;
+    VecGetDM(solutionVec, &solutionDm) >> utilities::PetscUtilities::checkError;
     if (auxVec) {
-        VecGetDM(auxVec, &auxDm) >> checkError;
+        VecGetDM(auxVec, &auxDm) >> utilities::PetscUtilities::checkError;
     }
 
     // Get the arrays
@@ -156,19 +156,19 @@ void ablate::finiteVolume::FaceInterpolant::GetInterpolatedFaceVectors(Vec solut
         iFacee++;
         if (!stencil.stencilSize) {
             PetscScalar* faceSolValues;
-            DMPlexPointLocalRead(faceSolutionDm, face, faceSolutionArray, &faceSolValues) >> checkError;
+            DMPlexPointLocalRead(faceSolutionDm, face, faceSolutionArray, &faceSolValues) >> utilities::PetscUtilities::checkError;
             utilities::MathUtilities::ScaleVector(solTotalSize, faceSolValues, (double)NAN);
             PetscScalar* faceAuxValues;
             if (auxTotalSize) {
-                DMPlexPointLocalRead(faceAuxDm, face, faceAuxArray, &faceAuxValues) >> checkError;
+                DMPlexPointLocalRead(faceAuxDm, face, faceAuxArray, &faceAuxValues) >> utilities::PetscUtilities::checkError;
                 utilities::MathUtilities::ScaleVector(auxTotalSize, faceAuxValues, (double)NAN);
             }
             PetscScalar* faceSolGradValues;
-            DMPlexPointLocalRead(faceSolutionGradDm, face, faceSolutionGradArray, &faceSolGradValues) >> checkError;
+            DMPlexPointLocalRead(faceSolutionGradDm, face, faceSolutionGradArray, &faceSolGradValues) >> utilities::PetscUtilities::checkError;
             utilities::MathUtilities::ScaleVector(solTotalSize * dim, faceSolGradValues, (double)NAN);
             PetscScalar* faceAuxGradValues;
             if (auxTotalSize) {
-                DMPlexPointLocalRead(faceAuxGradDm, face, faceAuxGradArray, &faceAuxGradValues) >> checkError;
+                DMPlexPointLocalRead(faceAuxGradDm, face, faceAuxGradArray, &faceAuxGradValues) >> utilities::PetscUtilities::checkError;
                 utilities::MathUtilities::ScaleVector(auxTotalSize * dim, faceAuxGradValues, (double)NAN);
             }
 
@@ -177,22 +177,22 @@ void ablate::finiteVolume::FaceInterpolant::GetInterpolatedFaceVectors(Vec solut
 
         // get the field faces
         PetscScalar* faceSolValues;
-        DMPlexPointLocalRead(faceSolutionDm, face, faceSolutionArray, &faceSolValues) >> checkError;
-        PetscArrayzero(faceSolValues, solTotalSize) >> checkError;
+        DMPlexPointLocalRead(faceSolutionDm, face, faceSolutionArray, &faceSolValues) >> utilities::PetscUtilities::checkError;
+        PetscArrayzero(faceSolValues, solTotalSize) >> utilities::PetscUtilities::checkError;
         PetscScalar* faceAuxValues;
         if (auxTotalSize) {
-            DMPlexPointLocalRead(faceAuxDm, face, faceAuxArray, &faceAuxValues) >> checkError;
-            PetscArrayzero(faceAuxValues, auxTotalSize) >> checkError;
+            DMPlexPointLocalRead(faceAuxDm, face, faceAuxArray, &faceAuxValues) >> utilities::PetscUtilities::checkError;
+            PetscArrayzero(faceAuxValues, auxTotalSize) >> utilities::PetscUtilities::checkError;
         }
 
         // get the grad faces
         PetscScalar* faceSolGradValues;
-        DMPlexPointLocalRead(faceSolutionGradDm, face, faceSolutionGradArray, &faceSolGradValues) >> checkError;
-        PetscArrayzero(faceSolGradValues, solTotalSize * dim) >> checkError;
+        DMPlexPointLocalRead(faceSolutionGradDm, face, faceSolutionGradArray, &faceSolGradValues) >> utilities::PetscUtilities::checkError;
+        PetscArrayzero(faceSolGradValues, solTotalSize * dim) >> utilities::PetscUtilities::checkError;
         PetscScalar* faceAuxGradValues;
         if (auxTotalSize) {
-            DMPlexPointLocalRead(faceAuxGradDm, face, faceAuxGradArray, &faceAuxGradValues) >> checkError;
-            PetscArrayzero(faceAuxGradValues, auxTotalSize * dim) >> checkError;
+            DMPlexPointLocalRead(faceAuxGradDm, face, faceAuxGradArray, &faceAuxGradValues) >> utilities::PetscUtilities::checkError;
+            PetscArrayzero(faceAuxGradValues, auxTotalSize * dim) >> utilities::PetscUtilities::checkError;
         }
 
         // Using this value compute the gradient on the faces
@@ -202,13 +202,13 @@ void ablate::finiteVolume::FaceInterpolant::GetInterpolatedFaceVectors(Vec solut
             // compute the value on the face
             // get cell value and add to the array
             PetscScalar* solutionValue;
-            DMPlexPointLocalRead(solutionDm, cell, solutionArray, &solutionValue) >> checkError;
+            DMPlexPointLocalRead(solutionDm, cell, solutionArray, &solutionValue) >> utilities::PetscUtilities::checkError;
             AddToArray(solTotalSize, solutionValue, faceSolValues, stencil.weights[c]);
 
             if (auxTotalSize) {
                 // get cell value and add to the array
                 PetscScalar* auxValue;
-                DMPlexPointLocalRead(auxDm, cell, auxArray, &auxValue) >> checkError;
+                DMPlexPointLocalRead(auxDm, cell, auxArray, &auxValue) >> utilities::PetscUtilities::checkError;
                 AddToArray(auxTotalSize, auxValue, faceAuxValues, stencil.weights[c]);
             }
 
@@ -223,7 +223,7 @@ void ablate::finiteVolume::FaceInterpolant::GetInterpolatedFaceVectors(Vec solut
             if (auxTotalSize) {
                 // get cell value and add to the array
                 PetscScalar* auxValue;
-                DMPlexPointLocalRead(auxDm, cell, auxArray, &auxValue) >> checkError;
+                DMPlexPointLocalRead(auxDm, cell, auxArray, &auxValue) >> utilities::PetscUtilities::checkError;
 
                 // for each component
                 offset = 0;
@@ -250,13 +250,13 @@ void ablate::finiteVolume::FaceInterpolant::GetInterpolatedFaceVectors(Vec solut
 
 void ablate::finiteVolume::FaceInterpolant::RestoreInterpolatedFaceVectors(Vec, Vec, Vec& faceSolutionVec, Vec& faceAuxVec, Vec& faceSolutionGradVec, Vec& faceAuxGradVec) {
     // Size the return vectors
-    DMRestoreLocalVector(faceSolutionDm, &faceSolutionVec) >> checkError;
-    DMRestoreLocalVector(faceSolutionGradDm, &faceSolutionGradVec) >> checkError;
+    DMRestoreLocalVector(faceSolutionDm, &faceSolutionVec) >> utilities::PetscUtilities::checkError;
+    DMRestoreLocalVector(faceSolutionGradDm, &faceSolutionGradVec) >> utilities::PetscUtilities::checkError;
     if (faceAuxDm) {
-        DMRestoreLocalVector(faceAuxDm, &faceAuxVec) >> checkError;
+        DMRestoreLocalVector(faceAuxDm, &faceAuxVec) >> utilities::PetscUtilities::checkError;
     }
     if (faceAuxGradDm) {
-        DMRestoreLocalVector(faceAuxGradDm, &faceAuxGradVec) >> checkError;
+        DMRestoreLocalVector(faceAuxGradDm, &faceAuxGradVec) >> utilities::PetscUtilities::checkError;
     }
 }
 void ablate::finiteVolume::FaceInterpolant::ComputeRHS(PetscReal time, Vec locXVec, Vec locAuxVec, Vec locFVec, const std::shared_ptr<domain::Region>& solverRegion,
@@ -271,7 +271,7 @@ void ablate::finiteVolume::FaceInterpolant::ComputeRHS(PetscReal time, Vec locXV
 
     // check for ghost cells
     DMLabel ghostLabel;
-    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
+    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
 
     // extract the arrays for each of the vec
     const PetscScalar* faceSolutionArray;
@@ -290,23 +290,23 @@ void ablate::finiteVolume::FaceInterpolant::ComputeRHS(PetscReal time, Vec locXV
 
     // get raw access to the locF
     PetscScalar* locFArray;
-    VecGetArray(locFVec, &locFArray) >> checkError;
+    VecGetArray(locFVec, &locFArray) >> utilities::PetscUtilities::checkError;
 
     // Size up the total dim
     PetscInt totDim;
-    PetscDSGetTotalDimension(subDomain->GetDiscreteSystem(), &totDim) >> checkError;
+    PetscDSGetTotalDimension(subDomain->GetDiscreteSystem(), &totDim) >> utilities::PetscUtilities::checkError;
     std::vector<PetscScalar> flux(totDim);
     auto dim = subDomain->GetDimensions();
 
     // Get the geometry for the mesh
     DM cellDM;
-    VecGetDM(cellGeomVec, &cellDM) >> checkError;
+    VecGetDM(cellGeomVec, &cellDM) >> utilities::PetscUtilities::checkError;
     const PetscScalar* cellGeomArray;
-    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
     DM faceDM;
-    VecGetDM(faceGeomVec, &faceDM) >> checkError;
+    VecGetDM(faceGeomVec, &faceDM) >> utilities::PetscUtilities::checkError;
     const PetscScalar* faceGeomArray;
-    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
 
     // march only over this region
     DMLabel regionLabel;
@@ -324,8 +324,8 @@ void ablate::finiteVolume::FaceInterpolant::ComputeRHS(PetscReal time, Vec locXV
     // Get the full set of offsets from the ds
     PetscInt* uOffTotal;
     PetscInt* uGradOffTotal;
-    PetscDSGetComponentOffsets(subDomain->GetDiscreteSystem(), &uOffTotal) >> checkError;
-    PetscDSGetComponentDerivativeOffsets(subDomain->GetDiscreteSystem(), &uGradOffTotal) >> checkError;
+    PetscDSGetComponentOffsets(subDomain->GetDiscreteSystem(), &uOffTotal) >> utilities::PetscUtilities::checkError;
+    PetscDSGetComponentDerivativeOffsets(subDomain->GetDiscreteSystem(), &uGradOffTotal) >> utilities::PetscUtilities::checkError;
 
     for (std::size_t fun = 0; fun < rhsFunctions.size(); fun++) {
         const auto& field = subDomain->GetField(rhsFunctions[fun].field);
@@ -340,8 +340,8 @@ void ablate::finiteVolume::FaceInterpolant::ComputeRHS(PetscReal time, Vec locXV
     if (auxTotalSize) {
         PetscInt* auxOffTotal;
         PetscInt* auxGradOffTotal;
-        PetscDSGetComponentOffsets(subDomain->GetAuxDiscreteSystem(), &auxOffTotal) >> checkError;
-        PetscDSGetComponentDerivativeOffsets(subDomain->GetAuxDiscreteSystem(), &auxGradOffTotal) >> checkError;
+        PetscDSGetComponentOffsets(subDomain->GetAuxDiscreteSystem(), &auxOffTotal) >> utilities::PetscUtilities::checkError;
+        PetscDSGetComponentDerivativeOffsets(subDomain->GetAuxDiscreteSystem(), &auxGradOffTotal) >> utilities::PetscUtilities::checkError;
         for (std::size_t fun = 0; fun < rhsFunctions.size(); fun++) {
             for (std::size_t f = 0; f < rhsFunctions[fun].auxFields.size(); f++) {
                 aOff[fun].push_back(auxOffTotal[rhsFunctions[fun].auxFields[f]]);
@@ -356,37 +356,37 @@ void ablate::finiteVolume::FaceInterpolant::ComputeRHS(PetscReal time, Vec locXV
 
         // make sure that this is a valid face
         PetscInt ghost, nsupp, nchild;
-        DMLabelGetValue(ghostLabel, face, &ghost) >> checkError;
-        DMPlexGetSupportSize(subDomain->GetDM(), face, &nsupp) >> checkError;
-        DMPlexGetTreeChildren(subDomain->GetDM(), face, &nchild, nullptr) >> checkError;
+        DMLabelGetValue(ghostLabel, face, &ghost) >> utilities::PetscUtilities::checkError;
+        DMPlexGetSupportSize(subDomain->GetDM(), face, &nsupp) >> utilities::PetscUtilities::checkError;
+        DMPlexGetTreeChildren(subDomain->GetDM(), face, &nchild, nullptr) >> utilities::PetscUtilities::checkError;
         if (ghost >= 0 || nsupp > 2 || nchild > 0) continue;
 
         // extract the arrays
         const PetscScalar* solutionValue;
-        DMPlexPointLocalRead(faceSolutionDm, face, faceSolutionArray, &solutionValue) >> checkError;
+        DMPlexPointLocalRead(faceSolutionDm, face, faceSolutionArray, &solutionValue) >> utilities::PetscUtilities::checkError;
         const PetscScalar* solutionGradValue;
-        DMPlexPointLocalRead(faceSolutionGradDm, face, faceSolutionGradArray, &solutionGradValue) >> checkError;
+        DMPlexPointLocalRead(faceSolutionGradDm, face, faceSolutionGradArray, &solutionGradValue) >> utilities::PetscUtilities::checkError;
 
         const PetscScalar* auxValue = nullptr;
         const PetscScalar* auxGradValue = nullptr;
         if (auxTotalSize) {
-            DMPlexPointLocalRead(faceAuxDm, face, faceAuxArray, &auxValue) >> checkError;
-            DMPlexPointLocalRead(faceAuxGradDm, face, faceAuxGradArray, &auxGradValue) >> checkError;
+            DMPlexPointLocalRead(faceAuxDm, face, faceAuxArray, &auxValue) >> utilities::PetscUtilities::checkError;
+            DMPlexPointLocalRead(faceAuxGradDm, face, faceAuxGradArray, &auxGradValue) >> utilities::PetscUtilities::checkError;
         }
 
         // determine where to add the cell values
         const PetscInt* faceCells;
         PetscFVCellGeom *cgL, *cgR;
-        DMPlexGetSupport(subDomain->GetDM(), face, &faceCells) >> checkError;
-        DMPlexPointLocalRead(cellDM, faceCells[0], cellGeomArray, &cgL) >> checkError;
-        DMPlexPointLocalRead(cellDM, faceCells[1], cellGeomArray, &cgR) >> checkError;
+        DMPlexGetSupport(subDomain->GetDM(), face, &faceCells) >> utilities::PetscUtilities::checkError;
+        DMPlexPointLocalRead(cellDM, faceCells[0], cellGeomArray, &cgL) >> utilities::PetscUtilities::checkError;
+        DMPlexPointLocalRead(cellDM, faceCells[1], cellGeomArray, &cgR) >> utilities::PetscUtilities::checkError;
 
         PetscFVFaceGeom* fg;
         DMPlexPointLocalRead(faceDM, face, faceGeomArray, &fg);
 
         // March over each source function
         for (std::size_t fun = 0; fun < rhsFunctions.size(); fun++) {
-            PetscArrayzero(flux.data(), totDim) >> checkError;
+            PetscArrayzero(flux.data(), totDim) >> utilities::PetscUtilities::checkError;
 
             const auto& rhsFluxFunctionDescription = rhsFunctions[fun];
             rhsFluxFunctionDescription.function(dim,
@@ -401,26 +401,26 @@ void ablate::finiteVolume::FaceInterpolant::ComputeRHS(PetscReal time, Vec locXV
                                                 auxGradValue,
                                                 flux.data(),
                                                 rhsFluxFunctionDescription.context) >>
-                checkError;
+                utilities::PetscUtilities::checkError;
 
             // add the flux back to the cell
             PetscScalar *fL = nullptr, *fR = nullptr;
             PetscInt cellLabelValue = regionValue;
-            DMLabelGetValue(ghostLabel, faceCells[0], &ghost) >> checkError;
+            DMLabelGetValue(ghostLabel, faceCells[0], &ghost) >> utilities::PetscUtilities::checkError;
             if (regionLabel) {
-                DMLabelGetValue(regionLabel, faceCells[0], &cellLabelValue) >> checkError;
+                DMLabelGetValue(regionLabel, faceCells[0], &cellLabelValue) >> utilities::PetscUtilities::checkError;
             }
             if (ghost <= 0 && regionValue == cellLabelValue) {
-                DMPlexPointLocalFieldRef(dm, faceCells[0], rhsFunctions[fun].field, locFArray, &fL) >> checkError;
+                DMPlexPointLocalFieldRef(dm, faceCells[0], rhsFunctions[fun].field, locFArray, &fL) >> utilities::PetscUtilities::checkError;
             }
 
             cellLabelValue = regionValue;
-            DMLabelGetValue(ghostLabel, faceCells[1], &ghost) >> checkError;
+            DMLabelGetValue(ghostLabel, faceCells[1], &ghost) >> utilities::PetscUtilities::checkError;
             if (regionLabel) {
-                DMLabelGetValue(regionLabel, faceCells[1], &cellLabelValue) >> checkError;
+                DMLabelGetValue(regionLabel, faceCells[1], &cellLabelValue) >> utilities::PetscUtilities::checkError;
             }
             if (ghost <= 0 && regionValue == cellLabelValue) {
-                DMPlexPointLocalFieldRef(dm, faceCells[1], rhsFunctions[fun].field, locFArray, &fR) >> checkError;
+                DMPlexPointLocalFieldRef(dm, faceCells[1], rhsFunctions[fun].field, locFArray, &fR) >> utilities::PetscUtilities::checkError;
             }
 
             for (PetscInt d = 0; d < fluxComponentSize[fun]; ++d) {
@@ -437,8 +437,8 @@ void ablate::finiteVolume::FaceInterpolant::ComputeRHS(PetscReal time, Vec locXV
         VecRestoreArrayRead(faceAuxVec, &faceAuxArray);
         VecRestoreArrayRead(faceAuxGradVec, &faceAuxGradArray);
     }
-    VecRestoreArray(locFVec, &locFArray) >> checkError;
-    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-    VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+    VecRestoreArray(locFVec, &locFArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
     RestoreInterpolatedFaceVectors(locXVec, locAuxVec, faceSolutionVec, faceAuxVec, faceSolutionGradVec, faceAuxGradVec);
 }

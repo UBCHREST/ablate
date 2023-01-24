@@ -3,7 +3,6 @@
 #include <set>
 #include "boundaryProcess.hpp"
 #include "environment/runEnvironment.hpp"
-#include "utilities/mpiError.hpp"
 #include "utilities/mpiUtilities.hpp"
 
 ablate::boundarySolver::DebugBoundarySolver::DebugBoundarySolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary,
@@ -20,7 +19,7 @@ void ablate::boundarySolver::DebugBoundarySolver::Setup() {
     // check to make sure that gradientStencils is not zero
     PetscMPIInt numberStencilLocal = (PetscMPIInt)gradientStencils.size();
     PetscMPIInt numberStencilGlobal;
-    MPI_Reduce(&numberStencilLocal, &numberStencilGlobal, 1, MPI_INT, MPI_SUM, 0, GetSubDomain().GetComm()) >> checkMpiError;
+    MPI_Reduce(&numberStencilLocal, &numberStencilGlobal, 1, MPI_INT, MPI_SUM, 0, GetSubDomain().GetComm()) >> utilities::MpiUtilities::checkError;
 
     utilities::MpiUtilities::Once(
         GetSubDomain().GetComm(),
@@ -51,7 +50,7 @@ void ablate::boundarySolver::DebugBoundarySolver::Setup() {
 
     // Get the rank
     PetscMPIInt rank;
-    MPI_Comm_rank(GetSubDomain().GetComm(), &rank) >> checkError;
+    MPI_Comm_rank(GetSubDomain().GetComm(), &rank) >> utilities::PetscUtilities::checkError;
 
     // march over each stencil and create a separate file
     for (std::size_t s = 0; s < gradientStencils.size(); ++s) {
@@ -81,18 +80,18 @@ void ablate::boundarySolver::DebugBoundarySolver::OutputStencilCellLocation(std:
     stream << cell;
 
     const PetscScalar* cellGeomArray;
-    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
     DM cellDM;
-    VecGetDM(cellGeomVec, &cellDM) >> checkError;
+    VecGetDM(cellGeomVec, &cellDM) >> utilities::PetscUtilities::checkError;
 
     PetscFVCellGeom* cg;
-    DMPlexPointLocalRead(cellDM, cell, cellGeomArray, &cg) >> checkError;
+    DMPlexPointLocalRead(cellDM, cell, cellGeomArray, &cg) >> utilities::PetscUtilities::checkError;
 
     for (PetscInt d = 0; d < GetSubDomain().GetDimensions(); ++d) {
         stream << " " << cg->centroid[d];
     }
 
-    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
 }
 PetscErrorCode ablate::boundarySolver::DebugBoundarySolver::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) {
     PetscFunctionBeginUser;
@@ -100,7 +99,7 @@ PetscErrorCode ablate::boundarySolver::DebugBoundarySolver::ComputeRHSFunction(P
 
     // Get the rank
     PetscMPIInt rank;
-    MPI_Comm_rank(GetSubDomain().GetComm(), &rank) >> checkError;
+    MPI_Comm_rank(GetSubDomain().GetComm(), &rank) >> utilities::PetscUtilities::checkError;
 
     auto solverDirectory = ablate::environment::RunEnvironment::Get().GetOutputDirectory() / GetSolverId();
 

@@ -20,7 +20,6 @@
 #include "monitors/solutionErrorMonitor.hpp"
 #include "parameters/mapParameters.hpp"
 #include "solver/timeStepper.hpp"
-#include "utilities/petscOptions.hpp"
 #include "utilities/petscUtilities.hpp"
 
 typedef struct {
@@ -105,11 +104,11 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %" PetscInt_FMT "\n", l);
 
             // setup any global arguments
-            ablate::utilities::PetscOptionsUtils::Set({{"dm_plex_separate_marker", ""}, {"petsclimiter_type", "none"}});
+            ablate::utilities::PetscUtilities::Set({{"dm_plex_separate_marker", ""}, {"petsclimiter_type", "none"}});
 
             // create a mock eos
             std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
-            EXPECT_CALL(*eos, GetSpecies()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(species));
+            EXPECT_CALL(*eos, GetSpeciesVariables()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(species));
             EXPECT_CALL(*eos, GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature, testing::_))
                 .Times(::testing::Exactly(1))
                 .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction([](const PetscReal conserved[], PetscReal* T) { *T = NAN; })));
@@ -124,8 +123,8 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {
                 std::make_shared<ablate::domain::FieldDescription>(
                     "euler", "euler", std::vector<std::string>{"rho", "rhoE", "rhoVel" + domain::FieldDescription::DIMENSION}, domain::FieldLocation::SOL, domain::FieldType::FVM),
-                std::make_shared<ablate::domain::FieldDescription>("densityYi", "densityYi", eos->GetSpecies(), domain::FieldLocation::SOL, domain::FieldType::FVM),
-                std::make_shared<ablate::domain::FieldDescription>("yi", "yi", eos->GetSpecies(), domain::FieldLocation::AUX, domain::FieldType::FVM),
+                std::make_shared<ablate::domain::FieldDescription>("densityYi", "densityYi", eos->GetSpeciesVariables(), domain::FieldLocation::SOL, domain::FieldType::FVM),
+                std::make_shared<ablate::domain::FieldDescription>("Yi", "Yi", eos->GetSpeciesVariables(), domain::FieldLocation::AUX, domain::FieldType::FVM),
 
             };
 

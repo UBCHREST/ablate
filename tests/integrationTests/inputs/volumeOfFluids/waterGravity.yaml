@@ -27,7 +27,7 @@ timestepper:
             Rgas: 0
         region:
           name: domain
-      - name: densityVF
+      - name: densityvolumeFraction
         type: FVM
         region:
           name: domain
@@ -46,7 +46,7 @@ timestepper:
         994.0897497618486,
         2414070815.450644,
         0.0
-    - fieldName: densityVF
+    - fieldName: densityvolumeFraction
       field: "0.0"
     - fieldName: volumeFraction
       field: "0.0"
@@ -80,7 +80,6 @@ solvers:
           eosR: *eosWater
       - !ablate::finiteVolume::processes::Gravity
         vector: [ -9.81 ]
-    computePhysicsTimeStep: true
     monitors:
       - !ablate::monitors::TimeStepMonitor
         log: !ablate::monitors::logs::CsvLog

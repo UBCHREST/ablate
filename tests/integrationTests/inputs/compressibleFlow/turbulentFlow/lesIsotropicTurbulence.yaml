@@ -22,12 +22,13 @@ timestepper:
   # time stepper specific input arguments
   arguments:
     ts_type: rk
-    ts_adapt_type: none
+    ts_adapt_type: physics # overwrite and set the time step based upon the CFL constraint
     ts_max_steps: 20
+    ts_adapt_safety: 1.0
   # the domain/mesh must be specified at the start of a simulation
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
-    faces: [ 5,5,5]
+    faces: [ 5 ,5 ,5]
     lower: [ 0, 0, 0]
     upper: [ 0.565, 0.565 , 0.565]
     boundary: [ "PERIODIC", "PERIODIC", "PERIODIC", "PERIODIC" ]
@@ -48,8 +49,9 @@ timestepper:
           parameters:
             gamma: 1.4
             Rgas: 287
-        # the initial value of turbulent kinetic energy (tke) should be passed into the lesSolver as an extra variable
-        extraVariables: ["ev1"]
+      # a field should be created for turbulent kinetic energy (tke)
+      - !ablate::finiteVolume::TurbulenceFlowFields
+
   initialization:
     # the ablate::finiteVolume::fieldFunctions::Euler helper can define the "euler" field (rho, rhoE, rhoU, rhoV) from more common inputs
     - !ablate::finiteVolume::fieldFunctions::Euler
@@ -80,8 +82,9 @@ timestepper:
             LO2: -pi/2
     # the density*ev field must be specified. The DensityExtraVariables class helps by computing density and each ev value using the specified list functions
     - !ablate::finiteVolume::fieldFunctions::DensityExtraVariables
+      # introduce initial value for tke
+      name: tke
       state: *flowFieldState
-      # a list of functions used to describe the extra variable initialization
       functions:
         - .09 # ev1 is set to initial value for tke
 
@@ -93,7 +96,6 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
   # a flux calculator must be specified to so solver for advection
   fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
     mInf: .5
-  computePhysicsTimeStep: true
 
   # the default transport object assumes constant values for k, mu, diff
   transport:
@@ -107,7 +109,6 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
   # introduce the initial value of tke to LES application
   additionalProcesses:
     - !ablate::finiteVolume::processes::LES
-      tke: ev1
 
   monitors:
     # output the time and dt at each time step

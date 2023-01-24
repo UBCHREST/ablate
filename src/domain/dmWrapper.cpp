@@ -1,12 +1,12 @@
 #include "dmWrapper.hpp"
 
 #include <utility>
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 static std::string getPetscObjectName(DM dm) {
     const char* name;
-    PetscObjectName((PetscObject)dm) >> ablate::checkError;
-    PetscObjectGetName((PetscObject)dm, &name) >> ablate::checkError;
+    PetscObjectName((PetscObject)dm) >> ablate::utilities::PetscUtilities::checkError;
+    PetscObjectGetName((PetscObject)dm, &name) >> ablate::utilities::PetscUtilities::checkError;
     return {name};
 }
 

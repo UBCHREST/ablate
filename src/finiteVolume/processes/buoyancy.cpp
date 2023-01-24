@@ -21,8 +21,7 @@ PetscErrorCode ablate::finiteVolume::processes::Buoyancy::UpdateAverageDensity(T
     // get the flowSolution from the ts
     Vec globFlowVec = flow.GetSubDomain().GetSolutionVector();
     const PetscScalar *flowArray;
-    PetscErrorCode ierr = VecGetArrayRead(globFlowVec, &flowArray);
-    CHKERRQ(ierr);
+    PetscCall(VecGetArrayRead(globFlowVec, &flowArray));
 
     // Get the valid cell range over this region
     solver::Range cellRange;
@@ -35,8 +34,7 @@ PetscErrorCode ablate::finiteVolume::processes::Buoyancy::UpdateAverageDensity(T
 
         // Get the current state variables for this cell
         const PetscScalar *euler;
-        ierr = DMPlexPointGlobalFieldRead(flow.GetSubDomain().GetDM(), cell, flowEulerId, flowArray, &euler);
-        CHKERRQ(ierr);
+        PetscCall(DMPlexPointGlobalFieldRead(flow.GetSubDomain().GetDM(), cell, flowEulerId, flowArray, &euler));
 
         if (euler) {
             locDensitySum += euler[CompressibleFlowFields::RHO];
@@ -48,18 +46,15 @@ PetscErrorCode ablate::finiteVolume::processes::Buoyancy::UpdateAverageDensity(T
     PetscReal densitySum = 0.0;
     PetscInt cellCount = 0;
     auto comm = flow.GetSubDomain().GetComm();
-    ierr = MPIU_Allreduce(&locDensitySum, &densitySum, 1, MPIU_REAL, MPIU_SUM, comm);
-    CHKERRMPI(ierr);
-    ierr = MPIU_Allreduce(&locCellCount, &cellCount, 1, MPIU_INT, MPIU_SUM, comm);
-    CHKERRMPI(ierr);
+    PetscCallMPI(MPIU_Allreduce(&locDensitySum, &densitySum, 1, MPIU_REAL, MPIU_SUM, comm));
+    PetscCallMPI(MPIU_Allreduce(&locCellCount, &cellCount, 1, MPIU_INT, MPIU_SUM, comm));
 
     // update reference density
     densityAvg = densitySum / cellCount;
 
     // cleanup
     flow.RestoreRange(cellRange);
-    ierr = VecRestoreArrayRead(globFlowVec, &flowArray);
-    CHKERRQ(ierr);
+    PetscCall(VecRestoreArrayRead(globFlowVec, &flowArray));
 
     PetscFunctionReturn(0);
 }

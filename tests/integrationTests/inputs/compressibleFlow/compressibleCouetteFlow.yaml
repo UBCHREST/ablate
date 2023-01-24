@@ -13,7 +13,7 @@ timestepper:
   # time stepper specific input arguments
   arguments:
     ts_type: rk
-    ts_adapt_type: none
+    ts_adapt_type: physics # overwrite and set the time step based upon the CFL constraint
     ts_max_steps: 20
   # the domain/mesh must be specified at the start of a simulation
   domain: !ablate::domain::BoxMesh
@@ -75,9 +75,6 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
 
   # share the existing eos with the compressible flow solver
   eos: *eos
-
-  # overwrite and set the time step based upon the CFL constraint
-  computePhysicsTimeStep: true
 
   # using constant boundary condition values on sides 1,3 with the specified values for euler
   boundaryConditions:

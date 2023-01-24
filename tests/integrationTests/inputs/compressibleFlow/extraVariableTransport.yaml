@@ -16,8 +16,9 @@ timestepper:
   # time stepper specific input arguments
   arguments:
     ts_type: rk
-    ts_adapt_type: none
+    ts_adapt_type: physics # overwrite and set the time step based upon the CFL constraint
     ts_max_steps: 20
+    ts_adapt_safety: 1.0
   # the domain/mesh must be specified at the start of a simulation
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
@@ -73,7 +74,6 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
   # a flux calculator must be specified to so solver for advection
   fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
     mInf: .3
-  computePhysicsTimeStep: true
 
   # the default transport object assumes constant values for k, mu, diff
   transport:
@@ -118,7 +118,7 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
         - name: c
           location: [ .25, .75 ]
       bufferSize: 10
-      variables:  [velocity, densityEV, ev, euler ] # these fields will be saved to a text file at the specified locations
+      variables:  [velocity, densityEV, EV, euler ] # these fields will be saved to a text file at the specified locations
 
     # define a probe using a rake, which uses a start/end location and a number of probes to compute initial probe locations
     - !ablate::monitors::Probes
@@ -128,4 +128,4 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
         end: [.25, 0.5]
         number: 3
       bufferSize: 10
-      variables: [ velocity, densityEV, ev, euler ]  # these fields will be saved to a text file at the specified locations
+      variables: [ velocity, densityEV, EV, euler ]  # these fields will be saved to a text file at the specified locations

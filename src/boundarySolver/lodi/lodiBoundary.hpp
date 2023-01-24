@@ -27,10 +27,16 @@ class LODIBoundary : public BoundaryProcess {
     void GetEigenValues(PetscReal veln, PetscReal c, PetscReal velnprm, PetscReal cprm, PetscReal lamda[]) const;
 
     void GetmdFdn(const PetscInt sOff[], const PetscReal* velNormCord, PetscReal rho, PetscReal T, PetscReal Cp, PetscReal Cv, PetscReal C, PetscReal Enth, PetscReal velnprm, PetscReal Cprm,
-                  const PetscReal* Yi, const PetscReal* EV, const PetscReal* sL, const PetscReal transformationMatrix[3][3], PetscReal* mdFdn) const;
+                  const PetscReal* conserved, const PetscInt uOff[], const PetscReal* sL, const PetscReal transformationMatrix[3][3], PetscReal* mdFdn) const;
 
     // Compute known/shared values
-    PetscInt dims, nEqs, nSpecEqs, nEvEqs, eulerId, speciesId, evId;
+    PetscInt dims, nEqs, nSpecEqs, nEvEqs, eulerId, speciesId;
+
+    //! There maybe more than one ev field so keep a separate id for each.
+    std::vector<PetscInt> evIds;
+
+    //! Track the number of components in each ev field
+    std::vector<PetscInt> nEvComps;
 
     // Keep track of the required fields
     std::vector<std::string> fieldNames;
@@ -55,9 +61,9 @@ class LODIBoundary : public BoundaryProcess {
      * @param dims
      * @param nEqs
      * @param nSpecEqs
-     * @param nEvEqs
+     * @param nEvEqs number of ev
      */
-    void Setup(PetscInt dims, PetscInt nEqs, PetscInt nSpecEqs = 0, PetscInt nEvEqs = 0, const std::vector<domain::Field>& fields = {});
+    void Setup(PetscInt dims, PetscInt nEqs, PetscInt nSpecEqs = 0, std::vector<PetscInt> nEvEqs = {}, const std::vector<domain::Field>& fields = {});
 
    private:
     eos::ThermodynamicTemperatureFunction computeTemperatureFunction;

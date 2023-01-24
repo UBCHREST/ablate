@@ -1,14 +1,14 @@
-Timestep: 0000 time = 0        dt = 0.1
-Timestep: 0001 time = 6.001e-05 dt = 6.00058e-05
-Timestep: 0002 time = 0.000114 dt = 5.39555e-05
-Timestep: 0003 time = 0.0001643 dt = 5.0383e-05
-Timestep: 0004 time = 0.0002125 dt = 4.81531e-05
-Timestep: 0005 time = 0.0002596 dt = 4.70575e-05
-Timestep: 0006 time = 0.0003064 dt = 4.68213e-05
-Timestep: 0007 time = 0.0003537 dt = 4.72864e-05
-Timestep: 0008 time = 0.000402 dt = 4.83701e-05
-Timestep: 0009 time = 0.0004516 dt = 4.9597e-05
-Timestep: 0010 time = 0.0005008 dt = 4.92152e-05
+Timestep: 0000 time = 0        dt = 6.00058e-05
+Timestep: 0001 time = 6.001e-05 dt = 5.39555e-05
+Timestep: 0002 time = 0.000114 dt = 5.0383e-05
+Timestep: 0003 time = 0.0001643 dt = 4.81531e-05
+Timestep: 0004 time = 0.0002125 dt = 4.70575e-05
+Timestep: 0005 time = 0.0002596 dt = 4.68213e-05
+Timestep: 0006 time = 0.0003064 dt = 4.72864e-05
+Timestep: 0007 time = 0.0003537 dt = 4.83701e-05
+Timestep: 0008 time = 0.000402 dt = 4.9597e-05
+Timestep: 0009 time = 0.0004516 dt = 4.92152e-05
+Timestep: 0010 time = 0.0005008 dt = 4.93212e-05
 ResultFiles:
 fluidField.hdf5
 fluidField.xmf

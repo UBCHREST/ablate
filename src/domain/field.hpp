@@ -2,6 +2,8 @@
 #define ABLATELIBRARY_FIELD_HPP
 
 #include <petsc.h>
+#include <algorithm>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -31,9 +33,17 @@ struct Field {
     // Keep track of the field type
     const enum FieldType type;
 
+    // store any optional tags, there are strings that can be used to describe the field
+    const std::set<std::string> tags;
+
     static Field FromFieldDescription(const FieldDescription& fieldDescription, PetscInt id, PetscInt subId = PETSC_DEFAULT, PetscInt offset = PETSC_DEFAULT);
 
     Field CreateSubField(PetscInt subId, PetscInt offset) const;
+
+    // helper function to check if the field contains a certain tag
+    inline bool Tagged(std::string_view tag) const {
+        return std::any_of(tags.begin(), tags.end(), [tag](const auto& tagItem) { return tagItem == tag; });
+    }
 };
 
 std::istream& operator>>(std::istream& is, FieldLocation& v);

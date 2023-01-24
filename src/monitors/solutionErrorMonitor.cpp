@@ -1,7 +1,7 @@
 #include "solutionErrorMonitor.hpp"
 #include <monitors/logs/stdOut.hpp>
-#include <utilities/petscError.hpp>
 #include "mathFunctions/mathFunction.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::monitors::SolutionErrorMonitor::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope errorScope, ablate::monitors::SolutionErrorMonitor::Norm normType,
                                                              std::shared_ptr<logs::Log> logIn)
@@ -9,29 +9,24 @@ ablate::monitors::SolutionErrorMonitor::SolutionErrorMonitor(ablate::monitors::S
 
 PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
+
     DM dm;
     PetscDS ds;
-    ierr = TSGetDM(ts, &dm);
-    CHKERRQ(ierr);
-    ierr = DMGetDS(dm, &ds);
-    CHKERRQ(ierr);
+    PetscCall(TSGetDM(ts, &dm));
+    PetscCall(DMGetDS(dm, &ds));
 
     // Check for the number of DS, this should be relaxed
     PetscInt numberDS;
-    ierr = DMGetNumDS(dm, &numberDS);
-    CHKERRQ(ierr);
+    PetscCall(DMGetNumDS(dm, &numberDS));
     if (numberDS > 1) {
         SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "This monitor only supports a single DS in a DM");
     }
 
     // Get the number of fields
     PetscInt numberOfFields;
-    ierr = PetscDSGetNumFields(ds, &numberOfFields);
-    CHKERRQ(ierr);
+    PetscCall(PetscDSGetNumFields(ds, &numberOfFields));
     PetscInt* numberComponentsPerField;
-    ierr = PetscDSGetComponents(ds, &numberComponentsPerField);
-    CHKERRQ(ierr);
+    PetscCall(PetscDSGetComponents(ds, &numberComponentsPerField));
 
     SolutionErrorMonitor* errorMonitor = (SolutionErrorMonitor*)ctx;
 
@@ -63,8 +58,7 @@ PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, Petsc
             PetscInt fieldOffset = 0;
             for (PetscInt f = 0; f < numberOfFields; f++) {
                 PetscObject field;
-                ierr = DMGetField(dm, f, NULL, &field);
-                CHKERRQ(ierr);
+                PetscCall(DMGetField(dm, f, NULL, &field));
                 const char* name;
                 PetscObjectGetName((PetscObject)field, &name);
 
@@ -85,14 +79,14 @@ PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, Petsc
 std::vector<PetscReal> ablate::monitors::SolutionErrorMonitor::ComputeError(TS ts, PetscReal time, Vec u) {
     DM dm;
     PetscDS ds;
-    TSGetDM(ts, &dm) >> checkError;
-    DMGetDS(dm, &ds) >> checkError;
+    TSGetDM(ts, &dm) >> utilities::PetscUtilities::checkError;
+    DMGetDS(dm, &ds) >> utilities::PetscUtilities::checkError;
 
     // Get the number of fields
     PetscInt numberOfFields;
-    PetscDSGetNumFields(ds, &numberOfFields) >> checkError;
+    PetscDSGetNumFields(ds, &numberOfFields) >> utilities::PetscUtilities::checkError;
     PetscInt* numberComponentsPerField;
-    PetscDSGetComponents(ds, &numberComponentsPerField) >> checkError;
+    PetscDSGetComponents(ds, &numberComponentsPerField) >> utilities::PetscUtilities::checkError;
 
     // compute the total number of components
     PetscInt totalComponents = 0;
@@ -101,7 +95,7 @@ std::vector<PetscReal> ablate::monitors::SolutionErrorMonitor::ComputeError(TS t
     std::vector<ablate::mathFunctions::PetscFunction> exactFuncs(numberOfFields);
     std::vector<void*> exactCtxs(numberOfFields);
     for (auto f = 0; f < numberOfFields; ++f) {
-        PetscDSGetExactSolution(ds, f, &exactFuncs[f], &exactCtxs[f]) >> checkError;
+        PetscDSGetExactSolution(ds, f, &exactFuncs[f], &exactCtxs[f]) >> utilities::PetscUtilities::checkError;
         if (!exactFuncs[f]) {
             throw std::invalid_argument("The exact solution has not set");
         }
@@ -110,17 +104,17 @@ std::vector<PetscReal> ablate::monitors::SolutionErrorMonitor::ComputeError(TS t
 
     // Create an vector to hold the exact solution
     Vec exactVec;
-    VecDuplicate(u, &exactVec) >> checkError;
-    DMProjectFunction(dm, time, &exactFuncs[0], &exactCtxs[0], INSERT_ALL_VALUES, exactVec) >> checkError;
+    VecDuplicate(u, &exactVec) >> utilities::PetscUtilities::checkError;
+    DMProjectFunction(dm, time, &exactFuncs[0], &exactCtxs[0], INSERT_ALL_VALUES, exactVec) >> utilities::PetscUtilities::checkError;
 
     // Compute the error
-    VecAXPY(exactVec, -1.0, u) >> checkError;
+    VecAXPY(exactVec, -1.0, u) >> utilities::PetscUtilities::checkError;
 
     // If we treat this as a single vector or multiple components change how this is done
     totalComponents = errorScope == Scope::VECTOR ? 1 : totalComponents;
 
     // Update the block size
-    VecSetBlockSize(exactVec, totalComponents) >> checkError;
+    VecSetBlockSize(exactVec, totalComponents) >> utilities::PetscUtilities::checkError;
 
     // Compute the l2 errors
     std::vector<PetscReal> ferrors(totalComponents);
@@ -144,7 +138,7 @@ std::vector<PetscReal> ablate::monitors::SolutionErrorMonitor::ComputeError(TS t
     }
 
     // compute the norm along the stride
-    VecStrideNormAll(exactVec, petscNormType, &ferrors[0]) >> checkError;
+    VecStrideNormAll(exactVec, petscNormType, &ferrors[0]) >> utilities::PetscUtilities::checkError;
 
     // normalize the error if _norm
     if (normType == Norm::L1_NORM) {
@@ -164,7 +158,7 @@ std::vector<PetscReal> ablate::monitors::SolutionErrorMonitor::ComputeError(TS t
         }
     }
 
-    VecDestroy(&exactVec) >> checkError;
+    VecDestroy(&exactVec) >> utilities::PetscUtilities::checkError;
     return ferrors;
 }
 

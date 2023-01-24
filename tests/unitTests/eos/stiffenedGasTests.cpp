@@ -64,16 +64,14 @@ TEST_P(SGThermodynamicPropertyTestFixture, ShouldComputeProperty) {
     // act/assert check for compute without temperature
     auto thermodynamicFunction = eos->GetThermodynamicFunction(params.thermodynamicProperty, params.fields);
     std::vector<PetscReal> computedProperty(params.expectedValue.size(), NAN);
-    PetscErrorCode ierr = thermodynamicFunction.function(params.conservedValues.data(), computedProperty.data(), thermodynamicFunction.context.get());
-    ASSERT_EQ(ierr, 0);
+    ASSERT_EQ(0, thermodynamicFunction.function(params.conservedValues.data(), computedProperty.data(), thermodynamicFunction.context.get()));
     for (std::size_t c = 0; c < params.expectedValue.size(); c++) {
         ASSERT_NEAR(computedProperty[c], params.expectedValue[c], 1E-6) << "for direct function ";
     }
     // act/assert check for compute when temperature is known
     auto temperatureFunction = eos->GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, params.fields);
     PetscReal computedTemperature;
-    ierr = temperatureFunction.function(params.conservedValues.data(), &computedTemperature, temperatureFunction.context.get());
-    ASSERT_EQ(ierr, 0);
+    ASSERT_EQ(0, temperatureFunction.function(params.conservedValues.data(), &computedTemperature, temperatureFunction.context.get()));
 
     if (params.expectedTemperature) {
         ASSERT_NEAR(computedTemperature, params.expectedTemperature.value(), 1E-6) << "for computed temperature ";
@@ -81,9 +79,7 @@ TEST_P(SGThermodynamicPropertyTestFixture, ShouldComputeProperty) {
 
     auto thermodynamicTemperatureFunction = eos->GetThermodynamicTemperatureFunction(params.thermodynamicProperty, params.fields);
     computedProperty = std::vector<PetscReal>(params.expectedValue.size(), NAN);
-    ierr = thermodynamicTemperatureFunction.function(params.conservedValues.data(), computedTemperature, computedProperty.data(), thermodynamicTemperatureFunction.context.get());
-
-    ASSERT_EQ(ierr, 0);
+    ASSERT_EQ(0, thermodynamicTemperatureFunction.function(params.conservedValues.data(), computedTemperature, computedProperty.data(), thermodynamicTemperatureFunction.context.get()));
     for (std::size_t c = 0; c < params.expectedValue.size(); c++) {
         ASSERT_NEAR(computedProperty[c], params.expectedValue[c], 1E-6) << " for temperature function ";
     }
@@ -197,16 +193,15 @@ INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, SGThermodynamicPropertyTestFixtur
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// EOS get species tests
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-TEST(StiffenedGasEOSTests, StiffenedGasShouldReportNoSpeciesByDefault) {
+TEST(StiffenedGasEOSTests, StiffenedGasShouldReportNoSpeciesEctByDefault) {
     // arrange
     auto parameters = std::make_shared<ablate::parameters::MapParameters>();
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::StiffenedGas>(parameters);
 
     // act
-    auto species = eos->GetSpecies();
-
-    // assert
-    ASSERT_EQ(0, species.size());
+    ASSERT_EQ(0, eos->GetSpeciesVariables().size());
+    ASSERT_EQ(0, eos->GetFieldFunctionProperties().size());
+    ASSERT_EQ(0, eos->GetProgressVariables().size());
 }
 
 TEST(StiffenedGasEOSTests, StiffenedGasShouldReportSpeciesWhenProvided) {
@@ -215,7 +210,7 @@ TEST(StiffenedGasEOSTests, StiffenedGasShouldReportSpeciesWhenProvided) {
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::StiffenedGas>(parameters, std::vector<std::string>{"N2", "H2"});
 
     // act
-    auto species = eos->GetSpecies();
+    auto species = eos->GetSpeciesVariables();
 
     // assert
     ASSERT_EQ(2, species.size());
@@ -256,7 +251,7 @@ TEST_P(SGFieldFunctionTestFixture, ShouldComputeField) {
     std::vector<PetscReal> actualValue(params.expectedValue.size(), NAN);
 
     // act
-    auto stateFunction = eos->GetFieldFunctionFunction(params.field, params.property1, params.property2);
+    auto stateFunction = eos->GetFieldFunctionFunction(params.field, params.property1, params.property2, {ablate::eos::EOS::YI});
     stateFunction(params.property1Value, params.property2Value, params.velocity.size(), params.velocity.data(), params.yi.data(), actualValue.data());
 
     // assert

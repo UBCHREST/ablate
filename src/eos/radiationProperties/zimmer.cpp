@@ -10,13 +10,11 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerFunction(const Pe
     auto functionContext = (FunctionContext *)ctx;
     PetscReal temperature = 0;
     PetscReal density = 0;  //!< Variables to hold information gathered from the fields
-    PetscErrorCode ierr;    //!< Standard PETSc error code returned by PETSc functions
+                            //!< Standard PETSc error code returned by PETSc functions
 
-    ierr = functionContext->temperatureFunction.function(conserved, &temperature, functionContext->temperatureFunction.context.get());  //!< Get the temperature value at this location
-    CHKERRQ(ierr);
+    PetscCall(functionContext->temperatureFunction.function(conserved, &temperature, functionContext->temperatureFunction.context.get()));  //!< Get the temperature value at this location
     if (temperature != 0) {
-        ierr = functionContext->densityFunction.function(conserved, temperature, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
-        CHKERRQ(ierr);
+        PetscCall(functionContext->densityFunction.function(conserved, temperature, &density, functionContext->densityFunction.context.get()));  //!< Get the density value at this location
     }
 
     if (density == 0) {
@@ -64,7 +62,11 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerFunction(const Pe
         pCO = (density * UGC * YinCO * temperature) / (MWCO * 101325.);
 
         /** The resulting absorptivity is an average of species absorptivity weighted by partial pressure. */
-        *kappa = pCO2 * kappaCO2 + pH2O * kappaH2O + pCH4 * kappaCH4 + pCO * kappaCO;
+        *kappa = 0;
+        if (pCO2 > 1E-3 && kappaCO2 > 0) *kappa += pCO2 * kappaCO2;
+        if (pH2O > 1E-3 && kappaH2O > 0) *kappa += pH2O * kappaH2O;
+        if (pCH4 > 1E-3 && kappaCH4 > 0) *kappa += pCH4 * kappaCH4;
+        if (pCO > 1E-3 && kappaCO > 0) *kappa += pCO * kappaCO;
     }
     PetscFunctionReturn(0);
 }
@@ -74,11 +76,10 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerTemperatureFuncti
     /** This model depends on mass fraction, temperature, and density in order to predict the absorption properties of the medium. */
     auto functionContext = (FunctionContext *)ctx;
     PetscReal density = 0;  //!< Variables to hold information gathered from the fields
-    PetscErrorCode ierr;    //!< Standard PETSc error code returned by PETSc functions
+                            //!< Standard PETSc error code returned by PETSc functions
 
     if (temperature != 0) {
-        ierr = functionContext->densityFunction.function(conserved, temperature, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
-        CHKERRQ(ierr);
+        PetscCall(functionContext->densityFunction.function(conserved, temperature, &density, functionContext->densityFunction.context.get()));  //!< Get the density value at this location
     }
 
     if (density == 0) {
@@ -126,7 +127,11 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerTemperatureFuncti
         pCO = (density * UGC * YinCO * temperature) / (MWCO * 101325.);
 
         /** The resulting absorptivity is an average of species absorptivity weighted by partial pressure. */
-        *kappa = pCO2 * kappaCO2 + pH2O * kappaH2O + pCH4 * kappaCH4 + pCO * kappaCO;
+        *kappa = 0;
+        if (pCO2 > 1E-3 && kappaCO2 > 0) *kappa += pCO2 * kappaCO2;
+        if (pH2O > 1E-3 && kappaH2O > 0) *kappa += pH2O * kappaH2O;
+        if (pCH4 > 1E-3 && kappaCH4 > 0) *kappa += pCH4 * kappaCH4;
+        if (pCO > 1E-3 && kappaCO > 0) *kappa += pCO * kappaCO;
     }
     PetscFunctionReturn(0);
 }

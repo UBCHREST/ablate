@@ -1,7 +1,7 @@
 #include "mpiFileLog.hpp"
-#include <utilities/mpiError.hpp>
-#include <utilities/petscError.hpp>
 #include "environment/runEnvironment.hpp"
+#include "utilities/mpiUtilities.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::monitors::logs::MpiFileLog::MpiFileLog(std::string fileName)
     : outputPath(std::filesystem::path(fileName).is_absolute() ? std::filesystem::path(fileName) : ablate::environment::RunEnvironment::Get().GetOutputDirectory() / fileName), file(nullptr) {}
@@ -18,17 +18,16 @@ void ablate::monitors::logs::MpiFileLog::Initialize(MPI_Comm commIn) {
 
     // Update the output path with the rank
     int rank;
-    MPI_Comm_rank(commIn, &rank) >> checkMpiError;
+    MPI_Comm_rank(commIn, &rank) >> utilities::MpiUtilities::checkError;
     outputPath = outputPath.parent_path() / (outputPath.stem().string() + "." + std::to_string(rank) + outputPath.extension().string());
     file = fopen(outputPath.c_str(), "a");
-    std::cout << outputPath << std::endl;
 }
 
 void ablate::monitors::logs::MpiFileLog::Printf(const char* format, ...) {
     if (file) {
         va_list args;
         va_start(args, format);
-        PetscVFPrintf(file, format, args) >> checkError;
+        PetscVFPrintf(file, format, args) >> utilities::PetscUtilities::checkError;
         va_end(args);
     }
 }

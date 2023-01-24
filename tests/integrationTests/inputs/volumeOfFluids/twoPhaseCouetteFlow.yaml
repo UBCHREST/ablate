@@ -1,0 +1,128 @@
+---
+environment:
+  title: mixedTransport
+  tagDirectory: true
+arguments:
+  dm_plex_periodic_cut: true
+timestepper:
+  name: theMainTimeStepper
+  arguments:
+    ts_type: rk
+    ts_max_time: 0.4
+    ts_dt: 1e-6
+    ts_max_steps: 2
+    ts_adapt_type: none
+  domain: !ablate::domain::BoxMesh
+    name: simpleBoxField
+    faces: [ 3, 3 ]
+    lower: [ 0, 0 ]
+    upper: [ 1, 1 ]
+    boundary: [ PERIODIC, NONE ]
+    options:
+      dm_refine: 1
+    modifiers:
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+      - !ablate::domain::modifiers::GhostBoundaryCells
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas
+          parameters:
+            gamma: 0
+            Rgas: 0
+      - name: densityvolumeFraction
+        type: FVM
+      - name: volumeFraction
+        type: FVM
+      - name: pressure
+        location: AUX
+        type: FVM
+  initialization:
+    - fieldName: "euler" # p=1e5 Pa, T=300 K
+      field: >-
+        y > 0.5 ? 1.1614401858304297 : 994.0897497618486,
+        y > 0.5 ? 1.1614401858304297*(215250.0) : 994.0897497618486*(2428423.405461103),
+        0.0,
+        0.0
+    - fieldName: densityvolumeFraction
+      field: "y > 0.5 ? 1.1614401858304297 : 0.0"
+    - fieldName: volumeFraction # additional field alpha to initialize
+      field: "y > 0.5 ? 1.0 : 0.0 "
+solver: !ablate::finiteVolume::FiniteVolumeSolver
+  id: flow solver
+  processes:
+    # ** need to list transport first, otherwise aux field update will overwrite! **
+    - !ablate::finiteVolume::processes::NavierStokesTransport
+      eos: !ablate::eos::PerfectGas
+        parameters:
+          gamma: 0
+          Rgas: 0
+      transport: !ablate::eos::transport::TwoPhaseTransport
+        transport1: !ablate::eos::transport::Constant # air
+          k: 1.0 #0.025     # W/(mK)
+          mu: 3.0 #0.0000181 # kg/(ms)
+        transport2: !ablate::eos::transport::Constant # water
+          k: 2.0 #0.598     # W/(mK)
+          mu: 4.0 #0.001     # kg/(ms)
+    - !ablate::finiteVolume::processes::TwoPhaseEulerAdvection
+      eosGas: !ablate::eos::PerfectGas &eosAir
+        parameters: # air
+          gamma: 1.4
+          Rgas: 287.0
+      eosLiquid: !ablate::eos::StiffenedGas &eosWater
+        parameters: # water
+          gamma: 1.932
+          Cp: 8095.08
+          p0: 1164500000.0
+      fluxCalculatorGasGas: !ablate::finiteVolume::fluxCalculator::RiemannStiff
+        eosL: *eosAir
+        eosR: *eosAir
+      fluxCalculatorGasLiquid: !ablate::finiteVolume::fluxCalculator::RiemannStiff
+        eosL: *eosAir
+        eosR: *eosWater
+      fluxCalculatorLiquidGas: !ablate::finiteVolume::fluxCalculator::RiemannStiff
+        eosL: *eosWater
+        eosR: *eosAir
+      fluxCalculatorLiquidLiquid: !ablate::finiteVolume::fluxCalculator::RiemannStiff
+        eosL: *eosWater
+        eosR: *eosWater
+
+  computePhysicsTimeStep: true # this does nothing until we make a cfl for twoPhaseEulerAdvection
+  boundaryConditions:
+    - !ablate::finiteVolume::boundaryConditions::EssentialGhost
+      boundaryName: "stationary wall"
+      labelIds: [ 1 ]
+      boundaryValue:
+        fieldName: euler
+        field: "1.1614401858304297, 1.1614401858304297*215250.0, 0.0, 0.0"
+    - !ablate::finiteVolume::boundaryConditions::EssentialGhost
+      boundaryName: "stationary densityVF"
+      labelIds: [ 1 ]
+      boundaryValue:
+        fieldName: densityvolumeFraction
+        field: "1.1614401858304297"
+    - !ablate::finiteVolume::boundaryConditions::EssentialGhost
+      boundaryName: "stationary vf"
+      labelIds: [ 1 ]
+      boundaryValue:
+        fieldName: volumeFraction
+        field: "1.0"
+    - !ablate::finiteVolume::boundaryConditions::EssentialGhost
+      boundaryName: "moving wall"
+      labelIds: [ 3 ]
+      boundaryValue:
+        fieldName: euler
+        field: "994.0897497618486, 994.0897497618486*(2428423.405461103+50.0), 994.0897497618486*10.0, 0.0"
+    - !ablate::finiteVolume::boundaryConditions::EssentialGhost
+      boundaryName: "moving densityVF"
+      labelIds: [ 3 ]
+      boundaryValue:
+        fieldName: densityvolumeFraction
+        field: "0.0"
+    - !ablate::finiteVolume::boundaryConditions::EssentialGhost
+      boundaryName: "moving vf"
+      labelIds: [ 3 ]
+      boundaryValue:
+        fieldName: volumeFraction
+        field: "0.0"
+  monitors:
+    - !ablate::monitors::TimeStepMonitor

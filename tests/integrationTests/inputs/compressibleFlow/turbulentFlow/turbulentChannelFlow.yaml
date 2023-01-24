@@ -1,0 +1,224 @@
+# This case is inspired by the setup for Direct Numerical Simulation of turbulent channel flow up to Ret=590 (Moser et al. Physics of Fluids, 11(4):943–945, 1999).
+# The case is a statistically-developing internal flow through parallel smooth walls.
+# The domain comprises a 3D rectangular channel.
+# Longitudinal direction (Mean-flow direction)
+# Vertical direction (Wall-normal direction)
+# Spanwise direction (Statistically homogeneous direction).
+# Large eddy simulation (LES) is used to model sub-grid-scales and wall models are deployed near the wall regions.
+
+# Turbulent inflow is imposed at the intel. Turbulent velocity profile is approximated from 1/7 power-low.
+
+# ### Bulk velocity of flow:
+# - $$ U_b=(17.55,0.00,0.00) m/s$$
+# ### Max velocity:
+# - $$U_max = 19.86 m/s$$
+# ### Reynolds Number:
+# - $$Re = 5E+6$$
+# ### velocity profile
+# - $$u = U_max (y/Re)^1/7$$
+# ### turbulence intensity
+# - $$U_mean* 10%$$
+
+---
+# metadata for the simulation
+environment:
+  title: _TurbulentChannelFlow
+  tagDirectory: false
+arguments:
+  # ask petsc to label the boundary values
+  dm_plex_separate_marker: ""
+# set up the time stepper responsible for marching in time
+timestepper:
+  name: theMainTimeStepper
+  arguments:
+    ts_type: rk
+    ts_max_steps: 20
+    ts_dt: 1.0E-10
+    ts_adapt_safety: 0.9
+  io:
+    interval: 1 # result are saved at every 5 steps.  In real simulations this should be much larger.  # Create a simple box mesh to start
+  domain: !ablate::domain::BoxMesh
+    name: simpleBoxField
+    faces: [ 10, 10, 5]
+    lower: [ 0.0, -0.025,0.0]
+    upper: [ 0.2 , 0.025, 0.02]
+    simplex: false
+    # pass in these options to petsc when setting up the domain.  Using an option list here prevents command line arguments from being seen.
+    options:
+      dm_distribute: false # turn off default dm_distribute so that we can extrude label first
+      dm_distribute_overlap: 0
+    modifiers:
+      # extrude all boundaries
+      - !ablate::domain::modifiers::ExtrudeLabel
+        # use the labels defined by the dm_plex_separate_marker option
+        regions:
+          - name: marker
+            value: 5 # this is the right boundary value
+          - name: marker
+            value: 6 # this is the left boundary value
+          - name: marker
+            value: 3 # this is the top boundary value
+          - name: marker
+            value: 4 # this is the left boundary value
+          - name: marker
+
+        # define a region for the new interface between the originalRegion and extrudedRegion
+        boundaryRegion:
+          name: boundaryFaces
+        # for all cells/faces/points that were in the original mesh before extrusion
+        originalRegion:
+          name: interiorCells
+        # for all cells/faces/points that were extruded.  This does include overlap faces that are in the boundaryRegion, originalRegion, and extrudedRegion regions
+        extrudedRegion:
+          name: boundaryCells
+      # if using mpi, this modifier distributes cells
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+        ghostCellDepth: 2
+
+        # refine the mesh
+        dm_refine: 0
+
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas: 287
+      # a field should be created for turbulent kinetic energy (tke)
+      - !ablate::finiteVolume::TurbulenceFlowFields
+
+  initialization:
+    - !<!ablate::finiteVolume::fieldFunctions::Euler>
+      state: &2
+        eos: *eos
+        pressure: 101325.0
+        temperature: 300
+        velocity: 15,0,0
+    - !ablate::finiteVolume::fieldFunctions::DensityExtraVariables
+      # introduce initial value for tke
+      name: tke
+      state: *2
+      functions:
+        - 1.0
+solvers:
+  # The compressible flow solver will solve the compressible flow equations over the interiorCells
+  - !ablate::finiteVolume::CompressibleFlowSolver
+    id: vortexFlowField
+    # only apply this solver to the flowRegion, area without faces
+    region:
+      name: interiorCells
+    additionalProcesses:
+
+      - !ablate::finiteVolume::processes::LES
+      - !ablate::finiteVolume::processes::PressureGradientScaling
+        &pgs
+        eos: *eos
+        alphaInit: 100.0
+        maxAlphaAllowed: 100.0
+        domainLength: 0.165354
+
+    # a flux calculator must be specified to so solver for advection
+    fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
+      pgs: *pgs
+
+    # cfl is used to compute the physics time step
+    parameters:
+      cfl: 0.5
+
+    # the default transport object assumes constant values for k, mu, diff
+    transport:
+      k: .2
+      mu: .1
+      diff: 1E-4
+    eos: *eos
+
+    monitors:
+      # output the timestep and dt at each time step
+      - !ablate::monitors::TimeStepMonitor
+
+      # use a boundary solver to update the cells in the boundaryCellsLeft region to represent an inlet
+  - !ablate::boundarySolver::BoundarySolver
+    id: inlet
+    region:
+      name: marker
+      value: 6
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: false
+    processes:
+      - !ablate::boundarySolver::lodi::Inlet
+        eos: *eos
+        pgs: *pgs
+        velocity: !ablate::mathFunctions::ParsedSeries
+          upperBound: 5000
+          lowerBound: 1
+          formula: (a*(h-abs(y))^(1/7))/5000 +(sqrt(alpha * exp(-2 * (((kappa_o) + (kappa_max) - (kappa_o)) * (i - 1)  / n) / kappa_eta) ^ 2) * (uPrime^2 /kappa_e * (((kappa_o)+ (kappa_max)- (kappa_o)) * (i - 1)  / n)/ kappa_e) ^ 4 / (1* (1 + (((kappa_o) + (kappa_max)- (kappa_o)) * (i - 1)  / n) / kappa_e) )^ (17/6)* cos( (((kappa_o) + (kappa_max) - (kappa_o)) * (i - 1)  / n) * (delta_x)*sin(.5* ((kappa_o) + (kappa_max) - (kappa_o)) * (i - 1)  / n)* (delta_x)*sin( acos(pRand(LO,HI)))* cos(pRand(LO1,HI1) )* x + (pRand(LO2,HI2)))), sqrt(alpha * exp(-2 * (((kappa_o) + (kappa_max) - (kappa_o)) * (i - 1)  / n) / kappa_eta) ^ 2) * (uPrime^2 /kappa_e * (((kappa_o)+ (kappa_max)- (kappa_o)) * (i - 1)  / n)/ kappa_e) ^ 4 / (1* (1 + (((kappa_o) + (kappa_max)- (kappa_o)) * (i - 1)  / n) / kappa_e) )^ (17/6)* cos( (((kappa_o) + (kappa_max) - (kappa_o)) * (i - 1)  / n) * (delta_y)*sin(.5* ((kappa_o) + (kappa_max) - (kappa_o)) * (i - 1)  / n)* (delta_y)*sin( acos(pRand(LO,HI)))* cos(pRand(LO1,HI1) )* y + (pRand(LO2,HI2))),sqrt(alpha * exp(-2 * (((kappa_o) + (kappa_max) - (kappa_o)) * (i - 1)  / n) / kappa_eta) ^ 2) * (uPrime^2 /kappa_e * (((kappa_o)+ (kappa_max)- (kappa_o)) * (i - 1)  / n)/ kappa_e) ^ 4 / (1* (1 + (((kappa_o) + (kappa_max)- (kappa_o)) * (i - 1)  / n) / kappa_e) )^ (17/6)* cos( (((kappa_o) + (kappa_max) - (kappa_o)) * (i - 1)  / n) * (delta_z)*sin(.5* ((kappa_o) + (kappa_max) - (kappa_o)) * (i - 1)  / n)* (delta_z)*sin( acos(pRand(LO,HI)))* cos(pRand(LO1,HI1) )* z + (pRand(LO2,HI2)))
+          constants:
+            n: 5000 # modes
+            a: 20.078 # Umean/Re^(1/7)
+            alpha: 1.453 # scaling constant
+            h: 0.025  # Integral length scale: half of the channel height
+            delta_x: 0.002 # grid size
+            delta_y: 0.002  # grid size
+            delta_z: 0.005  # grid size
+            kappa_eta: 0.857^3*5624   # epsilon^1/4 * nu^-3/4  where nu is molecular viscosity
+            uPrime: 0.25 # Umean * turbulence intensity
+            L: 0.05 #max(delta_z,delta_y)
+            epsilon: uPrime^3 / L
+            kappa_e: 25.82 # constant
+            kappa_o: 2*3.14/0.02 # max ( 2pi/Lx,2pi/Ly,2pi/Lz)
+            kappa_max: 3.14/(.02/10) # max ( pi/delta_x,pi/delta_y, z/delta_z)
+            HI: 1
+            LO: -1
+            HI1: 2*pi
+            LO1: 0
+            HI2: pi/2
+            LO2: -pi/2
+  # use a boundary solver to update the cells in the boundaryCellsRight region to represent an open pipe
+  - !ablate::boundarySolver::BoundarySolver
+    id: openBoundary
+    region:
+      name: marker
+      value: 5
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::OpenBoundary
+        eos: *eos
+        reflectFactor: 0.0
+        referencePressure: 101325.0
+        maxAcousticsLength: 1
+        pgs: *pgs
+    # bottom wall
+  - !ablate::boundarySolver::BoundarySolver
+    id: topBoundary
+    region:
+      name: marker
+      value: 3
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::IsothermalWall
+        eos: *eos
+        pgs: *pgs
+      # Deardorff (1970) wall model is used to recover the log law at the first boundary cell near the wall
+      - !ablate::boundarySolver::physics::LogLawBoundary
+
+      # top wall
+  - !ablate::boundarySolver::BoundarySolver
+    id: bottomBoundary
+    region:
+      name: marker
+      value: 4
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::IsothermalWall
+        eos: *eos
+        pgs: *pgs
+      # Deardorff (1970) wall model is used to recover the log law at the first boundary cell near the wall
+      - !ablate::boundarySolver::physics::LogLawBoundary
+

@@ -14,11 +14,11 @@ class CompressibleFlowState {
     const std::shared_ptr<mathFunctions::MathFunction> pressureFunction;
     const std::shared_ptr<mathFunctions::MathFunction> velocityFunction;
 
-    const std::shared_ptr<mathFunctions::FieldFunction> massFractionFunction;
+    const std::shared_ptr<mathFunctions::FieldFunction> otherPropertyFunction;
 
    public:
     CompressibleFlowState(std::shared_ptr<ablate::eos::EOS> eos, std::shared_ptr<mathFunctions::MathFunction> temperatureFunction, std::shared_ptr<mathFunctions::MathFunction> pressureFunction,
-                          std::shared_ptr<mathFunctions::MathFunction> velocityFunction, std::shared_ptr<mathFunctions::FieldFunction> massFractionFunction = {});
+                          std::shared_ptr<mathFunctions::MathFunction> velocityFunction, std::shared_ptr<mathFunctions::FieldFunction> otherPropertyFunction = {});
 
     /**
      * returns the field function for the supplied properties and field

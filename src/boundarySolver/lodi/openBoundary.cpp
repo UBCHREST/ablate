@@ -47,12 +47,9 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
             boundaryVel[d] = boundaryValues[uOff[boundary->eulerId] + finiteVolume::CompressibleFlowFields::RHOU + d] / boundaryDensity;
             boundaryNormalVelocity += boundaryVel[d] * fg->normal[d];
         }
-        PetscErrorCode ierr = boundary->computeTemperature.function(boundaryValues, &boundaryTemperature, boundary->computeTemperature.context.get());
-        CHKERRQ(ierr);
-        ierr = boundary->computeSpeedOfSound.function(boundaryValues, boundaryTemperature, &boundarySpeedOfSound, boundary->computeSpeedOfSound.context.get());
-        CHKERRQ(ierr);
-        ierr = boundary->computePressureFromTemperature.function(boundaryValues, boundaryTemperature, &boundaryPressure, boundary->computePressureFromTemperature.context.get());
-        CHKERRQ(ierr);
+        PetscCall(boundary->computeTemperature.function(boundaryValues, &boundaryTemperature, boundary->computeTemperature.context.get()));
+        PetscCall(boundary->computeSpeedOfSound.function(boundaryValues, boundaryTemperature, &boundarySpeedOfSound, boundary->computeSpeedOfSound.context.get()));
+        PetscCall(boundary->computePressureFromTemperature.function(boundaryValues, boundaryTemperature, &boundaryPressure, boundary->computePressureFromTemperature.context.get()));
         boundaryMach = PetscAbs(boundaryNormalVelocity / boundarySpeedOfSound);
     }
 
@@ -75,8 +72,7 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
             stencilVel[s][d] = stencilValues[s][uOff[boundary->eulerId] + finiteVolume::CompressibleFlowFields::RHOU + d] / stencilDensity[s];
             stencilNormalVelocity[s] += stencilVel[s][d] * fg->normal[d];
         }
-        PetscErrorCode ierr = boundary->computePressure.function(stencilValues[s], &stencilPressure[s], boundary->computePressure.context.get());
-        CHKERRQ(ierr);
+        PetscCall(boundary->computePressure.function(stencilValues[s], &stencilPressure[s], boundary->computePressure.context.get()));
 
         // Map the stencil velocity to a normal velocity
         PetscReal normalCoordsVel[3];
@@ -90,8 +86,11 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
         for (PetscInt sp = 0; sp < boundary->nSpecEqs; sp++) {
             stencilYi[sp][s] = stencilValues[s][uOff[boundary->speciesId] + sp] / stencilDensity[s];
         }
-        for (PetscInt ev = 0; ev < boundary->nEvEqs; ev++) {
-            stencilEv[ev][s] = stencilValues[s][uOff[boundary->evId] + ev] / stencilDensity[s];
+        int ne = 0;
+        for (std::size_t ev = 0; ev < boundary->evIds.size(); ++ev) {
+            for (PetscInt ec = 0; ec < boundary->nEvComps[ev]; ++ec) {
+                stencilEv[ne++][s] = stencilValues[s][uOff[boundary->evIds[ev]] + ec] / stencilDensity[s];
+            }
         }
     }
 
@@ -112,8 +111,13 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
         boundaryYi[i] = boundaryDensityYi[i] / boundaryDensity;
     }
     std::vector<PetscReal> boundaryEv(boundary->nEvEqs);
-    for (PetscInt i = 0; i < boundary->nEvEqs; i++) {
-        boundaryEv[i] = boundaryValues[uOff[boundary->evId] + i] / boundaryDensity;
+    int i = 0;
+    for (std::size_t ev = 0; ev < boundary->evIds.size(); ++ev) {
+        const PetscReal *rhoEV = boundaryValues + uOff[boundary->evIds[ev]];
+        for (PetscInt ec = 0; ec < boundary->nEvComps[ev]; ++ec) {
+            boundaryEv[i] = rhoEV[ec] / boundaryDensity;
+            i++;
+        }
     }
 
     // Compute the cp, cv from the eos
@@ -235,9 +239,9 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
                        boundarySensibleEnthalpy,
                        velNormPrim,
                        speedOfSoundPrim,
-                       boundaryDensityYi /* PetscReal* Yi*/,
-                       boundary->nEvEqs > 0 ? boundaryValues + uOff[boundary->evId] : nullptr /* PetscReal* EV*/,
-                       &scriptL[0],
+                       boundaryValues,
+                       uOff,
+                       scriptL.data(),
                        transformationMatrix,
                        source);
 

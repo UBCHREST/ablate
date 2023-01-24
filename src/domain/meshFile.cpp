@@ -1,7 +1,6 @@
 #include "meshFile.hpp"
-#include <utilities/petscError.hpp>
-#include <utilities/petscOptions.hpp>
 #include <utility>
+#include "utilities/petscUtilities.hpp"
 
 ablate::domain::MeshFile::MeshFile(const std::string& nameIn, const std::filesystem::path& pathIn, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors,
                                    std::vector<std::shared_ptr<modifiers::Modifier>> modifiers, const std::shared_ptr<parameters::Parameters>& options)
@@ -19,8 +18,8 @@ DM ablate::domain::MeshFile::ReadDMFromFile(const std::string& name, const std::
     }
 
     DM dm;
-    DMPlexCreateFromFile(PETSC_COMM_WORLD, path.c_str(), name.c_str(), PETSC_TRUE, &dm) >> checkError;
-    PetscObjectSetName((PetscObject)dm, name.c_str()) >> checkError;
+    DMPlexCreateFromFile(PETSC_COMM_WORLD, path.c_str(), name.c_str(), PETSC_TRUE, &dm) >> utilities::PetscUtilities::checkError;
+    PetscObjectSetName((PetscObject)dm, name.c_str()) >> utilities::PetscUtilities::checkError;
     return dm;
 }
 

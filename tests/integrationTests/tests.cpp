@@ -13,11 +13,15 @@ INSTANTIATE_TEST_SUITE_P(
                            .expectedOutputFile = "outputs/compressibleFlow/compressibleFlowVortex.txt",
                            .arguments = "",
                            .expectedFiles{{"outputs/compressibleFlow/compressibleFlowVortex/domain.xmf", "domain.xmf"}}},
-        (MpiTestParameter){.testName = "inputs/compressibleFlow/lesIsotropicTurbulence.yaml",
+        (MpiTestParameter){.testName = "inputs/compressibleFlow/turbulentFlow/lesIsotropicTurbulence.yaml",
                            .nproc = 1,
                            .expectedOutputFile = "outputs/compressibleFlow/lesIsotropicTurbulence.txt",
                            .arguments = "",
                            .expectedFiles{{"outputs/compressibleFlow/lesIsotropicTurbulence/domain.xmf", "domain.xmf"}}},
+        (MpiTestParameter){.testName = "inputs/compressibleFlow/turbulentFlow/turbulentChannelFlow.yaml",
+                           .nproc = 1,
+                           .arguments = "",
+                           .expectedFiles{{"outputs/compressibleFlow/turbulentChannelFlow/domain.xmf", "domain.xmf"}}},
         (MpiTestParameter){
             .testName = "inputs/compressibleFlow/customCouetteCompressibleFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleFlow/customCouetteCompressibleFlow.txt", .arguments = ""},
         (MpiTestParameter){.testName = "inputs/compressibleFlow/extraVariableTransport.yaml",
@@ -76,24 +80,26 @@ INSTANTIATE_TEST_SUITE_P(
 
         (MpiTestParameter){
             .testName = "inputs/volumeOfFluids/twoGasAdvectingDiscontinuity.yaml", .nproc = 1, .expectedOutputFile = "outputs/volumeOfFluids/twoGasAdvectingDiscontinuity.txt", .arguments = ""},
+        (MpiTestParameter){.testName = "inputs/volumeOfFluids/twoPhaseCouetteFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/volumeOfFluids/twoPhaseCouetteFlow.txt", .arguments = ""},
         (MpiTestParameter){.testName = "inputs/volumeOfFluids/waterGravity.yaml", .nproc = 1, .expectedOutputFile = "outputs/volumeOfFluids/waterGravity.txt", .arguments = ""}),
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
-INSTANTIATE_TEST_SUITE_P(ReactingFlow, IntegrationTestsSpecifier,
-                         testing::Values(
+INSTANTIATE_TEST_SUITE_P(
+    ReactingFlow, IntegrationTestsSpecifier,
+    testing::Values(
 
-                             (MpiTestParameter){
-                                 .testName = "inputs/reactingFlow/simpleReactingFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/reactingFlow/simpleReactingFlow.txt", .arguments = ""},
-                             (MpiTestParameter){.testName = "inputs/reactingFlow/ignitionDelayGriMech.yaml",
-                                                .nproc = 1,
-                                                .arguments = "",
-                                                .expectedFiles{{"outputs/reactingFlow/ignitionDelayGriMech.PeakYi.txt", "ignitionDelayPeakYi.txt"},
-                                                               {"outputs/reactingFlow/ignitionDelayGriMech.Temperature.txt", "ignitionDelayTemperature.csv"}}},
-                             (MpiTestParameter){.testName = "inputs/reactingFlow/ignitionDelay2S_CH4_CM2.yaml",
-                                                .nproc = 1,
-                                                .arguments = "",
-                                                .expectedFiles{{"outputs/reactingFlow/ignitionDelay2S_CH4_CM2.Temperature.txt", "ignitionDelayTemperature.txt"}}}),
-                         [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
+        (MpiTestParameter){.testName = "inputs/reactingFlow/simpleReactingFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/reactingFlow/simpleReactingFlow.txt", .arguments = ""},
+        (MpiTestParameter){.testName = "inputs/reactingFlow/sampleDiffusionFlame.yaml", .nproc = 1, .expectedOutputFile = "outputs/reactingFlow/sampleDiffusionFlame.txt", .arguments = ""},
+        (MpiTestParameter){.testName = "inputs/reactingFlow/ignitionDelayGriMech.yaml",
+                           .nproc = 1,
+                           .arguments = "",
+                           .expectedFiles{{"outputs/reactingFlow/ignitionDelayGriMech.PeakYi.txt", "ignitionDelayPeakYi.txt"},
+                                          {"outputs/reactingFlow/ignitionDelayGriMech.Temperature.txt", "ignitionDelayTemperature.csv"}}},
+        (MpiTestParameter){.testName = "inputs/reactingFlow/ignitionDelay2S_CH4_CM2.yaml",
+                           .nproc = 1,
+                           .arguments = "",
+                           .expectedFiles{{"outputs/reactingFlow/ignitionDelay2S_CH4_CM2.Temperature.txt", "ignitionDelayTemperature.txt"}}}),
+    [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
 INSTANTIATE_TEST_SUITE_P(
     Machinery, IntegrationTestsSpecifier,
