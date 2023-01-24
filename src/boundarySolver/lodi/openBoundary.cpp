@@ -47,12 +47,9 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
             boundaryVel[d] = boundaryValues[uOff[boundary->eulerId] + finiteVolume::CompressibleFlowFields::RHOU + d] / boundaryDensity;
             boundaryNormalVelocity += boundaryVel[d] * fg->normal[d];
         }
-        PetscErrorCode ierr = boundary->computeTemperature.function(boundaryValues, &boundaryTemperature, boundary->computeTemperature.context.get());
-        CHKERRQ(ierr);
-        ierr = boundary->computeSpeedOfSound.function(boundaryValues, boundaryTemperature, &boundarySpeedOfSound, boundary->computeSpeedOfSound.context.get());
-        CHKERRQ(ierr);
-        ierr = boundary->computePressureFromTemperature.function(boundaryValues, boundaryTemperature, &boundaryPressure, boundary->computePressureFromTemperature.context.get());
-        CHKERRQ(ierr);
+        PetscCall(boundary->computeTemperature.function(boundaryValues, &boundaryTemperature, boundary->computeTemperature.context.get()));
+        PetscCall(boundary->computeSpeedOfSound.function(boundaryValues, boundaryTemperature, &boundarySpeedOfSound, boundary->computeSpeedOfSound.context.get()));
+        PetscCall(boundary->computePressureFromTemperature.function(boundaryValues, boundaryTemperature, &boundaryPressure, boundary->computePressureFromTemperature.context.get()));
         boundaryMach = PetscAbs(boundaryNormalVelocity / boundarySpeedOfSound);
     }
 
@@ -75,8 +72,7 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
             stencilVel[s][d] = stencilValues[s][uOff[boundary->eulerId] + finiteVolume::CompressibleFlowFields::RHOU + d] / stencilDensity[s];
             stencilNormalVelocity[s] += stencilVel[s][d] * fg->normal[d];
         }
-        PetscErrorCode ierr = boundary->computePressure.function(stencilValues[s], &stencilPressure[s], boundary->computePressure.context.get());
-        CHKERRQ(ierr);
+        PetscCall(boundary->computePressure.function(stencilValues[s], &stencilPressure[s], boundary->computePressure.context.get()));
 
         // Map the stencil velocity to a normal velocity
         PetscReal normalCoordsVel[3];

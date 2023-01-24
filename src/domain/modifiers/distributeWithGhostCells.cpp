@@ -1,5 +1,5 @@
 #include "distributeWithGhostCells.hpp"
-#include <utilities/petscError.hpp>
+#include "utilities/petscUtilities.hpp"
 
 ablate::domain::modifiers::DistributeWithGhostCells::DistributeWithGhostCells(int ghostCellDepthIn) : ghostCellDepth(ghostCellDepthIn < 1 ? 2 : ghostCellDepthIn) {}
 void ablate::domain::modifiers::DistributeWithGhostCells::Modify(DM &dm) {
@@ -7,13 +7,13 @@ void ablate::domain::modifiers::DistributeWithGhostCells::Modify(DM &dm) {
     DM dmDist;
 
     // create any ghost cells that are needed
-    DMPlexDistribute(dm, ghostCellDepth, NULL, &dmDist) >> checkError;
+    DMPlexDistribute(dm, ghostCellDepth, NULL, &dmDist) >> utilities::PetscUtilities::checkError;
     ReplaceDm(dm, dmDist);
 
     // if we are using ghost cells, set the adjacency for fvm
-    DMSetBasicAdjacency(dm, PETSC_TRUE, PETSC_FALSE) >> checkError;
+    DMSetBasicAdjacency(dm, PETSC_TRUE, PETSC_FALSE) >> utilities::PetscUtilities::checkError;
 
-    TagMpiGhostCells(dm) >> checkError;
+    TagMpiGhostCells(dm) >> utilities::PetscUtilities::checkError;
 }
 
 PetscErrorCode ablate::domain::modifiers::DistributeWithGhostCells::TagMpiGhostCells(DM dmNew) {
@@ -35,7 +35,7 @@ PetscErrorCode ablate::domain::modifiers::DistributeWithGhostCells::TagMpiGhostC
     PetscCall(DMGetLabel(dmNew, "ghost", &ghostLabel));
 
     DMLabel vtkLabel;
-    DMLabelCreate(PETSC_COMM_SELF, "vtkLabel", &vtkLabel) >> checkError;
+    DMLabelCreate(PETSC_COMM_SELF, "vtkLabel", &vtkLabel) >> utilities::PetscUtilities::checkError;
 
     for (l = 0, c = cStart; l < numLeaves && c < cEnd; ++l, ++c) {
         for (; c < leafLocal[l] && c < cEnd; ++c) {
@@ -76,7 +76,7 @@ PetscErrorCode ablate::domain::modifiers::DistributeWithGhostCells::TagMpiGhostC
         }
     }
 
-    DMLabelDestroy(&vtkLabel) >> checkError;
+    DMLabelDestroy(&vtkLabel) >> utilities::PetscUtilities::checkError;
     PetscFunctionReturn(0);
 }
 

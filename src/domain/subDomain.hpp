@@ -6,10 +6,10 @@
 #include <mathFunctions/fieldFunction.hpp>
 #include <memory>
 #include <string>
-#include <utilities/petscError.hpp>
 #include "domain.hpp"
 #include "fieldDescription.hpp"
 #include "io/serializable.hpp"
+#include "utilities/petscUtilities.hpp"
 
 namespace ablate::domain {
 
@@ -205,7 +205,7 @@ class SubDomain : public io::Serializable {
             return true;
         }
         PetscInt ptValue;
-        DMLabelGetValue(label, point, &ptValue) >> checkError;
+        DMLabelGetValue(label, point, &ptValue) >> utilities::PetscUtilities::checkError;
         return ptValue == labelValue;
     }
 

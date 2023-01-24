@@ -92,11 +92,9 @@ TEST_P(StressTensorTestFixture, ShouldComputeTheCorrectStressTensor) {
     PetscReal computedTau[9];
     const auto &params = GetParam();
 
-    // act
-    PetscErrorCode ierr = ablate::finiteVolume::processes::NavierStokesTransport::CompressibleFlowComputeStressTensor(params.dim, params.mu, params.gradVel.data(), computedTau);
+    // act //assert
+    ASSERT_EQ(0, ablate::finiteVolume::processes::NavierStokesTransport::CompressibleFlowComputeStressTensor(params.dim, params.mu, params.gradVel.data(), computedTau));
 
-    // assert
-    ASSERT_EQ(0, ierr);
     for (auto c = 0; c < params.dim; c++) {
         for (auto d = 0; d < params.dim; d++) {
             auto i = c * params.dim + d;

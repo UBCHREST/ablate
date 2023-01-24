@@ -2,7 +2,7 @@
 environment:
   title: SOD_2Gas_6x6_ArAir
   tagDirectory: true
-arguments: {}
+arguments: { }
 timestepper:
   name: theMainTimeStepper
   arguments:
@@ -29,7 +29,7 @@ timestepper:
           parameters:
             gamma: 0
             Rgas: 0
-      - name: densityVF
+      - name: densityvolumeFraction
         type: FVM
       - name: volumeFraction
         type: FVM
@@ -45,7 +45,7 @@ timestepper:
         0,
         0
     - &rhoAlpha
-      fieldName: densityVF
+      fieldName: densityvolumeFraction
       field: "x < 0.5 ? 0.0 : 0.125"
     - &alpha
       fieldName: volumeFraction
@@ -57,11 +57,11 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
       eosGas: !ablate::eos::PerfectGas &eosAir
         parameters: # air
           gamma: 1.4
-          Rgas : 287.0
+          Rgas: 287.0
       eosLiquid: !ablate::eos::PerfectGas &eosArgon
         parameters: # argon
           gamma: 1.67
-          Rgas : 208.1
+          Rgas: 208.1
       fluxCalculatorGasGas: !ablate::finiteVolume::fluxCalculator::Riemann2Gas
         eosL: *eosAir
         eosR: *eosAir
@@ -78,15 +78,15 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
   boundaryConditions:
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "air walls euler"
-      labelIds: [2, 4]
+      labelIds: [ 2, 4 ]
       boundaryValue: *eulerField
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "vf walls"
-      labelIds: [2, 4]
+      labelIds: [ 2, 4 ]
       boundaryValue: *rhoAlpha
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "alpha walls"
-      labelIds: [2, 4]
+      labelIds: [ 2, 4 ]
       boundaryValue: *alpha
 
   monitors:

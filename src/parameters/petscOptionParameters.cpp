@@ -1,5 +1,5 @@
 #include "petscOptionParameters.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 ablate::parameters::PetscOptionParameters::PetscOptionParameters(PetscOptions petscOptionsIn) : petscOptions(petscOptionsIn) {}
 
 std::optional<std::string> ablate::parameters::PetscOptionParameters::GetString(std::string paramName) const {
@@ -10,7 +10,7 @@ std::optional<std::string> ablate::parameters::PetscOptionParameters::GetString(
     // add prefix to the param name
     auto paramNamePetsc = "-" + paramName;
 
-    PetscOptionsGetString(petscOptions, NULL, paramNamePetsc.c_str(), result, PETSC_MAX_OPTION_NAME, &found) >> checkError;
+    PetscOptionsGetString(petscOptions, NULL, paramNamePetsc.c_str(), result, PETSC_MAX_OPTION_NAME, &found) >> utilities::PetscUtilities::checkError;
 
     if (found) {
         return std::string(result);
@@ -24,7 +24,7 @@ std::unordered_set<std::string> ablate::parameters::PetscOptionParameters::GetKe
 
     // Get all of the values as a string
     char* keyString;
-    PetscOptionsGetAll(petscOptions, &keyString) >> checkError;
+    PetscOptionsGetAll(petscOptions, &keyString) >> utilities::PetscUtilities::checkError;
 
     return keys;
 }

@@ -12,7 +12,7 @@ timestepper:
   name: theMainTimeStepper
   arguments:
     ts_type: rk
-    ts_adapt_type: none
+    ts_adapt_type: physics # overwrite and set the time step based upon the CFL constraint
     ts_max_steps: 20
   # sets a single box domain
   domain: !ablate::domain::BoxMesh
@@ -89,8 +89,7 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
       transport:
         k: 0.0
         mu: 1.0
-  # overwrite and set the time step based upon the CFL constraint
-  computePhysicsTimeStep: true
+
   # using constant boundary condition values on sides 1,3 with the specified values for euler
   boundaryConditions:
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost

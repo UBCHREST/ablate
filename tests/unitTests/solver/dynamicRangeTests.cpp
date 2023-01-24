@@ -30,5 +30,5 @@ TEST_P(DynamicRangeTestFixture, ShouldBuildAndUseRange) {
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(MathUtilititiesTests, DynamicRangeTestFixture, testing::Values(std::vector<PetscInt>{2, 3, 6, 2, 5}, std::vector<PetscInt>{2}, std::vector<PetscInt>{}));
+INSTANTIATE_TEST_SUITE_P(SolverTests, DynamicRangeTestFixture, testing::Values(std::vector<PetscInt>{2, 3, 6, 2, 5}, std::vector<PetscInt>{2}, std::vector<PetscInt>{}));
 }  // namespace ablateTesting::solver

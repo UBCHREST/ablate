@@ -4,7 +4,7 @@
 #include <petsc.h>
 #include <map>
 #include "particles/field.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 namespace ablate::particles::accessors {
 /**

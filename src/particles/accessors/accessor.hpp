@@ -7,7 +7,7 @@
 #include <vector>
 #include "particles/field.hpp"
 #include "pointData.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 namespace ablate::particles::accessors {
 /**

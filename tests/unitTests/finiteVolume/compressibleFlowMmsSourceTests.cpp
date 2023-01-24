@@ -454,23 +454,16 @@ static PetscErrorCode SourceMMS(PetscInt dim, PetscReal time, const PetscReal xy
 PetscErrorCode ComputeRHS(TS ts, DM dm, PetscReal t, Vec u, PetscInt blockSize, PetscReal residualNorm2[], PetscReal residualNormInf[], PetscReal start[], PetscReal end[]) {
     MPI_Comm comm;
     Vec r;
-    PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
     Vec sol;
-    ierr = VecDuplicate(u, &sol);
-    CHKERRQ(ierr);
-    ierr = VecCopy(u, sol);
-    CHKERRQ(ierr);
+    PetscCall(VecDuplicate(u, &sol));
+    PetscCall(VecCopy(u, sol));
 
-    ierr = PetscObjectGetComm((PetscObject)ts, &comm);
-    CHKERRQ(ierr);
-    ierr = DMComputeExactSolution(dm, t, sol, NULL);
-    CHKERRQ(ierr);
-    ierr = VecDuplicate(u, &r);
-    CHKERRQ(ierr);
-    ierr = TSComputeRHSFunction(ts, t, sol, r);
-    CHKERRQ(ierr);
+    PetscCall(PetscObjectGetComm((PetscObject)ts, &comm));
+    PetscCall(DMComputeExactSolution(dm, t, sol, NULL));
+    PetscCall(VecDuplicate(u, &r));
+    PetscCall(TSComputeRHSFunction(ts, t, sol, r));
 
     // zero out the norms
     for (PetscInt b = 0; b < blockSize; b++) {
@@ -484,24 +477,18 @@ PetscErrorCode ComputeRHS(TS ts, DM dm, PetscReal t, Vec u, PetscInt blockSize, 
         DM dmCell;
         PetscInt dim;
         const PetscScalar *cgeom;
-        ierr = DMPlexGetGeometryFVM(dm, NULL, &cellgeom, NULL);
-        CHKERRQ(ierr);
-        ierr = VecGetDM(cellgeom, &dmCell);
-        CHKERRQ(ierr);
-        ierr = DMGetDimension(dm, &dim);
-        CHKERRQ(ierr);
+        PetscCall(DMPlexGetGeometryFVM(dm, NULL, &cellgeom, NULL));
+        PetscCall(VecGetDM(cellgeom, &dmCell));
+        PetscCall(DMGetDimension(dm, &dim));
 
         // Get the cell start and end for the fv cells
         PetscInt cStart, cEnd;
-        ierr = DMPlexGetSimplexOrBoxCells(dmCell, 0, &cStart, &cEnd);
-        CHKERRQ(ierr);
+        PetscCall(DMPlexGetSimplexOrBoxCells(dmCell, 0, &cStart, &cEnd));
 
         // temp read current residual
         const PetscScalar *currentRHS;
-        ierr = VecGetArrayRead(cellgeom, &cgeom);
-        CHKERRQ(ierr);
-        ierr = VecGetArrayRead(r, &currentRHS);
-        CHKERRQ(ierr);
+        PetscCall(VecGetArrayRead(cellgeom, &cgeom));
+        PetscCall(VecGetArrayRead(r, &currentRHS));
 
         // Count up the cells
         PetscInt count = 0;
@@ -511,10 +498,8 @@ PetscErrorCode ComputeRHS(TS ts, DM dm, PetscReal t, Vec u, PetscInt blockSize, 
             PetscFVCellGeom *cg;
             const PetscReal *rhsCurrent;
 
-            ierr = DMPlexPointLocalRead(dmCell, c, cgeom, &cg);
-            CHKERRQ(ierr);
-            ierr = DMPlexPointGlobalFieldRead(dm, c, 0, currentRHS, &rhsCurrent);
-            CHKERRQ(ierr);
+            PetscCall(DMPlexPointLocalRead(dmCell, c, cgeom, &cg));
+            PetscCall(DMPlexPointGlobalFieldRead(dm, c, 0, currentRHS, &rhsCurrent));
 
             PetscBool countCell = PETSC_TRUE;
             for (PetscInt d = 0; d < dim; d++) {
@@ -536,22 +521,17 @@ PetscErrorCode ComputeRHS(TS ts, DM dm, PetscReal t, Vec u, PetscInt blockSize, 
         }
 
         // temp return current residual
-        ierr = VecRestoreArrayRead(cellgeom, &cgeom);
-        CHKERRQ(ierr);
-        ierr = VecRestoreArrayRead(r, &currentRHS);
-        CHKERRQ(ierr);
+        PetscCall(VecRestoreArrayRead(cellgeom, &cgeom));
+        PetscCall(VecRestoreArrayRead(r, &currentRHS));
     }
 
-    ierr = VecDestroy(&sol);
-    CHKERRQ(ierr);
-    ierr = VecDestroy(&r);
-    CHKERRQ(ierr);
+    PetscCall(VecDestroy(&sol));
+    PetscCall(VecDestroy(&r));
     PetscFunctionReturn(0);
 }
 
 TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
     StartWithMPI
-        PetscErrorCode ierr;
 
         // initialize petsc and mpi
         ablate::environment::RunEnvironment::Initialize(argc, argv);

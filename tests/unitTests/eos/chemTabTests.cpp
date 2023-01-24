@@ -78,7 +78,7 @@ TEST_P(ChemTabModelTestFixture, ShouldReturnCorrectSpeciesAndVariables) {
 
         // act
         auto actualSpeciesVariables = chemTabModel.GetSpeciesVariables();
-        auto actualSpecies = chemTabModel.GetSpecies();
+        auto actualSpecies = chemTabModel.GetFieldFunctionProperties();
         auto actualProgressVariables = chemTabModel.GetProgressVariables();
 
         // assert
@@ -298,7 +298,7 @@ static std::vector<PetscReal> GetMassFraction(const std::vector<std::string>& sp
 
 class ChemTabFieldFunctionTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<ChemTabFieldFunctionTestParameters> {};
 
-TEST_P(ChemTabFieldFunctionTestFixture, ShouldComputeField) {
+TEST_P(ChemTabFieldFunctionTestFixture, ShouldComputeFieldFromYi) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
     // arrange
@@ -307,7 +307,7 @@ TEST_P(ChemTabFieldFunctionTestFixture, ShouldComputeField) {
     // build a new reference eos
     auto metadata = YAML::LoadFile(std::filesystem::path(GetParam().modelPath) / "metadata.yaml");
     auto tchem = std::make_shared<ablate::eos::TChem>(std::filesystem::path(GetParam().modelPath) / metadata["mechanism"].as<std::string>());
-    auto yi = GetMassFraction(tchem->GetSpecies(), GetParam().yiMap);
+    auto yi = GetMassFraction(tchem->GetFieldFunctionProperties(), GetParam().yiMap);
 
     // get the test params
     const auto& params = GetParam();
@@ -319,10 +319,49 @@ TEST_P(ChemTabFieldFunctionTestFixture, ShouldComputeField) {
     chemTab->ComputeProgressVariables(yi.data(), yi.size(), expectedEvValue.data(), expectedEvValue.size());
 
     // act
-    auto stateEulerFunction = chemTab->GetFieldFunctionFunction(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD, params.property1, params.property2);
+    auto stateEulerFunction = chemTab->GetFieldFunctionFunction(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD, params.property1, params.property2, {ablate::eos::EOS::YI});
     stateEulerFunction(params.property1Value, params.property2Value, (PetscInt)params.velocity.size(), params.velocity.data(), yi.data(), actualEulerValue.data());
-    auto stateDensityEvFunction = chemTab->GetFieldFunctionFunction(ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD, params.property1, params.property2);
+    auto stateDensityEvFunction = chemTab->GetFieldFunctionFunction(ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD, params.property1, params.property2, {ablate::eos::EOS::YI});
     stateDensityEvFunction(params.property1Value, params.property2Value, (PetscInt)params.velocity.size(), params.velocity.data(), yi.data(), actualDensityEvValue.data());
+
+    // assert
+    for (std::size_t c = 0; c < params.expectedEulerValue.size(); c++) {
+        ASSERT_LT(PetscAbs(params.expectedEulerValue[c] - actualEulerValue[c]) / (params.expectedEulerValue[c] + 1E-30), 1E-3)
+            << "for component[" << c << "] of expectedEulerValue (" << params.expectedEulerValue[c] << " vs " << actualEulerValue[c] << ")";
+    }
+    for (std::size_t c = 0; c < expectedEvValue.size(); c++) {
+        ASSERT_LT(PetscAbs(expectedEvValue[c] * params.expectedEulerValue[0] - actualDensityEvValue[c]) / (expectedEvValue[c] * params.expectedEulerValue[0] + 1E-30), 1E-3)
+            << "for component[" << c << "] of densityEv_progress (" << yi[c] * params.expectedEulerValue[0] << " vs " << actualDensityEvValue[c] << ")";
+    }
+}
+
+TEST_P(ChemTabFieldFunctionTestFixture, ShouldComputeFieldFromProgressVariable) {
+    GTEST_SKIP() << "Test will not work until ChemTab can decode progress (with zMix) from Yi";
+    ONLY_WITH_TENSORFLOW_CHECK;
+
+    // arrange
+    auto chemTab = std::make_shared<ablate::eos::ChemTab>(GetParam().modelPath);
+
+    // build a new reference eos
+    auto metadata = YAML::LoadFile(std::filesystem::path(GetParam().modelPath) / "metadata.yaml");
+    auto tchem = std::make_shared<ablate::eos::TChem>(std::filesystem::path(GetParam().modelPath) / metadata["mechanism"].as<std::string>());
+    auto yi = GetMassFraction(tchem->GetFieldFunctionProperties(), GetParam().yiMap);
+
+    // get the test params
+    const auto& params = GetParam();
+    std::vector<PetscReal> actualEulerValue(params.expectedEulerValue.size(), NAN);
+    std::vector<PetscReal> actualDensityEvValue(chemTab->GetProgressVariables().size(), NAN);
+
+    // compute the expected progress
+    auto expectedEvValue = actualDensityEvValue;
+    chemTab->ComputeProgressVariables(yi.data(), yi.size(), expectedEvValue.data(), expectedEvValue.size());
+
+    // act
+    auto stateEulerFunction = chemTab->GetFieldFunctionFunction(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD, params.property1, params.property2, {ablate::eos::EOS::PROGRESS});
+    stateEulerFunction(params.property1Value, params.property2Value, (PetscInt)params.velocity.size(), params.velocity.data(), expectedEvValue.data(), actualEulerValue.data());
+    auto stateDensityEvFunction =
+        chemTab->GetFieldFunctionFunction(ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD, params.property1, params.property2, {ablate::eos::EOS::PROGRESS});
+    stateDensityEvFunction(params.property1Value, params.property2Value, (PetscInt)params.velocity.size(), params.velocity.data(), expectedEvValue.data(), actualDensityEvValue.data());
 
     // assert
     for (std::size_t c = 0; c < params.expectedEulerValue.size(); c++) {
@@ -417,7 +456,7 @@ INSTANTIATE_TEST_SUITE_P(ChemTabTests, ChemTabFieldFunctionTestFixture,
                          });
 
 TEST_P(ChemTabModelTestFixture, ShouldComputeProgressVariablesMassFractionsInterchangeability) {
-    GTEST_SKIP() << "Test is not working with ChemTab";
+    GTEST_SKIP() << "Test will not work until ChemTab can decode progress (with zMix) from Yi";
     ONLY_WITH_TENSORFLOW_CHECK;
 
     for (const auto& testTarget : testTargets) {

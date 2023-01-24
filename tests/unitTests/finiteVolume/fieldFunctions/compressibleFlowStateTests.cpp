@@ -37,12 +37,9 @@ TEST_P(CompressibleFlowStateTestFixture, ShouldComputeCorrectEuler) {
 
     auto computeStateFunction = flowState.GetFieldFunction("euler");
 
-    // act
+    // act//assert
     std::vector<PetscScalar> eulerCompute(params.expectedEuler.size());
-    PetscErrorCode ierr = computeStateFunction->GetPetscFunction()(location.size(), 0.0, &location[0], params.expectedEuler.size(), &eulerCompute[0], computeStateFunction->GetContext());
-
-    // assert
-    ASSERT_EQ(ierr, 0);
+    ASSERT_EQ(0, computeStateFunction->GetPetscFunction()(location.size(), 0.0, &location[0], params.expectedEuler.size(), &eulerCompute[0], computeStateFunction->GetContext()));
     for (std::size_t i = 0; i < eulerCompute.size(); i++) {
         ASSERT_NEAR(eulerCompute[i], params.expectedEuler[i], 1E-3);
     }
@@ -57,12 +54,9 @@ TEST_P(CompressibleFlowStateTestFixture, ShouldComputeCorrectMassFractions) {
     const auto& location = params.location;
     auto computeStateFunction = flowState.GetFieldFunction("densityYi");
 
-    // act
-    std::vector<PetscScalar> densityYi(eos->GetSpecies().size());
-    PetscErrorCode ierr = computeStateFunction->GetPetscFunction()(location.size(), 0.0, &location[0], params.expectedEuler.size(), &densityYi[0], computeStateFunction->GetContext());
-
-    // assert
-    ASSERT_EQ(ierr, 0);
+    // act //assert
+    std::vector<PetscScalar> densityYi(eos->GetSpeciesVariables().size());
+    ASSERT_EQ(0, computeStateFunction->GetPetscFunction()(location.size(), 0.0, &location[0], params.expectedEuler.size(), &densityYi[0], computeStateFunction->GetContext()));
     for (std::size_t i = 0; i < densityYi.size(); i++) {
         ASSERT_NEAR(densityYi[i], params.expectedDensityYi[i], 1E-3);
     }

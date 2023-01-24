@@ -1,9 +1,8 @@
 #include "probes.hpp"
 #include <fstream>
 #include <regex>
-#include "environment/runEnvironment.hpp"
 #include "io/interval/fixedInterval.hpp"
-#include "utilities/mpiError.hpp"
+#include "utilities/mpiUtilities.hpp"
 #include "utilities/vectorUtilities.hpp"
 
 ablate::monitors::Probes::Probes(const std::shared_ptr<ablate::monitors::probes::ProbeInitializer> &initializer, std::vector<std::string> variableNames,
@@ -44,16 +43,16 @@ void ablate::monitors::Probes::Register(std::shared_ptr<solver::Solver> solver) 
 
         // Locate the points in the DM
         PetscSF cellSF = nullptr;
-        DMLocatePoints(solver->GetSubDomain().GetDM(), pointVec, DM_POINTLOCATION_REMOVE, &cellSF) >> checkMpiError;
+        DMLocatePoints(solver->GetSubDomain().GetDM(), pointVec, DM_POINTLOCATION_REMOVE, &cellSF) >> utilities::MpiUtilities::checkError;
         PetscInt numFound;
         const PetscSFNode *foundCells = nullptr;
         const PetscInt *foundPoints = nullptr;
-        PetscSFGetGraph(cellSF, nullptr, &numFound, &foundPoints, &foundCells) >> checkMpiError;
+        PetscSFGetGraph(cellSF, nullptr, &numFound, &foundPoints, &foundCells) >> utilities::MpiUtilities::checkError;
 
         // Let the lowest rank process own each point
         PetscMPIInt rank, size;
-        MPI_Comm_rank(solver->GetSubDomain().GetComm(), &rank) >> checkMpiError;
-        MPI_Comm_size(solver->GetSubDomain().GetComm(), &size) >> checkMpiError;
+        MPI_Comm_rank(solver->GetSubDomain().GetComm(), &rank) >> utilities::MpiUtilities::checkError;
+        MPI_Comm_size(solver->GetSubDomain().GetComm(), &size) >> utilities::MpiUtilities::checkError;
         std::vector<PetscMPIInt> foundProcs(globalPointsCount, size);
         std::vector<PetscMPIInt> globalProcs(globalPointsCount, size);
 
@@ -63,7 +62,7 @@ void ablate::monitors::Probes::Register(std::shared_ptr<solver::Solver> solver) 
             }
         }
         // Let the lowest rank process own each point
-        MPI_Allreduce(foundProcs.data(), globalProcs.data(), globalPointsCount, MPI_INT, MPI_MIN, solver->GetSubDomain().GetComm()) >> checkMpiError;
+        MPI_Allreduce(foundProcs.data(), globalProcs.data(), globalPointsCount, MPI_INT, MPI_MIN, solver->GetSubDomain().GetComm()) >> utilities::MpiUtilities::checkError;
 
         // throw error if location cannot be found and copy over the probes that this rank owns
         for (std::size_t p = 0; p < initializer->GetProbes().size(); p++) {
@@ -102,26 +101,26 @@ void ablate::monitors::Probes::Register(std::shared_ptr<solver::Solver> solver) 
 
         // Create the interpolant.  This uses PETSC_COMM_SELF because it should only work over local variables
         DMInterpolationInfo interpolant;
-        DMInterpolationCreate(PETSC_COMM_SELF, &interpolant) >> checkError;
-        DMInterpolationSetDim(interpolant, dim) >> checkError;
-        DMInterpolationSetDof(interpolant, field.numberComponents) >> checkError;
+        DMInterpolationCreate(PETSC_COMM_SELF, &interpolant) >> utilities::PetscUtilities::checkError;
+        DMInterpolationSetDim(interpolant, dim) >> utilities::PetscUtilities::checkError;
+        DMInterpolationSetDof(interpolant, field.numberComponents) >> utilities::PetscUtilities::checkError;
 
         // Add all local points to the interpolant
-        DMInterpolationAddPoints(interpolant, (PetscInt)localProbes.size(), coordinates.data()) >> checkError;
+        DMInterpolationAddPoints(interpolant, (PetscInt)localProbes.size(), coordinates.data()) >> utilities::PetscUtilities::checkError;
 
         // Get the subfield dm
         IS subIs;
         DM subDm;
         Vec locVec;
-        solver->GetSubDomain().GetFieldLocalVector(field, 0.0, &subIs, &locVec, &subDm) >> checkError;
+        solver->GetSubDomain().GetFieldLocalVector(field, 0.0, &subIs, &locVec, &subDm) >> utilities::PetscUtilities::checkError;
 
         // Finish the one time set up
         // The redundantPoints flag should not really matter because PETSC_COMM_SELF was used to init the interpolant
-        DMInterpolationSetUp(interpolant, subDm, PETSC_FALSE, PETSC_FALSE) >> checkError;
+        DMInterpolationSetUp(interpolant, subDm, PETSC_FALSE, PETSC_FALSE) >> utilities::PetscUtilities::checkError;
         interpolants.push_back(interpolant);
 
         // restore
-        solver->GetSubDomain().RestoreFieldLocalVector(field, &subIs, &locVec, &subDm) >> checkError;
+        solver->GetSubDomain().RestoreFieldLocalVector(field, &subIs, &locVec, &subDm) >> utilities::PetscUtilities::checkError;
 
         // convert the variable names to the variable names with components
         if (field.numberComponents > 0) {
@@ -144,7 +143,7 @@ void ablate::monitors::Probes::Register(std::shared_ptr<solver::Solver> solver) 
 
 ablate::monitors::Probes::~Probes() {
     for (auto &interpolant : interpolants) {
-        DMInterpolationDestroy(&interpolant) >> checkError;
+        DMInterpolationDestroy(&interpolant) >> utilities::PetscUtilities::checkError;
     }
 }
 
@@ -152,7 +151,6 @@ PetscErrorCode ablate::monitors::Probes::UpdateProbes(TS ts, PetscInt step, Pets
     PetscFunctionBegin;
     auto monitor = (ablate::monitors::Probes *)ctx;
     auto comm = PetscObjectComm((PetscObject)ts);
-    PetscErrorCode ierr;
 
     if (monitor->interval->Check(comm, step, time)) {
         // set the current time for each recorder
@@ -169,17 +167,14 @@ PetscErrorCode ablate::monitors::Probes::UpdateProbes(TS ts, PetscInt step, Pets
             IS subIs;
             DM subDm;
             Vec locVec;
-            ierr = monitor->GetSolver()->GetSubDomain().GetFieldLocalVector(field, 0.0, &subIs, &locVec, &subDm);
-            CHKERRQ(ierr);
+            PetscCall(monitor->GetSolver()->GetSubDomain().GetFieldLocalVector(field, 0.0, &subIs, &locVec, &subDm));
 
             // get a temp vector
             Vec interpValues;
-            ierr = DMInterpolationGetVector(monitor->interpolants[it], &interpValues);
-            CHKERRQ(ierr);
+            PetscCall(DMInterpolationGetVector(monitor->interpolants[it], &interpValues));
 
             // Interpolate
-            ierr = DMInterpolationEvaluate(monitor->interpolants[it], subDm, locVec, interpValues);
-            CHKERRQ(ierr);
+            PetscCall(DMInterpolationEvaluate(monitor->interpolants[it], subDm, locVec, interpValues));
 
             // Record each value
             const PetscScalar *interValuesArray;
@@ -194,10 +189,8 @@ PetscErrorCode ablate::monitors::Probes::UpdateProbes(TS ts, PetscInt step, Pets
 
             // restore
             VecRestoreArrayRead(interpValues, &interValuesArray);
-            ierr = DMInterpolationRestoreVector(monitor->interpolants[it], &interpValues);
-            CHKERRQ(ierr);
-            ierr = monitor->GetSolver()->GetSubDomain().RestoreFieldLocalVector(field, &subIs, &locVec, &subDm);
-            CHKERRQ(ierr);
+            PetscCall(DMInterpolationRestoreVector(monitor->interpolants[it], &interpValues));
+            PetscCall(monitor->GetSolver()->GetSubDomain().RestoreFieldLocalVector(field, &subIs, &locVec, &subDm));
         }
     }
 

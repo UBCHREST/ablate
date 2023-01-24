@@ -3,7 +3,7 @@
 #include <petscdmplextransform.h>
 #include <utility>
 #include "tagLabelInterface.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 ablate::domain::modifiers::ExtrudeLabel::ExtrudeLabel(std::vector<std::shared_ptr<domain::Region>> regions, std::shared_ptr<domain::Region> boundaryRegion,
                                                       std::shared_ptr<domain::Region> originalRegion, std::shared_ptr<domain::Region> extrudedRegion, double thickness)
@@ -21,7 +21,7 @@ std::string ablate::domain::modifiers::ExtrudeLabel::ToString() const {
 void ablate::domain::modifiers::ExtrudeLabel::Modify(DM &dm) {
     // create a temporary label to hold adapt information
     DMLabel adaptLabel;
-    DMLabelCreate(PETSC_COMM_SELF, "Adaptation Label", &adaptLabel) >> checkError;
+    DMLabelCreate(PETSC_COMM_SELF, "Adaptation Label", &adaptLabel) >> utilities::PetscUtilities::checkError;
 
     // add points from each region
     for (const auto &region : regions) {
@@ -36,23 +36,23 @@ void ablate::domain::modifiers::ExtrudeLabel::Modify(DM &dm) {
             const PetscInt *points;
             PetscInt n, i;
 
-            DMLabelGetStratumIS(regionLabel, regionValue, &bdIS) >> checkError;
+            DMLabelGetStratumIS(regionLabel, regionValue, &bdIS) >> utilities::PetscUtilities::checkError;
             if (!bdIS) {
                 continue;
             }
-            ISGetLocalSize(bdIS, &n) >> checkError;
-            ISGetIndices(bdIS, &points) >> checkError;
+            ISGetLocalSize(bdIS, &n) >> utilities::PetscUtilities::checkError;
+            ISGetIndices(bdIS, &points) >> utilities::PetscUtilities::checkError;
             for (i = 0; i < n; ++i) {
-                DMLabelSetValue(adaptLabel, points[i], DM_ADAPT_REFINE) >> checkError;
+                DMLabelSetValue(adaptLabel, points[i], DM_ADAPT_REFINE) >> utilities::PetscUtilities::checkError;
             }
-            ISRestoreIndices(bdIS, &points) >> checkError;
-            ISDestroy(&bdIS) >> checkError;
+            ISRestoreIndices(bdIS, &points) >> utilities::PetscUtilities::checkError;
+            ISDestroy(&bdIS) >> utilities::PetscUtilities::checkError;
         }
     }
 
     // set the options for the transform
     PetscOptions transformOptions;
-    PetscOptionsCreate(&transformOptions) >> checkError;
+    PetscOptionsCreate(&transformOptions) >> utilities::PetscUtilities::checkError;
     PetscOptionsInsertString(transformOptions, "-dm_plex_transform_type extrude");
     PetscOptionsInsertString(transformOptions, "-dm_plex_transform_extrude_use_tensor 0");
 
@@ -60,7 +60,7 @@ void ablate::domain::modifiers::ExtrudeLabel::Modify(DM &dm) {
     PetscReal extrudeThickness = thickness;
     if (extrudeThickness == 0.0) {
         // Get the fv geom
-        DMPlexGetGeometryFVM(dm, nullptr, nullptr, &extrudeThickness) >> checkError;
+        DMPlexGetGeometryFVM(dm, nullptr, nullptr, &extrudeThickness) >> utilities::PetscUtilities::checkError;
         extrudeThickness *= 2.0;  // double the thickness
     }
     const auto extrudeThicknessString = std::to_string(extrudeThickness);
@@ -68,7 +68,7 @@ void ablate::domain::modifiers::ExtrudeLabel::Modify(DM &dm) {
 
     // extrude the mesh
     DM dmAdapt;
-    DMPlexTransformAdaptLabel(dm, nullptr, adaptLabel, nullptr, transformOptions, &dmAdapt) >> checkError;
+    DMPlexTransformAdaptLabel(dm, nullptr, adaptLabel, nullptr, transformOptions, &dmAdapt) >> utilities::PetscUtilities::checkError;
 
     if (dmAdapt) {
         (dmAdapt)->prealloc_only = dm->prealloc_only; /* maybe this should go .... */
@@ -86,16 +86,16 @@ void ablate::domain::modifiers::ExtrudeLabel::Modify(DM &dm) {
 
     // Determine the current max cell int
     PetscInt originalMaxCell;
-    DMPlexGetHeightStratum(dm, 0, nullptr, &originalMaxCell) >> checkError;
+    DMPlexGetHeightStratum(dm, 0, nullptr, &originalMaxCell) >> utilities::PetscUtilities::checkError;
 
     // March over each cell in this rank and determine if it is original or not
     PetscInt cStart, cEnd;
-    DMPlexGetHeightStratum(dmAdapt, 0, &cStart, &cEnd) >> checkError;
+    DMPlexGetHeightStratum(dmAdapt, 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
     for (PetscInt c = cStart; c < cEnd; ++c) {
         if (c < originalMaxCell) {
-            DMLabelSetValue(originalRegionLabel, c, originalRegionValue) >> checkError;
+            DMLabelSetValue(originalRegionLabel, c, originalRegionValue) >> utilities::PetscUtilities::checkError;
         } else {
-            DMLabelSetValue(extrudedRegionLabel, c, extrudedRegionValue) >> checkError;
+            DMLabelSetValue(extrudedRegionLabel, c, extrudedRegionValue) >> utilities::PetscUtilities::checkError;
         }
     }
 
@@ -110,8 +110,8 @@ void ablate::domain::modifiers::ExtrudeLabel::Modify(DM &dm) {
     ReplaceDm(dm, dmAdapt);
 
     // cleanup
-    PetscOptionsDestroy(&transformOptions) >> checkError;
-    DMLabelDestroy(&adaptLabel) >> checkError;
+    PetscOptionsDestroy(&transformOptions) >> utilities::PetscUtilities::checkError;
+    DMLabelDestroy(&adaptLabel) >> utilities::PetscUtilities::checkError;
 }
 
 PetscErrorCode ablate::domain::modifiers::ExtrudeLabel::DMPlexTransformAdaptLabel(DM dm, Vec, DMLabel adaptLabel, DMLabel, PetscOptions transformOptions, DM *rdm) {

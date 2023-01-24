@@ -9,12 +9,14 @@
 #include "monitors/logs/log.hpp"
 #include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
+#include "utilities/constants.hpp"
 #include "utilities/loggable.hpp"
 
 namespace ablate::radiation {
 
 class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver provides cell based functionality, right hand side function compatibility with
                                                               //!< finite element/ volume, loggable allows for the timing and tracking of events
+
    public:
     /**
      *
@@ -28,28 +30,28 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
 
     virtual ~Radiation();
 
+    /** Identifiers are carrying by both the search and solve particles in order to associate them with their origins and ray segments
+     * In the search particles, nsegment iterates based on how many domains the search particle has crossed.
+     * In the solve particle, nsegment remains constant as it ties the particle to its specific order in the ray */
+    struct Identifier {
+        //! the rank for the start of the ray
+        PetscInt originRank;
+        //! The local ray id 'index'
+        PetscInt originRayId;
+        //! the remote rank (may be same as originating) for this segment id
+        PetscInt remoteRank;
+        //! The local ray id 'index'
+        PetscInt remoteRayId;
+        //! The number of segments away from the origin, zero on the origin
+        PetscInt nSegment;
+    };
+
     /** Carriers are attached to the solve particles and bring ray information from the local segments to the origin cells
      * They are transported directly from the segment to the origin. They carry only the values that the Segment computes and not the spatial information necessary to  */
     struct Carrier {
         PetscReal Ij = 0;    //!< Black body source for the segment. Make sure that this is reset every solve after the value has been transported.
         PetscReal Krad = 1;  //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
-        PetscReal I0 = 0;
     };
-
-    /** Each origin cell will need to retain local information given to it by the ray segments in order to compute the final intenisty.
-     * This information will be owned by cell index and stored in a map of local cell indices.
-     * */
-    struct Origin {
-        PetscReal I0 = 0;                        //!< Determing the initial ray intensity by grabbing the head cell of the furthest ray? There will need to be additional setup for this.
-        PetscReal Isource = 0;                   //!< Value that will be contributed to by every ray segment.
-        PetscReal Kradd = 1;                     //!< Value that will be contributed to by every ray segment.
-        PetscReal intensity = 0;                 //!< The irradiation value that will be contributed to by every ray. This is updated every (pre-step && interval) gain evaluation.
-        PetscReal net = 0;                       //!< The net radiation value including the losses. This is updated every pre-stage solve.
-        std::map<std::string, Carrier> handler;  //!< Stores local carrier information
-    };
-
-    std::map<PetscInt, Origin> origin;
-    std::map<std::string, bool> presence;  //!< Map to track the local presence of search particles during the initialization
 
     /** Returns the black body intensity for a given temperature and emissivity */
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
@@ -62,15 +64,26 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      */
     virtual void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
-    inline PetscReal GetIntensity(PetscInt iCell) {  //!< Function to give other classes access to the intensity
-        return origin[iCell].net;
-    }
+    /**
+     * Compute total intensity (pre computed gains + current loss) with
+     * @param index the current index in the cell range (note, this is not the cell/face id)
+     * @param cellRange the cell/face range used in setup/initialize
+     * @param temperature the temperature of the cell or face
+     * @param kappa the absorptivity of the cell
+     * @return
+     */
+    inline PetscReal GetIntensity(PetscInt index, const solver::Range& cellRange, PetscReal temperature, PetscReal kappa) {
+        // Compute the losses
+        PetscReal netIntensity = -4.0 * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
 
-    /// Class Methods
-    /** The solve function evaluates the net radiation source term. However, the net radiation value must be updated by each solver individually.
-     * The solve updates every value except for the radiative gains from the domain. This avoids doing the must computationally expensive part of the solve at every stage.
-     * */
-    void Solve(Vec solVec, ablate::domain::Field temperatureField, Vec aux);
+        // add in precomputed gains
+        netIntensity += evaluatedGains[index - cellRange.start];
+
+        // scale by kappa
+        netIntensity *= kappa;
+
+        return abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
+    }
 
     /** Evaluates the ray intensity from the domain to update the effects of irradiation. Does not impact the solution unless the solve function is called again.
      * */
@@ -78,42 +91,33 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
 
     /** Determines the next location of the search particles during the initialization
      * */
-    virtual void ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray);  //!< Routine to move the particle one step
+    virtual void ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray, DM radReturn);  //!< Routine to move the particle one step
 
     /** Determines what component of the incoming radiation should be accounted for when evaluating the irradiation for each ray.
      * Dummy function that doesn't do anything unless it is overridden by the surface implementation
      * */
-    virtual PetscReal SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi, PetscInt ntheta);
-    virtual PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM solDm, DM pPDm);  //!< Get the index of the cell which the losses should be calculated from
-    virtual void GetFuelEmissivity(double& kappa);
+    virtual PetscReal SurfaceComponent(const PetscReal normal[], PetscInt iCell, PetscInt nphi, PetscInt ntheta);
+
+    //! provide access to the model used to provided the absorptivity function
+    inline std::shared_ptr<eos::radiationProperties::RadiationModel> GetRadiationModel() { return radiationModel; }
 
    protected:
-    DM radsolve{};   //!< DM associated with the radiation particles
-    DM radsearch{};  //!< DM which the search particles occupy
+    //! DM which the search particles occupy.  This representations the physical particle in space
+    DM radSearch = nullptr;
 
-    Vec faceGeomVec = nullptr;  //!< Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
+    //! Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
+    Vec faceGeomVec = nullptr;
     Vec cellGeomVec = nullptr;
 
-    /// Structs to hold information
+    //! create a data type to simplify moving the carrier
+    MPI_Datatype carrierMpiType;
 
-    /** Segments belong to the local maps and hold all of the local information about the ray segments both during the search and the solve */
-    struct Segment {
-        std::vector<PetscInt> cells;  //!< Stores the cell indices of the segment locally.
-        std::vector<PetscReal> h;     //!< Stores the space steps of the segment locally.
-        PetscReal Ij = 0;             //!< Black body source for the segment. Make sure that this is reset every solve after the value has been transported.
-        PetscReal Krad = 1;           //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
-        PetscReal I0 = 0;
-    };
-
-    /** Identifiers are carrying by both the search and solve particles in order to associate them with their origins and ray segments
-     * In the search particles, nsegment iterates based on how many domains the search particle has crossed.
-     * In the solve particle, nsegment remains constant as it ties the particle to its specific order in the ray */
-    struct Identifier {
-        PetscInt origin;
-        PetscInt iCell;
-        PetscInt ntheta;
-        PetscInt nphi;
-        PetscInt nsegment;
+    /** CellSegment belong to the local maps and hold all of the local information about the ray segments both during the search and the solve */
+    struct CellSegment {
+        //!< Stores the cell indices of the segment locally.
+        PetscInt cell;
+        //!< Stores the space steps of the segment locally.
+        PetscReal h;
     };
 
     /** Virtual coordinates are used during the search to compute path length properties in case the simulation is not 3 dimensional */
@@ -130,7 +134,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     /// Class Methods
     /** Returns the forward path length of a travelling particle with any face.
      * The function will return zero if the intersection is not in the direction of travel.
-     *
+     *x
      * @param virtualcoord the struct containing particle position information
      * @param face the struct containing information about a cell face
      */
@@ -146,36 +150,58 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * */
     void UpdateCoordinates(PetscInt ipart, Virtualcoord* virtualcoord, PetscReal* coord, PetscReal adv) const;
 
-    /** Create a unique identifier from an array of integers.
-     * This is done using the nested Cantor pairing function
-     * The ray segment will always be accessed by a particle carrying an identifier so it does not need to be inverted.
-     * (Unless the particles created for the solve need to find their ray segments efficiently? Maybe dont destroy the particles of the search?)
-     * */
-    std::string static inline Key(Identifier* id) {  //!< Nested Cantor pairing function in order to identify ray segment
-
-        std::string key = std::to_string(id->origin) + "." + std::to_string(id->iCell) + "." + std::to_string(id->ntheta) + "." + std::to_string(id->nphi) + "." + std::to_string(id->nsegment);
-        return key;
-    }
-
-    eos::ThermodynamicTemperatureFunction absorptivityFunction;
-
-    PetscMPIInt numRanks = 0;  //!< The number of the ranks that the simulation contains. This will be used to support global indexing.
-
     /// Class inputs and Variables
     PetscInt dim = 0;  //!< Number of dimensions that the domain exists within
     PetscInt nTheta;   //!< The number of angles to solve with, given by user input
     PetscInt nPhi;     //!< The number of angles to solve with, given by user input (x2)
     PetscReal minCellRadius{};
 
-    /**
-     * Store a log used to output the required information
-     */
+    //! store the local rays identified on this rank.  This includes rays that do and do not originate on this rank
+    std::vector<std::vector<CellSegment>> raySegments;
 
-    std::map<std::string, Segment> rays;
-    std::basic_string<char>&& solverId;
+    //! the calculation over each of the remoteRays. indexed over remote ray
+    std::vector<Carrier> raySegmentsCalculations;
+
+    //! store the number of originating rays
+    PetscInt numberOriginRays;
+
+    //! store the number of originating rays cells
+    PetscInt numberOriginCells;
+
+    //! the number of rays per cell
+    PetscInt raysPerCell;
+
+    //! store the number of ray segments for each originating on this rank.  This may be zero
+    std::vector<unsigned short int> raySegmentsPerOriginRay;
+
+    //! a vector of raySegment information for every local/remote ray segment ordered as ray, segment
+    std::vector<Carrier> raySegmentSummary;
+
+    //! the factor for each origin ray
+    std::vector<PetscReal> gainsFactor;
+
+    //! size up the evaluated gains, this index is based upon order of the requested cells
+    std::vector<PetscScalar> evaluatedGains;
+
+    //! Store the petscSF that is used for pulling remote ray calculation
+    PetscSF remoteAccess;
+
+    //! the name of this solver
+    std::string solverId;
+
+    //! the region for which this solver applies
     const std::shared_ptr<domain::Region> region;
+
+    //! model used to provided the absorptivity function
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
+
+    //! hold a pointer to the absorptivity function
+    eos::ThermodynamicTemperatureFunction absorptivityFunction;
+
+    // !Store a log used to output the required information
     const std::shared_ptr<ablate::monitors::logs::Log> log = nullptr;
+    static inline constexpr char IdentifierField[] = "identifier";
+    static inline constexpr char VirtualCoordField[] = "virtual coord";
 };
 
 }  // namespace ablate::radiation

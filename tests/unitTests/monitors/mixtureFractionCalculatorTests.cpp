@@ -28,11 +28,11 @@ TEST_P(MixtureFractionCalculatorFixture, ShouldComputeMixtureFraction) {
     // test each case
     for (const auto& [inputMassFractions, expectedValue] : GetParam().parameters) {
         // build a mixture fraction vector
-        std::vector<double> mixtureFraction(eos->GetSpecies().size());
+        std::vector<double> mixtureFraction(eos->GetSpeciesVariables().size());
         for (const auto& [species, yi] : inputMassFractions) {
-            auto location = std::find(eos->GetSpecies().begin(), eos->GetSpecies().end(), species);
-            if (location != eos->GetSpecies().end()) {
-                auto i = std::distance(eos->GetSpecies().begin(), location);
+            auto location = std::find(eos->GetSpeciesVariables().begin(), eos->GetSpeciesVariables().end(), species);
+            if (location != eos->GetSpeciesVariables().end()) {
+                auto i = std::distance(eos->GetSpeciesVariables().begin(), location);
                 mixtureFraction[i] = yi;
             }
         }
@@ -50,19 +50,19 @@ TEST_P(MixtureFractionCalculatorFixture, ShouldComputeMixtureFractionUsingFieldF
     ablate::monitors::MixtureFractionCalculator mixtureFractionCalculator(
         eos,
         std::make_shared<ablate::mathFunctions::FieldFunction>(
-            "yi", std::make_shared<ablate::mathFunctions::ConstantValue>(ablate::utilities::VectorUtilities::Fill(eos->GetSpecies(), GetParam().massFractionsFuel))),
+            "yi", std::make_shared<ablate::mathFunctions::ConstantValue>(ablate::utilities::VectorUtilities::Fill(eos->GetSpeciesVariables(), GetParam().massFractionsFuel))),
         std::make_shared<ablate::mathFunctions::FieldFunction>(
-            "yi", std::make_shared<ablate::mathFunctions::ConstantValue>(ablate::utilities::VectorUtilities::Fill(eos->GetSpecies(), GetParam().massFractionsOxidizer))),
+            "yi", std::make_shared<ablate::mathFunctions::ConstantValue>(ablate::utilities::VectorUtilities::Fill(eos->GetSpeciesVariables(), GetParam().massFractionsOxidizer))),
         GetParam().trackingElements);
 
     // test each case
     for (const auto& [inputMassFractions, expectedValue] : GetParam().parameters) {
         // build a mixture fraction vector
-        std::vector<double> mixtureFraction(eos->GetSpecies().size());
+        std::vector<double> mixtureFraction(eos->GetSpeciesVariables().size());
         for (const auto& [species, yi] : inputMassFractions) {
-            auto location = std::find(eos->GetSpecies().begin(), eos->GetSpecies().end(), species);
-            if (location != eos->GetSpecies().end()) {
-                auto i = std::distance(eos->GetSpecies().begin(), location);
+            auto location = std::find(eos->GetSpeciesVariables().begin(), eos->GetSpeciesVariables().end(), species);
+            if (location != eos->GetSpeciesVariables().end()) {
+                auto i = std::distance(eos->GetSpeciesVariables().begin(), location);
                 mixtureFraction[i] = yi;
             }
         }
@@ -119,9 +119,9 @@ TEST_P(MixtureFractionCalculatorExceptionFixture, ShouldThrowExceptionWithInvali
     ASSERT_THROW(ablate::monitors::MixtureFractionCalculator mixtureFractionCalculator(
                      eos,
                      std::make_shared<ablate::mathFunctions::FieldFunction>(
-                         "yi", std::make_shared<ablate::mathFunctions::ConstantValue>(ablate::utilities::VectorUtilities::Fill(eos->GetSpecies(), GetParam().massFractionsFuel))),
+                         "yi", std::make_shared<ablate::mathFunctions::ConstantValue>(ablate::utilities::VectorUtilities::Fill(eos->GetSpeciesVariables(), GetParam().massFractionsFuel))),
                      std::make_shared<ablate::mathFunctions::FieldFunction>(
-                         "yi", std::make_shared<ablate::mathFunctions::ConstantValue>(ablate::utilities::VectorUtilities::Fill(eos->GetSpecies(), GetParam().massFractionsOxidizer))),
+                         "yi", std::make_shared<ablate::mathFunctions::ConstantValue>(ablate::utilities::VectorUtilities::Fill(eos->GetSpeciesVariables(), GetParam().massFractionsOxidizer))),
                      GetParam().trackingElements);
                  , std::invalid_argument);
 }

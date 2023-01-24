@@ -1,9 +1,9 @@
 #include "ghostBoundaryCells.hpp"
-#include <utilities/petscError.hpp>
+#include "utilities/petscUtilities.hpp"
 ablate::domain::modifiers::GhostBoundaryCells::GhostBoundaryCells(std::string labelName) : labelName(labelName) {}
 void ablate::domain::modifiers::GhostBoundaryCells::Modify(DM &dm) {
     DM gdm;
-    DMPlexConstructGhostCells(dm, labelName.empty() ? nullptr : labelName.c_str(), NULL, &gdm) >> checkError;
+    DMPlexConstructGhostCells(dm, labelName.empty() ? nullptr : labelName.c_str(), NULL, &gdm) >> utilities::PetscUtilities::checkError;
     ReplaceDm(dm, gdm);
 }
 

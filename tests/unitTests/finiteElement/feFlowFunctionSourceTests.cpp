@@ -82,33 +82,24 @@ class FEFlowMMSTestFixture : public testingResources::MpiTestFixture, public ::t
 static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     DM dm;
     PetscReal t;
-    PetscErrorCode ierr;
 
     PetscFunctionBegin;
-    ierr = TSGetDM(ts, &dm);
-    CHKERRQ(ierr);
-    ierr = TSGetTime(ts, &t);
-    CHKERRQ(ierr);
+    PetscCall(TSGetDM(ts, &dm));
+    PetscCall(TSGetTime(ts, &t));
 
     // Get the flowData
     ablate::finiteElement::FiniteElementSolver *flow;
-    ierr = DMGetApplicationContext(dm, &flow);
-    CHKERRQ(ierr);
+    PetscCall(DMGetApplicationContext(dm, &flow));
 
     // This function Tags the u vector as the exact solution.  We need to copy the values to prevent this.
     Vec e;
-    ierr = VecDuplicate(u, &e);
-    CHKERRQ(ierr);
-    ierr = DMComputeExactSolution(dm, t, e, NULL);
-    CHKERRQ(ierr);
-    ierr = VecCopy(e, u);
-    CHKERRQ(ierr);
-    ierr = VecDestroy(&e);
-    CHKERRQ(ierr);
+    PetscCall(VecDuplicate(u, &e));
+    PetscCall(DMComputeExactSolution(dm, t, e, NULL));
+    PetscCall(VecCopy(e, u));
+    PetscCall(VecDestroy(&e));
 
     // get the flow to apply the completeFlowInitialization method
     flow->CompleteFlowInitialization(dm, u);
-    CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -121,44 +112,31 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
     Vec v;
     PetscReal ferrors[3];
     PetscInt f;
-    PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
-    ierr = TSGetDM(ts, &dm);
-    CHKERRQ(ierr);
-    ierr = DMGetDS(dm, &ds);
-    CHKERRQ(ierr);
+    PetscCall(TSGetDM(ts, &dm));
+    PetscCall(DMGetDS(dm, &ds));
 
     for (f = 0; f < 3; ++f) {
-        ierr = PetscDSGetExactSolution(ds, f, &exactFuncs[f], &ctxs[f]);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        PetscCallAbort(PETSC_COMM_WORLD, PetscDSGetExactSolution(ds, f, &exactFuncs[f], &ctxs[f]));
     }
-    ierr = DMComputeL2FieldDiff(dm, crtime, exactFuncs, ctxs, u, ferrors);
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD, "Timestep: %04d time = %-8.4g \t L_2 Error: [%2.3g, %2.3g, %2.3g]\n", (int)step, (double)crtime, (double)ferrors[0], (double)ferrors[1], (double)ferrors[2]);
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+    PetscCallAbort(PETSC_COMM_WORLD, DMComputeL2FieldDiff(dm, crtime, exactFuncs, ctxs, u, ferrors));
+    PetscCallAbort(
+        PETSC_COMM_WORLD,
+        PetscPrintf(PETSC_COMM_WORLD, "Timestep: %04d time = %-8.4g \t L_2 Error: [%2.3g, %2.3g, %2.3g]\n", (int)step, (double)crtime, (double)ferrors[0], (double)ferrors[1], (double)ferrors[2]));
 
-    ierr = DMGetGlobalVector(dm, &u);
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    // ierr = TSGetSolution(ts, &u);CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = PetscObjectSetName((PetscObject)u, "Numerical Solution");
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = VecViewFromOptions(u, NULL, "-sol_vec_view");
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = DMRestoreGlobalVector(dm, &u);
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+    PetscCallAbort(PETSC_COMM_WORLD, DMGetGlobalVector(dm, &u));
+    // PetscCall(TSGetSolution(ts, &u);CHKERRABORT(PETSC_COMM_WORLD, ierr);
+    PetscCallAbort(PETSC_COMM_WORLD, PetscObjectSetName((PetscObject)u, "Numerical Solution"));
+    PetscCallAbort(PETSC_COMM_WORLD, VecViewFromOptions(u, NULL, "-sol_vec_view"));
+    PetscCallAbort(PETSC_COMM_WORLD, DMRestoreGlobalVector(dm, &u));
 
-    ierr = DMGetGlobalVector(dm, &v);
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    // ierr = VecSet(v, 0.0);CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = DMProjectFunction(dm, 0.0, exactFuncs, ctxs, INSERT_ALL_VALUES, v);
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = PetscObjectSetName((PetscObject)v, "Exact Solution");
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = VecViewFromOptions(v, NULL, "-exact_vec_view");
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = DMRestoreGlobalVector(dm, &v);
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+    PetscCallAbort(PETSC_COMM_WORLD, DMGetGlobalVector(dm, &v));
+    // PetscCall(VecSet(v, 0.0);CHKERRABORT(PETSC_COMM_WORLD, ierr);
+    PetscCallAbort(PETSC_COMM_WORLD, DMProjectFunction(dm, 0.0, exactFuncs, ctxs, INSERT_ALL_VALUES, v));
+    PetscCallAbort(PETSC_COMM_WORLD, PetscObjectSetName((PetscObject)v, "Exact Solution"));
+    PetscCallAbort(PETSC_COMM_WORLD, VecViewFromOptions(v, NULL, "-exact_vec_view"));
+    PetscCallAbort(PETSC_COMM_WORLD, DMRestoreGlobalVector(dm, &v));
 
     PetscFunctionReturn(0);
 }

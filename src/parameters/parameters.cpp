@@ -1,7 +1,7 @@
 #include "parameters.hpp"
 #include <set>
 #include "environment/runEnvironment.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 static std::set<std::string> knownTrueValues = {"true", "TRUE", "True", "y", "Y", "Yes", "on", "ON", "On", "1", "yes", "YES"};
 
@@ -20,6 +20,6 @@ void ablate::parameters::Parameters::Fill(PetscOptions options) const {
         ablate::environment::RunEnvironment::Get().ExpandVariables(value);
 
         // set the options
-        PetscOptionsSetValue(options, name.c_str(), value.c_str()) >> checkError;
+        PetscOptionsSetValue(options, name.c_str(), value.c_str()) >> utilities::PetscUtilities::checkError;
     }
 }

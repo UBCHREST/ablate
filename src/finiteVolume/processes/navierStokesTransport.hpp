@@ -51,7 +51,7 @@ class NavierStokesTransport : public FlowProcess {
     eos::ThermodynamicFunction computePressureFunction;
 
     // Store the required ctx for time stepping
-    struct TimeStepData {
+    struct CflTimeStepData {
         /* thermal conductivity*/
         AdvectionData* advectionData;
 
@@ -60,10 +60,35 @@ class NavierStokesTransport : public FlowProcess {
          */
         std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> pgs;
     };
-    TimeStepData timeStepData;
+    CflTimeStepData timeStepData;
+
+    //! methods and functions to compute diffusion based time stepping
+    struct DiffusionTimeStepData {
+        //! stability factor for condition time step. 0 (default) does not compute factor
+        PetscReal conductionStabilityFactor;
+
+        //! stability factor for viscous diffusion time step. 0 (default) does not compute factor
+        PetscReal viscousStabilityFactor;
+
+        /* thermal conductivity*/
+        eos::ThermodynamicTemperatureFunction kFunction;
+        /* dynamic viscosity*/
+        eos::ThermodynamicTemperatureFunction muFunction;
+        /* specific heat*/
+        eos::ThermodynamicTemperatureFunction specificHeat;
+        /* density */
+        eos::ThermodynamicTemperatureFunction density;
+    };
+    DiffusionTimeStepData diffusionTimeStepData;
 
     // static function to compute time step for euler advection
-    static double ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
+    static double ComputeCflTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
+
+    // static function to compute the conduction based time step
+    static double ComputeConductionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
+
+    // static function to compute the conduction based time step
+    static double ComputeViscousDiffusionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
 
    public:
     /**

@@ -1,8 +1,8 @@
 #include "download.hpp"
 #include <utility>
 #include "environment/runEnvironment.hpp"
-#include "utilities/mpiError.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/mpiUtilities.hpp"
+#include "utilities/petscUtilities.hpp"
 #include "utilities/temporaryWorkingDirectory.hpp"
 
 ablate::environment::Download::Download(std::string url) : url(std::move(url)) {}
@@ -20,7 +20,7 @@ std::filesystem::path ablate::environment::Download::Locate(const std::vector<st
         if (url.rfind(prefix, 0) == 0) {
             char localPath[PETSC_MAX_PATH_LEN];
             PetscBool found;
-            PetscFileRetrieve(PETSC_COMM_WORLD, url.c_str(), localPath, PETSC_MAX_PATH_LEN, &found) >> checkError;
+            PetscFileRetrieve(PETSC_COMM_WORLD, url.c_str(), localPath, PETSC_MAX_PATH_LEN, &found) >> utilities::PetscUtilities::checkError;
             if (!found) {
                 throw std::runtime_error("unable to locate file at" + url);
             }

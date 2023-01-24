@@ -147,7 +147,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * List of species used for the field function initialization.
      * @return
      */
-    [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { return referenceEOS->GetSpecies(); }
+    [[nodiscard]] const std::vector<std::string>& GetFieldFunctionProperties() const override { return referenceEOS->GetFieldFunctionProperties(); }
 
     /**
      * As far as other parts of the code is concerned the chemTabEos does not expect species
@@ -220,7 +220,8 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @param property1
      * @param property2
      */
-    [[nodiscard]] eos::FieldFunction GetFieldFunctionFunction(const std::string& field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2) const override;
+    [[nodiscard]] eos::EOSFunction GetFieldFunctionFunction(const std::string& field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2,
+                                                            std::vector<std::string> otherProperties) const override;
 };
 
 #else
@@ -231,7 +232,7 @@ class ChemTab : public ChemistryModel {
 
     [[nodiscard]] const std::vector<std::string>& GetSpeciesVariables() const override { throw std::runtime_error(errorMessage); }
 
-    [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { throw std::runtime_error(errorMessage); }
+    [[nodiscard]] const std::vector<std::string>& GetFieldFunctionProperties() const override { throw std::runtime_error(errorMessage); }
 
     [[nodiscard]] const std::vector<std::string>& GetProgressVariables() const override { throw std::runtime_error(errorMessage); }
 
@@ -247,7 +248,8 @@ class ChemTab : public ChemistryModel {
         throw std::runtime_error(errorMessage);
     }
 
-    [[nodiscard]] eos::FieldFunction GetFieldFunctionFunction(const std::string& field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2) const override {
+    [[nodiscard]] eos::EOSFunction GetFieldFunctionFunction(const std::string& field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2,
+                                                            std::vector<std::string> otherProperties) const override {
         throw std::runtime_error(errorMessage);
     }
 

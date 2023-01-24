@@ -1,6 +1,6 @@
 #include "leastSquares.hpp"
 #include "utilities/mathUtilities.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 void ablate::finiteVolume::stencil::LeastSquares::Generate(PetscInt face, ablate::finiteVolume::stencil::Stencil& stencil, const domain::SubDomain& subDomain,
                                                            const std::shared_ptr<domain::Region> solverRegion, DM cellDM, const PetscScalar* cellGeomArray, DM faceDM,
@@ -10,13 +10,13 @@ void ablate::finiteVolume::stencil::LeastSquares::Generate(PetscInt face, ablate
 
     // compute the grad calculator if needed
     if (!gradientCalculator) {
-        PetscFVCreate(PETSC_COMM_SELF, &gradientCalculator) >> checkError;
+        PetscFVCreate(PETSC_COMM_SELF, &gradientCalculator) >> utilities::PetscUtilities::checkError;
         // Set least squares as the default type
-        PetscFVSetType(gradientCalculator, PETSCFVLEASTSQUARES) >> checkError;
+        PetscFVSetType(gradientCalculator, PETSCFVLEASTSQUARES) >> utilities::PetscUtilities::checkError;
         // Set any other required options
-        PetscFVSetFromOptions(gradientCalculator) >> checkError;
-        PetscFVSetNumComponents(gradientCalculator, 1) >> checkError;
-        PetscFVSetSpatialDimension(gradientCalculator, dim) >> checkError;
+        PetscFVSetFromOptions(gradientCalculator) >> utilities::PetscUtilities::checkError;
+        PetscFVSetNumComponents(gradientCalculator, 1) >> utilities::PetscUtilities::checkError;
+        PetscFVSetSpatialDimension(gradientCalculator, dim) >> utilities::PetscUtilities::checkError;
     }
     // get the face geom
     PetscFVFaceGeom* fg;
@@ -25,19 +25,19 @@ void ablate::finiteVolume::stencil::LeastSquares::Generate(PetscInt face, ablate
     // Get all nodes in this face
     PetscInt numberNodes;
     PetscInt* faceNodes = nullptr;
-    DMPlexGetTransitiveClosure(dm, face, PETSC_TRUE, &numberNodes, &faceNodes) >> checkError;
+    DMPlexGetTransitiveClosure(dm, face, PETSC_TRUE, &numberNodes, &faceNodes) >> utilities::PetscUtilities::checkError;
 
     // For each node get the cells that connect to it
     for (PetscInt n = 0; n < numberNodes; n++) {
         PetscInt numberCells;
         PetscInt* nodeCells = nullptr;
-        DMPlexGetTransitiveClosure(dm, faceNodes[n * 2], PETSC_FALSE, &numberCells, &nodeCells) >> checkError;
+        DMPlexGetTransitiveClosure(dm, faceNodes[n * 2], PETSC_FALSE, &numberCells, &nodeCells) >> utilities::PetscUtilities::checkError;
 
         for (PetscInt c = 0; c < numberCells; c++) {
             PetscInt cell = nodeCells[c * 2];
             // Make sure that cell is in this region and is a cell
             PetscInt cellHeight;
-            DMPlexGetPointHeight(dm, cell, &cellHeight) >> checkError;
+            DMPlexGetPointHeight(dm, cell, &cellHeight) >> utilities::PetscUtilities::checkError;
             if (cellHeight != 0) {
                 continue;
             }
@@ -49,11 +49,11 @@ void ablate::finiteVolume::stencil::LeastSquares::Generate(PetscInt face, ablate
         }
 
         // cleanup
-        DMPlexRestoreTransitiveClosure(dm, faceNodes[n * 2], PETSC_FALSE, &numberCells, &nodeCells) >> checkError;
+        DMPlexRestoreTransitiveClosure(dm, faceNodes[n * 2], PETSC_FALSE, &numberCells, &nodeCells) >> utilities::PetscUtilities::checkError;
     }
 
     // cleanup
-    DMPlexRestoreTransitiveClosure(dm, face, PETSC_TRUE, &numberNodes, &faceNodes) >> checkError;
+    DMPlexRestoreTransitiveClosure(dm, face, PETSC_TRUE, &numberNodes, &faceNodes) >> utilities::PetscUtilities::checkError;
 
     // Clean up the stencil to remove duplicates
     std::sort(stencil.stencil.begin(), stencil.stencil.end());
@@ -72,8 +72,8 @@ void ablate::finiteVolume::stencil::LeastSquares::Generate(PetscInt face, ablate
         // Get the support for this face
         PetscInt numberNeighborCells;
         const PetscInt* neighborCells;
-        DMPlexGetSupportSize(dm, face, &numberNeighborCells) >> ablate::checkError;
-        DMPlexGetSupport(dm, face, &neighborCells) >> ablate::checkError;
+        DMPlexGetSupportSize(dm, face, &numberNeighborCells) >> utilities::PetscUtilities::checkError;
+        DMPlexGetSupport(dm, face, &neighborCells) >> utilities::PetscUtilities::checkError;
         // Set the stencilWeight
         PetscReal sum = 0.0;
         for (PetscInt c = 0; c < numberNeighborCells; c++) {
@@ -90,7 +90,7 @@ void ablate::finiteVolume::stencil::LeastSquares::Generate(PetscInt face, ablate
         // Compute gradients
         if (stencil.stencilSize > maxFaces) {
             maxFaces = stencil.stencilSize;
-            PetscFVLeastSquaresSetMaxFaces(gradientCalculator, maxFaces) >> checkError;
+            PetscFVLeastSquaresSetMaxFaces(gradientCalculator, maxFaces) >> utilities::PetscUtilities::checkError;
         }
 
         // compute the distance between the cell centers and the face
@@ -103,7 +103,7 @@ void ablate::finiteVolume::stencil::LeastSquares::Generate(PetscInt face, ablate
             }
         }
 
-        PetscFVComputeGradient(gradientCalculator, stencil.stencilSize, dx.data(), stencil.gradientWeights.data()) >> checkError;
+        PetscFVComputeGradient(gradientCalculator, stencil.stencilSize, dx.data(), stencil.gradientWeights.data()) >> utilities::PetscUtilities::checkError;
 
         // now combine the gradient weights with the stencil weights so that we don't need to precompute the stencil value and compute dx
         const auto gradientWeightsOrg = stencil.gradientWeights;

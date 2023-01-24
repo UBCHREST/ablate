@@ -7,7 +7,7 @@
 #include "domain/subDomain.hpp"
 #include "particles/field.hpp"
 #include "swarmAccessor.hpp"
-#include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 
 namespace ablate::particles::accessors {
 /**

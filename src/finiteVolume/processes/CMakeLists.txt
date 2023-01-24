@@ -12,6 +12,7 @@ target_sources(ablateLibrary
         constantPressureFix.cpp
         les.cpp
         chemistry.cpp
+        radiationLoss.cpp
 
         PUBLIC
         process.hpp
@@ -27,4 +28,5 @@ target_sources(ablateLibrary
         constantPressureFix.hpp
         les.hpp
         chemistry.hpp
+        radiationLoss.hpp
         )

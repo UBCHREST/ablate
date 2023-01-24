@@ -139,9 +139,9 @@ TEST_P(FaceInterpolantTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
 
         // Get the geometry for the mesh
         DM faceDM;
-        VecGetDM(faceGeomVec, &faceDM) >> checkError;
+        VecGetDM(faceGeomVec, &faceDM) >> utilities::PetscUtilities::checkError;
         const PetscScalar* faceGeomArray;
-        VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+        VecGetArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
 
         // march over each face
         for (PetscInt f = faceRange.start; f < faceRange.end; f++) {

@@ -45,7 +45,6 @@ static PetscReal Difference(PetscReal expected, PetscReal actual) { return Petsc
 TEST_P(PressureGradientScalingTestFixture, ShouldUpdatePgsCorrectly) {
     StartWithMPI
         // arrange
-        PetscErrorCode ierr;
 
         // initialize petsc and mpi
         ablate::environment::RunEnvironment::Initialize(argc, argv);

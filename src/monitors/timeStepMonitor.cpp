@@ -7,13 +7,10 @@ ablate::monitors::TimeStepMonitor::TimeStepMonitor(std::shared_ptr<logs::Log> lo
 
 PetscErrorCode ablate::monitors::TimeStepMonitor::MonitorTimeStep(TS ts, PetscInt steps, PetscReal crtime, Vec u, void* ctx) {
     PetscFunctionBeginUser;
-    PetscErrorCode ierr;
     auto monitor = (ablate::monitors::TimeStepMonitor*)ctx;
-
     if (monitor->interval->Check(PetscObjectComm((PetscObject)ts), steps, crtime)) {
         PetscReal dt;
-        ierr = TSGetTimeStep(ts, &dt);
-        CHKERRQ(ierr);
+        PetscCall(TSGetTimeStep(ts, &dt));
 
         // if this is the first time step init the log
         if (!monitor->log->Initialized()) {
@@ -21,7 +18,6 @@ PetscErrorCode ablate::monitors::TimeStepMonitor::MonitorTimeStep(TS ts, PetscIn
         }
 
         monitor->log->Printf("Timestep: %04d time = %-8.4g dt = %g\n", (int)steps, (double)crtime, (double)dt);
-        CHKERRQ(ierr);
     }
     PetscFunctionReturn(0);
 }

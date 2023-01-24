@@ -47,33 +47,24 @@ class FEFlowDynamicSourceMMSTestFixture : public testingResources::MpiTestFixtur
 static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     DM dm;
     PetscReal t;
-    PetscErrorCode ierr;
 
     PetscFunctionBegin;
-    ierr = TSGetDM(ts, &dm);
-    CHKERRQ(ierr);
-    ierr = TSGetTime(ts, &t);
-    CHKERRQ(ierr);
+    PetscCall(TSGetDM(ts, &dm));
+    PetscCall(TSGetTime(ts, &t));
 
     // This function Tags the u vector as the exact solution.  We need to copy the values to prevent this.
     Vec e;
-    ierr = VecDuplicate(u, &e);
-    CHKERRQ(ierr);
-    ierr = DMComputeExactSolution(dm, t, e, NULL);
-    CHKERRQ(ierr);
-    ierr = VecCopy(e, u);
-    CHKERRQ(ierr);
-    ierr = VecDestroy(&e);
-    CHKERRQ(ierr);
+    PetscCall(VecDuplicate(u, &e));
+    PetscCall(DMComputeExactSolution(dm, t, e, NULL));
+    PetscCall(VecCopy(e, u));
+    PetscCall(VecDestroy(&e));
 
     // Get the flowData
     ablate::finiteElement::FiniteElementSolver *flow;
-    ierr = DMGetApplicationContext(dm, &flow);
-    CHKERRQ(ierr);
+    PetscCall(DMGetApplicationContext(dm, &flow));
 
     // get the flow to apply the completeFlowInitialization method
     flow->CompleteFlowInitialization(dm, u);
-    CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -85,22 +76,18 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
     PetscDS ds;
     PetscReal ferrors[3];
     PetscInt f;
-    PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
-    ierr = TSGetDM(ts, &dm);
-    CHKERRQ(ierr);
-    ierr = DMGetDS(dm, &ds);
-    CHKERRQ(ierr);
+    PetscCall(TSGetDM(ts, &dm));
+    PetscCall(DMGetDS(dm, &ds));
 
     for (f = 0; f < 3; ++f) {
-        ierr = PetscDSGetExactSolution(ds, f, &exactFuncs[f], &ctxs[f]);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        PetscCallAbort(PETSC_COMM_WORLD, PetscDSGetExactSolution(ds, f, &exactFuncs[f], &ctxs[f]));
     }
-    ierr = DMComputeL2FieldDiff(dm, crtime, exactFuncs, ctxs, u, ferrors);
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD, "Timestep: %04d time = %-8.4g \t L_2 Error: [%2.3g, %2.3g, %2.3g]\n", (int)step, (double)crtime, (double)ferrors[0], (double)ferrors[1], (double)ferrors[2]);
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+    PetscCallAbort(PETSC_COMM_WORLD, DMComputeL2FieldDiff(dm, crtime, exactFuncs, ctxs, u, ferrors));
+    PetscCallAbort(
+        PETSC_COMM_WORLD,
+        PetscPrintf(PETSC_COMM_WORLD, "Timestep: %04d time = %-8.4g \t L_2 Error: [%2.3g, %2.3g, %2.3g]\n", (int)step, (double)crtime, (double)ferrors[0], (double)ferrors[1], (double)ferrors[2]));
 
     PetscFunctionReturn(0);
 }

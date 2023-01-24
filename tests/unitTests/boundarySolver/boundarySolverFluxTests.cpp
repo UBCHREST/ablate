@@ -12,7 +12,6 @@
 #include "domain/modifiers/tagLabelBoundary.hpp"
 #include "environment/runEnvironment.hpp"
 #include "eos/transport/constant.hpp"
-#include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
@@ -128,7 +127,7 @@ TEST_P(BoundarySolverFluxTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
         // Test one boundary point at a time
         PetscReal activeCell[3];
         PetscInt totalDim;
-        PetscDSGetTotalDimension(boundarySolver->GetSubDomain().GetDiscreteSystem(), &totalDim) >> checkError;
+        PetscDSGetTotalDimension(boundarySolver->GetSubDomain().GetDiscreteSystem(), &totalDim) >> utilities::PetscUtilities::checkError;
 
         // determine the cell size
         PetscReal stencilRadius = .5;
@@ -229,15 +228,16 @@ TEST_P(BoundarySolverFluxTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
 
         // Create a locFVector
         Vec gradVec;
-        DMCreateLocalVector(subDomain->GetDM(), &gradVec) >> checkError;
+        DMCreateLocalVector(subDomain->GetDM(), &gradVec) >> utilities::PetscUtilities::checkError;
 
         // Get raw access to the vector
         const PetscScalar* gradArray;
-        VecGetArrayRead(gradVec, &gradArray) >> checkError;
+        VecGetArrayRead(gradVec, &gradArray) >> utilities::PetscUtilities::checkError;
 
         // Get the offset for field
         PetscInt resultGradOffset;
-        PetscDSGetFieldOffset(boundarySolver->GetSubDomain().GetDiscreteSystem(), boundarySolver->GetSubDomain().GetField("resultGrad").subId, &resultGradOffset) >> checkError;
+        PetscDSGetFieldOffset(boundarySolver->GetSubDomain().GetDiscreteSystem(), boundarySolver->GetSubDomain().GetField("resultGrad").subId, &resultGradOffset) >>
+            utilities::PetscUtilities::checkError;
 
         // get the exactGrads
         auto expectedFieldAGradient = ablate::mathFunctions::Create(GetParam().expectedFieldAGradient);
@@ -247,18 +247,18 @@ TEST_P(BoundarySolverFluxTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
 
         // Get the list of cells not in the boundary region (i.e. gas phase)
         PetscInt depth;
-        DMPlexGetDepth(subDomain->GetDM(), &depth) >> checkError;
+        DMPlexGetDepth(subDomain->GetDM(), &depth) >> utilities::PetscUtilities::checkError;
         IS allCellIS;
-        DMGetStratumIS(subDomain->GetDM(), "depth", depth, &allCellIS) >> checkError;
+        DMGetStratumIS(subDomain->GetDM(), "depth", depth, &allCellIS) >> utilities::PetscUtilities::checkError;
 
         // Get the inside cells
         IS insideCellIS;
         IS labelIS;
         DMLabel insideLabel;
         DMGetLabel(subDomain->GetDM(), insideRegion->GetName().c_str(), &insideLabel);
-        DMLabelGetStratumIS(insideLabel, insideRegion->GetValue(), &labelIS) >> checkError;
-        ISIntersect(allCellIS, labelIS, &insideCellIS) >> checkError;
-        ISDestroy(&labelIS) >> checkError;
+        DMLabelGetStratumIS(insideLabel, insideRegion->GetValue(), &labelIS) >> utilities::PetscUtilities::checkError;
+        ISIntersect(allCellIS, labelIS, &insideCellIS) >> utilities::PetscUtilities::checkError;
+        ISDestroy(&labelIS) >> utilities::PetscUtilities::checkError;
 
         // Get the range
         PetscInt insideCellStart, insideCellEnd;
@@ -269,9 +269,9 @@ TEST_P(BoundarySolverFluxTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
         Vec cellGeomVec;
         const PetscScalar* cellGeomArray;
         DM cellGeomDm;
-        DMPlexGetDataFVM(subDomain->GetDM(), nullptr, &cellGeomVec, nullptr, nullptr) >> checkError;
-        VecGetDM(cellGeomVec, &cellGeomDm) >> checkError;
-        VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+        DMPlexGetDataFVM(subDomain->GetDM(), nullptr, &cellGeomVec, nullptr, nullptr) >> utilities::PetscUtilities::checkError;
+        VecGetDM(cellGeomVec, &cellGeomDm) >> utilities::PetscUtilities::checkError;
+        VecGetArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
 
         // March over each cell
         solver::Range boundaryCellRange;
@@ -281,7 +281,7 @@ TEST_P(BoundarySolverFluxTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
             const PetscInt cell = boundaryCellRange.points ? boundaryCellRange.points[c] : c;
 
             PetscFVCellGeom* cellGeom;
-            DMPlexPointLocalRead(cellGeomDm, cell, cellGeomArray, &cellGeom) >> checkError;
+            DMPlexPointLocalRead(cellGeomDm, cell, cellGeomArray, &cellGeom) >> utilities::PetscUtilities::checkError;
 
             // Set the current location
             PetscArraycpy(activeCell, cellGeom->centroid, dim);
@@ -290,17 +290,17 @@ TEST_P(BoundarySolverFluxTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
             const auto& stencils = boundarySolver->GetBoundaryGeometry(cell);
             for (const auto& stencil : stencils) {
                 // Reset the grad vec
-                VecZeroEntries(gradVec) >> checkError;
+                VecZeroEntries(gradVec) >> utilities::PetscUtilities::checkError;
 
                 // evaluate
-                boundarySolver->ComputeRHSFunction(0.0, globVec, gradVec) >> checkError;
+                boundarySolver->ComputeRHSFunction(0.0, globVec, gradVec) >> utilities::PetscUtilities::checkError;
 
                 // Make sure that there is no source terms in this boundary solver region
                 for (PetscInt tc = boundaryCellRange.start; tc < boundaryCellRange.end; ++tc) {
                     const PetscInt testCell = boundaryCellRange.points ? boundaryCellRange.points[tc] : tc;
 
                     const PetscScalar* data;
-                    DMPlexPointLocalRead(boundarySolver->GetSubDomain().GetDM(), testCell, gradArray, &data) >> checkError;
+                    DMPlexPointLocalRead(boundarySolver->GetSubDomain().GetDM(), testCell, gradArray, &data) >> utilities::PetscUtilities::checkError;
                     for (PetscInt i = 0; i < totalDim; i++) {
                         ASSERT_DOUBLE_EQ(0.0, data[i]) << "All at the sources should be zero in the boundarySolverRegion " << testCell;
                     }
@@ -312,15 +312,15 @@ TEST_P(BoundarySolverFluxTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
                 // March over each face
                 PetscInt numberFaces;
                 const PetscInt* cellFaces;
-                DMPlexGetConeSize(subDomain->GetDM(), cell, &numberFaces) >> checkError;
-                DMPlexGetCone(subDomain->GetDM(), cell, &cellFaces) >> checkError;
+                DMPlexGetConeSize(subDomain->GetDM(), cell, &numberFaces) >> utilities::PetscUtilities::checkError;
+                DMPlexGetCone(subDomain->GetDM(), cell, &cellFaces) >> utilities::PetscUtilities::checkError;
                 for (PetscInt f = 0; f < numberFaces; f++) {
                     PetscInt faceId = cellFaces[f];
                     // Get the connected cells
                     PetscInt numberNeighborCells;
                     const PetscInt* neighborCells;
-                    DMPlexGetSupportSize(subDomain->GetDM(), faceId, &numberNeighborCells) >> checkError;
-                    DMPlexGetSupport(subDomain->GetDM(), faceId, &neighborCells) >> checkError;
+                    DMPlexGetSupportSize(subDomain->GetDM(), faceId, &numberNeighborCells) >> utilities::PetscUtilities::checkError;
+                    DMPlexGetSupport(subDomain->GetDM(), faceId, &neighborCells) >> utilities::PetscUtilities::checkError;
                     if (neighborCells[0] == cell && neighborCells[1] == stencil.stencil.front()) {
                         neighborCellFound = true;
                         neighborCell = neighborCells[1];
@@ -339,7 +339,7 @@ TEST_P(BoundarySolverFluxTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
                     const PetscInt testCell = insideCells ? insideCells[ic] : ic;
 
                     const PetscScalar* data;
-                    DMPlexPointLocalRead(boundarySolver->GetSubDomain().GetDM(), testCell, gradArray, &data) >> checkError;
+                    DMPlexPointLocalRead(boundarySolver->GetSubDomain().GetDM(), testCell, gradArray, &data) >> utilities::PetscUtilities::checkError;
 
                     // If this is not the neighbor cell, make sure that it is zero
                     if (testCell != neighborCell) {
@@ -349,7 +349,7 @@ TEST_P(BoundarySolverFluxTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
                     } else {
                         // compute the volume for the test cell
                         PetscReal volume;
-                        DMPlexComputeCellGeometryFVM(boundarySolver->GetSubDomain().GetDM(), testCell, &volume, nullptr, nullptr) >> checkError;
+                        DMPlexComputeCellGeometryFVM(boundarySolver->GetSubDomain().GetDM(), testCell, &volume, nullptr, nullptr) >> utilities::PetscUtilities::checkError;
 
                         // make sure that the grad is equal
                         // Compute the expected values
@@ -391,19 +391,19 @@ TEST_P(BoundarySolverFluxTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
         }
 
         boundarySolver->RestoreRange(boundaryCellRange);
-        VecRestoreArrayRead(gradVec, &gradArray) >> checkError;
+        VecRestoreArrayRead(gradVec, &gradArray) >> utilities::PetscUtilities::checkError;
 
         ISRestorePointRange(insideCellIS, &insideCellStart, &insideCellEnd, &insideCells);
 
         ISDestroy(&allCellIS);
         ISDestroy(&insideCellIS);
-        VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+        VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
 
         // debug code
         DMViewFromOptions(mesh->GetDM(), nullptr, "-viewTestDM");
         DMViewFromOptions(mesh->GetDM(), nullptr, "-viewTestDMAlso");
 
-        VecDestroy(&gradVec) >> checkError;
+        VecDestroy(&gradVec) >> utilities::PetscUtilities::checkError;
 
         ablate::environment::RunEnvironment::Finalize();
         exit(0);

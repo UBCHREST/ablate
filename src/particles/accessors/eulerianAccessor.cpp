@@ -21,42 +21,42 @@ ablate::particles::accessors::ConstPointData ablate::particles::accessors::Euler
 
     /* Get local field */
     const auto& eulerianField = subDomain->GetField(fieldName);
-    subDomain->GetFieldLocalVector(eulerianField, currentTime, &eulerianFieldIs, &locEulerianField, &eulerianFieldDm) >> checkError;
+    subDomain->GetFieldLocalVector(eulerianField, currentTime, &eulerianFieldIs, &locEulerianField, &eulerianFieldDm) >> utilities::PetscUtilities::checkError;
 
     // Set up the interpolation
     DMInterpolationInfo interpolant;
-    DMInterpolationCreate(PETSC_COMM_SELF, &interpolant) >> checkError;
-    DMInterpolationSetDim(interpolant, subDomain->GetDimensions()) >> checkError;
-    DMInterpolationSetDof(interpolant, eulerianField.numberComponents) >> checkError;
+    DMInterpolationCreate(PETSC_COMM_SELF, &interpolant) >> utilities::PetscUtilities::checkError;
+    DMInterpolationSetDim(interpolant, subDomain->GetDimensions()) >> utilities::PetscUtilities::checkError;
+    DMInterpolationSetDof(interpolant, eulerianField.numberComponents) >> utilities::PetscUtilities::checkError;
 
     // Copy over the np of particles
-    DMInterpolationAddPoints(interpolant, np, coordinates.data()) >> checkError;
+    DMInterpolationAddPoints(interpolant, np, coordinates.data()) >> utilities::PetscUtilities::checkError;
 
     /* Particles that lie outside the domain should be dropped,
     whereas particles that move to another partition should trigger a migration */
-    DMInterpolationSetUp(interpolant, eulerianFieldDm, PETSC_FALSE, PETSC_TRUE) >> checkError;
+    DMInterpolationSetUp(interpolant, eulerianFieldDm, PETSC_FALSE, PETSC_TRUE) >> utilities::PetscUtilities::checkError;
 
     // Create a vec to hold the information
     Vec eulerianFieldAtParticles;
-    VecCreateSeq(PETSC_COMM_SELF, np * eulerianField.numberComponents, &eulerianFieldAtParticles) >> checkError;
+    VecCreateSeq(PETSC_COMM_SELF, np * eulerianField.numberComponents, &eulerianFieldAtParticles) >> utilities::PetscUtilities::checkError;
 
     // interpolate
-    DMInterpolationEvaluate(interpolant, eulerianFieldDm, locEulerianField, eulerianFieldAtParticles) >> checkError;
+    DMInterpolationEvaluate(interpolant, eulerianFieldDm, locEulerianField, eulerianFieldAtParticles) >> utilities::PetscUtilities::checkError;
 
     // Now cleanup
-    DMInterpolationDestroy(&interpolant) >> checkError;
-    subDomain->RestoreFieldLocalVector(eulerianField, &eulerianFieldIs, &locEulerianField, &eulerianFieldDm) >> checkError;
+    DMInterpolationDestroy(&interpolant) >> utilities::PetscUtilities::checkError;
+    subDomain->RestoreFieldLocalVector(eulerianField, &eulerianFieldIs, &locEulerianField, &eulerianFieldDm) >> utilities::PetscUtilities::checkError;
 
     // Get the raw array from the vec
     const PetscScalar* valueArray = nullptr;
-    VecGetArrayRead(eulerianFieldAtParticles, &valueArray) >> checkError;
+    VecGetArrayRead(eulerianFieldAtParticles, &valueArray) >> utilities::PetscUtilities::checkError;
 
     // Clean up the vec when done being used
     RegisterCleanupFunction([eulerianFieldAtParticles, valueArray]() {
         Vec eulerianFieldAtParticlesTmp = eulerianFieldAtParticles;
         const PetscScalar* valueArrayTmp = valueArray;
-        VecRestoreArrayRead(eulerianFieldAtParticlesTmp, &valueArrayTmp) >> checkError;
-        VecDestroy(&eulerianFieldAtParticlesTmp) >> checkError;
+        VecRestoreArrayRead(eulerianFieldAtParticlesTmp, &valueArrayTmp) >> utilities::PetscUtilities::checkError;
+        VecDestroy(&eulerianFieldAtParticlesTmp) >> utilities::PetscUtilities::checkError;
     });
 
     // return the vec
