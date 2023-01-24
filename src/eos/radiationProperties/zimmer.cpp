@@ -22,7 +22,7 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerFunction(const Pe
         *kappa = 0;
     } else {
         if (temperature > functionContext->upperLimit) temperature = functionContext->upperLimit;  //! Limit the model to only pull constants from below the upper end of the temperature.
-        if (temperature < functionContext->lowerLimit) temperature = functionContext->lowerLimit;    //! Limit the model to only pull constants from above the lower end of the temperature.
+        if (temperature < functionContext->lowerLimit) temperature = functionContext->lowerLimit;  //! Limit the model to only pull constants from above the lower end of the temperature.
 
         /** The Zimmer model uses a fit approximation of the absorptivity. This depends on the presence of four species which are present in combustion and shown below. */
         double kappaH2O = 0;
@@ -89,7 +89,7 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerTemperatureFuncti
         *kappa = 0;
     } else {
         if (temperature > functionContext->upperLimit) temperature = functionContext->upperLimit;  //! Limit the model to only pull constants from below the upper end of the temperature.
-        if (temperature < functionContext->lowerLimit) temperature = functionContext->lowerLimit;    //! Limit the model to only pull constants from above the lower end of the temperature.
+        if (temperature < functionContext->lowerLimit) temperature = functionContext->lowerLimit;  //! Limit the model to only pull constants from above the lower end of the temperature.
 
         /** The Zimmer model uses a fit approximation of the absorptivity. This depends on the presence of four species which are present in combustion and shown below. */
         double kappaH2O = 0;
