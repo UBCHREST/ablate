@@ -2,7 +2,7 @@
 #include "math.h"
 
 ablate::eos::radiationProperties::Zimmer::Zimmer(std::shared_ptr<eos::EOS> eosIn, PetscReal upperLimitIn, PetscReal lowerLimitIn)
-    : eos(std::move(eosIn)), upperLimitStored((upperLimitIn = 0) ? 2500 : upperLimitIn), lowerLimitStored((lowerLimitIn = 0) ? 500 : lowerLimitIn) {}
+    : eos(std::move(eosIn)), upperLimitStored((upperLimitIn == 0) ? 2500 : upperLimitIn), lowerLimitStored((lowerLimitIn == 0) ? 500 : lowerLimitIn) {}
 
 PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerFunction(const PetscReal *conserved, PetscReal *kappa, void *ctx) {
     PetscFunctionBeginUser;
