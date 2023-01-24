@@ -4,6 +4,21 @@
 using namespace ablate::domain::rbf;
 
 
+// Return an array of length-3 containing the location, even for 1D or 2D domains
+void RBF::Loc3D(PetscReal xIn[], PetscReal x[3]){
+  PetscInt d;
+  PetscInt dim = subDomain->GetDimensions();
+
+  for (d = 0; d < dim; ++d) {
+    x[d] = xIn[d];
+  }
+  for (d = dim; d < 3; ++d) {
+    x[d] = 0.0;
+  }
+
+}
+
+
 // Distance between two points
 PetscReal RBF::DistanceSquared(PetscReal x[], PetscReal y[]){
   PetscInt dim = subDomain->GetDimensions();
@@ -38,7 +53,7 @@ void RBF::Matrix(const PetscInt c, PetscReal **xCenters, Mat *LUA) {
   PetscInt              i, j, d, px, py, pz, matSize;
   PetscInt              nCells, *list;
   const PetscInt        dim = subDomain->GetDimensions();
-  const PetscInt        nPoly = RBF::nPoly, p = RBF::polyOrder, p1 = p + 1;
+  const PetscInt        nPoly = RBF::nPoly, p = RBF::polyOrder, p1 = PetscMax(p + 1, 1);
   Mat                   A;
   PetscReal             *x, *vals;
   PetscReal             x0[dim];        // Center of the cell of interest
@@ -50,12 +65,11 @@ void RBF::Matrix(const PetscInt c, PetscReal **xCenters, Mat *LUA) {
   RBF::nStencil[c] = nCells;
   RBF::stencilList[c] = list;
 
-  PetscMalloc1(nCells*dim*p1, &xp) >> ablate::checkError;
-
-
   if(nPoly>=nCells){
     throw std::invalid_argument("Number of surrounding cells, " + std::to_string(nCells) + ", can not support a requested polynomial order of " + std::to_string(p) + " which requires " + std::to_string(nPoly) + " number of cells.");
   }
+
+  PetscMalloc1(nCells*dim*p1, &xp) >> ablate::checkError;
 
   // Get the cell center
   DMPlexComputeCellGeometryFVM(dm, c, NULL, x0, NULL) >> ablate::checkError;
@@ -66,12 +80,14 @@ void RBF::Matrix(const PetscInt c, PetscReal **xCenters, Mat *LUA) {
     DMPlexComputeCellGeometryFVM(dm, list[i], NULL, &x[i*dim], NULL) >> ablate::checkError;
     for (d = 0; d < dim; ++d) {
       x[i*dim+d] -= x0[d];
+//      printf("%+f ", x[i*dim+d]);
       // Precompute the powers for later use
       xp[(i*dim+d)*p1 + 0] = 1.0;
-      for (px = 1; px < p+1; ++px) {
+      for (px = 1; px < p1; ++px) {
         xp[(i*dim+d)*p1 + px] = xp[(i*dim+d)*p1 + (px-1)]*x[i*dim+d];
       }
     }
+//    printf("\n");
   }
 
   matSize = nCells + nPoly;
@@ -91,30 +107,47 @@ void RBF::Matrix(const PetscInt c, PetscReal **xCenters, Mat *LUA) {
     }
   }
 
-  // Augmented polynomial contributions
-  if (dim == 2) {
-    for (i = 0; i < nCells; ++i) {
-      j = nCells;
-      for (py = 0; py < p1; ++py) {
-        for (px = 0; px < p1-py; ++px) {
-          vals[i*matSize + j] = vals[j*matSize + i] = xp[(i*dim+0)*p1 + px] * xp[(i*dim+1)*p1 + py];
-          ++j;
-        }
-      }
-    }
-  } else {
-    for (i = 0; i < nCells; ++i) {
-      j = nCells;
-      for (pz = 0; pz < p1; ++pz) {
-        for (py = 0; py < p1-pz; ++py) {
-          for (px = 0; px < p1-py-pz; ++px ){
-            vals[i*matSize + j] = vals[j*matSize + i] = xp[(i*dim+0)*p1 + px] * xp[(i*dim+1)*p1 + py] * xp[(i*dim+2)*p1 + pz];
+  if (nPoly>0) {
+    // Augmented polynomial contributions
+    switch (dim) {
+      case 1:
+        for (i = 0; i < nCells; ++i) {
+          j = nCells;
+          for (px = 0; px < p1; ++px) {
+            vals[i*matSize + j] = vals[j*matSize + i] = xp[(i*dim+0)*p1 + px];
             ++j;
           }
         }
-      }
+        break;
+      case 2:
+        for (i = 0; i < nCells; ++i) {
+          j = nCells;
+          for (py = 0; py < p1; ++py) {
+            for (px = 0; px < p1-py; ++px) {
+              vals[i*matSize + j] = vals[j*matSize + i] = xp[(i*dim+0)*p1 + px] * xp[(i*dim+1)*p1 + py];
+              ++j;
+            }
+          }
+        }
+        break;
+      case 3:
+        for (i = 0; i < nCells; ++i) {
+          j = nCells;
+          for (pz = 0; pz < p1; ++pz) {
+            for (py = 0; py < p1-pz; ++py) {
+              for (px = 0; px < p1-py-pz; ++px ){
+                vals[i*matSize + j] = vals[j*matSize + i] = xp[(i*dim+0)*p1 + px] * xp[(i*dim+1)*p1 + py] * xp[(i*dim+2)*p1 + pz];
+                ++j;
+              }
+            }
+          }
+        }
+        break;
+      default:
+        throw std::runtime_error("ablate::domain::RBF::Matrix encountered an unknown dimension.");
     }
   }
+
   MatDenseRestoreArrayWrite(A, &vals) >> ablate::checkError;
   MatViewFromOptions(A,NULL,"-ablate::domain::rbf::RBF::A_view") >> ablate::checkError;
 
@@ -182,7 +215,7 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
   PetscInt    nDer = RBF::nDer;
   PetscInt    *dxyz = RBF::dxyz;
   PetscInt    i, j;
-  PetscInt    px, py, pz, p1 = RBF::polyOrder+1;
+  PetscInt    px, py, pz, p1 = PetscMax(RBF::polyOrder + 1, 1);
   PetscScalar *vals = nullptr;
 
   //Create the RHS
@@ -198,35 +231,54 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
     }
   }
 
-  // Derivatives of the augmented polynomials
-  if (dim == 2) {
-    for (j = 0; j < nDer; ++j) {
-      i = nCells;
-      for (py = 0; py < p1; ++py) {
-        for (px = 0; px < p1-py; ++px ){
-          if(dxyz[j*3 + 0] == px && dxyz[j*3 + 1] == py) {
-            vals[i + j*matSize] = fac[px]*fac[py];
-          }
-          ++i;
-        }
-      }
-
-    }
-  } else {
-    for (j = 0; j < nDer; ++j) {
-      i = nCells;
-      for (pz = 0; pz < p1; ++pz) {
-        for (py = 0; py < p1-pz; ++py) {
-          for (px = 0; px < p1-py-pz; ++px ){
-            if(dxyz[j*3 + 0] == px && dxyz[j*3 + 1] == py && dxyz[j*3 + 2] == pz) {
-              vals[i + j*matSize] = fac[px]*fac[py]*fac[pz];
+  if (RBF::nPoly>0) {
+    // Derivatives of the augmented polynomials
+    switch (dim) {
+      case 1:
+        for (j = 0; j < nDer; ++j) {
+          i = nCells;
+          for (px = 0; px < p1; ++px ){
+            if(dxyz[j*3 + 0] == px) {
+              vals[i + j*matSize] = (PetscReal)fac[px];
             }
             ++i;
           }
         }
-      }
+        break;
+      case 2:
+        for (j = 0; j < nDer; ++j) {
+          i = nCells;
+          for (py = 0; py < p1; ++py) {
+            for (px = 0; px < p1-py; ++px ){
+              if(dxyz[j*3 + 0] == px && dxyz[j*3 + 1] == py) {
+                vals[i + j*matSize] = (PetscReal)(fac[px]*fac[py]);
+              }
+              ++i;
+            }
+          }
+        }
+        break;
+      case 3:
+        for (j = 0; j < nDer; ++j) {
+          i = nCells;
+          for (pz = 0; pz < p1; ++pz) {
+            for (py = 0; py < p1-pz; ++py) {
+              for (px = 0; px < p1-py-pz; ++px ){
+                if(dxyz[j*3 + 0] == px && dxyz[j*3 + 1] == py && dxyz[j*3 + 2] == pz) {
+                  vals[i + j*matSize] = (PetscReal)(fac[px]*fac[py]*fac[pz]);
+                }
+                ++i;
+              }
+            }
+          }
+        }
+        break;
+      default:
+        throw std::runtime_error("ablate::domain::RBF::SetupDerivativeStencils encountered an unknown dimension.");
     }
   }
+
+
 
   MatDenseRestoreArrayWrite(B, &vals) >> ablate::checkError;
 
@@ -397,7 +449,7 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
   // Get the cell center
   DMPlexComputeCellGeometryFVM(dm, c, NULL, x0, NULL) >> ablate::checkError;
 
-  PetscInt p1 = RBF::polyOrder + 1, dim = subDomain->GetDimensions();
+  PetscInt p1 = PetscMax(RBF::polyOrder + 1, 1), dim = subDomain->GetDimensions();
   PetscInt px, py, pz;
   PetscReal *xp;
   PetscMalloc1(dim*p1, &xp) >> ablate::checkError;
@@ -452,7 +504,7 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
 /************ Begin Ablate support Code **********************/
 // Return the range of DMPlex objects at a given depth in a subDomain and region. This is pulled from ablate::solver::Solver::GetRange
 //    which already has the subDomain and region information.
-//    Note: This seems like it should be in ablate::domain and the solver will call this. Need to talk to Matt. M about it.
+//    Note: This seems like it should be in ablate::domain and the solver will call this. Need to talk to Matt M. about it.
 void RBF::GetRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::solver::Range &range) const {
     // Start out getting all the points
     IS allPointIS;
@@ -513,12 +565,12 @@ void RBF::RestoreRange(ablate::solver::Range &range) const {
 /************ Constructor, Setup, and Initialization Code **********************/
 
 RBF::RBF(PetscInt polyOrder, bool hasDerivatives, bool hasInterpolation) :
-    polyOrder(polyOrder < 1 ? __RBF_DEFAULT_POLYORDER : polyOrder),
+    polyOrder(polyOrder),
     hasDerivatives(hasDerivatives),
     hasInterpolation(hasInterpolation) {}
 
 
-RBF::~RBF() {}
+RBF::~RBF() { }
 
 // This is done once
 void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
@@ -531,24 +583,35 @@ void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
 
   PetscInt dim = subDomain->GetDimensions();
 
-  // The number of polynomial values is (p+2)(p+1)/2 in 2D and (p+3)(p+2)(p+1)/6 in 3D
+//   The number of polynomial values is (p+2)(p+1)/2 in 2D and (p+3)(p+2)(p+1)/6 in 3D
   PetscInt p = RBF::polyOrder;
-  if (dim == 1) {
-    RBF::nPoly = p+1;
-  } else if (dim == 2) {
-    RBF::nPoly = (p+2)*(p+1)/2;
-  } else {
-    RBF::nPoly = (p+3)*(p+2)*(p+1)/6;
+
+  if (p>0) {
+
+    if (dim == 1) {
+      RBF::nPoly = p+1;
+    } else if (dim == 2) {
+      RBF::nPoly = (p+2)*(p+1)/2;
+    } else {
+      RBF::nPoly = (p+3)*(p+2)*(p+1)/6;
+    }
+
+    // Set the minimum number of cells to get compute the RBF matrix
+    RBF::minNumberCells = PetscMax((PetscInt)floor(2*(RBF::nPoly)), 30);
+  }
+  else {
+    RBF::nPoly = 0;
+    RBF::minNumberCells = 30;
   }
 
-  // Set the minimum number of cells to get compute the RBF matrix
-  RBF::minNumberCells = (PetscInt)floor(2*(RBF::nPoly));
 
   if (RBF::hasDerivatives) {
 
     // Now setup the derivatives required for curvature/normal calculations. This should probably move over to user-option
     PetscInt nDer = 0;
-    PetscInt dx[10], dy[10], dz[10];
+    PetscInt dx[11], dy[11], dz[11];
+
+    dx[nDer] = 0; dy[nDer] = 0; dz[nDer++] = 0;
 
     if (dim >= 1) {
       dx[nDer] = 1; dy[nDer] = 0; dz[nDer++] = 0;
@@ -557,17 +620,19 @@ void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
 
     if ( dim >= 2) {
       dx[nDer] = 0; dy[nDer] = 1; dz[nDer++] = 0;
-      dx[nDer] = 0; dy[nDer] = 2; dz[nDer++] = 0;
       dx[nDer] = 1; dy[nDer] = 1; dz[nDer++] = 0;
+      dx[nDer] = 0; dy[nDer] = 2; dz[nDer++] = 0;
     }
 
     if( dim == 3) {
       dx[nDer] = 0; dy[nDer] = 0; dz[nDer++] = 1;
-      dx[nDer] = 0; dy[nDer] = 0; dz[nDer++] = 2;
       dx[nDer] = 1; dy[nDer] = 0; dz[nDer++] = 1;
       dx[nDer] = 0; dy[nDer] = 1; dz[nDer++] = 1;
+      dx[nDer] = 0; dy[nDer] = 0; dz[nDer++] = 2;
       dx[nDer] = 1; dy[nDer] = 1; dz[nDer++] = 1;
     }
+
+
     SetDerivatives(nDer, dx, dy, dz);
   }
 

@@ -20,31 +20,34 @@ PetscReal IMQ::RBFVal(PetscReal x[], PetscReal y[]) {
 }
 
 // Derivatives of Multiquadric spline at a location.
-PetscReal IMQ::RBFDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) {
+PetscReal IMQ::RBFDer(PetscReal xIn[], PetscInt dx, PetscInt dy, PetscInt dz) {
 
   PetscReal h = IMQ::scale;
   PetscReal e2 = 1.0/(h*h);
-  PetscReal r2 = IMQ::DistanceSquared(x);
+  PetscReal r2 = IMQ::DistanceSquared(xIn);
   PetscReal imq = PetscSqrtReal(1.0 + e2*r2);
+  PetscReal x[3];
+
+  IMQ::Loc3D(xIn, x);
 
   switch (dx + 10*dy + 100*dz) {
     case 0:
       imq = 1.0/imq;
       break;
     case 1: // x
-      imq = -e2*x[0]/(imq*imq*imq);
+      imq = e2*x[0]/(imq*imq*imq);
       break;
     case 2: // xx
       imq = -e2*(1.0 + e2*(-2.0*x[0]*x[0] + x[1]*x[1] + x[2]*x[2]))/(imq*imq*imq*imq*imq);
       break;
     case 10: // y
-      imq = -e2*x[1]/(imq*imq*imq);
+      imq = e2*x[1]/(imq*imq*imq);
       break;
     case 20: // yy
       imq = -e2*(1.0 + e2*(x[0]*x[0] - 2.0*x[1]*x[1] + x[2]*x[2]))/(imq*imq*imq*imq*imq);
       break;
     case 100: // z
-      imq = -e2*x[2]/(imq*imq*imq);
+      imq = e2*x[2]/(imq*imq*imq);
       break;
     case 200: // zz
       imq = -e2*(1.0 + e2*(x[0]*x[0] + x[1]*x[1] - 2.0*x[2]*x[2]))/(imq*imq*imq*imq*imq);
@@ -59,7 +62,7 @@ PetscReal IMQ::RBFDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) {
       imq = 3.0*PetscSqr(e2)*x[1]*x[2]/(imq*imq*imq*imq*imq);
       break;
     case 111: // xyz
-      imq = -15.0*e2*PetscSqr(e2)*x[0]*x[1]*x[2]/(imq*imq*imq*imq*imq*imq*imq);
+      imq = 15.0*e2*PetscSqr(e2)*x[0]*x[1]*x[2]/(imq*imq*imq*imq*imq*imq*imq);
       break;
     default:
       throw std::invalid_argument("IMQ: Derivative of (" + std::to_string(dx) + ", " + std::to_string(dy) + ", " + std::to_string(dz) + ") is not setup.");

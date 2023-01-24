@@ -16,6 +16,23 @@
 using namespace ablate;
 
 
+void RBFTestFixture_SetData(ablate::solver::Range cellRange, const ablate::domain::Field *field, std::shared_ptr<ablate::domain::SubDomain> subDomain) {
+
+  PetscReal    *array, *val, x[3] = {0.0, 0.0, 0.0};
+  Vec           vec = subDomain->GetVec(*field);
+  DM            dm  = subDomain->GetFieldDM(*field);
+
+  VecGetArray(vec, &array) >> ablate::checkError;
+  for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+    PetscInt cell = cellRange.points ? cellRange.points[c] : c;
+    DMPlexComputeCellGeometryFVM(dm, cell, NULL, x, NULL) >> ablate::checkError;
+    DMPlexPointLocalFieldRef(dm, cell, field->id, array, &val) >> ablate::checkError;
+    *val = 1.0 + sin(4.0*x[0] + 3.0*x[1] - x[2]) + sin(x[0] - x[1]) - cos(2.0*x[0]+x[2]) - sin(x[1]-3.0*x[2])+cos(3.0*x[0]*x[1]*x[2]);
+  }
+  VecRestoreArray(vec, &array) >> ablate::checkError;
+
+}
+
 
 struct RBFParameters_RBFValues {
     testingResources::MpiTestParameter mpiTestParameter;
@@ -37,7 +54,7 @@ class RBFTestFixture_RBFValues : public testingResources::MpiTestFixture, public
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
 
-// Tests the actual radial functions
+// Tests the radial functions RBFVal and RBFDer, which returns the function value between two locations and the derivative at a location, respectively.
 TEST_P(RBFTestFixture_RBFValues, CheckRBFFunctions) {
     StartWithMPI
         {
@@ -49,7 +66,7 @@ TEST_P(RBFTestFixture_RBFValues, CheckRBFFunctions) {
             std::shared_ptr<domain::rbf::RBF> rbf = testingParam.rbf;
 
             auto mesh = std::make_shared<domain::BoxMesh>(
-                "mesh", std::vector<std::shared_ptr<domain::FieldDescriptor>>{},
+                "mesh", std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>>{},
                 std::vector<std::shared_ptr<domain::modifiers::Modifier>>{}, testingParam.meshFaces, testingParam.meshStart, testingParam.meshEnd);
 
             mesh->InitializeSubDomains();
@@ -68,25 +85,10 @@ TEST_P(RBFTestFixture_RBFValues, CheckRBFFunctions) {
             for (int i = 0; i < dx.size(); ++i) {
               EXPECT_DOUBLE_EQ(testingParam.expectedDerivatives[i], rbf->RBFDer(x, dx[i], dy[i], dz[i]));
             }
-
-
-
-
-//GA::GA(PetscInt p, PetscReal scale, bool hasDerivatives, bool hasInterpolation) : RBF(p, hasDerivatives, hasInterpolation), scale(scale) {};
-//IMQ::IMQ(PetscInt p, PetscReal scale, bool hasDerivatives, bool hasInterpolation) : RBF(p, hasDerivatives, hasInterpolation), scale(scale) {};
-//MQ::MQ(PetscInt p, PetscReal scale, bool hasDerivatives, bool hasInterpolation) : RBF(p, hasDerivatives, hasInterpolation), scale(scale) {};
-//PHS::PHS(PetscInt p, PetscInt phsOrder, bool hasDerivatives, bool hasInterpolation) : RBF(p, hasDerivatives, hasInterpolation), phsOrder(phsOrder) {};
-
-
-
-
-
         }
         ablate::environment::RunEnvironment::Finalize();
     EndWithMPI
 }
-
-
 
 INSTANTIATE_TEST_SUITE_P(
     MeshTests, RBFTestFixture_RBFValues,
@@ -101,7 +103,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dx = {0, 1, 2},
                                               .dy = {0, 0, 0},
                                               .dz = {0, 0, 0},
-                                              .expectedDerivatives = {1.0/M_E, -1.0/M_E, 1.0/(2.0*M_E)}},
+                                              .expectedDerivatives = {1.0/M_E, 1.0/M_E, 1.0/(2.0*M_E)}},
                     (RBFParameters_RBFValues){.mpiTestParameter = {.testName = "GA2D"},
                                               .meshFaces = {1, 1},
                                               .meshStart = {0.0, 0.0},
@@ -113,7 +115,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dx = {0, 1, 2, 0, 0, 1},
                                               .dy = {0, 0, 0, 1, 2, 1},
                                               .dz = {0, 0, 0, 0, 0, 0},
-                                              .expectedDerivatives = {1.0/exp(5.0), -1.0/exp(5.0), 0.5/exp(5.0), -2.0/exp(5.0), 3.5/exp(5.0), 2.0/exp(5.0)}},
+                                              .expectedDerivatives = {1.0/exp(5.0), 1.0/exp(5.0), 0.5/exp(5.0), 2.0/exp(5.0), 3.5/exp(5.0), 2.0/exp(5.0)}},
                     (RBFParameters_RBFValues){.mpiTestParameter = {.testName = "GA3D"},
                                               .meshFaces = {1, 1, 1},
                                               .meshStart = {0.0, 0.0, 0.0},
@@ -125,7 +127,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dx = {0, 1, 2, 0, 0, 1, 0, 0, 1, 0, 1},
                                               .dy = {0, 0, 0, 1, 2, 1, 0, 0, 0, 1, 1},
                                               .dz = {0, 0, 0, 0, 0, 0, 1, 2, 1, 1, 1},
-                                              .expectedDerivatives = {1.0/exp(6.0), -1.0/exp(6.0), 0.5/exp(6.0), -2.0/exp(6.0), 3.5/exp(6.0), 2.0/exp(6.0), 1.0/exp(6.0), 0.5/exp(6.0), -1.0/exp(6.0), -2.0/exp(6.0), 2.0/exp(6.0)}},
+                                              .expectedDerivatives = {1.0/exp(6.0), 1.0/exp(6.0), 0.5/exp(6.0), 2.0/exp(6.0), 3.5/exp(6.0), 2.0/exp(6.0), -1.0/exp(6.0), 0.5/exp(6.0), -1.0/exp(6.0), -2.0/exp(6.0), -2.0/exp(6.0)}},
                     (RBFParameters_RBFValues){.mpiTestParameter = {.testName = "IMQ1D"},
                                               .meshFaces = {1},
                                               .meshStart = {0.0},
@@ -137,7 +139,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dx = {0, 1, 2},
                                               .dy = {0, 0, 0},
                                               .dz = {0, 0, 0},
-                                              .expectedDerivatives = {1.0/sqrt(2.0), -0.25/sqrt(2.0), 0.0625/sqrt(2.0)}},
+                                              .expectedDerivatives = {1.0/sqrt(2.0), 0.25/sqrt(2.0), 0.0625/sqrt(2.0)}},
                     (RBFParameters_RBFValues){.mpiTestParameter = {.testName = "IMQ2D"},
                                               .meshFaces = {1, 1},
                                               .meshStart = {0.0, 0.0},
@@ -149,7 +151,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dx = {0, 1, 2, 0, 0, 1},
                                               .dy = {0, 0, 0, 1, 2, 1},
                                               .dz = {0, 0, 0, 0, 0, 0},
-                                              .expectedDerivatives = {1.0/sqrt(6.0), -1.0/(12.0*sqrt(6.0)), -1.0/(48.0*sqrt(6.0)), -1.0/(6.0*sqrt(6.0)), 1.0/(24.0*sqrt(6.0)), 1.0/(24.0*sqrt(6.0))}},
+                                              .expectedDerivatives = {1.0/sqrt(6.0), 1.0/(12.0*sqrt(6.0)), -1.0/(48.0*sqrt(6.0)), 1.0/(6.0*sqrt(6.0)), 1.0/(24.0*sqrt(6.0)), 1.0/(24.0*sqrt(6.0))}},
                     (RBFParameters_RBFValues){.mpiTestParameter = {.testName = "IMQ3D"},
                                               .meshFaces = {1, 1, 1},
                                               .meshStart = {0.0, 0.0, 0.0},
@@ -161,7 +163,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dx = {0, 1, 2, 0, 0, 1, 0, 0, 1, 0, 1},
                                               .dy = {0, 0, 0, 1, 2, 1, 0, 0, 0, 1, 1},
                                               .dz = {0, 0, 0, 0, 0, 0, 1, 2, 1, 1, 1},
-                                              .expectedDerivatives = {1.0/sqrt(15.0), -1.0/(30.0*sqrt(15.0)), -1.0/(75.0*sqrt(15.0)), -1.0/(15.0*sqrt(15.0)), -1.0/(300.0*sqrt(15.0)), 1.0/(150.0*sqrt(15.0)), -1.0/(10.0*sqrt(15.0)), 1.0/(75.0*sqrt(15.0)), 1.0/(100.0*sqrt(15.0)), 1.0/(50.0*sqrt(15.0)), -1.0/(300.0*sqrt(15.0))}},
+                                              .expectedDerivatives = {1.0/sqrt(15.0), 1.0/(30.0*sqrt(15.0)), -1.0/(75.0*sqrt(15.0)), 1.0/(15.0*sqrt(15.0)), -1.0/(300.0*sqrt(15.0)), 1.0/(150.0*sqrt(15.0)), 1.0/(10.0*sqrt(15.0)), 1.0/(75.0*sqrt(15.0)), 1.0/(100.0*sqrt(15.0)), 1.0/(50.0*sqrt(15.0)), 1.0/(300.0*sqrt(15.0))}},
                     (RBFParameters_RBFValues){.mpiTestParameter = {.testName = "MQ1D"},
                                               .meshFaces = {1},
                                               .meshStart = {0.0},
@@ -173,7 +175,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dx = {0, 1, 2},
                                               .dy = {0, 0, 0},
                                               .dz = {0, 0, 0},
-                                              .expectedDerivatives = {sqrt(2.0), 0.5/sqrt(2.0), 0.125/sqrt(2.0)}},
+                                              .expectedDerivatives = {sqrt(2.0), -0.5/sqrt(2.0), 0.125/sqrt(2.0)}},
                     (RBFParameters_RBFValues){.mpiTestParameter = {.testName = "MQ2D"},
                                               .meshFaces = {1, 1},
                                               .meshStart = {0.0, 0.0},
@@ -185,7 +187,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dx = {0, 1, 2, 0, 0, 1},
                                               .dy = {0, 0, 0, 1, 2, 1},
                                               .dz = {0, 0, 0, 0, 0, 0},
-                                              .expectedDerivatives = {sqrt(6.0), 0.5/sqrt(6.0), 5.0/(24.0*sqrt(6.0)), 1.0/sqrt(6.0), 1.0/(12.0*sqrt(6.0)), -1.0/(12.0*sqrt(6.0))}},
+                                              .expectedDerivatives = {sqrt(6.0), -0.5/sqrt(6.0), 5.0/(24.0*sqrt(6.0)), -1.0/sqrt(6.0), 1.0/(12.0*sqrt(6.0)), -1.0/(12.0*sqrt(6.0))}},
                     (RBFParameters_RBFValues){.mpiTestParameter = {.testName = "MQ3D"},
                                               .meshFaces = {1, 1, 1},
                                               .meshStart = {0.0, 0.0, 0.0},
@@ -197,7 +199,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dx = {0, 1, 2, 0, 0, 1, 0, 0, 1, 0, 1},
                                               .dy = {0, 0, 0, 1, 2, 1, 0, 0, 0, 1, 1},
                                               .dz = {0, 0, 0, 0, 0, 0, 1, 2, 1, 1, 1},
-                                              .expectedDerivatives = {sqrt(15.0), 0.5/sqrt(15.0), 7.0/(30.0*sqrt(15.0)), 1.0/sqrt(15.0), 11.0/(60.0*sqrt(15.0)), -1.0/(30.0*sqrt(15.0)), 0.5*sqrt(3.0/5.0), 1.0/(10.0*sqrt(15.0)), -1.0/(20.0*sqrt(15.0)), -1.0/(10.0*sqrt(15.0)), 1.0/(100.0*sqrt(15.0))}},
+                                              .expectedDerivatives = {sqrt(15.0), -0.5/sqrt(15.0), 7.0/(30.0*sqrt(15.0)), -1.0/sqrt(15.0), 11.0/(60.0*sqrt(15.0)), -1.0/(30.0*sqrt(15.0)), -0.5*sqrt(3.0/5.0), 1.0/(10.0*sqrt(15.0)), -1.0/(20.0*sqrt(15.0)), -1.0/(10.0*sqrt(15.0)), -1.0/(100.0*sqrt(15.0))}},
                     (RBFParameters_RBFValues){.mpiTestParameter = {.testName = "PHS1D"},
                                               .meshFaces = {1},
                                               .meshStart = {0.0},
@@ -209,7 +211,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dx = {0, 1, 2},
                                               .dy = {0, 0, 0},
                                               .dz = {0, 0, 0},
-                                              .expectedDerivatives = {32.0, 80.0, 160.0}},
+                                              .expectedDerivatives = {32.0, -80.0, 160.0}},
                     (RBFParameters_RBFValues){.mpiTestParameter = {.testName = "PHS2D"},
                                               .meshFaces = {1, 1},
                                               .meshStart = {0.0, 0.0},
@@ -221,7 +223,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dx = {0, 1, 2, 0, 0, 1},
                                               .dy = {0, 0, 0, 1, 2, 1},
                                               .dz = {0, 0, 0, 0, 0, 0},
-                                              .expectedDerivatives = {800.0*sqrt(5.0), 400.0*sqrt(5.0), 320.0*sqrt(5.0), 800.0*sqrt(5.0), 680.0*sqrt(5.0), 240.0*sqrt(5.0)}},
+                                              .expectedDerivatives = {800.0*sqrt(5.0), -400.0*sqrt(5.0), 320.0*sqrt(5.0), -800.0*sqrt(5.0), 680.0*sqrt(5.0), 240.0*sqrt(5.0)}},
                     (RBFParameters_RBFValues){.mpiTestParameter = {.testName = "PHS3D"},
                                               .meshFaces = {1, 1, 1},
                                               .meshStart = {0.0, 0.0, 0.0},
@@ -233,7 +235,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dx = {0, 1, 2, 0, 0, 1, 0, 0, 1, 0, 1},
                                               .dy = {0, 0, 0, 1, 2, 1, 0, 0, 0, 1, 1},
                                               .dz = {0, 0, 0, 0, 0, 0, 1, 2, 1, 1, 1},
-                                              .expectedDerivatives = {6272.0*sqrt(14.0), 1120.0*sqrt(14.0), 680.0*sqrt(14.0), 2240.0*sqrt(14.0), 1040.0*sqrt(14.0), 240.0*sqrt(14.0), 3360.0*sqrt(14.0), 1640.0*sqrt(14.0), 360.0*sqrt(14.0), 720.0*sqrt(14.0), 180.0*sqrt(2.0/7.0)}}
+                                              .expectedDerivatives = {6272.0*sqrt(14.0), -1120.0*sqrt(14.0), 680.0*sqrt(14.0), -2240.0*sqrt(14.0), 1040.0*sqrt(14.0), 240.0*sqrt(14.0), -3360.0*sqrt(14.0), 1640.0*sqrt(14.0), 360.0*sqrt(14.0), 720.0*sqrt(14.0), -180.0*sqrt(2.0/7.0)}}
                   ),
     [](const testing::TestParamInfo<RBFParameters_RBFValues>& info) { return info.param.mpiTestParameter.getTestName(); });
 
@@ -260,36 +262,25 @@ class RBFTestFixture_Derivative : public testingResources::MpiTestFixture, publi
 };
 
 
-void RBFTestFixture_SetData(ablate::solver::Range cellRange, std::shared_ptr<ablate::domain::SubDomain> subDomain) {
-
-  DM            dm = subDomain->GetDM();
-  PetscReal    *array, *val;
-  Vec           solVec = subDomain->GetSolutionVector();
-  const ablate::domain::Field field = subDomain->GetField("fieldA");
-
-  VecGetArray(solVec, &array) >> ablate::checkError;
-  for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
-    PetscInt cell = cellRange.points ? cellRange.points[c] : c;
-    DMPlexPointLocalFieldRef(dm, cell, field.id, array, &val)  >> ablate::checkError;
-    *val = 1.0;
-  }
-  VecRestoreArray(solVec, &array) >> ablate::checkError;
-
-}
 
 
-// This tests single-cell functions EvalDer and Interpolate.
+
+// This tests single-cell derivative functions.
 TEST_P(RBFTestFixture_Derivative, CheckPointFunctions) {
     StartWithMPI
-        {
-            // initialize petsc and mpi
-            environment::RunEnvironment::Initialize(argc, argv);
-            utilities::PetscUtilities::Initialize();
 
+        // initialize petsc and mpi
+        environment::RunEnvironment::Initialize(argc, argv);
+        utilities::PetscUtilities::Initialize();
+        {
             auto testingParam = GetParam();
+            std::shared_ptr<domain::rbf::RBF> rbf = testingParam.rbf;
 
             // Make the field
-            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptor = {std::make_shared<ablate::domain::FieldDescription>("fieldA", "", ablate::domain::FieldDescription::ONECOMPONENT, ablate::domain::FieldLocation::SOL, ablate::domain::FieldType::FVM)};
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptor = {
+              std::make_shared<ablate::domain::FieldDescription>("fieldB", "", ablate::domain::FieldDescription::ONECOMPONENT, ablate::domain::FieldLocation::SOL, ablate::domain::FieldType::FVM),
+              std::make_shared<ablate::domain::FieldDescription>("fieldA", "", ablate::domain::FieldDescription::ONECOMPONENT, ablate::domain::FieldLocation::AUX, ablate::domain::FieldType::FVM)
+              };
 
             // Create the mesh
             // Note that using -dm_view :mesh.tex:ascii_latex -dm_plex_view_scale 10 -dm_plex_view_numbers_depth 1,0,1 will create a mesh, changing numbers_depth as appropriate
@@ -298,51 +289,50 @@ TEST_P(RBFTestFixture_Derivative, CheckPointFunctions) {
 
             mesh->InitializeSubDomains();
 
-            auto subDomain = mesh->GetSubDomain(domain::Region::ENTIREDOMAIN);
+            std::shared_ptr<ablate::domain::SubDomain> subDomain = mesh->GetSubDomain(domain::Region::ENTIREDOMAIN);
+            rbf->Setup(subDomain);
 
-            testingParam.rbf->Setup(subDomain);
+            // The field containing the data
+//            const ablate::domain::Field *field = &(subDomain->GetField("fieldA"));
 
+//            // Now set the data
+//            ablate::solver::Range cellRange;
+//            rbf->GetCellRange(subDomain, nullptr, cellRange);
+//            rbf->Initialize(cellRange);
+//            RBFTestFixture_SetData(cellRange, field, subDomain);
+//            rbf->RestoreRange(cellRange);
 
-            // Initialize the RBF
-            PetscInt depth;
-            DMPlexGetDepth(mesh->GetDM(), &depth) >> checkError;
-            solver::Range cellRange;
-            testingParam.rbf->GetRange(subDomain, nullptr, depth, cellRange);
-            testingParam.rbf->Initialize(cellRange);
+//            // Now check derivatives
+//            std::vector<PetscInt> dx = testingParam.dx, dy = testingParam.dy, dz = testingParam.dz;
+//            PetscInt c = testingParam.c;
+//            PetscReal expectedVal;
 
+//            for (int i = 0; i < dx.size(); ++i) {
+//              expectedVal = testingParam.expectedDerivatives[i];
 
-
-
-
-            testingParam.rbf->RestoreRange(cellRange);
-
-
-
-
-
-
-
-//GA::GA(PetscInt p, PetscReal scale, bool hasDerivatives, bool hasInterpolation) : RBF(p, hasDerivatives, hasInterpolation), scale(scale) {};
-//IMQ::IMQ(PetscInt p, PetscReal scale, bool hasDerivatives, bool hasInterpolation) : RBF(p, hasDerivatives, hasInterpolation), scale(scale) {};
-//MQ::MQ(PetscInt p, PetscReal scale, bool hasDerivatives, bool hasInterpolation) : RBF(p, hasDerivatives, hasInterpolation), scale(scale) {};
-//PHS::PHS(PetscInt p, PetscInt phsOrder, bool hasDerivatives, bool hasInterpolation) : RBF(p, hasDerivatives, hasInterpolation), phsOrder(phsOrder) {};
-
-
-
-
+              // Make sure that the value is within 1e-8 of the true derivative calculated to double-precision using Mathematica.
+//              EXPECT_NEAR(rbf->EvalDer(field, c, dx[i], dy[i], dz[i]), expectedVal, 1.0e-8*PetscAbsReal(expectedVal));
+//            }
 
         }
         ablate::environment::RunEnvironment::Finalize();
+
     EndWithMPI
 }
 
 INSTANTIATE_TEST_SUITE_P(
     MeshTests, RBFTestFixture_Derivative,
-    testing::Values((RBFParameters_Derivative){.mpiTestParameter = {.testName = "MQ_Der1", .nproc = 1},
-                                              .meshFaces = {10, 10},
-                                              .meshStart = {0.0, 0.0},
-                                              .meshEnd = {1.0, 1.0},
+    testing::Values((RBFParameters_Derivative){.mpiTestParameter = {.testName = "PHS2D_Center"},
+                                              .meshFaces = {50, 50},
+                                              .meshStart = {0.4875, 0.4875},
+                                              .meshEnd = {0.5125, 0.5125},
                                               .meshSimplex = false,
-                                              .rbf = std::make_shared<domain::rbf::GA>(8, 0.1, true, false)}
+                                              .rbf = std::make_shared<domain::rbf::PHS>(8, 2, true, false),
+                                              .c = 1275,
+                                              .dx = {0, 1, 2, 0, 1, 0},
+                                              .dy = {0, 0, 0, 1, 1, 2},
+                                              .dz = {0, 0, 0, 0, 0, 0},
+                                              .expectedDerivatives = {0.62805208896495, -1.0598834704955244, 7.798269834129567, -4.684986827102714, 4.229057867030736, 3.651438319533394}}
                   ),
     [](const testing::TestParamInfo<RBFParameters_Derivative>& info) { return info.param.mpiTestParameter.getTestName(); });
+

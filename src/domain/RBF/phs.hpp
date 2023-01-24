@@ -3,7 +3,7 @@
 
 #include "rbf.hpp"
 
-#define __RBF_PHS_DEFAULT_PARAM 4
+#define __RBF_PHS_DEFAULT_PARAM 9
 
 namespace ablate::domain::rbf {
 

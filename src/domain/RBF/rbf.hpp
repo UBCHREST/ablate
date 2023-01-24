@@ -14,7 +14,7 @@ class RBF {
   private:
 
 
-    std::shared_ptr<ablate::domain::SubDomain> subDomain;
+    std::shared_ptr<ablate::domain::SubDomain> subDomain = nullptr;
 
     // Radial Basis Function type and parameters
     const PetscInt polyOrder = 4;
@@ -51,6 +51,7 @@ class RBF {
   protected:
     PetscReal DistanceSquared(PetscReal x[], PetscReal y[]);
     PetscReal DistanceSquared(PetscReal x[]);
+    void Loc3D(PetscReal xIn[], PetscReal x[3]);
 
   public:
 

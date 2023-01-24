@@ -20,31 +20,34 @@ PetscReal MQ::RBFVal(PetscReal x[], PetscReal y[]) {
 }
 
 // Derivatives of Multiquadric spline at a location.
-PetscReal MQ::RBFDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) {
+PetscReal MQ::RBFDer(PetscReal xIn[], PetscInt dx, PetscInt dy, PetscInt dz) {
 
   PetscReal h = MQ::scale;
   PetscReal e2 = 1.0/(h*h);
-  PetscReal r2 = MQ::DistanceSquared(x);
+  PetscReal r2 = MQ::DistanceSquared(xIn);
   PetscReal mq = PetscSqrtReal(1.0 + e2*r2);
+  PetscReal x[3];
+
+  MQ::Loc3D(xIn, x);
 
   switch (dx + 10*dy + 100*dz) {
     case 0:
       // Do nothing
       break;
     case 1: // x
-      mq = e2*x[0]/mq;
+      mq = -e2*x[0]/mq;
       break;
     case 2: // xx
       mq = e2*(1.0 + e2*(x[1]*x[1] + x[2]*x[2]))/(mq*mq*mq);
       break;
     case 10: // y
-      mq = e2*x[1]/mq;
+      mq = -e2*x[1]/mq;
       break;
     case 20: // yy
       mq = e2*(1.0 + e2*(x[0]*x[0] + x[2]*x[2]))/(mq*mq*mq);
       break;
     case 100: // z
-      mq = e2*x[2]/mq;
+      mq = -e2*x[2]/mq;
       break;
     case 200: // zz
       mq = e2*(1.0 + e2*(x[0]*x[0] + x[1]*x[1]))/(mq*mq*mq);
@@ -59,7 +62,7 @@ PetscReal MQ::RBFDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) {
       mq = -PetscSqr(e2)*x[1]*x[2]/(mq*mq*mq);
       break;
     case 111: // xyz
-      mq = 3.0*e2*PetscSqr(e2)*x[0]*x[1]*x[2]/(mq*mq*mq*mq*mq);
+      mq = -3.0*e2*PetscSqr(e2)*x[0]*x[1]*x[2]/(mq*mq*mq*mq*mq);
       break;
     default:
       throw std::invalid_argument("MQ: Derivative of (" + std::to_string(dx) + ", " + std::to_string(dy) + ", " + std::to_string(dz) + ") is not setup.");

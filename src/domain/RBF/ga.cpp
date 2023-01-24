@@ -20,31 +20,34 @@ PetscReal GA::RBFVal(PetscReal x[], PetscReal y[]) {
 }
 
 // Derivatives of Gaussian spline at a location.
-PetscReal GA::RBFDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) {
+PetscReal GA::RBFDer(PetscReal xIn[], PetscInt dx, PetscInt dy, PetscInt dz) {
 
   PetscReal h = GA::scale;
   PetscReal e2 = 1.0/(h*h);
-  PetscReal r2 = GA::DistanceSquared(x);
+  PetscReal r2 = GA::DistanceSquared(xIn);
   PetscReal ga = PetscExpReal(-r2*e2);
+  PetscReal x[3];
+
+  GA::Loc3D(xIn, x);
 
   switch (dx + 10*dy + 100*dz) {
     case 0:
       // Do nothing
       break;
     case 1: // x
-      ga *= -2.0*e2*x[0];
+      ga *= 2.0*e2*x[0];
       break;
     case 2: // xx
       ga *= 2.0*e2*(2.0*e2*x[0]*x[0]-1.0);
       break;
     case 10: // y
-      ga *= -2.0*e2*x[1];
+      ga *= 2.0*e2*x[1];
       break;
     case 20: // yy
       ga *= 2.0*e2*(2.0*e2*x[1]*x[1]-1.0);
       break;
     case 100: // z
-      ga *= -2.0*e2*x[2];
+      ga *= 2.0*e2*x[2];
       break;
     case 200: // zz
       ga *= 2.0*e2*(2.0*e2*x[2]*x[2]-1.0);
@@ -59,7 +62,7 @@ PetscReal GA::RBFDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) {
       ga *= 4.0*e2*e2*x[1]*x[2];
       break;
     case 111: // xyz
-      ga *= -8.0*e2*e2*e2*x[0]*x[1]*x[2];
+      ga *= 8.0*e2*e2*e2*x[0]*x[1]*x[2];
       break;
     default:
       throw std::invalid_argument("GA: Derivative of (" + std::to_string(dx) + ", " + std::to_string(dy) + ", " + std::to_string(dz) + ") is not setup.");
