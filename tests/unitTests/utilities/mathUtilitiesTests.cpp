@@ -124,6 +124,5 @@ INSTANTIATE_TEST_SUITE_P(MathUtilititiesTests, CrossProductFixture,
                                          (CrossProductParameters){.a = {.5, .1, -3.0}, .b = {.3, .1, -.1}, .expectedResult = {0.29, -0.85, 0.02}},
                                          (CrossProductParameters){.a = {1.0, 0., 0.0}, .b = {0.0, 0.0, 1.0}, .expectedResult = {0.0, -1.0, 0.0}},
                                          (CrossProductParameters){.a = {3.0, 5.0}, .b = {1.0, -1.0}, .expectedResult = {-8.0}},
-                                         (CrossProductParameters){.a = {1.0}, .b = {.2}, .expectedResult = {0.0}}
-                                         ),
+                                         (CrossProductParameters){.a = {1.0}, .b = {.2}, .expectedResult = {0.0}}),
                          [](const testing::TestParamInfo<CrossProductParameters>& info) { return std::to_string(info.param.a.size()) + "_D_test" + std::to_string(info.index); });

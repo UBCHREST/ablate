@@ -61,10 +61,10 @@ bool ablate::mathFunctions::geom::Triangle::InsideGeometry(const double* xyz, co
     return std::abs(disVecMag) < maxDistance;
 }
 
- #include "registrar.hpp"
- REGISTER(ablate::mathFunctions::geom::Geometry, ablate::mathFunctions::geom::Triangle, "Creates a 3D triangle including all projected space up to the maxDistance (on either side)",
-         ARG(std::vector<double>, "point1", "the first point of the triangle"),
-         ARG(std::vector<double>, "point2", "the second point of the triangle"),
+#include "registrar.hpp"
+REGISTER(ablate::mathFunctions::geom::Geometry, ablate::mathFunctions::geom::Triangle, "Creates a 3D triangle including all projected space up to the maxDistance (on either side)",
+         ARG(std::vector<double>, "point1", "the first point of the triangle"), ARG(std::vector<double>, "point2", "the second point of the triangle"),
          ARG(std::vector<double>, "point3", "the third point of the triangle"),
          OPT(double, "maxDistance", "max distance from triangle to be considered inside.  A zero value is assumed to include all projected space"),
-         OPT(ablate::mathFunctions::MathFunction, "insideValues", "the values for inside the sphere, defaults to 1"), OPT(ablate::mathFunctions::MathFunction, "outsideValues", "the outsideValues, defaults to zero"));
+         OPT(ablate::mathFunctions::MathFunction, "insideValues", "the values for inside the sphere, defaults to 1"),
+         OPT(ablate::mathFunctions::MathFunction, "outsideValues", "the outsideValues, defaults to zero"));

@@ -1,8 +1,8 @@
 #ifndef ABLATELIBRARY_TRIANGLE_HPP
 #define ABLATELIBRARY_TRIANGLE_HPP
 
-#include "cylinderShell.hpp"
 #include <array>
+#include "cylinderShell.hpp"
 
 namespace ablate::mathFunctions::geom {
 
@@ -26,8 +26,8 @@ class Triangle : public Geometry {
      */
     std::array<double, 3> sideNorm1 = {0, 0, 0};
     std::array<double, 3> sideNorm2 = {0, 0, 0};
-    std::array<double, 3> sideNorm3= {0, 0, 0};
-    std::array<double, 3> triangleNorm= {0, 0, 0};
+    std::array<double, 3> sideNorm3 = {0, 0, 0};
+    std::array<double, 3> triangleNorm = {0, 0, 0};
 
    public:
     Triangle(std::vector<double> pt0, std::vector<double> pt1, std::vector<double> pt2, double maxDistance = {}, const std::shared_ptr<mathFunctions::MathFunction>& insideValues = {},
@@ -37,4 +37,4 @@ class Triangle : public Geometry {
 };
 
 }  // namespace ablate::mathFunctions::geom
-#endif  // ABLATELIBRARY_SPHERE_HPP
+#endif  // ABLATELIBRARY_TRIANGLE_HPP

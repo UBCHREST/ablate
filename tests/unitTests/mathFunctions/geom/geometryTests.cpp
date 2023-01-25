@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "mathFunctions/geom/box.hpp"
+#include "mathFunctions/geom/convexPolygon.hpp"
 #include "mathFunctions/geom/cylinder.hpp"
 #include "mathFunctions/geom/cylinderShell.hpp"
 #include "mathFunctions/geom/difference.hpp"
@@ -279,7 +280,35 @@ INSTANTIATE_TEST_SUITE_P(
                                                            {.xyz = {0.6852920895252079, 0.6101429857193673, 0.6550053484152754}, .value = 20},
                                                            {.xyz = {0.7244501131320623, 0.5297659898947714, 0.6653100914697108}, .value = 20},
                                                            {.xyz = {0.7331518961558077, 0.5119044352670835, 0.6676000343706964}, .value = 4.2},
-                                                           {.xyz = {0.6374322828946082, 0.7083815361716511, 0.6424106624598543}, .value = 4.2}}}));
+                                                           {.xyz = {0.6374322828946082, 0.7083815361716511, 0.6424106624598543}, .value = 4.2}}},
+        (GeometryTestScalarParameters){
+            .createGeom =
+                []() {
+                    return std::make_shared<ConvexPolygon>(std::vector<std::vector<double>>{{1.0, 2.0, 0.0}, {2.0, 2.0, 0.0}, {2.0, 3.0, 0.0}, {1.0, 3.0, 0.0}},
+                                                           .1,
+                                                           ablate::mathFunctions::Create("20"),
+                                                           ablate::mathFunctions::Create("4.2"));
+                },
+            .expectedResults = {
+                {.xyz = {0.9, 1.9, 0.0}, .value = 4.2},    {.xyz = {1., 2., 0.0}, .value = 20},     {.xyz = {1.25, 2.25, 0.0}, .value = 20},   {.xyz = {1.5, 2.5, 0.0}, .value = 20},
+                {.xyz = {1.75, 2.75, 0.0}, .value = 20},   {.xyz = {1.75, 2.75, 0.0}, .value = 20}, {.xyz = {2.0, 3.0, 0.0}, .value = 20},     {.xyz = {2.1, 3.1, 0.0}, .value = 4.2},
+
+                {.xyz = {0.9, 3.1, 0.0}, .value = 4.2},    {.xyz = {1., 3., 0.0}, .value = 20},     {.xyz = {1.25, 2.75, 0.0}, .value = 20},   {.xyz = {1.5, 2.5, 0.0}, .value = 20},
+                {.xyz = {1.75, 2.25, 0.0}, .value = 20},   {.xyz = {2, 2, 0.0}, .value = 20},       {.xyz = {2.1, 1.9, 0.0}, .value = 4.2},
+
+                {.xyz = {0.9, 2.5, 0.0}, .value = 4.2},    {.xyz = {1., 2.5, 0.0}, .value = 20},    {.xyz = {1.25, 2.5, 0.0}, .value = 20},    {.xyz = {1.5, 2.5, 0.0}, .value = 20},
+                {.xyz = {1.75, 2.5, 0.0}, .value = 20},    {.xyz = {2, 2.5, 0.0}, .value = 20},     {.xyz = {2.1, 2.5, 0.0}, .value = 4.2},
+
+                {.xyz = {1.5, -1.9, 0.0}, .value = 4.2},   {.xyz = {1.5, 2.0, 0.0}, .value = 20},   {.xyz = {1.5, 2.25, 0.0}, .value = 20},    {.xyz = {1.5, 2.5, 0.0}, .value = 20},
+                {.xyz = {1.5, 2.75, 0.0}, .value = 20},    {.xyz = {1.5, 3.0, 0.0}, .value = 20},   {.xyz = {1.5, 3.1, 0.0}, .value = 4.2},
+
+                {.xyz = {1.5, -1.9, .09}, .value = 4.2},   {.xyz = {1.5, 2.0, .09}, .value = 20},   {.xyz = {1.5, 2.25, -.09}, .value = 20},   {.xyz = {1.5, 2.5, .09}, .value = 20},
+                {.xyz = {1.5, 2.75, -0.09}, .value = 20},  {.xyz = {1.5, 3.0, 0.09}, .value = 20},  {.xyz = {1.5, 3.1, -.09}, .value = 4.2},
+
+                {.xyz = {0.9, 3.1, 0.11}, .value = 4.2},   {.xyz = {1., 3., -0.11}, .value = 4.2},  {.xyz = {1.25, 2.75, 0.11}, .value = 4.2}, {.xyz = {1.5, 2.5, -0.11}, .value = 4.2},
+                {.xyz = {1.75, 2.25, 0.11}, .value = 4.2}, {.xyz = {2, 2, -0.11}, .value = 4.2},    {.xyz = {2.1, 1.9, 0.11}, .value = 4.2},
+
+            }}));
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct GeometryTestVectorParameters {
@@ -339,7 +368,7 @@ TEST_P(GeometryTestVectorFixture, ShouldComputeCorrectAnswerPetscFunction) {
         auto functionPointer = function->GetPetscFunction();
 
         // act
-        auto errorCode = functionPointer((PetscInt)xyz.size(), NAN, xyz.data(), result.size(), &result[0], context);
+        auto errorCode = functionPointer((PetscInt)xyz.size(), NAN, xyz.data(), (PetscInt)result.size(), &result[0], context);
 
         // assert
         ASSERT_EQ(errorCode, 0);
@@ -598,8 +627,30 @@ INSTANTIATE_TEST_SUITE_P(
                                                            {.xyz = {0.6852920895252079, 0.6101429857193673, 0.6550053484152754}, .value = {20, 11}},
                                                            {.xyz = {0.7244501131320623, 0.5297659898947714, 0.6653100914697108}, .value = {20, 11}},
                                                            {.xyz = {0.7331518961558077, 0.5119044352670835, 0.6676000343706964}, .value = {4.2, -10}},
-                                                           {.xyz = {0.6374322828946082, 0.7083815361716511, 0.6424106624598543}, .value = {4.2, -10}}}}
+                                                           {.xyz = {0.6374322828946082, 0.7083815361716511, 0.6424106624598543}, .value = {4.2, -10}}}},
+        (GeometryTestVectorParameters){.createGeom =
+                                           []() {
+                                               return std::make_shared<ConvexPolygon>(std::vector<std::vector<double>>{{1.0, 2.0, .5}, {2.0, 2.0, .5}, {2.0, 3.0, 0.5}, {1.0, 3.0, 0.5}},
+                                                                                      0.25,
+                                                                                      ablate::mathFunctions::Create(std::vector<double>{20, 11}),
+                                                                                      ablate::mathFunctions::Create(std::vector<double>{4.2, -10}));
+                                           },
+                                       .expectedResults = {{.xyz = {0.9, 1.9, 0.0}, .value = {4.2, -10}},
+                                                           {.xyz = {1., 2., 0.35}, .value = {20, 11}},
+                                                           {.xyz = {1.25, 2.25, 0.35}, .value = {20, 11}},
+                                                           {.xyz = {1.5, 2.5, 0.35}, .value = {20, 11}},
+                                                           {.xyz = {1.75, 2.75, 0.65}, .value = {20, 11}},
+                                                           {.xyz = {1.75, 2.75, 0.15}, .value = {4.2, -10}},
+                                                           {.xyz = {2.0, 3.0, 0.0}, .value = {4.2, -10}},
+                                                           {.xyz = {2.1, 3.1, .5}, .value = {4.2, -10}},
+                                                           {.xyz = {0.9, 3.1, 0.0}, .value = {4.2, -10}},
+                                                           {.xyz = {1., 3., -.5}, .value = {4.2, -10}},
+                                                           {.xyz = {1.25, 2.75, 0.5}, .value = {20, 11}},
+                                                           {.xyz = {1.5, 2.5, 0.74}, .value = {20, 11}},
+                                                           {.xyz = {1.75, 2.25, 0.77}, .value = {4.2, -10}},
+                                                           {.xyz = {2, 2, 0.35}, .value = {20, 11}},
+                                                           {.xyz = {2.1, 1.9, 1.0}, .value = {4.2, -10}}
 
-        ));
+                                       }}));
 
 }  // namespace ablateTesting::mathFunctions::geom

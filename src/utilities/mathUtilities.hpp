@@ -68,16 +68,15 @@ class MathUtilities {
     template <int dim, class T>
     static inline T DotVector(const T* a, const T* b) {
         if constexpr (dim == 3) {
-            return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+            return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
         }
         if constexpr (dim == 2) {
-            return a[0]*b[0]+a[1]*b[1];
+            return a[0] * b[0] + a[1] * b[1];
         }
         if constexpr (dim == 1) {
-            return a[0]*b[0];
+            return a[0] * b[0];
         }
         static_assert(dim == 1 || dim == 2 || dim == 3, "ablate::utilities::MathUtilities::DotVector only support dimensions of 1, 2, or 3");
-
     }
 
     /**
@@ -201,6 +200,21 @@ class MathUtilities {
     }
 
     /**
+     * adds a to b; b = a+b
+     * @tparam I
+     * @tparam T
+     * @param dim
+     * @param a
+     * @param b
+     */
+    template <class I, class T>
+    static inline void Plus(I dim, const T* a, T* b) {
+        for (I i = 0; i < dim; i++) {
+            b[i] += a[i];
+        }
+    }
+
+    /**
      *  matrix vector multiplication
      *  returns out = [A]*in
      *  1st index in A is row, 2nd is col
@@ -252,7 +266,6 @@ class MathUtilities {
      */
     static PetscReal ComputeDeterminant(PetscInt dim, PetscScalar transformationMatrix[3][3]);
 
-   private:
     MathUtilities() = delete;
 };
 

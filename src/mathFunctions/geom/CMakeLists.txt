@@ -10,6 +10,7 @@ target_sources(ablateLibrary
         difference.cpp
         inverse.cpp
         triangle.cpp
+        convexPolygon.cpp
 
         PUBLIC
         geometry.hpp
@@ -22,4 +23,5 @@ target_sources(ablateLibrary
         difference.hpp
         inverse.hpp
         triangle.hpp
+        convexPolygon.hpp
         )
