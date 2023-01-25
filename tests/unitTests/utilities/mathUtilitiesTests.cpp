@@ -12,7 +12,7 @@ class TransformVectorTestFixture : public ::testing::TestWithParam<TransformVect
 TEST_P(TransformVectorTestFixture, ShouldTransformToAndFromNormalBasis) {
     // arrange
     PetscScalar transformMatrix[3][3] = {{NAN, NAN, NAN}, {NAN, NAN, NAN}, {NAN, NAN, NAN}};
-    const PetscInt dim = (PetscInt)GetParam().normal.size();
+    const auto dim = (PetscInt)GetParam().normal.size();
 
     // Compute the transformation matrix
     ablate::utilities::MathUtilities::ComputeTransformationMatrix(dim, &GetParam().normal[0], transformMatrix);
