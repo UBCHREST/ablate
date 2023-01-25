@@ -9,6 +9,7 @@ target_sources(ablateLibrary
         union.cpp
         difference.cpp
         inverse.cpp
+        triangle.cpp
 
         PUBLIC
         geometry.hpp
@@ -20,4 +21,5 @@ target_sources(ablateLibrary
         union.hpp
         difference.hpp
         inverse.hpp
+        triangle.hpp
         )

@@ -71,3 +71,59 @@ INSTANTIATE_TEST_SUITE_P(MathUtilititiesTests, TransformVectorTestFixture,
                                                                          .cartBasisVector = {.3, .4, -2.5},
                                                                          .expectedNormBasisVector = {-2.1920310216782859, -0.89738181263444372, -0.94324221828380639}}),
                          [](const testing::TestParamInfo<TransformVectorTestParameters>& info) { return std::to_string(info.param.normal.size()) + "_D_test" + std::to_string(info.index); });
+
+struct CrossProductParameters {
+    std::vector<double> a;
+    std::vector<double> b;
+    std::vector<double> expectedResult;
+};
+
+class CrossProductFixture : public ::testing::TestWithParam<CrossProductParameters> {};
+
+TEST_P(CrossProductFixture, ShouldComputeCrossProductDynamically) {
+    // arrange
+    std::vector<double> result(GetParam().expectedResult.size());
+
+    // act
+    ablate::utilities::MathUtilities::CrossVector(GetParam().a.size(), GetParam().a.data(), GetParam().b.data(), result.data());
+
+    // assert
+    for (std::size_t d = 0; d < GetParam().expectedResult.size(); ++d) {
+        ASSERT_NEAR(GetParam().expectedResult[d], result[d], 1E-8) << "the cross product should be correct in dimension " << d;
+    }
+}
+
+TEST_P(CrossProductFixture, ShouldComputeCrossProductStatically) {
+    // arrange
+    std::vector<double> result(GetParam().expectedResult.size());
+
+    // act
+    switch (GetParam().a.size()) {
+        case 3:
+            ablate::utilities::MathUtilities::CrossVector<3>(GetParam().a.data(), GetParam().b.data(), result.data());
+            break;
+        case 2:
+            ablate::utilities::MathUtilities::CrossVector<2>(GetParam().a.data(), GetParam().b.data(), result.data());
+            break;
+        case 1:
+            ablate::utilities::MathUtilities::CrossVector<1>(GetParam().a.data(), GetParam().b.data(), result.data());
+            break;
+        default:
+            FAIL() << "Unknown vector dimension size";
+    }
+
+    // assert
+    for (std::size_t d = 0; d < GetParam().expectedResult.size(); ++d) {
+        ASSERT_NEAR(GetParam().expectedResult[d], result[d], 1E-8) << "the cross product should be correct in dimension " << d;
+    }
+}
+
+INSTANTIATE_TEST_SUITE_P(MathUtilititiesTests, CrossProductFixture,
+                         testing::Values((CrossProductParameters){.a = {1.0, 2.0, 3.0}, .b = {1.0, 5.0, 7.0}, .expectedResult = {-1.0, -4.0, 3.0}},
+                                         (CrossProductParameters){.a = {-1.0, -2.0, 3.0}, .b = {4.0, 0.0, -8.0}, .expectedResult = {16.0, 4.0, 8.0}},
+                                         (CrossProductParameters){.a = {.5, .1, -3.0}, .b = {.3, .1, -.1}, .expectedResult = {0.29, -0.85, 0.02}},
+                                         (CrossProductParameters){.a = {1.0, 0., 0.0}, .b = {0.0, 0.0, 1.0}, .expectedResult = {0.0, -1.0, 0.0}},
+                                         (CrossProductParameters){.a = {3.0, 5.0}, .b = {1.0, -1.0}, .expectedResult = {-8.0}},
+                                         (CrossProductParameters){.a = {1.0}, .b = {.2}, .expectedResult = {0.0}}
+                                         ),
+                         [](const testing::TestParamInfo<CrossProductParameters>& info) { return std::to_string(info.param.a.size()) + "_D_test" + std::to_string(info.index); });
