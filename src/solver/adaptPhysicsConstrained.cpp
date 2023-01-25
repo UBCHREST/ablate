@@ -16,26 +16,27 @@
  * @return
  */
 PetscErrorCode ablate::solver::AdaptPhysicsConstrained::TSAdaptChoose(TSAdapt adapt, TS ts, PetscReal h, PetscInt *next_sc, PetscReal *next_h, PetscBool *accept, PetscReal *wlte, PetscReal *wltea,
-                                                           PetscReal *wlter) {
-    Vec       Y;
-    DM        dm;
-    PetscInt  order = PETSC_DECIDE;
+                                                                      PetscReal *wlter) {
+    Vec Y;
+    DM dm;
+    PetscInt order = PETSC_DECIDE;
     PetscReal enorm = -1;
     PetscReal enorma, enormr;
     PetscReal safety = adapt->safety;
     PetscReal hfac_lte, h_lte;
 
     PetscFunctionBeginUser;
-    *next_sc = 0;  /* Reuse the same order scheme */
-    *wltea   = -1; /* Weighted absolute local truncation error is not used */
-    *wlter   = -1; /* Weighted relative local truncation error is not used */
+    *next_sc = 0; /* Reuse the same order scheme */
+    *wltea = -1;  /* Weighted absolute local truncation error is not used */
+    *wlter = -1;  /* Weighted relative local truncation error is not used */
 
     if (ts->ops->evaluatewlte) {
         PetscCall(TSEvaluateWLTE(ts, adapt->wnormtype, &order, &enorm));
         PetscCheck(enorm < 0 || order >= 1, PetscObjectComm((PetscObject)adapt), PETSC_ERR_ARG_OUTOFRANGE, "Computed error order %" PetscInt_FMT " must be positive", order);
     } else if (ts->ops->evaluatestep) {
         PetscCheck(adapt->candidates.n >= 1, PetscObjectComm((PetscObject)adapt), PETSC_ERR_ARG_WRONGSTATE, "No candidate has been registered");
-        PetscCheck(adapt->candidates.inuse_set, PetscObjectComm((PetscObject)adapt), PETSC_ERR_ARG_WRONGSTATE, "The current in-use scheme is not among the %" PetscInt_FMT " candidates", adapt->candidates.n);
+        PetscCheck(
+            adapt->candidates.inuse_set, PetscObjectComm((PetscObject)adapt), PETSC_ERR_ARG_WRONGSTATE, "The current in-use scheme is not among the %" PetscInt_FMT " candidates", adapt->candidates.n);
         order = adapt->candidates.order[0];
         PetscCall(TSGetDM(ts, &dm));
         PetscCall(DMGetGlobalVector(dm, &Y));
@@ -46,8 +47,8 @@ PetscErrorCode ablate::solver::AdaptPhysicsConstrained::TSAdaptChoose(TSAdapt ad
 
     if (enorm < 0) {
         *accept = PETSC_TRUE;
-        *next_h = h;  /* Reuse the old step */
-        *wlte   = -1; /* Weighted local truncation error was not evaluated */
+        *next_h = h; /* Reuse the old step */
+        *wlte = -1;  /* Weighted local truncation error was not evaluated */
         PetscFunctionReturn(0);
     }
 
@@ -70,8 +71,10 @@ PetscErrorCode ablate::solver::AdaptPhysicsConstrained::TSAdaptChoose(TSAdapt ad
     }
 
     /* The optimal new step based purely on local truncation error for this step. */
-    if (enorm > 0) hfac_lte = safety * PetscPowReal(enorm, ((PetscReal)-1) / order);
-    else hfac_lte = safety * PETSC_INFINITY;
+    if (enorm > 0)
+        hfac_lte = safety * PetscPowReal(enorm, ((PetscReal)-1) / order);
+    else
+        hfac_lte = safety * PETSC_INFINITY;
     if (adapt->timestepjustdecreased) {
         hfac_lte = PetscMin(hfac_lte, 1.0);
         adapt->timestepjustdecreased--;
@@ -80,25 +83,25 @@ PetscErrorCode ablate::solver::AdaptPhysicsConstrained::TSAdaptChoose(TSAdapt ad
 
     *next_h = PetscClipInterval(h_lte, adapt->dt_min, adapt->dt_max);
 
-    {// This is the ablate specific code that clips based upon the physics dt
+    {  // This is the ablate specific code that clips based upon the physics dt
        // Get the time stepper context
-         ablate::solver::TimeStepper *timeStepper;
-         PetscCall(TSGetApplicationContext(ts, &timeStepper));
+        ablate::solver::TimeStepper *timeStepper;
+        PetscCall(TSGetApplicationContext(ts, &timeStepper));
 
-         // Compute the physics based timeStep from the time stepper
-         PetscReal physicsDt;
-         PetscCall(timeStepper->ComputePhysicsTimeStep(&physicsDt));
+        // Compute the physics based timeStep from the time stepper
+        PetscReal physicsDt;
+        PetscCall(timeStepper->ComputePhysicsTimeStep(&physicsDt));
 
-         // Scale the physics dt by the safety factor
-         physicsDt *= adapt->safety;
+        // Scale the physics dt by the safety factor
+        physicsDt *= adapt->safety;
 
-         if(physicsDt < *next_h){
+        if (physicsDt < *next_h) {
             PetscCall(PetscInfo(adapt, "Limiting adaptive time step %g, to physics maximum dt %g\n", (double)*next_h, (double)physicsDt));
             *next_h = physicsDt;
-         }
+        }
     }
 
-    *wlte   = enorm;
+    *wlte = enorm;
     PetscFunctionReturn(0);
 }
 
