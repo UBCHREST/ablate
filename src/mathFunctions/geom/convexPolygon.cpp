@@ -19,7 +19,7 @@ ablate::mathFunctions::geom::ConvexPolygon::ConvexPolygon(std::vector<std::vecto
     }
 
     // March over each point to create the center
-    std::vector<double> center = {0.0, 0.0, 0.0};
+    std::vector<double> center(dim, 0.0);
     for (const auto &point : points) {
         ablate::utilities::MathUtilities::Plus(point.size(), point.data(), center.data());
     }
