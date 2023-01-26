@@ -12,6 +12,9 @@ class MQ: virtual public RBF {
     const PetscReal scale = -1;
 
   public:
+
+    std::string_view type() const override { return "MQ"; }
+
     MQ(PetscInt p = 4, PetscReal scale = 0.1, bool hasDerivatives = false, bool hasInterpolation = false);
 
     PetscReal RBFVal(PetscReal x[], PetscReal y[]) override;

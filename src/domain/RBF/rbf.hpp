@@ -83,6 +83,8 @@ class RBF {
     // These will be overwritten in the derived classes
     virtual PetscReal RBFVal(PetscReal x[], PetscReal y[]) = 0;   // Radial function evaluated using the distance between two points
     virtual PetscReal RBFDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) = 0; // Derivative of the radial function assuming that the center point is at zero.
+    virtual std::string_view type() const = 0;
+
 
 
 };

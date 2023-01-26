@@ -12,6 +12,9 @@ class PHS : public RBF {
     const PetscInt  phsOrder = -1;    // The PHS order
 
   public:
+
+    std::string_view type() const override { return "PHS"; }
+
     PHS(PetscInt p = 4, PetscInt phsOrder = 4, bool hasDerivatives = false, bool hasInterpolation = false);
 
     PetscReal RBFVal(PetscReal x[], PetscReal y[]) override;
