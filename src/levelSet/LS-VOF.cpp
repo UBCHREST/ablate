@@ -522,10 +522,10 @@ void VOF_3D_Hex_Test( ){
 //  DM                dm  = subDomain->GetFieldDM(*field);
 //  PetscScalar       val = 0.0, f;
 //  const PetscScalar *array;
-//  VecGetArrayRead(vec, &array) >> checkError;
+//  VecGetArrayRead(vec, &array) >> utilities::PetscUtilities::checkError;
 
 //  for (PetscInt i = 0; i < nStencil; ++i) {
-//    DMPlexPointLocalFieldRead(dm, lst[i], field->id, array, &f) >> checkError;
+//    DMPlexPointLocalFieldRead(dm, lst[i], field->id, array, &f) >> utilities::PetscUtilities::checkError;
 //    val += wt[i*nDer + derID]*f;
 //  }
 

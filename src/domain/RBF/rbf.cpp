@@ -69,15 +69,15 @@ void RBF::Matrix(const PetscInt c, PetscReal **xCenters, Mat *LUA) {
     throw std::invalid_argument("Number of surrounding cells, " + std::to_string(nCells) + ", can not support a requested polynomial order of " + std::to_string(p) + " which requires " + std::to_string(nPoly) + " number of cells.");
   }
 
-  PetscMalloc1(nCells*dim*p1, &xp) >> ablate::checkError;
+  PetscMalloc1(nCells*dim*p1, &xp) >> utilities::PetscUtilities::checkError;
 
   // Get the cell center
-  DMPlexComputeCellGeometryFVM(dm, c, NULL, x0, NULL) >> ablate::checkError;
+  DMPlexComputeCellGeometryFVM(dm, c, NULL, x0, NULL) >> utilities::PetscUtilities::checkError;
 
   // Shifted cell-centers of neighbor cells
   PetscMalloc1(nCells*dim, &x);
   for (i = 0; i < nCells; ++i) {
-    DMPlexComputeCellGeometryFVM(dm, list[i], NULL, &x[i*dim], NULL) >> ablate::checkError;
+    DMPlexComputeCellGeometryFVM(dm, list[i], NULL, &x[i*dim], NULL) >> utilities::PetscUtilities::checkError;
     for (d = 0; d < dim; ++d) {
       x[i*dim+d] -= x0[d];
 //      printf("%+f ", x[i*dim+d]);
@@ -93,12 +93,12 @@ void RBF::Matrix(const PetscInt c, PetscReal **xCenters, Mat *LUA) {
   matSize = nCells + nPoly;
 
   // Create the matrix
-  MatCreateSeqDense(PETSC_COMM_SELF, matSize, matSize, NULL, &A) >> ablate::checkError;
-  PetscObjectSetName((PetscObject)A,"ablate::domain::RBF::A") >> ablate::checkError;
-  MatZeroEntries(A) >> ablate::checkError;
-  MatSetOption(A, MAT_SYMMETRIC, PETSC_TRUE) >> ablate::checkError;
+  MatCreateSeqDense(PETSC_COMM_SELF, matSize, matSize, NULL, &A) >> utilities::PetscUtilities::checkError;
+  PetscObjectSetName((PetscObject)A,"ablate::domain::RBF::A") >> utilities::PetscUtilities::checkError;
+  MatZeroEntries(A) >> utilities::PetscUtilities::checkError;
+  MatSetOption(A, MAT_SYMMETRIC, PETSC_TRUE) >> utilities::PetscUtilities::checkError;
 
-  MatDenseGetArrayWrite(A, &vals) >> ablate::checkError;
+  MatDenseGetArrayWrite(A, &vals) >> utilities::PetscUtilities::checkError;
 
   // RBF contributions to the matrix
   for (i = 0; i < nCells; ++i) {
@@ -148,13 +148,13 @@ void RBF::Matrix(const PetscInt c, PetscReal **xCenters, Mat *LUA) {
     }
   }
 
-  MatDenseRestoreArrayWrite(A, &vals) >> ablate::checkError;
-  MatViewFromOptions(A,NULL,"-ablate::domain::rbf::RBF::A_view") >> ablate::checkError;
+  MatDenseRestoreArrayWrite(A, &vals) >> utilities::PetscUtilities::checkError;
+  MatViewFromOptions(A,NULL,"-ablate::domain::rbf::RBF::A_view") >> utilities::PetscUtilities::checkError;
 
   // Factor the matrix
-  MatLUFactor(A, NULL, NULL, NULL) >> ablate::checkError;
+  MatLUFactor(A, NULL, NULL, NULL) >> utilities::PetscUtilities::checkError;
 
-  PetscFree(xp) >> ablate::checkError;
+  PetscFree(xp) >> utilities::PetscUtilities::checkError;
 
   // Assign output
   *xCenters = x;
@@ -176,7 +176,7 @@ void RBF::SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt d
     RBF::useVertices = useVertices;
     RBF::nDer = nDer;
 
-    PetscMalloc1(3*nDer, &(RBF::dxyz)) >> ablate::checkError;
+    PetscMalloc1(3*nDer, &(RBF::dxyz)) >> utilities::PetscUtilities::checkError;
 
     // Store the derivatives
     for (PetscInt i = 0; i < nDer; ++i) {
@@ -219,10 +219,10 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
   PetscScalar *vals = nullptr;
 
   //Create the RHS
-  MatCreateSeqDense(PETSC_COMM_SELF, matSize, nDer, NULL, &B) >> ablate::checkError;
-  PetscObjectSetName((PetscObject)B,"ablate::domain::rbf::RBF::rhs") >> ablate::checkError;
-  MatZeroEntries(B) >> ablate::checkError;
-  MatDenseGetArrayWrite(B, &vals) >> ablate::checkError;
+  MatCreateSeqDense(PETSC_COMM_SELF, matSize, nDer, NULL, &B) >> utilities::PetscUtilities::checkError;
+  PetscObjectSetName((PetscObject)B,"ablate::domain::rbf::RBF::rhs") >> utilities::PetscUtilities::checkError;
+  MatZeroEntries(B) >> utilities::PetscUtilities::checkError;
+  MatDenseGetArrayWrite(B, &vals) >> utilities::PetscUtilities::checkError;
 
   // Derivatives of the RBF
   for (i = 0; i < nCells; ++i) {
@@ -280,24 +280,24 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
 
 
 
-  MatDenseRestoreArrayWrite(B, &vals) >> ablate::checkError;
+  MatDenseRestoreArrayWrite(B, &vals) >> utilities::PetscUtilities::checkError;
 
-  MatViewFromOptions(B,NULL,"-ablate::domain::rbf::RBF::rhs_view") >> ablate::checkError;
+  MatViewFromOptions(B,NULL,"-ablate::domain::rbf::RBF::rhs_view") >> utilities::PetscUtilities::checkError;
 
-  MatMatSolve(A, B, B) >> ablate::checkError;
+  MatMatSolve(A, B, B) >> utilities::PetscUtilities::checkError;
 
-  MatViewFromOptions(B,NULL,"-ablate::domain::rbf::RBF::sol_view") >> ablate::checkError;
+  MatViewFromOptions(B,NULL,"-ablate::domain::rbf::RBF::sol_view") >> utilities::PetscUtilities::checkError;
 
   // Now populate the output
-  PetscMalloc1(nDer*nCells, &(RBF::stencilWeights[c])) >> ablate::checkError;
+  PetscMalloc1(nDer*nCells, &(RBF::stencilWeights[c])) >> utilities::PetscUtilities::checkError;
   PetscReal *wt = RBF::stencilWeights[c];
-  MatDenseGetArrayWrite(B, &vals) >> ablate::checkError;
+  MatDenseGetArrayWrite(B, &vals) >> utilities::PetscUtilities::checkError;
   for (i = 0; i < nCells; ++i) {
     for (j = 0; j < nDer; ++j) {
       wt[i*nDer + j] = vals[i + j*matSize];
     }
   }
-  MatDenseGetArrayWrite(B, &vals) >> ablate::checkError;
+  MatDenseGetArrayWrite(B, &vals) >> utilities::PetscUtilities::checkError;
 
   // The matrix is only needed in the future if interpolation is required. If not then
   //    the stencil list is enough.
@@ -306,10 +306,10 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
     RBF::stencilXLocs[c] = x;
   }
   else {
-    MatDestroy(&A) >> ablate::checkError;
-    PetscFree(x) >> ablate::checkError;
+    MatDestroy(&A) >> utilities::PetscUtilities::checkError;
+    PetscFree(x) >> utilities::PetscUtilities::checkError;
   }
-  MatDestroy(&B) >> ablate::checkError;
+  MatDestroy(&B) >> utilities::PetscUtilities::checkError;
 
 }
 
@@ -367,16 +367,16 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt 
   nStencil = RBF::nStencil[c];
   lst = RBF::stencilList[c];
 
-  VecGetArrayRead(vec, &array) >> checkError;
+  VecGetArrayRead(vec, &array) >> utilities::PetscUtilities::checkError;
 
   for (PetscInt i = 0; i < nStencil; ++i) {
     // DMPlexPointLocalFieldRead isn't behaving like I would expect. If I don't make f a pointer then it just returns zero.
     //    Additionally, it looks like it allows for the editing of the value.
-    DMPlexPointLocalFieldRead(dm, lst[i], field->id, array, &f) >> checkError;
+    DMPlexPointLocalFieldRead(dm, lst[i], field->id, array, &f) >> utilities::PetscUtilities::checkError;
     val += wt[i*nDer + derID]*(*f);
   }
 
-  VecRestoreArrayRead(vec, &array) >> checkError;
+  VecRestoreArrayRead(vec, &array) >> utilities::PetscUtilities::checkError;
 
   return val;
 }
@@ -413,7 +413,7 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
     throw std::runtime_error("ablate::domain::RBF::Interpolate does not work on SOL fields in parallel. A local vector needs to be obtained first.");
   }
 
-  DMPlexGetContainingCell(dm, xEval, &c) >> ablate::checkError;
+  DMPlexGetContainingCell(dm, xEval, &c) >> utilities::PetscUtilities::checkError;
 
   A = RBF::RBFMatrix[c];
   x = RBF::stencilXLocs[c];
@@ -427,32 +427,32 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
   nCells = RBF::nStencil[c];
   lst = RBF::stencilList[c];
 
-  MatCreateVecs(A, &weights, &rhs) >> ablate::checkError;
-  VecZeroEntries(weights) >> ablate::checkError;
-  VecZeroEntries(rhs) >> ablate::checkError;
+  MatCreateVecs(A, &weights, &rhs) >> utilities::PetscUtilities::checkError;
+  VecZeroEntries(weights) >> utilities::PetscUtilities::checkError;
+  VecZeroEntries(rhs) >> utilities::PetscUtilities::checkError;
 
   // The function values
-  VecGetArrayRead(f, &fvals) >> ablate::checkError;
-  VecGetArray(rhs, &vals) >> ablate::checkError;
+  VecGetArrayRead(f, &fvals) >> utilities::PetscUtilities::checkError;
+  VecGetArray(rhs, &vals) >> utilities::PetscUtilities::checkError;
   for (i = 0; i < nCells; ++i) {
-    DMPlexPointLocalFieldRead(dm, lst[i], field->id, fvals, &vals[i]) >> checkError;
+    DMPlexPointLocalFieldRead(dm, lst[i], field->id, fvals, &vals[i]) >> utilities::PetscUtilities::checkError;
   }
-  VecRestoreArrayRead(f, &fvals) >> ablate::checkError;
-  VecRestoreArray(rhs, &vals) >> ablate::checkError;
+  VecRestoreArrayRead(f, &fvals) >> utilities::PetscUtilities::checkError;
+  VecRestoreArray(rhs, &vals) >> utilities::PetscUtilities::checkError;
 
-  MatSolve(A, rhs, weights) >> ablate::checkError;
+  MatSolve(A, rhs, weights) >> utilities::PetscUtilities::checkError;
 
-  VecDestroy(&rhs) >> ablate::checkError;
+  VecDestroy(&rhs) >> utilities::PetscUtilities::checkError;
 
   // Now do the actual interpolation
 
   // Get the cell center
-  DMPlexComputeCellGeometryFVM(dm, c, NULL, x0, NULL) >> ablate::checkError;
+  DMPlexComputeCellGeometryFVM(dm, c, NULL, x0, NULL) >> utilities::PetscUtilities::checkError;
 
   PetscInt p1 = PetscMax(RBF::polyOrder + 1, 1), dim = subDomain->GetDimensions();
   PetscInt px, py, pz;
   PetscReal *xp;
-  PetscMalloc1(dim*p1, &xp) >> ablate::checkError;
+  PetscMalloc1(dim*p1, &xp) >> utilities::PetscUtilities::checkError;
 
   for (PetscInt d = 0; d < dim; ++d) {
     x0[d] = xEval[d] - x0[d]; // Shifted center
@@ -466,7 +466,7 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
 
 
   PetscReal   interpVal = 0.0;
-  VecGetArray(weights, &vals) >> ablate::checkError;
+  VecGetArray(weights, &vals) >> utilities::PetscUtilities::checkError;
   for (i = 0; i < nCells; ++i) {
     interpVal += vals[i]*RBFVal(x0, &x[i*dim]);
   }
@@ -487,9 +487,9 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
       }
     }
   }
-  VecRestoreArray(weights, &vals) >> ablate::checkError;
-  VecDestroy(&weights) >> ablate::checkError;
-  PetscFree(xp) >> ablate::checkError;
+  VecRestoreArray(weights, &vals) >> utilities::PetscUtilities::checkError;
+  VecDestroy(&weights) >> utilities::PetscUtilities::checkError;
+  PetscFree(xp) >> utilities::PetscUtilities::checkError;
 
   return interpVal;
 
@@ -508,9 +508,9 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
 void RBF::GetRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::solver::Range &range) const {
     // Start out getting all the points
     IS allPointIS;
-    DMGetStratumIS(subDomain->GetDM(), "dim", depth, &allPointIS) >> checkError;
+    DMGetStratumIS(subDomain->GetDM(), "dim", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
     if (!allPointIS) {
-        DMGetStratumIS(subDomain->GetDM(), "depth", depth, &allPointIS) >> checkError;
+        DMGetStratumIS(subDomain->GetDM(), "depth", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
     }
 
     // If there is a label for this solver, get only the parts of the mesh that here
@@ -519,11 +519,11 @@ void RBF::GetRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const s
         DMGetLabel(subDomain->GetDM(), region->GetName().c_str(), &label);
 
         IS labelIS;
-        DMLabelGetStratumIS(label, region->GetValue(), &labelIS) >> checkError;
-        ISIntersect_Caching_Internal(allPointIS, labelIS, &range.is) >> checkError;
-        ISDestroy(&labelIS) >> checkError;
+        DMLabelGetStratumIS(label, region->GetValue(), &labelIS) >> utilities::PetscUtilities::checkError;
+        ISIntersect_Caching_Internal(allPointIS, labelIS, &range.is) >> utilities::PetscUtilities::checkError;
+        ISDestroy(&labelIS) >> utilities::PetscUtilities::checkError;
     } else {
-        PetscObjectReference((PetscObject)allPointIS) >> checkError;
+        PetscObjectReference((PetscObject)allPointIS) >> utilities::PetscUtilities::checkError;
         range.is = allPointIS;
     }
 
@@ -535,26 +535,26 @@ void RBF::GetRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const s
         range.points = nullptr;
     } else {
         // Get the range
-        ISGetPointRange(range.is, &range.start, &range.end, &range.points) >> checkError;
+        ISGetPointRange(range.is, &range.start, &range.end, &range.points) >> utilities::PetscUtilities::checkError;
     }
 
     // Clean up the allCellIS
-    ISDestroy(&allPointIS) >> checkError;
+    ISDestroy(&allPointIS) >> utilities::PetscUtilities::checkError;
 }
 
 
 void RBF::GetCellRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, ablate::solver::Range &cellRange) const {
     // Start out getting all the cells
     PetscInt depth;
-    DMPlexGetDepth(subDomain->GetDM(), &depth) >> checkError;
+    DMPlexGetDepth(subDomain->GetDM(), &depth) >> utilities::PetscUtilities::checkError;
     RBF::GetRange(subDomain, region, depth, cellRange);
 }
 
 
 void RBF::RestoreRange(ablate::solver::Range &range) const {
     if (range.is) {
-        ISRestorePointRange(range.is, &range.start, &range.end, &range.points) >> checkError;
-        ISDestroy(&range.is) >> checkError;
+        ISRestorePointRange(range.is, &range.start, &range.end, &range.points) >> utilities::PetscUtilities::checkError;
+        ISDestroy(&range.is) >> utilities::PetscUtilities::checkError;
     }
 }
 /************ End Ablate support Code **********************/
@@ -649,7 +649,7 @@ void RBF::Initialize(solver::Range cellRange) {
       PetscFree(RBF::stencilWeights);
       PetscFree(RBF::stencilXLocs[c]);
     }
-    PetscFree6(RBF::cellList, RBF::nStencil, RBF::stencilList, RBF::RBFMatrix, RBF::stencilXLocs, RBF::stencilWeights) >> ablate::checkError;
+    PetscFree6(RBF::cellList, RBF::nStencil, RBF::stencilList, RBF::RBFMatrix, RBF::stencilXLocs, RBF::stencilWeights) >> utilities::PetscUtilities::checkError;
   }
 
   RBF::cStart = cellRange.start;
@@ -657,7 +657,7 @@ void RBF::Initialize(solver::Range cellRange) {
 
   // Both interpolation and derivatives need the list of points
   PetscInt nCells = RBF::cEnd - RBF::cStart;
-  PetscMalloc6(nCells, &(RBF::cellList), nCells, &(RBF::nStencil), nCells, &(RBF::stencilList), nCells, &(RBF::RBFMatrix), nCells, &(RBF::stencilXLocs), nCells, &(RBF::stencilWeights)) >> ablate::checkError;
+  PetscMalloc6(nCells, &(RBF::cellList), nCells, &(RBF::nStencil), nCells, &(RBF::stencilList), nCells, &(RBF::RBFMatrix), nCells, &(RBF::stencilXLocs), nCells, &(RBF::stencilWeights)) >> utilities::PetscUtilities::checkError;
 
   // Shift so that we can use cell range directly
   RBF::cellList -= cStart;

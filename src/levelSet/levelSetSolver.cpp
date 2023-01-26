@@ -145,13 +145,13 @@ void LevelSetSolver::ComputeAllNormal() {
   Vec           auxVec = subDomain->GetAuxVector();       // For normal vector
 
   GetCellRange(cellRange);
-  VecGetArray(auxVec, &array) >> ablate::checkError;
+  VecGetArray(auxVec, &array) >> utilities::PetscUtilities::checkError;
   for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
     PetscInt cell = cellRange.points ? cellRange.points[c] : c;
-    DMPlexPointLocalFieldRef(dm, cell, LevelSetSolver::normalField->id, array, &n) >> ablate::checkError;
+    DMPlexPointLocalFieldRef(dm, cell, LevelSetSolver::normalField->id, array, &n) >> utilities::PetscUtilities::checkError;
     LevelSetSolver::Normal(cell, n);
   }
-  VecRestoreArray(auxVec, &array) >> ablate::checkError;
+  VecRestoreArray(auxVec, &array) >> utilities::PetscUtilities::checkError;
   RestoreRange(cellRange);
 }
 
@@ -162,13 +162,13 @@ void LevelSetSolver::ComputeAllCurvature() {
   Vec           auxVec = subDomain->GetAuxVector();       // For normal vector
 
   GetCellRange(cellRange);
-  VecGetArray(auxVec, &array) >> ablate::checkError;
+  VecGetArray(auxVec, &array) >> utilities::PetscUtilities::checkError;
   for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
     PetscInt cell = cellRange.points ? cellRange.points[c] : c;
     DMPlexPointLocalFieldRef(dm, cell, LevelSetSolver::curvField->id, array, &h);
     h[0] = LevelSetSolver::Curvature(cell);
   }
-  VecRestoreArray(auxVec, &array) >> ablate::checkError;
+  VecRestoreArray(auxVec, &array) >> utilities::PetscUtilities::checkError;
   RestoreRange(cellRange);
 }
 
@@ -198,18 +198,18 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
   Vec               auxVec = subDomain->GetAuxVector();       // For normal vector
 
   // The cell center
-  DMPlexComputeCellGeometryFVM(dm, p, NULL, x0, NULL) >> ablate::checkError;
+  DMPlexComputeCellGeometryFVM(dm, p, NULL, x0, NULL) >> utilities::PetscUtilities::checkError;
 
 
   // Level-set value at cell-center
-  VecGetArrayRead(solVec, &array) >> ablate::checkError;
-  DMPlexPointLocalFieldRead(dm, p, LevelSetSolver::lsField->id, array, &c0) >> checkError;
-  VecRestoreArrayRead(solVec, &array) >> ablate::checkError;
+  VecGetArrayRead(solVec, &array) >> utilities::PetscUtilities::checkError;
+  DMPlexPointLocalFieldRead(dm, p, LevelSetSolver::lsField->id, array, &c0) >> utilities::PetscUtilities::checkError;
+  VecRestoreArrayRead(solVec, &array) >> utilities::PetscUtilities::checkError;
 
   // Normal vector
-  VecGetArrayRead(auxVec, &array) >> ablate::checkError;
-  DMPlexPointLocalFieldRead(dm, p, LevelSetSolver::normalField->id, array, n) >> checkError;
-  VecRestoreArrayRead(auxVec, &array) >> ablate::checkError;
+  VecGetArrayRead(auxVec, &array) >> utilities::PetscUtilities::checkError;
+  DMPlexPointLocalFieldRead(dm, p, LevelSetSolver::normalField->id, array, n) >> utilities::PetscUtilities::checkError;
+  VecRestoreArrayRead(auxVec, &array) >> utilities::PetscUtilities::checkError;
 
   g = 0.0;
   for (i = 0; i < dim; ++i) g += PetscSqr(n[i]);
@@ -220,12 +220,12 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 
 
   // Coordinates of the cell vertices
-  DMPlexGetCellCoordinates(dm, p, &isDG, &Nc, &array, &coords) >> ablate::checkError;
+  DMPlexGetCellCoordinates(dm, p, &isDG, &Nc, &array, &coords) >> utilities::PetscUtilities::checkError;
 
   // Number of vertices
   nVerts = Nc/dim;
 
-  PetscMalloc1(nVerts, &c) >> ablate::checkError;
+  PetscMalloc1(nVerts, &c) >> utilities::PetscUtilities::checkError;
 
   // The level set value of each vertex. This assumes that the interface is a line/plane
   //    with the given unit normal.
@@ -237,7 +237,7 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
   }
 
   // Get the cell type and call appropriate VOF function
-  DMPlexGetCellType(dm, p, &ct) >> ablate::checkError;
+  DMPlexGetCellType(dm, p, &ct) >> utilities::PetscUtilities::checkError;
   switch (ct) {
     case DM_POLYTOPE_SEGMENT:
       throw std::invalid_argument("No element geometry for cell " + std::to_string(p) + " with type " + DMPolytopeTypes[ct]);
@@ -257,8 +257,8 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
       throw std::invalid_argument("No element geometry for cell " + std::to_string(p) + " with type " + DMPolytopeTypes[ct]);
   }
 
-  DMPlexRestoreCellCoordinates(dm, p, &isDG, &Nc, &array, &coords) >> ablate::checkError;
-  PetscFree(c) >> ablate::checkError;
+  DMPlexRestoreCellCoordinates(dm, p, &isDG, &Nc, &array, &coords) >> utilities::PetscUtilities::checkError;
+  PetscFree(c) >> utilities::PetscUtilities::checkError;
 
 }
 
@@ -282,9 +282,9 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 
 ////    // Get the array vector
 ////    PetscScalar *solutionArray;
-////    VecGetArray(solVec, &solutionArray) >> checkError;
+////    VecGetArray(solVec, &solutionArray) >> utilities::PetscUtilities::checkError;
 ////    PetscScalar *auxArray;
-////    VecGetArray(auxVec, &auxArray) >> checkError;
+////    VecGetArray(auxVec, &auxArray) >> utilities::PetscUtilities::checkError;
 
 ////    // March over each cell in this domain
 ////    solver::Range cellRange;
@@ -297,13 +297,13 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 
 ////        // Get the euler and density field
 ////        const PetscScalar *euler = nullptr;
-////        DMPlexPointGlobalFieldRef(dm, cell, eulerFieldInfo.id, solutionArray, &euler) >> checkError;
+////        DMPlexPointGlobalFieldRef(dm, cell, eulerFieldInfo.id, solutionArray, &euler) >> utilities::PetscUtilities::checkError;
 ////        PetscScalar *densityYi;
-////        DMPlexPointGlobalFieldRef(dm, cell, densityYiFieldInfo.id, solutionArray, &densityYi) >> checkError;
+////        DMPlexPointGlobalFieldRef(dm, cell, densityYiFieldInfo.id, solutionArray, &densityYi) >> utilities::PetscUtilities::checkError;
 ////        PetscScalar *yi;
-////        DMPlexPointLocalFieldRead(auxDm, cell, yiFieldInfo.id, auxArray, &yi) >> checkError;
+////        DMPlexPointLocalFieldRead(auxDm, cell, yiFieldInfo.id, auxArray, &yi) >> utilities::PetscUtilities::checkError;
 ////        PetscFVCellGeom *cellGeom;
-////        DMPlexPointLocalRead(cellGeomDm, cell, cellGeomArray, &cellGeom) >> checkError;
+////        DMPlexPointLocalRead(cellGeomDm, cell, cellGeomArray, &cellGeom) >> utilities::PetscUtilities::checkError;
 
 ////        // compute the mass fractions on the boundary
 ////        massFractionsFunction(dim, time, cellGeom->centroid, yiFieldInfo.numberComponents, yi, massFractionsContext);
@@ -320,9 +320,9 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 ////    }
 
 ////    // cleanup
-////    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-////    VecRestoreArray(auxVec, &auxArray) >> checkError;
-////    VecRestoreArray(solVec, &solutionArray) >> checkError;
+////    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
+////    VecRestoreArray(auxVec, &auxArray) >> utilities::PetscUtilities::checkError;
+////    VecRestoreArray(solVec, &solutionArray) >> utilities::PetscUtilities::checkError;
 ////    solver.RestoreRange(cellRange);
 
 
@@ -344,8 +344,8 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 
 ////  VecDuplicate(newPhi, &newPhi);
 
-////  VecGetArrayRead(VOF, &vofVal) >> ablate::checkError;
-////  VecGetArray(newPhi, &phiVal) >> ablate::checkError;
+////  VecGetArrayRead(VOF, &vofVal) >> utilities::PetscUtilities::checkError;
+////  VecGetArray(newPhi, &phiVal) >> utilities::PetscUtilities::checkError;
 
 //////Take a look at boundarySolver/physics/sublimation.cpp lines 233-246 + 276
 
@@ -354,14 +354,14 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 //////Make the level set a solution variable in the ablate solver
 
 
-////  DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> ablate::checkError;
+////  DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
 ////  for (c = cStart; c < cEnd; ++c) {
 ////    LevelSetField::VOF(c, &vof, &faceArea, &cellVolume);
 
 ////  }
 
 ////  VecRestoreArray(newPhi, &phiVal);
-////  VecRestoreArrayRead(VOF, &vofVal) >> ablate::checkError;
+////  VecRestoreArrayRead(VOF, &vofVal) >> utilities::PetscUtilities::checkError;
 ////  VecDestroy(&newPhi);
 
 
@@ -395,11 +395,11 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 ////  PetscScalar       c0;
 ////  DM                dm = LevelSetField::dm;
 
-////  DMPlexGetHeightStratum(dm, 0, &cStart, NULL) >> ablate::checkError;
+////  DMPlexGetHeightStratum(dm, 0, &cStart, NULL) >> utilities::PetscUtilities::checkError;
 
-////  DMPlexGetNeighborCells(dm, p, 1, -1, -1, PETSC_TRUE, &nCells, &cells) >> ablate::checkError;
+////  DMPlexGetNeighborCells(dm, p, 1, -1, -1, PETSC_TRUE, &nCells, &cells) >> utilities::PetscUtilities::checkError;
 
-////  VecGetArrayRead(phi, &array) >> ablate::checkError;
+////  VecGetArrayRead(phi, &array) >> utilities::PetscUtilities::checkError;
 ////  c0 = array[p - cStart];
 
 ////  i = 0;
@@ -408,8 +408,8 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 ////    ++i;
 ////  }
 
-////  VecRestoreArrayRead(phi, &array) >> ablate::checkError;
-////  PetscFree(cells) >> ablate::checkError;
+////  VecRestoreArrayRead(phi, &array) >> utilities::PetscUtilities::checkError;
+////  PetscFree(cells) >> utilities::PetscUtilities::checkError;
 
 ////  return hasInterface;
 
@@ -445,12 +445,12 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 //  Vec                   phi = LevelSetField::phi;
 //  PetscReal             val;
 
-//  DMInterpolationCreate(PETSC_COMM_WORLD, &ctx) >> ablate::checkError;
-//  DMInterpolationSetDim(ctx, LevelSetField::dim) >> ablate::checkError;
-//  DMInterpolationAddPoints(ctx, 1, xyz) >> ablate::checkError;
-//  DMInterpolationSetUp(ctx, dm, PETSC_FALSE, PETSC_FALSE) >> ablate::checkError;
+//  DMInterpolationCreate(PETSC_COMM_WORLD, &ctx) >> utilities::PetscUtilities::checkError;
+//  DMInterpolationSetDim(ctx, LevelSetField::dim) >> utilities::PetscUtilities::checkError;
+//  DMInterpolationAddPoints(ctx, 1, xyz) >> utilities::PetscUtilities::checkError;
+//  DMInterpolationSetUp(ctx, dm, PETSC_FALSE, PETSC_FALSE) >> utilities::PetscUtilities::checkError;
 //  c = ctx->cells[0];
-//  DMInterpolationDestroy(&ctx) >> ablate::checkError;
+//  DMInterpolationDestroy(&ctx) >> utilities::PetscUtilities::checkError;
 
 
 //  PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscInt c, PetscReal xEval[3]) {
@@ -483,14 +483,14 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 
 ////  VecDuplicate(phi, &nextPhi);
 
-////  DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> ablate::checkError;       // Range of cells
+////  DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;       // Range of cells
 
-////  VecGetArray(nextPhi, &newVal) >> ablate::checkError;
-////  VecGetArrayRead(velocity, &vel) >> ablate::checkError;
+////  VecGetArray(nextPhi, &newVal) >> utilities::PetscUtilities::checkError;
+////  VecGetArrayRead(velocity, &vel) >> utilities::PetscUtilities::checkError;
 ////  for (c = cStart; c < cEnd; ++c) {
 ////    cShift = c - cStart;
 ////    // Cell center
-////    DMPlexComputeCellGeometryFVM(dm, c, NULL, pos, NULL) >> ablate::checkError;
+////    DMPlexComputeCellGeometryFVM(dm, c, NULL, pos, NULL) >> utilities::PetscUtilities::checkError;
 
 ////    // Step backward
 ////    for (PetscInt d = 0; d < dim; ++d) {
@@ -499,14 +499,14 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 
 ////    newVal[cShift] = LevelSetField::Interpolate(pos);
 ////  }
-////  VecRestoreArrayRead(velocity, &vel) >> ablate::checkError;
-////  VecRestoreArray(nextPhi, &newVal) >> ablate::checkError;
+////  VecRestoreArrayRead(velocity, &vel) >> utilities::PetscUtilities::checkError;
+////  VecRestoreArray(nextPhi, &newVal) >> utilities::PetscUtilities::checkError;
 
-////  VecCopy(nextPhi, phi) >> ablate::checkError;
-////  VecDestroy(&nextPhi) >> ablate::checkError;
+////  VecCopy(nextPhi, phi) >> utilities::PetscUtilities::checkError;
+////  VecDestroy(&nextPhi) >> utilities::PetscUtilities::checkError;
 
-////  VecGhostUpdateBegin(phi, INSERT_VALUES, SCATTER_FORWARD) >> ablate::checkError;
-////  VecGhostUpdateEnd(phi, INSERT_VALUES, SCATTER_FORWARD) >> ablate::checkError;
+////  VecGhostUpdateBegin(phi, INSERT_VALUES, SCATTER_FORWARD) >> utilities::PetscUtilities::checkError;
+////  VecGhostUpdateEnd(phi, INSERT_VALUES, SCATTER_FORWARD) >> utilities::PetscUtilities::checkError;
 
 
 ////  VecDestroy(&nextPhi);
@@ -530,8 +530,8 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 
 ////  VecDuplicate(newPhi, &newPhi);
 
-////  VecGetArrayRead(VOF, &vofVal) >> ablate::checkError;
-////  VecGetArray(newPhi, &phiVal) >> ablate::checkError;
+////  VecGetArrayRead(VOF, &vofVal) >> utilities::PetscUtilities::checkError;
+////  VecGetArray(newPhi, &phiVal) >> utilities::PetscUtilities::checkError;
 
 //////Take a look at boundarySolver/physics/sublimation.cpp lines 233-246 + 276
 
@@ -540,14 +540,14 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 //////Make the level set a solution variable in the ablate solver
 
 
-////  DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> ablate::checkError;
+////  DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
 ////  for (c = cStart; c < cEnd; ++c) {
 ////    LevelSetField::VOF(c, &vof, &faceArea, &cellVolume);
 
 ////  }
 
 ////  VecRestoreArray(newPhi, &phiVal);
-////  VecRestoreArrayRead(VOF, &vofVal) >> ablate::checkError;
+////  VecRestoreArrayRead(VOF, &vofVal) >> utilities::PetscUtilities::checkError;
 ////  VecDestroy(&newPhi);
 
 

@@ -77,52 +77,52 @@ REGISTER(ablate::domain::FieldDescriptor, ablate::levelSet::LevelSetFields, "Lev
 
 
 
-////  DMGetDimension(dm, &dim) >> ablate::checkError;
+////  DMGetDimension(dm, &dim) >> utilities::PetscUtilities::checkError;
 ////  LevelSetField::dim = dim;
 
 
 
 
 ////  // Create the vectors
-////  DMCreateGlobalVector(dm, &(LevelSetField::phi)) >> ablate::checkError;
-////  DMCreateGlobalVector(dm, &(LevelSetField::curv)) >> ablate::checkError;
+////  DMCreateGlobalVector(dm, &(LevelSetField::phi)) >> utilities::PetscUtilities::checkError;
+////  DMCreateGlobalVector(dm, &(LevelSetField::curv)) >> utilities::PetscUtilities::checkError;
 
 ////  PetscInt lsz, gsz;
-////  VecGetLocalSize(phi, &lsz) >> ablate::checkError;
-////  VecGetSize(phi, &gsz) >> ablate::checkError;
-////  VecCreateMPI(PETSC_COMM_WORLD, dim*lsz, dim*gsz, &(LevelSetField::normal)) >> ablate::checkError;
-////  VecSetBlockSize(LevelSetField::normal, dim) >> ablate::checkError;
+////  VecGetLocalSize(phi, &lsz) >> utilities::PetscUtilities::checkError;
+////  VecGetSize(phi, &gsz) >> utilities::PetscUtilities::checkError;
+////  VecCreateMPI(PETSC_COMM_WORLD, dim*lsz, dim*gsz, &(LevelSetField::normal)) >> utilities::PetscUtilities::checkError;
+////  VecSetBlockSize(LevelSetField::normal, dim) >> utilities::PetscUtilities::checkError;
 
-////  DMGetBoundingBox(dm, lo, hi) >> ablate::checkError;
+////  DMGetBoundingBox(dm, lo, hi) >> utilities::PetscUtilities::checkError;
 ////  for (d = 0; d < dim; ++d) {
 ////    centroid[d] = 0.5*(lo[d] + hi[d]);
 ////  }
 
-////  PetscOptionsGetReal(NULL, NULL, "-radius", &(radius), NULL) >> ablate::checkError;
-////  PetscOptionsGetRealArray(NULL, NULL, "-centroid", centroid, &nSet, NULL) >> ablate::checkError;
+////  PetscOptionsGetReal(NULL, NULL, "-radius", &(radius), NULL) >> utilities::PetscUtilities::checkError;
+////  PetscOptionsGetRealArray(NULL, NULL, "-centroid", centroid, &nSet, NULL) >> utilities::PetscUtilities::checkError;
 
 
-////  DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> ablate::checkError;       // Range of cells
-////  VecGetArray(LevelSetField::phi, &val) >> ablate::checkError;
+////  DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;       // Range of cells
+////  VecGetArray(LevelSetField::phi, &val) >> utilities::PetscUtilities::checkError;
 ////  // Set the initial shape.
 ////  switch (shape) {
 ////    case LevelSetField::levelSetShape::SPHERE:
 ////     for (c = cStart; c < cEnd; ++c) {
-////       DMPlexComputeCellGeometryFVM(dm, c, NULL, pos, NULL) >> ablate::checkError;
+////       DMPlexComputeCellGeometryFVM(dm, c, NULL, pos, NULL) >> utilities::PetscUtilities::checkError;
 ////       val[c - cStart] = LevelSetField::Sphere(pos, centroid, radius);
 ////      }
 
 ////      break;
 ////    case LevelSetField::levelSetShape::ELLIPSE:
 ////      for (c = cStart; c < cEnd; ++c) {
-////        DMPlexComputeCellGeometryFVM(dm, c, NULL, pos, NULL) >> ablate::checkError;
+////        DMPlexComputeCellGeometryFVM(dm, c, NULL, pos, NULL) >> utilities::PetscUtilities::checkError;
 ////        val[c - cStart] = LevelSetField::Ellipse(pos, centroid, radius);
 ////      }
 
 ////      break;
 ////    case LevelSetField::levelSetShape::STAR:
 ////      for (c = cStart; c < cEnd; ++c) {
-////        DMPlexComputeCellGeometryFVM(dm, c, NULL, pos, NULL) >> ablate::checkError;
+////        DMPlexComputeCellGeometryFVM(dm, c, NULL, pos, NULL) >> utilities::PetscUtilities::checkError;
 ////        val[c - cStart] = LevelSetField::Star(pos, centroid);
 ////      }
 
@@ -131,10 +131,10 @@ REGISTER(ablate::domain::FieldDescriptor, ablate::levelSet::LevelSetFields, "Lev
 ////      throw std::invalid_argument("Unknown level set shape shape");
 ////  }
 
-////  VecRestoreArray(LevelSetField::phi, &val) >> ablate::checkError;
+////  VecRestoreArray(LevelSetField::phi, &val) >> utilities::PetscUtilities::checkError;
 
-////  VecGhostUpdateBegin(LevelSetField::phi, INSERT_VALUES, SCATTER_FORWARD) >> ablate::checkError;
-////  VecGhostUpdateEnd(LevelSetField::phi, INSERT_VALUES, SCATTER_FORWARD) >> ablate::checkError;
+////  VecGhostUpdateBegin(LevelSetField::phi, INSERT_VALUES, SCATTER_FORWARD) >> utilities::PetscUtilities::checkError;
+////  VecGhostUpdateEnd(LevelSetField::phi, INSERT_VALUES, SCATTER_FORWARD) >> utilities::PetscUtilities::checkError;
 
 ////  // Now setup the derivatives and set the curvature/normal calculations
 ////  PetscInt nDer = 0;

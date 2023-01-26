@@ -45,7 +45,7 @@ TEST_P(RBFSupportTestFixture_ReturnID, ShouldReturnCellIDs) {
                 "mesh", std::vector<std::shared_ptr<domain::FieldDescriptor>>{}, testingParam.meshModifiers, testingParam.meshFaces, testingParam.meshStart, testingParam.meshEnd, std::vector<std::string>{}, testingParam.meshSimplex);
 
             PetscInt cell = -2;
-            DMPlexGetContainingCell(mesh->GetDM(), &testingParam.xyz[0], &cell) >> ablate::checkError;
+            DMPlexGetContainingCell(mesh->GetDM(), &testingParam.xyz[0], &cell) >> utilities::PetscUtilities::checkError;
 
             PetscMPIInt rank;
             MPI_Comm_rank(PetscObjectComm((PetscObject)mesh->GetDM()), &rank);
@@ -164,7 +164,7 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
             PetscMPIInt rank;
             MPI_Comm_rank(PetscObjectComm((PetscObject)mesh->GetDM()), &rank);
 
-            DMPlexGetNeighborCells(mesh->GetDM(), testingParam.centerCell[rank], testingParam.numLevels, testingParam.maxDistance, testingParam.minNumberCells, testingParam.useVertices, &nCells, &cells) >> ablate::checkError;
+            DMPlexGetNeighborCells(mesh->GetDM(), testingParam.centerCell[rank], testingParam.numLevels, testingParam.maxDistance, testingParam.minNumberCells, testingParam.useVertices, &nCells, &cells) >> utilities::PetscUtilities::checkError;
 
 
             ASSERT_EQ(nCells, testingParam.expectedNumberOfCells[rank]);
@@ -212,7 +212,7 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
 //      PetscReal maxDist = -1;
 //      PetscInt minNumberCells = -1;
 
-//      DMPlexGetNeighborCells(mesh->GetDM(), centerCell, maxLevels, maxDist, minNumberCells, PETSC_TRUE, &nCells, &cells) >> ablate::checkError;
+//      DMPlexGetNeighborCells(mesh->GetDM(), centerCell, maxLevels, maxDist, minNumberCells, PETSC_TRUE, &nCells, &cells) >> utilities::PetscUtilities::checkError;
 //      printf("%d: center: %d\n", rank, centerCell);
 //      printf("%d: nCells: %d\n", rank, nCells);
 //      printf("%d: ", rank);
@@ -224,7 +224,7 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
 
 //    PetscInt cell;
 //    PetscScalar xyz[2] = {0.55, 0.25};
-//    DMPlexGetContainingCell(mesh->GetDM(), xyz, &cell) >> ablate::checkError;
+//    DMPlexGetContainingCell(mesh->GetDM(), xyz, &cell) >> utilities::PetscUtilities::checkError;
 //    printf("Cell: %d\n", cell);
 
 INSTANTIATE_TEST_SUITE_P(
@@ -544,7 +544,7 @@ TEST_P(RBFSupportTestFixture_ErrorChecking, ShouldThrowErrorForTooManyInputs) {
 
             PetscInt nCells, *cells;
 
-            EXPECT_ANY_THROW(DMPlexGetNeighborCells(mesh->GetDM(), 0, 1, 1.0, 1, PETSC_TRUE, &nCells, &cells)>> ablate::checkError);
+            EXPECT_ANY_THROW(DMPlexGetNeighborCells(mesh->GetDM(), 0, 1, 1.0, 1, PETSC_TRUE, &nCells, &cells)>> utilities::PetscUtilities::checkError);
 
         }
         ablate::environment::RunEnvironment::Finalize();
