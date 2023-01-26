@@ -1,4 +1,5 @@
 #include "triangle.hpp"
+#include <algorithm>
 #include "utilities/constants.hpp"
 #include "utilities/mathUtilities.hpp"
 
