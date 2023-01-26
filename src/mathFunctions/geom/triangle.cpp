@@ -29,12 +29,17 @@ ablate::mathFunctions::geom::Triangle::Triangle(std::vector<double> point1In, st
     ablate::utilities::MathUtilities::Subtract(3, point3.data(), point1.data(), p1_p3);
 
     ablate::utilities::MathUtilities::CrossVector<3>(p1_p2, p1_p3, triangleNorm.data());
-
+    ablate::utilities::MathUtilities::NormVector(3, triangleNorm.data());
     // Compute the side normals
     ablate::utilities::MathUtilities::CrossVector<3>(p1_p2, triangleNorm.data(), sideNorm3.data());
     ablate::utilities::MathUtilities::CrossVector<3>(p2_p3, triangleNorm.data(), sideNorm1.data());
     ablate::utilities::MathUtilities::CrossVector<3>(p1_p3, triangleNorm.data(), sideNorm2.data());
     ablate::utilities::MathUtilities::ScaleVector(3, sideNorm2.data(), -1.0);
+
+    // norm each vector
+    ablate::utilities::MathUtilities::NormVector(3, sideNorm3.data());
+    ablate::utilities::MathUtilities::NormVector(3, sideNorm1.data());
+    ablate::utilities::MathUtilities::NormVector(3, sideNorm2.data());
 }
 bool ablate::mathFunctions::geom::Triangle::InsideGeometry(const double* xyz, const int& ndims, const double& time) const {
     // First check to see if it in the projected length
@@ -45,7 +50,7 @@ bool ablate::mathFunctions::geom::Triangle::InsideGeometry(const double* xyz, co
     // Get side normals
     double sign3 = ablate::utilities::MathUtilities::DiffDotVector<3>(point, point1.data(), sideNorm3.data());
     double sign2 = ablate::utilities::MathUtilities::DiffDotVector<3>(point, point3.data(), sideNorm2.data());
-    double sign1 = ablate::utilities::MathUtilities::DiffDotVector<3>(point, point3.data(), sideNorm1.data());
+    double sign1 = ablate::utilities::MathUtilities::DiffDotVector<3>(point, point2.data(), sideNorm1.data());
 
     // Check to see if inside
     bool inside = (sign3 <= ablate::utilities::Constants::small) && (sign2 <= ablate::utilities::Constants::small) && (sign1 <= ablate::utilities::Constants::small);

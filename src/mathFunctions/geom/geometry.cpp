@@ -40,7 +40,7 @@ void ablate::mathFunctions::geom::Geometry::Eval(const double &x, const double &
     }
 }
 void ablate::mathFunctions::geom::Geometry::Eval(const double *xyz, const int &ndims, const double &t, std::vector<double> &result) const {
-    if (InsideGeometry(xyz, 3, t)) {
+    if (InsideGeometry(xyz, ndims, t)) {
         insideValues->Eval(xyz, ndims, t, result);
     } else {
         outsideValues->Eval(xyz, ndims, t, result);

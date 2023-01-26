@@ -597,6 +597,16 @@ INSTANTIATE_TEST_SUITE_P(
                                        }},
         (GeometryTestVectorParameters){.createGeom =
                                            []() {
+                                               return std::make_shared<Triangle>(std::vector<double>{0.0070000000000000001, 0},
+                                                                                 std::vector<double>{0.0077000000000000002, 0.0011000000000000001},
+                                                                                 std::vector<double>{0.027400000000000004, -0.0173800000000000034},
+                                                                                 0.0,
+                                                                                 ablate::mathFunctions::Create(std::vector<double>{20, 11}),
+                                                                                 ablate::mathFunctions::Create(std::vector<double>{4.2, -10}));
+                                           },
+                                       .expectedResults = {{.xyz = {0.00617267, 0.00161062}, .value = {4.2, -10}}}},
+        (GeometryTestVectorParameters){.createGeom =
+                                           []() {
                                                return std::make_shared<Triangle>(std::vector<double>{.5, .5, .5},
                                                                                  std::vector<double>{.6, .6, .9},
                                                                                  std::vector<double>{.9, .7, .54},
