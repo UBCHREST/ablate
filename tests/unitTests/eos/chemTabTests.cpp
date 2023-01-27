@@ -78,15 +78,13 @@ TEST_P(ChemTabModelTestFixture, ShouldReturnCorrectSpeciesAndVariables) {
 
         // act
         auto actualSpeciesVariables = chemTabModel.GetSpeciesVariables();
-        auto actualSpecies = chemTabModel.GetFieldFunctionProperties();
+        auto actualFieldFunction = chemTabModel.GetFieldFunctionProperties();
         auto actualProgressVariables = chemTabModel.GetProgressVariables();
 
         // assert
         EXPECT_TRUE(actualSpeciesVariables.empty()) << "should report no transport species" << testTarget["testName"].as<std::string>();
-        EXPECT_EQ(testTarget["species_names"].as<std::vector<std::string>>(), actualSpecies) << "should compute correct species name for model " << testTarget["testName"].as<std::string>();
+        EXPECT_EQ(testTarget["cpv_names"].as<std::vector<std::string>>(), actualFieldFunction) << "should compute correct cpv for model " << testTarget["testName"].as<std::string>();
         EXPECT_EQ(testTarget["cpv_names"].as<std::vector<std::string>>(), actualProgressVariables) << "should compute correct cpv names for model " << testTarget["testName"].as<std::string>();
-        EXPECT_EQ(testTarget["species_names"].as<std::vector<std::string>>().size(), actualSpecies.size())
-            << "should compute correct species name for model " << testTarget["testName"].as<std::string>();
     }
 }
 
@@ -107,7 +105,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectMassFractions) {
 
         // act
         std::vector<PetscReal> actual(expectedMassFractions.size());
-        chemTabModel.ComputeMassFractions(inputProgressVariables.data(), inputProgressVariables.size(), actual.data(), actual.size());
+        chemTabModel.ComputeMassFractions(inputProgressVariables, actual);
 
         // assert
         for (std::size_t r = 0; r < actual.size(); r++) {
@@ -248,7 +246,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectProgressVariables) {
         // act
         // Size up the results based upon expected
         std::vector<PetscReal> actual(expectedProgressVariables.size());
-        chemTabModel.ComputeProgressVariables(inputMassFractions.data(), inputMassFractions.size(), actual.data(), actual.size());
+        chemTabModel.ComputeProgressVariables(inputMassFractions, actual);
 
         // assert
         for (std::size_t r = 0; r < actual.size(); r++) {
@@ -260,265 +258,49 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectProgressVariables) {
 INSTANTIATE_TEST_SUITE_P(ChemTabTests, ChemTabModelTestFixture,
                          testing::Values((ChemTabModelTestParameters){.modelPath = "inputs/eos/chemTabTestModel_1", .testTargetFile = "inputs/eos/chemTabTestModel_1/testTargets.yaml"}));
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///// ChemTab FieldFunctionTests
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct ChemTabFieldFunctionTestParameters {
-    // eos init
-    std::filesystem::path modelPath;
+TEST_P(ChemTabModelTestFixture, ShouldComputeFieldFromProgressVariable) {
+    ONLY_WITH_TENSORFLOW_CHECK;
 
-    // field function init
-    ablate::eos::ThermodynamicProperty property1;
-    ablate::eos::ThermodynamicProperty property2;
+    // arrange
+    auto chemTab = std::make_shared<ablate::eos::ChemTab>(GetParam().modelPath);
 
-    // inputs
-    PetscReal property1Value;
-    PetscReal property2Value;
-    std::vector<PetscReal> velocity;
-    std::map<std::string, PetscReal> yiMap;
-    std::vector<PetscReal> expectedEulerValue;
-};
+    // build a new reference eos
+    auto metadata = YAML::LoadFile(std::filesystem::path(GetParam().modelPath) / "metadata.yaml");
+    auto tchem = std::make_shared<ablate::eos::TChem>(std::filesystem::path(GetParam().modelPath) / metadata["mechanism"].as<std::string>());
 
-/*
- * Helper function to fill mass fraction
- */
-static std::vector<PetscReal> GetMassFraction(const std::vector<std::string>& species, const std::map<std::string, PetscReal>& yiIn) {
-    std::vector<PetscReal> yi(species.size(), 0.0);
+    // Get the list of initializers
+    std::map<std::string, std::map<std::string, double>> initializers;
+    for (const auto& node : metadata["initializers"]) {
+        initializers[node.first.as<std::string>()] = node.second["mass_fractions"].as<std::map<std::string, double>>();
+    }
 
-    for (const auto& value : yiIn) {
-        // Get the index
-        auto it = std::find(species.begin(), species.end(), value.first);
-        if (it != species.end()) {
-            auto index = std::distance(species.begin(), it);
+    ASSERT_TRUE(initializers.size() > 1) << "All ChemTab models should have at least two initializers";
 
-            yi[index] = value.second;
+    // get the test params
+    const auto& params = GetParam();
+
+    // March over each initializer
+    for (const auto& [label, speciesMap] : initializers) {
+        // compute yi scratch for tchem
+        std::vector<PetscReal> yi(tchem->GetSpeciesVariables().size(), 0.0);
+        for (const auto& [species, value] : speciesMap) {
+            auto loc = std::find(tchem->GetSpeciesVariables().begin(), tchem->GetSpeciesVariables().end(), species);
+            if (loc == tchem->GetSpeciesVariables().end()) {
+                throw std::invalid_argument("Unable to locate species " + species);
+            }
+            yi[std::distance(tchem->GetSpeciesVariables().begin(), loc)] = value;
         }
-    }
-    return yi;
-}
 
-class ChemTabFieldFunctionTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<ChemTabFieldFunctionTestParameters> {};
+        std::vector<PetscReal> expectedProgressVariable(chemTab->GetProgressVariables().size());
+        chemTab->ComputeProgressVariables(yi, expectedProgressVariable);
 
-#include <iostream>
-#include <sstream>
-using namespace std;
-
-template <typename T>
-string to_string(vector<T> vec) {
-    stringstream ss;
-    for (auto i : vec) {
-        ss << i << ", ";
-    }
-    return ss.str();
-}
-
-#define GET_VARIABLE_NAME(Variable) (#Variable)
-#define print_var(var) cerr << "At line: " << __LINE__ << " Variable: " << GET_VARIABLE_NAME(var) << " = " << to_string(var) << endl << flush;
-
-// NOTE: this works fine!! I wonder why similar test fails?
-TEST_P(ChemTabFieldFunctionTestFixture, ShouldComputeFieldFromYi) {
-    ONLY_WITH_TENSORFLOW_CHECK;
-
-    // arrange
-    auto chemTab = std::make_shared<ablate::eos::ChemTab>(GetParam().modelPath);
-
-    // build a new reference eos
-    auto metadata = YAML::LoadFile(std::filesystem::path(GetParam().modelPath) / "metadata.yaml");
-    auto tchem = std::make_shared<ablate::eos::TChem>(std::filesystem::path(GetParam().modelPath) / metadata["mechanism"].as<std::string>());
-    auto yi = GetMassFraction(tchem->GetFieldFunctionProperties(), GetParam().yiMap);
-
-    // get the test params
-    const auto& params = GetParam();
-    std::vector<PetscReal> actualEulerValue(params.expectedEulerValue.size(), NAN);
-    std::vector<PetscReal> actualDensityEvValue(chemTab->GetProgressVariables().size(), NAN);
-
-    // compute the expected progress
-    auto expectedEvValue = actualDensityEvValue;
-    chemTab->ComputeProgressVariables(yi.data(), yi.size(), expectedEvValue.data(), expectedEvValue.size());
-
-    // act
-    auto stateEulerFunction = chemTab->GetFieldFunctionFunction(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD, params.property1, params.property2, {ablate::eos::EOS::YI});
-    stateEulerFunction(params.property1Value, params.property2Value, (PetscInt)params.velocity.size(), params.velocity.data(), yi.data(), actualEulerValue.data());
-    auto stateDensityEvFunction = chemTab->GetFieldFunctionFunction(ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD, params.property1, params.property2, {ablate::eos::EOS::YI});
-    stateDensityEvFunction(params.property1Value, params.property2Value, (PetscInt)params.velocity.size(), params.velocity.data(), yi.data(), actualDensityEvValue.data());
-
-    // assert
-    for (std::size_t c = 0; c < params.expectedEulerValue.size(); c++) {
-        auto rel_error = PetscAbs(params.expectedEulerValue[c] - actualEulerValue[c]) / (params.expectedEulerValue[c] + 1E-30);
-        print_var(rel_error);
-        ASSERT_LT(PetscAbs(params.expectedEulerValue[c] - actualEulerValue[c]) / (params.expectedEulerValue[c] + 1E-30), 1E-3)
-            << "for component[" << c << "] of expectedEulerValue (" << params.expectedEulerValue[c] << " vs " << actualEulerValue[c] << ")";
-    }
-    for (std::size_t c = 0; c < expectedEvValue.size(); c++) {
-        auto rel_error = PetscAbs(expectedEvValue[c] * params.expectedEulerValue[0] - actualDensityEvValue[c]) / (expectedEvValue[c] * params.expectedEulerValue[0] + 1E-30);
-        print_var(rel_error);
-        ASSERT_LT(PetscAbs(expectedEvValue[c] * params.expectedEulerValue[0] - actualDensityEvValue[c]) / (expectedEvValue[c] * params.expectedEulerValue[0] + 1E-30), 1E-3)
-            << "for component[" << c << "] of densityEv_progress (" << yi[c] * params.expectedEulerValue[0] << " vs " << actualDensityEvValue[c] << ")";
-    }
-}
-
-// NOTE: this does not work! Why?
-TEST_P(ChemTabFieldFunctionTestFixture, ShouldComputeFieldFromProgressVariable) {
-    //GTEST_SKIP() << "Test will not work until ChemTab can decode progress (with zMix) from Yi";
-    ONLY_WITH_TENSORFLOW_CHECK;
-
-    // arrange
-    auto chemTab = std::make_shared<ablate::eos::ChemTab>(GetParam().modelPath);
-
-    // build a new reference eos
-    auto metadata = YAML::LoadFile(std::filesystem::path(GetParam().modelPath) / "metadata.yaml");
-    auto tchem = std::make_shared<ablate::eos::TChem>(std::filesystem::path(GetParam().modelPath) / metadata["mechanism"].as<std::string>());
-    auto yi = GetMassFraction(tchem->GetFieldFunctionProperties(), GetParam().yiMap);
-
-    print_var(tchem->GetSpecies());
-    print_var(yi); 
-
-    // get the test params
-    const auto& params = GetParam();
-    std::vector<PetscReal> actualEulerValue(params.expectedEulerValue.size(), NAN);
-    std::vector<PetscReal> actualDensityEvValue(chemTab->GetProgressVariables().size(), NAN);
-
-    // compute the expected progress
-    auto expectedEvValue = actualDensityEvValue;
-    chemTab->ComputeProgressVariables(yi.data(), yi.size(), expectedEvValue.data(), expectedEvValue.size());
-
-    print_var(expectedEvValue);
-
-    // act
-    auto stateEulerFunction = chemTab->GetFieldFunctionFunction(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD, params.property1, params.property2, {ablate::eos::EOS::PROGRESS});
-    stateEulerFunction(params.property1Value, params.property2Value, (PetscInt)params.velocity.size(), params.velocity.data(), expectedEvValue.data(), actualEulerValue.data());
-    auto stateDensityEvFunction =
-        chemTab->GetFieldFunctionFunction(ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD, params.property1, params.property2, {ablate::eos::EOS::PROGRESS});
-    stateDensityEvFunction(params.property1Value, params.property2Value, (PetscInt)params.velocity.size(), params.velocity.data(), expectedEvValue.data(), actualDensityEvValue.data());
-
-    print_var(actualEulerValue);
-    print_var(actualDensityEvValue);
-
-    chemTab->ComputeMassFractions(expectedEvValue.data(), expectedEvValue.size(), yi.data(), yi.size());
-    print_var(yi);
-    // assert
-    for (std::size_t c = 0; c < params.expectedEulerValue.size(); c++) {
-        print_var(params.expectedEulerValue[c]);
-        print_var(actualEulerValue[c]);
-        ASSERT_LT(PetscAbs(params.expectedEulerValue[c] - actualEulerValue[c]) / (params.expectedEulerValue[c] + 1E-30), 1E-1)
-            << "for component[" << c << "] of expectedEulerValue (" << params.expectedEulerValue[c] << " vs " << actualEulerValue[c] << ")";
-    }
-    for (std::size_t c = 0; c < expectedEvValue.size(); c++) {
-        print_var(params.expectedEulerValue[c]);
-        print_var(actualEulerValue[c]);
-        ASSERT_LT(PetscAbs(expectedEvValue[c] * params.expectedEulerValue[0] - actualDensityEvValue[c]) / (expectedEvValue[c] * params.expectedEulerValue[0] + 1E-30), 1E-1)
-            << "for component[" << c << "] of densityEv_progress (" << yi[c] * params.expectedEulerValue[0] << " vs " << actualDensityEvValue[c] << ")";
-    }
-}
-
-//void ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize, PetscReal density = 1.0) const;
-
-INSTANTIATE_TEST_SUITE_P(ChemTabTests, ChemTabFieldFunctionTestFixture,
-                         testing::Values(
-                                         (ChemTabFieldFunctionTestParameters){.modelPath = "inputs/eos/chemTabTestModel_1",
-                                                                              .property1 = ablate::eos::ThermodynamicProperty::Temperature,
-                                                                              .property2 = ablate::eos::ThermodynamicProperty::Pressure,
-                                                                              .property1Value = 499.25,
-                                                                              .property2Value = 197710.5,
-                                                                              .velocity = {10, 20, 30},
-                                                                              .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
-                                                                              .expectedEulerValue = {1.2, 1.2 * 99993.99, 1.2 * 10, 1.2 * 20, 1.2 * 30}},
-                                         (ChemTabFieldFunctionTestParameters){.modelPath = "inputs/eos/chemTabTestModel_1",
-                                                                              .property1 = ablate::eos::ThermodynamicProperty::Temperature,
-                                                                              .property2 = ablate::eos::ThermodynamicProperty::Pressure,
-                                                                              .property1Value = 762.664,
-                                                                              .property2Value = 189973.54,
-                                                                              .velocity = {0.0, 0.0, 0.0},
-                                                                              .yiMap = {{"O2", .3}, {"N2", .4}, {"CH2", .1}, {"NO", .2}},
-                                                                              .expectedEulerValue = {0.8, 0.8 * 3.2E5, 0.0, 0.0, 0.0}},
-                                         (ChemTabFieldFunctionTestParameters){.modelPath = "inputs/eos/chemTabTestModel_1",
-                                                                              .property1 = ablate::eos::ThermodynamicProperty::Temperature,
-                                                                              .property2 = ablate::eos::ThermodynamicProperty::Pressure,
-                                                                              .property1Value = 418.079,
-                                                                              .property2Value = 409488.10,
-                                                                              .velocity = {0, 2, 4},
-                                                                              .yiMap = {{"N2", 1.0}},
-                                                                              .expectedEulerValue = {3.3, 3.3 * 1000, 0.0, 3.3 * 2, 3.3 * 4}},
-                                         (ChemTabFieldFunctionTestParameters){.modelPath = "inputs/eos/chemTabTestModel_1",
-                                                                              .property1 = ablate::eos::ThermodynamicProperty::Pressure,
-                                                                              .property2 = ablate::eos::ThermodynamicProperty::Temperature,
-                                                                              .property1Value = 7411.11,
-                                                                              .property2Value = 437.46,
-                                                                              .velocity = {-1, -2, -3},
-                                                                              .yiMap = {{"H2", .35}, {"H2O", .35}, {"N2", .3}},
-                                                                              .expectedEulerValue = {0.01, 0.01 * 1E5, .01 * -1, .01 * -2, .01 * -3}},
-                                         (ChemTabFieldFunctionTestParameters){.modelPath = "inputs/eos/chemTabTestModel_1",
-                                                                              .property1 = ablate::eos::ThermodynamicProperty::Pressure,
-                                                                              .property2 = ablate::eos::ThermodynamicProperty::Temperature,
-                                                                              .property1Value = 281125963.5,
-                                                                              .property2Value = 394.59,
-                                                                              .velocity = {-10, -20, -300},
-                                                                              .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
-                                                                              .expectedEulerValue = {999.9, 999.9 * 1E4, 999.9 * -10, 999.9 * -20, 999.9 * -300}},
-                                         (ChemTabFieldFunctionTestParameters){.modelPath = "inputs/eos/chemTabTestModel_1",
-                                                                              .property1 = ablate::eos::ThermodynamicProperty::Pressure,
-                                                                              .property2 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
-                                                                              .property1Value = 281125963.5,
-                                                                              .property2Value = -35256.942891550425,
-                                                                              .velocity = {-10, -20, -300},
-                                                                              .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
-                                                                              .expectedEulerValue = {999.9, 999.9 * 1E4, 999.9 * -10, 999.9 * -20, 999.9 * -300}},
-                                         (ChemTabFieldFunctionTestParameters){.modelPath = "inputs/eos/chemTabTestModel_1",
-                                                                              .property1 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
-                                                                              .property2 = ablate::eos::ThermodynamicProperty::Pressure,
-                                                                              .property1Value = -35256.942891550425,
-                                                                              .property2Value = 281125963.5,
-                                                                              .velocity = {-10, -20, -300},
-                                                                              .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
-                                                                              .expectedEulerValue = {999.9, 999.9 * 1E4, 999.9 * -10, 999.9 * -20, 999.9 * -300}},
-                                         (ChemTabFieldFunctionTestParameters){.modelPath = "inputs/eos/chemTabTestModel_1",
-                                                                              .property1 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
-                                                                              .property2 = ablate::eos::ThermodynamicProperty::Pressure,
-                                                                              .property1Value = 99291.694615827029,
-                                                                              .property2Value = 197710.5,
-                                                                              .velocity = {10, 20, 30},
-                                                                              .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
-                                                                              .expectedEulerValue = {1.2, 1.2 * 99993.99, 1.2 * 10, 1.2 * 20, 1.2 * 30}},
-                                         (ChemTabFieldFunctionTestParameters){.modelPath = "inputs/eos/chemTabTestModel_1",
-                                                                              .property1 = ablate::eos::ThermodynamicProperty::Pressure,
-                                                                              .property2 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
-                                                                              .property1Value = 197710.5,
-                                                                              .property2Value = 99291.694615827029,
-                                                                              .velocity = {10, 20, 30},
-                                                                              .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
-                                                                              .expectedEulerValue = {1.2, 1.2 * 99993.99, 1.2 * 10, 1.2 * 20, 1.2 * 30}}
-
-                                         ),
-
-                         [](const testing::TestParamInfo<ChemTabFieldFunctionTestParameters>& info) {
-                             return std::to_string(info.index) + "_from_" + std::string(to_string(info.param.property1)) + "_" + std::string(to_string(info.param.property2)) + "_with_" +
-                                    info.param.modelPath.stem().string();
-                         });
-
-TEST_P(ChemTabModelTestFixture, ShouldComputeProgressVariablesMassFractionsInterchangeability) {
-    GTEST_SKIP() << "Test will not work until ChemTab can decode progress (with zMix) from Yi";
-    ONLY_WITH_TENSORFLOW_CHECK;
-
-    for (const auto& testTarget : testTargets) {
-        // arrange
-        auto chemTab = std::make_shared<ablate::eos::ChemTab>(GetParam().modelPath);
-        auto expectedProgressVariables = testTarget["output_cpvs"].as<std::vector<double>>();
-        auto inputMassFractions = testTarget["input_mass_fractions"].as<std::vector<double>>();
-
-        // act
-        // Size up the results based upon expected
-        std::vector<PetscReal> actualProgressVariables(expectedProgressVariables.size());
-        chemTab->ComputeProgressVariables(inputMassFractions.data(), inputMassFractions.size(), actualProgressVariables.data(), actualProgressVariables.size());
-
-        std::vector<PetscReal> actualMassFractions(inputMassFractions.size());
-        chemTab->ComputeMassFractions(actualProgressVariables.data(), actualProgressVariables.size(), actualMassFractions.data(), actualMassFractions.size());
+        // Get the actual progress variable values for this initializers
+        std::vector<PetscReal> actualProgressVariable;
+        chemTab->GetInitializerProgressVariables(label, actualProgressVariable);
 
         // assert
-        for (std::size_t r = 0; r < actualProgressVariables.size(); r++) {
-            assert_float_close(expectedProgressVariables[r], actualProgressVariables[r]) << "The value for input set [" << r << "] is incorrect for model " << testTarget["testName"].as<std::string>();
-        }
-        for (std::size_t r = 0; r < actualMassFractions.size(); r++) {
-            assert_float_close(inputMassFractions[r], actualMassFractions[r]) << "The value for input mass fractions [" << r << "] is incorrect for model " << testTarget["testName"].as<std::string>();
+        for (std::size_t c = 0; c < actualProgressVariable.size(); c++) {
+            ASSERT_EQ(actualProgressVariable[c], expectedProgressVariable[c]);
         }
     }
 }
