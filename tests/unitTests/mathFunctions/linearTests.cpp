@@ -154,15 +154,16 @@ INSTANTIATE_TEST_SUITE_P(LinearTests, LinearTestsFixture,
                                                                  .start = -1.0,
                                                                  .end = -0.5,
                                                                  .dir = 2,
-                                                                 .testValues = {
-                                                                     std::make_pair<std::array<double, 3>, std::vector<double>>({0.0, 0.0, -1.0}, {0.0, 10.0, -20}),
-                                                                     std::make_pair<std::array<double, 3>, std::vector<double>>({0, 0.0, -2}, {0.0, 10.0, -20}),
-                                                                     std::make_pair<std::array<double, 3>, std::vector<double>>({0.0, 0.0, -0.5}, {1.0, -10.0, 20}),
-                                                                     std::make_pair<std::array<double, 3>, std::vector<double>>({0.0, 0.0, 0.0}, {1.0, -10.0, 20}),
-                                                                     std::make_pair<std::array<double, 3>, std::vector<double>>({0.0, 0.0, -.75}, {.5, 0, 0}),
-                                                                     std::make_pair<std::array<double, 3>, std::vector<double>>({NAN, 0.0, -0.875}, {.25, 5, -10}),
-                                                                     std::make_pair<std::array<double, 3>, std::vector<double>>({NAN, 0.0, -0.625}, {.75, -5, 10}),
-                                                                 }}),
+                                                                 .testValues =
+                                                                     {
+                                                                         std::make_pair<std::array<double, 3>, std::vector<double>>({0.0, 0.0, -1.0}, {0.0, 10.0, -20}),
+                                                                         std::make_pair<std::array<double, 3>, std::vector<double>>({0, 0.0, -2}, {0.0, 10.0, -20}),
+                                                                         std::make_pair<std::array<double, 3>, std::vector<double>>({0.0, 0.0, -0.5}, {1.0, -10.0, 20}),
+                                                                         std::make_pair<std::array<double, 3>, std::vector<double>>({0.0, 0.0, 0.0}, {1.0, -10.0, 20}),
+                                                                         std::make_pair<std::array<double, 3>, std::vector<double>>({0.0, 0.0, -.75}, {.5, 0, 0}),
+                                                                         std::make_pair<std::array<double, 3>, std::vector<double>>({NAN, 0.0, -0.875}, {.25, 5, -10}),
+                                                                         std::make_pair<std::array<double, 3>, std::vector<double>>({NAN, 0.0, -0.625}, {.75, -5, 10}),
+                                                                     }}),
                          [](const testing::TestParamInfo<LinearTestsParameters>& info) { return "linearTest" + std::to_string(info.index); });
 
 }  // namespace ablateTesting::mathFunctions

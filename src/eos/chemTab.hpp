@@ -149,7 +149,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @param density allows for this function to be used with density*progress variables
      *
      */
-    void ComputeMassFractions(const PetscReal* progressVariables, PetscReal* massFractions,PetscReal density = 1.0) const;
+    void ComputeMassFractions(const PetscReal* progressVariables, PetscReal* massFractions, PetscReal density = 1.0) const;
 
    public:
     explicit ChemTab(const std::filesystem::path& path);
@@ -189,7 +189,6 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @return
      */
     std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override;
-
 
     /**
      * Print the details of this eos
@@ -283,13 +282,11 @@ class ChemTab : public ChemistryModel {
         throw std::runtime_error(errorMessage);
     }
 
-    void ComputeProgressVariables(const PetscReal* massFractions, std::size_t massFractionsSize, PetscReal* progressVariables, std::size_t progressVariablesSize) const {
-        throw std::runtime_error(errorMessage);
-    }
+    void ComputeProgressVariables(const std::vector<PetscReal>& massFractions, std::vector<PetscReal>& progressVariables) const { throw std::runtime_error(errorMessage); }
 
-    void ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize, PetscReal density = 1.0) {
-        throw std::runtime_error(errorMessage);
-    }
+    void ComputeMassFractions(const std::vector<PetscReal>& progressVariables, std::vector<PetscReal>& massFractions, PetscReal density = 1.0) const { throw std::runtime_error(errorMessage); }
+
+    void GetInitializerProgressVariables(const std::string& name, std::vector<PetscReal>& progressVariables) const { throw std::runtime_error(errorMessage); }
 };
 #endif
 }  // namespace ablate::eos

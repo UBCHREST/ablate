@@ -42,7 +42,7 @@ ablate::eos::ChemTab::ChemTab(const std::filesystem::path &path) : ChemistryMode
     }
 
     // Load in any initializers from the metadata
-    for(const auto& node : metadata["initializers"]){
+    for (const auto &node : metadata["initializers"]) {
         initializers[node.first.as<std::string>()] = node.second["mass_fractions"].as<std::map<std::string, double>>();
     }
 
@@ -415,16 +415,16 @@ ablate::eos::EOSFunction ablate::eos::ChemTab::GetFieldFunctionFunction(const st
         throw std::invalid_argument("Unknown field type " + field + " and otherProperties " + ablate::utilities::VectorUtilities::Concatenate(otherProperties) + " for ablate::eos::ChemTab.");
     }
 }
-void ablate::eos::ChemTab::GetInitializerProgressVariables(const std::string& name, std::vector<PetscReal> &progressVariables) const {
+void ablate::eos::ChemTab::GetInitializerProgressVariables(const std::string &name, std::vector<PetscReal> &progressVariables) const {
     // Fill the mass fractions based upon the initializer
-    if (!initializers.count(name)){
+    if (!initializers.count(name)) {
         throw std::invalid_argument("The initializers " + name + " cannot be found.");
     }
 
     std::vector<PetscReal> yiScratch(speciesNames.size(), 0.0);
-    for(const auto& [species, value] : initializers.at(name)){
+    for (const auto &[species, value] : initializers.at(name)) {
         auto loc = std::find(speciesNames.begin(), speciesNames.end(), species);
-        if (loc == speciesNames.end()){
+        if (loc == speciesNames.end()) {
             throw std::invalid_argument("Unable to locate species " + species);
         }
         yiScratch[std::distance(speciesNames.begin(), loc)] = value;
