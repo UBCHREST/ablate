@@ -59,17 +59,18 @@ input_data_cols:
 ipscaler: null
 kernel_constraint: Y
 kernel_regularizer: Y
-model_R2: 0.8515233500441262
+model_R2: 0.853419593981954
 noOfCpv: 12
 opscaler: StandardScaler
 val_losses:
-  dynamic_source_prediction_R2_split: 0.9772778153419495
-  dynamic_source_prediction_loss: -0.9774019122123718
-  dynamic_source_prediction_source_pred_mean: 1.224331021308899
-  dynamic_source_prediction_source_true_mean: 1.7918648719787598
-  loss: -1.7983406782150269
-  static_source_prediction_R2: 0.850985586643219
-  static_source_prediction_loss: -0.8507312536239624
-  static_source_prediction_mae: 0.10440650582313538
-  static_source_prediction_mape: 435.87158203125
-  static_source_prediction_mse: 0.15989357233047485
+  dynamic_source_prediction_R2_split: 0.987128734588623
+  dynamic_source_prediction_loss: -0.9872372150421143
+  dynamic_source_prediction_source_pred_mean: 0.877754807472229
+  dynamic_source_prediction_source_true_mean: 1.1688774824142456
+  loss: -1.8002454042434692
+  static_source_prediction_R2: 0.8570267558097839
+  static_source_prediction_R2_inv: 0.8549008369445801
+  static_source_prediction_loss: -0.857187032699585
+  static_source_prediction_mae: 0.1016734316945076
+  static_source_prediction_mape: 621.65869140625
+  static_source_prediction_mse: 0.15007615089416504

@@ -1,8 +1,5 @@
---- # chemTabTestModel_1
-# all paths are assumed to be relative
-name: chemTabTestModel_1
-rpath: regressor
-wpath: weights.csv
-ipath: weights_inv.csv
 mechanism: GRIMech30.yaml
+name: PCDNNV2_decomp-Wax-Orthog+Zmix
+rpath: regressor
 version: 1.0
+wpath: weights.csv
