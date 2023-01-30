@@ -16,6 +16,7 @@ class TwoPhase : public EOS {  // , public std::enabled_shared_from_this<TwoPhas
     const std::shared_ptr<eos::EOS> eos2;
     // this mixed eos does not allow species, get species from eos1 eos2
     std::vector<std::string> species;
+    std::vector<std::string> otherPropertiesList = {"VF"}; // otherProperties must include volumeFraction for Field Function initialization
     struct Parameters {
         PetscReal gamma1;
         PetscReal rGas1;
@@ -156,8 +157,9 @@ class TwoPhase : public EOS {  // , public std::enabled_shared_from_this<TwoPhas
     ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
 
     EOSFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2, std::vector<std::string> otherProperties) const override;
+    const std::vector<std::string>& GetFieldFunctionProperties() const override {return otherPropertiesList; } // list of other properties i.e. VF, Yi;
 
-    const std::vector<std::string>& GetSpeciesVariables() const override { return species; }  // need to modify this
+    const std::vector<std::string>& GetSpeciesVariables() const override { return species; }  // lists species of eos1 first, then eos2, no distinction for which fluid the species exists in
     [[nodiscard]] virtual const std::vector<std::string>& GetProgressVariables() const override { return ablate::utilities::VectorUtilities::Empty<std::string>; }
 };
 }  // namespace ablate::eos

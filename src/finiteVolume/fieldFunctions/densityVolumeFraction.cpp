@@ -7,5 +7,5 @@ ablate::finiteVolume::fieldFunctions::DensityVolumeFraction::DensityVolumeFracti
 
 #include "registrar.hpp"
 REGISTER(ablate::mathFunctions::FieldFunction, ablate::finiteVolume::fieldFunctions::DensityVolumeFraction, "initializes the densityVF conserved field for two phase flow based upon a CompressibleFlowState",
-         ARG(ablate::finiteVolume::fieldFunctions::CompressibleFlowState, "state", "The CompressibleFlowState used to initalize"),
+         ARG(ablate::finiteVolume::fieldFunctions::CompressibleFlowState, "state", "The CompressibleFlowState used to initialize"),
          OPT(ablate::domain::Region, "region", "A subset of the domain to apply the field function"));
