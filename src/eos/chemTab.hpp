@@ -29,14 +29,26 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
     std::vector<std::string> progressVariablesNames = std::vector<std::string>(0);
 
     PetscReal** Wmat = nullptr;
-    PetscReal** iWmat = nullptr;
     PetscReal* sourceEnergyScaler = nullptr;
+
+    // Store any initializers specified by the metadata
+    std::map<std::string, std::map<std::string, double>> initializers;
 
     /**
      * private implementations of support functions
      */
     void ExtractMetaData(std::istream& inputStream);
-    void LoadBasisVectors(std::istream& inputStream, std::size_t columns, PetscReal** W);
+    static void LoadBasisVectors(std::istream& inputStream, std::size_t columns, PetscReal** W);
+
+    /**
+     * Private function to compute predictedSourceEnergy, progressVariableSource, and massFractions
+     * @param density
+     * @param densityProgressVariable
+     * @param predictedSourceEnergy , if null, wont' be set
+     * @param progressVariableSource , if null, won't be set
+     * @param massFractions , if null, won't be set
+     */
+    void ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariable[], PetscReal* predictedSourceEnergy, PetscReal* progressVariableSource, PetscReal* massFractions) const;
 
     /**
      * The source calculator is used to do batch processing for chemistry model.  This is a bad implementation
@@ -53,6 +65,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
 
        public:
         ChemTabSourceCalculator(PetscInt densityOffset, PetscInt densityEnergyOffset, PetscInt densityProgressVariableOffset, std::shared_ptr<ChemTab> chemTabModel);
+
         /**
          * There is no need to precompute source for the chemtab model
          */
@@ -69,8 +82,6 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      */
     struct ThermodynamicFunctionContext {
         // memory access locations for fields
-        std::size_t numberSpecies;
-        std::size_t numberProgressVariables;
         std::size_t densityOffset;
         std::size_t progressOffset;
 
@@ -80,8 +91,8 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
         // Hold the context for the baseline tChem function
         ablate::eos::TChem::ThermodynamicMassFractionFunction tChemFunction;
 
-        // inverse function/  This does not hold the pointer, but it is held by chemTab;
-        PetscReal** iWmat;
+        // Hold a reference to chemTab
+        std::shared_ptr<const ChemTab> chemTab;
     };
 
     /**
@@ -89,8 +100,6 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      */
     struct ThermodynamicTemperatureFunctionContext {
         // memory access locations for fields
-        std::size_t numberSpecies;
-        std::size_t numberProgressVariables;
         std::size_t densityOffset;
         std::size_t progressOffset;
 
@@ -100,8 +109,8 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
         // Hold the context for the baseline tChem function
         ablate::eos::TChem::ThermodynamicTemperatureMassFractionFunction tChemFunction;
 
-        // inverse function/  This does not hold the pointer, but it is held by chemTab;
-        PetscReal** iWmat;
+        // Hold a reference to chemTab
+        std::shared_ptr<const ChemTab> chemTab;
     };
 
     /**
@@ -123,18 +132,27 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
     static PetscErrorCode ChemTabThermodynamicTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
 
     /**
+     * helper function to compute the progress variables from the mass fractions
+     * @param massFractions
+     * @param massFractionsSize
+     * @param progressVariables
+     * @param progressVariablesSize
+     */
+    void ComputeProgressVariables(const PetscReal* massFractions, PetscReal* progressVariables) const;
+
+    /**
      * helper function to compute the mass fractions = from the mass fractions progress variables
      * @param massFractions
      * @param massFractionsSize
      * @param progressVariables
      * @param progressVariablesSize
      * @param density allows for this function to be used with density*progress variables
+     *
      */
-    static void ComputeMassFractions(std::size_t numSpecies, std::size_t numProgressVariables, PetscReal** iWmat, const PetscReal* progressVariables, PetscReal* massFractions,
-                                     PetscReal density = 1.0);
+    void ComputeMassFractions(const PetscReal* progressVariables, PetscReal* massFractions, PetscReal density = 1.0) const;
 
    public:
-    explicit ChemTab(std::filesystem::path path);
+    explicit ChemTab(const std::filesystem::path& path);
     ~ChemTab() override;
 
     /**
@@ -147,7 +165,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * List of species used for the field function initialization.
      * @return
      */
-    [[nodiscard]] const std::vector<std::string>& GetFieldFunctionProperties() const override { return referenceEOS->GetFieldFunctionProperties(); }
+    [[nodiscard]] const std::vector<std::string>& GetFieldFunctionProperties() const override { return progressVariablesNames; }
 
     /**
      * As far as other parts of the code is concerned the chemTabEos does not expect species
@@ -171,26 +189,6 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @return
      */
     std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override;
-
-    /**
-     * helper function to compute the progress variables from the mass fractions
-     * @param massFractions
-     * @param massFractionsSize
-     * @param progressVariables
-     * @param progressVariablesSize
-     */
-    void ComputeProgressVariables(const PetscReal* massFractions, std::size_t massFractionsSize, PetscReal* progressVariables, std::size_t progressVariablesSize) const;
-
-    /**
-     * helper function to compute the mass fractions = from the mass fractions progress variables
-     * @param massFractions
-     * @param massFractionsSize
-     * @param progressVariables
-     * @param progressVariablesSize
-     * @param density allows for this function to be used with density*progress variables
-     *
-     */
-    void ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize, PetscReal density = 1.0) const;
 
     /**
      * Print the details of this eos
@@ -222,6 +220,33 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      */
     [[nodiscard]] eos::EOSFunction GetFieldFunctionFunction(const std::string& field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2,
                                                             std::vector<std::string> otherProperties) const override;
+
+    /**
+     * public function to compute the progress variables from the mass fractions
+     * @param massFractions
+     * @param massFractionsSize
+     * @param progressVariables
+     * @param progressVariablesSize
+     */
+    void ComputeProgressVariables(const std::vector<PetscReal>& massFractions, std::vector<PetscReal>& progressVariables) const;
+
+    /**
+     * public function to compute the mass fractions = from the mass fractions progress variables
+     * @param massFractions
+     * @param massFractionsSize
+     * @param progressVariables
+     * @param progressVariablesSize
+     * @param density allows for this function to be used with density*progress variables
+     *
+     */
+    void ComputeMassFractions(const std::vector<PetscReal>& progressVariables, std::vector<PetscReal>& massFractions, PetscReal density = 1.0) const;
+
+    /**
+     * Computes the progress variables for a given initializer
+     * @param name
+     * @param progressVariables
+     */
+    void GetInitializerProgressVariables(const std::string& name, std::vector<PetscReal>& progressVariables) const;
 };
 
 #else
@@ -257,13 +282,11 @@ class ChemTab : public ChemistryModel {
         throw std::runtime_error(errorMessage);
     }
 
-    void ComputeProgressVariables(const PetscReal* massFractions, std::size_t massFractionsSize, PetscReal* progressVariables, std::size_t progressVariablesSize) const {
-        throw std::runtime_error(errorMessage);
-    }
+    void ComputeProgressVariables(const std::vector<PetscReal>& massFractions, std::vector<PetscReal>& progressVariables) const { throw std::runtime_error(errorMessage); }
 
-    void ComputeMassFractions(const PetscReal* progressVariables, std::size_t progressVariablesSize, PetscReal* massFractions, std::size_t massFractionsSize, PetscReal density = 1.0) {
-        throw std::runtime_error(errorMessage);
-    }
+    void ComputeMassFractions(const std::vector<PetscReal>& progressVariables, std::vector<PetscReal>& massFractions, PetscReal density = 1.0) const { throw std::runtime_error(errorMessage); }
+
+    void GetInitializerProgressVariables(const std::string& name, std::vector<PetscReal>& progressVariables) const { throw std::runtime_error(errorMessage); }
 };
 #endif
 }  // namespace ablate::eos
