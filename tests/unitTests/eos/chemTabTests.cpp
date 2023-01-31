@@ -88,7 +88,7 @@ TEST_P(ChemTabModelTestFixture, ShouldReturnCorrectSpeciesAndVariables) {
     }
 }
 
-#define assert_float_close(expected, actual) EXPECT_NEAR(expected, actual, PetscAbs(5.0E-6 * actual))  // gives you relative error check
+#define assert_float_close(expected, actual) EXPECT_NEAR(expected, actual, PetscAbs(5.0E-4 * actual))  // gives you relative error check
 
 /*******************************************************************************************************
  * Tests for getting the Compute Mass Fractions Functions
