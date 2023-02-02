@@ -11,7 +11,7 @@ ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOf
                                                           const std::shared_ptr<ablate::mathFunctions::FieldFunction> &massFractions, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux,
                                                           std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling, bool diffusionFlame,
                                                           std::shared_ptr<ablate::radiation::SurfaceRadiation> radiationIn, const std::shared_ptr<io::interval::Interval> &intervalIn,
-                                                          const double emissivityIn)
+                                                          const double emissivityIn, const double solidDensityIn)
     : latentHeatOfFusion(latentHeatOfFusion),
       transportModel(std::move(transportModel)),
       eos(std::move(eos)),
@@ -23,7 +23,8 @@ ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOf
       pressureGradientScaling(std::move(pressureGradientScaling)),
       radiation(std::move(radiationIn)),
       radiationInterval((intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>())),
-      emissivity(emissivityIn == 0 ? 1.0 : emissivityIn) {}
+      emissivity(emissivityIn == 0 ? 1.0 : emissivityIn),
+      solidDensity(solidDensityIn == 0 ? 1.0 : solidDensityIn) {}
 
 void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
     // check for species
@@ -39,7 +40,7 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
     // Register an optional output function
     bSolver.RegisterFunction(SublimationOutputFunction,
                              this,
-                             {"conduction", "extraRad", "regressionMassFlux", "radiation"},
+                             {"conduction", "extraRad", "regressionMassFlux", "regressionRate", "radiation"},
                              inputFields,
                              {finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
                              BoundarySolver::BoundarySourceType::Face);
@@ -251,7 +252,8 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationOutputFu
     const int CONDUCTION_LOC = 0;
     const int EXTRA_RAD_LOC = 1;
     const int REGRESSION_MASS_FLUX_LOC = 2;
-    const int RAD_LOC = 3;
+    const int REGRESSION_RATE_LOC = 3;
+    const int RAD_LOC = 4;
 
     // extract the temperature
     std::vector<PetscReal> stencilTemperature(stencilSize, 0);
@@ -289,7 +291,9 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationOutputFu
     source[sOff[EXTRA_RAD_LOC]] = additionalHeatFlux;
 
     // Compute the massFlux (we can only remove mass)
-    source[sOff[REGRESSION_MASS_FLUX_LOC]] = sublimationHeatFlux / sublimation->latentHeatOfFusion;
+    PetscReal regressionMassFlux = sublimationHeatFlux / sublimation->latentHeatOfFusion;
+    source[sOff[REGRESSION_MASS_FLUX_LOC]] = regressionMassFlux;
+    source[sOff[REGRESSION_RATE_LOC]] = regressionMassFlux / sublimation->solidDensity;
 
     PetscFunctionReturn(0);
 }
@@ -395,4 +399,5 @@ REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::physic
          OPT(ablate::finiteVolume::processes::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"),
          OPT(bool, "diffusionFlame", "disables contribution to the momentum equation. Should be true when advection is not solved. (Default is false)"),
          OPT(ablate::radiation::SurfaceRadiation, "radiation", "radiation instance for the sublimation solver to calculate heat flux"),
-         OPT(ablate::io::interval::Interval, "radiationInterval", "number of time steps between the radiation solves"), OPT(double, "emissivity", "radiation property of the fuel surface"));
+         OPT(ablate::io::interval::Interval, "radiationInterval", "number of time steps between the radiation solves"), OPT(double, "emissivity", "radiation property of the fuel surface"),
+         OPT(double, "solidDensity", "Solid density of the fuel.  This is only used to output/report the solid regression rate. (Default is 1.0)"));
