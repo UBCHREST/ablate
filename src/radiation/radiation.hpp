@@ -57,7 +57,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
 
     /** SubDomain Register and Setup **/
-    void Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
+    virtual void Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
     /**
      * @param cellRange The range of cells for which rays are initialized
