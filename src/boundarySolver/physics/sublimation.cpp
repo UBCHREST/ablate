@@ -11,7 +11,7 @@ ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOf
                                                           const std::shared_ptr<ablate::mathFunctions::FieldFunction> &massFractions, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux,
                                                           std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling, bool diffusionFlame,
                                                           std::shared_ptr<ablate::radiation::SurfaceRadiation> radiationIn, const std::shared_ptr<io::interval::Interval> &intervalIn,
-                                                          const double emissivityIn, const double solidDensity)
+                                                          const double emissivityIn, const double solidDensityIn)
     : latentHeatOfFusion(latentHeatOfFusion),
       transportModel(std::move(transportModel)),
       eos(std::move(eos)),
@@ -24,7 +24,7 @@ ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOf
       radiation(std::move(radiationIn)),
       radiationInterval((intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>())),
       emissivity(emissivityIn == 0 ? 1.0 : emissivityIn),
-      solidDensity(solidDensity == 0 ? 1.0 : solidDensity) {}
+      solidDensity(solidDensityIn == 0 ? 1.0 : solidDensityIn) {}
 
 void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
     // check for species
