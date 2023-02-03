@@ -10,13 +10,11 @@ void ablate::monitors::RadiationFieldMonitor::Register(std::shared_ptr<ablate::s
     // Create the monitor name
     std::string dmID = "radiationFieldMonitor";
 
-    // Create suffix vector
-    std::vector<std::string> fieldNames{"radiationIntensity", "absorptionCoefficient"};
-
     std::vector<std::shared_ptr<domain::FieldDescriptor>> fields(fieldNames.size() + FieldPlacements::fieldsStart, nullptr);
 
     for (std::size_t f = 0; f < fieldNames.size(); f++) {
-        fields[FieldPlacements::fieldsStart + f] = std::make_shared<domain::FieldDescription>(fieldNames[f], fieldNames[f], processedCompNames[f], domain::FieldLocation::SOL, domain::FieldType::FVM);
+        fields[FieldPlacements::fieldsStart + f] =
+            std::make_shared<domain::FieldDescription>(fieldNames[f], fieldNames[f], domain::FieldDescription::ONECOMPONENT, domain::FieldLocation::SOL, domain::FieldType::FVM);
     }
 
     // Register all fields with the monitorDomain
@@ -31,10 +29,135 @@ void ablate::monitors::RadiationFieldMonitor::Save(PetscViewer viewer, PetscInt 
     ablate::monitors::FieldMonitor::Save(viewer, sequenceNumber, time);
 
     // Save the step number
-    //    ablate::io::Serializable::SaveKeyValue(viewer, "step", step);
+    ablate::io::Serializable::SaveKeyValue(viewer, "step", step);
+}
+
+PetscErrorCode ablate::monitors::RadiationFieldMonitor::MonitorRadiation(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
+    PetscFunctionBeginUser;
+
+    // Loads in context
+    auto monitor = (ablate::monitors::RadiationFieldMonitor*)ctx;
+
+    if (monitor->interval->Check(PetscObjectComm((PetscObject)ts), step, crtime)) {
+        // Increment the number of steps taken so far
+        monitor->step += 1;
+
+        // Extract all fields to be monitored
+        std::vector<Vec> vec(monitor->fieldNames.size(), nullptr);
+        std::vector<IS> vecIS(monitor->fieldNames.size(), nullptr);
+        std::vector<DM> fieldDM(monitor->fieldNames.size(), nullptr);
+
+        for (std::size_t f = 0; f < monitor->fieldNames.size(); f++) {
+            const auto& field = monitor->GetSolver()->GetSubDomain().GetField(monitor->fieldNames[f]);
+            monitor->GetSolver()->GetSubDomain().GetFieldGlobalVector(field, &vecIS[f], &vec[f], &fieldDM[f]) >> utilities::PetscUtilities::checkError;
+        }
+
+        // Extract the main solution vector for the absorptivity calculation
+        DM solDM;
+        Vec solVec;
+        solVec = monitor->GetSolver()->GetSubDomain().GetSubSolutionVector();
+        solDM = monitor->GetSolver()->GetSubDomain().GetDM();
+
+        DM auxDm;
+        Vec auxVec;
+        auxVec = monitor->GetSolver()->GetSubDomain().GetAuxVector();
+        auxDm = monitor->GetSolver()->GetSubDomain().GetAuxDM();
+
+        // Store the monitorDM, monitorVec, and the monitorFields
+        DM monitorDM = monitor->monitorSubDomain->GetSubDM();
+        Vec monitorVec = monitor->monitorSubDomain->GetSolutionVector();
+        auto& monitorFields = monitor->monitorSubDomain->GetFields();
+
+        // Get the local cell range
+        PetscInt cStart, cEnd;
+        DMPlexGetHeightStratum(monitor->monitorSubDomain->GetSubDM(), 0, &cStart, &cEnd);
+
+        // Get the local to global cell mapping
+        IS subpointIS;
+        const PetscInt* subpointIndices;
+        DMPlexGetSubpointIS(monitorDM, &subpointIS);
+        ISGetIndices(subpointIS, &subpointIndices);
+
+        // Extract the solution global array
+        const PetscScalar* solDat;
+        VecGetArrayRead(solVec, &solDat) >> utilities::PetscUtilities::checkError;
+
+        // Extract the aux global array
+        const PetscScalar *auxDat;
+        VecGetArrayRead(auxVec, &auxDat) >> utilities::PetscUtilities::checkError;
+
+        // Extract the monitor array
+        PetscScalar* monitorDat;
+        VecGetArray(monitorVec, &monitorDat) >> utilities::PetscUtilities::checkError;
+
+        const auto& temperatureFieldInfo = monitor->GetSolver()->GetSubDomain().GetField(ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD);
+
+        // Get the timestep from the TS
+        PetscReal dt;
+        TSGetTimeStep(ts, &dt) >> utilities::PetscUtilities::checkError;
+
+        // Create pointers to the field and monitor data exterior to loop
+        const PetscScalar* fieldDat;
+        double kappa = 1;                  //!< Absorptivity coefficient, property of each cell
+        PetscReal* temperature = nullptr;  //!< The temperature at any given location
+        const PetscScalar* fieldPt;
+        const PetscScalar* solPt;
+        PetscScalar* monitorPt;
+
+        for (std::size_t f = 0; f < monitor->fieldNames.size(); f++) {
+            // Extract the field vector global array
+            VecGetArrayRead(vec[f], &fieldDat) >> utilities::PetscUtilities::checkError;
+
+            //! Compute measures
+            for (PetscInt c = cStart; c < cEnd; c++) {
+                PetscInt monitorCell = c;
+                PetscInt masterCell = subpointIndices[monitorCell];
+
+                // Get field point data
+                DMPlexPointLocalRead(fieldDM[f], masterCell, fieldDat, &fieldPt) >> utilities::PetscUtilities::checkError;;
+
+                // Get solution point data
+                DMPlexPointLocalRead(solDM, masterCell, solDat, &solPt) >> utilities::PetscUtilities::checkError;;
+
+                // Get read/write access to point in monitor array
+                DMPlexPointGlobalRef(monitorDM, monitorCell, monitorDat, &monitorPt) >> utilities::PetscUtilities::checkError;
+
+                if (monitorPt && solPt) {
+
+                    // compute absorptivity
+                    DMPlexPointLocalFieldRead(auxDm, monitorCell, temperatureFieldInfo.id, auxDat, &temperature) >> utilities::PetscUtilities::checkError;
+
+                    // Get the absorptivity data from solution point data
+                    monitor->absorptivityFunction.function(solPt, *temperature, &kappa, monitor->absorptivityFunction.context.get());
+
+                    // Perform actual calculations now
+                    monitorPt[monitorFields[FieldPlacements::intensity].offset] += kappa * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;;
+                    monitorPt[monitorFields[FieldPlacements::absorption].offset] += kappa;
+
+                    // Get fields to be monitored here
+                    const auto& field = monitor->GetSolver()->GetSubDomain().GetField(monitor->fieldNames[f]);
+
+                }
+            }
+            VecRestoreArrayRead(vec[f], &fieldDat) >> utilities::PetscUtilities::checkError;
+        }
+        // Cleanup
+        // Restore arrays
+        ISRestoreIndices(subpointIS, &subpointIndices) >> utilities::PetscUtilities::checkError;
+        VecRestoreArrayRead(solVec, &solDat) >> utilities::PetscUtilities::checkError;
+        VecRestoreArray(monitorVec, &monitorDat) >> utilities::PetscUtilities::checkError;
+        // Restore field vectors
+        for (std::size_t f = 0; f < monitor->fieldNames.size(); f++) {
+            const auto& field = monitor->GetSolver()->GetSubDomain().GetField(monitor->fieldNames[f]);
+            monitor->GetSolver()->GetSubDomain().RestoreFieldGlobalVector(field, &vecIS[f], &vec[f], &fieldDM[f]) >> utilities::PetscUtilities::checkError;
+        }
+    }
+
+    PetscFunctionReturn(0);
 }
 
 #include "registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::RadiationFieldMonitor, "A solver for radiative heat transfer in participating media",
+         ARG(ablate::eos::EOS, "eos", "The equation of state"),
          ARG(ablate::eos::radiationProperties::RadiationModel, "radiationProperties", "properties model for the output of radiation properties within the field"),
          OPT(ablate::io::interval::Interval, "interval", "The monitor output interval"));
