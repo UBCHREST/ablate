@@ -3,6 +3,7 @@
 #include <utility>
 #include "eos/perfectGas.hpp"
 #include "eos/stiffenedGas.hpp"
+#include "parameters/emptyParameters.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "flowProcess.hpp"
 
@@ -191,6 +192,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormJaco
 }
 
 ablate::finiteVolume::processes::TwoPhaseEulerAdvection::TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid,
+                                                                                const std::shared_ptr<parameters::Parameters>& parametersIn,
                                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas,
                                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid,
                                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidGas,
@@ -200,7 +202,14 @@ ablate::finiteVolume::processes::TwoPhaseEulerAdvection::TwoPhaseEulerAdvection(
       fluxCalculatorGasGas(std::move(fluxCalculatorGasGas)),
       fluxCalculatorGasLiquid(std::move(fluxCalculatorGasLiquid)),
       fluxCalculatorLiquidGas(std::move(fluxCalculatorLiquidGas)),
-      fluxCalculatorLiquidLiquid(std::move(fluxCalculatorLiquidLiquid)) {}
+      fluxCalculatorLiquidLiquid(std::move(fluxCalculatorLiquidLiquid)) {
+    auto parameters = ablate::parameters::EmptyParameters::Check(parametersIn);
+    // If there is a flux calculator assumed advection
+    if (this->fluxCalculatorGasGas) {
+        // cfl
+        timeStepData.cfl = parameters->Get<PetscReal>("cfl", 0.5);
+    }
+}
 
 void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) {
     // Before each step, compute the alpha
@@ -1253,5 +1262,6 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffe
 
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TwoPhaseEulerAdvection, "", ARG(ablate::eos::EOS, "eosGas", ""), ARG(ablate::eos::EOS, "eosLiquid", ""),
+         OPT(ablate::parameters::Parameters, "parameters", "the parameters used by advection/diffusion: cfl(.5), conductionStabilityFactor(0), viscousStabilityFactor(0)"),
          ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorGasGas", ""), ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorGasLiquid", ""),
          ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorLiquidGas", ""), ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorLiquidLiquid", ""));
