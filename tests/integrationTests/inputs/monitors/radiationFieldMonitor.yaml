@@ -47,21 +47,27 @@ timestepper:
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: !ablate::eos::TChem  &eos
-          mechFile: ../../mechanisms/gri30.yaml
+          mechFile: ../mechanisms/gri30.yml
           options:
             # set a minimum temperature for the chemical kinetics ode integration
             thresholdTemperature: 560
+        conservedFieldOptions:
+          petscfv_type: leastsquares
+        region:
+          name: domain
       - !ablate::domain::FieldDescription
         name: pressure
         type: FV
         location: aux
+        region:
+          name: domain
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       state: &initFlowState
         eos: *eos
         #        pressure: 101325.0
-        pressure: "101325.0 + 100*y + 250*x"
-        temperature: 2500
+        pressure: 100
+        temperature: 1500
         #        velocity: "100, 15"
         velocity: " 65 + 10*y , 10 + 30*x "
         other: !ablate::finiteVolume::fieldFunctions::MassFractions
@@ -75,6 +81,9 @@ timestepper:
               field: 0.25
             - fieldName: CH4
               field: 0.25
+    - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
+      state: *initFlowState
+
 solvers:
   - !ablate::finiteVolume::CompressibleFlowSolver
     id: flowField
