@@ -159,5 +159,5 @@ PetscErrorCode ablate::monitors::RadiationFieldMonitor::MonitorRadiation(TS ts, 
 #include "registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::RadiationFieldMonitor, "A solver for radiative heat transfer in participating media",
          ARG(ablate::eos::EOS, "eos", "The equation of state"),
-         ARG(ablate::eos::radiationProperties::RadiationModel, "radiationProperties", "properties model for the output of radiation properties within the field"),
+         ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "properties model for the output of radiation properties within the field"),
          OPT(ablate::io::interval::Interval, "interval", "The monitor output interval"));
