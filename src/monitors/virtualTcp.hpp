@@ -53,6 +53,12 @@ class VirtualTcp : public Monitor, public io::Serializable {
      * @param time
      */
     void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+
+    /**
+     * This is not needed because this is only called upon serialize.
+     * @return
+     */
+    PetscMonitorFunction GetPetscFunction() override { return nullptr; }
 };
 }  // namespace ablate::monitors
 

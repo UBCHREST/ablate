@@ -66,7 +66,7 @@ void ablate::monitors::VirtualTcp::Save(PetscViewer viewer, PetscInt sequenceNum
             /**
              * Now that the intensity has been read out of the ray tracing solver, it will need to be written to the field which stores the radiation information in the monitor.
              */
-
+            // TODO: Is the radiation information output to its own DM or is there another special place that the information should go?
 
         }
     }
