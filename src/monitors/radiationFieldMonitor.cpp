@@ -18,7 +18,7 @@ void ablate::monitors::RadiationFieldMonitor::Register(std::shared_ptr<ablate::s
     }
 
     // Register all fields with the monitorDomain
-    ablate::monitors::FieldMonitor::Register(dmID, solverIn, fields);
+//    ablate::monitors::FieldMonitor::Register(dmID, solverIn, fields);
 
     // Get the density thermodynamic function
     absorptivityFunction = radiationModel->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, solverIn->GetSubDomain().GetFields());
