@@ -114,10 +114,10 @@ PetscErrorCode ablate::monitors::RadiationFieldMonitor::MonitorRadiation(TS ts, 
                 PetscInt masterCell = subpointIndices[monitorCell];
 
                 // Get field point data
-                DMPlexPointLocalRead(fieldDM[f], masterCell, fieldDat, &fieldPt) >> utilities::PetscUtilities::checkError;;
+                DMPlexPointLocalRead(fieldDM[f], masterCell, fieldDat, &fieldPt) >> utilities::PetscUtilities::checkError;
 
                 // Get solution point data
-                DMPlexPointLocalRead(solDM, masterCell, solDat, &solPt) >> utilities::PetscUtilities::checkError;;
+                DMPlexPointLocalRead(solDM, masterCell, solDat, &solPt) >> utilities::PetscUtilities::checkError;
 
                 // Get read/write access to point in monitor array
                 DMPlexPointGlobalRef(monitorDM, monitorCell, monitorDat, &monitorPt) >> utilities::PetscUtilities::checkError;
@@ -131,11 +131,8 @@ PetscErrorCode ablate::monitors::RadiationFieldMonitor::MonitorRadiation(TS ts, 
                     monitor->absorptivityFunction.function(solPt, *temperature, &kappa, monitor->absorptivityFunction.context.get());
 
                     // Perform actual calculations now
-                    monitorPt[monitorFields[FieldPlacements::intensity].offset] += kappa * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;;
+                    monitorPt[monitorFields[FieldPlacements::intensity].offset] += kappa * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
                     monitorPt[monitorFields[FieldPlacements::absorption].offset] += kappa;
-
-                    // Get fields to be monitored here
-                    const auto& field = monitor->GetSolver()->GetSubDomain().GetField(monitor->fieldNames[f]);
 
                 }
             }
