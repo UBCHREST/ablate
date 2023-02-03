@@ -1,10 +1,12 @@
 #ifndef ABLATELIBRARY_VIRTUALTCP_H
 #define ABLATELIBRARY_VIRTUALTCP_H
 
+#include "boundarySolver/boundarySolver.hpp"
+#include "io/interval/fixedInterval.hpp"
 #include "io/interval/interval.hpp"
 #include "monitor.hpp"
-#include "io/interval/fixedInterval.hpp"
 #include "radiation/radiation.hpp"
+#include "solver/dynamicRange.hpp"
 
 namespace ablate::monitors {
 
@@ -13,7 +15,26 @@ namespace ablate::monitors {
  */
 class VirtualTcp : public Monitor, public io::Serializable {
 
+   private:
+    /**
+     * A vector of radiation models which describe ray tracers with different attached properties.
+     */
+    std::vector<ablate::radiation::Radiation> radiation;
+
+    /**
+     * The boundary solver
+     */
+    std::shared_ptr<ablate::boundarySolver::BoundarySolver> boundarySolver;
+
+    /**
+     * Face range stored by the radiation to locate the
+     */
+    solver::DynamicRange faceRange;
+
    public:
+
+    VirtualTcp(std::vector<radiation::Radiation> radiationIn);
+
     /**
      * Clean up the petsc objects
      */
