@@ -19,8 +19,8 @@ timestepper:
   domain: !ablate::domain::BoxMeshBoundaryCells
     name: simpleBoxField
     faces: [ 5, 40 ]
-    lower: [ 0 , 1 ]
-    upper: [ 0 , 1 ]
+    lower: [ 0 , 0 ]
+    upper: [ 1 , 1 ]
     simplex: false
     preModifiers:
       - !ablate::domain::modifiers::DistributeWithGhostCells
@@ -66,19 +66,19 @@ timestepper:
       state: &initFlowState
         eos: *eos
         pressure: 101325.0
-        temperature: 2000
+        temperature: "2000*x + 300"
         velocity: "0,0"
         other: !ablate::finiteVolume::fieldFunctions::MassFractions
           eos: *eos
           values:
             - fieldName: H2O
-              field: 0.25
+              field: "(0.24*y) + 0.01"
             - fieldName: CO2
-              field: 0.25
+              field: "(0.24*y) + 0.01"
             - fieldName: CO
-              field: 0.25
+              field: "(-0.24*y) + 0.25"
             - fieldName: CH4
-              field: 0.25
+              field: "(-0.24*y) + 0.25"
     - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
       state: *initFlowState
 

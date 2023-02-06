@@ -44,7 +44,7 @@ PetscErrorCode ablate::monitors::RadiationFieldMonitor::MonitorRadiation(TS ts, 
         // Extract the main solution vector for the absorptivity calculation
         DM solDM;
         Vec solVec;
-        solVec = monitor->GetSolver()->GetSubDomain().GetSubSolutionVector();
+        solVec = monitor->GetSolver()->GetSubDomain().GetSolutionVector();
         solDM = monitor->GetSolver()->GetSubDomain().GetDM();
 
         /**
@@ -56,21 +56,13 @@ PetscErrorCode ablate::monitors::RadiationFieldMonitor::MonitorRadiation(TS ts, 
         auxDm = monitor->GetSolver()->GetSubDomain().GetAuxDM();
 
         // Store the monitorDM, monitorVec, and the monitorFields
-        DM monitorDM = monitor->monitorSubDomain->GetSubDM();
+        DM monitorDM = monitor->monitorSubDomain->GetDM();
         Vec monitorVec = monitor->monitorSubDomain->GetSolutionVector();
         auto& monitorFields = monitor->monitorSubDomain->GetFields();
 
-        /**
-         * The monitor needs to read the information from the monitor DM to know which points it needs to write to
-         */
-        //        for (std::size_t f = 0; f < monitor->fieldNames.size(); f++) {
-        //            const auto& field = monitor->monitorSubDomain->GetField(monitor->fieldNames[f]);
-        //            monitor->GetSolver()->GetSubDomain().GetFieldGlobalVector(field, &vecIS[f], &vec[f], &fieldDM[f]) >> utilities::PetscUtilities::checkError;
-        //        }
-
         // Get the local cell range
         PetscInt cStart, cEnd;
-        DMPlexGetHeightStratum(monitor->monitorSubDomain->GetSubDM(), 0, &cStart, &cEnd);
+        DMPlexGetHeightStratum(monitor->monitorSubDomain->GetDM(), 0, &cStart, &cEnd);
 
         //! Get the local to global cell mapping. This ensures that the cell index mapping between the monitor DM and the global solution is correct
         IS subpointIS;
@@ -87,8 +79,8 @@ PetscErrorCode ablate::monitors::RadiationFieldMonitor::MonitorRadiation(TS ts, 
         VecGetArrayRead(auxVec, &auxArray) >> utilities::PetscUtilities::checkError;
 
         // Extract the monitor array
-        PetscScalar* monitorDat;
-        VecGetArray(monitorVec, &monitorDat) >> utilities::PetscUtilities::checkError;
+        PetscScalar* monitorArray;
+        VecGetArray(monitorVec, &monitorArray) >> utilities::PetscUtilities::checkError;
 
         const auto& temperatureFieldInfo = monitor->GetSolver()->GetSubDomain().GetField(ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD);
 
@@ -97,32 +89,21 @@ PetscErrorCode ablate::monitors::RadiationFieldMonitor::MonitorRadiation(TS ts, 
         TSGetTimeStep(ts, &dt) >> utilities::PetscUtilities::checkError;
 
         // Create pointers to the field and monitor data exterior to loop
-        const PetscScalar* fieldDat;
         double kappa = 1;                  //!< Absorptivity coefficient, property of each cell
         PetscReal* temperature = nullptr;  //!< The temperature at any given location
-                                           //        const PetscScalar* fieldPt;
         const PetscScalar* solPt;
         PetscScalar* monitorPt;
-
-        // Extract the field vector global array
-        VecGetArrayRead(monitorVec, &fieldDat) >> utilities::PetscUtilities::checkError;  // TODO: Do we need an offset here?
 
         //! Compute measures
         for (PetscInt c = cStart; c < cEnd; c++) {
             PetscInt monitorCell = c;
             PetscInt masterCell = subpointIndices[monitorCell];  //! Gets the cell index associated with this position in the monitor DM cell range?
 
-            // TODO: We don't need to extract any information from the monitor field to get the new values.
-
-            //                // Get field point data
-            //                DMPlexPointLocalFieldRead(monitorDM, cellSegment.cell, temperatureField.id, auxArray, &temperature);
-            //                DMPlexPointLocalRead(fieldDM[f], masterCell, fieldDat, &fieldPt) >> utilities::PetscUtilities::checkError;
-
             // Get solution point data
             DMPlexPointLocalRead(solDM, masterCell, solArray, &solPt) >> utilities::PetscUtilities::checkError;
 
             // Get read/write access to point in monitor array
-            DMPlexPointGlobalRef(monitorDM, monitorCell, monitorDat, &monitorPt) >> utilities::PetscUtilities::checkError;
+            DMPlexPointLocalRef(monitorDM, monitorCell, monitorArray, &monitorPt) >> utilities::PetscUtilities::checkError;
 
             if (monitorPt && solPt) {
                 // compute absorptivity
@@ -132,17 +113,17 @@ PetscErrorCode ablate::monitors::RadiationFieldMonitor::MonitorRadiation(TS ts, 
                 monitor->absorptivityFunction.function(solPt, *temperature, &kappa, monitor->absorptivityFunction.context.get());
 
                 // Perform actual calculations now
-                monitorPt[monitorFields[FieldPlacements::intensity].offset] += kappa * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
-                monitorPt[monitorFields[FieldPlacements::absorption].offset] += kappa;
+                monitorPt[monitorFields[FieldPlacements::intensity].offset] = kappa * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
+                monitorPt[monitorFields[FieldPlacements::absorption].offset] = kappa;
             }
         }
-        VecRestoreArrayRead(monitorVec, &fieldDat) >> utilities::PetscUtilities::checkError;  // TODO: Do we need an offset here?
+        VecRestoreArray(monitorVec, &monitorArray) >> utilities::PetscUtilities::checkError;
 
         // Cleanup
         // Restore arrays
         ISRestoreIndices(subpointIS, &subpointIndices) >> utilities::PetscUtilities::checkError;
         VecRestoreArrayRead(solVec, &solArray) >> utilities::PetscUtilities::checkError;
-        VecRestoreArray(monitorVec, &monitorDat) >> utilities::PetscUtilities::checkError;
+        VecRestoreArray(monitorVec, &monitorArray) >> utilities::PetscUtilities::checkError;
         //        // Restore field vectors
         //        for (std::size_t f = 0; f < monitor->fieldNames.size(); f++) {
         //            const auto& field = monitor->GetSolver()->GetSubDomain().GetField(monitor->fieldNames[f]);
