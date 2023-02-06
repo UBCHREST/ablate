@@ -75,7 +75,7 @@ class TChem : public ChemistryModel, public std::enable_shared_from_this<ablate:
 
    public:
     /**
-     * The tChem EOS can utzlie either a mechanical & thermo file using the Chemkin file format for a modern yaml file.
+     * The tChem EOS can utilize either a mechanical & thermo file using the Chemkin file format for a modern yaml file.
      * @param mechFile
      * @param optionalThermoFile
      */

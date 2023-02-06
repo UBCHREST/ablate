@@ -6,6 +6,7 @@ target_sources(ablateLibrary
         chemTab.cpp
         chemistryModel.cpp
         twoPhase.cpp
+        tChemSoot.cpp
 
         PUBLIC
         eos.hpp
@@ -15,8 +16,10 @@ target_sources(ablateLibrary
         chemTab.hpp
         chemistryModel.hpp
         twoPhase.hpp
+        tChemSoot.hpp
         )
 
 add_subdirectory(transport)
 add_subdirectory(tChem)
 add_subdirectory(radiationProperties)
+add_subdirectory(tChemSoot)

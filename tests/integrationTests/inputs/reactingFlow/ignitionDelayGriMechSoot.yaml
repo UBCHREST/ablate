@@ -1,4 +1,4 @@
-# This input runs a zero-dimension ignition delay calculation using the GRIMech3.0 kinetics mechanism.  To run this input the grimech30.mech.dat and grimech30.thermo.dat files will need to be downloaded and the paths updated in this file.
+# This input runs a zero-dimension ignition delay calculation using the GRIMech3.0 kinetics mechanism.
 
 ---
 # metadata for the simulation
