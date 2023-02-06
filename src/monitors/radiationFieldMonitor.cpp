@@ -79,12 +79,12 @@ PetscErrorCode ablate::monitors::RadiationFieldMonitor::MonitorRadiation(TS ts, 
         ISGetIndices(subpointIS, &subpointIndices);
 
         // Extract the solution global array
-        const PetscScalar* solDat;
-        VecGetArrayRead(solVec, &solDat) >> utilities::PetscUtilities::checkError;
+        const PetscScalar* solArray;
+        VecGetArrayRead(solVec, &solArray) >> utilities::PetscUtilities::checkError;
 
         // Extract the aux global array
-        const PetscScalar* auxDat;
-        VecGetArrayRead(auxVec, &auxDat) >> utilities::PetscUtilities::checkError;
+        const PetscScalar* auxArray;
+        VecGetArrayRead(auxVec, &auxArray) >> utilities::PetscUtilities::checkError;
 
         // Extract the monitor array
         PetscScalar* monitorDat;
@@ -100,50 +100,48 @@ PetscErrorCode ablate::monitors::RadiationFieldMonitor::MonitorRadiation(TS ts, 
         const PetscScalar* fieldDat;
         double kappa = 1;                  //!< Absorptivity coefficient, property of each cell
         PetscReal* temperature = nullptr;  //!< The temperature at any given location
-//        const PetscScalar* fieldPt;
+                                           //        const PetscScalar* fieldPt;
         const PetscScalar* solPt;
-
         PetscScalar* monitorPt;
 
-        for (std::size_t f = 0; f < monitor->fieldNames.size(); f++) {
-            // Extract the field vector global array
-            VecGetArrayRead(monitorVec, &fieldDat) >> utilities::PetscUtilities::checkError;  // TODO: Do we need an offset here?
+        // Extract the field vector global array
+        VecGetArrayRead(monitorVec, &fieldDat) >> utilities::PetscUtilities::checkError;  // TODO: Do we need an offset here?
 
-            //! Compute measures
-            for (PetscInt c = cStart; c < cEnd; c++) {
-                PetscInt monitorCell = c;
-                PetscInt masterCell = subpointIndices[monitorCell];  //! Gets the cell index associated with this position in the monitor DM cell range?
+        //! Compute measures
+        for (PetscInt c = cStart; c < cEnd; c++) {
+            PetscInt monitorCell = c;
+            PetscInt masterCell = subpointIndices[monitorCell];  //! Gets the cell index associated with this position in the monitor DM cell range?
 
-                // TODO: We don't need to extract any information from the monitor field to get the new values.
+            // TODO: We don't need to extract any information from the monitor field to get the new values.
 
-                //                // Get field point data
-                //                DMPlexPointLocalFieldRead(monitorDM, cellSegment.cell, temperatureField.id, auxArray, &temperature);
-                //                DMPlexPointLocalRead(fieldDM[f], masterCell, fieldDat, &fieldPt) >> utilities::PetscUtilities::checkError;
+            //                // Get field point data
+            //                DMPlexPointLocalFieldRead(monitorDM, cellSegment.cell, temperatureField.id, auxArray, &temperature);
+            //                DMPlexPointLocalRead(fieldDM[f], masterCell, fieldDat, &fieldPt) >> utilities::PetscUtilities::checkError;
 
-                // Get solution point data
-                DMPlexPointLocalRead(solDM, masterCell, solDat, &solPt) >> utilities::PetscUtilities::checkError;
+            // Get solution point data
+            DMPlexPointLocalRead(solDM, masterCell, solArray, &solPt) >> utilities::PetscUtilities::checkError;
 
-                // Get read/write access to point in monitor array
-                DMPlexPointGlobalRef(monitorDM, monitorCell, monitorDat, &monitorPt) >> utilities::PetscUtilities::checkError;
+            // Get read/write access to point in monitor array
+            DMPlexPointGlobalRef(monitorDM, monitorCell, monitorDat, &monitorPt) >> utilities::PetscUtilities::checkError;
 
-                if (monitorPt && solPt) {
-                    // compute absorptivity
-                    DMPlexPointLocalFieldRead(auxDm, masterCell, temperatureFieldInfo.id, auxDat, &temperature) >> utilities::PetscUtilities::checkError;
+            if (monitorPt && solPt) {
+                // compute absorptivity
+                DMPlexPointLocalFieldRead(auxDm, masterCell, temperatureFieldInfo.id, auxArray, &temperature) >> utilities::PetscUtilities::checkError;
 
-                    // Get the absorptivity data from solution point data
-                    monitor->absorptivityFunction.function(solPt, *temperature, &kappa, monitor->absorptivityFunction.context.get());
+                // Get the absorptivity data from solution point data
+                monitor->absorptivityFunction.function(solPt, *temperature, &kappa, monitor->absorptivityFunction.context.get());
 
-                    // Perform actual calculations now
-                    monitorPt[monitorFields[FieldPlacements::intensity].offset] += kappa * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
-                    monitorPt[monitorFields[FieldPlacements::absorption].offset] += kappa;
-                }
+                // Perform actual calculations now
+                monitorPt[monitorFields[FieldPlacements::intensity].offset] += kappa * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
+                monitorPt[monitorFields[FieldPlacements::absorption].offset] += kappa;
             }
-            VecRestoreArrayRead(monitorVec, &fieldDat) >> utilities::PetscUtilities::checkError;  // TODO: Do we need an offset here?
         }
+        VecRestoreArrayRead(monitorVec, &fieldDat) >> utilities::PetscUtilities::checkError;  // TODO: Do we need an offset here?
+
         // Cleanup
         // Restore arrays
         ISRestoreIndices(subpointIS, &subpointIndices) >> utilities::PetscUtilities::checkError;
-        VecRestoreArrayRead(solVec, &solDat) >> utilities::PetscUtilities::checkError;
+        VecRestoreArrayRead(solVec, &solArray) >> utilities::PetscUtilities::checkError;
         VecRestoreArray(monitorVec, &monitorDat) >> utilities::PetscUtilities::checkError;
         //        // Restore field vectors
         //        for (std::size_t f = 0; f < monitor->fieldNames.size(); f++) {
