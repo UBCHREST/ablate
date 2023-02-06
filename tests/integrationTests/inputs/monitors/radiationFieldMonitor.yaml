@@ -19,8 +19,8 @@ timestepper:
   domain: !ablate::domain::BoxMeshBoundaryCells
     name: simpleBoxField
     faces: [ 5, 40 ]
-    lower: [ 0 , -0.5 ]
-    upper: [ 0.5 , 0.5 ]
+    lower: [ 0 , 1 ]
+    upper: [ 0 , 1 ]
     simplex: false
     preModifiers:
       - !ablate::domain::modifiers::DistributeWithGhostCells
@@ -65,11 +65,9 @@ timestepper:
     - !ablate::finiteVolume::fieldFunctions::Euler
       state: &initFlowState
         eos: *eos
-        #        pressure: 101325.0
-        pressure: 100
-        temperature: 1500
-        #        velocity: "100, 15"
-        velocity: " 65 + 10*y , 10 + 30*x "
+        pressure: 101325.0
+        temperature: 2000
+        velocity: "0,0"
         other: !ablate::finiteVolume::fieldFunctions::MassFractions
           eos: *eos
           values:
