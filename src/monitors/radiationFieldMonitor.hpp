@@ -25,13 +25,14 @@ class RadiationFieldMonitor : public FieldMonitor {
     PetscMonitorFunction GetPetscFunction() override { return MonitorRadiation; }
 
    private:
+    const std::shared_ptr<ablate::eos::EOS> eos;             //! Equation of state used for computing flow field properties.
+
     //! model used to provided the absorptivity function
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;  //! Radiation properties model from which the absorption is calculated.
 
     //! hold a pointer to the absorptivity function
     eos::ThermodynamicTemperatureFunction absorptivityFunction;  //! Absorption function for the radiation properties. This comes from the model.
 
-    const std::shared_ptr<ablate::eos::EOS> eos;             //! Equation of state used for computing flow field properties.
     const std::shared_ptr<io::interval::Interval> interval;  //! Interval of the radiation properties recording.
     PetscInt step;
 

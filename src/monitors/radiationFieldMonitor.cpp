@@ -2,7 +2,7 @@
 
 ablate::monitors::RadiationFieldMonitor::RadiationFieldMonitor(const std::shared_ptr<ablate::eos::EOS> eosIn, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
                                                                std::shared_ptr<io::interval::Interval> intervalIn)
-    : eos(eosIn), interval(intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>()) {}
+    : eos(eosIn), radiationModel(radiationModelIn), interval(intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>()) {}
 
 void ablate::monitors::RadiationFieldMonitor::Register(std::shared_ptr<ablate::solver::Solver> solverIn) {
     Monitor::Register(solverIn);
@@ -10,15 +10,15 @@ void ablate::monitors::RadiationFieldMonitor::Register(std::shared_ptr<ablate::s
     // Create the monitor name
     std::string dmID = "radiationFieldMonitor";
 
-    std::vector<std::shared_ptr<domain::FieldDescriptor>> fields(fieldNames.size() + FieldPlacements::fieldsStart, nullptr);
+    std::vector<std::shared_ptr<domain::FieldDescriptor>> fields(fieldNames.size(), nullptr);
 
     for (std::size_t f = 0; f < fieldNames.size(); f++) {
-        fields[FieldPlacements::fieldsStart + f] =
+        fields[f] =
             std::make_shared<domain::FieldDescription>(fieldNames[f], fieldNames[f], domain::FieldDescription::ONECOMPONENT, domain::FieldLocation::SOL, domain::FieldType::FVM);
     }
 
     // Register all fields with the monitorDomain
-//    ablate::monitors::FieldMonitor::Register(dmID, solverIn, fields);
+    ablate::monitors::FieldMonitor::Register(dmID, solverIn, fields);
 
     // Get the density thermodynamic function
     absorptivityFunction = radiationModel->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, solverIn->GetSubDomain().GetFields());
