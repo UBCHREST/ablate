@@ -64,7 +64,6 @@ ablate::eos::TChemSoot::TChemSoot(std::filesystem::path mechanismFileIn, std::fi
 
         // set reference information
         stateHost.Temperature() = TREF;
-        stateHost.MassFractions()() = 0.0;
         Kokkos::deep_copy(stateDevice, stateHostView);
 
         // size up the other scratch information
@@ -150,8 +149,8 @@ void ablate::eos::TChemSoot::View(std::ostream &stream) const {
         stream << "\tthermoFile: " << thermoFile << std::endl;
     }
     stream << "\tnumberSpecies: " << species.size() << std::endl;
-    tChemLib::exec_space::print_configuration(stream, true);
-    tChemLib::host_exec_space::print_configuration(stream, true);
+//    tChemLib::exec_space::print_configuration(stream, true);
+//    tChemLib::host_exec_space::print_configuration(stream, true);
 }
 
 //Returns the Total Density of the Mixture, This is a conserved variable and can just be returned
@@ -577,7 +576,7 @@ ablate::eos::FieldFunction ablate::eos::TChemSoot::GetFieldFunctionFunction(cons
             auto iep = [=](PetscReal sensibleInternalEnergy, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
                 stateHost(2) = 300.; //Temperature Initial Guess
                 stateHost(1) = pressure;
-                internalEnergy() = sensibleInternalEnergy;
+                internalEnergy(0) = sensibleInternalEnergy;
                 auto Yc = yi[0];
                 // fill the state
                 auto yiHost = Kokkos::subview( stateHost,std::make_pair(3,3+kineticsModelDataDevice->nSpec) );
@@ -697,7 +696,7 @@ ablate::eos::FieldFunction ablate::eos::TChemSoot::GetFieldFunctionFunction(cons
             auto densityYiFromIeP = [=](PetscReal sensibleInternalEnergy, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
                 stateHost(2) = 300.; //Temperature Initial Guess
                 stateHost(1) = pressure;
-                internalEnergy() = sensibleInternalEnergy;
+                internalEnergy(0) = sensibleInternalEnergy;
                 auto Yc = yi[0];
                 // fill the state
                 auto yiHost = Kokkos::subview( stateHost,std::make_pair(3,3+kineticsModelDataDevice->nSpec) );
