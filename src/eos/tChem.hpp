@@ -40,7 +40,7 @@ class TChem : public ChemistryModel, public std::enable_shared_from_this<ablate:
         std::shared_ptr<void> context = nullptr;
     };
 
-   private:
+   protected:
     //! hold a copy of the constrains that can be used for single or batch source calculation
     tChem::SourceCalculator::ChemistryConstraints constraints;
 
@@ -140,19 +140,19 @@ class TChem : public ChemistryModel, public std::enable_shared_from_this<ablate:
      * Returns all elements tracked in this mechanism and their molecular mass
      * @return
      */
-    [[nodiscard]] std::map<std::string, double> GetElementInformation() const;
+    [[nodiscard]] virtual std::map<std::string, double> GetElementInformation() const;
 
     /**
      * no. of atoms of each element in each species
      * @return
      */
-    [[nodiscard]] std::map<std::string, std::map<std::string, int>> GetSpeciesElementalInformation() const;
+    [[nodiscard]] virtual std::map<std::string, std::map<std::string, int>> GetSpeciesElementalInformation() const;
 
     /**
      * the MW of each species
      * @return
      */
-    [[nodiscard]] std::map<std::string, double> GetSpeciesMolecularMass() const;
+    [[nodiscard]] virtual std::map<std::string, double> GetSpeciesMolecularMass() const;
 
     /**
      * Print the details of this eos
@@ -178,7 +178,7 @@ class TChem : public ChemistryModel, public std::enable_shared_from_this<ablate:
      */
     std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override;
 
-   private:
+   protected:
     struct FunctionContext {
         // memory access locations for fields
         PetscInt dim;

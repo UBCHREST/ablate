@@ -54,7 +54,7 @@ ablate::eos::TChem::TChem(std::filesystem::path mechanismFileIn, std::filesystem
         policy_enthalpy.set_scratch_size(1, Kokkos::PerTeam((int)tChemLib::Scratch<real_type_1d_view>::shmem_size(per_team_scratch_h)));
 
         // set the state
-        real_type_2d_view stateDevice(" state device", 1, tChemLib::Impl::getStateVectorSize(kineticsModelDataDevice->nSpec));
+        real_type_2d_view stateDevice("state device", 1, tChemLib::Impl::getStateVectorSize(kineticsModelDataDevice->nSpec));
         auto stateHostView = Kokkos::create_mirror_view(stateDevice);
         auto stateHost = Impl::StateVector<real_type_1d_view_host>(kineticsModelDataDevice->nSpec, Kokkos::subview(stateHostView, 0, Kokkos::ALL()));
 

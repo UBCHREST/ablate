@@ -6,83 +6,37 @@
 #include "eos/tChemSoot/densityFcn.hpp"
 #include "eos/tChemSoot/sensibleInternalEnergy.hpp"
 #include "eos/tChemSoot/sensibleInternalEnergyFcn.hpp"
-#include "eos/tChemSoot/speedOfSound.hpp"
-#include "eos/tChemSoot/temperature.hpp"
+#include "eos/tChemSoot/stateVectorSoot.hpp"
 #include "eos/tChemSoot/specificHeatConstantPressure.hpp"
 #include "eos/tChemSoot/specificHeatConstantVolume.hpp"
+#include "eos/tChemSoot/speedOfSound.hpp"
+#include "eos/tChemSoot/temperature.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "monitors/logs/nullLog.hpp"
 #include "utilities/kokkosUtilities.hpp"
 #include "utilities/mpiUtilities.hpp"
 
-//should be good
-ablate::eos::TChemSoot::TChemSoot(std::filesystem::path mechanismFileIn, std::filesystem::path thermoFileIn) : EOS("TChemSoot"), mechanismFile(std::move(mechanismFileIn)), thermoFile(std::move(thermoFileIn)) {
-    // setup/use Kokkos
-    ablate::utilities::KokkosUtilities::Initialize();
+ablate::eos::TChemSoot::TChemSoot(std::filesystem::path mechanismFile, std::filesystem::path thermoFile, std::shared_ptr<ablate::monitors::logs::Log>,
+                                  const std::shared_ptr<ablate::parameters::Parameters>& options) :
+        TChem(mechanismFile, thermoFile, log, options) {
 
-    // create/parse the kinetic data
-    // TChem init reads/writes file it can only be done one at a time
-    ablate::utilities::MpiUtilities::RoundRobin(PETSC_COMM_WORLD, [&](int rank) {
-        if (thermoFile.empty()) {
-            kineticsModel = tChemLib::KineticModelData(mechanismFile.string());
-        } else {
-            kineticsModel = tChemLib::KineticModelData(mechanismFile.string(), thermoFile.string());
-        }
-    });
+    // Insert carbon as the first species
+    species.insert(species.begin(), CSolidName);
 
-    // get the device KineticsModelData
-    kineticsModelDataDevice = std::make_shared<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<exec_space>::type>>(
-        tChemLib::createGasKineticModelConstData<typename Tines::UseThisDevice<exec_space>::type>(kineticsModel));
+    // Use the computed enthalpy and insert solid carbon as first index
+    auto enthalpyReferenceWithCarbon = real_type_1d_view("reference enthalpy", kineticsModelDataDevice->nSpec+1);
 
-    // copy the species information
-    const auto speciesNamesHost = Kokkos::create_mirror_view(kineticsModelDataDevice->speciesNames);
-    Kokkos::deep_copy(speciesNamesHost, kineticsModelDataDevice->speciesNames);
-    // resize the species data
-    species.resize(kineticsModelDataDevice->nSpec+1);
-    auto speciesArray = species.data();
+    // copy to enthalpyReference
+    Kokkos::deep_copy(Kokkos::subview(enthalpyReferenceWithCarbon,std::make_pair(1,kineticsModelDataDevice->nSpec+1)), enthalpyReference);
 
-    //Add Solid carbon species to the front
-    speciesArray[0] = "C_solid";
-    Kokkos::parallel_for(
-        "speciesInit", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(0, kineticsModelDataDevice->nSpec), KOKKOS_LAMBDA(const auto i) {
-            speciesArray[i+1] = std::string(&speciesNamesHost(i, 0));
-        });
-    Kokkos::fence();
+    //Now put in reference enthalpy for Carbon
+    enthalpyReference(0) = CarbonEnthalpy_R_T(TREF)*TREF*kineticsModelDataDevice->Runiv / MWCarbon; //TODO::Check that Runiv is correct units
 
-
-    // compute the reference enthalpy
-    enthalpyReference = real_type_1d_view("reference enthalpy", kineticsModelDataDevice->nSpec+1);
-    {  // manually compute reference enthalpy on the device
-        const auto per_team_extent_h = tChemLib::EnthalpyMass::getWorkSpaceSize(*kineticsModelDataDevice);
-        const auto per_team_scratch_h = Scratch<real_type_1d_view>::shmem_size(per_team_extent_h);
-        typename tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type policy_enthalpy(1, Kokkos::AUTO());
-        policy_enthalpy.set_scratch_size(1, Kokkos::PerTeam((int)tChemLib::Scratch<real_type_1d_view>::shmem_size(per_team_scratch_h)));
-
-        // set the state
-        real_type_2d_view stateDevice(" state device", 1, tChemLib::Impl::getStateVectorSize(kineticsModelDataDevice->nSpec));
-        auto stateHostView = Kokkos::create_mirror_view(stateDevice);
-        auto stateHost = Impl::StateVector<real_type_1d_view_host>(kineticsModelDataDevice->nSpec, Kokkos::subview(stateHostView, 0, Kokkos::ALL()));
-
-        // set reference information
-        stateHost.Temperature() = TREF;
-        Kokkos::deep_copy(stateDevice, stateHostView);
-
-        // size up the other scratch information
-        real_type_2d_view perSpeciesDevice("scratch perSpecies device", 1, kineticsModelDataDevice->nSpec);
-        real_type_1d_view mixtureDevice("scratch mixture device", 1);
-
-        tChemLib::EnthalpyMass::runDeviceBatch(policy_enthalpy, stateDevice, perSpeciesDevice, mixtureDevice, *kineticsModelDataDevice);
-
-        // copy to enthalpyReference
-        Kokkos::deep_copy(Kokkos::subview(enthalpyReference,std::make_pair(1,kineticsModelDataDevice->nSpec+1)), Kokkos::subview(perSpeciesDevice, 0, Kokkos::ALL()));
-        //Now put in reference enthalpy for Carbon
-        enthalpyReference(0) = CarbonEnthalpy_R_T(TREF)*TREF*kineticsModelDataDevice->Runiv / MWCarbon; //TODO::Check that Runiv is correct units
-    }
+    // Replace the org calc
+    enthalpyReference = enthalpyReferenceWithCarbon;
 }
 
 std::shared_ptr<ablate::eos::TChemSoot::FunctionContext> ablate::eos::TChemSoot::BuildFunctionContext(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
-    //STILL NEED TO THINK OF WHAT I WANT TO PASS TO EACH FUNCTION
-
-
     // Look for the euler field
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
     if (eulerField == fields.end()) {
@@ -95,7 +49,7 @@ std::shared_ptr<ablate::eos::TChemSoot::FunctionContext> ablate::eos::TChemSoot:
     }
 
     // determine the state vector size
-    const ordinal_type stateVecDim = tChemLib::Impl::getStateVectorSize(kineticsModelDataDevice->nSpec)+1; //Extra 1 for YC
+    const ordinal_type stateVecDim = tChemSoot::getStateVectorSootSize(kineticsModelDataDevice->nSpec);
     const ordinal_type batchSize = 1;
 
     // get the property string
@@ -149,8 +103,8 @@ void ablate::eos::TChemSoot::View(std::ostream &stream) const {
         stream << "\tthermoFile: " << thermoFile << std::endl;
     }
     stream << "\tnumberSpecies: " << species.size() << std::endl;
-//    tChemLib::exec_space::print_configuration(stream, true);
-//    tChemLib::host_exec_space::print_configuration(stream, true);
+    tChemLib::exec_space().print_configuration(stream, true);
+    tChemLib::host_exec_space().print_configuration(stream, true);
 }
 
 //Returns the Total Density of the Mixture, This is a conserved variable and can just be returned
@@ -184,7 +138,8 @@ PetscErrorCode ablate::eos::TChemSoot::TemperatureTemperatureFunction(const Pets
     PetscReal internalEnergyRef = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
 
     // Fill the working array
-    auto stateHost = Kokkos::subview(functionContext->stateHost, 0, Kokkos::ALL());
+    auto stateHost = tChemSoot::StateVectorSoot<real_type_1d_view_host>(functionContext->kineticsModelDataDevice->nSpec, Kokkos::subview(functionContext->stateHost, 0, Kokkos::ALL()));
+
     FillWorkingVectorFromDensityMassFractions(density, temperatureGuess, conserved + functionContext->densityYiOffset, stateHost, functionContext->kineticsModelDataDevice->nSpec+1);
     Kokkos::deep_copy(functionContext->stateDevice, functionContext->stateHost);
     functionContext->mixtureHost[0] = internalEnergyRef;
@@ -451,29 +406,31 @@ PetscErrorCode ablate::eos::TChemSoot::SpeciesSensibleEnthalpyTemperatureFunctio
 }
 
 
-
-void ablate::eos::TChemSoot::FillWorkingVectorFromDensityMassFractions(double &density, double &temperature, const double *densityYi, const real_type_1d_view_host &totalStateVector,const int &totNumSpec) {
+void ablate::eos::TChemSoot::FillWorkingVectorFromDensityMassFractions(double density, double temperature, const double *densityYi, const tChemSoot::StateVectorSoot<real_type_1d_view_host>& stateVector) {
     //As a Reminder StateVector Assumed to follow -> {total Density, Pressure, Temperature, Total SpeciesMass Fraction of Gas states, Carbon Mass Fraction, Ndd}
-    totalStateVector(2) = temperature;
-    totalStateVector(0) = density;
-    totalStateVector(1) = NAN; //Pressure set to NAN
+    stateVector.Temperature() = temperature;
+    stateVector.Density() = density;
+    stateVector.Pressure() = NAN; //Pressure set to NAN
     //Ignore the First species as it is the carbon solid species
     real_type yiSum = densityYi[0]/ density;//start with carbon value
-    totalStateVector[totNumSpec+2] = yiSum;//carbon index is 3+kmcd_numspecies = 2+totNumSpecies
-    for (ordinal_type s = 0; s < totNumSpec-2; s++) { // Dilute species is totNumSpec -1 in density Yi, and 3+totNumSpec-2 in totalState vector
-        totalStateVector[3+s] = PetscMax(0.0, densityYi[s+1] / density);
-        totalStateVector[3+s] = PetscMin(1.0, totalStateVector[3+s]);
-        yiSum += totalStateVector[3+s];
+    stateVector.MassFractionCarbon() = yiSum;//carbon index is 3+kmcd_numspecies = 2+totNumSpecies
+
+    auto ys = stateVector.MassFractions();
+
+    for (ordinal_type s = 0; s < stateVector.NumGasSpecies() - 1; s++) { // Dilute species is totNumSpec -1 in density Yi, and 3+totNumSpec-2 in totalState vector
+        ys[s] = PetscMax(0.0, densityYi[s+1] / density);
+        ys[s] = PetscMin(1.0, ys[s]);
+        yiSum += ys[s];
     }
     if (yiSum > 1.0) {
-        for (PetscInt s = 0; s < totNumSpec - 2; s++) {
+        for (PetscInt s = 0; s < stateVector.NumGasSpecies() - 1; s++) {
             // Limit the bounds
-            totalStateVector[3+s] /= yiSum;
+            ys[s] /= yiSum;
         }
-        totalStateVector[2+totNumSpec] /= yiSum; // have to do carbon out of the loop since it jumps the dilute last species in statevector
-        totalStateVector[2+totNumSpec-1] = 0.0; //Set dilute species to 0
+        stateVector.MassFractionCarbon() /= yiSum; // have to do carbon out of the loop since it jumps the dilute last species in statevector
+        ys[stateVector.NumGasSpecies()-1] = 0.0; //Set dilute species to 0
     } else {
-        totalStateVector[2+totNumSpec-1] = 1.0 - yiSum; //Set dilute species to 1-YiSum
+        ys[stateVector.NumGasSpecies()-1] = 1.0 - yiSum; //Set dilute species to 1-YiSum
     }
 }
 

@@ -7,6 +7,7 @@ target_sources(ablateLibrary
         speedOfSound.cpp
         specificHeatConstantPressure.cpp
         specificHeatConstantVolume.cpp
+
         PUBLIC
         densityFcn.hpp
         temperature.hpp
@@ -18,4 +19,5 @@ target_sources(ablateLibrary
         speedOfSound.hpp
         specificHeatConstantPressure.hpp
         specificHeatConstantVolume.hpp
+        stateVectorSoot.hpp
         )

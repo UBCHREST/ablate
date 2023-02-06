@@ -15,10 +15,7 @@
 #include "monitors/timeStepMonitor.hpp"
 #include "parameters/mapParameters.hpp"
 #include "radiation/radiation.hpp"
-// #include "radiation/raySharingRadiation.hpp"
 #include "domain/boxMeshBoundaryCells.hpp"
-#include "io/hdf5Serializer.hpp"
-#include "io/interval/fixedInterval.hpp"
 #include "radiation/volumeRadiation.hpp"
 #include "utilities/petscUtilities.hpp"
 
