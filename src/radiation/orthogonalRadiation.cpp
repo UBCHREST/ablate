@@ -2,7 +2,7 @@
 
 ablate::radiation::OrthogonalRadiation::OrthogonalRadiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region,
                                                             std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
-    : Radiation(solverId, region, NAN, radiationModelIn, log) {}  //! The ray number should never be used because there is only one ray emanating from every boundary face
+    : Radiation(solverId, region, 0, radiationModelIn, log) {}  //! The ray number should never be used because there is only one ray emanating from every boundary face
 
 ablate::radiation::OrthogonalRadiation::~OrthogonalRadiation() {}
 

@@ -13,13 +13,13 @@ namespace ablate::monitors {
 /**
  * use to call the boundary solver to output any specific output variables
  */
-class VirtualTcp : public Monitor, public io::Serializable {
+class RadiationFlux : public Monitor {
 
    private:
     /**
      * A vector of radiation models which describe ray tracers with different attached properties.
      */
-    std::vector<ablate::radiation::Radiation> radiation;
+    std::vector<std::shared_ptr<ablate::radiation::Radiation>> radiation;
 
     /**
      * The boundary solver
@@ -31,18 +31,22 @@ class VirtualTcp : public Monitor, public io::Serializable {
      */
     solver::DynamicRange faceRange;
 
-   public:
+    /**
+     * Region for the radiation solver to monitor
+     */
+    std::shared_ptr<ablate::domain::Region> radiationRegion;
 
-    VirtualTcp(std::vector<radiation::Radiation> radiationIn);
+   public:
+    RadiationFlux(std::vector<std::shared_ptr<radiation::Radiation>> radiationIn, std::shared_ptr<domain::Region> radiationRegion);
 
     /**
      * Clean up the petsc objects
      */
-    ~VirtualTcp() override;
+    ~RadiationFlux() override;
 
     /**
      * Register this solver with the boundary solver
-     * @param solver the solver must be of type ablate::boundarySolver::BoundarySolver
+     * @param solver which contains the region being monitored.
      */
     void Register(std::shared_ptr<solver::Solver> solver) override;
 
@@ -52,13 +56,18 @@ class VirtualTcp : public Monitor, public io::Serializable {
      * @param sequenceNumber
      * @param time
      */
-    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    static PetscErrorCode MonitorRadiation(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx);
+
+    /**
+     * return context to be returned to the PetscMonitorFunction.  By default this is a pointer to this instance
+     */
+    void* GetContext() override { return this; }
 
     /**
      * This is not needed because this is only called upon serialize.
      * @return
      */
-    PetscMonitorFunction GetPetscFunction() override { return nullptr; }
+    PetscMonitorFunction GetPetscFunction() override { return MonitorRadiation; }
 };
 }  // namespace ablate::monitors
 

@@ -19,7 +19,7 @@ target_sources(ablateLibrary
         fieldMonitor.cpp
         mixtureFractionMonitor.cpp
         mixtureFractionCalculator.cpp
-        virtualTcp.cpp
+        radiationFlux.cpp
 
         PUBLIC
         monitor.hpp
@@ -42,7 +42,7 @@ target_sources(ablateLibrary
         mixtureFractionMonitor.hpp
         boundarySolverMonitor.hpp
         mixtureFractionCalculator.hpp
-        virtualTcp.hpp
+        radiationFlux.hpp
         )
 
 add_subdirectory(logs)
