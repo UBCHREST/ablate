@@ -68,7 +68,7 @@ void ablate::monitors::BoundarySolverMonitor::Register(std::shared_ptr<solver::S
     // Now create a sub dm with only the faces
     DMPlexFilter(boundaryDm, boundaryFaceLabel, 1, &faceDm) >> utilities::PetscUtilities::checkError;
 
-    // Add each of the output components on each face in the fluxDm
+    // Add each of the output components on each face in the faceDm
     for (const auto& field : boundarySolver->GetOutputComponents()) {
         PetscFV fvm;
         PetscFVCreate(PetscObjectComm(PetscObject(faceDm)), &fvm) >> utilities::PetscUtilities::checkError;
@@ -87,7 +87,7 @@ void ablate::monitors::BoundarySolverMonitor::Register(std::shared_ptr<solver::S
 
 void ablate::monitors::BoundarySolverMonitor::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
     PetscFunctionBeginUser;
-    // If this is the first output, store a copy of the fluxDm
+    // If this is the first output, store a copy of the faceDm
     if (sequenceNumber == 0) {
         DMView(faceDm, viewer) >> utilities::PetscUtilities::checkError;
     }

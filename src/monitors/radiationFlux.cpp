@@ -56,11 +56,13 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
     // Now create a sub dm with only the faces
     DMPlexFilter(monitorDm, radiationFluxLabel, 1, &fluxDm) >> utilities::PetscUtilities::checkError;
 
-    // Add each of the output components on each face in the fluxDm
-    for (const auto& field : boundarySolver->GetOutputComponents()) {
+    /** Add each of the output components on each face in the fluxDm
+     * the number of components should be equal to the number of ray tracers plus any ratio outputs?
+     */
+    for (const auto& rayTracer : radiation) {
         PetscFV fvm;
         PetscFVCreate(PetscObjectComm(PetscObject(fluxDm)), &fvm) >> utilities::PetscUtilities::checkError;
-        PetscObjectSetName((PetscObject)fvm, field.c_str()) >> utilities::PetscUtilities::checkError;
+        PetscObjectSetName((PetscObject)fvm, rayTracer->GetId().c_str()) >> utilities::PetscUtilities::checkError;
         PetscFVSetFromOptions(fvm) >> utilities::PetscUtilities::checkError;
         PetscFVSetNumComponents(fvm, 1) >> utilities::PetscUtilities::checkError;
         PetscInt dim;
@@ -103,7 +105,7 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
         rayTracer->Initialize(monitorRange.GetRange(), solver->GetSubDomain());
     }
 
-    // TODO: Delete the monitor DM at the end of the initialization because we will not need it anymore.
+    DMDestroy(&monitorDm);    //! Delete the monitor DM at the end of the initialization because we will not need it anymore.
 }
 
 void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
@@ -134,6 +136,10 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
     Vec localFaceVec;
     DMGetLocalVector(fluxDm, &localFaceVec) >> utilities::PetscUtilities::checkError;
     VecZeroEntries(localFaceVec) >> utilities::PetscUtilities::checkError;
+
+    // Get the raw data for the global vectors
+    PetscScalar* localFaceArray;
+    VecGetArray(localFaceVec, &localFaceArray) >> utilities::PetscUtilities::checkError;
 
     // Determine the size of data
     PetscInt dataSize;
@@ -172,20 +178,22 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
             const PetscInt iCell = faceToBoundary[c];  //!< Isolates the valid cells
             rayTracer->GetIntensity(iCell, monitorRange.GetRange(), 0, 1);
 
+            // TODO: Write the intensity into the fluxDm for outputting.
+
             /**
              * Now that the intensity has been read out of the ray tracing solver, it will need to be written to the field which stores the radiation information in the monitor.
              */
 
             /// This is where the computed information should be written to the dm that was created for the radiation flux monitor.
 
-            const PetscScalar* localBoundaryData = nullptr;
-            PetscScalar* globalFaceData = nullptr;
+            //            const PetscScalar* localBoundaryData = nullptr;
+            //            PetscScalar* globalFaceData = nullptr;
 
-            DMPlexPointLocalRead(monitorDm, iCell, localBoundaryArray, &localBoundaryData) >> utilities::PetscUtilities::checkError;
-            DMPlexPointLocalRef(fluxDm, c, localFaceArray, &globalFaceData) >> utilities::PetscUtilities::checkError;  // TODO: Should c go here or something else?
-            if (globalFaceData && localBoundaryData) {
-                PetscArraycpy(globalFaceData, localBoundaryData, dataSize) >> utilities::PetscUtilities::checkError;
-            }
+            //            DMPlexPointLocalRead(GetSolver()->GetSubDomain().GetDM(), iCell, locXArray, &sol) >> utilities::PetscUtilities::checkError;
+            //            DMPlexPointLocalRef(fluxDm, c, localFaceArray, &globalFaceData) >> utilities::PetscUtilities::checkError;
+            //            if (globalFaceData && localBoundaryData) {
+            //                PetscArraycpy(globalFaceData, localBoundaryData, dataSize) >> utilities::PetscUtilities::checkError;
+            //            }
         }
     }
     //    }

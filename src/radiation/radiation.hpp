@@ -85,6 +85,8 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
         return abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
     }
 
+    inline std::string GetId() { return solverId; };
+
     /** Evaluates the ray intensity from the domain to update the effects of irradiation. Does not impact the solution unless the solve function is called again.
      * */
     void EvaluateGains(Vec solVec, ablate::domain::Field temperatureField, Vec auxVec);
