@@ -3,6 +3,7 @@
 #include <utility>
 #include "eos/perfectGas.hpp"
 #include "eos/stiffenedGas.hpp"
+#include "eos/twoPhase.hpp"
 #include "parameters/emptyParameters.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "flowProcess.hpp"
@@ -222,7 +223,9 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Setup(ablate::fini
     // Currently, no option for species advection
     flow.RegisterRHSFunction(CompressibleFlowComputeEulerFlux, this, CompressibleFlowFields::EULER_FIELD, {VOLUME_FRACTION_FIELD, DENSITY_VF_FIELD, CompressibleFlowFields::EULER_FIELD}, {});
     flow.RegisterRHSFunction(CompressibleFlowComputeVFFlux, this, DENSITY_VF_FIELD, {VOLUME_FRACTION_FIELD, DENSITY_VF_FIELD, CompressibleFlowFields::EULER_FIELD}, {});
-    flow.RegisterComputeTimeStepFunction(ComputeTimeStep, &timeStepData, "cfl"); // ** new **
+    flow.RegisterComputeTimeStepFunction(ComputeCflTimeStep, &timeStepData, "cfl"); // ** new **
+    std::shared_ptr<ablate::eos::EOS> twoPhaseEos = std::make_shared<ablate::eos::TwoPhase>(eosGas,eosLiquid);
+    timeStepData.computeSpeedOfSound = twoPhaseEos->GetThermodynamicFunction(eos::ThermodynamicProperty::SpeedOfSound, flow.GetSubDomain().GetFields());
 
     // check to see if auxFieldUpdates needed to be added
     if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::VELOCITY_FIELD)) {
@@ -304,7 +307,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Multipha
     PetscFunctionReturn(0);
 }
 
-double ablate::finiteVolume::processes::TwoPhaseEulerAdvection::ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx) {
+double ablate::finiteVolume::processes::TwoPhaseEulerAdvection::ComputeCflTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx) {
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> utilities::PetscUtilities::checkError;
@@ -313,7 +316,6 @@ double ablate::finiteVolume::processes::TwoPhaseEulerAdvection::ComputeTimeStep(
 
     // Get the flow param
     auto timeStepData = (TimeStepData*)ctx;
-//    auto advectionData = timeStepData->advectionData;
 
     // Get the fv geom
     PetscReal minCellRadius;
@@ -350,8 +352,6 @@ double ablate::finiteVolume::processes::TwoPhaseEulerAdvection::ComputeTimeStep(
             PetscReal rho = euler[CompressibleFlowFields::RHO];
 
             // Get the speed of sound from the eos
-//            PetscReal temperature;
-//            advectionData->computeTemperature.function(conserved, &temperature, advectionData->computeTemperature.context.get()) >> checkError;
             PetscReal a;
             timeStepData->computeSpeedOfSound.function(conserved, &a, timeStepData->computeSpeedOfSound.context.get()) >> utilities::PetscUtilities::checkError;
 
