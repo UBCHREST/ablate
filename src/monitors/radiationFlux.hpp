@@ -16,6 +16,10 @@ namespace ablate::monitors {
 class RadiationFlux : public Monitor, public io::Serializable {
    private:
     /**
+     * This is the DM that the monitor uses to place ray tracing particles on the faces.
+     */
+    DM monitorDm = nullptr;
+    /**
      * This dm contains only the faces on the boundary and an output boundary field
      */
     DM faceDm = nullptr;
@@ -43,10 +47,10 @@ class RadiationFlux : public Monitor, public io::Serializable {
     /**
      * Region for the radiation solver to monitor
      */
-    std::shared_ptr<ablate::domain::Region> radiationRegion;
+    std::shared_ptr<ablate::domain::Region> radiationFluxRegion;
 
    public:
-    RadiationFlux(std::vector<std::shared_ptr<radiation::Radiation>> radiationIn, std::shared_ptr<domain::Region> radiationRegion);
+    RadiationFlux(std::vector<std::shared_ptr<radiation::Radiation>> radiationIn, std::shared_ptr<domain::Region> radiationFluxRegionIn);
 
     /**
      * Clean up the petsc objects
