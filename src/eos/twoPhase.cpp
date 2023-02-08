@@ -186,10 +186,6 @@ ablate::eos::TwoPhase::TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<
             parameters.species2 = stiffenedGasEos2->GetSpeciesVariables();
         }
         species.resize(parameters.numberSpecies1 + parameters.numberSpecies2);
-        if (species.size()>0){
-            otherPropertiesList.resize(2);
-            otherPropertiesList[1] = "Yi"; // other properties now contains {"VF","Yi"}, currently not used, want for TChem support
-        }
 
         for (PetscInt c = 0; c < parameters.numberSpecies1; c++) {
             species[c] = parameters.species1[c];
@@ -307,6 +303,7 @@ ablate::eos::EOSFunction ablate::eos::TwoPhase::GetFieldFunctionFunction(const s
     if (otherProperties != std::vector<std::string>{VF} && otherProperties != std::vector<std::string>{VF, YI}) {  // VF not in otherProperties){
         throw std::invalid_argument("ablate::eos::TwoPhase expects other properties to include VF (volume fraction) as first entry, and optionally, YI (species) as second entry");
     }
+
     if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field) {
         // temperature & pressure & alpha (** note: need volume fraction in otherProperties to back out conserved variables **)
         // Not: This function is used for initializing fields from P,T,vel instead of conserved variables
