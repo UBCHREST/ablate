@@ -22,7 +22,7 @@ class RadiationFlux : public Monitor, public io::Serializable {
     /**
      * This dm contains only the faces on the boundary and an output boundary field
      */
-    DM faceDm = nullptr;
+    DM fluxDm = nullptr;
 
     /**
      * Named used for output
