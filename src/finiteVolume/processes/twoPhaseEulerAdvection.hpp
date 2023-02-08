@@ -18,7 +18,7 @@ class TwoPhaseEulerAdvection : public Process {
 
     struct TimeStepData {
         PetscReal cfl;
-        eos::ThermodynamicFunction computeSpeedOfSound; // **change**, this needs to twoPhase EOS
+        eos::ThermodynamicFunction computeSpeedOfSound;
     };
     TimeStepData timeStepData;
 
@@ -186,14 +186,14 @@ class TwoPhaseEulerAdvection : public Process {
     static PetscErrorCode UpdateAuxVelocityField2Gas(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[], const PetscScalar *conservedValues, const PetscInt aOff[],
                                                      PetscScalar *auxField, void *ctx);
 
-    TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, const std::shared_ptr<parameters::Parameters>& parameters, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas,
-                           std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidGas,
-                           std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid);
+    TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, const std::shared_ptr<parameters::Parameters> &parameters,
+                           std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid,
+                           std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidGas, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid);
     void Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) override;
 
    private:
     // static function to compute time step for twoPhase euler advection
-    static double ComputeCflTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
+    static double ComputeCflTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver &flow, void *ctx);
 
     static PetscErrorCode CompressibleFlowComputeEulerFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscScalar fieldL[], const PetscScalar fieldR[],
                                                            const PetscInt aOff[], const PetscScalar auxL[], const PetscScalar auxR[], PetscScalar *flux, void *ctx);
