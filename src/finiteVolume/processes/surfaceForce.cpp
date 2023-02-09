@@ -132,12 +132,8 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
                     PetscReal totAlpha[3] = {0, 0, 0};
                     PetscReal distCell[3] = {0, 0, 0};
 
-                    // exclude vortices that do not have enough faces
-                    if (numAttachedFace < 2 * dim) {
-                        totAlpha[3] = 0;
-                    }
-
-                    else if (numAttachedFace >= 2 * dim) {
+                    // use vortices have enough faces
+                    if (numAttachedFace >= 2 * dim) {
                         // Get cells attached to each face
                         for (PetscInt iFace = 0; iFace < numAttachedFace; ++iFace) {
                             const PetscInt* cell;
@@ -273,10 +269,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
                         DMPlexGetSupport(dm, attachVortices[v], &edges);
                         DMPlexGetSupportSize(dm, attachVortices[v], &numEdges);
 
-                        if (numEdges < 2 * dim) {
-                            totAlpha[3] = 0;
-
-                        } else if (numEdges >= 2 * dim) {
+                        if (numEdges >= 2 * dim) {
                             for (PetscInt iEdges = 0; iEdges < numEdges; ++iEdges) {
                                 // get faces attached to each vertex
                                 const PetscInt* attachedFace;
