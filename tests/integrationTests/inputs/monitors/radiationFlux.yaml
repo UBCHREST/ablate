@@ -87,10 +87,12 @@ solvers:
       - !<!ablate::monitors::RadiationFlux>
         eos: *1
         region:
-        radiation: !ablate::radiation::Radiation
-          id: volRad
-          region:
-            name: flowRegion
-          rays: 25
-          properties: !ablate::eos::radiationProperties::Zimmer
-            eos: *1
+          name: boundaryCellsTop
+        radiation:
+          - !<!ablate::radiation::Radiation>
+            id: volRad
+            region:
+              name: interiorCells
+            rays: 25
+            properties: !ablate::eos::radiationProperties::Zimmer
+              eos: *1

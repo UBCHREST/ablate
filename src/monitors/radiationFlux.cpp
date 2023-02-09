@@ -58,7 +58,7 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
 
     /** Add each of the output components on each face in the fluxDm
      * the number of components should be equal to the number of ray tracers plus any ratio outputs?
-     */
+     */ // TODO: Is this the correct way to create the multiple fields that are required for storage in the fluxDm?
     for (const auto& rayTracer : radiation) {
         PetscFV fvm;
         PetscFVCreate(PetscObjectComm(PetscObject(fluxDm)), &fvm) >> utilities::PetscUtilities::checkError;
@@ -105,7 +105,7 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
         rayTracer->Initialize(monitorRange.GetRange(), solver->GetSubDomain());
     }
 
-    DMDestroy(&monitorDm);    //! Delete the monitor DM at the end of the initialization because we will not need it anymore.
+    DMDestroy(&monitorDm);  //! Delete the monitor DM at the end of the initialization because we will not need it anymore.
 }
 
 void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
@@ -151,9 +151,9 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
 
     // get the mapping information
     IS faceIs;
-    const PetscInt* faceToBoundary = nullptr;
+    const PetscInt* fluxToSolver = nullptr;
     DMPlexGetSubpointIS(fluxDm, &faceIs) >> utilities::PetscUtilities::checkError;
-    ISGetIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
+    ISGetIndices(faceIs, &fluxToSolver) >> utilities::PetscUtilities::checkError;
 
     // TODO: The TCP monitor must store one output for each of the radiation models that are in the vector of ray tracing solvers.
     // The ratio of red to green intensities must be computed and output as well.
@@ -171,35 +171,28 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
     /**
      * After the radiation solution is computed, then the intensity of the individual radiation solutions can be output for each face.
      */
-    //    if (localBoundaryArray && localFaceArray) {
-    auto& range = monitorRange.GetRange();
-    for (auto& rayTracer : radiation) {
-        for (PetscInt c = range.start; c < range.end; ++c) {
-            const PetscInt iCell = faceToBoundary[c];  //!< Isolates the valid cells
-            rayTracer->GetIntensity(iCell, monitorRange.GetRange(), 0, 1);
-
-            // TODO: Write the intensity into the fluxDm for outputting.
-
-            /**
-             * Now that the intensity has been read out of the ray tracing solver, it will need to be written to the field which stores the radiation information in the monitor.
-             */
-
-            /// This is where the computed information should be written to the dm that was created for the radiation flux monitor.
-
-            //            const PetscScalar* localBoundaryData = nullptr;
-            //            PetscScalar* globalFaceData = nullptr;
-
-            //            DMPlexPointLocalRead(GetSolver()->GetSubDomain().GetDM(), iCell, locXArray, &sol) >> utilities::PetscUtilities::checkError;
-            //            DMPlexPointLocalRef(fluxDm, c, localFaceArray, &globalFaceData) >> utilities::PetscUtilities::checkError;
-            //            if (globalFaceData && localBoundaryData) {
-            //                PetscArraycpy(globalFaceData, localBoundaryData, dataSize) >> utilities::PetscUtilities::checkError;
-            //            }
+    if (locXArray && localFaceArray) {
+        auto& range = monitorRange.GetRange();
+        for (int i = 0; i < int(radiation.size()); i++) {
+            for (PetscInt c = range.start; c < range.end; ++c) {
+                const PetscInt iCell = fluxToSolver[c];  //!< Isolates the valid cells
+                /**
+                 * Write the intensity into the fluxDm for outputting.
+                 * Now that the intensity has been read out of the ray tracing solver, it will need to be written to the field which stores the radiation information in the monitor.
+                 * This is where the computed information should be written to the dm that was created for the radiation flux monitor.
+                 */
+                PetscScalar* globalFaceData = nullptr;  // TODO: Is the size of the pointer that is retrieved equal to the number of fields that are in the DM. Are they in order still?
+                DMPlexPointLocalRef(fluxDm, c, localFaceArray, &globalFaceData) >> utilities::PetscUtilities::checkError;
+                /**
+                 * Get the intensity calculated out of the ray tracer. Write it to the appropriate location in the face DM.
+                 */
+                globalFaceData[i] = radiation[i]->GetIntensity(iCell, monitorRange.GetRange(), 0, 1);
+            }
         }
     }
-    //    }
 
     // restore
-    ISRestoreIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
+    ISRestoreIndices(faceIs, &fluxToSolver) >> utilities::PetscUtilities::checkError;
 
     VecRestoreArrayRead(locXVec, &locXArray) >> utilities::PetscUtilities::checkError;
     VecRestoreArray(localFaceVec, &localFaceArray) >> utilities::PetscUtilities::checkError;
