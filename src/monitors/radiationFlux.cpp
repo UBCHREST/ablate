@@ -56,18 +56,31 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
     DMLabel radiationRegionLabel;
     DMGetLabel(solverIn->GetSubDomain().GetDM(), radiationFluxRegion->GetName().c_str(), &radiationRegionLabel) >> utilities::PetscUtilities::checkError;
 
+    // March over each cell in the face dm
+    PetscInt cStart, cEnd;
+    DMPlexGetHeightStratum(fluxDm, 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
+
+    // get the mapping information
+    IS faceIs;
+    const PetscInt* faceToBoundary = nullptr;
+    DMPlexGetSubpointIS(fluxDm, &faceIs) >> utilities::PetscUtilities::checkError;
+    ISGetIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
+
     /** Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solverIn.
      * The purpose of using a dynamic range is to avoid including the boundary cells within the stored range of faces that belongs to the radiation solvers in the monitor.
      * */
-    ablate::solver::Range solverRange;
-    solverIn->GetFaceRange(solverRange);
-    for (PetscInt c = solverRange.start; c < solverRange.end; ++c) {
-        const PetscInt iCell = solverRange.GetPoint(c);  //!< Isolates the valid cells
+    //    ablate::solver::Range solverRange;
+    //    solverIn->GetFaceRange(solverRange);
+    for (PetscInt c = cStart; c < cEnd; ++c) {
+        const PetscInt iCell = faceToBoundary[c];  //!< Isolates the valid cells
         PetscInt ghost = -1;
         if (ghostLabel) DMLabelGetValue(ghostLabel, iCell, &ghost) >> utilities::PetscUtilities::checkError;
-        if (!(ghost >= 0) && (radiationFluxRegion->InRegion(radiationFluxRegion, GetSolver()->GetSubDomain().GetDM(), iCell))) monitorRange.Add(iCell);  //!< Add each ID to the range that the radiation solverIn will use
+        if (!(ghost >= 0) && (radiationFluxRegion->InRegion(radiationFluxRegion, GetSolver()->GetSubDomain().GetDM(), iCell)))
+            monitorRange.Add(iCell);  //!< Add each ID to the range that the radiation solverIn will use
     }
-    solverIn->RestoreRange(solverRange);
+    // restore
+    ISRestoreIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
+    //    solverIn->RestoreRange(solverRange);
 
     for (auto& rayTracer : radiation) {
         rayTracer->Setup(monitorRange.GetRange(), solverIn->GetSubDomain());
@@ -104,16 +117,6 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
     PetscInt dataSize;
     VecGetBlockSize(localFaceVec, &dataSize) >> utilities::PetscUtilities::checkError;
 
-    // March over each cell in the face dm
-    PetscInt cStart, cEnd;
-    DMPlexGetHeightStratum(fluxDm, 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
-
-    // get the mapping information
-    IS fluxIs;
-    const PetscInt* fluxToSolver = nullptr;
-    DMPlexGetSubpointIS(fluxDm, &fluxIs) >> utilities::PetscUtilities::checkError;
-    ISGetIndices(fluxIs, &fluxToSolver) >> utilities::PetscUtilities::checkError;
-
     // TODO: The TCP monitor must store one output for each of the radiation models that are in the vector of ray tracing solvers.
     // The ratio of red to green intensities must be computed and output as well.
     // It is not clear whether the red to green intensity ratio output should be implicitly defined in the input definition or whether there should be an explicit definition of which absorption model
@@ -131,10 +134,20 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
      * After the radiation solution is computed, then the intensity of the individual radiation solutions can be output for each face.
      */
     if (locXArray && localFaceArray) {
-        auto& range = monitorRange.GetRange();
+
+        // March over each cell in the face dm
+        PetscInt cStart, cEnd;
+        DMPlexGetHeightStratum(fluxDm, 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
+
+        // get the mapping information
+        IS faceIs;
+        const PetscInt* faceToBoundary = nullptr;
+        DMPlexGetSubpointIS(fluxDm, &faceIs) >> utilities::PetscUtilities::checkError;
+        ISGetIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
+
         for (int i = 0; i < int(radiation.size()); i++) {
-            for (PetscInt c = range.start; c < range.end; ++c) {
-//                const PetscInt iCell = fluxToSolver[c];  //!< Isolates the valid cells
+            for (PetscInt c = cStart; c < cEnd; ++c) {
+                const PetscInt iCell = faceToBoundary[c];  //!< Isolates the valid cells
                 /**
                  * Write the intensity into the fluxDm for outputting.
                  * Now that the intensity has been read out of the ray tracing solver, it will need to be written to the field which stores the radiation information in the monitor.
@@ -145,13 +158,12 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
                 /**
                  * Get the intensity calculated out of the ray tracer. Write it to the appropriate location in the face DM.
                  */
-                globalFaceData[i] = 1000 * i + 300; // radiation[i]->GetIntensity(iCell, monitorRange.GetRange(), 0, 1);
+                globalFaceData[i] = radiation[i]->GetIntensity(iCell, monitorRange.GetRange(), 0, 1);
             }
         }
+        // restore
+        ISRestoreIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
     }
-
-    // restore
-    ISRestoreIndices(fluxIs, &fluxToSolver) >> utilities::PetscUtilities::checkError;
 
     VecRestoreArray(localFaceVec, &localFaceArray) >> utilities::PetscUtilities::checkError;
     VecRestoreArrayRead(GetSolver()->GetSubDomain().GetSolutionVector(), &locXArray) >> utilities::PetscUtilities::checkError;
