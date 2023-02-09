@@ -75,8 +75,7 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
         const PetscInt iCell = faceToBoundary[c];  //!< Isolates the valid cells
         PetscInt ghost = -1;
         if (ghostLabel) DMLabelGetValue(ghostLabel, iCell, &ghost) >> utilities::PetscUtilities::checkError;
-        if (!(ghost >= 0) && (radiationFluxRegion->InRegion(radiationFluxRegion, GetSolver()->GetSubDomain().GetDM(), iCell)))
-            monitorRange.Add(iCell);  //!< Add each ID to the range that the radiation solverIn will use
+        if (!(ghost >= 0)) monitorRange.Add(iCell);  //!< Add each ID to the range that the radiation solverIn will use
     }
     // restore
     ISRestoreIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
@@ -134,7 +133,6 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
      * After the radiation solution is computed, then the intensity of the individual radiation solutions can be output for each face.
      */
     if (locXArray && localFaceArray) {
-
         // March over each cell in the face dm
         PetscInt cStart, cEnd;
         DMPlexGetHeightStratum(fluxDm, 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
@@ -145,9 +143,9 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
         DMPlexGetSubpointIS(fluxDm, &faceIs) >> utilities::PetscUtilities::checkError;
         ISGetIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
 
-        for (int i = 0; i < int(radiation.size()); i++) {
-            for (PetscInt c = cStart; c < cEnd; ++c) {
-                const PetscInt iCell = faceToBoundary[c];  //!< Isolates the valid cells
+        for (PetscInt c = cStart; c < cEnd; ++c) {
+            for (int i = 0; i < int(radiation.size()); i++) {
+                //                const PetscInt iCell = faceToBoundary[c];  //!< Isolates the valid cells
                 /**
                  * Write the intensity into the fluxDm for outputting.
                  * Now that the intensity has been read out of the ray tracing solver, it will need to be written to the field which stores the radiation information in the monitor.
@@ -158,7 +156,7 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
                 /**
                  * Get the intensity calculated out of the ray tracer. Write it to the appropriate location in the face DM.
                  */
-                globalFaceData[i] = radiation[i]->GetIntensity(iCell, monitorRange.GetRange(), 0, 1);
+                globalFaceData[i] = radiation[i]->GetIntensity((c - cStart), monitorRange.GetRange(), 0, 1);
             }
         }
         // restore
