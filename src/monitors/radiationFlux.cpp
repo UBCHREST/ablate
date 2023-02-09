@@ -145,7 +145,6 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
 
         for (PetscInt c = cStart; c < cEnd; ++c) {
             for (int i = 0; i < int(radiation.size()); i++) {
-                //                const PetscInt iCell = faceToBoundary[c];  //!< Isolates the valid cells
                 /**
                  * Write the intensity into the fluxDm for outputting.
                  * Now that the intensity has been read out of the ray tracing solver, it will need to be written to the field which stores the radiation information in the monitor.
