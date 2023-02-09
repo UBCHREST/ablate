@@ -2,7 +2,7 @@
 environment:
   title: radiationFlux
   tagDirectory: true
-arguments: {}
+arguments: { }
 timestepper:
   name: mainTimeStepper
   io:
@@ -15,9 +15,9 @@ timestepper:
     ts_adapt_safety: 0.9
   domain: !<!ablate::domain::BoxMeshBoundaryCells>
     name: simpleBoxField
-    faces: [20, 20]
-    lower: [0, 0]
-    upper: [1, 1]
+    faces: [ 20, 20 ]
+    lower: [ 0, 0 ]
+    upper: [ 1, 1 ]
     simplex: false
     options:
       dm_plex_hash_location: true
@@ -97,11 +97,9 @@ solvers:
             rays: 25
             properties: !ablate::eos::radiationProperties::Zimmer
               eos: *1
-            log: !ablate::monitors::logs::StdOut
           - !<!ablate::radiation::OrthogonalRadiation>
             id: window
             region:
               name: interiorCells
             properties: !ablate::eos::radiationProperties::Constant
               absorptivity: 1
-            log: !ablate::monitors::logs::StdOut

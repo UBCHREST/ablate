@@ -15,7 +15,6 @@ namespace ablate::monitors {
  */
 class RadiationFlux : public Monitor, public io::Serializable {
    private:
-
     /**
      * This dm contains only the faces on the boundary and an output boundary field
      */
@@ -75,7 +74,7 @@ class RadiationFlux : public Monitor, public io::Serializable {
 
     [[nodiscard]] const std::string& GetId() const override { return name; };
 
-    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override {};
+    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override{};
 
     [[nodiscard]] bool Serialize() const override { return true; }
 

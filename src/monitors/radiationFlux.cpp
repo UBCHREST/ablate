@@ -8,15 +8,6 @@ ablate::monitors::RadiationFlux::~RadiationFlux() {}
 void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> solverIn) {
     Monitor::Register(solverIn);
 
-    // TODO: Put in a condition such that the radiation flux monitor can only take radiation classes with surface based implementations.
-
-    // TODO: Run a check on all of the indexes in the given region to ensure that they are faces and not cells.
-
-    //    GetSolver() = std::dynamic_pointer_cast<ablate::boundarySolver::BoundarySolver>(solverIn);
-    //    if (!boundarySolver) {
-    //        throw std::invalid_argument("The BoundarySolverMonitor monitor can only be used with ablate::boundarySolver::BoundarySolver");
-    //    }
-
     // update the name
     name = radiationFluxRegion->GetName() + name;
 
@@ -66,6 +57,9 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
     DMPlexGetSubpointIS(fluxDm, &faceIs) >> utilities::PetscUtilities::checkError;
     ISGetIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
 
+    PetscInt maxDepth;
+    DMPlexGetDepth(GetSolver()->GetSubDomain().GetDM(), &maxDepth) >> utilities::PetscUtilities::checkError;
+
     /** Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solverIn.
      * The purpose of using a dynamic range is to avoid including the boundary cells within the stored range of faces that belongs to the radiation solvers in the monitor.
      * */
@@ -74,12 +68,16 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
     for (PetscInt c = cStart; c < cEnd; ++c) {
         const PetscInt iCell = faceToBoundary[c];  //!< Isolates the valid cells
         PetscInt ghost = -1;
+        PetscInt depth = -1;
+        DMPlexGetPointDepth(GetSolver()->GetSubDomain().GetDM(), iCell, &depth);
+        if (depth != (maxDepth - 1))
+            throw std::invalid_argument(
+                "The radiation flux monitor must be given a region of faces. The cell region given to the ray tracers must not include the cells adjacent to the back of these faces.");
         if (ghostLabel) DMLabelGetValue(ghostLabel, iCell, &ghost) >> utilities::PetscUtilities::checkError;
         if (!(ghost >= 0)) monitorRange.Add(iCell);  //!< Add each ID to the range that the radiation solverIn will use
     }
     // restore
     ISRestoreIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
-    //    solverIn->RestoreRange(solverRange);
 
     for (auto& rayTracer : radiation) {
         rayTracer->Setup(monitorRange.GetRange(), solverIn->GetSubDomain());
@@ -116,13 +114,11 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
     PetscInt dataSize;
     VecGetBlockSize(localFaceVec, &dataSize) >> utilities::PetscUtilities::checkError;
 
-    // TODO: The TCP monitor must store one output for each of the radiation models that are in the vector of ray tracing solvers.
-    // The ratio of red to green intensities must be computed and output as well.
-    // It is not clear whether the red to green intensity ratio output should be implicitly defined in the input definition or whether there should be an explicit definition of which absorption model
-    // represents the red and green intensities respectively. THe definition of a helper class which represents two radiation solvers each carrying a red and green ray tracing solver would likely be
-    // beneficial for the definition of the models.
-
-    /**
+    /** The TCP monitor must store one output for each of the radiation models that are in the vector of ray tracing solvers.
+     * The ratio of red to green intensities must be computed and output as well.
+     * It is not clear whether the red to green intensity ratio output should be implicitly defined in the input definition or whether there should be an explicit definition of which absorption model
+     * represents the red and green intensities respectively. THe definition of a helper class which represents two radiation solvers each carrying a red and green ray tracing solver would likely be
+     * beneficial for the definition of the models.
      * First solve the radiation through each of the ray tracing solvers
      */
     for (auto& rayTracer : radiation) {
@@ -150,7 +146,7 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
                  * Now that the intensity has been read out of the ray tracing solver, it will need to be written to the field which stores the radiation information in the monitor.
                  * This is where the computed information should be written to the dm that was created for the radiation flux monitor.
                  */
-                PetscScalar* globalFaceData = nullptr;  // TODO: Is the size of the pointer that is retrieved equal to the number of fields that are in the DM. Are they in order still?
+                PetscScalar* globalFaceData = nullptr;  //! The size of the pointer is equal to the number of fields that are in the DM.
                 DMPlexPointLocalRef(fluxDm, c, localFaceArray, &globalFaceData) >> utilities::PetscUtilities::checkError;
                 /**
                  * Get the intensity calculated out of the ray tracer. Write it to the appropriate location in the face DM.
@@ -180,6 +176,6 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::monitors::Monitor, ablate::monitors::RadiationFlux, "Outputs radiation flux information about a region.",
+REGISTER(ablate::monitors::Monitor, ablate::monitors::RadiationFlux, "outputs radiation flux information about a region.",
          ARG(std::vector<ablate::radiation::Radiation>, "radiation", "ray tracing solvers which write information to the boundary faces. Use orthogonal for a window or surface for a plate."),
-         ARG(ablate::domain::Region, "region", "region where the radiation is detected."));
+         ARG(ablate::domain::Region, "region", "face region where the radiation is detected. The region given to the ray tracers must not include the cells adjacent to the back of these faces."));
