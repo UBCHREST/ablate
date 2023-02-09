@@ -313,7 +313,7 @@ TEST(TwoPhaseEOSTests, TwoPhaseShouldReportNoSpeciesEctByDefault) {
     std::shared_ptr<ablate::eos::EOS> twoPhaseEos = std::make_shared<ablate::eos::TwoPhase>(eos1, eos2);
 
     // act // assert
-    ASSERT_EQ(0, twoPhaseEos->GetFieldFunctionProperties().size());
+    ASSERT_EQ(1, twoPhaseEos->GetFieldFunctionProperties().size()); // returns VF
     ASSERT_EQ(0, twoPhaseEos->GetSpeciesVariables().size());
     ASSERT_EQ(0, twoPhaseEos->GetProgressVariables().size());
 }
