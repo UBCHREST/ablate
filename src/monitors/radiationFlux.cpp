@@ -5,16 +5,23 @@ ablate::monitors::RadiationFlux::RadiationFlux(std::vector<std::shared_ptr<radia
 
 ablate::monitors::RadiationFlux::~RadiationFlux() {}
 
-void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> solver) {
-    Monitor::Register(solver);
+void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> solverIn) {
+    Monitor::Register(solverIn);
+
+    // TODO: Put in a condition such that the radiation flux monitor can only take radiation classes with surface based implementations.
+
+    //    GetSolver() = std::dynamic_pointer_cast<ablate::boundarySolver::BoundarySolver>(solverIn);
+    //    if (!boundarySolver) {
+    //        throw std::invalid_argument("The BoundarySolverMonitor monitor can only be used with ablate::boundarySolver::BoundarySolver");
+    //    }
 
     // update the name
     name = radiationFluxRegion->GetName() + name;
 
     // make a copy of the dm for a boundary dm.
     DM coordDM;
-    DMGetCoordinateDM(solver->GetSubDomain().GetDM(), &coordDM) >> utilities::PetscUtilities::checkError;
-    DMClone(solver->GetSubDomain().GetDM(), &monitorDm) >> utilities::PetscUtilities::checkError;
+    DMGetCoordinateDM(solverIn->GetSubDomain().GetDM(), &coordDM) >> utilities::PetscUtilities::checkError;
+    DMClone(solverIn->GetSubDomain().GetDM(), &monitorDm) >> utilities::PetscUtilities::checkError;
     DMSetCoordinateDM(monitorDm, coordDM) >> utilities::PetscUtilities::checkError;
 
     // Create a label in the dm copy to mark boundary faces
@@ -27,7 +34,7 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
     PetscSectionCreate(PetscObjectComm((PetscObject)monitorDm), &boundaryFaceSection) >> utilities::PetscUtilities::checkError;
     // Set the max/min bounds
     PetscInt fStart, fEnd;
-    DMPlexGetHeightStratum(solver->GetSubDomain().GetDM(), 1, &fStart, &fEnd) >> utilities::PetscUtilities::checkError;
+    DMPlexGetHeightStratum(solverIn->GetSubDomain().GetDM(), 1, &fStart, &fEnd) >> utilities::PetscUtilities::checkError;
     PetscSectionSetChart(boundaryFaceSection, fStart, fEnd) >> utilities::PetscUtilities::checkError;
 
     // default section dof to zero
@@ -35,15 +42,15 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
         PetscSectionSetDof(boundaryFaceSection, f, 0) >> utilities::PetscUtilities::checkError;
     }
 
-    // set the label at each of the faces and set the dof at each point
-    const auto numberOfComponents = (PetscInt)boundarySolver->GetOutputComponents().size();
-    for (const auto& gradientStencil : boundarySolver->GetBoundaryGeometry()) {
-        // set both the label (used for filtering) and section for global variable creation
-        DMLabelSetValue(radiationFluxLabel, gradientStencil.geometry.faceId, 1) >> utilities::PetscUtilities::checkError;
-
-        // set the dof at each section to the numberOfComponents
-        PetscSectionSetDof(boundaryFaceSection, gradientStencil.geometry.faceId, numberOfComponents) >> utilities::PetscUtilities::checkError;
-    }
+    //    // set the label at each of the faces and set the dof at each point // TODO If there is no boundary solver then how will we tag the appropriate faces?
+    //    const auto numberOfComponents = (PetscInt)boundarySolver->GetOutputComponents().size();
+    //    for (const auto& gradientStencil : boundarySolver->GetBoundaryGeometry()) {
+    //        // set both the label (used for filtering) and section for global variable creation
+    //        DMLabelSetValue(radiationFluxLabel, gradientStencil.geometry.faceId, 1) >> utilities::PetscUtilities::checkError;
+    //
+    //        // set the dof at each section to the numberOfComponents
+    //        PetscSectionSetDof(boundaryFaceSection, gradientStencil.geometry.faceId, numberOfComponents) >> utilities::PetscUtilities::checkError;
+    //    }
 
     // finish the section
     PetscSectionSetUp(boundaryFaceSection) >> utilities::PetscUtilities::checkError;
@@ -81,28 +88,28 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
      * one another.
      */
     DMLabel ghostLabel;
-    DMGetLabel(solver->GetSubDomain().GetDM(), "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
+    DMGetLabel(solverIn->GetSubDomain().GetDM(), "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
     DMLabel radiationRegionLabel;
-    DMGetLabel(solver->GetSubDomain().GetDM(), radiationFluxRegion->GetName().c_str(), &radiationRegionLabel) >> utilities::PetscUtilities::checkError;
+    DMGetLabel(solverIn->GetSubDomain().GetDM(), radiationFluxRegion->GetName().c_str(), &radiationRegionLabel) >> utilities::PetscUtilities::checkError;
 
-    /** Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solver.
+    /** Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solverIn.
      * The purpose of using a dynamic range is to avoid including the boundary cells within the stored range of faces that belongs to the radiation solvers in the monitor.
      * */
     ablate::solver::Range solverRange;
-    solver->GetFaceRange(solverRange);
+    solverIn->GetFaceRange(solverRange);
     for (PetscInt c = solverRange.start; c < solverRange.end; ++c) {
         const PetscInt iCell = solverRange.GetPoint(c);  //!< Isolates the valid cells
         PetscInt ghost = -1;
         PetscInt rad = -1;
         if (ghostLabel) DMLabelGetValue(ghostLabel, iCell, &ghost) >> utilities::PetscUtilities::checkError;
         if (radiationRegionLabel) DMLabelGetValue(radiationRegionLabel, iCell, &rad) >> utilities::PetscUtilities::checkError;
-        if (!(ghost >= 0) && !(rad >= 0)) monitorRange.Add(iCell);  //!< Add each ID to the range that the radiation solver will use
+        if (!(ghost >= 0) && (rad >= 0)) monitorRange.Add(iCell);  //!< Add each ID to the range that the radiation solverIn will use
     }
-    solver->RestoreRange(solverRange);
+    solverIn->RestoreRange(solverRange);
 
     for (auto& rayTracer : radiation) {
-        rayTracer->Setup(monitorRange.GetRange(), solver->GetSubDomain());
-        rayTracer->Initialize(monitorRange.GetRange(), solver->GetSubDomain());
+        rayTracer->Setup(monitorRange.GetRange(), solverIn->GetSubDomain());
+        rayTracer->Initialize(monitorRange.GetRange(), solverIn->GetSubDomain());
     }
 
     DMDestroy(&monitorDm);  //! Delete the monitor DM at the end of the initialization because we will not need it anymore.
@@ -121,16 +128,24 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
 
     // Create a local version of the solution (X) vector
     Vec locXVec;
-    const PetscScalar* locXArray;
-    VecGetArrayRead(locXVec, &locXArray);
+    DMGetLocalVector(GetSolver()->GetSubDomain().GetDM(), &locXVec) >> utilities::PetscUtilities::checkError;
+    DMGlobalToLocalBegin(GetSolver()->GetSubDomain().GetDM(), GetSolver()->GetSubDomain().GetSolutionVector(), INSERT_VALUES, locXVec) >> utilities::PetscUtilities::checkError;
+
+    // finish with the locXVec
+    DMGlobalToLocalEnd(GetSolver()->GetSubDomain().GetDM(), GetSolver()->GetSubDomain().GetSolutionVector(), INSERT_VALUES, locXVec) >> utilities::PetscUtilities::checkError;
+
     //    DMGetLocalVector(GetSolver()->GetSubDomain().GetDM(), &locXVec) >> utilities::PetscUtilities::checkError;
     //    DMGlobalToLocalBegin(GetSolver()->GetSubDomain().GetDM(), GetSolver()->GetSubDomain().GetSolutionVector(), INSERT_VALUES, locXVec) >> utilities::PetscUtilities::checkError;
 
     // finish with the locXVec
     DMGlobalToLocalEnd(GetSolver()->GetSubDomain().GetDM(), GetSolver()->GetSubDomain().GetSolutionVector(), INSERT_VALUES, locXVec) >> utilities::PetscUtilities::checkError;
     /// We don't need to compute the rhs of the solver because we will do all of the radiation calculations
-    //    // compute the rhs
-    //    boundarySolver->ComputeRHSFunction(time, locXVec, localBoundaryVec, boundarySolver->GetOutputFunctions()) >> utilities::PetscUtilities::checkError;
+
+    /** Get read access to the local solution information
+     *
+     */
+    const PetscScalar* locXArray;
+    VecGetArrayRead(locXVec, &locXArray) >> utilities::PetscUtilities::checkError;
 
     // Create a local vector for just the monitor
     Vec localFaceVec;

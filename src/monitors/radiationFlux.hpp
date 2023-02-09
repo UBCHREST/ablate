@@ -58,10 +58,10 @@ class RadiationFlux : public Monitor, public io::Serializable {
     ~RadiationFlux() override;
 
     /**
-     * Register this solver with the boundary solver
-     * @param solver which contains the region being monitored.
+     * Register this solverIn with the boundary solverIn
+     * @param solverIn which contains the region being monitored.
      */
-    void Register(std::shared_ptr<solver::Solver> solver) override;
+    void Register(std::shared_ptr<solver::Solver> solverIn) override;
 
     /**
      * Compute and store the current boundary output values

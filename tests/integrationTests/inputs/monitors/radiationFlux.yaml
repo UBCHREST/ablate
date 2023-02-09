@@ -15,10 +15,12 @@ timestepper:
     ts_adapt_safety: 0.9
   domain: !<!ablate::domain::BoxMeshBoundaryCells>
     name: simpleBoxField
-    faces: [5, 40]
+    faces: [20, 20]
     lower: [0, 0]
     upper: [1, 1]
     simplex: false
+    options:
+      dm_plex_hash_location: true
     preModifiers:
       - !<!ablate::domain::modifiers::DistributeWithGhostCells> ""
     postModifiers:
@@ -85,14 +87,14 @@ solvers:
     eos: *1
     monitors:
       - !<!ablate::monitors::RadiationFlux>
-        eos: *1
         region:
           name: boundaryCellsTop
         radiation:
-          - !<!ablate::radiation::Radiation>
+          - !<!ablate::radiation::SurfaceRadiation>
             id: volRad
             region:
               name: interiorCells
             rays: 25
             properties: !ablate::eos::radiationProperties::Zimmer
               eos: *1
+            log: !ablate::monitors::logs::StdOut
