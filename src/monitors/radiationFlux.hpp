@@ -15,10 +15,7 @@ namespace ablate::monitors {
  */
 class RadiationFlux : public Monitor, public io::Serializable {
    private:
-    /**
-     * This is the DM that the monitor uses to place ray tracing particles on the faces.
-     */
-    DM monitorDm = nullptr;
+
     /**
      * This dm contains only the faces on the boundary and an output boundary field
      */

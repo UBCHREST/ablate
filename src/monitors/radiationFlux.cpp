@@ -18,50 +18,12 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
     // update the name
     name = radiationFluxRegion->GetName() + name;
 
-    // make a copy of the dm for a boundary dm.
-    DM coordDM;
-    DMGetCoordinateDM(solverIn->GetSubDomain().GetDM(), &coordDM) >> utilities::PetscUtilities::checkError;
-    DMClone(solverIn->GetSubDomain().GetDM(), &monitorDm) >> utilities::PetscUtilities::checkError;
-    DMSetCoordinateDM(monitorDm, coordDM) >> utilities::PetscUtilities::checkError;
-
-    // Create a label in the dm copy to mark boundary faces
-    DMCreateLabel(monitorDm, "radiationFluxRegion") >> utilities::PetscUtilities::checkError;
-    DMLabel radiationFluxLabel;
-    DMGetLabel(monitorDm, "radiationFluxRegion", &radiationFluxLabel) >> utilities::PetscUtilities::checkError;
-
-    // Also create a section on each of the faces.  This needs to be a custom section
-    PetscSection boundaryFaceSection;
-    PetscSectionCreate(PetscObjectComm((PetscObject)monitorDm), &boundaryFaceSection) >> utilities::PetscUtilities::checkError;
-    // Set the max/min bounds
-    PetscInt fStart, fEnd;
-    DMPlexGetHeightStratum(solverIn->GetSubDomain().GetDM(), 1, &fStart, &fEnd) >> utilities::PetscUtilities::checkError;
-    PetscSectionSetChart(boundaryFaceSection, fStart, fEnd) >> utilities::PetscUtilities::checkError;
-
-    // default section dof to zero
-    for (PetscInt f = fStart; f < fEnd; ++f) {
-        PetscSectionSetDof(boundaryFaceSection, f, 0) >> utilities::PetscUtilities::checkError;
-    }
-
-    //    // set the label at each of the faces and set the dof at each point // TODO If there is no boundary solver then how will we tag the appropriate faces?
-    //    const auto numberOfComponents = (PetscInt)boundarySolver->GetOutputComponents().size();
-    //    for (const auto& gradientStencil : boundarySolver->GetBoundaryGeometry()) {
-    //        // set both the label (used for filtering) and section for global variable creation
-    //        DMLabelSetValue(radiationFluxLabel, gradientStencil.geometry.faceId, 1) >> utilities::PetscUtilities::checkError;
-    //
-    //        // set the dof at each section to the numberOfComponents
-    //        PetscSectionSetDof(boundaryFaceSection, gradientStencil.geometry.faceId, numberOfComponents) >> utilities::PetscUtilities::checkError;
-    //    }
-
-    // finish the section
-    PetscSectionSetUp(boundaryFaceSection) >> utilities::PetscUtilities::checkError;
-    DMSetLocalSection(monitorDm, boundaryFaceSection) >> utilities::PetscUtilities::checkError;
-    PetscSectionDestroy(&boundaryFaceSection) >> utilities::PetscUtilities::checkError;
-
-    // Complete the label
-    DMPlexLabelComplete(monitorDm, radiationFluxLabel) >> utilities::PetscUtilities::checkError;
+    DMLabel radiationFluxRegionLabel = nullptr;
+    PetscInt regionValue = 0;
+    domain::Region::GetLabel(radiationFluxRegion, solverIn->GetSubDomain().GetDM(), radiationFluxRegionLabel, regionValue);
 
     // Now create a sub dm with only the faces
-    DMPlexFilter(monitorDm, radiationFluxLabel, 1, &fluxDm) >> utilities::PetscUtilities::checkError;
+    DMPlexFilter(solverIn->GetSubDomain().GetDM(), radiationFluxRegionLabel, 1, &fluxDm) >> utilities::PetscUtilities::checkError;
 
     /** Add each of the output components on each face in the fluxDm
      * the number of components should be equal to the number of ray tracers plus any ratio outputs?
@@ -100,10 +62,8 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
     for (PetscInt c = solverRange.start; c < solverRange.end; ++c) {
         const PetscInt iCell = solverRange.GetPoint(c);  //!< Isolates the valid cells
         PetscInt ghost = -1;
-        PetscInt rad = -1;
         if (ghostLabel) DMLabelGetValue(ghostLabel, iCell, &ghost) >> utilities::PetscUtilities::checkError;
-        if (radiationRegionLabel) DMLabelGetValue(radiationRegionLabel, iCell, &rad) >> utilities::PetscUtilities::checkError;
-        if (!(ghost >= 0) && (rad >= 0)) monitorRange.Add(iCell);  //!< Add each ID to the range that the radiation solverIn will use
+        if (!(ghost >= 0) && (radiationFluxRegion->InRegion(radiationFluxRegion, GetSolver()->GetSubDomain().GetDM(), iCell))) monitorRange.Add(iCell);  //!< Add each ID to the range that the radiation solverIn will use
     }
     solverIn->RestoreRange(solverRange);
 
@@ -111,8 +71,6 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
         rayTracer->Setup(monitorRange.GetRange(), solverIn->GetSubDomain());
         rayTracer->Initialize(monitorRange.GetRange(), solverIn->GetSubDomain());
     }
-
-    DMDestroy(&monitorDm);  //! Delete the monitor DM at the end of the initialization because we will not need it anymore.
 }
 
 void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
@@ -126,20 +84,10 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
     // Set the output sequence number to the face dm
     DMSetOutputSequenceNumber(fluxDm, sequenceNumber, time) >> utilities::PetscUtilities::checkError;
 
-    // Create a local version of the solution (X) vector
-    Vec locXVec;
-    DMGetLocalVector(GetSolver()->GetSubDomain().GetDM(), &locXVec) >> utilities::PetscUtilities::checkError;
-    DMGlobalToLocalBegin(GetSolver()->GetSubDomain().GetDM(), GetSolver()->GetSubDomain().GetSolutionVector(), INSERT_VALUES, locXVec) >> utilities::PetscUtilities::checkError;
-
-    // finish with the locXVec
-    DMGlobalToLocalEnd(GetSolver()->GetSubDomain().GetDM(), GetSolver()->GetSubDomain().GetSolutionVector(), INSERT_VALUES, locXVec) >> utilities::PetscUtilities::checkError;
-    /// We don't need to compute the rhs of the solver because we will do all of the radiation calculations
-
     /** Get read access to the local solution information
-     *
      */
     const PetscScalar* locXArray;
-    VecGetArrayRead(locXVec, &locXArray) >> utilities::PetscUtilities::checkError;
+    VecGetArrayRead(GetSolver()->GetSubDomain().GetSolutionVector(), &locXArray) >> utilities::PetscUtilities::checkError;
 
     // Create a local vector for just the monitor
     Vec localFaceVec;
@@ -159,10 +107,10 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
     DMPlexGetHeightStratum(fluxDm, 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
 
     // get the mapping information
-    IS faceIs;
+    IS fluxIs;
     const PetscInt* fluxToSolver = nullptr;
-    DMPlexGetSubpointIS(fluxDm, &faceIs) >> utilities::PetscUtilities::checkError;
-    ISGetIndices(faceIs, &fluxToSolver) >> utilities::PetscUtilities::checkError;
+    DMPlexGetSubpointIS(fluxDm, &fluxIs) >> utilities::PetscUtilities::checkError;
+    ISGetIndices(fluxIs, &fluxToSolver) >> utilities::PetscUtilities::checkError;
 
     // TODO: The TCP monitor must store one output for each of the radiation models that are in the vector of ray tracing solvers.
     // The ratio of red to green intensities must be computed and output as well.
@@ -201,10 +149,10 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
     }
 
     // restore
-    ISRestoreIndices(faceIs, &fluxToSolver) >> utilities::PetscUtilities::checkError;
+    ISRestoreIndices(fluxIs, &fluxToSolver) >> utilities::PetscUtilities::checkError;
 
-    VecRestoreArrayRead(locXVec, &locXArray) >> utilities::PetscUtilities::checkError;
     VecRestoreArray(localFaceVec, &localFaceArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(GetSolver()->GetSubDomain().GetSolutionVector(), &locXArray) >> utilities::PetscUtilities::checkError;
 
     // Map to a global array with add values
     Vec globalFaceVec;
@@ -217,9 +165,6 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
     VecView(globalFaceVec, viewer) >> utilities::PetscUtilities::checkError;
     DMRestoreGlobalVector(fluxDm, &globalFaceVec) >> utilities::PetscUtilities::checkError;
 
-    // cleanup
-    DMRestoreLocalVector(fluxDm, &localFaceVec) >> utilities::PetscUtilities::checkError;
-    DMRestoreLocalVector(GetSolver()->GetSubDomain().GetDM(), &locXVec) >> utilities::PetscUtilities::checkError;
 
     PetscFunctionReturnVoid();
 }
