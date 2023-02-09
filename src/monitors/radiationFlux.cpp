@@ -10,6 +10,8 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
 
     // TODO: Put in a condition such that the radiation flux monitor can only take radiation classes with surface based implementations.
 
+    // TODO: Run a check on all of the indexes in the given region to ensure that they are faces and not cells.
+
     //    GetSolver() = std::dynamic_pointer_cast<ablate::boundarySolver::BoundarySolver>(solverIn);
     //    if (!boundarySolver) {
     //        throw std::invalid_argument("The BoundarySolverMonitor monitor can only be used with ablate::boundarySolver::BoundarySolver");
@@ -27,7 +29,7 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
 
     /** Add each of the output components on each face in the fluxDm
      * the number of components should be equal to the number of ray tracers plus any ratio outputs?
-     */ // TODO: Is this the correct way to create the multiple fields that are required for storage in the fluxDm?
+     */
     for (const auto& rayTracer : radiation) {
         PetscFV fvm;
         PetscFVCreate(PetscObjectComm(PetscObject(fluxDm)), &fvm) >> utilities::PetscUtilities::checkError;
@@ -132,7 +134,7 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
         auto& range = monitorRange.GetRange();
         for (int i = 0; i < int(radiation.size()); i++) {
             for (PetscInt c = range.start; c < range.end; ++c) {
-                const PetscInt iCell = fluxToSolver[c];  //!< Isolates the valid cells
+//                const PetscInt iCell = fluxToSolver[c];  //!< Isolates the valid cells
                 /**
                  * Write the intensity into the fluxDm for outputting.
                  * Now that the intensity has been read out of the ray tracing solver, it will need to be written to the field which stores the radiation information in the monitor.
@@ -143,7 +145,7 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
                 /**
                  * Get the intensity calculated out of the ray tracer. Write it to the appropriate location in the face DM.
                  */
-                globalFaceData[i] = radiation[i]->GetIntensity(iCell, monitorRange.GetRange(), 0, 1);
+                globalFaceData[i] = 1000 * i + 300; // radiation[i]->GetIntensity(iCell, monitorRange.GetRange(), 0, 1);
             }
         }
     }
@@ -164,7 +166,6 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
     // write to the output file
     VecView(globalFaceVec, viewer) >> utilities::PetscUtilities::checkError;
     DMRestoreGlobalVector(fluxDm, &globalFaceVec) >> utilities::PetscUtilities::checkError;
-
 
     PetscFunctionReturnVoid();
 }

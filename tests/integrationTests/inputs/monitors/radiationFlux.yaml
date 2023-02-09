@@ -88,13 +88,20 @@ solvers:
     monitors:
       - !<!ablate::monitors::RadiationFlux>
         region:
-          name: boundaryCellsTop
+          name: upperWallBoundaryFaces
         radiation:
           - !<!ablate::radiation::SurfaceRadiation>
-            id: volRad
+            id: plate
             region:
               name: interiorCells
             rays: 25
             properties: !ablate::eos::radiationProperties::Zimmer
               eos: *1
+            log: !ablate::monitors::logs::StdOut
+          - !<!ablate::radiation::OrthogonalRadiation>
+            id: window
+            region:
+              name: interiorCells
+            properties: !ablate::eos::radiationProperties::Constant
+              absorptivity: 1
             log: !ablate::monitors::logs::StdOut
