@@ -77,7 +77,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
         DMLabel ghostLabel;
         PetscBool boundary;
         DMGetLabel(dm, "ghost", &ghostLabel);
-        PetscInt ghost;
+        PetscInt ghost = -1;
         DMIsBoundaryPoint(dm, c, &boundary);
         if (ghostLabel) {
             DMLabelGetValue(ghostLabel, c, &ghost);
