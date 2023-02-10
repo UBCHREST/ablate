@@ -29,11 +29,14 @@ void SensibleEnthalpy_TemplateRun(const std::string& profile_name,
             const real_type_0d_view_type& hMix_at_i = Kokkos::subview(enthalpyMassMixture, i); //Output Location
             const real_type_1d_view_type hi_at_i = Kokkos::subview(enthalpyMass, i, Kokkos::ALL()); //Scratch Variable of h_species at point of interest
             const real_type_1d_view_type hi_at_i_gas = Kokkos::subview(hi_at_i,std::make_pair(1,kmcd.nSpec));//TODO:: Make sure I'm pulling out correct size
+            const StateVectorSoot<real_type_1d_view_type> sv_at_i_total(kmcd.nSpec, state_at_i);
+
             //Want to reUse sensible enthalpy function from Non Soot case, meaning we need to split our state vector into a gaseous statevector
             real_type_1d_view_type state_at_i_gas = real_type_1d_view_type("Gaseous",Impl::getStateVectorSize(kmcd.nSpec));
-            TChemSoot::SplitYiState(state_at_i,state_at_i_gas,kmcd);
             //Get the Gaseous State Vector
-            const Impl::StateVector<real_type_1d_view_type> sv_at_i(kmcd.nSpec, state_at_i_gas);
+            Impl::StateVector<real_type_1d_view_type> sv_at_i(kmcd.nSpec, state_at_i_gas);
+
+            sv_at_i_total.SplitYiState(sv_at_i);
 
             Scratch<real_type_1d_view_type> work(member.team_scratch(level), per_team_extent);
             auto cpks = real_type_1d_view_type((real_type*)work.data(), kmcd.nSpec);
@@ -49,7 +52,7 @@ void SensibleEnthalpy_TemplateRun(const std::string& profile_name,
                 //Now scale gaseous enthalpy by amount of soot present in system
                 hMix_at_i() *= (1-Yc);
                 //Calculate Solid Enthalpy and add it
-                hi_at_i(0) = ablate::eos::TChemSoot::CarbonEnthalpy_R_T(t)*t*kmcd.Runiv - enthalpyRef(0);
+                hi_at_i(0) = ablate::eos::TChemSoot::CarbonEnthalpy_R_T(t)*t*kmcd.Runiv/ tChemSoot::MWCarbon - enthalpyRef(0);
                 hMix_at_i() += hi_at_i(0)*Yc;
             }
         });

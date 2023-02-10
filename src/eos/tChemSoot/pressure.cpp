@@ -20,12 +20,16 @@ void Pressure_TemplateRun(const std::string& profile_name,
             const ordinal_type i = member.league_rank();
             const real_type_1d_view_type state_at_i = Kokkos::subview(state, i, Kokkos::ALL());
 
-            //Need to scale Yi appropriately
-            real_type_1d_view_type state_at_i_gas = real_type_1d_view_type("Gaseous",TChem::Impl::getStateVectorSize(kmcd.nSpec));
-            ablate::eos::TChemSoot::SplitYiState(state_at_i,state_at_i_gas,kmcd);
+            const StateVectorSoot<real_type_1d_view_type> sv_at_i_total(kmcd.nSpec, state_at_i);
+
             //Get the Gaseous State Vector
-            const Impl::StateVector<real_type_1d_view_type> sv_at_i(kmcd.nSpec, state_at_i_gas);
-            state_at_i(1) = ablate::eos::tChem::impl::pressureFcn<real_type, device_type>::team_invoke(member, sv_at_i, kmcd);
+            real_type_1d_view_type state_at_i_gas = real_type_1d_view_type("Gaseous",::TChem::Impl::getStateVectorSize(kmcd.nSpec));
+            Impl::StateVector<real_type_1d_view_type> sv_at_i(kmcd.nSpec, state_at_i_gas);
+
+            //Need to scale Yi appropriately
+            sv_at_i_total.SplitYiState(sv_at_i);
+
+            sv_at_i_total.Pressure() = ablate::eos::tChem::impl::pressureFcn<real_type, device_type>::team_invoke(member, sv_at_i, kmcd);
         });
     Kokkos::Profiling::popRegion();
 }

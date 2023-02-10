@@ -8,10 +8,9 @@ namespace ablate::eos::tChemSoot::impl {
 
 template <typename PolicyType, typename DeviceType>
 void SpecificHeatConstantPressure_TemplateRun(const std::string& profile_name,
-                          /// team size setting
-                          const PolicyType& policy, const Tines::value_type_2d_view<real_type, DeviceType>& state, const Tines::value_type_1d_view<real_type, DeviceType>& CpMix,
+                                              /// team size setting
+                                              const PolicyType& policy, const Tines::value_type_2d_view<real_type, DeviceType>& state, const Tines::value_type_1d_view<real_type, DeviceType>& CpMix,
                                               const KineticModelConstData<DeviceType>& kmcd) {
-
     Kokkos::Profiling::pushRegion(profile_name);
     using policy_type = PolicyType;
     using device_type = DeviceType;
@@ -26,12 +25,13 @@ void SpecificHeatConstantPressure_TemplateRun(const std::string& profile_name,
         profile_name, policy, KOKKOS_LAMBDA(const typename policy_type::member_type& member) {
             const ordinal_type i = member.league_rank();
             const real_type_1d_view_type state_at_i = Kokkos::subview(state, i, Kokkos::ALL());
+            const StateVectorSoot<real_type_1d_view_type> sv_at_i_total(kmcd.nSpec, state_at_i);
 
-            //Need to scale Yi appropriately
-            real_type_1d_view_type state_at_i_gas = real_type_1d_view_type("Gaseous",TChem::Impl::getStateVectorSize(kmcd.nSpec));
-            ablate::eos::TChemSoot::SplitYiState(state_at_i,state_at_i_gas,kmcd);
-            //Get the Gaseous State Vector
-            const Impl::StateVector<real_type_1d_view_type> sv_at_i(kmcd.nSpec, state_at_i_gas);
+            // Need to scale Yi appropriately
+            real_type_1d_view_type state_at_i_gas = real_type_1d_view_type("Gaseous", ::TChem::Impl::getStateVectorSize(kmcd.nSpec));
+            // Get the Gaseous State Vector
+            Impl::StateVector<real_type_1d_view_type> sv_at_i(kmcd.nSpec, state_at_i_gas);
+            sv_at_i_total.SplitYiState(sv_at_i);
 
             const real_type_0d_view_type CpMix_at_i = Kokkos::subview(CpMix, i);
 
@@ -42,17 +42,17 @@ void SpecificHeatConstantPressure_TemplateRun(const std::string& profile_name,
             {
                 real_type t = sv_at_i.Temperature();
                 const real_type_1d_view_type ys = sv_at_i.MassFractions();
-                const real_type Yc = state_at_i(kmcd.nSpec+3);
+                const real_type Yc = state_at_i(kmcd.nSpec + 3);
                 // compute cp_gas
                 auto cp_gas = tChemLib::Impl::CpMixMs<real_type, device_type>::team_invoke(member, t, ys, cpks, kmcd);
-                auto cp_Soot = ablate::eos::TChemSoot::CarbonCp_R(t)*kmcd.Runiv/ablate::eos::TChemSoot::solidCarbonDensity;
-                CpMix_at_i() = (1-Yc)*cp_gas + Yc*cp_Soot;
+                auto cp_Soot = ablate::eos::TChemSoot::CarbonCp_R(t) * kmcd.Runiv / ablate::eos::tChemSoot::solidCarbonDensity;
+                CpMix_at_i() = (1 - Yc) * cp_gas + Yc * cp_Soot;
             }
         });
     Kokkos::Profiling::popRegion();
 }
 
-}  // namespace ablate::eos::tChem::impl
+}  // namespace ablate::eos::tChemSoot::impl
 
 [[maybe_unused]] void ablate::eos::tChemSoot::SpecificHeatConstantPressure::runDeviceBatch(typename UseThisTeamPolicy<exec_space>::type& policy,
                                                                                            const ablate::eos::tChemSoot::SpecificHeatConstantPressure::real_type_2d_view_type& state,

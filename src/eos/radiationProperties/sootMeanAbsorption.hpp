@@ -10,7 +10,7 @@ namespace ablate::eos::radiationProperties {
 class SootMeanAbsorption : public RadiationModel {
    private:
     struct FunctionContext {
-        PetscInt densityEVCOffset;
+        PetscInt densityYiCSolidCOffset;
         const ThermodynamicFunction temperatureFunction;
         const ThermodynamicTemperatureFunction densityFunction;
     };
@@ -24,8 +24,6 @@ class SootMeanAbsorption : public RadiationModel {
     ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
     static PetscErrorCode SootFunction(const PetscReal* conserved, PetscReal* kappa, void* ctx);
     static PetscErrorCode SootTemperatureFunction(const PetscReal* conserved, PetscReal temperature, PetscReal* kappa, void* ctx);
-
-    PetscInt GetFieldComponentOffset(const std::string& str, const domain::Field& field) const;
 };
 }  // namespace ablate::eos::radiationProperties
 #endif  // ABLATELIBRARY_SOOTMEANABSORPTION_HPP

@@ -21,8 +21,8 @@ namespace ablate::eos {
 
 namespace tChemLib = TChem;
 
-class TChemSoot : public TChem {
-   private:
+class TChemSoot : public TChemBase, public std::enable_shared_from_this<ablate::eos::TChemSoot> {
+   public:
     /**
      * The name of the solid species
      */
@@ -108,7 +108,7 @@ class TChemSoot : public TChem {
      * @param cellRange
      * @return
      */
-    std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override { return nullptr; }
+    std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override;
 
     /**
      * helper function to build the function context needed regardless of function type.  This is specialized for soot
@@ -192,28 +192,6 @@ class TChemSoot : public TChem {
      * @param yi
      */
     static void FillWorkingVectorFromDensityMassFractions(double density, double temperature, const double* densityYi, const tChemSoot::StateVectorSoot<real_type_1d_view_host>& stateVector);
-
-   public:
-    //! SolidCarbonDensity
-    inline const static double solidCarbonDensity = 2000;
-    //! Molecular Weight of Carbon
-    inline static const double MWCarbon = 12.0107;
-    //! Scaling term for Ndd going into the Tines ODE Solver
-    inline static double NddScaling = 1e20;
-
-    // Helper Function to split the total state vector into an appropriate gaseous state vector
-    // Currently assumes all species were already normalized
-    template <typename device_type, typename real_1d_viewType>
-    inline static void SplitYiState(const real_1d_viewType& totalState, real_1d_viewType& gaseousState, const KineticModelConstData<device_type>& kmcd) {
-        double Yc = totalState(3 + kmcd.nSpec);
-        gaseousState(1) = totalState(1);  // Pressure
-        gaseousState(2) = totalState(2);  // Temperature (assumed the same in both phases)
-        for (auto ns = 0; ns < kmcd.nSpec; ns++) {
-            gaseousState(3 + ns) = totalState(3 + ns) / (1 - Yc);
-        }
-        // Need to calculate the gaseous density at this state
-        gaseousState(0) = (1 - Yc) / (1 / totalState(0) - Yc / ablate::eos::TChemSoot::solidCarbonDensity);
-    }
 
     // New stuff
    private:

@@ -55,7 +55,7 @@ struct SensibleInternalEnergyFcn {
         //Scale Internal Energy with the solid component
         sensibleInternalEnergy*= (1-YCarbon);
         //Add on the contribution due to soot //e_{sens,carbon} = H_i_mass - P/rhoCarbon
-        value_type sootInternalEnergy = kmcd.Runiv*temperature*ablate::eos::TChemSoot::CarbonEnthalpy_R_T(temperature)/ablate::eos::TChemSoot::MWCarbon - hi_ref(0) - pressure/ablate::eos::TChemSoot::solidCarbonDensity;
+        value_type sootInternalEnergy = kmcd.Runiv*temperature*ablate::eos::TChemSoot::CarbonEnthalpy_R_T(temperature)/ablate::eos::tChemSoot::MWCarbon - hi_ref(0) - pressure/ablate::eos::tChemSoot::solidCarbonDensity;
         sensibleInternalEnergy += sootInternalEnergy*YCarbon;
         return sensibleInternalEnergy;
     }

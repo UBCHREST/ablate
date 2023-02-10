@@ -27,12 +27,14 @@ void SpecificHeatConstantVolume_TemplateRun(const std::string& profile_name,
         profile_name, policy, KOKKOS_LAMBDA(const typename policy_type::member_type& member) {
             const ordinal_type i = member.league_rank();
             const real_type_1d_view_type state_at_i = Kokkos::subview(state, i, Kokkos::ALL());
+            const StateVectorSoot<real_type_1d_view_type> sv_at_i_total(kmcd.nSpec, state_at_i);
 
-            //Need to scale Yi appropriately
-            real_type_1d_view_type state_at_i_gas = real_type_1d_view_type("Gaseous",TChem::Impl::getStateVectorSize(kmcd.nSpec));
-            ablate::eos::TChemSoot::SplitYiState(state_at_i,state_at_i_gas,kmcd);
             //Get the Gaseous State Vector
-            const Impl::StateVector<real_type_1d_view_type> sv_at_i(kmcd.nSpec, state_at_i_gas);
+            real_type_1d_view_type state_at_i_gas = real_type_1d_view_type("Gaseous",::TChem::Impl::getStateVectorSize(kmcd.nSpec));
+            Impl::StateVector<real_type_1d_view_type> sv_at_i(kmcd.nSpec, state_at_i_gas);
+            //Need to scale Yi appropriately
+            sv_at_i_total.SplitYiState(sv_at_i);
+
 
             const real_type_0d_view_type CvMix_at_i = Kokkos::subview(CvMix, i);
 
@@ -43,12 +45,12 @@ void SpecificHeatConstantVolume_TemplateRun(const std::string& profile_name,
             {
                 real_type t = sv_at_i.Temperature();
                 const real_type_1d_view_type ys = sv_at_i.MassFractions();
-                const real_type Yc = state_at_i(kmcd.nSpec+3);
+                const real_type Yc = sv_at_i_total.MassFractionCarbon();
                 // compute cv_gas
                 real_type wmix = tChemLib::Impl::MolarWeights<real_type,device_type>::team_invoke(member, ys, kmcd );
                 member.team_barrier();
                 auto cv_gas = tChemLib::Impl::CpMixMs<real_type, device_type>::team_invoke(member, t, ys, cpks, kmcd) - kmcd.Runiv/wmix;
-                auto cv_Soot = (ablate::eos::TChemSoot::CarbonCp_R(t) - 1)*kmcd.Runiv/ablate::eos::TChemSoot::MWCarbon;
+                auto cv_Soot = (ablate::eos::TChemSoot::CarbonCp_R(t) - 1)*kmcd.Runiv/ablate::eos::tChemSoot::MWCarbon;
                 CvMix_at_i() = (1-Yc)*cv_gas + Yc*cv_Soot;
             }
         });

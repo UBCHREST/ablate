@@ -25,7 +25,7 @@ Sandia National Laboratories, Livermore, CA, USA
 #include "TChem_Util.hpp"
 
 #include "IgnitionZeroDSoot_Implemenatation.hpp"
-namespace ablate::finiteVolume::processes::tchemSoot {
+namespace ablate::eos::tChemSoot {
 
     using host_device_type = typename Tines::UseThisDevice<host_exec_space>::type;
     using device_type = typename Tines::UseThisDevice<exec_space>::type;
@@ -67,7 +67,7 @@ namespace ablate::finiteVolume::processes::tchemSoot {
         const real_type_1d_view& dt_out,
         const real_type_2d_view& state_out,
         /// const data from kinetic model
-        const Tines::value_type_1d_view<KineticModelConstData<interf_device_type>,interf_device_type>& kmcds);
+        const Tines::value_type_1d_view<KineticModelConstData<interf_device_type>,interf_device_type>& kmcds, double thresholdTemperature);
 
       static void runHostBatch( /// input
         typename UseThisTeamPolicy<host_exec_space>::type& policy,
@@ -86,7 +86,7 @@ namespace ablate::finiteVolume::processes::tchemSoot {
         const real_type_1d_view_host& dt_out,
         const real_type_2d_view_host& state_out,
         /// const data from kinetic model
-        const Tines::value_type_1d_view<KineticModelConstData<interf_host_device_type>,interf_host_device_type>& kmcds);
+        const Tines::value_type_1d_view<KineticModelConstData<interf_host_device_type>,interf_host_device_type>& kmcds, double thresholdTemperature);
     };
 
 } // namespace TChem

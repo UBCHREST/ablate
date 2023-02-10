@@ -31,7 +31,7 @@ Sandia National Laboratories, Livermore, CA, USA
 #include "TChem_Util.hpp"
 
 
-namespace ablate::finiteVolume::processes::tchemSoot {
+namespace ablate::eos::tChemSoot {
     template<typename ValueType, typename DeviceType>
     struct IgnitionZeroD_ProblemSoot {
         using device_type = DeviceType;
@@ -79,8 +79,8 @@ namespace ablate::finiteVolume::processes::tchemSoot {
 
         KOKKOS_INLINE_FUNCTION  // Probably Need to change this, but I'm not sure rn.... ??? -klb
         static ordinal_type getWorkSpaceSize(const kinetic_model_type& kmcd) {
-            const ordinal_type src_workspace_size = TChem::Impl::SourceTerm<real_type, device_type>::getWorkSpaceSize(kmcd);
-            const ordinal_type jac_workspace_size = TChem::Impl::JacobianReduced::getWorkSpaceSize(kmcd);
+            const ordinal_type src_workspace_size = ::TChem::Impl::SourceTerm<real_type, device_type>::getWorkSpaceSize(kmcd);
+            const ordinal_type jac_workspace_size = ::TChem::Impl::JacobianReduced::getWorkSpaceSize(kmcd);
             const ordinal_type workspace_size_analytical_jacobian = (jac_workspace_size > src_workspace_size ? jac_workspace_size : src_workspace_size);
 
             const ordinal_type m = getNumberOfEquations(kmcd);
@@ -109,15 +109,15 @@ namespace ablate::finiteVolume::processes::tchemSoot {
             //Convert total mass fractions to gas mass fractions, and pull out YCarbon and Nd for temperature calculation!
             const real_type_1d_view_type gas_StateVector=  real_type_1d_view_type("GaseousSpecies",_kmcd.nSpec+3);
             real_type Ycarbon = PetscMax(x(_kmcd.nSpec+1),0);
-            real_type Nd = PetscMax(x(_kmcd.nSpec+2),0) * ablate::eos::TChemSoot::NddScaling;
+            real_type Nd = PetscMax(x(_kmcd.nSpec+2),0) * ablate::eos::tChemSoot::NddScaling;
 
             // Calculate gas density based on total density is constant and back it out from Yc
-            gas_StateVector(0) = (1-Ycarbon)/(1/_densityTot-Ycarbon/ablate::eos::TChemSoot::solidCarbonDensity); //gaseous density
+            gas_StateVector(0) = (1-Ycarbon)/(1/_densityTot-Ycarbon/ablate::eos::tChemSoot::solidCarbonDensity); //gaseous density
             gas_StateVector(2) = x(0);// temperature
             for(int i =0; i < _kmcd.nSpec; i++) {
                 gas_StateVector(i+3) = x(i+1)/(1-Ycarbon);
             }
-            const TChem::Impl::StateVector gas_SV(_kmcd.nSpec,gas_StateVector);
+            const ::TChem::Impl::StateVector gas_SV(_kmcd.nSpec,gas_StateVector);
 
             //CalculatePressure based on density of the gas and temperature
             gas_SV.Pressure() = ablate::eos::tChem::impl::pressureFcn<real_type,DeviceType>::team_invoke(member, gas_SV,_kmcd);

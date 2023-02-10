@@ -1,12 +1,10 @@
-//
-// Created by klbud on 9/30/22.
-//
-#include <TChem_Impl_RhoMixMs.hpp>
-#include "TChem_KineticModelData.hpp"
-#include "eos/tChemSoot.hpp"
-
 #ifndef ABLATE_SOOTDENSITYFCN_HPP
 #define ABLATE_SOOTDENSITYFCN_HPP
+
+#include <TChem_Impl_RhoMixMs.hpp>
+#include "TChem_KineticModelData.hpp"
+#include "eos/tChemSoot/sootConstants.hpp"
+#include "stateVectorSoot.hpp"
 
 namespace ablate::eos::tChemSoot::impl {
 
@@ -21,36 +19,24 @@ struct densityFcn {
     template <typename MemberType, typename KineticModelConstDataType>
     KOKKOS_INLINE_FUNCTION static value_type team_invoke(const MemberType& member,
                                                          /// input
-                                                         const Impl::StateVector<real_type_1d_view_type> svGas, // Gaseous State Vector
-                                                         value_type YCarbon,
-                                                         const KineticModelConstDataType& kmcd) {
+                                                         StateVectorSoot<real_type_1d_view_type> totalState, const KineticModelConstDataType& kmcd) {
         member.team_barrier();
-        // compute the Pressure
-        value_type TotalDensity;
+        real_type_1d_view gaseousState = real_type_1d_view_type("Gaseous", ::TChem::Impl::getStateVectorSize(kmcd.nSpec));
+        ::TChem::Impl::StateVector svGas = ::TChem::Impl::StateVector(kmcd.nSpec, gaseousState);
+
+        totalState.SplitYiState(svGas);
+
+        value_type totalDensity;
+        auto YCarbon = totalState.MassFractionCarbon();
         TCHEM_CHECK_ERROR(!svGas.isValid(), "Error: input state vector is not valid");
         {
             value_type temperature = svGas.Temperature();
-            value_type GaseousDensity = Impl::RhoMixMs<value_type,DeviceType>
-                ::team_invoke(member, temperature,
-                             svGas.Pressure(), svGas.MassFractions(), kmcd);
-            TotalDensity = 1/((1-YCarbon)/GaseousDensity+(YCarbon/TChemSoot::solidCarbonDensity) );
+            value_type gaseousDensity = Impl::RhoMixMs<value_type, DeviceType>::team_invoke(member, temperature, svGas.Pressure(), svGas.MassFractions(), kmcd);
+            totalDensity = 1.0 / ((1.0 - YCarbon) / gaseousDensity + (YCarbon / ablate::eos::tChemSoot::solidCarbonDensity));
         }
-        return TotalDensity;
-    }
-
-    template <typename MemberType, typename KineticModelConstDataType>
-    KOKKOS_INLINE_FUNCTION static value_type team_invoke(const MemberType& member,
-                                                         /// input
-                                                         real_type_1d_view_type TotalState,
-                                                         const KineticModelConstDataType& kmcd) {
-        member.team_barrier();
-        real_type_1d_view GaseousState = real_type_1d_view_type("Gaseous",TChem::Impl::getStateVectorSize(kmcd.nSpec));
-        TChemSoot::SplitYiState(TotalState,GaseousState,kmcd);
-        const TChem::Impl::StateVector SV = TChem::Impl::StateVector(kmcd.nSpec,GaseousState);
-        return team_invoke(member,SV,TotalState(kmcd.nSpec+3),kmcd);
+        return totalDensity;
     }
 };
 
-}  // namespace ablate::eos::tChem::impl
+}  // namespace ablate::eos::tChemSoot::impl
 #endif
-

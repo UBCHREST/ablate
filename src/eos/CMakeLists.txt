@@ -7,6 +7,7 @@ target_sources(ablateLibrary
         chemistryModel.cpp
         twoPhase.cpp
         tChemSoot.cpp
+        tChemBase.cpp
 
         PUBLIC
         eos.hpp
@@ -17,6 +18,7 @@ target_sources(ablateLibrary
         chemistryModel.hpp
         twoPhase.hpp
         tChemSoot.hpp
+        tChemBase.hpp
         )
 
 add_subdirectory(transport)

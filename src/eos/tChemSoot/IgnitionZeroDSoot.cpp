@@ -31,7 +31,7 @@ Sandia National Laboratories, Livermore, CA, USA
 /// qoi (time + qidx.extent(0)) - QoI output
 /// kmcd - const data for kinetic model
 
-namespace ablate::finiteVolume::processes::tchemSoot {
+namespace ablate::eos::tChemSoot {
     using device_type = typename Tines::UseThisDevice<exec_space>::type;
     using real_type_0d_view_type = Tines::value_type_0d_view<real_type,device_type>;
     using real_type_1d_view_type = Tines::value_type_1d_view<real_type,device_type>;
@@ -56,7 +56,7 @@ namespace ablate::finiteVolume::processes::tchemSoot {
         const real_type_1d_view& dt_out,
         const real_type_2d_view& state_out,
         /// const data from kinetic model
-        const Tines::value_type_1d_view<KineticModelConstData<interf_device_type>,interf_device_type>& kmcds)
+        const Tines::value_type_1d_view<KineticModelConstData<interf_device_type>,interf_device_type>& kmcds, double thresholdTemperature)
     {
         const std::string profile_name = "TChem::IgnitionZeroDSoot::runDeviceBatch::kmcd array";
         using value_type = real_type;
@@ -75,7 +75,8 @@ namespace ablate::finiteVolume::processes::tchemSoot {
             t_out,
             dt_out,
             state_out,
-            kmcds);
+            kmcds,
+            thresholdTemperature);
     }
 
   void
@@ -95,7 +96,7 @@ namespace ablate::finiteVolume::processes::tchemSoot {
                               const real_type_1d_view_host& dt_out,
                               const real_type_2d_view_host& state_out,
                               /// const data from kinetic model
-			      const Tines::value_type_1d_view<KineticModelConstData<interf_host_device_type>,interf_host_device_type>& kmcds) {
+			      const Tines::value_type_1d_view<KineticModelConstData<interf_host_device_type>,interf_host_device_type>& kmcds,  double thresholdTemperature) {
     const std::string profile_name = "TChem::IgnitionZeroDSoot::runHostBatch::kmcd array";
     using value_type = real_type;
     IgnitionZeroDSoot_TemplateRun(
@@ -113,7 +114,8 @@ namespace ablate::finiteVolume::processes::tchemSoot {
         t_out,
         dt_out,
         state_out,
-        kmcds);
+        kmcds,
+        thresholdTemperature);
   }
 
 } // namespace TChem

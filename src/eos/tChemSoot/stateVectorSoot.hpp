@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_STATEVECTORSOOT_HPP
 #define ABLATELIBRARY_STATEVECTORSOOT_HPP
 #include "TChem_Util.hpp"
+#include "sootConstants.hpp"
 
 namespace ablate::eos::tChemSoot {
 
@@ -53,6 +54,25 @@ struct StateVectorSoot {
     KOKKOS_INLINE_FUNCTION real_value_type *TemperaturePtr() const { return &_v(2); }
     KOKKOS_INLINE_FUNCTION real_value_type *MassFractionsPtr() const { return &_v(3); }
 
+
+    // Helper Function to split the total state vector into an appropriate gaseous state vector
+    // Currently assumes all species were already normalized
+    template <typename real_1d_viewType>
+    inline void SplitYiState(Impl::StateVector<real_1d_viewType>& gaseousState) const {
+        double Yc = MassFractionCarbon();
+
+        // pressure, temperature (assumed the same in both phases)
+        gaseousState.Temperature() = Temperature();
+        gaseousState.Pressure() = Pressure();
+        auto yiGaseousState = gaseousState.MassFractions();
+        auto yi = MassFractions();
+
+        for (auto ns = 0; ns < _nSpec; ns++) {
+            yiGaseousState(ns) = yi(ns) / (1.0 - Yc);
+        }
+        // Need to calculate the gaseous density at this state
+        gaseousState.Density() = (1 - Yc) / (1 / Density() - Yc / ablate::eos::tChemSoot::solidCarbonDensity);
+    }
 };
 
 static KOKKOS_INLINE_FUNCTION ordinal_type getStateVectorSootSize(const ordinal_type nGasSpec) { return nGasSpec + 3 + 2 /*yc, ndd */; }

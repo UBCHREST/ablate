@@ -28,21 +28,24 @@ namespace ablate::eos::tChemSoot::impl {
             profile_name, policy, KOKKOS_LAMBDA(const typename policy_type::member_type& member) {
                 const ordinal_type i = member.league_rank();
                 const real_type_1d_view_type state_at_i = Kokkos::subview(state, i, Kokkos::ALL());
+                const StateVectorSoot<real_type_1d_view_type> sv_at_i_total(kmcd.nSpec, state_at_i);
+
                 const real_type_1d_view_type hi_at_i = Kokkos::subview(enthalpyMass, i, Kokkos::ALL());
                 const real_type_0d_view_type internalEnergyRef_at_i = Kokkos::subview(internalEnergyRef, i);
 
                 //Pull out Carbon Mass Fractions
-                const real_type Yc = state_at_i(3+kmcd.nSpec);
+                const real_type Yc = sv_at_i_total.MassFractionCarbon();
                 //Create the Gaseous State Vector
-                real_type_1d_view_type state_at_i_gas = real_type_1d_view_type("Gaseous",TChem::Impl::getStateVectorSize(kmcd.nSpec));
-                ablate::eos::TChemSoot::SplitYiState(state_at_i,state_at_i_gas,kmcd);
-                const Impl::StateVector<real_type_1d_view_type> sv_at_i(kmcd.nSpec, state_at_i_gas);
+                real_type_1d_view_type state_at_i_gas = real_type_1d_view_type("Gaseous",::TChem::Impl::getStateVectorSize(kmcd.nSpec));
+                Impl::StateVector<real_type_1d_view_type> sv_at_i(kmcd.nSpec, state_at_i_gas);
+                sv_at_i_total.SplitYiState(sv_at_i);
+
                 const ordinal_type level = 1;
                 const ordinal_type per_team_extent = Temperature::getWorkSpaceSize(kmcd.nSpec);
                 //        using real_type_0d_view_type = Tines::value_type_0d_view<real_type, device_type>;
                 Scratch<real_type_1d_view_type> work(member.team_scratch(level), per_team_extent);
                 auto cpks = real_type_1d_view_type((real_type*)work.data(), kmcd.nSpec);
-                state_at_i(2) = ablate::eos::tChemSoot::impl::TemperatureFcn<real_type,device_type>::team_invoke(member,sv_at_i,Yc,internalEnergyRef_at_i,hi_at_i,cpks,enthalpyReference,kmcd);
+                sv_at_i_total.Temperature() = ablate::eos::tChemSoot::impl::TemperatureFcn<real_type,device_type>::team_invoke(member,sv_at_i,Yc,internalEnergyRef_at_i,hi_at_i,cpks,enthalpyReference,kmcd);
             });
 
 

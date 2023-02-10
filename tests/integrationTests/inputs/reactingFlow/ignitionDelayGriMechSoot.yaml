@@ -5,7 +5,7 @@
 environment:
   title: _ignitionDelayGriMechSoot
   tagDirectory: false
-arguments: 
+arguments:
   petsclimiter_type: none
 # set up the time stepper responsible for marching in time
 timestepper:
@@ -27,12 +27,9 @@ timestepper:
       # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
       # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...) and species mass fractions
       - !ablate::finiteVolume::CompressibleFlowFields
-        eos: &eos !ablate::eos::TChem # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked
+        eos: &eos !ablate::eos::TChemSoot # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked
           mechFile: ../mechanisms/grimech30.mech.dat
           thermoFile: ../mechanisms/grimech30.thermo.dat
-
-        extraVariables: ["YCarbonSolid","SootNumberDensity_Mass"]
-
 
   # set the initial conditions of the flow field
   initialization:
@@ -45,7 +42,7 @@ timestepper:
         pressure: 101325.0
         velocity: [ 0.0 ]
         # the mass fractions must be specified to compute rho, e, etc.
-        massFractions: !ablate::finiteVolume::fieldFunctions::MassFractions
+        other: !ablate::finiteVolume::fieldFunctions::MassFractions
           # the mass fraction class allows for a subset of mass fractions to be specified.  The rest are assumed zero
           eos: *eos
           values:
@@ -59,30 +56,26 @@ timestepper:
     - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
       state: *initState
 
-    - !ablate::finiteVolume::fieldFunctions::DensityExtraVariables
-      &densityEVFlowFieldState
-      state: *initState
-      functions:
-      - 0.0
-      - 0.0
-
+    # Set the number density to zero
+    - fieldName: densityProgress
+      field: "0.0"
 
 # the basic FiniteVolumeSolver is used with only a single reaction process
 solver: !ablate::finiteVolume::FiniteVolumeSolver
   id: reactingFlowODE
-  options: {}
+  options: { }
   processes:
-    # without advection/diffusion the tChemReactions process is the only one needed
-    - !ablate::finiteVolume::processes::TChemSootReactions
+    # without advection/diffusion the Chemistry process is the only one needed
+    - !ablate::finiteVolume::processes::Chemistry
       eos: *eos
 
-  boundaryConditions: []
+  boundaryConditions: [ ]
 
   monitors:
     # the IgnitionDelayPeakYi monitor computes and store the amount of time it took to reach peak OH
     - !ablate::monitors::IgnitionDelayPeakYi
       species: OH
-      location: [0.5]
+      location: [ 0.5 ]
       log: !ablate::monitors::logs::FileLog
         name: ignitionDelayPeakYi.txt
       historyLog: !ablate::monitors::logs::CsvLog
@@ -90,7 +83,7 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
     # the IgnitionDelayTemperature monitor computes and store the amount of time it took to reach the specified temperature
     - !ablate::monitors::IgnitionDelayTemperature
       eos: *eos
-      location: [0.5]
+      location: [ 0.5 ]
       thresholdTemperature: 1500
       log: !ablate::monitors::logs::CsvLog
         name: ignitionDelayTemperature.csv
@@ -102,5 +95,5 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
         - name: DataProbe
           location: [ .5 ]
       bufferSize: 10
-      variables: [ densityYi, euler, densityEV]
+      variables: [ densityYi, euler, densityProgress, temperature ]
 

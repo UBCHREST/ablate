@@ -26,14 +26,17 @@ void SpeedOfSound_TemplateRun(const std::string& profile_name,
             const ordinal_type i = member.league_rank();
             const real_type_1d_view_type state_at_i = Kokkos::subview(state, i, Kokkos::ALL());
 
-            if(state_at_i(3+kmcd.nSpec) >=1 )     //Error out, something went wrong, this should never be full carbon
+            const StateVectorSoot<real_type_1d_view_type> sv_at_i_total(kmcd.nSpec, state_at_i);
+
+
+            if(sv_at_i_total.MassFractionCarbon() >=1 )     //Error out, something went wrong, this should never be full carbon
                 throw std::invalid_argument("ablate::eos::tchemSoot::SpeedOfSound, Carbon Mass Fraction has reached a value of 1 and this is not handled currently!");
 
             //Need to scale Yi appropriately
-            real_type_1d_view_type state_at_i_gas = real_type_1d_view_type("Gaseous",TChem::Impl::getStateVectorSize(kmcd.nSpec));
-            ablate::eos::TChemSoot::SplitYiState(state_at_i,state_at_i_gas,kmcd);
+            real_type_1d_view_type state_at_i_gas = real_type_1d_view_type("Gaseous",::TChem::Impl::getStateVectorSize(kmcd.nSpec));
             //Get the Gaseous State Vector
-            const Impl::StateVector<real_type_1d_view_type> sv_at_i(kmcd.nSpec, state_at_i_gas);
+            Impl::StateVector<real_type_1d_view_type> sv_at_i(kmcd.nSpec, state_at_i_gas);
+            sv_at_i_total.SplitYiState(sv_at_i);
 
             const real_type_0d_view_type speedOfSound_at_i = Kokkos::subview(speedOfSound, i);
 

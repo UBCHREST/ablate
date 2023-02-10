@@ -28,7 +28,7 @@ Sandia National Laboratories, Livermore, CA, USA
 #include "Sacado.hpp"
 #include "Tines.hpp"
 
-namespace ablate::finiteVolume::processes::tchemSoot {
+namespace ablate::eos::tChemSoot {
 
     struct IgnitionZeroDSootImplementation
     {

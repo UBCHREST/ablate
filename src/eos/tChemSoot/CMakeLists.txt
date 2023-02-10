@@ -7,6 +7,8 @@ target_sources(ablateLibrary
         speedOfSound.cpp
         specificHeatConstantPressure.cpp
         specificHeatConstantVolume.cpp
+        sourceCalculatorSoot.cpp
+        IgnitionZeroDSoot.cpp
 
         PUBLIC
         densityFcn.hpp
@@ -20,4 +22,9 @@ target_sources(ablateLibrary
         specificHeatConstantPressure.hpp
         specificHeatConstantVolume.hpp
         stateVectorSoot.hpp
+        sootConstants.hpp
+        sourceCalculatorSoot.hpp
+        IgnitionZeroDSoot.hpp
+        IgnitionZeroDSoot_Internal.hpp
+        IgnitionZeroD_ProblemSoot.hpp
         )

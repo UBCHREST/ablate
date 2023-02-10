@@ -44,6 +44,31 @@ struct Field {
     inline bool Tagged(std::string_view tag) const {
         return std::any_of(tags.begin(), tags.end(), [tag](const auto& tagItem) { return tagItem == tag; });
     }
+
+    /**
+     * return the component index in the current field
+     * @param search
+     * @return
+     */
+    inline std::size_t ComponentIndex(std::string_view search) const {
+        auto it = std::find_if(components.begin(), components.end(), [search](const auto& component) { return component == search; });
+
+        // If element was found
+        if (it != components.end()) {
+            return std::distance(components.begin(), it);
+        } else {
+            throw std::invalid_argument(std::string("Cannot locate component ") + std::string(search) + " in field " + name);
+        }
+    }
+
+    /**
+     * return the component offset (field offset + index) in the current field/component
+     * @param search
+     * @return
+     */
+    inline std::size_t ComponentOffset(std::string_view search) const {
+        return ComponentIndex(search) + offset;
+    }
 };
 
 std::istream& operator>>(std::istream& is, FieldLocation& v);
