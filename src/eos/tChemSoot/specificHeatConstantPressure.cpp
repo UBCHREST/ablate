@@ -45,7 +45,7 @@ void SpecificHeatConstantPressure_TemplateRun(const std::string& profile_name,
                 const real_type Yc = state_at_i(kmcd.nSpec + 3);
                 // compute cp_gas
                 auto cp_gas = tChemLib::Impl::CpMixMs<real_type, device_type>::team_invoke(member, t, ys, cpks, kmcd);
-                auto cp_Soot = ablate::eos::TChemSoot::CarbonCp_R(t) * kmcd.Runiv / ablate::eos::tChemSoot::solidCarbonDensity;
+                auto cp_Soot = ablate::eos::TChemSoot::CarbonCp_R(t) * kmcd.Runiv / ablate::eos::tChemSoot::MWCarbon;
                 CpMix_at_i() = (1 - Yc) * cp_gas + Yc * cp_Soot;
             }
         });
