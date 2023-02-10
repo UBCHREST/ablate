@@ -1,5 +1,4 @@
 #include "tChem.hpp"
-#include <TChem_EnthalpyMass.hpp>
 #include <utility>
 #include "TChem_SpecificHeatCapacityConsVolumePerMass.hpp"
 #include "TChem_SpecificHeatCapacityPerMass.hpp"
@@ -9,14 +8,11 @@
 #include "eos/tChem/temperature.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "monitors/logs/nullLog.hpp"
-#include "utilities/kokkosUtilities.hpp"
 #include "utilities/mpiUtilities.hpp"
 
 ablate::eos::TChem::TChem(std::filesystem::path mechanismFileIn, std::filesystem::path thermoFileIn, std::shared_ptr<ablate::monitors::logs::Log> logIn,
                           const std::shared_ptr<ablate::parameters::Parameters> &options)
-    : TChemBase("TChem", mechanismFileIn, thermoFileIn, logIn, options){
-
-}
+    : TChemBase("TChem", mechanismFileIn, thermoFileIn, logIn, options) {}
 
 std::shared_ptr<ablate::eos::TChem::FunctionContext> ablate::eos::TChem::BuildFunctionContext(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields,
                                                                                               bool checkDensityYi) const {

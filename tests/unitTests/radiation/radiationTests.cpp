@@ -5,6 +5,7 @@
 #include "builder.hpp"
 #include "convergenceTester.hpp"
 #include "domain/boxMesh.hpp"
+#include "domain/boxMeshBoundaryCells.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
 #include "environment/runEnvironment.hpp"
 #include "eos/perfectGas.hpp"
@@ -15,7 +16,6 @@
 #include "monitors/timeStepMonitor.hpp"
 #include "parameters/mapParameters.hpp"
 #include "radiation/radiation.hpp"
-#include "domain/boxMeshBoundaryCells.hpp"
 #include "radiation/volumeRadiation.hpp"
 #include "utilities/petscUtilities.hpp"
 

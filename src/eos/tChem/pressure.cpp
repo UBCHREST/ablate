@@ -19,7 +19,7 @@ void Pressure_TemplateRun(const std::string& profile_name,
             const ordinal_type i = member.league_rank();
             const real_type_1d_view_type state_at_i = Kokkos::subview(state, i, Kokkos::ALL());
             const Impl::StateVector<real_type_1d_view_type> sv_at_i(kmcd.nSpec, state_at_i);
-            sv_at_i.Pressure() =ablate::eos::tChem::impl::pressureFcn<real_type, device_type>::team_invoke(member, sv_at_i, kmcd);
+            sv_at_i.Pressure() = ablate::eos::tChem::impl::pressureFcn<real_type, device_type>::team_invoke(member, sv_at_i, kmcd);
         });
     Kokkos::Profiling::popRegion();
 }

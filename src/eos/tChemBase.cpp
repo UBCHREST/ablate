@@ -12,8 +12,8 @@
 #include "utilities/kokkosUtilities.hpp"
 #include "utilities/mpiUtilities.hpp"
 
-ablate::eos::TChemBase::TChemBase(const std::string& eosName, std::filesystem::path mechanismFileIn, std::filesystem::path thermoFileIn, std::shared_ptr<ablate::monitors::logs::Log> logIn,
-                          const std::shared_ptr<ablate::parameters::Parameters> &options)
+ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::path mechanismFileIn, std::filesystem::path thermoFileIn, std::shared_ptr<ablate::monitors::logs::Log> logIn,
+                                  const std::shared_ptr<ablate::parameters::Parameters> &options)
     : ChemistryModel(eosName), mechanismFile(std::move(mechanismFileIn)), thermoFile(std::move(thermoFileIn)), log(logIn ? logIn : std::make_shared<ablate::monitors::logs::NullLog>()) {
     // setup/use Kokkos
     ablate::utilities::KokkosUtilities::Initialize();
@@ -75,7 +75,6 @@ ablate::eos::TChemBase::TChemBase(const std::string& eosName, std::filesystem::p
     // set the chemistry constraints
     constraints.Set(options);
 }
-
 
 void ablate::eos::TChemBase::View(std::ostream &stream) const {
     stream << "EOS: " << type << std::endl;

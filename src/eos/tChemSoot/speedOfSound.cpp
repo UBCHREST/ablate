@@ -4,7 +4,7 @@
 #include "eos/tChemSoot.hpp"
 
 namespace tChemLib = TChem;
-//In a LHF Formulation, Speed of sound is just the gaseous speed of sound
+// In a LHF Formulation, Speed of sound is just the gaseous speed of sound
 namespace ablate::eos::tChemSoot::impl {
 template <typename PolicyType, typename DeviceType>
 void SpeedOfSound_TemplateRun(const std::string& profile_name,
@@ -28,13 +28,12 @@ void SpeedOfSound_TemplateRun(const std::string& profile_name,
 
             const StateVectorSoot<real_type_1d_view_type> sv_at_i_total(kmcd.nSpec, state_at_i);
 
-
-            if(sv_at_i_total.MassFractionCarbon() >=1 )     //Error out, something went wrong, this should never be full carbon
+            if (sv_at_i_total.MassFractionCarbon() >= 1)  // Error out, something went wrong, this should never be full carbon
                 throw std::invalid_argument("ablate::eos::tchemSoot::SpeedOfSound, Carbon Mass Fraction has reached a value of 1 and this is not handled currently!");
 
-            //Need to scale Yi appropriately
-            real_type_1d_view_type state_at_i_gas = real_type_1d_view_type("Gaseous",::TChem::Impl::getStateVectorSize(kmcd.nSpec));
-            //Get the Gaseous State Vector
+            // Need to scale Yi appropriately
+            real_type_1d_view_type state_at_i_gas = real_type_1d_view_type("Gaseous", ::TChem::Impl::getStateVectorSize(kmcd.nSpec));
+            // Get the Gaseous State Vector
             Impl::StateVector<real_type_1d_view_type> sv_at_i(kmcd.nSpec, state_at_i_gas);
             sv_at_i_total.SplitYiState(sv_at_i);
 
@@ -65,16 +64,16 @@ void SpeedOfSound_TemplateRun(const std::string& profile_name,
     Kokkos::Profiling::popRegion();
 }
 
-}  // namespace ablate::eos::tChem::impl
+}  // namespace ablate::eos::tChemSoot::impl
 
 [[maybe_unused]] void ablate::eos::tChemSoot::SpeedOfSound::runDeviceBatch(typename UseThisTeamPolicy<exec_space>::type& policy, const SpeedOfSound::real_type_2d_view_type& state,
-                                                                       const SpeedOfSound::real_type_1d_view_type& speedOfSound, const SpeedOfSound::kinetic_model_type& kmcd) {
+                                                                           const SpeedOfSound::real_type_1d_view_type& speedOfSound, const SpeedOfSound::kinetic_model_type& kmcd) {
     ablate::eos::tChemSoot::impl::SpeedOfSound_TemplateRun("ablate::eos::tChemSoot::SpeedOfSound::runDeviceBatch", policy, state, speedOfSound, kmcd);
 }
 
 [[maybe_unused]] void ablate::eos::tChemSoot::SpeedOfSound::runHostBatch(typename UseThisTeamPolicy<host_exec_space>::type& policy,
-                                                                     const ablate::eos::tChemSoot::SpeedOfSound::real_type_2d_view_host_type& state,
-                                                                     const ablate::eos::tChemSoot::SpeedOfSound::real_type_1d_view_host_type& speedOfSound,
-                                                                     const ablate::eos::tChemSoot::SpeedOfSound::kinetic_model_host_type& kmcd) {
+                                                                         const ablate::eos::tChemSoot::SpeedOfSound::real_type_2d_view_host_type& state,
+                                                                         const ablate::eos::tChemSoot::SpeedOfSound::real_type_1d_view_host_type& speedOfSound,
+                                                                         const ablate::eos::tChemSoot::SpeedOfSound::kinetic_model_host_type& kmcd) {
     ablate::eos::tChemSoot::impl::SpeedOfSound_TemplateRun("ablate::eos::tChemSoot::SpeedOfSound::runHostBatch", policy, state, speedOfSound, kmcd);
 }

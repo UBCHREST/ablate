@@ -20,7 +20,6 @@ struct StateVectorSoot {
     using real_value_type = typename RealType1DView::non_const_value_type;
     using range_type = Kokkos::pair<::TChem::ordinal_type, ::TChem::ordinal_type>;
 
-
     KOKKOS_INLINE_FUNCTION StateVectorSoot(const ::TChem::ordinal_type nGasSpec, const RealType1DView &v) : _nSpec(nGasSpec), _v(v) {}
 
     /// validate input vector
@@ -39,8 +38,6 @@ struct StateVectorSoot {
     KOKKOS_INLINE_FUNCTION ::TChem::ordinal_type NumGasSpecies() const { return _nSpec; }
     KOKKOS_INLINE_FUNCTION ::TChem::ordinal_type NumSpecies() const { return _nSpec + 1; }
 
-
-
     /// interface to state vector
     KOKKOS_INLINE_FUNCTION real_value_type &Density() const { return _v(0); }
     KOKKOS_INLINE_FUNCTION real_value_type &Pressure() const { return _v(1); }
@@ -54,11 +51,10 @@ struct StateVectorSoot {
     KOKKOS_INLINE_FUNCTION real_value_type *TemperaturePtr() const { return &_v(2); }
     KOKKOS_INLINE_FUNCTION real_value_type *MassFractionsPtr() const { return &_v(3); }
 
-
     // Helper Function to split the total state vector into an appropriate gaseous state vector
     // Currently assumes all species were already normalized
     template <typename real_1d_viewType>
-    inline void SplitYiState(Impl::StateVector<real_1d_viewType>& gaseousState) const {
+    inline void SplitYiState(Impl::StateVector<real_1d_viewType> &gaseousState) const {
         double Yc = MassFractionCarbon();
 
         // pressure, temperature (assumed the same in both phases)
@@ -77,5 +73,5 @@ struct StateVectorSoot {
 
 static KOKKOS_INLINE_FUNCTION ordinal_type getStateVectorSootSize(const ordinal_type nGasSpec) { return nGasSpec + 3 + 2 /*yc, ndd */; }
 
-}
+}  // namespace ablate::eos::tChemSoot
 #endif  // ABLATELIBRARY_STATEVECTORSOOT_HPP

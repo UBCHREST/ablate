@@ -24,14 +24,10 @@ struct TemperatureFcn {
      */
     template <typename MemberType, typename KineticModelConstDataType>
     KOKKOS_INLINE_FUNCTION static value_type team_invoke(const MemberType& member,
-                                                 /// input
-                                                 const Impl::StateVector<Tines::value_type_1d_view<real_type, DeviceType>> svGas, // Gaseous State Vector
-                                                 const real_type Yc,
-                                                 const Tines::value_type_0d_view<real_type, DeviceType> internalEnergyRef,
-                                                 const real_type_1d_view_type hi_Scratch,
-                                                 const real_type_1d_view_type cp_gas_Scratch,
-                                                 const real_type_1d_view_type hi_Ref_Values,
-                                                 const KineticModelConstDataType& kmcd) {
+                                                         /// input
+                                                         const Impl::StateVector<Tines::value_type_1d_view<real_type, DeviceType>> svGas,  // Gaseous State Vector
+                                                         const real_type Yc, const Tines::value_type_0d_view<real_type, DeviceType> internalEnergyRef, const real_type_1d_view_type hi_Scratch,
+                                                         const real_type_1d_view_type cp_gas_Scratch, const real_type_1d_view_type hi_Ref_Values, const KineticModelConstDataType& kmcd) {
         TCHEM_CHECK_ERROR(!svGas.isValid(), "Error: input state vector is not valid");
         {
             real_type& t = svGas.Temperature();
@@ -76,9 +72,7 @@ struct TemperatureFcn {
         // Make Sure Temperature is set in the stateSpace
         return svGas.Temperature();
     }
-
 };
 
-}  // namespace ablate::eos::tChem::impl
+}  // namespace ablate::eos::tChemSoot::impl
 #endif
-

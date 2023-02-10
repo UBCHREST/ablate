@@ -25,8 +25,7 @@ struct pressureFcn {
     template <typename MemberType, typename KineticModelConstDataType>
     KOKKOS_INLINE_FUNCTION static value_type team_invoke(const MemberType& member,
                                                          /// input
-                                                         Impl::StateVector<real_type_1d_view_type> sv_at_i,
-                                                         const KineticModelConstDataType& kmcd) {
+                                                         Impl::StateVector<real_type_1d_view_type> sv_at_i, const KineticModelConstDataType& kmcd) {
         member.team_barrier();
         // compute the Pressure
         value_type Pressure;

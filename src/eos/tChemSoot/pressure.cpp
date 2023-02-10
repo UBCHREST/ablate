@@ -22,11 +22,11 @@ void Pressure_TemplateRun(const std::string& profile_name,
 
             const StateVectorSoot<real_type_1d_view_type> sv_at_i_total(kmcd.nSpec, state_at_i);
 
-            //Get the Gaseous State Vector
-            real_type_1d_view_type state_at_i_gas = real_type_1d_view_type("Gaseous",::TChem::Impl::getStateVectorSize(kmcd.nSpec));
+            // Get the Gaseous State Vector
+            real_type_1d_view_type state_at_i_gas = real_type_1d_view_type("Gaseous", ::TChem::Impl::getStateVectorSize(kmcd.nSpec));
             Impl::StateVector<real_type_1d_view_type> sv_at_i(kmcd.nSpec, state_at_i_gas);
 
-            //Need to scale Yi appropriately
+            // Need to scale Yi appropriately
             sv_at_i_total.SplitYiState(sv_at_i);
 
             sv_at_i_total.Pressure() = ablate::eos::tChem::impl::pressureFcn<real_type, device_type>::team_invoke(member, sv_at_i, kmcd);
@@ -34,14 +34,15 @@ void Pressure_TemplateRun(const std::string& profile_name,
     Kokkos::Profiling::popRegion();
 }
 
-}  // namespace ablate::eos::tChem::impl
+}  // namespace ablate::eos::tChemSoot::impl
 
 [[maybe_unused]] void ablate::eos::tChemSoot::Pressure::runDeviceBatch(typename UseThisTeamPolicy<exec_space>::type& policy, const Pressure::real_type_2d_view_type& state,
-                                                                   const Pressure::kinetic_model_type& kmcd) {
+                                                                       const Pressure::kinetic_model_type& kmcd) {
     ablate::eos::tChemSoot::impl::Pressure_TemplateRun("ablate::eos::tChem::Pressure::runDeviceBatch", policy, state, kmcd);
 }
 
-[[maybe_unused]] void ablate::eos::tChemSoot::Pressure::runHostBatch(typename UseThisTeamPolicy<host_exec_space>::type& policy, const ablate::eos::tChemSoot::Pressure::real_type_2d_view_host_type& state,
-                                                                 const ablate::eos::tChemSoot::Pressure::kinetic_model_host_type& kmcd) {
+[[maybe_unused]] void ablate::eos::tChemSoot::Pressure::runHostBatch(typename UseThisTeamPolicy<host_exec_space>::type& policy,
+                                                                     const ablate::eos::tChemSoot::Pressure::real_type_2d_view_host_type& state,
+                                                                     const ablate::eos::tChemSoot::Pressure::kinetic_model_host_type& kmcd) {
     ablate::eos::tChemSoot::impl::Pressure_TemplateRun("ablate::eos::tChem::Pressure::runHostBatch", policy, state, kmcd);
 }

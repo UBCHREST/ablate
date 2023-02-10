@@ -30,7 +30,7 @@ PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootTempera
                      //!< Standard PETSc error code returned by PETSc functions
 
     PetscCall(functionContext->densityFunction.function(conserved, temperature, &density, functionContext->densityFunction.context.get()));  //!< Get the density value at this location
-    PetscReal YinC = (functionContext->densityYiCSolidCOffset == -1) ? 0 : conserved[functionContext->densityYiCSolidCOffset] / density;                 //!< Get the mass fraction of carbon here
+    PetscReal YinC = (functionContext->densityYiCSolidCOffset == -1) ? 0 : conserved[functionContext->densityYiCSolidCOffset] / density;     //!< Get the mass fraction of carbon here
 
     PetscReal fv = density * YinC / rhoC;
 
@@ -99,4 +99,4 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
 
 #include "registrar.hpp"
 REGISTER(ablate::eos::radiationProperties::RadiationModel, ablate::eos::radiationProperties::SootMeanAbsorption, "SootMeanAbsorption",
-                 ARG(ablate::eos::EOS, "eos", "The EOS used to compute field properties"));
+         ARG(ablate::eos::EOS, "eos", "The EOS used to compute field properties"));

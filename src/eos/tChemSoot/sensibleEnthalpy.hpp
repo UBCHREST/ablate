@@ -61,5 +61,5 @@ struct SensibleEnthalpy {
         const real_type_1d_view_host_type& enthalpyRef, const kinetic_model_type& kmcd);
 };
 
-}  // namespace ablate::eos::tChem
+}  // namespace ablate::eos::tChemSoot
 #endif

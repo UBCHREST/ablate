@@ -15,9 +15,9 @@
 #include "eos/tChem/temperature.hpp"
 #include "monitors/logs/log.hpp"
 #include "parameters/parameters.hpp"
+#include "tChemBase.hpp"
 #include "utilities/intErrorChecker.hpp"
 #include "utilities/vectorUtilities.hpp"
-#include "tChemBase.hpp"
 
 namespace ablate::eos {
 
@@ -40,7 +40,6 @@ class TChem : public TChemBase, public std::enable_shared_from_this<ablate::eos:
         PetscErrorCode (*function)(const PetscReal conserved[], const PetscReal yi[], PetscReal T, PetscReal* property, void* ctx) = nullptr;
         std::shared_ptr<void> context = nullptr;
     };
-
 
    public:
     /**
@@ -110,7 +109,6 @@ class TChem : public TChemBase, public std::enable_shared_from_this<ablate::eos:
      */
     [[nodiscard]] std::map<std::string, double> GetSpeciesMolecularMass() const override;
 
-
     /**
      * Function to create the batch source specific to the provided cell range
      * @param fields
@@ -120,7 +118,6 @@ class TChem : public TChemBase, public std::enable_shared_from_this<ablate::eos:
     std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override;
 
    protected:
-
     /**
      * helper function to build the function context needed regardless of function type
      * @tparam Function

@@ -18,10 +18,10 @@ Questions? Contact Cosmin Safta at <csafta@sandia.gov>, or
 
 Sandia National Laboratories, Livermore, CA, USA
 ===================================================================================== */
-//#include "finiteVolume/processes/tchemSoot/IgnitionZeroDSoot.hpp"
+// #include "finiteVolume/processes/tchemSoot/IgnitionZeroDSoot.hpp"
 #include "IgnitionZeroDSoot.hpp"
-#include "TChem_Util.hpp"
 #include "IgnitionZeroDSoot_Internal.hpp"
+#include "TChem_Util.hpp"
 
 /// tadv - an input structure for time marching
 /// state (nSpec+3) - initial condition of the state vector
@@ -32,90 +32,38 @@ Sandia National Laboratories, Livermore, CA, USA
 /// kmcd - const data for kinetic model
 
 namespace ablate::eos::tChemSoot {
-    using device_type = typename Tines::UseThisDevice<exec_space>::type;
-    using real_type_0d_view_type = Tines::value_type_0d_view<real_type,device_type>;
-    using real_type_1d_view_type = Tines::value_type_1d_view<real_type,device_type>;
-    using real_type_2d_view_type = Tines::value_type_2d_view<real_type,device_type>;
-    using kinetic_model_type= KineticModelConstData<device_type>;
+using device_type = typename Tines::UseThisDevice<exec_space>::type;
+using real_type_0d_view_type = Tines::value_type_0d_view<real_type, device_type>;
+using real_type_1d_view_type = Tines::value_type_1d_view<real_type, device_type>;
+using real_type_2d_view_type = Tines::value_type_2d_view<real_type, device_type>;
+using kinetic_model_type = KineticModelConstData<device_type>;
 
+void IgnitionZeroDSoot::runDeviceBatch(  /// thread block size
+    typename UseThisTeamPolicy<exec_space>::type& policy,
+    /// input
+    const real_type_1d_view& tol_newton, const real_type_2d_view& tol_time, const real_type_2d_view& fac, const time_advance_type_1d_view& tadv, const real_type_2d_view& state,
+    const real_type_1d_view& HF, const real_type_2d_view& Hi_Scratch, const real_type_2d_view& cp_gas_scratch,
+    /// output
+    const real_type_1d_view& t_out, const real_type_1d_view& dt_out, const real_type_2d_view& state_out,
+    /// const data from kinetic model
+    const Tines::value_type_1d_view<KineticModelConstData<interf_device_type>, interf_device_type>& kmcds, double thresholdTemperature) {
+    const std::string profile_name = "TChem::IgnitionZeroDSoot::runDeviceBatch::kmcd array";
+    using value_type = real_type;
+    IgnitionZeroDSoot_TemplateRun(profile_name, value_type(), policy, tol_newton, tol_time, fac, tadv, state, HF, Hi_Scratch, cp_gas_scratch, t_out, dt_out, state_out, kmcds, thresholdTemperature);
+}
 
-    void
-    IgnitionZeroDSoot::runDeviceBatch( /// thread block size
-        typename UseThisTeamPolicy<exec_space>::type& policy,
-        /// input
-        const real_type_1d_view& tol_newton,
-        const real_type_2d_view& tol_time,
-        const real_type_2d_view& fac,
-        const time_advance_type_1d_view& tadv,
-        const real_type_2d_view& state,
-        const real_type_1d_view& HF,
-        const real_type_2d_view& Hi_Scratch,
-        const real_type_2d_view& cp_gas_scratch,
-        /// output
-        const real_type_1d_view& t_out,
-        const real_type_1d_view& dt_out,
-        const real_type_2d_view& state_out,
-        /// const data from kinetic model
-        const Tines::value_type_1d_view<KineticModelConstData<interf_device_type>,interf_device_type>& kmcds, double thresholdTemperature)
-    {
-        const std::string profile_name = "TChem::IgnitionZeroDSoot::runDeviceBatch::kmcd array";
-        using value_type = real_type;
-        IgnitionZeroDSoot_TemplateRun(
-            profile_name,
-            value_type(),
-            policy,
-            tol_newton,
-            tol_time,
-            fac,
-            tadv,
-            state,
-            HF,
-            Hi_Scratch,
-            cp_gas_scratch,
-            t_out,
-            dt_out,
-            state_out,
-            kmcds,
-            thresholdTemperature);
-    }
-
-  void
-  IgnitionZeroDSoot::runHostBatch( /// thread block size
-                              typename UseThisTeamPolicy<host_exec_space>::type& policy,
-                              /// input
-                              const real_type_1d_view_host& tol_newton,
-                              const real_type_2d_view_host& tol_time,
-                              const real_type_2d_view_host& fac,
-                              const time_advance_type_1d_view_host& tadv,
-                              const real_type_2d_view_host& state,
-                              const real_type_1d_view_host& HF,
-                              const real_type_2d_view_host& Hi_Scratch,
-                              const real_type_2d_view_host& cp_gas_scratch,
-                              /// output
-                              const real_type_1d_view_host& t_out,
-                              const real_type_1d_view_host& dt_out,
-                              const real_type_2d_view_host& state_out,
-                              /// const data from kinetic model
-			      const Tines::value_type_1d_view<KineticModelConstData<interf_host_device_type>,interf_host_device_type>& kmcds,  double thresholdTemperature) {
+void IgnitionZeroDSoot::runHostBatch(  /// thread block size
+    typename UseThisTeamPolicy<host_exec_space>::type& policy,
+    /// input
+    const real_type_1d_view_host& tol_newton, const real_type_2d_view_host& tol_time, const real_type_2d_view_host& fac, const time_advance_type_1d_view_host& tadv,
+    const real_type_2d_view_host& state, const real_type_1d_view_host& HF, const real_type_2d_view_host& Hi_Scratch, const real_type_2d_view_host& cp_gas_scratch,
+    /// output
+    const real_type_1d_view_host& t_out, const real_type_1d_view_host& dt_out, const real_type_2d_view_host& state_out,
+    /// const data from kinetic model
+    const Tines::value_type_1d_view<KineticModelConstData<interf_host_device_type>, interf_host_device_type>& kmcds, double thresholdTemperature) {
     const std::string profile_name = "TChem::IgnitionZeroDSoot::runHostBatch::kmcd array";
     using value_type = real_type;
-    IgnitionZeroDSoot_TemplateRun(
-        profile_name,
-        value_type(),
-        policy,
-        tol_newton,
-        tol_time,
-        fac,
-        tadv,
-        state,
-        HF,
-        Hi_Scratch,
-        cp_gas_scratch,
-        t_out,
-        dt_out,
-        state_out,
-        kmcds,
-        thresholdTemperature);
-  }
+    IgnitionZeroDSoot_TemplateRun(profile_name, value_type(), policy, tol_newton, tol_time, fac, tadv, state, HF, Hi_Scratch, cp_gas_scratch, t_out, dt_out, state_out, kmcds, thresholdTemperature);
+}
 
-} // namespace TChem
+}  // namespace ablate::eos::tChemSoot

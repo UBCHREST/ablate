@@ -13,6 +13,5 @@ inline static const double MWCarbon = 12.0107;
 //! Scaling term for Ndd going into the Tines ODE Solver
 inline static double NddScaling = 1e20;
 
-}  // namespace ablate::eos::tChem::impl
+}  // namespace ablate::eos::tChemSoot
 #endif
-

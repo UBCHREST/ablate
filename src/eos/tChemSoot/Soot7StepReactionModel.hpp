@@ -2,6 +2,7 @@
 #define ABLATELIBRARY_SOOT7STEPREACTIONMODEL_HPP
 #include <cmath>
 #include <iostream>
+#include "TChem_Impl_EnthalpySpecMl.hpp"
 #include "TChem_Impl_MolarWeights.hpp"
 #include "TChem_KineticModelData.hpp"
 #include "TChem_SpecificHeatCapacityConsVolumePerMass.hpp"

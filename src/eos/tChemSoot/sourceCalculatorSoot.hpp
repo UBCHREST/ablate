@@ -24,7 +24,8 @@ class SourceCalculatorSoot : public ChemistryModel::SourceCalculator, private ut
      * @param constraints
      * @param cellRange
      */
-    SourceCalculatorSoot(const std::vector<domain::Field>& fields, const std::shared_ptr<TChemSoot>& tChemEos, ablate::eos::tChem::SourceCalculator::ChemistryConstraints constraints, const solver::Range& cellRange);
+    SourceCalculatorSoot(const std::vector<domain::Field>& fields, const std::shared_ptr<TChemSoot>& tChemEos, ablate::eos::tChem::SourceCalculator::ChemistryConstraints constraints,
+                         const solver::Range& cellRange);
 
     /**
      * The compute source can be used as a prestep allowing the add source to be used at each stage without reevaluating
@@ -94,6 +95,6 @@ class SourceCalculatorSoot : public ChemistryModel::SourceCalculator, private ut
     Kokkos::View<KineticModelGasConstData<typename Tines::UseThisDevice<exec_space>::type>*, typename Tines::UseThisDevice<exec_space>::type> kineticModelGasConstDataDevices;
 };
 
-}  // namespace ablate::eos::tChem
+}  // namespace ablate::eos::tChemSoot
 
 #endif  // ABLATELIBRARY_BATCHSOURCE_HPP

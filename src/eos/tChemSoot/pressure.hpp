@@ -53,5 +53,5 @@ struct Pressure {
         const kinetic_model_host_type& kmcd);
 };
 
-}  // namespace ablate::eos::tChem
+}  // namespace ablate::eos::tChemSoot
 #endif

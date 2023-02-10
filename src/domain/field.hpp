@@ -66,9 +66,7 @@ struct Field {
      * @param search
      * @return
      */
-    inline std::size_t ComponentOffset(std::string_view search) const {
-        return ComponentIndex(search) + offset;
-    }
+    inline std::size_t ComponentOffset(std::string_view search) const { return ComponentIndex(search) + offset; }
 };
 
 std::istream& operator>>(std::istream& is, FieldLocation& v);

@@ -58,5 +58,5 @@ struct Temperature {
         const real_type_1d_view_host_type& enthalpyReference, const kinetic_model_host_type& kmcd);
 };
 
-}  // namespace ablate::eos::tChem
+}  // namespace ablate::eos::tChemSoot
 #endif

@@ -869,128 +869,128 @@ INSTANTIATE_TEST_SUITE_P(
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////// EOS Thermodynamic property tests
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
- struct TChemSootComputeSourceTestParameters {
-     std::filesystem::path mechFile;
-     std::filesystem::path thermoFile;
-     PetscReal dt;
-     std::vector<PetscReal> inputEulerValues;
-     std::vector<PetscReal> inputDensityYiValues;
+struct TChemSootComputeSourceTestParameters {
+    std::filesystem::path mechFile;
+    std::filesystem::path thermoFile;
+    PetscReal dt;
+    std::vector<PetscReal> inputEulerValues;
+    std::vector<PetscReal> inputDensityYiValues;
 
-     std::vector<PetscReal> expectedEulerSource;
-     std::vector<PetscReal> expectedDensityYiSource;
+    std::vector<PetscReal> expectedEulerSource;
+    std::vector<PetscReal> expectedDensityYiSource;
 
-     PetscReal errorTolerance = 1E-3;
- };
+    PetscReal errorTolerance = 1E-3;
+};
 
- class TChemSootComputeSourceTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemSootComputeSourceTestParameters> {};
+class TChemSootComputeSourceTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemSootComputeSourceTestParameters> {};
 
- TEST_P(TChemSootComputeSourceTestFixture, ShouldComputeCorrectSource) {
-     // ARRANGE
-     auto eos = std::make_shared<ablate::eos::TChemSoot>(GetParam().mechFile, GetParam().thermoFile);
+TEST_P(TChemSootComputeSourceTestFixture, ShouldComputeCorrectSource) {
+    // ARRANGE
+    auto eos = std::make_shared<ablate::eos::TChemSoot>(GetParam().mechFile, GetParam().thermoFile);
 
-     // create a zeroD domain for testing
-     auto domain = std::make_shared<ablate::domain::BoxMesh>("zeroD",
-                                                             std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>>{std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)},
-                                                             std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
-                                                             std::vector<int>{1},
-                                                             std::vector<double>{0.0},
-                                                             std::vector<double>{1.0});
-     domain->InitializeSubDomains();
+    // create a zeroD domain for testing
+    auto domain = std::make_shared<ablate::domain::BoxMesh>("zeroD",
+                                                            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>>{std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)},
+                                                            std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
+                                                            std::vector<int>{1},
+                                                            std::vector<double>{0.0},
+                                                            std::vector<double>{1.0});
+    domain->InitializeSubDomains();
 
-     // get the test params
-     const auto& params = GetParam();
+    // get the test params
+    const auto& params = GetParam();
 
-     // copy over the initial euler values
-     PetscScalar* solution;
-     VecGetArray(domain->GetSolutionVector(), &solution) >> ablate::utilities::PetscUtilities::checkError;
-     PetscScalar* eulerField = nullptr;
-     DMPlexPointLocalFieldRef(domain->GetDM(), 0, domain->GetField("euler").id, solution, &eulerField) >> ablate::utilities::PetscUtilities::checkError;
-     // copy over euler
-     for (std::size_t i = 0; i < GetParam().inputEulerValues.size(); i++) {
-         eulerField[i] = GetParam().inputEulerValues[i];
-     }
+    // copy over the initial euler values
+    PetscScalar* solution;
+    VecGetArray(domain->GetSolutionVector(), &solution) >> ablate::utilities::PetscUtilities::checkError;
+    PetscScalar* eulerField = nullptr;
+    DMPlexPointLocalFieldRef(domain->GetDM(), 0, domain->GetField("euler").id, solution, &eulerField) >> ablate::utilities::PetscUtilities::checkError;
+    // copy over euler
+    for (std::size_t i = 0; i < GetParam().inputEulerValues.size(); i++) {
+        eulerField[i] = GetParam().inputEulerValues[i];
+    }
 
-     // copy over the initial densityYi values
-     PetscScalar* densityYiField = nullptr;
-     DMPlexPointLocalFieldRef(domain->GetDM(), 0, domain->GetField("densityYi").id, solution, &densityYiField) >> ablate::utilities::PetscUtilities::checkError;
-     // copy over euler
-     for (std::size_t i = 0; i < GetParam().inputDensityYiValues.size(); i++) {
-         densityYiField[i] = GetParam().inputDensityYiValues[i];
-     }
-     VecRestoreArray(domain->GetSolutionVector(), &solution) >> ablate::utilities::PetscUtilities::checkError;
+    // copy over the initial densityYi values
+    PetscScalar* densityYiField = nullptr;
+    DMPlexPointLocalFieldRef(domain->GetDM(), 0, domain->GetField("densityYi").id, solution, &densityYiField) >> ablate::utilities::PetscUtilities::checkError;
+    // copy over euler
+    for (std::size_t i = 0; i < GetParam().inputDensityYiValues.size(); i++) {
+        densityYiField[i] = GetParam().inputDensityYiValues[i];
+    }
+    VecRestoreArray(domain->GetSolutionVector(), &solution) >> ablate::utilities::PetscUtilities::checkError;
 
-     // create a copy to store f calculation
-     Vec computedF;
-     DMGetLocalVector(domain->GetDM(), &computedF) >> ablate::utilities::PetscUtilities::checkError;
-     VecZeroEntries(computedF) >> ablate::utilities::PetscUtilities::checkError;
+    // create a copy to store f calculation
+    Vec computedF;
+    DMGetLocalVector(domain->GetDM(), &computedF) >> ablate::utilities::PetscUtilities::checkError;
+    VecZeroEntries(computedF) >> ablate::utilities::PetscUtilities::checkError;
 
-     // ACT
-     ablate::solver::DynamicRange range;
-     range.Add(0);
-     auto sourceTermCalculator = eos->CreateSourceCalculator(domain->GetFields(), range.GetRange());
+    // ACT
+    ablate::solver::DynamicRange range;
+    range.Add(0);
+    auto sourceTermCalculator = eos->CreateSourceCalculator(domain->GetFields(), range.GetRange());
 
-     // Perform prestep
-     sourceTermCalculator->ComputeSource(range.GetRange(), 0.0, GetParam().dt, domain->GetSolutionVector());
+    // Perform prestep
+    sourceTermCalculator->ComputeSource(range.GetRange(), 0.0, GetParam().dt, domain->GetSolutionVector());
 
-     // perform source add
-     sourceTermCalculator->AddSource(range.GetRange(), domain->GetSolutionVector(), computedF);
+    // perform source add
+    sourceTermCalculator->AddSource(range.GetRange(), domain->GetSolutionVector(), computedF);
 
-     // ASSERT
-     PetscScalar* sourceArray;
-     VecGetArray(computedF, &sourceArray) >> ablate::utilities::PetscUtilities::checkError;
-     PetscScalar* eulerSource = nullptr;
-     DMPlexPointLocalFieldRef(domain->GetDM(), 0, domain->GetField("euler").id, sourceArray, &eulerSource) >> ablate::utilities::PetscUtilities::checkError;
-     for (std::size_t c = 0; c < GetParam().expectedEulerSource.size(); c++) {
-         if (PetscAbs(GetParam().expectedEulerSource[c]) == 0) {
-             ASSERT_LT(PetscAbs(eulerSource[c]), params.errorTolerance) << "The computed value of source for index " << c << " is " << eulerSource[c] << "), it should be near zero";
-         } else {
-             ASSERT_LT(PetscAbs((GetParam().expectedEulerSource[c] - eulerSource[c]) / (GetParam().expectedEulerSource[c] + 1E-30)), params.errorTolerance)
-                 << "The percent difference for the expected and actual source (" << GetParam().expectedEulerSource[c] << " vs " << eulerSource[c] << ") should be small for index " << c;
-         }
-     }
-     PetscScalar* densityYiSource = nullptr;
-     DMPlexPointLocalFieldRef(domain->GetDM(), 0, domain->GetField("densityYi").id, sourceArray, &densityYiSource) >> ablate::utilities::PetscUtilities::checkError;
-     for (std::size_t c = 0; c < GetParam().expectedDensityYiSource.size(); c++) {
-         if (PetscAbs(GetParam().expectedDensityYiSource[c]) < params.errorTolerance) {
-             ASSERT_LT(PetscAbs(densityYiSource[c]), params.errorTolerance) << "The computed value of source for index " << c << " is " << densityYiSource[c] << "), it should be near zero";
-         } else {
-             ASSERT_LT(PetscAbs((GetParam().expectedDensityYiSource[c] - densityYiSource[c]) / (GetParam().expectedDensityYiSource[c] + 1E-30)), params.errorTolerance)
-                 << "The percent difference for the expected and actual source (" << GetParam().expectedDensityYiSource[c] << " vs " << densityYiSource[c] << ") should be small for index " << c;
-         }
-     }
-     VecRestoreArray(computedF, &sourceArray) >> ablate::utilities::PetscUtilities::checkError;
+    // ASSERT
+    PetscScalar* sourceArray;
+    VecGetArray(computedF, &sourceArray) >> ablate::utilities::PetscUtilities::checkError;
+    PetscScalar* eulerSource = nullptr;
+    DMPlexPointLocalFieldRef(domain->GetDM(), 0, domain->GetField("euler").id, sourceArray, &eulerSource) >> ablate::utilities::PetscUtilities::checkError;
+    for (std::size_t c = 0; c < GetParam().expectedEulerSource.size(); c++) {
+        if (PetscAbs(GetParam().expectedEulerSource[c]) == 0) {
+            ASSERT_LT(PetscAbs(eulerSource[c]), params.errorTolerance) << "The computed value of source for index " << c << " is " << eulerSource[c] << "), it should be near zero";
+        } else {
+            ASSERT_LT(PetscAbs((GetParam().expectedEulerSource[c] - eulerSource[c]) / (GetParam().expectedEulerSource[c] + 1E-30)), params.errorTolerance)
+                << "The percent difference for the expected and actual source (" << GetParam().expectedEulerSource[c] << " vs " << eulerSource[c] << ") should be small for index " << c;
+        }
+    }
+    PetscScalar* densityYiSource = nullptr;
+    DMPlexPointLocalFieldRef(domain->GetDM(), 0, domain->GetField("densityYi").id, sourceArray, &densityYiSource) >> ablate::utilities::PetscUtilities::checkError;
+    for (std::size_t c = 0; c < GetParam().expectedDensityYiSource.size(); c++) {
+        if (PetscAbs(GetParam().expectedDensityYiSource[c]) < params.errorTolerance) {
+            ASSERT_LT(PetscAbs(densityYiSource[c]), params.errorTolerance) << "The computed value of source for index " << c << " is " << densityYiSource[c] << "), it should be near zero";
+        } else {
+            ASSERT_LT(PetscAbs((GetParam().expectedDensityYiSource[c] - densityYiSource[c]) / (GetParam().expectedDensityYiSource[c] + 1E-30)), params.errorTolerance)
+                << "The percent difference for the expected and actual source (" << GetParam().expectedDensityYiSource[c] << " vs " << densityYiSource[c] << ") should be small for index " << c;
+        }
+    }
+    VecRestoreArray(computedF, &sourceArray) >> ablate::utilities::PetscUtilities::checkError;
 
-     DMRestoreLocalVector(domain->GetDM(), &computedF) >> ablate::utilities::PetscUtilities::checkError;
- }
+    DMRestoreLocalVector(domain->GetDM(), &computedF) >> ablate::utilities::PetscUtilities::checkError;
+}
 
- INSTANTIATE_TEST_SUITE_P(
-     TChemTests, TChemSootComputeSourceTestFixture,
-     testing::Values(
-         (TChemSootComputeSourceTestParameters){
-             .mechFile = "inputs/eos/grimech30.dat",
-             .thermoFile = "inputs/eos/thermo30.dat",
-             .dt = 0.0001,
-             .inputEulerValues = {0.280629, 212565., 0.},
-             .inputDensityYiValues = {0., 0., 0., 0.0617779, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.015487, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,      0.,
-                                      0., 0., 0., 0.,        0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,       0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.203364},
-             .expectedEulerSource = {0., -1966.14, 0},
-             .expectedDensityYiSource = {2.62257e-07,  3.01397e-09, 4.09717e-08,  -0.000291841, 1.13109e-07, 1.32473e-05, 0.000272949, 7.49846e-06, 4.11287e-29, 5.21486e-19, 1.30009e-13,
-                                         1.77129e-14,  0.000141599, -0.000159441, 6.28935e-09,  9.99219e-11, 6.50777e-12, 1.54219e-05, 7.74522e-15, 2.01303e-08, 5.9374e-08,  -7.11753e-27,
-                                         7.43587e-16,  1.47109e-18, 1.55456e-09,  9.85081e-11,  5.90665e-08, 7.39121e-25, 3.67216e-16, 5.56643e-25, 3.60909e-19, 3.47387e-21, -4.90663e-25,
-                                         1.15566e-24,  6.18335e-14, 1.15305e-16,  1.41443e-20,  1.63021e-10, 6.24732e-21, 2.21197e-26, 1.35958e-19, 2.22306e-23, 7.79272e-21, -2.94329e-25,
-                                         -1.15818e-24, 1.82192e-24, 4.16812e-24,  -2.70267e-24, 1.40856e-18, 2.57528e-14, 1.14893e-17, 1.55882e-16, -1.0375e-10}},
-         (TChemSootComputeSourceTestParameters){
-             .mechFile = "inputs/eos/gri30.yaml",
-             .dt = 0.017418748136926492,
-             .inputEulerValues = {0.280629, 214342., 0.},
-             .inputDensityYiValues = {2.70155e-06, 2.42588e-10, 1.75298e-09, 0.0615735,    5.91967e-09, 0.00013291,  1.42223e-06, 2.69273e-07, 1.17659e-25, 2.62694e-19, 1.04261e-12,
-                                      1.55473e-13, 3.29875e-06, 0.0153352,   3.5785e-05,   2.61125e-07, 2.32785e-10, 0.000118819, 2.02248e-12, 3.19032e-09, 1.6112e-06,  3.70467e-18,
-                                      1.90909e-09, 1.00394e-12, 3.84067e-06, 1.46041e-09,  5.52161e-05, 1.51027e-14, 3.77118e-08, 8.45969e-14, 1.76002e-20, 3.66826e-19, 2.92689e-20,
-                                      3.18488e-20, 4.77626e-15, 1.73259e-15, 1.22235e-15,  1.81966e-10, 7.66494e-19, 1.00758e-26, 1.13374e-17, 2.26247e-22, 3.89214e-21, 2.08805e-21,
-                                      1.82355e-22, 2.25953e-19, 1.26537e-19, -4.31761e-27, 6.78129e-13, 1.13467e-08, 8.23985e-12, 1.12011e-10, 0.203364},
-             .expectedEulerSource = {0., 710973., 0.},
-             .expectedDensityYiSource = {0.00155576,  2.04165e-07, 9.48011e-07, -0.0772463,   3.76528e-06, 0.0526686,   0.000375605, 0.000127858, 5.52447e-20, 8.30561e-15, 2.15501e-09,
-                                         3.34547e-10, 0.000374787, -0.0504404,  0.0295509,    0.000613861, 3.23639e-07, 0.0229248,   5.17743e-09, 2.5618e-06,  0.000749697, 2.18505e-13,
-                                         7.71297e-06, 8.76474e-09, 0.0042147,   3.01428e-06,  0.0143082,   8.95778e-10, 0.000171936, 2.11932e-09, 3.98707e-17, 2.93971e-15, 3.98326e-16,
-                                         2.19774e-15, 4.30824e-12, 3.73653e-12, 4.39779e-12,  5.44988e-08, 5.9704e-15,  1.24544e-21, 9.80878e-14, 1.50217e-18, 1.15244e-16, 7.52342e-17,
-                                         7.10193e-18, 4.27329e-15, 2.96867e-16, -6.83549e-25, 2.57715e-09, 3.0537e-05,  5.93473e-08, 9.20704e-07, -3.46948e-08}}));
+INSTANTIATE_TEST_SUITE_P(
+    TChemTests, TChemSootComputeSourceTestFixture,
+    testing::Values(
+        (TChemSootComputeSourceTestParameters){
+            .mechFile = "inputs/eos/grimech30.dat",
+            .thermoFile = "inputs/eos/thermo30.dat",
+            .dt = 0.0001,
+            .inputEulerValues = {0.280629, 212565., 0.},
+            .inputDensityYiValues = {0., 0., 0., 0.0617779, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.015487, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,      0.,
+                                     0., 0., 0., 0.,        0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,       0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.203364},
+            .expectedEulerSource = {0., -1966.14, 0},
+            .expectedDensityYiSource = {2.62257e-07,  3.01397e-09, 4.09717e-08,  -0.000291841, 1.13109e-07, 1.32473e-05, 0.000272949, 7.49846e-06, 4.11287e-29, 5.21486e-19, 1.30009e-13,
+                                        1.77129e-14,  0.000141599, -0.000159441, 6.28935e-09,  9.99219e-11, 6.50777e-12, 1.54219e-05, 7.74522e-15, 2.01303e-08, 5.9374e-08,  -7.11753e-27,
+                                        7.43587e-16,  1.47109e-18, 1.55456e-09,  9.85081e-11,  5.90665e-08, 7.39121e-25, 3.67216e-16, 5.56643e-25, 3.60909e-19, 3.47387e-21, -4.90663e-25,
+                                        1.15566e-24,  6.18335e-14, 1.15305e-16,  1.41443e-20,  1.63021e-10, 6.24732e-21, 2.21197e-26, 1.35958e-19, 2.22306e-23, 7.79272e-21, -2.94329e-25,
+                                        -1.15818e-24, 1.82192e-24, 4.16812e-24,  -2.70267e-24, 1.40856e-18, 2.57528e-14, 1.14893e-17, 1.55882e-16, -1.0375e-10}},
+        (TChemSootComputeSourceTestParameters){
+            .mechFile = "inputs/eos/gri30.yaml",
+            .dt = 0.017418748136926492,
+            .inputEulerValues = {0.280629, 214342., 0.},
+            .inputDensityYiValues = {2.70155e-06, 2.42588e-10, 1.75298e-09, 0.0615735,    5.91967e-09, 0.00013291,  1.42223e-06, 2.69273e-07, 1.17659e-25, 2.62694e-19, 1.04261e-12,
+                                     1.55473e-13, 3.29875e-06, 0.0153352,   3.5785e-05,   2.61125e-07, 2.32785e-10, 0.000118819, 2.02248e-12, 3.19032e-09, 1.6112e-06,  3.70467e-18,
+                                     1.90909e-09, 1.00394e-12, 3.84067e-06, 1.46041e-09,  5.52161e-05, 1.51027e-14, 3.77118e-08, 8.45969e-14, 1.76002e-20, 3.66826e-19, 2.92689e-20,
+                                     3.18488e-20, 4.77626e-15, 1.73259e-15, 1.22235e-15,  1.81966e-10, 7.66494e-19, 1.00758e-26, 1.13374e-17, 2.26247e-22, 3.89214e-21, 2.08805e-21,
+                                     1.82355e-22, 2.25953e-19, 1.26537e-19, -4.31761e-27, 6.78129e-13, 1.13467e-08, 8.23985e-12, 1.12011e-10, 0.203364},
+            .expectedEulerSource = {0., 710973., 0.},
+            .expectedDensityYiSource = {0.00155576,  2.04165e-07, 9.48011e-07, -0.0772463,   3.76528e-06, 0.0526686,   0.000375605, 0.000127858, 5.52447e-20, 8.30561e-15, 2.15501e-09,
+                                        3.34547e-10, 0.000374787, -0.0504404,  0.0295509,    0.000613861, 3.23639e-07, 0.0229248,   5.17743e-09, 2.5618e-06,  0.000749697, 2.18505e-13,
+                                        7.71297e-06, 8.76474e-09, 0.0042147,   3.01428e-06,  0.0143082,   8.95778e-10, 0.000171936, 2.11932e-09, 3.98707e-17, 2.93971e-15, 3.98326e-16,
+                                        2.19774e-15, 4.30824e-12, 3.73653e-12, 4.39779e-12,  5.44988e-08, 5.9704e-15,  1.24544e-21, 9.80878e-14, 1.50217e-18, 1.15244e-16, 7.52342e-17,
+                                        7.10193e-18, 4.27329e-15, 2.96867e-16, -6.83549e-25, 2.57715e-09, 3.0537e-05,  5.93473e-08, 9.20704e-07, -3.46948e-08}}));
