@@ -47,7 +47,7 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootMeanAbs
      * If some don't exist, then the values should be set to zero for their mass fractions in all cases.
      * */
     if (densityYiField == fields.end()) {
-        throw std::invalid_argument("Soot absorption model requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD.");
+        throw std::invalid_argument("Soot absorption model requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD.");
     }
 
     /** Get the offsets that locate the position of the solid carbon field. */

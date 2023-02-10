@@ -24,9 +24,9 @@ void SensibleEnthalpy_TemplateRun(const std::string& profile_name,
     Kokkos::parallel_for(
         profile_name, policy, KOKKOS_LAMBDA(const typename policy_type::member_type& member) {
             const ordinal_type i = member.league_rank();
-            const real_type_1d_view_type state_at_i = Kokkos::subview(state, i, Kokkos::ALL());                  // State at current point of interest
-            const real_type_0d_view_type& hMix_at_i = Kokkos::subview(enthalpyMassMixture, i);                   // Output Location
-            const real_type_1d_view_type hi_at_i = Kokkos::subview(enthalpyMass, i, Kokkos::ALL());              // Scratch Variable of h_species at point of interest
+            const real_type_1d_view_type state_at_i = Kokkos::subview(state, i, Kokkos::ALL());      // State at current point of interest
+            const real_type_0d_view_type& hMix_at_i = Kokkos::subview(enthalpyMassMixture, i);       // Output Location
+            const real_type_1d_view_type hi_at_i = Kokkos::subview(enthalpyMass, i, Kokkos::ALL());  // Scratch Variable of h_species at point of interest
             const real_type_1d_view_type hi_at_i_gas = Kokkos::subview(hi_at_i, std::make_pair(1, kmcd.nSpec));
             const StateVectorSoot<real_type_1d_view_type> sv_at_i_total(kmcd.nSpec, state_at_i);
 
