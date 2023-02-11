@@ -47,9 +47,6 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
         PetscReal surfaceEnergy = 0;
         PetscReal totalGradMagNormal = 0;
         PetscReal TINY = 1e-30;
-        PetscReal numVertex;
-        PetscReal numVortices = 0;
-
         PetscReal divergentNormal[dim];
         PetscReal grad[dim];
         PetscReal gradMagNormal[dim];
@@ -88,9 +85,24 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
         PetscInt numCellFaces;
         DMPlexGetCone(dm, c, &cellFaces);
         DMPlexGetConeSize(dm, c, &numCellFaces);
-        // get number of vortices of the cell
+        // extract number of vortices of the cell for 2D
+        PetscReal numVertex;
         numVertex = numCellFaces;
-
+        // calculate number of vortices of the cell for 3D
+        PetscReal vertex = 0;
+        PetscReal numVortices;
+        const PetscInt* attachEdges;
+        PetscInt numAttachEdges;
+        if (dim == 3) {
+            // calculate number of vortices of the cell
+            for (PetscInt face = 0; face < numCellFaces; face++) {
+                // find edges attached to faces of the cell
+                DMPlexGetCone(dm, cellFaces[face], &attachEdges);
+                DMPlexGetConeSize(dm, cellFaces[face], &numAttachEdges);
+                vertex += numAttachEdges;
+                numVortices = vertex / dim;
+            }
+        }
         // get vortices attached to each face
         for (PetscInt f = 0; f < numCellFaces; f++) {
             // here if the case is 2D extract vortices, if 3D extract edges then proceed
@@ -219,18 +231,10 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
                 }
             }
             if (dim == 3) {
-                const PetscInt* attachEdges;
-                PetscInt numAttachEdges;
                 // find edges attached to faces of the cell
                 DMPlexGetCone(dm, cellFaces[f], &attachEdges);
                 DMPlexGetConeSize(dm, cellFaces[f], &numAttachEdges);
 
-                // calculate the number of vortices of the cell
-                for (PetscInt face = 0; face < numCellFaces; face++) {
-                    for (PetscInt e = 0; e < numAttachEdges; e++) {
-                        numVortices += numAttachEdges / dim;
-                    }
-                }
                 for (PetscInt e = 0; e < numAttachEdges; e++) {
                     const PetscInt* attachVortices;
                     PetscInt numAttachVortices;
