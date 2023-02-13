@@ -26,14 +26,14 @@ static inline void SimpleGasGasDecode(PetscInt dim, ablate::eos::TwoPhase::Decod
         rho2 = rho;
         e2 = e;
         p = (gamma2 - 1) * rho2 * e2;
-        T = e2 * cv2;
+        T = e2 / cv2;
         rho1 = p / R1 / T;
         e1 = cv1 * T;
     } else if (alpha > 1 - 10E-16) {  // all air
         rho1 = rho;
         e1 = e;
         p = (gamma1 - 1) * rho1 * e1;
-        T = e1 * cv1;
+        T = e1 / cv1;
         rho2 = p / R2 / T;
         e2 = cv2 * T;
     } else {
@@ -78,7 +78,7 @@ static inline void SimpleGasStiffDecode(PetscInt dim, ablate::eos::TwoPhase::Dec
         rho1 = rho;
         e1 = e;
         p = (gamma1 - 1) * rho1 * e1;
-        T = e1 * cv1;
+        T = e1 / cv1;
         rho2 = (p + p02) * gamma2 / (gamma2 - 1) / T / cp2;
         e2 = cp2 / gamma2 * T + p02 / rho2;
     } else {
@@ -186,6 +186,7 @@ ablate::eos::TwoPhase::TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<
             parameters.species2 = stiffenedGasEos2->GetSpeciesVariables();
         }
         species.resize(parameters.numberSpecies1 + parameters.numberSpecies2);
+
         for (PetscInt c = 0; c < parameters.numberSpecies1; c++) {
             species[c] = parameters.species1[c];
         }
