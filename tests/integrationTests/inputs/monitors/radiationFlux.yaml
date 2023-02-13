@@ -45,7 +45,7 @@ timestepper:
       - !<!ablate::domain::modifiers::GhostBoundaryCells> ""
     fields:
       - !<!ablate::finiteVolume::CompressibleFlowFields>
-        eos: !<!ablate::eos::TChem> &1
+        eos: !<!ablate::eos::TChem> &eos
           mechFile: ../mechanisms/gri30.yml
           options:
             thresholdTemperature: 560
@@ -61,13 +61,13 @@ timestepper:
           name: domain
   initialization:
     - !<!ablate::finiteVolume::fieldFunctions::Euler>
-      state: &2
-        eos: *1
+      state: &flowFieldState
+        eos: *eos
         pressure: 101325.0
         temperature: 2000*x + 300
         velocity: 0,0
         other: !<!ablate::finiteVolume::fieldFunctions::MassFractions>
-          eos: *1
+          eos: *eos
           values:
             - fieldName: H2O
               field: (0.24*y) + 0.01
@@ -78,13 +78,13 @@ timestepper:
             - fieldName: CH4
               field: (-0.24*y) + 0.25
     - !<!ablate::finiteVolume::fieldFunctions::DensityMassFractions>
-      state: *2
+      state: *flowFieldState
 solvers:
   - !<!ablate::finiteVolume::CompressibleFlowSolver>
     id: flowField
     region:
       name: interiorCells
-    eos: *1
+    eos: *eos
     monitors:
       - !<!ablate::monitors::RadiationFlux>
         region:
@@ -96,7 +96,7 @@ solvers:
               name: interiorCells
             rays: 25
             properties: !ablate::eos::radiationProperties::Zimmer
-              eos: *1
+              eos: *eos
           - !<!ablate::radiation::OrthogonalRadiation>
             id: window
             region:

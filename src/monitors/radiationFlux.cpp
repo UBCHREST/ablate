@@ -16,7 +16,7 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
     domain::Region::GetLabel(radiationFluxRegion, solverIn->GetSubDomain().GetDM(), radiationFluxRegionLabel, regionValue);
 
     // Now create a sub dm with only the faces
-    DMPlexFilter(solverIn->GetSubDomain().GetDM(), radiationFluxRegionLabel, 1, &fluxDm) >> utilities::PetscUtilities::checkError;
+    DMPlexFilter(solverIn->GetSubDomain().GetDM(), radiationFluxRegionLabel, regionValue, &fluxDm) >> utilities::PetscUtilities::checkError;
 
     /** Add each of the output components on each face in the fluxDm
      * the number of components should be equal to the number of ray tracers plus any ratio outputs?
@@ -140,7 +140,7 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
         ISGetIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
 
         for (PetscInt c = cStart; c < cEnd; ++c) {
-            for (int i = 0; i < int(radiation.size()); i++) {
+            for (std::size_t i = 0; i < radiation.size(); i++) {
                 /**
                  * Write the intensity into the fluxDm for outputting.
                  * Now that the intensity has been read out of the ray tracing solver, it will need to be written to the field which stores the radiation information in the monitor.
