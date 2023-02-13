@@ -9,7 +9,7 @@ void ablate::monitors::FieldMonitor::Register(std::string id, std::shared_ptr<so
     for (const auto& fieldDescriptor : fieldDescriptors) {
         for (const auto& field : fieldDescriptor->GetFields()) {
             if (field->region != domain::Region::ENTIREDOMAIN) {
-                throw std::invalid_argument("The ablate::monitors::FieldMonito requires all fields to be defined over the entire domain");
+                throw std::invalid_argument("The ablate::monitors::FieldMonitor requires all fields to be defined over the entire domain");
             }
         }
     }

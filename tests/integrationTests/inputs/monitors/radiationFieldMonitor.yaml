@@ -22,6 +22,8 @@ timestepper:
     lower: [ 0 , 0 ]
     upper: [ 1 , 1 ]
     simplex: false
+    options:
+      dm_plex_hash_location: true
     preModifiers:
       - !ablate::domain::modifiers::DistributeWithGhostCells
     postModifiers:

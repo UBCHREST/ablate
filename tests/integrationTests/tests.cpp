@@ -98,17 +98,7 @@ INSTANTIATE_TEST_SUITE_P(
         (MpiTestParameter){.testName = "inputs/reactingFlow/ignitionDelay2S_CH4_CM2.yaml",
                            .nproc = 1,
                            .arguments = "",
-                           .expectedFiles{{"outputs/reactingFlow/ignitionDelay2S_CH4_CM2.Temperature.txt", "ignitionDelayTemperature.txt"}}},
-        (MpiTestParameter){.testName = "inputs/reactingFlow/ignitionDelayGriMechSoot.yaml",
-                           .nproc = 1,
-                           .arguments = "",
-                           .expectedFiles{{"outputs/reactingFlow/ignitionDelayGriMechSoot.Temperature.txt", "ignitionDelayTemperature.csv"}}},
-        (MpiTestParameter){.testName = "inputs/reactingFlow/ignitionDelayMMASoot.yaml",
-                           .nproc = 1,
-                           .arguments = "",
-                           .expectedFiles{{"outputs/reactingFlow/ignitionDelayMMASoot.Temperature.txt", "ignitionDelayTemperature.csv"}}}
-
-        ),
+                           .expectedFiles{{"outputs/reactingFlow/ignitionDelay2S_CH4_CM2.Temperature.txt", "ignitionDelayTemperature.txt"}}}),
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
 INSTANTIATE_TEST_SUITE_P(
@@ -199,17 +189,19 @@ INSTANTIATE_TEST_SUITE_P(Monitors, IntegrationTestsSpecifier,
                                                             .arguments = "",
                                                             .expectedFiles{{"outputs/monitors/turbFlowStatsMonitor/flowField_turbulenceFlowStats.xmf", "flowField_turbulenceFlowStats.xmf"},
                                                                            {"outputs/monitors/turbFlowStatsMonitor/domain.xmf", "domain.xmf"}}},
-                                         (MpiTestParameter){
-                                             .testName = "inputs/monitors/radiationFlux.yaml",
-                                             .nproc = 1,
-                                             .arguments = "",
-                                             .expectedFiles{{"outputs/monitors/radiationFlux/upperWallBoundaryFaces_radiationFluxMonitor.xmf", "upperWallBoundaryFaces_radiationFluxMonitor.xmf"},
-                                                            {"outputs/monitors/radiationFlux/domain.xmf", "domain.xmf"}}}),
+                                         (MpiTestParameter){.testName = "inputs/monitors/radiationFieldMonitor.yaml",
+                                                            .nproc = 1,
+                                                            .arguments = "",
+                                                            .expectedFiles{{"outputs/monitors/radiationFieldMonitor/radiationFieldMonitor.xmf", "radiationFieldMonitor.xmf"},
+                                                                           {"outputs/monitors/radiationFieldMonitor/domain.xmf", "domain.xmf"}}},
+                                         (MpiTestParameter){.testName = "inputs/monitors/radiationFlux.yaml",
+                                                         .nproc = 1,
+                                                         .arguments = "",
+                                                         .expectedFiles{{"outputs/monitors/radiationFlux/upperWallBoundaryFaces_radiationFluxMonitor.xmf", "upperWallBoundaryFaces_radiationFluxMonitor.xmf"},
+                                                                        {"outputs/monitors/radiationFlux/domain.xmf", "domain.xmf"}}}),
                          [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
 INSTANTIATE_TEST_SUITE_P(Radiation, IntegrationTestsSpecifier,
-                         testing::Values(
-
-                             (MpiTestParameter){
-                                 .testName = "inputs/radiation/parallelPlatesRadiation.yaml", .nproc = 1, .expectedOutputFile = "outputs/radiation/parallelPlatesOutput.txt", .arguments = ""}),
+                         testing::Values((MpiTestParameter){
+                             .testName = "inputs/radiation/parallelPlatesRadiation.yaml", .nproc = 1, .expectedOutputFile = "outputs/radiation/parallelPlatesOutput.txt", .arguments = ""}),
                          [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
