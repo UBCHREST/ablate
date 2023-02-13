@@ -124,11 +124,6 @@ PetscErrorCode ablate::monitors::RadiationFieldMonitor::MonitorRadiation(TS ts, 
         ISRestoreIndices(subpointIS, &subpointIndices) >> utilities::PetscUtilities::checkError;
         VecRestoreArrayRead(solVec, &solArray) >> utilities::PetscUtilities::checkError;
         VecRestoreArray(monitorVec, &monitorArray) >> utilities::PetscUtilities::checkError;
-        //        // Restore field vectors
-        //        for (std::size_t f = 0; f < monitor->fieldNames.size(); f++) {
-        //            const auto& field = monitor->GetSolver()->GetSubDomain().GetField(monitor->fieldNames[f]);
-        //            monitor->GetSolver()->GetSubDomain().RestoreFieldGlobalVector(field, &vecIS[f], &vec[f], &fieldDM[f]) >> utilities::PetscUtilities::checkError;
-        //        }
     }
 
     PetscFunctionReturn(0);
