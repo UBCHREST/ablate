@@ -57,7 +57,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
 
     /** SubDomain Register and Setup **/
-    void Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
+    virtual void Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
     /**
      * @param cellRange The range of cells for which rays are initialized
@@ -84,6 +84,8 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
 
         return abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
     }
+
+    inline std::string GetId() { return solverId; };
 
     /** Evaluates the ray intensity from the domain to update the effects of irradiation. Does not impact the solution unless the solve function is called again.
      * */
