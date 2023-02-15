@@ -164,8 +164,9 @@ class TwoPhaseEulerAdvection : public Process {
                                       PetscReal *MG, PetscReal *ML, PetscReal *p, PetscReal *T, PetscReal *alpha) override;
     };
 
-    const std::shared_ptr<eos::EOS> eosGas;
-    const std::shared_ptr<eos::EOS> eosLiquid;
+    const std::shared_ptr<eos::EOS> eosTwoPhase;
+    std::shared_ptr<eos::EOS> eosGas;
+    std::shared_ptr<eos::EOS> eosLiquid;
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas;
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid;
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidGas;
@@ -186,9 +187,9 @@ class TwoPhaseEulerAdvection : public Process {
     static PetscErrorCode UpdateAuxVelocityField2Gas(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[], const PetscScalar *conservedValues, const PetscInt aOff[],
                                                      PetscScalar *auxField, void *ctx);
 
-    TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, const std::shared_ptr<parameters::Parameters> &parameters,
-                           std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid,
-                           std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidGas, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid);
+    TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosTwoPhase, const std::shared_ptr<parameters::Parameters> &parameters, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas,
+                           std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidGas,
+                           std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid);
     void Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) override;
 
    private:

@@ -192,19 +192,29 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormJaco
     return 0;
 }
 
-ablate::finiteVolume::processes::TwoPhaseEulerAdvection::TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid,
-                                                                                const std::shared_ptr<parameters::Parameters> &parametersIn,
+ablate::finiteVolume::processes::TwoPhaseEulerAdvection::TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosTwoPhase, const std::shared_ptr<parameters::Parameters> &parametersIn,
                                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas,
                                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid,
                                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidGas,
                                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid)
-    : eosGas(std::move(eosGas)),
-      eosLiquid(std::move(eosLiquid)),
+    : eosTwoPhase(std::move(eosTwoPhase)),
       fluxCalculatorGasGas(std::move(fluxCalculatorGasGas)),
       fluxCalculatorGasLiquid(std::move(fluxCalculatorGasLiquid)),
       fluxCalculatorLiquidGas(std::move(fluxCalculatorLiquidGas)),
       fluxCalculatorLiquidLiquid(std::move(fluxCalculatorLiquidLiquid)) {
     auto parameters = ablate::parameters::EmptyParameters::Check(parametersIn);
+    // check that eos is twoPhase
+    if (this->eosTwoPhase) {
+        auto twoPhaseEOS = std::dynamic_pointer_cast<eos::TwoPhase>(this->eosTwoPhase);
+        // populate component eoses
+        if (twoPhaseEOS) {
+            eosGas = twoPhaseEOS->GetEOSGas();
+            eosLiquid = twoPhaseEOS->GetEOSLiquid();
+        } else {
+            throw std::invalid_argument("invalid EOS. twoPhaseEulerAdvection requires TwoPhase equation of state.");
+        }
+    }
+
     // If there is a flux calculator assumed advection
     if (this->fluxCalculatorGasGas) {
         // cfl
@@ -224,8 +234,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Setup(ablate::fini
     flow.RegisterRHSFunction(CompressibleFlowComputeEulerFlux, this, CompressibleFlowFields::EULER_FIELD, {VOLUME_FRACTION_FIELD, DENSITY_VF_FIELD, CompressibleFlowFields::EULER_FIELD}, {});
     flow.RegisterRHSFunction(CompressibleFlowComputeVFFlux, this, DENSITY_VF_FIELD, {VOLUME_FRACTION_FIELD, DENSITY_VF_FIELD, CompressibleFlowFields::EULER_FIELD}, {});
     flow.RegisterComputeTimeStepFunction(ComputeCflTimeStep, &timeStepData, "cfl");
-    std::shared_ptr<ablate::eos::EOS> twoPhaseEos = std::make_shared<ablate::eos::TwoPhase>(eosGas, eosLiquid);
-    timeStepData.computeSpeedOfSound = twoPhaseEos->GetThermodynamicFunction(eos::ThermodynamicProperty::SpeedOfSound, flow.GetSubDomain().GetFields());
+    timeStepData.computeSpeedOfSound = eosTwoPhase->GetThermodynamicFunction(eos::ThermodynamicProperty::SpeedOfSound, flow.GetSubDomain().GetFields());
 
     // check to see if auxFieldUpdates needed to be added
     if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::VELOCITY_FIELD)) {
@@ -1261,7 +1270,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffe
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TwoPhaseEulerAdvection, "", ARG(ablate::eos::EOS, "eosGas", ""), ARG(ablate::eos::EOS, "eosLiquid", ""),
+REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TwoPhaseEulerAdvection, "", ARG(ablate::eos::EOS, "eos", "must be twoPhase"),
          OPT(ablate::parameters::Parameters, "parameters", "the parameters used by advection: cfl(.5)"), ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorGasGas", ""),
          ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorGasLiquid", ""), ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorLiquidGas", ""),
          ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorLiquidLiquid", ""));

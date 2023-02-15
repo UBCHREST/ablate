@@ -64,15 +64,16 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
           k: 2.0 #0.598     # W/(mK)
           mu: 4.0 #0.001     # kg/(ms)
     - !ablate::finiteVolume::processes::TwoPhaseEulerAdvection
-      eosGas: !ablate::eos::PerfectGas &eosAir
-        parameters: # air
-          gamma: 1.4
-          Rgas: 287.0
-      eosLiquid: !ablate::eos::StiffenedGas &eosWater
-        parameters: # water
-          gamma: 1.932
-          Cp: 8095.08
-          p0: 1164500000.0
+      eos: !ablate::eos::TwoPhase
+        eos1: !ablate::eos::PerfectGas &eosAir
+          parameters: # air
+            gamma: 1.4
+            Rgas: 287.0
+        eos2: !ablate::eos::StiffenedGas &eosWater
+          parameters: # water
+            gamma: 1.932
+            Cp: 8095.08
+            p0: 1164500000.0
       fluxCalculatorGasGas: !ablate::finiteVolume::fluxCalculator::RiemannStiff
         eosL: *eosAir
         eosR: *eosAir
