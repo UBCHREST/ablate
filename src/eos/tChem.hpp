@@ -29,16 +29,24 @@ class TChem : public TChemBase, public std::enable_shared_from_this<ablate::eos:
      * a thermodynamic function specific to TChem that takes yi from the arguments instead of conserved
      */
     struct ThermodynamicMassFractionFunction {
+        //! function to be called
         PetscErrorCode (*function)(const PetscReal conserved[], const PetscReal yi[], PetscReal* property, void* ctx) = nullptr;
+        //! optional context to pass into the function
         std::shared_ptr<void> context = nullptr;
+        //! the property size being set
+        PetscInt propertySize = 1;
     };
 
     /**
      * a temperature thermodynamic function specific to TChem that takes yi from the arguments instead of conserved
      */
     struct ThermodynamicTemperatureMassFractionFunction {
+        //! function to be called
         PetscErrorCode (*function)(const PetscReal conserved[], const PetscReal yi[], PetscReal T, PetscReal* property, void* ctx) = nullptr;
+        //! optional context to pass into the function
         std::shared_ptr<void> context = nullptr;
+        //! the property size being set
+        PetscInt propertySize = 1;
     };
 
    public:
@@ -262,6 +270,11 @@ class TChem : public TChemBase, public std::enable_shared_from_this<ablate::eos:
               SpeciesSensibleEnthalpyTemperatureMassFractionFunction,
               ablate::eos::tChem::Temperature::getWorkSpaceSize}} /**note size of temperature because it has a larger scratch space */
         };
+
+    /**
+     * Store a list of properties that are sized by species, everything is assumed to be size one
+     */
+    const std::set<ThermodynamicProperty> speciesSizedProperties = {ThermodynamicProperty::SpeciesSensibleEnthalpy};
 
     /**
      * Fill and Normalize the density species mass fractions

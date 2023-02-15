@@ -326,14 +326,15 @@ ablate::eos::ThermodynamicFunction ablate::eos::ChemTab::GetThermodynamicFunctio
     if (densityProgressField == fields.end()) {
         throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD Field");
     }
-
+    auto tChemThermodynamicFunction = referenceEOS->GetThermodynamicMassFractionFunction(property, fields);
     return ThermodynamicFunction{
         .function = ChemTabThermodynamicFunction,
         .context = std::make_shared<ThermodynamicFunctionContext>(ThermodynamicFunctionContext{.densityOffset = eulerField->offset + (std::size_t)ablate::finiteVolume::CompressibleFlowFields::RHO,
                                                                                                .progressOffset = (std::size_t)densityProgressField->offset,
                                                                                                .yiScratch = std::vector<PetscReal>(speciesNames.size()),
-                                                                                               .tChemFunction = referenceEOS->GetThermodynamicMassFractionFunction(property, fields),
-                                                                                               .chemTab = shared_from_this()})};
+                                                                                               .tChemFunction = tChemThermodynamicFunction,
+                                                                                               .chemTab = shared_from_this()}),
+        .propertySize = tChemThermodynamicFunction.propertySize};
 }
 
 ablate::eos::ThermodynamicTemperatureFunction ablate::eos::ChemTab::GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
@@ -348,13 +349,15 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::ChemTab::GetThermodyn
         throw std::invalid_argument("The ablate::chemistry::ChemTabModel requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD Field");
     }
 
+    auto tChemThermodynamicFunction = referenceEOS->GetThermodynamicTemperatureMassFractionFunction(property, fields);
     return ThermodynamicTemperatureFunction{.function = ChemTabThermodynamicTemperatureFunction,
                                             .context = std::make_shared<ThermodynamicTemperatureFunctionContext>(
                                                 ThermodynamicTemperatureFunctionContext{.densityOffset = eulerField->offset + (std::size_t)ablate::finiteVolume::CompressibleFlowFields::RHO,
                                                                                         .progressOffset = (std::size_t)densityProgressField->offset,
                                                                                         .yiScratch = std::vector<PetscReal>(speciesNames.size()),
-                                                                                        .tChemFunction = referenceEOS->GetThermodynamicTemperatureMassFractionFunction(property, fields),
-                                                                                        .chemTab = shared_from_this()})};
+                                                                                        .tChemFunction = tChemThermodynamicFunction,
+                                                                                        .chemTab = shared_from_this()}),
+                                            .propertySize = tChemThermodynamicFunction.propertySize};
 }
 
 ablate::eos::EOSFunction ablate::eos::ChemTab::GetFieldFunctionFunction(const std::string &field, eos::ThermodynamicProperty property1, eos::ThermodynamicProperty property2,

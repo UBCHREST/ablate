@@ -87,10 +87,14 @@ std::shared_ptr<ablate::eos::TChemSoot::FunctionContext> ablate::eos::TChemSoot:
 
 // These Next 5 are the same as regular TCHEM
 ablate::eos::ThermodynamicFunction ablate::eos::TChemSoot::GetThermodynamicFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
-    return ThermodynamicFunction{.function = std::get<0>(thermodynamicFunctions.at(property)), .context = BuildFunctionContext(property, fields)};
+    return ThermodynamicFunction{.function = std::get<0>(thermodynamicFunctions.at(property)),
+                                 .context = BuildFunctionContext(property, fields),
+                                 .propertySize = speciesSizedProperties.count(property) ? (PetscInt)species.size() : 1};
 }
 ablate::eos::ThermodynamicTemperatureFunction ablate::eos::TChemSoot::GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
-    return ThermodynamicTemperatureFunction{.function = std::get<1>(thermodynamicFunctions.at(property)), .context = BuildFunctionContext(property, fields)};
+    return ThermodynamicTemperatureFunction{.function = std::get<1>(thermodynamicFunctions.at(property)),
+                                            .context = BuildFunctionContext(property, fields),
+                                            .propertySize = speciesSizedProperties.count(property) ? (PetscInt)species.size() : 1};
 }
 void ablate::eos::TChemSoot::View(std::ostream &stream) const {
     stream << "EOS: " << type << std::endl;

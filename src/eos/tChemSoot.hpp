@@ -16,6 +16,7 @@
 #include "monitors/logs/log.hpp"
 #include "tChem.hpp"
 #include "utilities/intErrorChecker.hpp"
+#include <set>
 
 namespace ablate::eos {
 
@@ -185,6 +186,11 @@ class TChemSoot : public TChemBase, public std::enable_shared_from_this<ablate::
           SpeciesSensibleEnthalpyTemperatureFunction,
           ablate::eos::tChemSoot::Temperature::getWorkSpaceSize}} /**note size of temperature because it has a larger scratch space */
     };
+
+    /**
+     * Store a list of properties that are sized by species, everything is assumed to be size one
+     */
+     const std::set<ThermodynamicProperty> speciesSizedProperties = {ThermodynamicProperty::SpeciesSensibleEnthalpy};
 
     /**
      * Fill and Normalize the density species mass fractions
