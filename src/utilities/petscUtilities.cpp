@@ -2,7 +2,7 @@
 #include "environment/runEnvironment.hpp"
 
 void ablate::utilities::PetscUtilities::Initialize(const char help[]) {
-    PetscInitialize(ablate::environment::RunEnvironment::GetArgCount(), ablate::environment::RunEnvironment::GetArgs(), nullptr, help) >> utilities::PetscUtilities::checkError;
+    SlepcInitialize(ablate::environment::RunEnvironment::GetArgCount(), ablate::environment::RunEnvironment::GetArgs(), nullptr, help) >> utilities::PetscUtilities::checkError;
 
     // register the cleanup
     ablate::environment::RunEnvironment::RegisterCleanUpFunction("ablate::utilities::PetscUtilities::Initialize", []() { PetscFinalize() >> utilities::PetscUtilities::checkError; });

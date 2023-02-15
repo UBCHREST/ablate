@@ -57,11 +57,13 @@ include(config/findOpenCascade.cmake)
 include(config/findJson.cmake)
 include(config/findTensorFlow.cmake)
 include(config/findChrestCompilerFlags.cmake)
+include(config/findSLEPc.cmake)
 
 # specify in the required libaries
 target_link_libraries(ablateLibrary
         PUBLIC
         PkgConfig::PETSc
+        slepc
         CHREST::cppParserLibrary
         yaml-cpp
         muparser

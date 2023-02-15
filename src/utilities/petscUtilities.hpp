@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_PETSCUTILITIES_HPP
 #define ABLATELIBRARY_PETSCUTILITIES_HPP
 #include <petsc.h>
+#include <slepc.h>
 #include <map>
 #include <string>
 namespace ablate::utilities {
