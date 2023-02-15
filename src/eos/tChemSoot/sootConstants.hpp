@@ -7,11 +7,11 @@
 
 namespace ablate::eos::tChemSoot {
 //! SolidCarbonDensity
-inline const static double solidCarbonDensity = 2000;
+[[maybe_unused]] inline const static double solidCarbonDensity = 2000;
 //! Molecular Weight of Carbon
-inline static const double MWCarbon = 12.0107;
+[[maybe_unused]] inline static const double MWCarbon = 12.0107;
 //! Scaling term for Ndd going into the Tines ODE Solver
-inline static double NddScaling = 1e20;
+[[maybe_unused]] inline static double NddScaling = 1e20;
 
 }  // namespace ablate::eos::tChemSoot
 #endif
