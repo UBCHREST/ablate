@@ -1,0 +1,30 @@
+target_sources(ablateLibrary
+        PRIVATE
+        temperature.cpp
+        sensibleInternalEnergy.cpp
+        pressure.cpp
+        sensibleEnthalpy.cpp
+        speedOfSound.cpp
+        specificHeatConstantPressure.cpp
+        specificHeatConstantVolume.cpp
+        sourceCalculatorSoot.cpp
+        IgnitionZeroDSoot.cpp
+
+        PUBLIC
+        densityFcn.hpp
+        temperature.hpp
+        temperatureFcn.hpp
+        sensibleInternalEnergy.hpp
+        sensibleInternalEnergyFcn.hpp
+        pressure.hpp
+        sensibleEnthalpy.hpp
+        speedOfSound.hpp
+        specificHeatConstantPressure.hpp
+        specificHeatConstantVolume.hpp
+        stateVectorSoot.hpp
+        sootConstants.hpp
+        sourceCalculatorSoot.hpp
+        IgnitionZeroDSoot.hpp
+        IgnitionZeroDSoot_Internal.hpp
+        IgnitionZeroD_ProblemSoot.hpp
+        )

@@ -1,5 +1,5 @@
 #include "pressure.hpp"
-#include "TChem_Impl_MolarWeights.hpp"
+#include "pressureFcn.hpp"
 
 namespace tChemLib = TChem;
 
@@ -18,17 +18,8 @@ void Pressure_TemplateRun(const std::string& profile_name,
         profile_name, policy, KOKKOS_LAMBDA(const typename policy_type::member_type& member) {
             const ordinal_type i = member.league_rank();
             const real_type_1d_view_type state_at_i = Kokkos::subview(state, i, Kokkos::ALL());
-
             const Impl::StateVector<real_type_1d_view_type> sv_at_i(kmcd.nSpec, state_at_i);
-            TCHEM_CHECK_ERROR(!sv_at_i.isValid(), "Error: input state vector is not valid");
-            {
-                real_type temperature = sv_at_i.Temperature();
-                real_type density = sv_at_i.Density();
-
-                // compute the mw
-                const real_type mwMix = tChemLib::Impl::MolarWeights<real_type, device_type>::team_invoke(member, sv_at_i.MassFractions(), kmcd);
-                sv_at_i.Pressure() = density * kmcd.Runiv * temperature / mwMix;
-            }
+            sv_at_i.Pressure() = ablate::eos::tChem::impl::pressureFcn<real_type, device_type>::team_invoke(member, sv_at_i, kmcd);
         });
     Kokkos::Profiling::popRegion();
 }

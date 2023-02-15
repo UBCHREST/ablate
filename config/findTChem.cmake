@@ -12,8 +12,8 @@ elseif (NOT (DEFINED Tines_DIR|CACHE{Tines_DIR}|ENV{Tines_DIR}))
     set(TINES_SUNDIALS_WARNING OFF CACHE BOOL "" FORCE)
 
     FetchContent_Declare(tines
-            GIT_REPOSITORY https://github.com/sandialabs/Tines.git
-            GIT_TAG a718f2c
+            GIT_REPOSITORY https://github.com/UBCHREST/Tines.git
+            GIT_TAG mcgurn/numerical-jac-fix
             SOURCE_SUBDIR src
             )
     FetchContent_MakeAvailable(tines)

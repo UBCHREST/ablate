@@ -98,7 +98,17 @@ INSTANTIATE_TEST_SUITE_P(
         (MpiTestParameter){.testName = "inputs/reactingFlow/ignitionDelay2S_CH4_CM2.yaml",
                            .nproc = 1,
                            .arguments = "",
-                           .expectedFiles{{"outputs/reactingFlow/ignitionDelay2S_CH4_CM2.Temperature.txt", "ignitionDelayTemperature.txt"}}}),
+                           .expectedFiles{{"outputs/reactingFlow/ignitionDelay2S_CH4_CM2.Temperature.txt", "ignitionDelayTemperature.txt"}}},
+        (MpiTestParameter){.testName = "inputs/reactingFlow/ignitionDelayGriMechSoot.yaml",
+                           .nproc = 1,
+                           .arguments = "",
+                           .expectedFiles{{"outputs/reactingFlow/ignitionDelayGriMechSoot.Temperature.txt", "ignitionDelayTemperature.csv"}}},
+        (MpiTestParameter){.testName = "inputs/reactingFlow/ignitionDelayMMASoot.yaml",
+                           .nproc = 1,
+                           .arguments = "",
+                           .expectedFiles{{"outputs/reactingFlow/ignitionDelayMMASoot.Temperature.txt", "ignitionDelayTemperature.csv"}}}
+
+        ),
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
 INSTANTIATE_TEST_SUITE_P(

@@ -6,6 +6,7 @@ target_sources(unitTests
         tChemTests.cpp
         chemTabTests.cpp
         twoPhaseTests.cpp
+        tChemSootTests.cpp
         )
 
 add_subdirectory(transport)

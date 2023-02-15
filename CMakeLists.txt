@@ -69,9 +69,7 @@ target_link_libraries(ablateLibrary
         TChem::tchem
         Tines::tines
         Threads::Threads
-        nlohmann_json::nlohmann_json
-        PRIVATE
-        chrestCompilerFlags)
+        nlohmann_json::nlohmann_json)
 
 # Set the ablate library requirements
 set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
@@ -91,7 +89,7 @@ endif ()
 
 # keep a separate main statement
 add_executable(ablate main.cpp)
-target_link_libraries(ablate PUBLIC ablateLibrary PRIVATE chrestCompilerFlags)
+target_link_libraries(ablate PUBLIC ablateLibrary)
 
 # include system specific hacks
 include(config/systemHacks.cmake)
