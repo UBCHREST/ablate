@@ -64,6 +64,9 @@ TEST(ConstantTransportTests, ShouldRecordConstantValuesForTemperatureFunction) {
     ASSERT_DOUBLE_EQ(expectedK, computedK);
     ASSERT_DOUBLE_EQ(computedMu, computedMu);
     ASSERT_DOUBLE_EQ(computedDiff, computedDiff);
+    ASSERT_DOUBLE_EQ(conductivityFunction.propertySize, 1);
+    ASSERT_DOUBLE_EQ(viscosityFunction.propertySize, 1);
+    ASSERT_DOUBLE_EQ(diffusivityFunction.propertySize, 1);
 }
 
 TEST(ConstantTransportTests, ShouldReturnNullFunctionsIfAllValuesZeroForTemperatureFunction) {

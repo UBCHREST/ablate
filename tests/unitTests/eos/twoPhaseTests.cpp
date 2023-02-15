@@ -90,6 +90,7 @@ TEST_P(TPThermodynamicPropertyTestFixture, ShouldComputeProperty) {
     // act/assert check for compute when temperature is known
     auto temperatureFunction = twoPhaseEos->GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, params.fields);
     PetscReal computedTemperature;
+    ASSERT_EQ(1, temperatureFunction.propertySize) << "The temperature property size should be 1";
     ierr = temperatureFunction.function(params.conservedValues.data(), &computedTemperature, temperatureFunction.context.get());
     ASSERT_EQ(ierr, 0);
 
@@ -99,6 +100,7 @@ TEST_P(TPThermodynamicPropertyTestFixture, ShouldComputeProperty) {
 
     auto thermodynamicTemperatureFunction = twoPhaseEos->GetThermodynamicTemperatureFunction(params.thermodynamicProperty, params.fields);
     computedProperty = std::vector<PetscReal>(params.expectedValue.size(), NAN);
+    ASSERT_EQ(params.expectedValue.size(), thermodynamicFunction.propertySize) << "The " << params.thermodynamicProperty << " property size should be " << params.expectedValue.size();
     ierr = thermodynamicTemperatureFunction.function(params.conservedValues.data(), computedTemperature, computedProperty.data(), thermodynamicTemperatureFunction.context.get());
 
     ASSERT_EQ(ierr, 0);
