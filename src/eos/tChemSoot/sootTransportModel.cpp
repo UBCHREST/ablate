@@ -1,16 +1,16 @@
-#include "sootSpeciesTransport.hpp"
+#include "sootTransportModel.hpp"
 #include <algorithm>
-#include "finiteVolume/compressibleFlowFields.hpp"
 
-ablate::eos::transport::SootSpeciesTransport::SootSpeciesTransport(const std::shared_ptr<TransportModel>& transport) : transport(transport) {}
-ablate::eos::ThermodynamicFunction ablate::eos::transport::SootSpeciesTransport::GetTransportFunction(ablate::eos::transport::TransportProperty property,
-                                                                                                      const std::vector<domain::Field>& fields) const {
+ablate::eos::tChemSoot::SootTransportModel::SootTransportModel(const std::shared_ptr<TransportModel>& transport, std::string fieldName) : transport(transport), fieldName(fieldName) {}
+ablate::eos::ThermodynamicFunction ablate::eos::tChemSoot::SootTransportModel::GetTransportFunction(ablate::eos::transport::TransportProperty property,
+                                                                                                    const std::vector<domain::Field>& fields) const {
     if (property == ablate::eos::transport::TransportProperty::Diffusivity) {
         // determine the number of species from fields
-        auto speciesField = std::find_if(fields.begin(), fields.end(), [](auto field) { return field.name == finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
+        const auto& fieldName = this->fieldName;
+        auto speciesField = std::find_if(fields.begin(), fields.end(), [&fieldName](auto field) { return field.name == fieldName; });
 
         if (speciesField == fields.end()) {
-            throw std::invalid_argument("ablate::eos::transport::SootSpeciesTransport requires the field finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD");
+            throw std::invalid_argument("ablate::eos::transport::SootTransportModel requires the field " + fieldName);
         }
 
         auto diffusionFunction = transport->GetTransportFunction(property, fields);
@@ -24,18 +24,19 @@ ablate::eos::ThermodynamicFunction ablate::eos::transport::SootSpeciesTransport:
             return ThermodynamicFunction{
                 .function = AdjustSpeciesDiffusionFunction, .context = std::make_shared<ThermodynamicFunction>(diffusionFunction), .propertySize = speciesField->numberComponents};
         } else {
-            throw std::invalid_argument("ablate::eos::transport::SootSpeciesTransport requires the transport diffusion function to be sized 1 or number of species");
+            throw std::invalid_argument("ablate::eos::transport::SootTransportModel requires the transport diffusion function to be sized 1 or field size");
         }
     } else {
         // just pull from transport
         return transport->GetTransportFunction(property, fields);
     }
 }
-ablate::eos::ThermodynamicTemperatureFunction ablate::eos::transport::SootSpeciesTransport::GetTransportTemperatureFunction(ablate::eos::transport::TransportProperty property,
-                                                                                                                            const std::vector<domain::Field>& fields) const {
+ablate::eos::ThermodynamicTemperatureFunction ablate::eos::tChemSoot::SootTransportModel::GetTransportTemperatureFunction(ablate::eos::transport::TransportProperty property,
+                                                                                                                          const std::vector<domain::Field>& fields) const {
     if (property == ablate::eos::transport::TransportProperty::Diffusivity) {
         // determine the number of species from fields
-        auto speciesField = std::find_if(fields.begin(), fields.end(), [](auto field) { return field.name == finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
+        const auto& fieldName = this->fieldName;
+        auto speciesField = std::find_if(fields.begin(), fields.end(), [&fieldName](auto field) { return field.name == fieldName; });
 
         if (speciesField == fields.end()) {
             throw std::invalid_argument("ablate::eos::transport::SootSpeciesTransport requires the field finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD");
@@ -62,7 +63,7 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::transport::SootSpecie
     }
 }
 
-PetscErrorCode ablate::eos::transport::SootSpeciesTransport::VectorizeSpeciesDiffusionFunction(const PetscReal* conserved, PetscReal* property, void* ctx) {
+PetscErrorCode ablate::eos::tChemSoot::SootTransportModel::VectorizeSpeciesDiffusionFunction(const PetscReal* conserved, PetscReal* property, void* ctx) {
     // cast the pointer as a ThermodynamicFunction
     auto functionPointer = static_cast<ThermodynamicFunction*>(ctx);
     PetscReal constantDiff;
@@ -72,11 +73,11 @@ PetscErrorCode ablate::eos::transport::SootSpeciesTransport::VectorizeSpeciesDif
     std::fill_n(property, functionPointer->propertySize, constantDiff);
 
     // Scale the solid carbon
-    property[solidCarbonOffset] *= solidCarbonFactor;
+    property[offset] *= solidCarbonFactor;
 
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::transport::SootSpeciesTransport::AdjustSpeciesDiffusionFunction(const PetscReal* conserved, PetscReal* property, void* ctx) {
+PetscErrorCode ablate::eos::tChemSoot::SootTransportModel::AdjustSpeciesDiffusionFunction(const PetscReal* conserved, PetscReal* property, void* ctx) {
     PetscFunctionBeginUser;
 
     // cast the pointer as a ThermodynamicFunction
@@ -84,12 +85,12 @@ PetscErrorCode ablate::eos::transport::SootSpeciesTransport::AdjustSpeciesDiffus
     PetscCall(functionPointer->function(conserved, property, functionPointer->context.get()));
 
     // Scale the solid carbon
-    property[solidCarbonOffset] *= solidCarbonFactor;
+    property[offset] *= solidCarbonFactor;
 
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::eos::transport::SootSpeciesTransport::VectorizeSpeciesDiffusionTemperatureFunction(const PetscReal* conserved, PetscReal temperature, PetscReal* property, void* ctx) {
+PetscErrorCode ablate::eos::tChemSoot::SootTransportModel::VectorizeSpeciesDiffusionTemperatureFunction(const PetscReal* conserved, PetscReal temperature, PetscReal* property, void* ctx) {
     // cast the pointer as a ThermodynamicFunction
     auto functionPointer = static_cast<ThermodynamicTemperatureFunction*>(ctx);
     PetscReal constantDiff;
@@ -99,22 +100,22 @@ PetscErrorCode ablate::eos::transport::SootSpeciesTransport::VectorizeSpeciesDif
     std::fill_n(property, functionPointer->propertySize, constantDiff);
 
     // Scale the solid carbon
-    property[solidCarbonOffset] *= solidCarbonFactor;
+    property[offset] *= solidCarbonFactor;
 
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::eos::transport::SootSpeciesTransport::AdjustSpeciesDiffusionTemperatureFunction(const PetscReal* conserved, PetscReal temperature, PetscReal* property, void* ctx) {
+PetscErrorCode ablate::eos::tChemSoot::SootTransportModel::AdjustSpeciesDiffusionTemperatureFunction(const PetscReal* conserved, PetscReal temperature, PetscReal* property, void* ctx) {
     PetscFunctionBeginUser;
     // cast the pointer as a ThermodynamicFunction
     auto functionPointer = static_cast<ThermodynamicTemperatureFunction*>(ctx);
     PetscCall(functionPointer->function(conserved, temperature, property, functionPointer->context.get()));
 
     // Scale the solid carbon
-    property[solidCarbonOffset] *= solidCarbonFactor;
+    property[offset] *= solidCarbonFactor;
 
     PetscFunctionReturn(0);
 }
 
 #include "registrar.hpp"
-REGISTER_PASS_THROUGH(ablate::eos::transport::TransportModel, ablate::eos::transport::SootSpeciesTransport, "Modifies the transport model for soot", ablate::eos::transport::TransportModel);
+REGISTER_DERIVED(ablate::eos::transport::TransportModel, ablate::eos::tChemSoot::SootTransportModel);

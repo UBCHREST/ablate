@@ -1,10 +1,10 @@
 #include <functional>
-#include "eos/tChemSoot/sootSpeciesTransport.hpp"
+#include "eos/tChemSoot/sootSpeciesTransportModel.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
 
-struct SootSpeciesTransportTestParameters {
+struct SootSpeciesTransportModelTestParameters {
     //! the name of the test
     std::string name;
     //! function to get the base transport model
@@ -19,14 +19,14 @@ struct SootSpeciesTransportTestParameters {
     std::vector<PetscReal> expectedDiff;
 };
 
-class SootSpeciesTransportTestFixture : public ::testing::TestWithParam<SootSpeciesTransportTestParameters> {};
+class SootSpeciesTransportModelTestFixture : public ::testing::TestWithParam<SootSpeciesTransportModelTestParameters> {};
 
-TEST_P(SootSpeciesTransportTestFixture, ShouldComputePropertiesForFunction) {
+TEST_P(SootSpeciesTransportModelTestFixture, ShouldComputePropertiesForFunction) {
     // ARRANGE
     auto baseTransportModel = GetParam().getBaseTransportModel();
 
     // Create a soot transport property
-    auto sootSpeciesTransportModel = std::make_shared<ablate::eos::transport::SootSpeciesTransport>(baseTransportModel);
+    auto sootSpeciesTransportModel = std::make_shared<ablate::eos::tChemSoot::SootSpeciesTransportModel>(baseTransportModel);
 
     auto conductivityFunction = sootSpeciesTransportModel->GetTransportFunction(ablate::eos::transport::TransportProperty::Conductivity, GetParam().fields);
     auto viscosityFunction = sootSpeciesTransportModel->GetTransportFunction(ablate::eos::transport::TransportProperty::Viscosity, GetParam().fields);
@@ -53,12 +53,12 @@ TEST_P(SootSpeciesTransportTestFixture, ShouldComputePropertiesForFunction) {
     }
 }
 
-TEST_P(SootSpeciesTransportTestFixture, ShouldComputePropertiesForTemperatureFunction) {
+TEST_P(SootSpeciesTransportModelTestFixture, ShouldComputePropertiesForTemperatureFunction) {
     // ARRANGE
     auto baseTransportModel = GetParam().getBaseTransportModel();
 
     // Create a soot transport property
-    auto sootSpeciesTransportModel = std::make_shared<ablate::eos::transport::SootSpeciesTransport>(baseTransportModel);
+    auto sootSpeciesTransportModel = std::make_shared<ablate::eos::tChemSoot::SootSpeciesTransportModel>(baseTransportModel);
 
     auto conductivityFunction = sootSpeciesTransportModel->GetTransportTemperatureFunction(ablate::eos::transport::TransportProperty::Conductivity, GetParam().fields);
     auto viscosityFunction = sootSpeciesTransportModel->GetTransportTemperatureFunction(ablate::eos::transport::TransportProperty::Viscosity, GetParam().fields);
@@ -85,9 +85,9 @@ TEST_P(SootSpeciesTransportTestFixture, ShouldComputePropertiesForTemperatureFun
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(SootSpeciesTransportTests, SootSpeciesTransportTestFixture,
+INSTANTIATE_TEST_SUITE_P(SootSpeciesTransportTests, SootSpeciesTransportModelTestFixture,
                          testing::Values(
-                             (SootSpeciesTransportTestParameters){
+                             (SootSpeciesTransportModelTestParameters){
                                  .name = "constant_diff",
                                  .getBaseTransportModel = []() { return std::make_shared<ablate::eos::transport::Constant>(.1, .2, .3); },
                                  .fields = {ablate::domain::Field{.name = ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD, .numberComponents = 6}},
@@ -98,7 +98,7 @@ INSTANTIATE_TEST_SUITE_P(SootSpeciesTransportTests, SootSpeciesTransportTestFixt
                                  .expectedDiff = {0.003, .3, .3, .3, .3, .3} /** solid carbon is always the first index **/
 
                              },
-                             (SootSpeciesTransportTestParameters){
+                             (SootSpeciesTransportModelTestParameters){
                                  .name = "constant_diff",
                                  .getBaseTransportModel =
                                      []() {
@@ -113,4 +113,4 @@ INSTANTIATE_TEST_SUITE_P(SootSpeciesTransportTests, SootSpeciesTransportTestFixt
 
                              }),
 
-                         [](const testing::TestParamInfo<SootSpeciesTransportTestParameters>& info) { return std::to_string(info.index) + "_" + info.param.name; });
+                         [](const testing::TestParamInfo<SootSpeciesTransportModelTestParameters>& info) { return std::to_string(info.index) + "_" + info.param.name; });

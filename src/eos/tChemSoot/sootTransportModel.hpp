@@ -1,17 +1,19 @@
-#ifndef ABLATELIBRARY_SOOTSPECIESPTRANSPORT_HPP
-#define ABLATELIBRARY_SOOTSPECIESPTRANSPORT_HPP
+#ifndef ABLATELIBRARY_SOOTTRANSPORTMODEL_HPP
+#define ABLATELIBRARY_SOOTTRANSPORTMODEL_HPP
 
 #include <eos/eos.hpp>
 #include <memory>
 #include "eos/transport/transportModel.hpp"
 
-namespace ablate::eos::transport {
+namespace ablate::eos::tChemSoot {
 
 /**
  * This transport model, reduces the carbon diffusion to be 1% of species diffusion
  */
-class SootSpeciesTransport : public TransportModel {
+class SootTransportModel : public eos::transport::TransportModel {
    private:
+    //! Store the name of the field to find to set to zero
+    const std::string fieldName;
     /**
      * The baseline transport used for conductivity, viscosity, and baseline species diffusion
      */
@@ -23,9 +25,9 @@ class SootSpeciesTransport : public TransportModel {
     constexpr static PetscReal solidCarbonFactor = 1.0 / 100.0;
 
     /**
-     * Store the solid carbon offset, TChem soot makes this always zero
+     * Store the solid carbon/ndd offset, TChem soot makes this always zero
      */
-    constexpr static std::size_t solidCarbonOffset = 0;
+    constexpr static std::size_t offset = 0;
 
     /**
      * private static function to vectorize the species diffusion and set the solidCarbonOffset value to small
@@ -64,10 +66,10 @@ class SootSpeciesTransport : public TransportModel {
    public:
     /**
      * This transport model, reduces the carbon diffusion to be 1% of species diffusion
-     * @param eos the eos to use for the species list
      * @param transport the base transport model
+     * @param componentName, the name of the component to adjust (solid carbon or ndd)
      */
-    explicit SootSpeciesTransport(const std::shared_ptr<TransportModel>& transport);
+    explicit SootTransportModel(const std::shared_ptr<TransportModel>& transport, std::string componentName);
 
     /**
      * Single function to produce transport function for any property based upon the available fields
@@ -75,7 +77,7 @@ class SootSpeciesTransport : public TransportModel {
      * @param fields
      * @return
      */
-    [[nodiscard]] ThermodynamicFunction GetTransportFunction(TransportProperty property, const std::vector<domain::Field>& fields) const override;
+    [[nodiscard]] ThermodynamicFunction GetTransportFunction(eos::transport::TransportProperty property, const std::vector<domain::Field>& fields) const override;
 
     /**
      * Single function to produce thermodynamic function for any property based upon the available fields and temperature
@@ -83,8 +85,8 @@ class SootSpeciesTransport : public TransportModel {
      * @param fields
      * @return
      */
-    [[nodiscard]] ThermodynamicTemperatureFunction GetTransportTemperatureFunction(TransportProperty property, const std::vector<domain::Field>& fields) const override;
+    [[nodiscard]] ThermodynamicTemperatureFunction GetTransportTemperatureFunction(eos::transport::TransportProperty property, const std::vector<domain::Field>& fields) const override;
 };
 }  // namespace ablate::eos::transport
 
-#endif  // ABLATELIBRARY_SOOTSPECIESPTRANSPORT_HPP
+#endif  // ABLATELIBRARY_SOOTTRANSPORTMODEL_HPP

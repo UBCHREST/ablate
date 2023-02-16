@@ -1,4 +1,5 @@
 target_sources(unitTests
         PRIVATE
-        sootSpeciesTransportTests.cpp
+        sootSpeciesTransportModelTests.cpp
+        sootProgressTransportModelTests.cpp
         )

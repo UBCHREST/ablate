@@ -9,7 +9,9 @@ target_sources(ablateLibrary
         specificHeatConstantVolume.cpp
         sourceCalculatorSoot.cpp
         IgnitionZeroDSoot.cpp
-        sootSpeciesTransport.cpp
+        sootTransportModel.cpp
+        sootSpeciesTransportModel.cpp
+        sootProgressTransportModel.cpp
 
         PUBLIC
         densityFcn.hpp
@@ -28,5 +30,7 @@ target_sources(ablateLibrary
         IgnitionZeroDSoot.hpp
         IgnitionZeroDSoot_Internal.hpp
         IgnitionZeroD_ProblemSoot.hpp
-        sootSpeciesTransport.hpp
+        sootTransportModel.hpp
+        sootSpeciesTransportModel.hpp
+        sootProgressTransportModel.hpp
         )
