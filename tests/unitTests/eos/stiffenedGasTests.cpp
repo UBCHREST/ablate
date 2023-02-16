@@ -80,7 +80,7 @@ TEST_P(SGThermodynamicPropertyTestFixture, ShouldComputeProperty) {
 
     auto thermodynamicTemperatureFunction = eos->GetThermodynamicTemperatureFunction(params.thermodynamicProperty, params.fields);
     computedProperty = std::vector<PetscReal>(params.expectedValue.size(), NAN);
-    ASSERT_EQ(params.expectedValue.size(), thermodynamicFunction.propertySize) << "The " << params.thermodynamicProperty  << " property size should be " << params.expectedValue.size();
+    ASSERT_EQ(params.expectedValue.size(), thermodynamicFunction.propertySize) << "The " << params.thermodynamicProperty << " property size should be " << params.expectedValue.size();
     ASSERT_EQ(0, thermodynamicTemperatureFunction.function(params.conservedValues.data(), computedTemperature, computedProperty.data(), thermodynamicTemperatureFunction.context.get()));
     for (std::size_t c = 0; c < params.expectedValue.size(); c++) {
         ASSERT_NEAR(computedProperty[c], params.expectedValue[c], 1E-6) << " for temperature function ";

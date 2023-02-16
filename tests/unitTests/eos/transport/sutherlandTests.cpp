@@ -115,7 +115,6 @@ TEST_P(SutherlandTransportTestFixture, ShouldComputeDirectCorrectDiffusivity) {
     diffusivityFunction.function(nullptr, &computedDiff, diffusivityFunction.context.get());
     ASSERT_EQ(1, diffusivityFunction.propertySize) << " The sutherland diffusivity should have a property size of 1";
 
-
     // ASSERT
     double error = PetscAbs((GetParam().expectedDiffusivity - computedDiff) / GetParam().expectedDiffusivity);
     ASSERT_LT(error, 1E-5);

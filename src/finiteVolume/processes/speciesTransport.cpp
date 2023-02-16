@@ -22,9 +22,11 @@ ablate::finiteVolume::processes::SpeciesTransport::SpeciesTransport(std::shared_
         // set the eos functions
         diffusionData.numberSpecies = (PetscInt)eos->GetSpeciesVariables().size();
         diffusionData.speciesSpeciesSensibleEnthalpy.resize(eos->GetSpeciesVariables().size());
+        diffusionData.speciesDiffusionCoefficient.resize(eos->GetSpeciesVariables().size());
 
         // Add in the time stepping
         diffusionTimeStepData.stabilityFactor = parameters->Get<PetscReal>("speciesStabilityFactor", 0.0);
+        diffusionTimeStepData.speciesDiffusionCoefficient.resize(eos->GetSpeciesVariables().size());
     }
 
     numberSpecies = (PetscInt)eos->GetSpeciesVariables().size();
@@ -43,16 +45,32 @@ void ablate::finiteVolume::processes::SpeciesTransport::Setup(ablate::finiteVolu
         if (transportModel) {
             diffusionData.diffFunction = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Diffusivity, flow.GetSubDomain().GetFields());
             if (diffusionData.diffFunction.function) {
-                flow.RegisterRHSFunction(DiffusionEnergyFlux,
-                                         &diffusionData,
-                                         CompressibleFlowFields::EULER_FIELD,
-                                         {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
-                                         {CompressibleFlowFields::YI_FIELD});
-                flow.RegisterRHSFunction(DiffusionSpeciesFlux,
-                                         &diffusionData,
-                                         CompressibleFlowFields::DENSITY_YI_FIELD,
-                                         {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
-                                         {CompressibleFlowFields::YI_FIELD});
+                // Specify a different rhs function depending on if the diffusion flux is constant
+                if (diffusionData.diffFunction.propertySize == 1) {
+                    flow.RegisterRHSFunction(DiffusionEnergyFlux,
+                                             &diffusionData,
+                                             CompressibleFlowFields::EULER_FIELD,
+                                             {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
+                                             {CompressibleFlowFields::YI_FIELD});
+                    flow.RegisterRHSFunction(DiffusionSpeciesFlux,
+                                             &diffusionData,
+                                             CompressibleFlowFields::DENSITY_YI_FIELD,
+                                             {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
+                                             {CompressibleFlowFields::YI_FIELD});
+                } else if (diffusionData.diffFunction.propertySize == numberSpecies) {
+                    flow.RegisterRHSFunction(DiffusionEnergyFluxVariableDiffusionCoefficient,
+                                             &diffusionData,
+                                             CompressibleFlowFields::EULER_FIELD,
+                                             {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
+                                             {CompressibleFlowFields::YI_FIELD});
+                    flow.RegisterRHSFunction(DiffusionSpeciesFluxVariableDiffusionCoefficient,
+                                             &diffusionData,
+                                             CompressibleFlowFields::DENSITY_YI_FIELD,
+                                             {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
+                                             {CompressibleFlowFields::YI_FIELD});
+                } else {
+                    throw std::invalid_argument("The diffusion property size must be 1 or number of species in ablate::finiteVolume::processes::SpeciesTransport.");
+                }
 
                 diffusionData.computeTemperatureFunction = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature, flow.GetSubDomain().GetFields());
                 diffusionData.computeSpeciesSensibleEnthalpyFunction = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SpeciesSensibleEnthalpy, flow.GetSubDomain().GetFields());
@@ -116,7 +134,7 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionEnerg
         flux[CompressibleFlowFields::RHOU + d] = 0.0;
     }
 
-    // compute diff
+    // compute diff, this can be constant or variable
     PetscReal diff = 0.0;
     flowParameters->diffFunction.function(field, temperature, &diff, flowParameters->diffFunction.context.get());
 
@@ -131,6 +149,51 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionEnerg
 
     PetscFunctionReturn(0);
 }
+
+PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionEnergyFluxVariableDiffusionCoefficient(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[],
+                                                                                                                  const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
+                                                                                                                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
+                                                                                                                  const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
+    PetscFunctionBeginUser;
+    // this order is based upon the order that they are passed into RegisterRHSFunction
+    const int yi = 0;
+    const int euler = 0;
+
+    auto flowParameters = (DiffusionData *)ctx;
+
+    // get the current density from euler
+    const PetscReal density = field[uOff[euler] + CompressibleFlowFields::RHO];
+
+    // compute the temperature in this volume
+
+    PetscReal temperature;
+    PetscCall(flowParameters->computeTemperatureFunction.function(field, &temperature, flowParameters->computeTemperatureFunction.context.get()));
+
+    PetscCall(flowParameters->computeSpeciesSensibleEnthalpyFunction.function(
+        field, temperature, flowParameters->speciesSpeciesSensibleEnthalpy.data(), flowParameters->computeSpeciesSensibleEnthalpyFunction.context.get()));
+
+    // set the non rho E fluxes to zero
+    flux[CompressibleFlowFields::RHO] = 0.0;
+    flux[CompressibleFlowFields::RHOE] = 0.0;
+    for (PetscInt d = 0; d < dim; d++) {
+        flux[CompressibleFlowFields::RHOU + d] = 0.0;
+    }
+
+    // compute diff, this can be constant or variable
+    flowParameters->diffFunction.function(field, temperature, flowParameters->speciesDiffusionCoefficient.data(), flowParameters->diffFunction.context.get());
+
+    for (PetscInt sp = 0; sp < flowParameters->numberSpecies; ++sp) {
+        for (PetscInt d = 0; d < dim; ++d) {
+            // speciesFlux(-rho Di dYi/dx - rho Di dYi/dy - rho Di dYi//dz) . n A
+            const int offset = aOff_x[yi] + (sp * dim) + d;
+            PetscReal speciesFlux = -fg->normal[d] * density * flowParameters->speciesDiffusionCoefficient[sp] * flowParameters->speciesSpeciesSensibleEnthalpy[sp] * gradAux[offset];
+            flux[CompressibleFlowFields::RHOE] += speciesFlux;
+        }
+    }
+
+    PetscFunctionReturn(0);
+}
+
 PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionSpeciesFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[],
                                                                                        const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[],
                                                                                        const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
@@ -158,6 +221,40 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionSpeci
             // speciesFlux(-rho Di dYi/dx - rho Di dYi/dy - rho Di dYi//dz) . n A
             const int offset = aOff_x[yi] + (sp * dim) + d;
             PetscReal speciesFlux = -fg->normal[d] * density * diff * gradAux[offset];
+            flux[sp] += speciesFlux;
+        }
+    }
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionSpeciesFluxVariableDiffusionCoefficient(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[],
+                                                                                                                   const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
+                                                                                                                   const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
+                                                                                                                   const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
+    PetscFunctionBeginUser;
+    // this order is based upon the order that they are passed into RegisterRHSFunction
+    const int yi = 0;
+    const int euler = 0;
+
+    auto flowParameters = (DiffusionData *)ctx;
+
+    // get the current density from euler
+    const PetscReal density = field[uOff[euler] + CompressibleFlowFields::RHO];
+
+    PetscReal temperature;
+    PetscCall(flowParameters->computeTemperatureFunction.function(field, &temperature, flowParameters->computeTemperatureFunction.context.get()));
+
+    // compute diff
+    flowParameters->diffFunction.function(field, temperature, flowParameters->speciesDiffusionCoefficient.data(), flowParameters->diffFunction.context.get());
+
+    // species equations
+    for (PetscInt sp = 0; sp < flowParameters->numberSpecies; ++sp) {
+        flux[sp] = 0;
+        for (PetscInt d = 0; d < dim; ++d) {
+            // speciesFlux(-rho Di dYi/dx - rho Di dYi/dy - rho Di dYi//dz) . n A
+            const int offset = aOff_x[yi] + (sp * dim) + d;
+            PetscReal speciesFlux = -fg->normal[d] * density * flowParameters->speciesDiffusionCoefficient[sp] * gradAux[offset];
             flux[sp] += speciesFlux;
         }
     }

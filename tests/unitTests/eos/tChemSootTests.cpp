@@ -181,7 +181,7 @@ TEST_P(TChemSootThermodynamicPropertyTestFixture, ShouldComputeProperty) {
         auto thermodynamicFunction = eos->GetThermodynamicFunction(thermodynamicProperty, params.fields);
         std::vector<PetscReal> computedProperty(expectedValue.size(), NAN);
         ASSERT_EQ(0, thermodynamicFunction.function(conservedValues.data(), computedProperty.data(), thermodynamicFunction.context.get()));
-        ASSERT_EQ(expectedValue.size(), thermodynamicFunction.propertySize) << "The " << thermodynamicProperty  << " property size should be " << expectedValue.size();
+        ASSERT_EQ(expectedValue.size(), thermodynamicFunction.propertySize) << "The " << thermodynamicProperty << " property size should be " << expectedValue.size();
 
         for (std::size_t c = 0; c < expectedValue.size(); c++) {
             // perform a difference check is the expectedValue is zero

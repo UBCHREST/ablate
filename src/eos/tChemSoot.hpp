@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <map>
 #include <memory>
+#include <set>
 #include "TChem_KineticModelData.hpp"
 #include "chemistryModel.hpp"
 #include "eos.hpp"
@@ -16,7 +17,6 @@
 #include "monitors/logs/log.hpp"
 #include "tChem.hpp"
 #include "utilities/intErrorChecker.hpp"
-#include <set>
 
 namespace ablate::eos {
 
@@ -190,7 +190,7 @@ class TChemSoot : public TChemBase, public std::enable_shared_from_this<ablate::
     /**
      * Store a list of properties that are sized by species, everything is assumed to be size one
      */
-     const std::set<ThermodynamicProperty> speciesSizedProperties = {ThermodynamicProperty::SpeciesSensibleEnthalpy};
+    const std::set<ThermodynamicProperty> speciesSizedProperties = {ThermodynamicProperty::SpeciesSensibleEnthalpy};
 
     /**
      * Fill and Normalize the density species mass fractions
