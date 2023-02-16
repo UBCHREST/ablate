@@ -4,6 +4,7 @@
 #include "eos/tChemSoot.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "radiationProperties.hpp"
+#include "utilities/constants.hpp"
 
 namespace ablate::eos::radiationProperties {
 class SootSpectrumAbsorption : public RadiationModel {
@@ -15,7 +16,9 @@ class SootSpectrumAbsorption : public RadiationModel {
     };
     const std::shared_ptr<eos::EOS> eos;  //! eos is needed to compute field values
     constexpr static PetscReal rhoC = 2000;  // kg/m^3
-
+    constexpr static PetscReal C_2 = (utilities::Constants::h * utilities::Constants::c) / (utilities::Constants::k);
+    constexpr static PetscReal C_1 = NAN; // TODO: Update this
+    constexpr static PetscReal C_0 = 7.0;
 
    public:
     SootSpectrumAbsorption(std::shared_ptr<EOS> eosIn);
