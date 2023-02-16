@@ -55,9 +55,9 @@ TEST(ConstantTransportTests, ShouldRecordConstantValuesForDirectFunctionVectorDi
     for (std::size_t i = 0; i < expectedDiff.size(); ++i) {
         ASSERT_DOUBLE_EQ(expectedDiff[i], computedDiff[i]);
     }
-    ASSERT_DOUBLE_EQ(conductivityFunction.propertySize, 1);
-    ASSERT_DOUBLE_EQ(viscosityFunction.propertySize, 1);
-    ASSERT_DOUBLE_EQ(diffusivityFunction.propertySize, 3);
+    ASSERT_EQ(conductivityFunction.propertySize, 1);
+    ASSERT_EQ(viscosityFunction.propertySize, 1);
+    ASSERT_EQ(diffusivityFunction.propertySize, 3);
 }
 
 TEST(ConstantTransportTests, ShouldReturnNullFunctionsIfAllValuesZeroForDirectFunction) {
@@ -96,9 +96,9 @@ TEST(ConstantTransportTests, ShouldRecordConstantValuesForTemperatureFunction) {
     ASSERT_DOUBLE_EQ(expectedK, computedK);
     ASSERT_DOUBLE_EQ(expectedMu, computedMu);
     ASSERT_DOUBLE_EQ(expectedDiff, computedDiff);
-    ASSERT_DOUBLE_EQ(conductivityFunction.propertySize, 1);
-    ASSERT_DOUBLE_EQ(viscosityFunction.propertySize, 1);
-    ASSERT_DOUBLE_EQ(diffusivityFunction.propertySize, 1);
+    ASSERT_EQ(conductivityFunction.propertySize, 1);
+    ASSERT_EQ(viscosityFunction.propertySize, 1);
+    ASSERT_EQ(diffusivityFunction.propertySize, 1);
 }
 
 TEST(ConstantTransportTests, ShouldRecordConstantValuesForTemperatureFunctionVectorDiffusion) {
@@ -128,9 +128,9 @@ TEST(ConstantTransportTests, ShouldRecordConstantValuesForTemperatureFunctionVec
     for (std::size_t i = 0; i < expectedDiff.size(); ++i) {
         ASSERT_DOUBLE_EQ(expectedDiff[i], computedDiff[i]);
     }
-    ASSERT_DOUBLE_EQ(conductivityFunction.propertySize, 1);
-    ASSERT_DOUBLE_EQ(viscosityFunction.propertySize, 1);
-    ASSERT_DOUBLE_EQ(diffusivityFunction.propertySize, 3);
+    ASSERT_EQ(conductivityFunction.propertySize, 1);
+    ASSERT_EQ(viscosityFunction.propertySize, 1);
+    ASSERT_EQ(diffusivityFunction.propertySize, 3);
 }
 
 TEST(ConstantTransportTests, ShouldReturnNullFunctionsIfAllValuesZeroForTemperatureFunction) {
