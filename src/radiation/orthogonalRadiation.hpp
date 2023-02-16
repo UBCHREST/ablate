@@ -12,8 +12,6 @@ class OrthogonalRadiation : public ablate::radiation::Radiation {
     ~OrthogonalRadiation();
 
     void Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) override;
-
-    // TODO: Maybe overide the GetIntensity function here so that the spherical or surface characteristics are not accidentally captured in the implementation?
 };
 }  // namespace ablate::radiation
 

@@ -154,7 +154,7 @@ void ablate::eos::tChemSoot::SourceCalculatorSoot::ComputeSource(const ablate::s
             stateVectorTotal.SootNumberDensity() = PetscMax(0.0, progressDensityField[sootNumberDensityIndex] / density) / NddScaling;
             stateVectorTotal.MassFractionCarbon() = PetscMax(0.0, flowDensityField[0] / density);
 
-            // Start at index 1, because index 0 is reserved for C(s), Eventually make this its own index that can be changed and resolved but not atm. TODO::
+            // Start at index 1, because index 0 is reserved for C(s), Eventually make this its own index that can be changed and resolved but not atm.
             auto ys = stateVectorTotal.MassFractions();
             real_type yiSum = stateVectorTotal.MassFractionCarbon();
             for (ordinal_type s = 0; s < stateVectorTotal.NumGasSpecies() - 1; s++) {

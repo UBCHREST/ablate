@@ -1,0 +1,98 @@
+# ### Description
+# A test of the radiation field monitor output (intensity, absorption) using a simple 2d 5x20 plane of cells
+---
+
+environment:
+  title: radiationFieldMonitor
+  tagDirectory: true
+arguments: { }
+timestepper:
+  name: mainTimeStepper
+  io:
+    interval: 0
+  arguments:
+    ts_type: rk
+    ts_max_time: 100000
+    ts_max_steps: 5
+    ts_dt: 1.0E-10
+    ts_adapt_safety: 0.9
+  domain: !ablate::domain::BoxMeshBoundaryCells
+    name: simpleBoxField
+    faces: [ 5, 40 ]
+    lower: [ 0 , 0 ]
+    upper: [ 1 , 1 ]
+    simplex: false
+    options:
+      dm_plex_hash_location: true
+    preModifiers:
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+    postModifiers:
+      - !ablate::domain::modifiers::TagLabelInterface
+        leftRegion:
+          name: interiorCells
+        rightRegion:
+          name: boundaryCellsTop
+        boundaryFaceRegion:
+          name: upperWallBoundaryFaces
+        leftBoundaryCellRegion:
+          name: upperWallFlowCells
+      - !ablate::domain::modifiers::TagLabelInterface
+        leftRegion:
+          name: interiorCells
+        rightRegion:
+          name: boundaryCellsRight
+        boundaryFaceRegion:
+          name: outletBoundaryFaces
+        leftBoundaryCellRegion:
+          name: outletFlowCells
+      - !ablate::domain::modifiers::GhostBoundaryCells
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::TChem  &eos
+          mechFile: ../mechanisms/gri30.yml
+          options:
+            # set a minimum temperature for the chemical kinetics ode integration
+            thresholdTemperature: 560
+        conservedFieldOptions:
+          petscfv_type: leastsquares
+        region:
+          name: domain
+      - !ablate::domain::FieldDescription
+        name: pressure
+        type: FV
+        location: aux
+        region:
+          name: domain
+  initialization:
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state: &initFlowState
+        eos: *eos
+        pressure: 101325.0
+        temperature: "2000*x + 300"
+        velocity: "0,0"
+        other: !ablate::finiteVolume::fieldFunctions::MassFractions
+          eos: *eos
+          values:
+            - fieldName: H2O
+              field: "(0.24*y) + 0.01"
+            - fieldName: CO2
+              field: "(0.24*y) + 0.01"
+            - fieldName: CO
+              field: "(-0.24*y) + 0.25"
+            - fieldName: CH4
+              field: "(-0.24*y) + 0.25"
+    - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
+      state: *initFlowState
+
+solvers:
+  - !ablate::finiteVolume::CompressibleFlowSolver
+    id: flowField
+    region:
+      name: interiorCells
+    eos: *eos
+    monitors:
+      - !ablate::monitors::RadiationFieldMonitor
+        eos: *eos
+        properties: !ablate::eos::radiationProperties::Zimmer
+          eos: *eos
+        interval: 0

@@ -19,6 +19,7 @@ target_sources(ablateLibrary
         fieldMonitor.cpp
         mixtureFractionMonitor.cpp
         mixtureFractionCalculator.cpp
+        radiationFieldMonitor.cpp
         radiationFlux.cpp
 
         PUBLIC
@@ -42,6 +43,7 @@ target_sources(ablateLibrary
         mixtureFractionMonitor.hpp
         boundarySolverMonitor.hpp
         mixtureFractionCalculator.hpp
+        radiationFieldMonitor.hpp
         radiationFlux.hpp
         )
 
