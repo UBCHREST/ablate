@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_SOOTSPECTRUMABSORPTION_H
-#define ABLATELIBRARY_SOOTSPECTRUMABSORPTION_H
+#ifndef ABLATELIBRARY_SOOTSPECTRUMABSORPTION_HPP
+#define ABLATELIBRARY_SOOTSPECTRUMABSORPTION_HPP
 
 #include "eos/tChemSoot.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
@@ -27,7 +27,8 @@ class SootSpectrumAbsorption : public RadiationModel {
     ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
     static PetscErrorCode SootFunction(const PetscReal* conserved, PetscReal* kappa, void* ctx);
     static PetscErrorCode SootTemperatureFunction(const PetscReal* conserved, PetscReal temperature, PetscReal* kappa, void* ctx);
+
 };
 }  // namespace ablate::eos::radiationProperties
 
-#endif  // ABLATELIBRARY_SOOTSPECTRUMABSORPTION_H
+#endif  // ABLATELIBRARY_SOOTSPECTRUMABSORPTION_HPP

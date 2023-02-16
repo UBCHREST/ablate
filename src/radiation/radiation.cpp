@@ -353,13 +353,17 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
     PetscSFSetGraph(remoteAccess, (PetscInt)raySegments.size(), uniqueRaySegments, nullptr, PETSC_OWN_POINTER, remoteRayInformation, PETSC_OWN_POINTER) >> utilities::PetscUtilities::checkError;
     PetscSFSetUp(remoteAccess) >> utilities::PetscUtilities::checkError;
 
+    // TODO: Get the absorption model properties size so that the size of the communication object can be set in the SF.
+    // Get the number of wavelengths from the absorption model here.
+
     // Size up the memory to hold the local calculations and the retrieved information
-    raySegmentsCalculations.resize(raySegments.size());
-    raySegmentSummary.resize(numberOfReturnedSegments);
-    evaluatedGains.resize(numberOriginCells);
+    raySegmentsCalculations.resize(raySegments.size() * numLambda); // TODO: Set the sizes of the "wavelength" vectors in the "Spectrum" struct to be equal to the wavelength count.
+    raySegmentSummary.resize(numberOfReturnedSegments * numLambda);
+    evaluatedGains.resize(numberOriginCells); //TODO: Apply the filter before or after the gain evaluation?
 
     // Create a mpi data type to allow reducing the remoteRayCalculation to raySegmentSummary
-    MPI_Type_contiguous(2, MPIU_REAL, &carrierMpiType) >> utilities::MpiUtilities::checkError;
+    PetscInt count = 2 * numLambda;  //! = 2 * (the number of independant wavelengths that are being considered). Should be read from absorption model.
+    MPI_Type_contiguous(count, MPIU_REAL, &carrierMpiType) >> utilities::MpiUtilities::checkError;
     MPI_Type_commit(&carrierMpiType) >> utilities::MpiUtilities::checkError;
 }
 
@@ -575,8 +579,10 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     for (std::size_t r = 0; r < raySegments.size(); r++) {
         // zero our the calculation
         auto& raySegmentsCalculation = raySegmentsCalculations[r];
-        raySegmentsCalculation.Ij = 0.0;
-        raySegmentsCalculation.Krad = 1.0;
+        for (size_t i = 0; i < raySegmentsCalculations.size(); i++) {  //! Iterate through every wavelength entry in this ray segment
+            raySegmentsCalculations[r + i].Ij = 0.0;
+            raySegmentsCalculations[r + i].Krad = 1.0;
+        }
 
         // compute the Ij and Krad for this segment starting at the point closest to the ray origin
         const auto& raySegment = raySegments[r];
@@ -586,18 +592,21 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
             DMPlexPointLocalRead(solDm, cellSegment.cell, solArray, &sol);
             if (sol) {
                 DMPlexPointLocalFieldRead(auxDm, cellSegment.cell, temperatureField.id, auxArray, &temperature);
-                if (temperature) {    /** Input absorptivity (kappa) values from model here. */
-                    PetscReal kappa;  //!< Absorptivity coefficient, property of each cell
-                    absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
-                    if (cellSegment.h < 0) {
-                        // This is a boundary cell
-                        raySegmentsCalculation.Ij += FlameIntensity(1.0, *temperature) * raySegmentsCalculation.Krad;
-                    } else {
-                        // This is not a boundary cell
-                        raySegmentsCalculation.Ij += FlameIntensity(1 - exp(-kappa * cellSegment.h), *temperature) * raySegmentsCalculation.Krad;
+                if (temperature) {     /** Input absorptivity (kappa) values from model here. */
+                    PetscReal kappa[numLambda];  //!< Absorptivity coefficient, property of each cell // TODO: Update this to be the number of wavelengths
+                    absorptivityFunction.function(sol, *temperature, kappa, absorptivityFunctionContext);
+                    //! Get the pointer to the returned array of absorption values. Iterate through every wavelength for the evaluation.
+                    for (size_t i = 0; i < numLambda; i++) {
+                        if (cellSegment.h < 0) {
+                            // This is a boundary cell
+                            raySegmentsCalculations[r + i].Ij += FlameIntensity(1.0, *temperature) * raySegmentsCalculations[r + i].Krad;
+                        } else {
+                            // This is not a boundary cell
+                            raySegmentsCalculations[r + i].Ij += FlameIntensity(1 - exp(-kappa[i] * cellSegment.h), *temperature) * raySegmentsCalculations[r + i].Krad;
 
-                        // Compute the total absorption for this domain
-                        raySegmentsCalculation.Krad *= exp(-kappa * cellSegment.h);
+                            // Compute the total absorption for this domain
+                            raySegmentsCalculations[r + i].Krad *= exp(-kappa[i] * cellSegment.h);
+                        }
                     }
                 }
             }
@@ -620,11 +629,15 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
             // Add the absorption for this domain to the total absorption of the ray
             PetscReal kRadd = 1.0;
 
-            // for each segment in this ray
+            /** for each segment in this ray
+             * Integrate the wavelength dependent intensity calculation for each segment for each wavelength
+             */
             for (unsigned short int s = 0; s < raySegmentsPerOriginRay[rayOffset]; ++s) {
-                iSource += raySegmentSummary[segmentOffset].Ij * kRadd;
-                kRadd *= raySegmentSummary[segmentOffset].Krad;
-                segmentOffset++;
+                for (size_t i = 0; i < raySegmentSummary.size(); i++) {
+                    iSource += raySegmentSummary[segmentOffset + i].Ij * kRadd;
+                    kRadd *= raySegmentSummary[segmentOffset + i].Krad;
+                    segmentOffset++;
+                }
             }
 
             evaluatedGains[c] += iSource * gainsFactor[rayOffset];

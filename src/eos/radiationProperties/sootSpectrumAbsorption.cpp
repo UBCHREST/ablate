@@ -1,9 +1,12 @@
-#include "sootSpectrumAbsorption.h"
+#include "sootSpectrumAbsorption.hpp"
 
 ablate::eos::radiationProperties::SootSpectrumAbsorption::SootSpectrumAbsorption(std::shared_ptr<eos::EOS> eosIn) : eos(std::move(eosIn)) {}
 
 PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootFunction(const PetscReal *conserved, PetscReal *kappa, void *ctx) {
     PetscFunctionBeginUser;
+
+    // TODO: Need to prescribe that the size of kappa is equal to the number of wavelengths that are being evaluated.
+
     /** This model depends on mass fraction, temperature, and density in order to predict the absorption properties of the medium. */
     auto functionContext = (FunctionContext *)ctx;
     double temperature, density;  //!< Variables to hold information gathered from the fields
@@ -14,12 +17,19 @@ PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootFun
 
     PetscReal YinC = (functionContext->densityYiCSolidCOffset == -1) ? 0 : conserved[functionContext->densityYiCSolidCOffset] / density;  //!< Get the mass fraction of carbon here
 
-    PetscReal lambda;  //! This is the wavelength. (We must integrate over the valid range of wavelengths.)
-    PetscReal n = 1.811 + 0.1263 * log(lambda) + 0.027 * log(lambda) * log(lambda) + 0.0417 * log(lambda) * log(lambda) * log(lambda);  //! Fit of model to data.
-    PetscReal k = 0.5821 + 0.1213 * log(lambda) + 0.2309 * log(lambda) * log(lambda) - 0.01 * log(lambda) * log(lambda) * log(lambda);  //! Fit of model to data.
+    PetscInt numLambda = 10;
+    PetscReal n;
+    PetscReal k;
+    PetscReal lambda;
+    for (int i = 0; i < numLambda; i++) {
+        lambda = 1; // TODO: Make a function to say what the wavelength should be based on the loop index.
+        //! This is the wavelength. (We must integrate over the valid range of wavelengths.)
+        n = 1.811 + 0.1263 * log(lambda) + 0.027 * log(lambda) * log(lambda) + 0.0417 * log(lambda) * log(lambda) * log(lambda);  //! Fit of model to data.
+        k = 0.5821 + 0.1213 * log(lambda) + 0.2309 * log(lambda) * log(lambda) - 0.01 * log(lambda) * log(lambda) * log(lambda);  //! Fit of model to data.
 
-    PetscReal fv = density * YinC / rhoC;
-    *kappa = (36 * ablate::utilities::Constants::pi * n * k * fv) / ((((n * n) - (k * k) + 2) * ((n * n) - (k * k) + 2)) + (4 * n * n * k * k) * lambda);
+        PetscReal fv = density * YinC / rhoC;
+        kappa[i] = (36 * ablate::utilities::Constants::pi * n * k * fv) / ((((n * n) - (k * k) + 2) * ((n * n) - (k * k) + 2)) + (4 * n * n * k * k) * lambda);
+    }
 
     PetscFunctionReturn(0);
 }
