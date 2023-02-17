@@ -3,8 +3,10 @@
 #include <utility>
 #include "eos/perfectGas.hpp"
 #include "eos/stiffenedGas.hpp"
+#include "eos/twoPhase.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "flowProcess.hpp"
+#include "parameters/emptyParameters.hpp"
 
 static inline void NormVector(PetscInt dim, const PetscReal *in, PetscReal *out) {
     PetscReal mag = 0.0;
@@ -190,17 +192,35 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormJaco
     return 0;
 }
 
-ablate::finiteVolume::processes::TwoPhaseEulerAdvection::TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid,
+ablate::finiteVolume::processes::TwoPhaseEulerAdvection::TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosTwoPhase, const std::shared_ptr<parameters::Parameters> &parametersIn,
                                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas,
                                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid,
                                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidGas,
                                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid)
-    : eosGas(std::move(eosGas)),
-      eosLiquid(std::move(eosLiquid)),
+    : eosTwoPhase(std::move(eosTwoPhase)),
       fluxCalculatorGasGas(std::move(fluxCalculatorGasGas)),
       fluxCalculatorGasLiquid(std::move(fluxCalculatorGasLiquid)),
       fluxCalculatorLiquidGas(std::move(fluxCalculatorLiquidGas)),
-      fluxCalculatorLiquidLiquid(std::move(fluxCalculatorLiquidLiquid)) {}
+      fluxCalculatorLiquidLiquid(std::move(fluxCalculatorLiquidLiquid)) {
+    auto parameters = ablate::parameters::EmptyParameters::Check(parametersIn);
+    // check that eos is twoPhase
+    if (this->eosTwoPhase) {
+        auto twoPhaseEOS = std::dynamic_pointer_cast<eos::TwoPhase>(this->eosTwoPhase);
+        // populate component eoses
+        if (twoPhaseEOS) {
+            eosGas = twoPhaseEOS->GetEOSGas();
+            eosLiquid = twoPhaseEOS->GetEOSLiquid();
+        } else {
+            throw std::invalid_argument("invalid EOS. twoPhaseEulerAdvection requires TwoPhase equation of state.");
+        }
+    }
+
+    // If there is a flux calculator assumed advection
+    if (this->fluxCalculatorGasGas) {
+        // cfl
+        timeStepData.cfl = parameters->Get<PetscReal>("cfl", 0.5);
+    }
+}
 
 void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) {
     // Before each step, compute the alpha
@@ -213,6 +233,8 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Setup(ablate::fini
     // Currently, no option for species advection
     flow.RegisterRHSFunction(CompressibleFlowComputeEulerFlux, this, CompressibleFlowFields::EULER_FIELD, {VOLUME_FRACTION_FIELD, DENSITY_VF_FIELD, CompressibleFlowFields::EULER_FIELD}, {});
     flow.RegisterRHSFunction(CompressibleFlowComputeVFFlux, this, DENSITY_VF_FIELD, {VOLUME_FRACTION_FIELD, DENSITY_VF_FIELD, CompressibleFlowFields::EULER_FIELD}, {});
+    flow.RegisterComputeTimeStepFunction(ComputeCflTimeStep, &timeStepData, "cfl");
+    timeStepData.computeSpeedOfSound = eosTwoPhase->GetThermodynamicFunction(eos::ThermodynamicProperty::SpeedOfSound, flow.GetSubDomain().GetFields());
 
     // check to see if auxFieldUpdates needed to be added
     if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::VELOCITY_FIELD)) {
@@ -292,6 +314,68 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Multipha
     // clean up
     fvSolver.RestoreRange(cellRange);
     PetscFunctionReturn(0);
+}
+
+double ablate::finiteVolume::processes::TwoPhaseEulerAdvection::ComputeCflTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver &flow, void *ctx) {
+    // Get the dm and current solution vector
+    DM dm;
+    TSGetDM(ts, &dm) >> utilities::PetscUtilities::checkError;
+    Vec v;
+    TSGetSolution(ts, &v) >> utilities::PetscUtilities::checkError;
+
+    // Get the flow param
+    auto timeStepData = (TimeStepData *)ctx;
+
+    // Get the fv geom
+    PetscReal minCellRadius;
+    DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius) >> utilities::PetscUtilities::checkError;
+
+    // Get the valid cell range over this region
+    solver::Range cellRange;
+    flow.GetCellRange(cellRange);
+
+    const PetscScalar *x;
+    VecGetArrayRead(v, &x) >> utilities::PetscUtilities::checkError;
+
+    // Get the dim from the dm
+    PetscInt dim;
+    DMGetDimension(dm, &dim) >> utilities::PetscUtilities::checkError;
+
+    // assume the smallest cell is the limiting factor for now
+    const PetscReal dx = 2.0 * minCellRadius;
+
+    // Get field location for euler and densityYi
+    auto eulerId = flow.GetSubDomain().GetField(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD).id;
+
+    // March over each cell
+    PetscReal dtMin = 1000.0;
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+        PetscInt cell = cellRange.points ? cellRange.points[c] : c;
+
+        const PetscReal *euler;
+        const PetscReal *conserved = NULL;
+        DMPlexPointGlobalFieldRead(dm, cell, eulerId, x, &euler) >> utilities::PetscUtilities::checkError;
+        DMPlexPointGlobalRead(dm, cell, x, &conserved) >> utilities::PetscUtilities::checkError;
+
+        if (euler) {  // must be real cell and not ghost
+            PetscReal rho = euler[CompressibleFlowFields::RHO];
+
+            // Get the speed of sound from the eos
+            PetscReal a;
+            timeStepData->computeSpeedOfSound.function(conserved, &a, timeStepData->computeSpeedOfSound.context.get()) >> utilities::PetscUtilities::checkError;
+
+            PetscReal velSum = 0.0;
+            for (PetscInt d = 0; d < dim; d++) {
+                velSum += PetscAbsReal(euler[CompressibleFlowFields::RHOU + d]) / rho;
+            }
+            PetscReal dt = timeStepData->cfl * dx / (a + velSum);
+
+            dtMin = PetscMin(dtMin, dt);
+        }
+    }
+    VecRestoreArrayRead(v, &x) >> utilities::PetscUtilities::checkError;
+    flow.RestoreRange(cellRange);
+    return dtMin;
 }
 
 PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::CompressibleFlowComputeEulerFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscScalar *fieldL,
@@ -1186,6 +1270,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffe
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TwoPhaseEulerAdvection, "", ARG(ablate::eos::EOS, "eosGas", ""), ARG(ablate::eos::EOS, "eosLiquid", ""),
-         ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorGasGas", ""), ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorGasLiquid", ""),
-         ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorLiquidGas", ""), ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorLiquidLiquid", ""));
+REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TwoPhaseEulerAdvection, "", ARG(ablate::eos::EOS, "eos", "must be twoPhase"),
+         OPT(ablate::parameters::Parameters, "parameters", "the parameters used by advection: cfl(.5)"), ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorGasGas", ""),
+         ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorGasLiquid", ""), ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorLiquidGas", ""),
+         ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorLiquidLiquid", ""));

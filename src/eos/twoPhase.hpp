@@ -152,6 +152,9 @@ class TwoPhase : public EOS {  // , public std::enabled_shared_from_this<TwoPhas
     explicit TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<eos::EOS> eos2);
     void View(std::ostream& stream) const override;
 
+    const std::shared_ptr<ablate::eos::EOS> GetEOSGas() const { return eos1; }
+    const std::shared_ptr<ablate::eos::EOS> GetEOSLiquid() const { return eos2; }
+
     ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
 
     ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
