@@ -7,6 +7,7 @@ target_sources(unitTests
         compressibleFlowSpeciesDiffusionTests.cpp
         compressibleFlowEvAdvectionTests.cpp
         compressibleFlowEvDiffusionTests.cpp
+        compressibleFlowThermophoreticDiffusionTests.cpp
         faceInterpolantTests.cpp
         )
 

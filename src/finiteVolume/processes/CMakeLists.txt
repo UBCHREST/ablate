@@ -13,7 +13,7 @@ target_sources(ablateLibrary
         les.cpp
         chemistry.cpp
         radiationLoss.cpp
-#        sootTransport.cpp
+        thermophoreticDiffusion.cpp
 
         PUBLIC
         process.hpp
@@ -30,5 +30,5 @@ target_sources(ablateLibrary
         les.hpp
         chemistry.hpp
         radiationLoss.hpp
-#        sootTransport.hpp
+        thermophoreticDiffusion.hpp
         )

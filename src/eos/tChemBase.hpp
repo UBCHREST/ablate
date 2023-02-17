@@ -146,6 +146,8 @@ class TChemBase : public ChemistryModel {
    public:
     // Private static helper functions
     inline const static double TREF = 298.15;
+
+
 };
 
 }  // namespace ablate::eos
