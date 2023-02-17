@@ -4,7 +4,7 @@
 #include "utilities/constants.hpp"
 #include "utilities/mathUtilities.hpp"
 
-ablate::finiteVolume::processes::ThermophoreticDiffusion::ThermophoreticDiffusion(std::shared_ptr<eos::EOS> eosIn) : eos(std::move(eosIn)) {}
+ablate::finiteVolume::processes::ThermophoreticDiffusion::ThermophoreticDiffusion(std::shared_ptr<eos::transport::TransportModel> transportModel) : transportModel(std::move(transportModel)) {}
 
 void ablate::finiteVolume::processes::ThermophoreticDiffusion::Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) {
     flow.RegisterRHSFunction(ThermophoreticDiffusionEnergyFlux,
@@ -23,6 +23,8 @@ void ablate::finiteVolume::processes::ThermophoreticDiffusion::Setup(ablate::fin
                              CompressibleFlowFields::DENSITY_PROGRESS_FIELD,
                              {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_PROGRESS_FIELD},
                              {CompressibleFlowFields::TEMPERATURE_FIELD});
+
+    viscosityTemperatureFunction = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Viscosity, flow.GetSubDomain().GetFields());
 }
 
 PetscErrorCode ablate::finiteVolume::processes::ThermophoreticDiffusion::ThermophoreticDiffusionEnergyFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[],
@@ -92,4 +94,4 @@ PetscErrorCode ablate::finiteVolume::processes::ThermophoreticDiffusion::Thermop
 
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::ThermophoreticDiffusion,
-         "Thermophoretic diffusion the transport of ndd (ThermoPheretic) and solid carbon (ThermoPheretic).", ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"));
+         "Thermophoretic diffusion the transport of ndd (ThermoPheretic) and solid carbon (ThermoPheretic).", ARG(ablate::eos::transport::TransportModel, "transport", "The transportModel used to compute the viscosity"));

@@ -64,6 +64,7 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::tChemSoot::SootTransp
 }
 
 PetscErrorCode ablate::eos::tChemSoot::SootTransportModel::VectorizeSpeciesDiffusionFunction(const PetscReal* conserved, PetscReal* property, void* ctx) {
+    PetscFunctionBeginUser;
     // cast the pointer as a ThermodynamicFunction
     auto functionPointer = static_cast<ThermodynamicFunction*>(ctx);
     PetscReal constantDiff;
@@ -91,6 +92,7 @@ PetscErrorCode ablate::eos::tChemSoot::SootTransportModel::AdjustSpeciesDiffusio
 }
 
 PetscErrorCode ablate::eos::tChemSoot::SootTransportModel::VectorizeSpeciesDiffusionTemperatureFunction(const PetscReal* conserved, PetscReal temperature, PetscReal* property, void* ctx) {
+    PetscFunctionBeginUser;
     // cast the pointer as a ThermodynamicFunction
     auto functionPointer = static_cast<ThermodynamicTemperatureFunction*>(ctx);
     PetscReal constantDiff;

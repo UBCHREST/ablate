@@ -16,13 +16,13 @@ class ThermophoreticDiffusion : public FlowProcess {
     /**
      * Store the equation of state to compute pressure
      */
-    const std::shared_ptr<eos::EOS> eos;
+    const std::shared_ptr<eos::transport::TransportModel> transportModel;
 
     // store the thermodynamicTemperatureFunction to compute viscosity
     eos::ThermodynamicTemperatureFunction viscosityTemperatureFunction;
 
    public:
-    explicit ThermophoreticDiffusion(std::shared_ptr<eos::EOS> eos);
+    explicit ThermophoreticDiffusion(std::shared_ptr<eos::transport::TransportModel> transportModel);
 
     /**
      * public function to link this process with the flow

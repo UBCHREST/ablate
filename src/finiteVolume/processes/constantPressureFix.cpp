@@ -14,12 +14,12 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
     // determine which field exists depending upon the os
     std::string conservedOtherProperties = "";
     std::string otherProperties = "";
-    if (!eos->GetProgressVariables().empty()) {
-        conservedOtherProperties = finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD;
-        otherProperties = finiteVolume::CompressibleFlowFields::PROGRESS_FIELD;
-    } else if (!eos->GetSpeciesVariables().empty()) {
+    if (!eos->GetSpeciesVariables().empty()) {
         conservedOtherProperties = finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD;
         otherProperties = finiteVolume::CompressibleFlowFields::YI_FIELD;
+    } else if (!eos->GetProgressVariables().empty()) {
+        conservedOtherProperties = finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD;
+        otherProperties = finiteVolume::CompressibleFlowFields::PROGRESS_FIELD;
     }
 
     eulerFromEnergyAndPressure =

@@ -5,5 +5,5 @@ ablate::eos::tChemSoot::SootProgressTransportModel::SootProgressTransportModel(c
     : SootTransportModel(transportModel, finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD) {}
 
 #include "registrar.hpp"
-REGISTER_PASS_THROUGH(ablate::eos::tChemSoot::SootTransportModel, ablate::eos::tChemSoot::SootProgressTransportModel, "Modifies the transport progress model for soot",
-                      ablate::eos::transport::TransportModel);
+REGISTER(ablate::eos::transport::TransportModel, ablate::eos::tChemSoot::SootProgressTransportModel, "Modifies the transport progress model for soot",
+         ARG(ablate::eos::transport::TransportModel, "transport", "The baseline transport model.)"));
