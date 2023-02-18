@@ -577,8 +577,8 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
         // zero our the calculation
         auto& raySegmentsCalculation = raySegmentsCalculations[r];
         for (size_t i = 0; i < raySegmentsCalculations.size(); i++) {  //! Iterate through every wavelength entry in this ray segment
-            raySegmentsCalculations[r + i].Ij = 0.0;
-            raySegmentsCalculations[r + i].Krad = 1.0;
+            raySegmentsCalculations[numLambda * r + i].Ij = 0.0;
+            raySegmentsCalculations[numLambda * r + i].Krad = 1.0;
         }
 
         // compute the Ij and Krad for this segment starting at the point closest to the ray origin
@@ -591,19 +591,19 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                 DMPlexPointLocalFieldRead(auxDm, cellSegment.cell, temperatureField.id, auxArray, &temperature);
                 if (temperature) {               /** Input absorptivity (kappa) values from model here. */
                     PetscReal kappa[numLambda];  //!< Absorptivity coefficient, property of each cell
-                kappa[0] = numLambda; //! Unwise temporary solution to get the wavelength number into the static function and cast it as in int inside.
+                    kappa[0] = numLambda;        //! Unwise temporary solution to get the wavelength number into the static function and cast it as in int inside.
                     absorptivityFunction.function(sol, *temperature, kappa, absorptivityFunctionContext);
                     //! Get the pointer to the returned array of absorption values. Iterate through every wavelength for the evaluation.
                     for (size_t i = 0; i < numLambda; i++) {
                         if (cellSegment.h < 0) {
                             // This is a boundary cell
-                            raySegmentsCalculations[r + i].Ij += FlameIntensity(1.0, *temperature) * raySegmentsCalculations[r + i].Krad;
+                            raySegmentsCalculations[numLambda * r + i].Ij += FlameIntensity(1.0, *temperature) * raySegmentsCalculations[numLambda * r + i].Krad;
                         } else {
                             // This is not a boundary cell
-                            raySegmentsCalculations[r + i].Ij += FlameIntensity(1 - exp(-kappa[i] * cellSegment.h), *temperature) * raySegmentsCalculations[r + i].Krad;
+                            raySegmentsCalculations[numLambda * r + i].Ij += FlameIntensity(1 - exp(-kappa[i] * cellSegment.h), *temperature) * raySegmentsCalculations[numLambda * r + i].Krad;
 
                             // Compute the total absorption for this domain
-                            raySegmentsCalculations[r + i].Krad *= exp(-kappa[i] * cellSegment.h);
+                            raySegmentsCalculations[numLambda * r + i].Krad *= exp(-kappa[i] * cellSegment.h);
                         }
                     }
                 }
@@ -616,30 +616,33 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     PetscSFBcastEnd(remoteAccess, carrierMpiType, (const void*)raySegmentsCalculations.data(), (void*)raySegmentSummary.data(), MPI_REPLACE) >> utilities::PetscUtilities::checkError;
 
     // March over each
-    std::size_t segmentOffset = 0;
-    std::size_t rayOffset = 0;
-    for (PetscInt c = 0; c < numberOriginCells; ++c) {
-        evaluatedGains[c] = 0.0;
-        for (PetscInt r = 0; r < raysPerCell; ++r) {
-            // Add the black body radiation transmitted through the domain to the source term
-            PetscReal iSource = 0.0;
+    for (size_t i = 0; i < numLambda; i++) {
+        std::size_t segmentOffset = 0;
+        std::size_t rayOffset = 0;
+        for (PetscInt c = 0; c < numberOriginCells; ++c) {
+            evaluatedGains[numLambda * c + i] = 0.0;
+            for (PetscInt r = 0; r < raysPerCell; ++r) {
+                // Add the black body radiation transmitted through the domain to the source term
+                PetscReal iSource = 0.0;
 
-            // Add the absorption for this domain to the total absorption of the ray
-            PetscReal kRadd = 1.0;
+                // Add the absorption for this domain to the total absorption of the ray
+                PetscReal kRadd = 1.0;
 
-            /** for each segment in this ray
-             * Integrate the wavelength dependent intensity calculation for each segment for each wavelength
-             */
-            for (unsigned short int s = 0; s < raySegmentsPerOriginRay[rayOffset]; ++s) {
-                for (size_t i = 0; i < raySegmentSummary.size(); i++) {
-                    iSource += raySegmentSummary[segmentOffset + i].Ij * kRadd;
-                    kRadd *= raySegmentSummary[segmentOffset + i].Krad;
+                /** for each segment in this ray
+                 * Integrate the wavelength dependent intensity calculation for each segment for each wavelength
+                 * We need to store all of the wavelength results on the final evaluation of the cell
+                 * Therefore, we should first iterate through the wavelengths first and sum the effects of every wavelength on every cell.
+                 */
+                for (unsigned short int s = 0; s < raySegmentsPerOriginRay[numLambda * rayOffset + i]; ++s) {
+                    iSource += raySegmentSummary[numLambda * segmentOffset + i].Ij * kRadd;
+                    kRadd *= raySegmentSummary[numLambda * segmentOffset + i].Krad;
+
                     segmentOffset++;
                 }
-            }
 
-            evaluatedGains[c] += iSource * gainsFactor[rayOffset];
-            rayOffset++;
+                evaluatedGains[numLambda * c + i] += iSource * gainsFactor[numLambda * rayOffset + i];
+                rayOffset++;
+            }
         }
     }
 
