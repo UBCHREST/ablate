@@ -577,8 +577,8 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
         // zero our the calculation
         auto& raySegmentsCalculation = raySegmentsCalculations[r];
         for (size_t i = 0; i < raySegmentsCalculations.size(); i++) {  //! Iterate through every wavelength entry in this ray segment
-            raySegmentsCalculations[numLambda * r + i].Ij = 0.0;
-            raySegmentsCalculations[numLambda * r + i].Krad = 1.0;
+            raySegmentsCalculations[r + i].Ij = 0.0;
+            raySegmentsCalculations[r + i].Krad = 1.0;
         }
 
         // compute the Ij and Krad for this segment starting at the point closest to the ray origin
@@ -597,13 +597,13 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                     for (size_t i = 0; i < numLambda; i++) {
                         if (cellSegment.h < 0) {
                             // This is a boundary cell
-                            raySegmentsCalculations[numLambda * r + i].Ij += FlameIntensity(1.0, *temperature) * raySegmentsCalculations[numLambda * r + i].Krad;
+                            raySegmentsCalculations[r + i].Ij += FlameIntensity(1.0, *temperature) * raySegmentsCalculations[r + i].Krad;
                         } else {
                             // This is not a boundary cell
-                            raySegmentsCalculations[numLambda * r + i].Ij += FlameIntensity(1 - exp(-kappa[i] * cellSegment.h), *temperature) * raySegmentsCalculations[numLambda * r + i].Krad;
+                            raySegmentsCalculations[r + i].Ij += FlameIntensity(1 - exp(-kappa[i] * cellSegment.h), *temperature) * raySegmentsCalculations[r + i].Krad;
 
                             // Compute the total absorption for this domain
-                            raySegmentsCalculations[numLambda * r + i].Krad *= exp(-kappa[i] * cellSegment.h);
+                            raySegmentsCalculations[r + i].Krad *= exp(-kappa[i] * cellSegment.h);
                         }
                     }
                 }
@@ -615,34 +615,43 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     PetscSFBcastBegin(remoteAccess, carrierMpiType, (const void*)raySegmentsCalculations.data(), (void*)raySegmentSummary.data(), MPI_REPLACE) >> utilities::PetscUtilities::checkError;
     PetscSFBcastEnd(remoteAccess, carrierMpiType, (const void*)raySegmentsCalculations.data(), (void*)raySegmentSummary.data(), MPI_REPLACE) >> utilities::PetscUtilities::checkError;
 
-    // March over each
-    for (size_t i = 0; i < numLambda; i++) {
-        std::size_t segmentOffset = 0;
-        std::size_t rayOffset = 0;
-        for (PetscInt c = 0; c < numberOriginCells; ++c) {
-            evaluatedGains[numLambda * c + i] = 0.0;
-            for (PetscInt r = 0; r < raysPerCell; ++r) {
-                // Add the black body radiation transmitted through the domain to the source term
-                PetscReal iSource = 0.0;
+    /** March over each
+     * INDEXING ANNOTATIONS:
+     * evaluatedGains: There is a gain evaluation for every cell * wavelength
+     *  Therefore, the indexing of the gain evaluation is [numLambda * cell + i] because the cells are looped through outside of the wavelengths
+     * raySegmentsPerOriginRay: This only stores the number of segments in each ray. There is no reason to index this with wavelength.
+     *  Therefore, the indexing is [rayOffset], where the ray refers to the wavelength independent ray count.
+     * raySegmentSummary: This will store a value for every ray segment and wavelength. Each ray will integrate its ray segments together for every wavelength.
+     * */
+    std::size_t segmentOffset = 0;
+    std::size_t rayOffset = 0;
+    for (PetscInt c = 0; c < numberOriginCells; ++c) {
+        for (unsigned short int i = 0; i < numLambda; i++) evaluatedGains[numLambda * c + i] = 0.0;  //! Zero the evaluated gains for this ray specifically. Do this for all wavelengths.
+        for (PetscInt r = 0; r < raysPerCell; ++r) {
+            // Add the black body radiation transmitted through the domain to the source term
+            PetscReal iSource[numLambda];
+            std::fill_n(iSource, numLambda, 0.0);  //! Initialize the wavelength dependent arrays to be of size zero.
 
-                // Add the absorption for this domain to the total absorption of the ray
-                PetscReal kRadd = 1.0;
+            // Add the absorption for this domain to the total absorption of the ray
+            PetscReal kRadd[numLambda];
+            std::fill_n(kRadd, numLambda, 1.0);  //! Initialize the wavelength dependent arrays to be of size zero.
 
-                /** for each segment in this ray
-                 * Integrate the wavelength dependent intensity calculation for each segment for each wavelength
-                 * We need to store all of the wavelength results on the final evaluation of the cell
-                 * Therefore, we should first iterate through the wavelengths first and sum the effects of every wavelength on every cell.
-                 */
-                for (unsigned short int s = 0; s < raySegmentsPerOriginRay[numLambda * rayOffset + i]; ++s) {
-                    iSource += raySegmentSummary[numLambda * segmentOffset + i].Ij * kRadd;
-                    kRadd *= raySegmentSummary[numLambda * segmentOffset + i].Krad;
+            /** for each segment in this ray
+             * Integrate the wavelength dependent intensity calculation for each segment for each wavelength
+             * We need to store all of the wavelength results on the final evaluation of the cell
+             * Therefore, we should first iterate through the wavelengths first and sum the effects of every wavelength on every cell.
+             */
+            for (unsigned short int s = 0; s < raySegmentsPerOriginRay[rayOffset]; ++s) {
+                for (unsigned short int i = 0; i < numLambda; i++) {
+                    iSource[i] += raySegmentSummary[numLambda * segmentOffset + i].Ij * kRadd[i];
+                    kRadd[i] *= raySegmentSummary[numLambda * segmentOffset + i].Krad;
 
                     segmentOffset++;
                 }
-
-                evaluatedGains[numLambda * c + i] += iSource * gainsFactor[numLambda * rayOffset + i];
-                rayOffset++;
             }
+
+            for (unsigned short int i = 0; i < numLambda; i++) evaluatedGains[numLambda * c + i] += iSource[i] * gainsFactor[rayOffset];
+            rayOffset++;
         }
     }
 
