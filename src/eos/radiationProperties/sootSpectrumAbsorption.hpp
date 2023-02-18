@@ -16,11 +16,12 @@ class SootSpectrumAbsorption : public RadiationModel {
         const PetscReal minLambda = 0.4E-6;
         const PetscReal maxLambda = 30E-6;  //! These parameters could potentially be made into optional inputs and varied if we are interested in only part of the spectrum.
     };
-    const std::shared_ptr<eos::EOS> eos;     //! eos is needed to compute field values
-    constexpr static PetscReal rhoC = 2000;  // kg/m^3
-    constexpr static PetscReal C_2 = (utilities::Constants::h * utilities::Constants::c) / (utilities::Constants::k);
-    constexpr static PetscReal C_1 = NAN;  // TODO: Update this
-    constexpr static PetscReal C_0 = 7.0;
+    const std::shared_ptr<eos::EOS> eos;                                                                               //! eos is needed to compute field values
+    constexpr static PetscReal rhoC = 2000;                                                                            // kg/m^3
+    constexpr static PetscReal C_2 = (utilities::Constants::h * utilities::Constants::c) / (utilities::Constants::k);  //! Second Plank constant [m K]
+    constexpr static PetscReal C_1 =
+        2 * ablate::utilities::Constants::pi * ablate::utilities::Constants::h * ablate::utilities::Constants::c * ablate::utilities::Constants::c;  //! First Plank constant [W m^2]
+    constexpr static PetscReal C_0 = 7.0;                                                                                                            //! Empirical constant for soot refractive index
 
    public:
     SootSpectrumAbsorption(std::shared_ptr<eos::EOS> eosIn);
@@ -29,7 +30,6 @@ class SootSpectrumAbsorption : public RadiationModel {
     ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
     static PetscErrorCode SootFunction(const PetscReal* conserved, PetscReal* kappa, void* ctx);
     static PetscErrorCode SootTemperatureFunction(const PetscReal* conserved, PetscReal temperature, PetscReal* kappa, void* ctx);
-
 };
 }  // namespace ablate::eos::radiationProperties
 

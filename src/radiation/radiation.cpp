@@ -353,9 +353,6 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
     PetscSFSetGraph(remoteAccess, (PetscInt)raySegments.size(), uniqueRaySegments, nullptr, PETSC_OWN_POINTER, remoteRayInformation, PETSC_OWN_POINTER) >> utilities::PetscUtilities::checkError;
     PetscSFSetUp(remoteAccess) >> utilities::PetscUtilities::checkError;
 
-    // TODO: Assign the number of wavelengths to the absorption model.
-
-
     // Size up the memory to hold the local calculations and the retrieved information
     raySegmentsCalculations.resize(raySegments.size() * numLambda);
     raySegmentSummary.resize(numberOfReturnedSegments * numLambda);

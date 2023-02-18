@@ -15,7 +15,7 @@ class SurfaceRadiation : public ablate::radiation::Radiation {
 
    public:
     SurfaceRadiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
-                     std::shared_ptr<ablate::monitors::logs::Log> = {});
+                     int num = 1, std::shared_ptr<ablate::monitors::logs::Log> = {});
     ~SurfaceRadiation();
 
     void Initialize(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain) override;
