@@ -138,6 +138,18 @@ void ablate::radiation::OrthogonalRadiation::Setup(const ablate::domain::Range& 
     EndEvent();
 }
 
+void ablate::radiation::OrthogonalRadiation::Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) {
+    StartEvent("OrthogonalRadiation::Initialize");
+
+    DeleteOutOfBounds(subDomain);
+
+    EndEvent();
+    ablate::radiation::Radiation::Initialize(cellRange, subDomain);
+
+    // set up the reverse lookup for faces
+    indexLookup = solver::ReverseRange(cellRange);
+}
+
 #include "registrar.hpp"
 REGISTER_DERIVED(ablate::radiation::SurfaceRadiation, ablate::radiation::OrthogonalRadiation);
 REGISTER(ablate::radiation::OrthogonalRadiation, ablate::radiation::OrthogonalRadiation, "A solver for radiative heat transfer in participating media",

@@ -76,16 +76,18 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * @return
      */
     inline PetscReal GetIntensity(PetscInt index, const ablate::domain::Range& cellRange, PetscReal temperature, PetscReal kappa) {
-        // Compute the losses
+        if (numLambda == 1) {  // Compute the losses
         PetscReal netIntensity = -4.0 * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
 
         // add in precomputed gains
         netIntensity += evaluatedGains[index - cellRange.start];
 
-        // scale by kappa
-        netIntensity *= kappa;
-
-        return abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
+            // scale by kappa
+            netIntensity *= kappa;
+            return abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
+        } else {
+            return 0;  // TODO: This is where a wavelength dependant integrator would go.
+        }
     }
 
     inline std::string GetId() { return solverId; };
@@ -157,6 +159,13 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * @param adv a multiple of the minimum cell radius by which to advance the DMSwarm coordinates ahead of the virtual coordinates
      * */
     void UpdateCoordinates(PetscInt ipart, Virtualcoord* virtualcoord, PetscReal* coord, PetscReal adv) const;
+
+    /**
+     * Delete the particles that are outside of the domain
+     * This is used in the initialization for ray tracing solvers which rely on domain bounds to inform the placement of particles around the boundary regions.
+     * @param subDomain
+     */
+    void DeleteOutOfBounds(ablate::domain::SubDomain& subDomain);
 
     /// Class inputs and Variables
     PetscInt dim = 0;  //!< Number of dimensions that the domain exists within

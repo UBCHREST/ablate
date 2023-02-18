@@ -37,16 +37,19 @@ class SurfaceRadiation : public ablate::radiation::Radiation {
      * @return
      */
     inline PetscReal GetSurfaceIntensity(PetscInt faceId, PetscReal temperature, PetscReal emissivity = 1.0) {
-        // Compute the losses
-        PetscReal netIntensity = -ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
+        if (numLambda == 1) {  // Compute the losses
+            PetscReal netIntensity = -ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
 
-        // add in precomputed gains
-        netIntensity += evaluatedGains[indexLookup.GetAbsoluteIndex(faceId)];
+            // add in precomputed gains
+            netIntensity += evaluatedGains[indexLookup.GetAbsoluteIndex(faceId)];
 
-        // scale by kappa
-        netIntensity *= emissivity;
+            // scale by kappa
+            netIntensity *= emissivity;
 
-        return abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
+            return abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
+        } else {
+            return 0;  // TODO: This is where a wavelength dependant integrator would go. Or maybe we want the wavelength integrator outside and we get the values indexed by wavelength out of here.
+        }
     }
 };
 }  // namespace ablate::radiation
