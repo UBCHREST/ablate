@@ -125,7 +125,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
         //!< Stores the cell indices of the segment locally.
         PetscInt cell;
         //!< Stores the space steps of the segment locally.
-        PetscReal h;
+        PetscReal pathLength;
     };
 
     /** Virtual coordinates are used during the search to compute path length properties in case the simulation is not 3 dimensional */
