@@ -11,11 +11,11 @@ MinMaxAvg euler for timestep 0002:
 	max: [2.75, 2.53e+05,  0,  0]
 	avg: [0.6, 2.53e+05,  0,  0]
 MinMaxAvg euler for timestep 0003:
-	min: [0.176, 2.53e+05,  0,  0]
+	min: [0.177, 2.53e+05,  0,  0]
 	max: [2.75, 2.53e+05,  0,  0]
 	avg: [0.6, 2.53e+05,  0,  0]
 MinMaxAvg euler for timestep 0004:
-	min: [0.176, 2.53e+05,  0,  0]
+	min: [0.177, 2.53e+05,  0,  0]
 	max: [2.75, 2.53e+05,  0,  0]
 	avg: [0.6, 2.53e+05,  0,  0]
 ResultFiles:

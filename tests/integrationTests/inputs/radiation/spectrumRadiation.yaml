@@ -79,8 +79,6 @@ solvers:
     id: vortexFlowField
     region:
       name: interiorCells
-    parameters:
-      cfl: 0.5
     monitors:
       - !ablate::monitors::MaxMinAverage
         field: euler
