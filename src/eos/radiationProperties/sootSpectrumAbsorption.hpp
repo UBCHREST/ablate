@@ -13,15 +13,18 @@ class SootSpectrumAbsorption : public RadiationModel {
         PetscInt densityYiCSolidCOffset;
         const ThermodynamicFunction temperatureFunction;
         const ThermodynamicTemperatureFunction densityFunction;
+        const PetscReal minLambda = 0.4E-6;
+        const PetscReal maxLambda = 30E-6;  //! These parameters could potentially be made into optional inputs and varied if we are interested in only part of the spectrum.
+        const PetscInt numLambda;
     };
-    const std::shared_ptr<eos::EOS> eos;  //! eos is needed to compute field values
+    const std::shared_ptr<eos::EOS> eos;     //! eos is needed to compute field values
     constexpr static PetscReal rhoC = 2000;  // kg/m^3
     constexpr static PetscReal C_2 = (utilities::Constants::h * utilities::Constants::c) / (utilities::Constants::k);
-    constexpr static PetscReal C_1 = NAN; // TODO: Update this
+    constexpr static PetscReal C_1 = NAN;  // TODO: Update this
     constexpr static PetscReal C_0 = 7.0;
 
    public:
-    SootSpectrumAbsorption(std::shared_ptr<EOS> eosIn);
+    SootSpectrumAbsorption(std::shared_ptr<eos::EOS> eosIn);
 
     ThermodynamicFunction GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
     ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;

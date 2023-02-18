@@ -4,6 +4,7 @@
 #include <memory>
 #include <set>
 #include "eos/radiationProperties/radiationProperties.hpp"
+#include "eos/radiationProperties/sootSpectrumAbsorption.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
 #include "io/interval/interval.hpp"
 #include "monitors/logs/log.hpp"
@@ -26,7 +27,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * @param options other options
      */
     Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
-              std::shared_ptr<ablate::monitors::logs::Log> = {});
+              int num = 1, std::shared_ptr<ablate::monitors::logs::Log> = {});
 
     virtual ~Radiation();
 
@@ -53,7 +54,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
         PetscReal Krad = 1;  //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
     };
 
-    PetscInt numLambda = 1; // TODO: Refactor this to be the number of wavelengths that are returned by the absorption model.
+    PetscInt numLambda;
 
     /** Returns the black body intensity for a given temperature and emissivity */
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);

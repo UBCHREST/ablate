@@ -10,8 +10,8 @@
 #include "utilities/petscUtilities.hpp"
 
 ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber,
-                                        std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
-    : nTheta(raynumber), nPhi(2 * raynumber), solverId(solverId), region(region), radiationModel(std::move(radiationModelIn)), log(std::move(log)) {}
+                                        std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, int num, std::shared_ptr<ablate::monitors::logs::Log> log)
+    : nTheta(raynumber), nPhi(2 * raynumber), solverId(solverId), region(region), radiationModel(std::move(radiationModelIn)), numLambda(num), log(std::move(log)) {}
 
 ablate::radiation::Radiation::~Radiation() {
     if (faceGeomVec) VecDestroy(&faceGeomVec) >> utilities::PetscUtilities::checkError;
@@ -353,13 +353,13 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
     PetscSFSetGraph(remoteAccess, (PetscInt)raySegments.size(), uniqueRaySegments, nullptr, PETSC_OWN_POINTER, remoteRayInformation, PETSC_OWN_POINTER) >> utilities::PetscUtilities::checkError;
     PetscSFSetUp(remoteAccess) >> utilities::PetscUtilities::checkError;
 
-    // TODO: Get the absorption model properties size so that the size of the communication object can be set in the SF.
-    // Get the number of wavelengths from the absorption model here.
+    // TODO: Assign the number of wavelengths to the absorption model.
+
 
     // Size up the memory to hold the local calculations and the retrieved information
-    raySegmentsCalculations.resize(raySegments.size() * numLambda); // TODO: Set the sizes of the "wavelength" vectors in the "Spectrum" struct to be equal to the wavelength count.
+    raySegmentsCalculations.resize(raySegments.size() * numLambda);
     raySegmentSummary.resize(numberOfReturnedSegments * numLambda);
-    evaluatedGains.resize(numberOriginCells); //TODO: Apply the filter before or after the gain evaluation?
+    evaluatedGains.resize(numberOriginCells * numLambda);  //! The surface will be irradiated with all of the wavelengths. The surface properties will process the total information.
 
     // Create a mpi data type to allow reducing the remoteRayCalculation to raySegmentSummary
     PetscInt count = 2 * numLambda;  //! = 2 * (the number of independant wavelengths that are being considered). Should be read from absorption model.
@@ -592,8 +592,8 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
             DMPlexPointLocalRead(solDm, cellSegment.cell, solArray, &sol);
             if (sol) {
                 DMPlexPointLocalFieldRead(auxDm, cellSegment.cell, temperatureField.id, auxArray, &temperature);
-                if (temperature) {     /** Input absorptivity (kappa) values from model here. */
-                    PetscReal kappa[numLambda];  //!< Absorptivity coefficient, property of each cell // TODO: Update this to be the number of wavelengths
+                if (temperature) {               /** Input absorptivity (kappa) values from model here. */
+                    PetscReal kappa[numLambda];  //!< Absorptivity coefficient, property of each cell
                     absorptivityFunction.function(sol, *temperature, kappa, absorptivityFunctionContext);
                     //! Get the pointer to the returned array of absorption values. Iterate through every wavelength for the evaluation.
                     for (size_t i = 0; i < numLambda; i++) {
@@ -660,5 +660,5 @@ std::ostream& ablate::radiation::operator<<(std::ostream& os, const ablate::radi
 #include "registrar.hpp"
 REGISTER_DEFAULT(ablate::radiation::Radiation, ablate::radiation::Radiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
                  ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(int, "rays", "number of rays used by the solver"),
-                 ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"),
+                 ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"), OPT(int, "num", "number of wavelengths being considered in the spectrum"),
                  OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
