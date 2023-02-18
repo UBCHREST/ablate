@@ -15,7 +15,6 @@ class SootSpectrumAbsorption : public RadiationModel {
         const ThermodynamicTemperatureFunction densityFunction;
         const PetscReal minLambda = 0.4E-6;
         const PetscReal maxLambda = 30E-6;  //! These parameters could potentially be made into optional inputs and varied if we are interested in only part of the spectrum.
-        const PetscInt numLambda;
     };
     const std::shared_ptr<eos::EOS> eos;     //! eos is needed to compute field values
     constexpr static PetscReal rhoC = 2000;  // kg/m^3

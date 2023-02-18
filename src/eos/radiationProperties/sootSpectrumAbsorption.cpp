@@ -6,6 +6,8 @@ ablate::eos::radiationProperties::SootSpectrumAbsorption::SootSpectrumAbsorption
 PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootFunction(const PetscReal *conserved, PetscReal *kappa, void *ctx) {
     PetscFunctionBeginUser;
 
+    PetscInt numLambda = (int)kappa[0]; //! Unwise temporary solution to get the wavelength number into the static function and cast it as in int inside.
+
     /** This model depends on mass fraction, temperature, and density in order to predict the absorption properties of the medium. */
     auto functionContext = (FunctionContext *)ctx;
     double temperature, density;  //!< Variables to hold information gathered from the fields
@@ -19,8 +21,8 @@ PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootFun
     PetscReal n;
     PetscReal k;
     PetscReal lambda;
-    for (int i = 0; i < functionContext->numLambda; i++) {
-        lambda = functionContext->minLambda + (functionContext->maxLambda * (double(i) / functionContext->numLambda)); //! Get the wavelength for this iteration
+    for (int i = 0; i < numLambda; i++) {
+        lambda = functionContext->minLambda + (functionContext->maxLambda * (double(i) / numLambda)); //! Get the wavelength for this iteration
         //! This is the wavelength. (We must integrate over the valid range of wavelengths.)
         n = 1.811 + 0.1263 * log(lambda) + 0.027 * log(lambda) * log(lambda) + 0.0417 * log(lambda) * log(lambda) * log(lambda);  //! Fit of model to data.
         k = 0.5821 + 0.1213 * log(lambda) + 0.2309 * log(lambda) * log(lambda) - 0.01 * log(lambda) * log(lambda) * log(lambda);  //! Fit of model to data.
@@ -34,6 +36,9 @@ PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootFun
 
 PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *kappa, void *ctx) {
     PetscFunctionBeginUser;
+
+    PetscInt numLambda = (int)kappa[0];
+
     /** This model depends on mass fraction, temperature, and density in order to predict the absorption properties of the medium. */
     auto functionContext = (FunctionContext *)ctx;
     double density;  //!< Variables to hold information gathered from the fields
@@ -45,8 +50,8 @@ PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootTem
     PetscReal n;
     PetscReal k;
     PetscReal lambda;
-    for (int i = 0; i < functionContext->numLambda; i++) {
-        lambda = functionContext->minLambda + (functionContext->maxLambda * (double(i) / functionContext->numLambda)); //! Get the wavelength for this iteration
+    for (int i = 0; i < numLambda; i++) {
+        lambda = functionContext->minLambda + (functionContext->maxLambda * (double(i) / numLambda)); //! Get the wavelength for this iteration
         //! This is the wavelength. (We must integrate over the valid range of wavelengths.)
         n = 1.811 + 0.1263 * log(lambda) + 0.027 * log(lambda) * log(lambda) + 0.0417 * log(lambda) * log(lambda) * log(lambda);  //! Fit of model to data.
         k = 0.5821 + 0.1213 * log(lambda) + 0.2309 * log(lambda) * log(lambda) - 0.01 * log(lambda) * log(lambda) * log(lambda);  //! Fit of model to data.

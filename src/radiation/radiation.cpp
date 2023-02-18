@@ -594,6 +594,7 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                 DMPlexPointLocalFieldRead(auxDm, cellSegment.cell, temperatureField.id, auxArray, &temperature);
                 if (temperature) {               /** Input absorptivity (kappa) values from model here. */
                     PetscReal kappa[numLambda];  //!< Absorptivity coefficient, property of each cell
+                kappa[0] = numLambda; //! Unwise temporary solution to get the wavelength number into the static function and cast it as in int inside.
                     absorptivityFunction.function(sol, *temperature, kappa, absorptivityFunctionContext);
                     //! Get the pointer to the returned array of absorption values. Iterate through every wavelength for the evaluation.
                     for (size_t i = 0; i < numLambda; i++) {
