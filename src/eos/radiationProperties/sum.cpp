@@ -11,7 +11,7 @@ PetscErrorCode ablate::eos::radiationProperties::Sum::SumFunction(const PetscRea
     auto vector = (std::vector<ThermodynamicFunction> *)ctx;
 
     *property = 0;
-    for (const auto &[subFunction, subCtx] : *vector) {
+    for (const auto &[subFunction, subCtx, _] : *vector) {
         PetscReal propertyTmp = 0.0;
         PetscCall(subFunction(conserved, &propertyTmp, subCtx.get()));
         *property += propertyTmp;
@@ -24,7 +24,7 @@ PetscErrorCode ablate::eos::radiationProperties::Sum::SumTemperatureFunction(con
     auto vector = (std::vector<ThermodynamicTemperatureFunction> *)ctx;
 
     *property = 0;
-    for (const auto &[subFunction, subCtx] : *vector) {
+    for (const auto &[subFunction, subCtx, _] : *vector) {
         PetscReal propertyTmp = 0.0;
         PetscCall(subFunction(conserved, temperature, &propertyTmp, subCtx.get()));
         *property += propertyTmp;

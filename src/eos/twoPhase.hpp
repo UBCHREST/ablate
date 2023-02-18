@@ -148,6 +148,11 @@ class TwoPhase : public EOS {  // , public std::enabled_shared_from_this<TwoPhas
         {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundFunctionLiquidLiquid, SpeedOfSoundTemperatureFunctionLiquidLiquid}},
         {ThermodynamicProperty::SpeciesSensibleEnthalpy, {SpeciesSensibleEnthalpyFunction, SpeciesSensibleEnthalpyTemperatureFunction}}};
 
+    /**
+     * Store a list of properties that are sized by species, everything is assumed to be size one
+     */
+    const std::set<ThermodynamicProperty> speciesSizedProperties = {ThermodynamicProperty::SpeciesSensibleEnthalpy};
+
    public:
     explicit TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<eos::EOS> eos2);
     void View(std::ostream& stream) const override;

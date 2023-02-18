@@ -42,8 +42,8 @@ class EVTransport : public FlowProcess {
         /* functions to compute diffusion */
         eos::ThermodynamicFunction diffFunction;
 
-        /* store a scratch space for speciesSpeciesSensibleEnthalpy */
-        std::vector<PetscReal> speciesSpeciesSensibleEnthalpy;
+        /* store a scratch space for evDiffusionCoefficient */
+        std::vector<PetscReal> evDiffusionCoefficient;
     };
 
     // Store an AdvectionData, diffusionData, and numberEV for each ev field
@@ -77,6 +77,18 @@ class EVTransport : public FlowProcess {
      */
     static PetscErrorCode DiffusionEVFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
                                           const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
+
+    /**
+     * This computes the species transfer for species diffusion flux for variable diffusion coefficient
+     * f = "densityYi"
+     * u = {"euler"}
+     * a = {"yi", "T"}
+     * ctx = SpeciesDiffusionData
+     * @return
+     */
+    static PetscErrorCode DiffusionEVFluxVariableDiffusionCoefficient(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[],
+                                                                      const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[],
+                                                                      PetscScalar flux[], void* ctx);
 
     /**
      * This Computes the advection flux for each species (Yi)

@@ -8,7 +8,7 @@ class Constant : public TransportModel {
     const bool active;
     const PetscReal k;
     const PetscReal mu;
-    const PetscReal diff;
+    const std::vector<PetscReal> diff;
 
     /**
      * private static function for evaluating constant properties without temperature
@@ -19,6 +19,14 @@ class Constant : public TransportModel {
     static PetscErrorCode ConstantFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
 
     /**
+     * private static function for evaluating constant vector properties without temperature
+     * @param conserved
+     * @param property
+     * @param ctx
+     */
+    static PetscErrorCode ConstantVectorFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+
+    /**
      * private static function for evaluating constant properties without temperature
      * @param conserved
      * @param property
@@ -26,8 +34,29 @@ class Constant : public TransportModel {
      */
     static PetscErrorCode ConstantTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
 
+    /**
+     * private static function for evaluating constant properties without temperature
+     * @param conserved
+     * @param property
+     * @param ctx
+     */
+    static PetscErrorCode ConstantTemperatureVectorFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
+
    public:
+    /**
+     * default constructor with constant diffusion
+     * @param k
+     * @param mu
+     * @param diff
+     */
     explicit Constant(double k = 0, double mu = 0, double diff = 0);
+    /**
+     * constructor with variable constant diffusion
+     * @param k
+     * @param mu
+     * @param diff
+     */
+    explicit Constant(double k, double mu, std::vector<double> difft);
     explicit Constant(const Constant&) = delete;
     void operator=(const Constant&) = delete;
 

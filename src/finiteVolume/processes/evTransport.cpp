@@ -43,19 +43,17 @@ void ablate::finiteVolume::processes::EVTransport::Setup(ablate::finiteVolume::F
         }
 
         if (transportModel) {
-            diffusionData.speciesSpeciesSensibleEnthalpy.resize(eos->GetSpeciesVariables().size());
+            diffusionData.evDiffusionCoefficient.resize(diffusionData.numberEV);
 
             diffusionData.diffFunction = transportModel->GetTransportFunction(eos::transport::TransportProperty::Diffusivity, flow.GetSubDomain().GetFields());
 
             if (diffusionData.diffFunction.function) {
-                if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::YI_FIELD)) {
-                    flow.RegisterRHSFunction(DiffusionEVFlux,
-                                             &diffusionData,
-                                             evConservedField.name,
-                                             {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
-                                             {nonConserved, CompressibleFlowFields::YI_FIELD});
-                } else {
+                if (diffusionData.diffFunction.propertySize == 1) {
                     flow.RegisterRHSFunction(DiffusionEVFlux, &diffusionData, evConservedField.name, {CompressibleFlowFields::EULER_FIELD}, {nonConserved});
+                } else if (diffusionData.diffFunction.propertySize == diffusionData.numberEV) {
+                    flow.RegisterRHSFunction(DiffusionEVFluxVariableDiffusionCoefficient, &diffusionData, evConservedField.name, {CompressibleFlowFields::EULER_FIELD}, {nonConserved});
+                } else {
+                    throw std::invalid_argument("The diffusion property size must be 1 or number of ev in ablate::finiteVolume::processes::EVTransport.");
                 }
             }
         } else {
@@ -187,6 +185,37 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::DiffusionEVFlux(Pet
             // speciesFlux(-rho Di dYi/dx - rho Di dYi/dy - rho Di dYi//dz) . n A
             const int offset = aOff_x[EV_FIELD] + (ev * dim) + d;
             PetscReal evFlux = -fg->normal[d] * density * diff * gradAux[offset];
+            flux[ev] += evFlux;
+        }
+    }
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::finiteVolume::processes::EVTransport::DiffusionEVFluxVariableDiffusionCoefficient(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[],
+                                                                                                         const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[],
+                                                                                                         const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[],
+                                                                                                         PetscScalar flux[], void *ctx) {
+    PetscFunctionBeginUser;
+    // this order is based upon the order that they are passed into RegisterRHSFunction
+    const int EULER_FIELD = 0;
+    const int EV_FIELD = 0;
+
+    auto flowParameters = (DiffusionData *)ctx;
+
+    // get the current density from euler
+    const PetscReal density = field[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
+
+    // compute diff
+    flowParameters->diffFunction.function(field, flowParameters->evDiffusionCoefficient.data(), flowParameters->diffFunction.context.get());
+
+    // species equations
+    for (PetscInt ev = 0; ev < flowParameters->numberEV; ++ev) {
+        flux[ev] = 0;
+        for (PetscInt d = 0; d < dim; ++d) {
+            // speciesFlux(-rho Di dYi/dx - rho Di dYi/dy - rho Di dYi//dz) . n A
+            const int offset = aOff_x[EV_FIELD] + (ev * dim) + d;
+            PetscReal evFlux = -fg->normal[d] * density * flowParameters->evDiffusionCoefficient[ev] * gradAux[offset];
             flux[ev] += evFlux;
         }
     }

@@ -71,21 +71,29 @@ std::shared_ptr<ablate::eos::TChem::FunctionContext> ablate::eos::TChem::BuildFu
 }
 
 ablate::eos::ThermodynamicFunction ablate::eos::TChem::GetThermodynamicFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
-    return ThermodynamicFunction{.function = std::get<0>(thermodynamicFunctions.at(property)), .context = BuildFunctionContext(property, fields)};
+    return ThermodynamicFunction{.function = std::get<0>(thermodynamicFunctions.at(property)),
+                                 .context = BuildFunctionContext(property, fields),
+                                 .propertySize = speciesSizedProperties.count(property) ? (PetscInt)species.size() : 1};
 }
 
 ablate::eos::ThermodynamicTemperatureFunction ablate::eos::TChem::GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
-    return ThermodynamicTemperatureFunction{.function = std::get<1>(thermodynamicFunctions.at(property)), .context = BuildFunctionContext(property, fields)};
+    return ThermodynamicTemperatureFunction{.function = std::get<1>(thermodynamicFunctions.at(property)),
+                                            .context = BuildFunctionContext(property, fields),
+                                            .propertySize = speciesSizedProperties.count(property) ? (PetscInt)species.size() : 1};
 }
 
 ablate::eos::TChem::ThermodynamicMassFractionFunction ablate::eos::TChem::GetThermodynamicMassFractionFunction(ablate::eos::ThermodynamicProperty property,
                                                                                                                const std::vector<domain::Field> &fields) const {
-    return ThermodynamicMassFractionFunction{.function = std::get<0>(thermodynamicMassFractionFunctions.at(property)), .context = BuildFunctionContext(property, fields, false)};
+    return ThermodynamicMassFractionFunction{.function = std::get<0>(thermodynamicMassFractionFunctions.at(property)),
+                                             .context = BuildFunctionContext(property, fields, false),
+                                             .propertySize = speciesSizedProperties.count(property) ? (PetscInt)species.size() : 1};
 }
 
 ablate::eos::TChem::ThermodynamicTemperatureMassFractionFunction ablate::eos::TChem::GetThermodynamicTemperatureMassFractionFunction(ablate::eos::ThermodynamicProperty property,
                                                                                                                                      const std::vector<domain::Field> &fields) const {
-    return ThermodynamicTemperatureMassFractionFunction{.function = std::get<1>(thermodynamicMassFractionFunctions.at(property)), .context = BuildFunctionContext(property, fields, false)};
+    return ThermodynamicTemperatureMassFractionFunction{.function = std::get<1>(thermodynamicMassFractionFunctions.at(property)),
+                                                        .context = BuildFunctionContext(property, fields, false),
+                                                        .propertySize = speciesSizedProperties.count(property) ? (PetscInt)species.size() : 1};
 }
 
 PetscErrorCode ablate::eos::TChem::DensityFunction(const PetscReal *conserved, PetscReal *density, void *ctx) {

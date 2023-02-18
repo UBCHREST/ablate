@@ -43,6 +43,8 @@ class SpeciesTransport : public FlowProcess {
 
         /* store a scratch space for speciesSpeciesSensibleEnthalpy */
         std::vector<PetscReal> speciesSpeciesSensibleEnthalpy;
+        /* store an optional scratch space for individual species diffusion */
+        std::vector<PetscReal> speciesDiffusionCoefficient;
     };
     DiffusionData diffusionData;
 
@@ -56,6 +58,8 @@ class SpeciesTransport : public FlowProcess {
 
         /* diffusivity */
         eos::ThermodynamicTemperatureFunction diffFunction;
+        /* store an optional scratch space for individual species diffusion */
+        std::vector<PetscReal> speciesDiffusionCoefficient;
     };
     DiffusionTimeStepData diffusionTimeStepData;
 
@@ -95,8 +99,21 @@ class SpeciesTransport : public FlowProcess {
      */
     static PetscErrorCode DiffusionEnergyFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
                                               const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
+
     /**
-     * This computes the species transfer for species diffusion fluxy
+     * This computes the energy transfer for species diffusion flux for rhoE for variable diffusion coefficient
+     * f = "euler"
+     * u = {"euler", "densityYi"}
+     * a = {"yi"}
+     * ctx = SpeciesDiffusionData
+     * @return
+     */
+    static PetscErrorCode DiffusionEnergyFluxVariableDiffusionCoefficient(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[],
+                                                                          const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
+                                                                          const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
+
+    /**
+     * This computes the species transfer for species diffusion flux
      * f = "densityYi"
      * u = {"euler"}
      * a = {"yi", "T"}
@@ -105,6 +122,18 @@ class SpeciesTransport : public FlowProcess {
      */
     static PetscErrorCode DiffusionSpeciesFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
                                                const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
+
+    /**
+     * This computes the species transfer for species diffusion flux for variable diffusion coefficient
+     * f = "densityYi"
+     * u = {"euler"}
+     * a = {"yi", "T"}
+     * ctx = SpeciesDiffusionData
+     * @return
+     */
+    static PetscErrorCode DiffusionSpeciesFluxVariableDiffusionCoefficient(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[],
+                                                                           const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
+                                                                           const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
 
     /**
      * This Computes the advection flux for each species (Yi)

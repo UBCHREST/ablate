@@ -24,7 +24,7 @@
 
 typedef struct {
     PetscReal L;
-    PetscReal diff;
+    std::vector<PetscReal> diff;
     PetscReal rho;
 } InputParameters;
 
@@ -56,7 +56,7 @@ static PetscErrorCode ComputeDensityYiExact(PetscInt dim, PetscReal time, const 
     PetscReal yi0 = 0.0;
     for (PetscReal n = 1; n < 2000; n++) {
         PetscReal Bn = -yiInit * 2.0 * (-1.0 + PetscPowReal(-1.0, n)) / (n * PETSC_PI);
-        yi0 += Bn * PetscSinReal(n * PETSC_PI * xyz[0] / parameters->L) * PetscExpReal(-n * n * PETSC_PI * PETSC_PI * parameters->diff * time / (PetscSqr(parameters->L)));
+        yi0 += Bn * PetscSinReal(n * PETSC_PI * xyz[0] / parameters->L) * PetscExpReal(-n * n * PETSC_PI * PETSC_PI * parameters->diff[0] * time / (PetscSqr(parameters->L)));
     }
 
     yi[0] = yi0 * parameters->rho;
@@ -216,19 +216,38 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
 
 INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowSpeciesDiffusionTestFixture,
                          testing::Values((CompressibleSpeciesDiffusionTestParameters){.mpiTestParameter = {.testName = "species diffusion mpi 1", .nproc = 1, .arguments = ""},
-                                                                                      .parameters = {.L = 0.1, .diff = 1.0E-5, .rho = 1.0},
+                                                                                      .parameters = {.L = 0.1, .diff = {1.0E-5}, .rho = 1.0},
                                                                                       .initialNx = 3,
                                                                                       .levels = 3,
                                                                                       .expectedL2Convergence = {NAN, 2.2, NAN, 2.2, 2.2, NAN},
                                                                                       .expectedLInfConvergence = {NAN, 2.2, NAN, 2.2, 2.2, NAN}},
                                          (CompressibleSpeciesDiffusionTestParameters){.mpiTestParameter = {.testName = "species diffusion mpi 1 density 2.0", .nproc = 1, .arguments = ""},
-                                                                                      .parameters = {.L = 0.1, .diff = 1.0E-5, .rho = 2.0},
+                                                                                      .parameters = {.L = 0.1, .diff = {1.0E-5}, .rho = 2.0},
                                                                                       .initialNx = 3,
                                                                                       .levels = 3,
                                                                                       .expectedL2Convergence = {NAN, 2.2, NAN, 2.2, 2.2, NAN},
                                                                                       .expectedLInfConvergence = {NAN, 2.2, NAN, 2.2, 2.2, NAN}},
                                          (CompressibleSpeciesDiffusionTestParameters){.mpiTestParameter = {.testName = "species diffusion mpi 2 density 2.0", .nproc = 2, .arguments = ""},
-                                                                                      .parameters = {.L = 0.1, .diff = 1.0E-5, .rho = 2.0},
+                                                                                      .parameters = {.L = 0.1, .diff = {1.0E-5}, .rho = 2.0},
+                                                                                      .initialNx = 3,
+                                                                                      .levels = 3,
+                                                                                      .expectedL2Convergence = {NAN, 2.2, NAN, 2.2, 2.2, NAN},
+                                                                                      .expectedLInfConvergence = {NAN, 2.2, NAN, 2.2, 2.2, NAN}},
+
+                                         (CompressibleSpeciesDiffusionTestParameters){.mpiTestParameter = {.testName = "species var diffusion mpi 1", .nproc = 1, .arguments = ""},
+                                                                                      .parameters = {.L = 0.1, .diff = {1.0E-5, 1.0E-5, 1.0E-5}, .rho = 1.0},
+                                                                                      .initialNx = 3,
+                                                                                      .levels = 3,
+                                                                                      .expectedL2Convergence = {NAN, 2.2, NAN, 2.2, 2.2, NAN},
+                                                                                      .expectedLInfConvergence = {NAN, 2.2, NAN, 2.2, 2.2, NAN}},
+                                         (CompressibleSpeciesDiffusionTestParameters){.mpiTestParameter = {.testName = "species var diffusion mpi 1 density 2.0", .nproc = 1, .arguments = ""},
+                                                                                      .parameters = {.L = 0.1, .diff = {1.0E-5, 1.0E-5, 1.0E-5}, .rho = 2.0},
+                                                                                      .initialNx = 3,
+                                                                                      .levels = 3,
+                                                                                      .expectedL2Convergence = {NAN, 2.2, NAN, 2.2, 2.2, NAN},
+                                                                                      .expectedLInfConvergence = {NAN, 2.2, NAN, 2.2, 2.2, NAN}},
+                                         (CompressibleSpeciesDiffusionTestParameters){.mpiTestParameter = {.testName = "species var diffusion mpi 2 density 2.0", .nproc = 2, .arguments = ""},
+                                                                                      .parameters = {.L = 0.1, .diff = {1.0E-5, 1.0E-5, 1.0E-5}, .rho = 2.0},
                                                                                       .initialNx = 3,
                                                                                       .levels = 3,
                                                                                       .expectedL2Convergence = {NAN, 2.2, NAN, 2.2, 2.2, NAN},
