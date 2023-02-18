@@ -1,0 +1,110 @@
+# ### Description
+# A radiation solver verification case using parallel plates and an absorbing media with black body bounding surfaces.
+# This is a 2-dimensional case using a 3x20 plane of cells in order to predict a quasi-1D solution.
+# The temperature field of the media between the plates is prescribed as an asymmetrical piecewise parabola.
+#
+# ### Parameters
+# The tunable parameter of this problem is the absorptivity ($$\kappa$$), which controls how much radiation
+# is attenuated or emitted by the absorbing media based on its temperature excess relative to black body.
+#
+# | parameters | formula | value |
+# |:----------|:---------|:------|
+# | $$\kappa$$ | $$\frac{d I}{d x} = \kappa (\frac{\sigma T^4}{\pi} - I)$$ | 1.0  |
+#
+# ### Fields
+# The temperature field in this problem is assigned explicitly as an input. Based on this temperature field and
+# the absorptivity of the medium, the analytical solution for the net radiation heat transfer can be calculated
+# through a numerical integration.
+# if $$y < 0$$
+# $$T = -6.349E6 y^2 + 2000.0 [K]$$
+# if $$y > 0$$
+# $$-1.179E7 y^2 + 2000.0 [K]$$
+#
+---
+
+environment:
+  title: _rad
+  tagDirectory: true
+arguments: { }
+timestepper:
+  name: theMainTimeStepper
+  arguments:
+    ts_type: rk
+    ts_max_steps: 4
+  domain: !ablate::domain::BoxMeshBoundaryCells
+    name: simpleBoxField
+    faces: [ 3, 5 ]
+    lower: [ 0 , -0.0105 ]
+    upper: [ 0.5 , 0.0105 ]
+    simplex: false
+    options:
+      dm_refine: 0
+      dm_plex_hash_location: true
+    preModifiers:
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+    postModifiers:
+      - !ablate::domain::modifiers::GhostBoundaryCells
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: &eos !ablate::eos::TChemSoot # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked
+          mechFile: ../mechanisms/MMAReduced.yaml
+  initialization:
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state:
+        &initState
+        eos: *eos
+        temperature: 1200.0
+        pressure: 101325.0
+        velocity: [ 0.0 ]
+        # the mass fractions must be specified to compute rho, e, etc.
+        other: !ablate::finiteVolume::fieldFunctions::MassFractions
+          # the mass fraction class allows for a subset of mass fractions to be specified.  The rest are assumed zero
+          eos: *eos
+          values:
+            - fieldName: N2
+              field: 0.724672103
+            - fieldName: MMETHAC_C5H8O2
+              field: 0.055186656
+            - fieldName: O2
+              field: 0.220141239
+    # the DensityMassFractions reuses the initState to set the densityMassFractions for all species
+    - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
+      state: *initState
+
+    # Set the number density to zero
+    - fieldName: densityProgress
+      field: "0.0"
+solvers:
+  - !ablate::finiteVolume::CompressibleFlowSolver
+    id: vortexFlowField
+    region:
+      name: interiorCells
+    parameters:
+      cfl: 0.5
+    monitors:
+      - !ablate::monitors::MaxMinAverage
+        field: euler
+    eos: *eos
+  - !ablate::boundarySolver::BoundarySolver
+    id: openBoundary
+    region:
+      name: boundaryCells
+    fieldBoundary:
+      name: boundaryFaces
+    processes:
+      - !ablate::boundarySolver::lodi::Inlet
+        eos: *eos
+  - !ablate::radiation::VolumeRadiation
+    id: radiationSolver
+    region:
+      name: interiorCells
+    interval: 1
+    radiation: !ablate::radiation::Radiation
+      id: radiation
+      region:
+        name: interiorCells
+      rays: 5
+      # this is only an example of how to combine multiple models.  A simple fixed constant would be ideal for a real simulation
+      properties: !ablate::eos::radiationProperties::SootSpectrumAbsorption
+        eos: *eos
+      num: 100 # number of spectral points to give to the radiation solver
