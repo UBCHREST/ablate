@@ -52,8 +52,6 @@ timestepper:
           options:
             # set a minimum temperature for the chemical kinetics ode integration
             thresholdTemperature: 560
-            relToleranceNewton: 1E-3
-            absToleranceNewton: 1E-5
         conservedFieldOptions:
           petscfv_type: leastsquares
         region:
