@@ -1,4 +1,4 @@
-# Example 1D diffusion flame with a coupled boundary condition and soot.  The diffusion flame only uses
+# Example 1D diffusion flame with soot and thermophoretic diffusion.  The diffusion flame only uses
 # the transport processes of the Navier–Stokes equations.
 ---
 environment:
@@ -11,7 +11,8 @@ timestepper:
     ts_max_time: 1
     ts_max_steps: 50
     ts_dt: 1.0e-10
-    ts_adapt_safety: 0.75
+    ts_adapt_safety: 0.95
+    ts_adapt_type: physicsConstrained
   domain: !ablate::domain::BoxMeshBoundaryCells
     name: simpleBoxField
     faces: [50]
@@ -51,6 +52,8 @@ timestepper:
           options:
             # set a minimum temperature for the chemical kinetics ode integration
             thresholdTemperature: 560
+            relToleranceNewton: 1E-3
+            absToleranceNewton: 1E-5
         conservedFieldOptions:
           petscfv_type: leastsquares
         region:
@@ -65,8 +68,13 @@ timestepper:
     - !ablate::finiteVolume::fieldFunctions::Euler
       state: &flowFieldState
         eos: *eos
-        temperature:
-          "x < 0 ? 653.0  : (x > .01 ? 300.0 : (x < 0.007 ? (306714.2857*x + 653): (-833333.3333*x + 8633.33)  ))"
+        temperature: !ablate::mathFunctions::Peak
+          startValues: [300]
+          peakValues: [2710]
+          endValues: [300]
+          start: 0.0
+          peak:  0.007 
+          end: 0.01
         pressure: 101325.0
         velocity: "0.0"
         other: !ablate::finiteVolume::fieldFunctions::MassFractions
@@ -86,14 +94,23 @@ timestepper:
     - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
       state: *flowFieldState
 
+    # Set the number density to zero
+    - fieldName: densityProgress
+      field: "0.0"
+
+
 solvers:
   - !ablate::finiteVolume::CompressibleFlowSolver
     id: flowField
     region:
       name: interiorFlowRegion
     eos: *eos
-    transport: &transportModel !ablate::eos::transport::Sutherland
-      eos: *eos
+    transport: !ablate::eos::tChemSoot::SootSpeciesTransportModel
+      transport:  !ablate::eos::transport::Sutherland
+        eos: *eos
+    evTransport: !ablate::eos::tChemSoot::SootProgressTransportModel
+      transport:  !ablate::eos::transport::Sutherland
+        eos: *eos
     monitors:
     - !ablate::monitors::TimeStepMonitor
       interval: 10
@@ -105,6 +122,9 @@ solvers:
       - !ablate::finiteVolume::processes::ConstantPressureFix
         eos: *eos
         pressure: 101325.0
+      - !ablate::finiteVolume::processes::ThermophoreticDiffusion
+        transport:  !ablate::eos::transport::Sutherland
+          eos: *eos
   - !ablate::boundarySolver::BoundarySolver
     id: walls
     region:
