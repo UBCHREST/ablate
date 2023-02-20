@@ -15,7 +15,7 @@ class SurfaceRadiation : public ablate::radiation::Radiation {
 
    public:
     SurfaceRadiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
-                     int num = 1, std::shared_ptr<ablate::monitors::logs::Log> = {});
+                     std::shared_ptr<ablate::monitors::logs::Log> = {});
     ~SurfaceRadiation();
 
     void Initialize(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain) override;
@@ -36,8 +36,8 @@ class SurfaceRadiation : public ablate::radiation::Radiation {
      * @param emissivity the emissivity of the surface
      * @return
      */
-    inline PetscReal GetSurfaceIntensity(PetscInt faceId, PetscReal temperature, PetscReal emissivity = 1.0) {
-        if (numLambda == 1) {  // Compute the losses
+    inline void GetSurfaceIntensity(PetscReal *intensity, PetscInt faceId, PetscReal temperature, PetscReal emissivity = 1.0) {
+        if (absorptivityFunction.propertySize == 1) {  // Compute the losses
             PetscReal netIntensity = -ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
 
             // add in precomputed gains
@@ -46,9 +46,12 @@ class SurfaceRadiation : public ablate::radiation::Radiation {
             // scale by kappa
             netIntensity *= emissivity;
 
-            return abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
+            netIntensity = (netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
+
+            intensity[0] = netIntensity;
+//            return abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
         } else {
-            return 0;  // TODO: This is where a wavelength dependant integrator would go. Or maybe we want the wavelength integrator outside and we get the values indexed by wavelength out of here.
+//            return 0;  // TODO: This is where a wavelength dependant integrator would go. Or maybe we want the wavelength integrator outside and we get the values indexed by wavelength out of here.
         }
     }
 };

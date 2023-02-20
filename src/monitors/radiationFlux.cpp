@@ -1,6 +1,6 @@
 #include "radiationFlux.hpp"
 
-ablate::monitors::RadiationFlux::RadiationFlux(std::vector<std::shared_ptr<radiation::SurfaceRadiation>> radiationIn, std::shared_ptr<domain::Region> radiationFluxRegionIn)
+ablate::monitors::RadiationFlux::RadiationFlux(std::vector<std::shared_ptr<radiation::Radiation>> radiationIn, std::shared_ptr<domain::Region> radiationFluxRegionIn)
     : radiation(std::move(radiationIn)), radiationFluxRegion(std::move(radiationFluxRegionIn)) {}
 
 ablate::monitors::RadiationFlux::~RadiationFlux() {

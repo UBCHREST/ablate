@@ -27,7 +27,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * @param options other options
      */
     Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
-              int num = 1, std::shared_ptr<ablate::monitors::logs::Log> = {});
+              std::shared_ptr<ablate::monitors::logs::Log> = {});
 
     virtual ~Radiation();
 
@@ -74,11 +74,11 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * @return
      */
     inline PetscReal GetIntensity(PetscInt index, const ablate::domain::Range& cellRange, PetscReal temperature, PetscReal kappa) {
-        if (numLambda == 1) {  // Compute the losses
-        PetscReal netIntensity = -4.0 * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
+        if (absorptivityFunction.propertySize == 1) {  // Compute the losses
+            PetscReal netIntensity = -4.0 * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
 
-        // add in precomputed gains
-        netIntensity += evaluatedGains[index - cellRange.start];
+            // add in precomputed gains
+            netIntensity += evaluatedGains[index - cellRange.start];
 
             // scale by kappa
             netIntensity *= kappa;
@@ -99,6 +99,8 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     // Each property can be output separately.
 
     inline std::string GetId() { return solverId; };
+
+    inline eos::ThermodynamicTemperatureFunction GetAbsorptionFunction() { return absorptivityFunction; };
 
     /** Evaluates the ray intensity from the domain to update the effects of irradiation. Does not impact the solution unless the solve function is called again.
      * */

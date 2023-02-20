@@ -136,7 +136,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     // Use the solution from the radiation solve.
     PetscReal radIntensity = 0;
     if (sublimation->radiation) {
-        radIntensity = sublimation->radiation->GetSurfaceIntensity(fg->faceId, boundaryTemperature, sublimation->emissivity);
+        sublimation->radiation->GetSurfaceIntensity(&radIntensity, fg->faceId, boundaryTemperature, sublimation->emissivity);
     }
 
     // compute the heat flux. Add the radiation heat flux for this face intensity if the radiation solver exists
@@ -274,7 +274,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationOutputFu
 
     PetscReal radIntensity = 0;
     if (sublimation->radiation) {
-        radIntensity = sublimation->radiation->GetSurfaceIntensity(fg->faceId, boundaryTemperature, sublimation->emissivity);
+         sublimation->radiation->GetSurfaceIntensity(&radIntensity, fg->faceId, boundaryTemperature, sublimation->emissivity);
     }
 
     // compute the heat flux
