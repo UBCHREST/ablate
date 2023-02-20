@@ -13,8 +13,7 @@ class SootSpectrumAbsorption : public RadiationModel {
         PetscInt densityYiCSolidCOffset;
         const ThermodynamicFunction temperatureFunction;
         const ThermodynamicTemperatureFunction densityFunction;
-        const PetscReal minLambda = 0.4E-6;
-        const PetscReal maxLambda = 30E-6;  //! These parameters could potentially be made into optional inputs and varied if we are interested in only part of the spectrum.
+        const std::vector<PetscReal> wavelengths;
     };
     const std::shared_ptr<eos::EOS> eos;                                                                               //! eos is needed to compute field values
     constexpr static PetscReal rhoC = 2000;                                                                            // kg/m^3
@@ -23,8 +22,10 @@ class SootSpectrumAbsorption : public RadiationModel {
         2 * ablate::utilities::Constants::pi * ablate::utilities::Constants::h * ablate::utilities::Constants::c * ablate::utilities::Constants::c;  //! First Plank constant [W m^2]
     constexpr static PetscReal C_0 = 7.0;                                                                                                            //! Empirical constant for soot refractive index
 
+    std::vector<PetscReal> wavelengthsIn;
+
    public:
-    SootSpectrumAbsorption(std::shared_ptr<eos::EOS> eosIn);
+    SootSpectrumAbsorption(std::shared_ptr<eos::EOS> eosIn, int num = 0, double min = 0.4E-6, double max = 30E-6, std::vector<double> wavelengths = {});
 
     ThermodynamicFunction GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
     ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
