@@ -10,8 +10,8 @@
 #include "utilities/petscUtilities.hpp"
 
 ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber,
-                                        std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, int num, std::shared_ptr<ablate::monitors::logs::Log> log)
-    : nTheta(raynumber), nPhi(2 * raynumber), solverId(solverId), region(region), radiationModel(std::move(radiationModelIn)), numLambda(num), log(std::move(log)) {}
+                                        std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
+    : nTheta(raynumber), nPhi(2 * raynumber), solverId(solverId), region(region), radiationModel(std::move(radiationModelIn)), log(std::move(log)) {}
 
 ablate::radiation::Radiation::~Radiation() {
     if (faceGeomVec) VecDestroy(&faceGeomVec) >> utilities::PetscUtilities::checkError;
@@ -354,12 +354,12 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
     PetscSFSetUp(remoteAccess) >> utilities::PetscUtilities::checkError;
 
     // Size up the memory to hold the local calculations and the retrieved information
-    raySegmentsCalculations.resize(raySegments.size() * numLambda);
-    raySegmentSummary.resize(numberOfReturnedSegments * numLambda);
-    evaluatedGains.resize(numberOriginCells * numLambda);  //! The surface will be irradiated with all of the wavelengths. The surface properties will process the total information.
+    raySegmentsCalculations.resize(raySegments.size() * absorptivityFunction.propertySize);
+    raySegmentSummary.resize(numberOfReturnedSegments * absorptivityFunction.propertySize);
+    evaluatedGains.resize(numberOriginCells * absorptivityFunction.propertySize);  //! Size each of the entries to hold all of the wavelengths being transported.
 
     // Create a mpi data type to allow reducing the remoteRayCalculation to raySegmentSummary
-    PetscInt count = 2 * numLambda;  //! = 2 * (the number of independant wavelengths that are being considered). Should be read from absorption model.
+    PetscInt count = 2 * absorptivityFunction.propertySize;  //! = 2 * (the number of independant wavelengths that are being considered). Should be read from absorption model.
     MPI_Type_contiguous(count, MPIU_REAL, &carrierMpiType) >> utilities::MpiUtilities::checkError;
     MPI_Type_commit(&carrierMpiType) >> utilities::MpiUtilities::checkError;
 }
@@ -575,9 +575,9 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     // Start by marching over all rays in this rank
     for (std::size_t raySegmentIndex = 0; raySegmentIndex < raySegments.size(); ++raySegmentIndex) {
         //! Zero this ray segment for all wavelengths
-        for (unsigned short int wavelengthIndex = 0; wavelengthIndex < numLambda; wavelengthIndex++) {  //! Iterate through every wavelength entry in this ray segment
-            raySegmentsCalculations[numLambda * raySegmentIndex + wavelengthIndex].Ij = 0.0;
-            raySegmentsCalculations[numLambda * raySegmentIndex + wavelengthIndex].Krad = 1.0;
+        for (unsigned short int wavelengthIndex = 0; wavelengthIndex < absorptivityFunction.propertySize; wavelengthIndex++) {  //! Iterate through every wavelength entry in this ray segment
+            raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Ij = 0.0;
+            raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad = 1.0;
         }
 
         // compute the Ij and Krad for this segment starting at the point closest to the ray origin
@@ -590,24 +590,23 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
             if (sol) {
                 DMPlexPointLocalFieldRead(auxDm, cellSegment.cell, temperatureField.id, auxArray, &temperature);
                 if (temperature) {               /** Input absorptivity (kappa) values from model here. */
-                    PetscReal kappa[numLambda];  //!< Absorptivity coefficient, property of each cell. This is an array that we will iterate through for every evaluation
-                    kappa[0] = numLambda;        //! Unwise temporary solution to get the wavelength number into the static function and cast it as in int inside.
+                    PetscReal kappa[absorptivityFunction.propertySize];  //!< Absorptivity coefficient, property of each cell. This is an array that we will iterate through for every evaluation
                     absorptivityFunction.function(sol, *temperature, kappa, absorptivityFunctionContext);
                     //! Get the pointer to the returned array of absorption values. Iterate through every wavelength for the evaluation.
                     if (cellSegment.pathLength < 0) {
                         // This is a boundary cell
-                        for (size_t wavelengthIndex = 0; wavelengthIndex < numLambda; ++wavelengthIndex) {
-                            raySegmentsCalculations[numLambda * raySegmentIndex + wavelengthIndex].Ij +=
-                                FlameIntensity(1.0, *temperature) * raySegmentsCalculations[numLambda * raySegmentIndex + wavelengthIndex].Krad;
+                        for (int wavelengthIndex = 0; wavelengthIndex < absorptivityFunction.propertySize; ++wavelengthIndex) {
+                            raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Ij +=
+                                FlameIntensity(1.0, *temperature) * raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad;
                         }
                     } else {
-                        for (size_t wavelengthIndex = 0; wavelengthIndex < numLambda; ++wavelengthIndex) {
+                        for (int wavelengthIndex = 0; wavelengthIndex < absorptivityFunction.propertySize; ++wavelengthIndex) {
                             // This is not a boundary cell
-                            raySegmentsCalculations[numLambda * raySegmentIndex + wavelengthIndex].Ij +=
-                                FlameIntensity(1 - exp(-kappa[wavelengthIndex] * cellSegment.pathLength), *temperature) * raySegmentsCalculations[numLambda * raySegmentIndex + wavelengthIndex].Krad;
+                            raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Ij +=
+                                FlameIntensity(1 - exp(-kappa[wavelengthIndex] * cellSegment.pathLength), *temperature) * raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad;
 
                             // Compute the total absorption for this domain
-                            raySegmentsCalculations[numLambda * raySegmentIndex + wavelengthIndex].Krad *= exp(-kappa[wavelengthIndex] * cellSegment.pathLength);
+                            raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad *= exp(-kappa[wavelengthIndex] * cellSegment.pathLength);
                         }
                     }
                 }
@@ -622,7 +621,7 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     /** March over each
      * INDEXING ANNOTATIONS:
      * evaluatedGains: There is a gain evaluation for every cell * wavelength
-     *  Therefore, the indexing of the gain evaluation is [numLambda * cell + i] because the cells are looped through outside of the wavelengths
+     *  Therefore, the indexing of the gain evaluation is [absorptivityFunction.propertySize * cell + i] because the cells are looped through outside of the wavelengths
      * raySegmentsPerOriginRay: This only stores the number of segments in each ray. There is no reason to index this with wavelength.
      *  Therefore, the indexing is [rayOffset], where the ray refers to the wavelength independent ray count.
      * raySegmentSummary: This will store a value for every ray segment and wavelength. Each ray will integrate its ray segments together for every wavelength.
@@ -630,16 +629,16 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     std::size_t segmentOffset = 0;
     std::size_t rayOffset = 0;
     for (PetscInt cellIndex = 0; cellIndex < numberOriginCells; ++cellIndex) {
-        for (unsigned short int wavelengthIndex = 0; wavelengthIndex < numLambda; ++wavelengthIndex)
-            evaluatedGains[numLambda * cellIndex + wavelengthIndex] = 0.0;  //! Zero the evaluated gains for this ray specifically. Do this for all wavelengths.
+        for (unsigned short int wavelengthIndex = 0; wavelengthIndex < absorptivityFunction.propertySize; ++wavelengthIndex)
+            evaluatedGains[absorptivityFunction.propertySize * cellIndex + wavelengthIndex] = 0.0;  //! Zero the evaluated gains for this ray specifically. Do this for all wavelengths.
         for (PetscInt rayIndex = 0; rayIndex < raysPerCell; ++rayIndex) {
             // Add the black body radiation transmitted through the domain to the source term
-            PetscReal iSource[numLambda];
-            for (unsigned short int i = 0; i < numLambda; ++i) iSource[i] = 0.0;  //! Initialize the wavelength dependent arrays to be of size zero.
+            PetscReal iSource[absorptivityFunction.propertySize];
+            for (unsigned short int i = 0; i < absorptivityFunction.propertySize; ++i) iSource[i] = 0.0;  //! Initialize the wavelength dependent arrays to be of size zero.
 
             // Add the absorption for this domain to the total absorption of the ray
-            PetscReal kRadd[numLambda];
-            for (unsigned short int i = 0; i < numLambda; ++i) kRadd[i] = 1.0;  //! Initialize the wavelength dependent arrays to be of size zero.
+            PetscReal kRadd[absorptivityFunction.propertySize];
+            for (unsigned short int i = 0; i < absorptivityFunction.propertySize; ++i) kRadd[i] = 1.0;  //! Initialize the wavelength dependent arrays to be of size zero.
 
             /** for each segment in this ray
              * Integrate the wavelength dependent intensity calculation for each segment for each wavelength
@@ -647,15 +646,15 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
              * Therefore, we should first iterate through the wavelengths first and sum the effects of every wavelength on every cell.
              */
             for (unsigned short int s = 0; s < raySegmentsPerOriginRay[rayOffset]; ++s) {
-                for (unsigned short int wavelengthIndex = 0; wavelengthIndex < numLambda; wavelengthIndex++) {
-                    iSource[wavelengthIndex] += raySegmentSummary[numLambda * segmentOffset + wavelengthIndex].Ij * kRadd[wavelengthIndex];
-                    kRadd[wavelengthIndex] *= raySegmentSummary[numLambda * segmentOffset + wavelengthIndex].Krad;
+                for (unsigned short int wavelengthIndex = 0; wavelengthIndex < absorptivityFunction.propertySize; wavelengthIndex++) {
+                    iSource[wavelengthIndex] += raySegmentSummary[absorptivityFunction.propertySize * segmentOffset + wavelengthIndex].Ij * kRadd[wavelengthIndex];
+                    kRadd[wavelengthIndex] *= raySegmentSummary[absorptivityFunction.propertySize * segmentOffset + wavelengthIndex].Krad;
                 }
                 segmentOffset++;
             }
 
-            for (unsigned short int wavelengthIndex = 0; wavelengthIndex < numLambda; wavelengthIndex++)
-                evaluatedGains[numLambda * cellIndex + wavelengthIndex] += iSource[wavelengthIndex] * gainsFactor[rayOffset];
+            for (unsigned short int wavelengthIndex = 0; wavelengthIndex < absorptivityFunction.propertySize; wavelengthIndex++)
+                evaluatedGains[absorptivityFunction.propertySize * cellIndex + wavelengthIndex] += iSource[wavelengthIndex] * gainsFactor[rayOffset];
             rayOffset++;
         }
     }
@@ -719,5 +718,5 @@ std::ostream& ablate::radiation::operator<<(std::ostream& os, const ablate::radi
 #include "registrar.hpp"
 REGISTER_DEFAULT(ablate::radiation::Radiation, ablate::radiation::Radiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
                  ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(int, "rays", "number of rays used by the solver"),
-                 ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"), OPT(int, "num", "number of wavelengths being considered in the spectrum"),
+                 ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"),
                  OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
