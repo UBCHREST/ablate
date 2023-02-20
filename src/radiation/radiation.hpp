@@ -54,7 +54,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
         PetscReal Krad = 1;  //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
     };
 
-    PetscInt numLambda;
+    PetscInt numLambda; // TODO: Make this protected and replace the read with a function call.
 
     /** Returns the black body intensity for a given temperature and emissivity */
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
@@ -87,8 +87,18 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
             return abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
         } else {
             return 0;  // TODO: This is where a wavelength dependant integrator would go.
+            // TODO: Return a pointer to the array of intensities
         }
     }
+
+    // TODO: Add a class called "radiation surface properties" which is used to compute the amount of intensity absorbed by the material. This should be an optional input in the radiation base class.
+    // GetIntensity should compute this, because otherwise the losses will not be accounted for.
+    // Just embed a function within the GetIntensity function that "Computes surface properties" and decides how much of the radiation to do.
+    // Also. the losses are wavelength dependent based on what portion of the black body temperature they are emitting.
+    // Then, the camera properties will be able to be viewed as a radiation surface property.
+    // The radiation solver can take a vector of radiation surface properties.
+    // Each radiation surface property will be evaluated on the EvaluateGains call.
+    // Each property can be output separately.
 
     inline std::string GetId() { return solverId; };
 

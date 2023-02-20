@@ -27,6 +27,7 @@ class RadiationModel {
      * @return
      */
     [[nodiscard]] virtual ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const = 0;
+
 };
 
 /**

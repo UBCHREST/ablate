@@ -124,4 +124,8 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
 
 #include "registrar.hpp"
 REGISTER(ablate::eos::radiationProperties::RadiationModel, ablate::eos::radiationProperties::SootSpectrumAbsorption, "SootSpectrumAbsorption",
-         ARG(ablate::eos::EOS, "eos", "The EOS used to compute field properties"));
+         ARG(ablate::eos::EOS, "eos", "The EOS used to compute field properties"),
+         OPT(int, "num", "number of wavelengths that are integrated in the model"),
+         OPT(int, "min", "number of wavelengths that are integrated in the model"),
+         OPT(int, "max", "number of wavelengths that are integrated in the model"),
+         OPT(std::vector<float>, "wavelengths", "number of wavelengths that are integrated in the model"));
