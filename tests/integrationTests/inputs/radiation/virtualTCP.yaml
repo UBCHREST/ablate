@@ -3,7 +3,7 @@
 ---
 
 environment:
-  title: _spectrum
+  title: _tcp
   tagDirectory: true
 arguments: { }
 timestepper:
@@ -13,9 +13,9 @@ timestepper:
     ts_max_steps: 4
   domain: !ablate::domain::BoxMeshBoundaryCells
     name: simpleBoxField
-    faces: [ 3, 5 ]
-    lower: [ 0 , -0.0105 ]
-    upper: [ 0.5 , 0.0105 ]
+    faces: [ 10, 10, 3 ]
+    lower: [ 0 , 0, -0.0105 ]
+    upper: [ 0.5, 0.5, 0.0105 ]
     simplex: false
     options:
       dm_refine: 0
@@ -60,8 +60,20 @@ solvers:
     region:
       name: interiorCells
     monitors:
-      - !ablate::monitors::MaxMinAverage
+      - !<!ablate::monitors::MaxMinAverage>
         field: euler
+      - !<!ablate::monitors::RadiationFlux>
+        region:
+          name: upperWallBoundaryFaces
+        radiation:
+          - !<!ablate::radiation::OrthogonalRadiation>
+            id: tcp
+            region:
+              name: interiorCells
+            rays: 25
+            properties: !ablate::eos::radiationProperties::SootSpectrumAbsorption
+              eos: *eos
+              wavelengths:
     eos: *eos
   - !ablate::boundarySolver::BoundarySolver
     id: openBoundary
@@ -72,17 +84,3 @@ solvers:
     processes:
       - !ablate::boundarySolver::lodi::Inlet
         eos: *eos
-  - !ablate::radiation::VolumeRadiation
-    id: radiationSolver
-    region:
-      name: interiorCells
-    interval: 1
-    radiation: !ablate::radiation::Radiation
-      id: radiation
-      region:
-        name: interiorCells
-      rays: 5
-      # this is only an example of how to combine multiple models.  A simple fixed constant would be ideal for a real simulation
-      properties: !ablate::eos::radiationProperties::SootSpectrumAbsorption
-        eos: *eos
-      num: 100 # number of spectral points to give to the radiation solver
