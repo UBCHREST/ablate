@@ -12,13 +12,12 @@ void ablate::finiteVolume::processes::ThermophoreticDiffusion::Setup(ablate::fin
                              CompressibleFlowFields::EULER_FIELD,
                              {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD, CompressibleFlowFields::DENSITY_PROGRESS_FIELD},
                              {CompressibleFlowFields::TEMPERATURE_FIELD});
-
-    flow.RegisterRHSFunction(ThermophoreticDiffusionEnergyFlux,
+    flow.RegisterRHSFunction(ThermophoreticDiffusionVariableFlux,
                              &viscosityTemperatureFunction,
                              CompressibleFlowFields::DENSITY_YI_FIELD,
                              {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
                              {CompressibleFlowFields::TEMPERATURE_FIELD});
-    flow.RegisterRHSFunction(ThermophoreticDiffusionEnergyFlux,
+    flow.RegisterRHSFunction(ThermophoreticDiffusionVariableFlux,
                              &viscosityTemperatureFunction,
                              CompressibleFlowFields::DENSITY_PROGRESS_FIELD,
                              {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_PROGRESS_FIELD},
@@ -94,4 +93,5 @@ PetscErrorCode ablate::finiteVolume::processes::ThermophoreticDiffusion::Thermop
 
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::ThermophoreticDiffusion,
-         "Thermophoretic diffusion the transport of ndd (ThermoPheretic) and solid carbon (ThermoPheretic).", ARG(ablate::eos::transport::TransportModel, "transport", "The transportModel used to compute the viscosity"));
+         "Thermophoretic diffusion the transport of ndd (ThermoPheretic) and solid carbon (ThermoPheretic).",
+         ARG(ablate::eos::transport::TransportModel, "transport", "The transportModel used to compute the viscosity"));

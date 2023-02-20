@@ -1,16 +1,16 @@
 #include "sootTransportModel.hpp"
 #include <algorithm>
 
-ablate::eos::tChemSoot::SootTransportModel::SootTransportModel(const std::shared_ptr<TransportModel>& transport, std::string fieldName) : transport(transport), fieldName(fieldName) {}
+ablate::eos::tChemSoot::SootTransportModel::SootTransportModel(const std::shared_ptr<TransportModel>& transport, std::string fieldName) : fieldName(fieldName), transport(transport) {}
 ablate::eos::ThermodynamicFunction ablate::eos::tChemSoot::SootTransportModel::GetTransportFunction(ablate::eos::transport::TransportProperty property,
                                                                                                     const std::vector<domain::Field>& fields) const {
     if (property == ablate::eos::transport::TransportProperty::Diffusivity) {
         // determine the number of species from fields
-        const auto& fieldName = this->fieldName;
-        auto speciesField = std::find_if(fields.begin(), fields.end(), [&fieldName](auto field) { return field.name == fieldName; });
+        const auto& fieldNameReference = this->fieldName;
+        auto speciesField = std::find_if(fields.begin(), fields.end(), [&fieldNameReference](auto field) { return field.name == fieldNameReference; });
 
         if (speciesField == fields.end()) {
-            throw std::invalid_argument("ablate::eos::transport::SootTransportModel requires the field " + fieldName);
+            throw std::invalid_argument("ablate::eos::transport::SootTransportModel requires the field " + fieldNameReference);
         }
 
         auto diffusionFunction = transport->GetTransportFunction(property, fields);
@@ -35,8 +35,8 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::tChemSoot::SootTransp
                                                                                                                           const std::vector<domain::Field>& fields) const {
     if (property == ablate::eos::transport::TransportProperty::Diffusivity) {
         // determine the number of species from fields
-        const auto& fieldName = this->fieldName;
-        auto speciesField = std::find_if(fields.begin(), fields.end(), [&fieldName](auto field) { return field.name == fieldName; });
+        const auto& fieldNameReference = this->fieldName;
+        auto speciesField = std::find_if(fields.begin(), fields.end(), [&fieldNameReference](auto field) { return field.name == fieldNameReference; });
 
         if (speciesField == fields.end()) {
             throw std::invalid_argument("ablate::eos::transport::SootSpeciesTransport requires the field finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD");

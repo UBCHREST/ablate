@@ -53,7 +53,6 @@ class SootTransportModel : public eos::transport::TransportModel {
      */
     static PetscErrorCode VectorizeSpeciesDiffusionTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
 
-
     /**
      * private static function use a vectorized species diffusion and set the solidCarbonOffset value to small
      * @param conserved
@@ -61,7 +60,6 @@ class SootTransportModel : public eos::transport::TransportModel {
      * @param ctx
      */
     static PetscErrorCode AdjustSpeciesDiffusionTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
-
 
    public:
     /**
@@ -87,6 +85,6 @@ class SootTransportModel : public eos::transport::TransportModel {
      */
     [[nodiscard]] ThermodynamicTemperatureFunction GetTransportTemperatureFunction(eos::transport::TransportProperty property, const std::vector<domain::Field>& fields) const override;
 };
-}  // namespace ablate::eos::transport
+}  // namespace ablate::eos::tChemSoot
 
 #endif  // ABLATELIBRARY_SOOTTRANSPORTMODEL_HPP

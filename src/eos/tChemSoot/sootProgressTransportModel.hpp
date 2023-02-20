@@ -11,15 +11,13 @@ namespace ablate::eos::tChemSoot {
  * This transport model, reduces the NDD diffusion to be 1% of bulkd diffusion
  */
 class SootProgressTransportModel : public SootTransportModel {
-
    public:
     /**
      * This transport model, reduces the carbon diffusion to be 1% of buld diffusion
      * @param transport the base transport model
      */
     explicit SootProgressTransportModel(const std::shared_ptr<TransportModel>& transportModel);
-
 };
-}  // namespace ablate::eos::transport
+}  // namespace ablate::eos::tChemSoot
 
 #endif  // ABLATELIBRARY_SOOTPROGRESSTRANSPORTMODEL_HPP

@@ -11,7 +11,8 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                                                                      const std::shared_ptr<eos::transport::TransportModel>& transport,
                                                                      const std::shared_ptr<fluxCalculator::FluxCalculator>& fluxCalculatorIn,
                                                                      std::vector<std::shared_ptr<processes::Process>> additionalProcesses,
-                                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, const std::shared_ptr<eos::transport::TransportModel>& evTransport)
+                                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                                     const std::shared_ptr<eos::transport::TransportModel>& evTransport)
     : FiniteVolumeSolver(std::move(solverId), std::move(region), std::move(options),
                          utilities::VectorUtilities::Merge(
                              {
@@ -19,7 +20,7 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                                  std::make_shared<ablate::finiteVolume::processes::NavierStokesTransport>(
                                      parameters, eosIn, fluxCalculatorIn, transport, utilities::VectorUtilities::Find<ablate::finiteVolume::processes::PressureGradientScaling>(additionalProcesses)),
                                  std::make_shared<ablate::finiteVolume::processes::SpeciesTransport>(eosIn, fluxCalculatorIn, transport, parameters),
-                                 std::make_shared<ablate::finiteVolume::processes::EVTransport>(eosIn, fluxCalculatorIn, evTransport ? evTransport: transport),
+                                 std::make_shared<ablate::finiteVolume::processes::EVTransport>(eosIn, fluxCalculatorIn, evTransport ? evTransport : transport),
                              },
                              additionalProcesses),
                          std::move(boundaryConditions)) {}
@@ -28,7 +29,8 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                                                                      const std::shared_ptr<eos::EOS>& eosIn, const std::shared_ptr<parameters::Parameters>& parameters,
                                                                      const std::shared_ptr<eos::transport::TransportModel>& transport,
                                                                      const std::shared_ptr<fluxCalculator::FluxCalculator>& fluxCalculatorIn,
-                                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, const std::shared_ptr<eos::transport::TransportModel>& evTransport)
+                                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                                     const std::shared_ptr<eos::transport::TransportModel>& evTransport)
     : CompressibleFlowSolver(std::move(solverId), std::move(region), std::move(options), eosIn, parameters, transport, fluxCalculatorIn, {}, std::move(boundaryConditions), evTransport) {}
 
 #include "registrar.hpp"
