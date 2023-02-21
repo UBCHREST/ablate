@@ -1,12 +1,7 @@
 #include "tChemBase.hpp"
 #include <TChem_EnthalpyMass.hpp>
 #include <utility>
-#include "TChem_SpecificHeatCapacityConsVolumePerMass.hpp"
-#include "TChem_SpecificHeatCapacityPerMass.hpp"
 #include "eos/tChem/sensibleInternalEnergy.hpp"
-#include "eos/tChem/sensibleInternalEnergyFcn.hpp"
-#include "eos/tChem/speedOfSound.hpp"
-#include "eos/tChem/temperature.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "monitors/logs/nullLog.hpp"
 #include "utilities/kokkosUtilities.hpp"

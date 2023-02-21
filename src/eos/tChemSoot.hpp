@@ -16,6 +16,7 @@
 #include "eos/tChemSoot/temperature.hpp"
 #include "monitors/logs/log.hpp"
 #include "tChem.hpp"
+#include "tChemSoot/sootConstants.hpp"
 #include "utilities/intErrorChecker.hpp"
 
 namespace ablate::eos {
@@ -242,6 +243,14 @@ class TChemSoot : public TChemBase, public std::enable_shared_from_this<ablate::
             double t4900 = CS_Nasa7THigh.at(0) + 4900. * (CS_Nasa7THigh.at(1) + 4900. * (CS_Nasa7THigh.at(2) + 4900. * (CS_Nasa7THigh.at(3) + 4900. * CS_Nasa7THigh.at(4))));
             return t5000 + (t5000 - t4900) / 100. * (Temp - 5000.);
         }
+    }
+
+    /**
+     * static call to compute carbon sensible enthalpy
+     */
+    inline static double ComputeSolidCarbonSensibleEnthalpy(double temperature) {
+        return (ablate::eos::TChemSoot::CarbonEnthalpy_R_T(temperature) * temperature * RUNIV * 1.0e3 / tChemSoot::MWCarbon) -
+               (ablate::eos::TChemSoot::CarbonEnthalpy_R_T(TREF) * TREF * RUNIV * 1.0e3 / tChemSoot::MWCarbon);
     }
 };
 

@@ -11,3 +11,4 @@ target_sources(unitTests
 
 add_subdirectory(transport)
 add_subdirectory(radiationProperties)
+add_subdirectory(tChemSoot)
