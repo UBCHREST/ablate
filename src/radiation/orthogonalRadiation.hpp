@@ -16,5 +16,4 @@ class OrthogonalRadiation : public ablate::radiation::SurfaceRadiation {
     void Setup(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain) override;
 };
 }  // namespace ablate::radiation
-
 #endif  // ABLATELIBRARY_ORTHOGONALRADIATION_HPP
