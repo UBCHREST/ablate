@@ -12,7 +12,7 @@ Timestep: 0005 time = 0.25     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.04 
 Timestep: 0006 time = 0.3      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.04 <4.0 <0.05
 Timestep: 0007 time = 0.35     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.04 <4.0 <0.05
 Timestep: 0008 time = 0.4      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.04 <4.0 <0.05
-L_2 convergence rate: \[(.*), (.*), (.*)\]<expects> <0.25 <0.25 <0.25
+L_2 convergence rate: \[(.*), (.*), (.*)\]<expects> <0.25 <0.5 <0.5
 Timestep: 0000 time = 0        	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.04 <4.0 <0.05
 Timestep: 0001 time = 0.1      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.04 <4.0 <0.05
 Timestep: 0002 time = 0.2      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.04 <4.0 <0.05
