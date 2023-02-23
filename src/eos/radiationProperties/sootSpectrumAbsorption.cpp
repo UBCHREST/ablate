@@ -1,10 +1,9 @@
 #include "sootSpectrumAbsorption.hpp"
 
-ablate::eos::radiationProperties::SootSpectrumAbsorption::SootSpectrumAbsorption(std::shared_ptr<eos::EOS> eosIn, int num, double min, double max, std::vector<double> wavelengths)
+ablate::eos::radiationProperties::SootSpectrumAbsorption::SootSpectrumAbsorption(std::shared_ptr<eos::EOS> eosIn, int num, double min, double max, const std::vector<double> &wavelengths)
     : eos(std::move(eosIn)), wavelengthsIn(std::move(wavelengths)) {
-
     if ((std::empty(wavelengthsIn) && (num == 0)) || (!std::empty(wavelengthsIn) && (num != 0))) {
-        throw std::invalid_argument("The spectrum soot model requires definition of either the number of wavelengths, or a vector of wavelengths to be integrated. One must be chosen");
+        throw std::invalid_argument("The spectrum soot model requires definition of either the number of wavelengths, or a vector of wavelengths to be integrated. One must be chosen.");
     }
 
     //! If a range is given, initialize a linear variation in wavelength over the desired range.
@@ -29,14 +28,14 @@ PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootFun
 
     PetscReal n;
     PetscReal k;
+    PetscReal fv = density * YinC / rhoC;
     for (size_t i = 0; i < functionContext->wavelengths.size(); i++) {
-        PetscReal lambda = functionContext->wavelengths[i];
+        PetscReal lambda = functionContext->wavelengths[i] * 1E6;
         //! This is the wavelength. (We must integrate over the valid range of wavelengths.)
         n = 1.811 + 0.1263 * log(lambda) + 0.027 * log(lambda) * log(lambda) + 0.0417 * log(lambda) * log(lambda) * log(lambda);  //! Fit of model to data.
         k = 0.5821 + 0.1213 * log(lambda) + 0.2309 * log(lambda) * log(lambda) - 0.01 * log(lambda) * log(lambda) * log(lambda);  //! Fit of model to data.
 
-        PetscReal fv = density * YinC / rhoC;
-        kappa[i] = (36 * ablate::utilities::Constants::pi * n * k * fv) / ((((n * n) - (k * k) + 2) * ((n * n) - (k * k) + 2)) + (4 * n * n * k * k) * lambda);
+        kappa[i] = (36 * ablate::utilities::Constants::pi * n * k * fv) / (((((n * n) - (k * k) + 2) * ((n * n) - (k * k) + 2)) + (4 * n * n * k * k)) * (lambda * 1E-6));
     }
 
     PetscFunctionReturn(0);
@@ -55,14 +54,14 @@ PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootTem
 
     PetscReal n;
     PetscReal k;
+    PetscReal fv = density * YinC / rhoC;
     for (size_t i = 0; i < functionContext->wavelengths.size(); i++) {
-        PetscReal lambda = functionContext->wavelengths[i];
+        PetscReal lambda = functionContext->wavelengths[i] * 1E6;  //! Must convert to micrometers because of the model fit
         //! This is the wavelength. (We must integrate over the valid range of wavelengths.)
         n = 1.811 + 0.1263 * log(lambda) + 0.027 * log(lambda) * log(lambda) + 0.0417 * log(lambda) * log(lambda) * log(lambda);  //! Fit of model to data.
         k = 0.5821 + 0.1213 * log(lambda) + 0.2309 * log(lambda) * log(lambda) - 0.01 * log(lambda) * log(lambda) * log(lambda);  //! Fit of model to data.
 
-        PetscReal fv = density * YinC / rhoC;
-        kappa[i] = (36 * ablate::utilities::Constants::pi * n * k * fv) / ((((n * n) - (k * k) + 2) * ((n * n) - (k * k) + 2)) + (4 * n * n * k * k) * lambda);
+        kappa[i] = (36 * ablate::utilities::Constants::pi * n * k * fv) / (((((n * n) - (k * k) + 2) * ((n * n) - (k * k) + 2)) + (4 * n * n * k * k)) * (lambda * 1E-6));
     }
 
     PetscFunctionReturn(0);

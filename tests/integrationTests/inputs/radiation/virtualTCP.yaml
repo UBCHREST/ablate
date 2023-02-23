@@ -11,11 +11,14 @@ timestepper:
   arguments:
     ts_type: rk
     ts_max_steps: 4
+  io: !ablate::io::Hdf5MultiFileSerializer
+
+    interval: 0
   domain: !ablate::domain::BoxMeshBoundaryCells
     name: simpleBoxField
-    faces: [ 10, 10, 3 ]
-    lower: [ 0 , 0, -0.0105 ]
-    upper: [ 0.5, 0.5, 0.0105 ]
+    faces: [ 10, 10, 10 ]
+    lower: [ -0.25 , -0.25, -0.25 ]
+    upper: [ 0.25, 0.25, 0.25 ]
     simplex: false
     options:
       dm_refine: 0
@@ -23,31 +26,47 @@ timestepper:
     preModifiers:
       - !ablate::domain::modifiers::DistributeWithGhostCells
     postModifiers:
+      - !ablate::domain::modifiers::TagLabelInterface
+        leftRegion:
+          name: interiorCells
+        rightRegion:
+          name: boundaryCellsFront
+        boundaryFaceRegion:
+          name: boundaryFacesFront
       - !ablate::domain::modifiers::GhostBoundaryCells
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
-        eos: &eos !ablate::eos::TChemSoot # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked
+        eos: &eos !ablate::eos::TChemSoot # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked.
           mechFile: ../mechanisms/MMAReduced.yaml
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       state:
         &initState
         eos: *eos
-        temperature: 1200.0
+        temperature: !ablate::mathFunctions::geom::Sphere
+          center: [ 0, 0, 0 ]
+          radius: 0.125
+          insideValues: 2000
+          outsideValues: 800
         pressure: 101325.0
         velocity: [ 0.0 ]
         # the mass fractions must be specified to compute rho, e, etc.
         other: !ablate::finiteVolume::fieldFunctions::MassFractions
-          # the mass fraction class allows for a subset of mass fractions to be specified.  The rest are assumed zero
+          # the mass fraction class allows for a subset of mass fractions to be specified. The rest are assumed zero.
           eos: *eos
-          values:
-            - fieldName: N2
-              field: 0.724672103
-            - fieldName: MMETHAC_C5H8O2
-              field: 0.055186656
-            - fieldName: O2
-              field: 0.220141239
-    # the DensityMassFractions reuses the initState to set the densityMassFractions for all species
+          values: !ablate::mathFunctions::geom::Sphere
+            center: [ 0, 0, 0 ]
+            radius: 0.125
+            insideValues:
+              - fieldName: N2
+                field: 0.724672103
+              - fieldName: C_solid
+                field: "1 - 0.724672103"
+            outsideValues:
+              - fieldName: N2
+                field: 1
+
+    # the DensityMassFractions reuses the initState to set the densityMassFractions for all species.
     - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
       state: *initState
 
@@ -64,19 +83,16 @@ solvers:
         field: euler
       - !<!ablate::monitors::RadiationFlux>
         region:
-          name: upperWallBoundaryFaces
+          name: boundaryFacesFront
         radiation:
           - !ablate::radiation::OrthogonalRadiation
             id: tcp
             region:
               name: interiorCells
-            rays: 25
             properties: !ablate::eos::radiationProperties::SootSpectrumAbsorption
               eos: *eos
-              wavelengths:
-                - 650E-9 # Red wavelength
-                - 532E-9 # Green wavelength
-                - 470E-9 # Blue wavelength
+              wavelengths: [ 650.0E-9, 532.0E-9, 470.0E-9 ] # Red wavelength, # Green wavelength, # Blue wavelength
+            log: !ablate::monitors::logs::StdOut
     eos: *eos
   - !ablate::boundarySolver::BoundarySolver
     id: openBoundary

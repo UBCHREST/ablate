@@ -25,7 +25,7 @@ class SootSpectrumAbsorption : public RadiationModel {
     std::vector<PetscReal> wavelengthsIn;
 
    public:
-    SootSpectrumAbsorption(std::shared_ptr<eos::EOS> eosIn, int num = 0, double min = 0.4E-6, double max = 30E-6, std::vector<double> wavelengths = {});
+    SootSpectrumAbsorption(std::shared_ptr<eos::EOS> eosIn, int num = 0, double min = 0.4E-6, double max = 30E-6, const std::vector<double>& wavelengths = {});
 
     ThermodynamicFunction GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
     ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;

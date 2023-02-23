@@ -9,7 +9,7 @@
 namespace ablate::radiation {
 
 class SurfaceRadiation : public ablate::radiation::Radiation {
-   private:
+   protected:
     //! used to look up from the face id to range index
     ablate::domain::ReverseRange indexLookup;
 
@@ -36,7 +36,7 @@ class SurfaceRadiation : public ablate::radiation::Radiation {
      * @param emissivity the emissivity of the surface
      * @return
      */
-    inline void GetSurfaceIntensity(PetscReal *intensity, PetscInt faceId, PetscReal temperature, PetscReal emissivity = 1.0) {
+    virtual inline void GetSurfaceIntensity(PetscReal *intensity, PetscInt faceId, PetscReal temperature, PetscReal emissivity = 1.0) {
         if (absorptivityFunction.propertySize == 1) {  // Compute the losses
             PetscReal netIntensity = -ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
 
