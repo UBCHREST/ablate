@@ -1,6 +1,6 @@
 #include "radiationFlux.hpp"
 
-ablate::monitors::RadiationFlux::RadiationFlux(std::vector<std::shared_ptr<radiation::Radiation>> radiationIn, std::shared_ptr<domain::Region> radiationFluxRegionIn)
+ablate::monitors::RadiationFlux::RadiationFlux(std::vector<std::shared_ptr<radiation::SurfaceRadiation>> radiationIn, std::shared_ptr<domain::Region> radiationFluxRegionIn)
     : radiation(std::move(radiationIn)), radiationFluxRegion(std::move(radiationFluxRegionIn)) {}
 
 ablate::monitors::RadiationFlux::~RadiationFlux() {
@@ -26,17 +26,20 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
      * the number of components should be equal to the number of ray tracers plus any ratio outputs?
      */
     for (const auto& rayTracer : radiation) {
-        PetscFV fvm;
-        PetscFVCreate(PetscObjectComm(PetscObject(fluxDm)), &fvm) >> utilities::PetscUtilities::checkError;
-        PetscObjectSetName((PetscObject)fvm, rayTracer->GetId().c_str()) >> utilities::PetscUtilities::checkError;
-        PetscFVSetFromOptions(fvm) >> utilities::PetscUtilities::checkError;
-        PetscFVSetNumComponents(fvm, 1) >> utilities::PetscUtilities::checkError;
-        PetscInt dim;
-        DMGetCoordinateDim(fluxDm, &dim) >> utilities::PetscUtilities::checkError;
-        PetscFVSetSpatialDimension(fvm, dim) >> utilities::PetscUtilities::checkError;
+        auto absorptionTemp = rayTracer->GetRadiationModel()->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, solverIn->GetSubDomain().GetFields());
+        for (int i = 0; i < absorptionTemp.propertySize; ++i) {  //! Create an output field for each of the
+            PetscFV fvm;
+            PetscFVCreate(PetscObjectComm(PetscObject(fluxDm)), &fvm) >> utilities::PetscUtilities::checkError;
+            PetscObjectSetName((PetscObject)fvm, (rayTracer->GetId() + std::to_string(i)).c_str()) >> utilities::PetscUtilities::checkError;
+            PetscFVSetFromOptions(fvm) >> utilities::PetscUtilities::checkError;
+            PetscFVSetNumComponents(fvm, 1) >> utilities::PetscUtilities::checkError;
+            PetscInt dim;
+            DMGetCoordinateDim(fluxDm, &dim) >> utilities::PetscUtilities::checkError;
+            PetscFVSetSpatialDimension(fvm, dim) >> utilities::PetscUtilities::checkError;
 
-        DMAddField(fluxDm, nullptr, (PetscObject)fvm) >> utilities::PetscUtilities::checkError;
-        PetscFVDestroy(&fvm);
+            DMAddField(fluxDm, nullptr, (PetscObject)fvm) >> utilities::PetscUtilities::checkError;
+            PetscFVDestroy(&fvm);
+        }
     }
     DMCreateDS(fluxDm) >> utilities::PetscUtilities::checkError;
 
@@ -150,11 +153,9 @@ PetscErrorCode ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscIn
         for (PetscInt c = cStart; c < cEnd; ++c) {
             PetscInt boundaryPt = faceToBoundary[c];
             PetscInt ghost = -1;
-            if (ghostLabel) {
-                PetscCall(DMLabelGetValue(ghostLabel, boundaryPt, &ghost));
-            }
+            if (ghostLabel) PetscCall(DMLabelGetValue(ghostLabel, boundaryPt, &ghost));
             if (ghost < 0) {
-                for (std::size_t i = 0; i < radiation.size(); i++) {
+                for (std::size_t rayTracerIndex = 0; rayTracerIndex < radiation.size(); rayTracerIndex++) {
                     /**
                      * Write the intensity into the fluxDm for outputting.
                      * Now that the intensity has been read out of the ray tracing solver, it will need to be written to the field which stores the radiation information in the monitor.
@@ -165,8 +166,11 @@ PetscErrorCode ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscIn
                     /**
                      * Get the intensity calculated out of the ray tracer. Write it to the appropriate location in the face DM.
                      */
-                    PetscReal intensity = radiation[i]->GetSurfaceIntensity(boundaryPt, 0, 1);
-                    globalFaceData[i] = intensity;
+                    PetscReal wavelengths[radiation[rayTracerIndex]->GetAbsorptionFunction().propertySize];
+                    radiation[rayTracerIndex]->GetSurfaceIntensity(wavelengths, boundaryPt, 0, 1);
+                    for (int wavelengthIndex = 0; wavelengthIndex < radiation[rayTracerIndex]->GetAbsorptionFunction().propertySize; ++wavelengthIndex) {
+                        globalFaceData[radiation[rayTracerIndex]->GetAbsorptionFunction().propertySize * rayTracerIndex + wavelengthIndex] = wavelengths[wavelengthIndex];
+                    }
                 }
             }
         }
