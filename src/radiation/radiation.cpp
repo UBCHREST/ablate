@@ -227,8 +227,10 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
              * */
             if ((!(domain::Region::InRegion(region, subDomain.GetDM(), index[ipart]))) || ((dim == 1) && (abs(virtualcoord[ipart].xdir) < 0.0000001))) {
                 //! If the boundary has been reached by this ray, then add a boundary condition segment to the ray.
-                if (identifier[ipart].remoteRayId < 0 || identifier[ipart].remoteRayId >= (PetscInt)raySegments.size()){
-                    std::cout << "invalid remoteRayId: " << identifier[ipart].remoteRayId << "  0->" << raySegments.size() << std::endl;
+                int rank;
+                MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+                if (identifier[ipart].remoteRayId < 0 || identifier[ipart].remoteRayId >= (PetscInt)raySegments.size()) {
+                    std::cout << "invalid on " << rank << " -> " << identifier[ipart] << std::endl;
                 }
 
                 auto& ray = raySegments[identifier[ipart].remoteRayId];
@@ -610,6 +612,12 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     VecRestoreArrayRead(solVec, &solArray);
     VecRestoreArrayRead(auxVec, &auxArray);
     EndEvent();
+}
+
+std::ostream& ablate::radiation::operator<<(std::ostream& os, const ablate::radiation::Radiation::Identifier& id) {
+    os << "Identifier origin(" << id.originRank << ": " << id.originRayId << ") remote(" << id.remoteRank << ": " << id.remoteRayId << ") nSeg:" << id.nSegment;
+
+    return os;
 }
 
 #include "registrar.hpp"

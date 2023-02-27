@@ -205,6 +205,14 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     static inline constexpr char IdentifierField[] = "identifier";
     static inline constexpr char VirtualCoordField[] = "virtual coord";
 };
+/**
+ * provide write for the id
+ * @param os
+ * @param id
+ * @return
+ */
+std::ostream& operator<<(std::ostream& os, const Radiation::Identifier& id);
+
 
 }  // namespace ablate::radiation
 #endif
