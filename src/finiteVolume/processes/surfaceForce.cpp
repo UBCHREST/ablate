@@ -280,7 +280,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
                 totalGradMagNormal += gradMagNormal[d];
             }
             // calculate curvature -->  kappa = 1/n [(n/|n|. Delta) |n| - (Delta.n)]
-            curvature = ((totalGradMagNormal * magCellNormal) - totalDivNormal) / magCellNormal;
+            curvature = (totalGradMagNormal - totalDivNormal) / magCellNormal;
         } else {
             curvature = 0;
         }
