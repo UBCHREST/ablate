@@ -134,7 +134,6 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     Vec localVec;
     DMGetLocalVector(dm, &localVec);
     PetscScalar *normalArray = NULL;
-
     VecGetArrayWrite(localVec, &normalArray);
 
     Vec coordinates;
