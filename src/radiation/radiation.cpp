@@ -198,6 +198,9 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     DMSwarmGetSize(radSearch, &nglobalpoints) >> utilities::PetscUtilities::checkError;
     PetscInt stepcount = 0;       //!< Count the number of steps that the particles have taken
     while (nglobalpoints != 0) {  //!< WHILE THERE ARE PARTICLES IN ANY DOMAIN
+        // If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory and record its index
+        IdentifyNewRaysOnRank(subDomain, radReturn);
+
         /** Use the ParticleStep function to calculate the path lengths of the rays through each cell so that they can be stored.
          * This function also sets up the solve particle infrastructure.
          * */
@@ -415,31 +418,25 @@ PetscReal ablate::radiation::Radiation::FaceIntersect(PetscInt ip, Virtualcoord*
 
 PetscReal ablate::radiation::Radiation::SurfaceComponent(const PetscReal normal[], PetscInt iCell, PetscInt nphi, PetscInt ntheta) { return 1.0; }
 
-void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray, DM radReturn) { /** Check that the particle is in a valid region */
+void ablate::radiation::Radiation::IdentifyNewRaysOnRank(ablate::domain::SubDomain& subDomain, DM radReturn) { /** Check that the particle is in a valid region */
     PetscInt npoints = 0;
-    PetscInt nglobalpoints = 0;
     DMSwarmGetLocalSize(radSearch, &npoints) >> utilities::PetscUtilities::checkError;
-    DMSwarmGetSize(radSearch, &nglobalpoints) >> utilities::PetscUtilities::checkError;
-
-    PetscFVFaceGeom* faceGeom;
 
     PetscMPIInt rank = 0;
     MPI_Comm_rank(subDomain.GetComm(), &rank);
 
     /** Declare some information associated with the field declarations */
     PetscInt* index;
-    struct Virtualcoord* virtualcoords;  //!< Pointer to the primary (virtual) coordinate field information
-    struct Identifier* identifiers;      //!< Pointer to the ray identifier information
+    struct Identifier* identifiers;  //!< Pointer to the ray identifier information
 
     /** Get all of the ray information from the particle
      * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
     DMSwarmGetField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifiers) >> utilities::PetscUtilities::checkError;
-    DMSwarmGetField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoords) >> utilities::PetscUtilities::checkError;
     DMSwarmGetField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
 
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         /** Check that the particle is in a valid region */
-        if (index[ipart] >= 0 && subDomain.InRegion(index[ipart])) {
+        if (index[ipart] >= 0) {
             auto& identifier = identifiers[ipart];
             // If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory and record its index
             if (identifier.remoteRank != rank) {
@@ -469,6 +466,38 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
                     utilities::PetscUtilities::checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
                 DMSwarmRestoreField(radReturn, DMSwarmField_rank, nullptr, nullptr, (void**)&returnRank) >> utilities::PetscUtilities::checkError;
             }
+        }
+    }
+    DMSwarmRestoreField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifiers) >> utilities::PetscUtilities::checkError;
+    DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+}
+
+void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray, DM radReturn) { /** Check that the particle is in a valid region */
+    PetscInt npoints = 0;
+    PetscInt nglobalpoints = 0;
+    DMSwarmGetLocalSize(radSearch, &npoints) >> utilities::PetscUtilities::checkError;
+    DMSwarmGetSize(radSearch, &nglobalpoints) >> utilities::PetscUtilities::checkError;
+
+    PetscFVFaceGeom* faceGeom;
+
+    PetscMPIInt rank = 0;
+    MPI_Comm_rank(subDomain.GetComm(), &rank);
+
+    /** Declare some information associated with the field declarations */
+    PetscInt* index;
+    struct Virtualcoord* virtualcoords;  //!< Pointer to the primary (virtual) coordinate field information
+    struct Identifier* identifiers;      //!< Pointer to the ray identifier information
+
+    /** Get all of the ray information from the particle
+     * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
+    DMSwarmGetField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifiers) >> utilities::PetscUtilities::checkError;
+    DMSwarmGetField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoords) >> utilities::PetscUtilities::checkError;
+    DMSwarmGetField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+
+    for (PetscInt ipart = 0; ipart < npoints; ipart++) {
+        /** Check that the particle is in a valid region */
+        if (index[ipart] >= 0 && subDomain.InRegion(index[ipart])) {
+            auto& identifier = identifiers[ipart];
             // Exact the ray to reduce lookup
             auto& ray = raySegments[identifier.remoteRayId];
 
