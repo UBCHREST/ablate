@@ -25,35 +25,30 @@ struct SurfaceForceTestParameters {
     PetscReal sigma = 0.07;
 };
 
-class SurfaceForceTestFixture
-        : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<SurfaceForceTestParameters> {
-};
+class SurfaceForceTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<SurfaceForceTestParameters> {};
 
 TEST_P(SurfaceForceTestFixture, ShouldComputeCorrectSurfaceForce) {
     ablate::utilities::PetscUtilities::Initialize();
     const auto &params = GetParam();
 
-    auto eos = std::make_shared<ablate::eos::PerfectGas>(
-            std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}));
+    auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}));
 
     // define a test fields
     std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {
-            std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos),
+        std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos),
 
-            std::make_shared<ablate::domain::FieldDescription>(
-                    ablate::finiteVolume::processes::TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD,
-                    "",
-                    ablate::domain::FieldDescription::ONECOMPONENT,
-                    ablate::domain::FieldLocation::SOL,
-                    ablate::domain::FieldType::FVM)};
+        std::make_shared<ablate::domain::FieldDescription>(ablate::finiteVolume::processes::TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD,
+                                                           "",
+                                                           ablate::domain::FieldDescription::ONECOMPONENT,
+                                                           ablate::domain::FieldLocation::SOL,
+                                                           ablate::domain::FieldType::FVM)};
 
     auto dim = GetParam().dim;
     // define the test mesh
     auto domain = std::make_shared<ablate::domain::BoxMesh>("test",
 
                                                             fieldDescriptors,
-                                                            std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{
-                                                                    std::make_shared<ablate::domain::modifiers::GhostBoundaryCells>()},
+                                                            std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<ablate::domain::modifiers::GhostBoundaryCells>()},
 
                                                             GetParam().meshFaces,
                                                             GetParam().meshStart,
@@ -63,11 +58,8 @@ TEST_P(SurfaceForceTestFixture, ShouldComputeCorrectSurfaceForce) {
 
     );
     DMCreateLabel(domain->GetDM(), "ghost");
-    auto initialConditionFV = std::make_shared<ablate::mathFunctions::FieldFunction>(
-            ablate::finiteVolume::processes::TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD, GetParam().inputVFfield);
-    auto initialConditionEuler = std::make_shared<ablate::mathFunctions::FieldFunction>("euler",
-                                                                                        std::make_shared<ablate::mathFunctions::ConstantValue>(
-                                                                                                1));
+    auto initialConditionFV = std::make_shared<ablate::mathFunctions::FieldFunction>(ablate::finiteVolume::processes::TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD, GetParam().inputVFfield);
+    auto initialConditionEuler = std::make_shared<ablate::mathFunctions::FieldFunction>("euler", std::make_shared<ablate::mathFunctions::ConstantValue>(1));
     // the solver
     auto fvSolver = std::make_shared<ablate::finiteVolume::FiniteVolumeSolver>("testSolver",
                                                                                ablate::domain::Region::ENTIREDOMAIN,
@@ -158,8 +150,7 @@ TEST_P(SurfaceForceTestFixture, ShouldComputeCorrectSurfaceForce) {
 
     // copy over euler
     PetscScalar *eulerField = nullptr;
-    DMPlexPointLocalFieldRef(domain->GetDM(), GetParam().cellNumber, domain->GetField("euler").id, solution,
-                             &eulerField);
+    DMPlexPointLocalFieldRef(domain->GetDM(), GetParam().cellNumber, domain->GetField("euler").id, solution, &eulerField);
     // copy over euler
     for (std::size_t i = 0; i < GetParam().inputEulerValues.size(); i++) {
         eulerField[i] = GetParam().inputEulerValues[i];
@@ -172,21 +163,15 @@ TEST_P(SurfaceForceTestFixture, ShouldComputeCorrectSurfaceForce) {
     DMGetLocalVector(domain->GetDM(), &computedF);
     VecZeroEntries(computedF);
 
-    ablate::finiteVolume::processes::SurfaceForce::ComputeSource(*fvSolver, domain->GetDM(), NULL,
-                                                                 domain->GetSolutionVector(), computedF, &process);
+    ablate::finiteVolume::processes::SurfaceForce::ComputeSource(*fvSolver, domain->GetDM(), NULL, domain->GetSolutionVector(), computedF, &process);
 
     // ASSERT
     VecGetArray(computedF, &sourceArray);
 
-    DMPlexPointLocalFieldRef(domain->GetDM(), GetParam().cellNumber, domain->GetField("euler").id, sourceArray,
-                             &eulerSource);
+    DMPlexPointLocalFieldRef(domain->GetDM(), GetParam().cellNumber, domain->GetField("euler").id, sourceArray, &eulerSource);
     for (std::size_t c = 0; c < GetParam().expectedEulerSource.size(); c++) {
-        ASSERT_LT(PetscAbs(
-                (GetParam().expectedEulerSource[c] - eulerSource[c]) / (GetParam().expectedEulerSource[c] + 1E-30)),
-                  params.errorTolerance)
-                                    << "The percent difference for the expected and actual source ("
-                                    << GetParam().expectedEulerSource[c] << " vs " << eulerSource[c]
-                                    << ") should be small for index " << c;
+        ASSERT_LT(PetscAbs((GetParam().expectedEulerSource[c] - eulerSource[c]) / (GetParam().expectedEulerSource[c] + 1E-30)), params.errorTolerance)
+            << "The percent difference for the expected and actual source (" << GetParam().expectedEulerSource[c] << " vs " << eulerSource[c] << ") should be small for index " << c;
     }
     VecRestoreArray(computedF, &sourceArray) >> ablate::utilities::PetscUtilities::checkError;
 
@@ -194,50 +179,45 @@ TEST_P(SurfaceForceTestFixture, ShouldComputeCorrectSurfaceForce) {
 }
 
 INSTANTIATE_TEST_SUITE_P(SurfaceForce, SurfaceForceTestFixture,
-                         testing::Values((SurfaceForceTestParameters) {.dim = 1,
-                                                 .cellNumber = 1,
-                                                 .meshFaces = {3},
-                                                 .meshStart = {0},
-                                                 .meshEnd = {1},
-                                                 .inputEulerValues = {1, 0, 0},
-                                                 .inputVFfield = ablate::mathFunctions::Create(" x<2/3 ? 1:0"),
-                                                 .expectedEulerSource = {0, 0, 0.315}},
-                                         (SurfaceForceTestParameters) {.dim = 2,
-                                                 .cellNumber = 4,
-                                                 .meshFaces = {3, 3},
-                                                 .meshStart = {0, 0},
-                                                 .meshEnd = {1, 1},
-                                                 .inputEulerValues = {1, 0, 0, 0},
-                                                 .inputVFfield = ablate::mathFunctions::Create(" 1.0"),
-                                                 .expectedEulerSource = {0, 0, 0}},
-                                         (SurfaceForceTestParameters) {.dim = 2,
-                                                 .cellNumber = 4,
-                                                 .meshFaces = {3, 3},
-                                                 .meshStart = {0, 0},
-                                                 .meshEnd = {1, 1},
-                                                 .inputEulerValues = {1, 0, 0, 0},
-                                                 .inputVFfield = ablate::mathFunctions::Create(
-                                                         " x<2/3 && y< 2/3 ? 1:0"),
-                                                 .expectedEulerSource = {0, 0, -0.31384090, -0.31384090}},
-                                         (SurfaceForceTestParameters) {.dim = 3,
-                                                 .cellNumber = 13,
-                                                 .meshFaces = {3, 3, 3},
-                                                 .meshStart = {0, 0, 0},
-                                                 .meshEnd = {1, 1, 1},
-                                                 .inputEulerValues = {1, 0, 0, 0, 0},
-                                                 .inputVFfield = ablate::mathFunctions::Create(
-                                                         " x<2/3 && y< 2/3  && z< 1? 1:0"),
-                                                 .expectedEulerSource = {0, 0, -0.31384090, -0.31384090,
-                                                                         0}},  // should be getting same results as 2D
-                                         (SurfaceForceTestParameters) {.dim = 3,
-                                                 .cellNumber = 13,
-                                                 .meshFaces = {3, 3, 3},
-                                                 .meshStart = {0, 0, 0},
-                                                 .meshEnd = {1, 1, 1},
-                                                 .inputEulerValues = {1, 0, 1, 1, 0},
-                                                 .inputVFfield = ablate::mathFunctions::Create(
-                                                         " x<2/3 && y< 2/3  && z< 1? 1:0"),
-                                                 .expectedEulerSource = {0, -0.62768181644, -0.31384090, -0.31384090,
-                                                                         0}} // should calculate energy also
+                         testing::Values((SurfaceForceTestParameters){.dim = 1,
+                                                                      .cellNumber = 1,
+                                                                      .meshFaces = {3},
+                                                                      .meshStart = {0},
+                                                                      .meshEnd = {1},
+                                                                      .inputEulerValues = {1, 0, 0},
+                                                                      .inputVFfield = ablate::mathFunctions::Create(" x<2/3 ? 1:0"),
+                                                                      .expectedEulerSource = {0, 0, 0.315}},
+                                         (SurfaceForceTestParameters){.dim = 2,
+                                                                      .cellNumber = 4,
+                                                                      .meshFaces = {3, 3},
+                                                                      .meshStart = {0, 0},
+                                                                      .meshEnd = {1, 1},
+                                                                      .inputEulerValues = {1, 0, 0, 0},
+                                                                      .inputVFfield = ablate::mathFunctions::Create(" 1.0"),
+                                                                      .expectedEulerSource = {0, 0, 0}},
+                                         (SurfaceForceTestParameters){.dim = 2,
+                                                                      .cellNumber = 4,
+                                                                      .meshFaces = {3, 3},
+                                                                      .meshStart = {0, 0},
+                                                                      .meshEnd = {1, 1},
+                                                                      .inputEulerValues = {1, 0, 0, 0},
+                                                                      .inputVFfield = ablate::mathFunctions::Create(" x<2/3 && y< 2/3 ? 1:0"),
+                                                                      .expectedEulerSource = {0, 0, -0.31384090, -0.31384090}},
+                                         (SurfaceForceTestParameters){.dim = 3,
+                                                                      .cellNumber = 13,
+                                                                      .meshFaces = {3, 3, 3},
+                                                                      .meshStart = {0, 0, 0},
+                                                                      .meshEnd = {1, 1, 1},
+                                                                      .inputEulerValues = {1, 0, 0, 0, 0},
+                                                                      .inputVFfield = ablate::mathFunctions::Create(" x<2/3 && y< 2/3  && z< 1? 1:0"),
+                                                                      .expectedEulerSource = {0, 0, -0.31384090, -0.31384090, 0}},  // should be getting same results as 2D
+                                         (SurfaceForceTestParameters){.dim = 3,
+                                                                      .cellNumber = 13,
+                                                                      .meshFaces = {3, 3, 3},
+                                                                      .meshStart = {0, 0, 0},
+                                                                      .meshEnd = {1, 1, 1},
+                                                                      .inputEulerValues = {1, 0, 1, 1, 0},
+                                                                      .inputVFfield = ablate::mathFunctions::Create(" x<2/3 && y< 2/3  && z< 1? 1:0"),
+                                                                      .expectedEulerSource = {0, -0.62768181644, -0.31384090, -0.31384090, 0}}  // should calculate energy also
 
-                         ));
+                                         ));

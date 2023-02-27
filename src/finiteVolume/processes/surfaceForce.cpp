@@ -86,9 +86,7 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
     flow.RegisterRHSFunction(ComputeSource, this);
 }
 
-PetscErrorCode
-ablate::finiteVolume::processes::SurfaceForce::ComputeSource(const FiniteVolumeSolver &solver, DM dm, PetscReal time,
-                                                             Vec locX, Vec locFVec, void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(const FiniteVolumeSolver &solver, DM dm, PetscReal time, Vec locX, Vec locFVec, void *ctx) {
     PetscFunctionBegin;
 
     /** Now use the stored vortex information to calculate curvature at each cell center
@@ -101,7 +99,7 @@ ablate::finiteVolume::processes::SurfaceForce::ComputeSource(const FiniteVolumeS
      * use the computed values to calculate the curvature at the center
      **/
 
-    auto process = (ablate::finiteVolume::processes::SurfaceForce *) ctx;
+    auto process = (ablate::finiteVolume::processes::SurfaceForce *)ctx;
     auto fields = solver.GetSubDomain().GetFields();
 
     // Look for the euler field and volume fraction (alpha)
@@ -145,7 +143,7 @@ ablate::finiteVolume::processes::SurfaceForce::ComputeSource(const FiniteVolumeS
     PetscScalar *vertexNormal;
 
     // march over the stored vortices
-    for (const auto &info: process->vertexStencils) {
+    for (const auto &info : process->vertexStencils) {
         PetscReal totalAlpha[3] = {0, 0, 0};
 
         // march over the connected cells to each vortex and get the cell info and filed value
@@ -308,6 +306,5 @@ ablate::finiteVolume::processes::SurfaceForce::ComputeSource(const FiniteVolumeS
     PetscFunctionReturn(0);
 }
 
-REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::SurfaceForce,
-         "calculates surface tension force and adds source terms",
+REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::SurfaceForce, "calculates surface tension force and adds source terms",
          ARG(PetscReal, "value", "sigma, surface tension coefficient"));
