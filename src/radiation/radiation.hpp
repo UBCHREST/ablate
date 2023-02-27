@@ -216,6 +216,5 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
  */
 std::ostream& operator<<(std::ostream& os, const Radiation::Identifier& id);
 
-
 }  // namespace ablate::radiation
 #endif

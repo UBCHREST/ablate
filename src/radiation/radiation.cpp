@@ -230,12 +230,6 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
              * */
             if ((!(domain::Region::InRegion(region, subDomain.GetDM(), index[ipart]))) || ((dim == 1) && (abs(virtualcoord[ipart].xdir) < 0.0000001))) {
                 //! If the boundary has been reached by this ray, then add a boundary condition segment to the ray.
-                int rank;
-                MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-                if (identifier[ipart].remoteRayId < 0 || identifier[ipart].remoteRayId >= (PetscInt)raySegments.size()) {
-                    std::cout << "invalid on " << rank << " -> " << identifier[ipart] << std::endl;
-                }
-
                 auto& ray = raySegments[identifier[ipart].remoteRayId];
                 auto& raySegment = ray.emplace_back();
                 raySegment.cell = index[ipart];
