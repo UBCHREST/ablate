@@ -6,7 +6,7 @@
 
 ablate::finiteVolume::processes::SurfaceForce::SurfaceForce(PetscReal sigma) : sigma(sigma) {}
 
-void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) {
+void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) {
     /** Make stencils for connected cells of each vertex and store them
      * extract the vortices and get their coordinates
      *  March over each vortex and store the vortex point
@@ -19,7 +19,7 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
     auto dm = flow.GetSubDomain().GetDM();
     Vec cellGeomVec;
     DM dmCell;
-    const PetscScalar* cellGeomArray;
+    const PetscScalar *cellGeomArray;
     DMPlexGetGeometryFVM(dm, nullptr, &cellGeomVec, nullptr);
     VecGetDM(cellGeomVec, &dmCell);
     VecGetArrayRead(cellGeomVec, &cellGeomArray);
@@ -27,7 +27,7 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
     // extract the local x array
     Vec localCoordsVector;
     PetscSection coordsSection;
-    PetscScalar* coordsArray;
+    PetscScalar *coordsArray;
     DMGetCoordinateSection(dm, &coordsSection);
     DMGetCoordinatesLocal(dm, &localCoordsVector);
     VecGetArray(localCoordsVector, &coordsArray);
@@ -56,7 +56,7 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
         newStencil.gradientWeights = {0, 0, 0};
         newStencil.stencilSize = 0;
         // extract nodes of the vertex
-        PetscInt* star = nullptr;
+        PetscInt *star = nullptr;
         PetscInt numStar;
         DMPlexGetTransitiveClosure(dm, v, PETSC_FALSE, &numStar, &star);
 
@@ -67,7 +67,7 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
             cell = star[cl];
             if (cell < cStart || cell >= cEnd) continue;
             newStencil.stencil.push_back(cell);
-            PetscFVCellGeom* cg;
+            PetscFVCellGeom *cg;
             DMPlexPointLocalRead(dmCell, cell, cellGeomArray, &cg);
 
             for (PetscInt d = 0; d < dim; ++d) {
@@ -86,7 +86,9 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
     flow.RegisterRHSFunction(ComputeSource, this);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(const FiniteVolumeSolver& solver, DM dm, PetscReal time, Vec locX, Vec locFVec, void* ctx) {
+PetscErrorCode
+ablate::finiteVolume::processes::SurfaceForce::ComputeSource(const FiniteVolumeSolver &solver, DM dm, PetscReal time,
+                                                             Vec locX, Vec locFVec, void *ctx) {
     PetscFunctionBegin;
 
     /** Now use the stored vortex information to calculate curvature at each cell center
@@ -99,29 +101,29 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
      * use the computed values to calculate the curvature at the center
      **/
 
-    auto process = (ablate::finiteVolume::processes::SurfaceForce*)ctx;
+    auto process = (ablate::finiteVolume::processes::SurfaceForce *) ctx;
     auto fields = solver.GetSubDomain().GetFields();
 
     // Look for the euler field and volume fraction (alpha)
-    const auto& eulerField = solver.GetSubDomain().GetField(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD);
-    const auto& VFfield = solver.GetSubDomain().GetField(TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD);
+    const auto &eulerField = solver.GetSubDomain().GetField(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD);
+    const auto &VFfield = solver.GetSubDomain().GetField(TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD);
 
     // get the cell range
     solver::Range cellRange;
     solver.GetCellRangeWithoutGhost(cellRange);
-    PetscScalar* fArray;
+    PetscScalar *fArray;
     VecGetArray(locFVec, &fArray);
 
     auto dim = solver.GetSubDomain().GetDimensions();
 
     // get the flowSolution
-    const PetscScalar* solArray;
+    const PetscScalar *solArray;
     VecGetArrayRead(locX, &solArray);
 
     // Get the cell geometry
     Vec cellGeomVec;
     DM dmCell;
-    const PetscScalar* cellGeomArray;
+    const PetscScalar *cellGeomArray;
     DMPlexGetGeometryFVM(dm, nullptr, &cellGeomVec, nullptr);
     VecGetDM(cellGeomVec, &dmCell);
     VecGetArrayRead(cellGeomVec, &cellGeomArray);
@@ -129,29 +131,29 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     // get the coordinate domain
     DM cdm;
     DMGetCoordinateDM(dm, &cdm);
-    PetscScalar* coords = NULL;
+    PetscScalar *coords = NULL;
     // create a local array to save normals
     Vec localVec;
     DMGetLocalVector(dm, &localVec);
-    PetscScalar* normalArray = NULL;
+    PetscScalar *normalArray = NULL;
 
     VecGetArrayWrite(localVec, &normalArray);
 
     Vec coordinates;
     DMGetCoordinatesLocal(dm, &coordinates);
     VecGetArrayWrite(coordinates, &coords);
-    PetscScalar* vertexNormal;
+    PetscScalar *vertexNormal;
 
     // march over the stored vortices
-    for (const auto& info : process->vertexStencils) {
+    for (const auto &info: process->vertexStencils) {
         PetscReal totalAlpha[3] = {0, 0, 0};
 
         // march over the connected cells to each vortex and get the cell info and filed value
         for (PetscInt p = 0; p < info.stencilSize; p++) {
-            PetscFVCellGeom* cg = nullptr;
+            PetscFVCellGeom *cg = nullptr;
             DMPlexPointLocalRead(dmCell, info.stencil[p], cellGeomArray, &cg);
 
-            PetscScalar* alpha = nullptr;
+            PetscScalar *alpha = nullptr;
             DMPlexPointLocalFieldRead(dm, info.stencil[p], VFfield.id, solArray, &alpha);
 
             // add up the contribution of the cell. Front cells have positive and back cells have negative contribution to the vortex normal
@@ -180,7 +182,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     for (PetscInt i = cellRange.start; i < cellRange.end; ++i) {
         const PetscInt c = cellRange.points ? cellRange.points[i] : i;
         // get current euler solution here to get velocity
-        const PetscScalar* euler = nullptr;
+        const PetscScalar *euler = nullptr;
         DMPlexPointLocalFieldRead(dm, c, eulerField.id, solArray, &euler);
         auto density = euler[ablate::finiteVolume::CompressibleFlowFields::RHO];
 
@@ -189,7 +191,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
             vel[d] = euler[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density;
         }
         // add calculated sources to euler
-        PetscScalar* eulerSource = nullptr;
+        PetscScalar *eulerSource = nullptr;
         DMPlexPointLocalFieldRef(dm, c, eulerField.id, fArray, &eulerSource);
 
         PetscReal surfaceEnergy = 0;
@@ -202,11 +204,11 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
         PetscScalar surfaceForce[dim];
 
         // get the centroid information for the cell
-        PetscFVCellGeom* fcg;
+        PetscFVCellGeom *fcg;
         DMPlexPointLocalRead(dmCell, c, cellGeomArray, &fcg);
 
         // extract connected vortices to the cell
-        PetscInt* closure = NULL;
+        PetscInt *closure = NULL;
         PetscInt numClosure;
         DMPlexGetTransitiveClosure(dm, c, PETSC_TRUE, &numClosure, &closure);
         PetscInt cl, numVertex = 0;
@@ -231,7 +233,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
 
             Vec localCoordsVector;
             PetscSection coordsSection;
-            PetscScalar* coordsArray = NULL;
+            PetscScalar *coordsArray = NULL;
             DMGetCoordinateSection(dm, &coordsSection);
             DMGetCoordinatesLocal(dm, &localCoordsVector);
             VecGetArray(localCoordsVector, &coordsArray);
@@ -306,5 +308,6 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     PetscFunctionReturn(0);
 }
 
-REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::SurfaceForce, "calculates surface tension force and adds source terms",
+REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::SurfaceForce,
+         "calculates surface tension force and adds source terms",
          ARG(PetscReal, "value", "sigma, surface tension coefficient"));

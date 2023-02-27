@@ -35,14 +35,15 @@ namespace ablate::finiteVolume::processes {
 
         // Hold a list of VortexStencils
         std::vector<VertexStencil> vertexStencils;
+
         explicit SurfaceForce(PetscReal sigma);
 
         /**
          * public function to link this process with the flow
-         * @param flow
+         * a@param flow
          */
 
-        void Setup(ablate::finiteVolume::FiniteVolumeSolver& flow);
+        void Setup(ablate::finiteVolume::FiniteVolumeSolver &flow);
 
         /**
          * static function private function to compute surface force and add source to euler
@@ -54,7 +55,8 @@ namespace ablate::finiteVolume::processes {
          * @param ctx
          * @return
          */
-        static PetscErrorCode ComputeSource(const FiniteVolumeSolver& solver, DM dm, PetscReal time, Vec locX, Vec locFVec, void* ctx);
+        static PetscErrorCode
+        ComputeSource(const FiniteVolumeSolver &solver, DM dm, PetscReal time, Vec locX, Vec locFVec, void *ctx);
     };
 }  // namespace ablate::finiteVolume::processes
 #endif
