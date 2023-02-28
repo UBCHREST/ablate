@@ -84,7 +84,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
             netIntensity *= kappa;
             return abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
         } else {
-            return 0;  // TODO: This is where a wavelength dependant integrator would go.
+            throw std::invalid_argument("Radiation solvers currently support single wavelength transport only.");  // TODO: This is where a wavelength dependant integrator would go.
             // TODO: Return a pointer to the array of intensities
         }
     }
