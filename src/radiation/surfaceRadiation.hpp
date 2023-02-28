@@ -37,21 +37,16 @@ class SurfaceRadiation : public ablate::radiation::Radiation {
      * @return
      */
     virtual inline void GetSurfaceIntensity(PetscReal* intensity, PetscInt faceId, PetscReal temperature, PetscReal emissivity = 1.0) {
-        if (absorptivityFunction.propertySize == 1) {  // Compute the losses
+        // add in precomputed gains
+        for (int i = 0; i < (int)absorptivityFunction.propertySize; ++i) {  // Compute the losses
             PetscReal netIntensity = -ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
 
-            // add in precomputed gains
-            netIntensity += evaluatedGains[indexLookup.GetAbsoluteIndex(faceId)];
+            netIntensity += evaluatedGains[absorptivityFunction.propertySize * indexLookup.GetAbsoluteIndex(faceId) + i];
 
             // scale by kappa
             netIntensity *= emissivity;
 
-            netIntensity = (netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
-
-            intensity[0] = abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
-        } else {
-            throw std::invalid_argument("Radiation solvers currently support single wavelength transport only.");
-            //! This is where a wavelength dependant integrator would go. Or maybe we want the wavelength integrator outside and we get the values indexed by wavelength out of here.
+            intensity[i] = abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
         }
     }
 };

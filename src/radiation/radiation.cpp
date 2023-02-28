@@ -587,7 +587,7 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
             DMPlexPointLocalRead(solDm, cellSegment.cell, solArray, &sol);
             if (sol) {
                 DMPlexPointLocalFieldRead(auxDm, cellSegment.cell, temperatureField.id, auxArray, &temperature);
-                if (temperature) {               /** Input absorptivity (kappa) values from model here. */
+                if (temperature) {                                       /** Input absorptivity (kappa) values from model here. */
                     PetscReal kappa[absorptivityFunction.propertySize];  //!< Absorptivity coefficient, property of each cell. This is an array that we will iterate through for every evaluation
                     absorptivityFunction.function(sol, *temperature, kappa, absorptivityFunctionContext);
                     //! Get the pointer to the returned array of absorption values. Iterate through every wavelength for the evaluation.
@@ -601,7 +601,8 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                         for (int wavelengthIndex = 0; wavelengthIndex < absorptivityFunction.propertySize; ++wavelengthIndex) {
                             // This is not a boundary cell
                             raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Ij +=
-                                FlameIntensity(1 - exp(-kappa[wavelengthIndex] * cellSegment.pathLength), *temperature) * raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad;
+                                FlameIntensity(1 - exp(-kappa[wavelengthIndex] * cellSegment.pathLength), *temperature) *
+                                raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad;
 
                             // Compute the total absorption for this domain
                             raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad *= exp(-kappa[wavelengthIndex] * cellSegment.pathLength);

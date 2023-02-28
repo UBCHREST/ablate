@@ -36,5 +36,4 @@ PetscReal ablate::radiation::SurfaceRadiation::SurfaceComponent(const PetscReal 
 REGISTER_DERIVED(ablate::radiation::Radiation, ablate::radiation::SurfaceRadiation);
 REGISTER(ablate::radiation::SurfaceRadiation, ablate::radiation::SurfaceRadiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
          ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(int, "rays", "number of rays used by the solver"),
-         ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"),
-         OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
+         ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

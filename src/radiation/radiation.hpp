@@ -73,23 +73,21 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * @param kappa the absorptivity of the cell
      * @return
      */
-    inline PetscReal GetIntensity(PetscInt index, const ablate::domain::Range& cellRange, PetscReal temperature, PetscReal kappa) {
-        if (absorptivityFunction.propertySize == 1) {  // Compute the losses
+    inline void GetIntensity(PetscReal* intensity, PetscInt index, const solver::Range& cellRange, PetscReal temperature, PetscReal kappa) {
+        for (int i = 0; i < (int)absorptivityFunction.propertySize; ++i) {  // Compute the losses
             PetscReal netIntensity = -4.0 * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
 
             // add in precomputed gains
-            netIntensity += evaluatedGains[index - cellRange.start];
+            netIntensity += evaluatedGains[absorptivityFunction.propertySize * (index - cellRange.start) + i];
 
             // scale by kappa
             netIntensity *= kappa;
-            return abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
-        } else {
-            throw std::invalid_argument("Radiation solvers currently support single wavelength transport only.");  // TODO: This is where a wavelength dependant integrator would go.
-            // TODO: Return a pointer to the array of intensities
+
+            intensity[i] = abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
         }
     }
 
-    // TODO: Add a class called "radiation surface properties" which is used to compute the amount of intensity absorbed by the material. This should be an optional input in the radiation base class.
+    //  Add a class called "radiation surface properties" which is used to compute the amount of intensity absorbed by the material. This should be an optional input in the radiation base class.
     // GetIntensity should compute this, because otherwise the losses will not be accounted for.
     // Just embed a function within the GetIntensity function that "Computes surface properties" and decides how much of the radiation to do.
     // Also. the losses are wavelength dependent based on what portion of the black body temperature they are emitting.

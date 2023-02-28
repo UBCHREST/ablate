@@ -32,6 +32,7 @@ void ablate::radiation::VolumeRadiation::Setup() {
      * Begins radiation properties model
      */
     absorptivityFunction = radiation->GetRadiationModel()->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, subDomain->GetFields());
+    if (absorptivityFunction.propertySize != 1) throw std::invalid_argument("The volume radiation solver currently only accepts one radiation wavelength.");
 }
 
 void ablate::radiation::VolumeRadiation::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) { ablate::solver::Solver::Register(subDomain); }
@@ -94,7 +95,10 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
 
             PetscScalar* rhsValues;
             DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
-            rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += radiation->GetIntensity(c, range, *temperature, kappa);  //!< Loop through the cells and update the equation of state
+            PetscReal intensity[1];  //! This implies that there is currently only support for one wavelength in the volumetric radiation solver.
+            //! Implement a wavelength dependant absorption integration here if desired.
+            radiation->GetIntensity(intensity, c, range, *temperature, kappa);              //!< Loop through the cells and update the equation of state
+            rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += intensity[0];  //! Add the solution of this intensity.
         }
     }
     VecRestoreArrayRead(rhs, &rhsArray);
