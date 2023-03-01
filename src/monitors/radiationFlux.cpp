@@ -26,7 +26,8 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
      * the number of components should be equal to the number of ray tracers plus any ratio outputs?
      */
     for (const auto& rayTracer : radiation) {
-        auto absorptionTemp = rayTracer->GetRadiationModel()->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, solverIn->GetSubDomain().GetFields());
+        auto absorptionTemp =
+            rayTracer->GetRadiationModel()->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, solverIn->GetSubDomain().GetFields());
         for (int i = 0; i < absorptionTemp.propertySize; ++i) {  //! Create an output field for each of the
             PetscFV fvm;
             PetscFVCreate(PetscObjectComm(PetscObject(fluxDm)), &fvm) >> utilities::PetscUtilities::checkError;
