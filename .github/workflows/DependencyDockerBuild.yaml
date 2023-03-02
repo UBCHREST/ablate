@@ -71,11 +71,12 @@ jobs:
             --tag $IMAGE_ID:${{ needs.get-timestamp.outputs.time_stamp}} \
             --file DockerDependencyFile
 
-  # Push the latest tag if everything build
+  # Push the latest tag if everything build, Note this must run on max-parallel=1
   push-latest-tag:
     needs: [get-timestamp, build]
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 1
       matrix:
         arch: [ { runson: ARM64, id: -arm64 }, { runson: ubuntu-latest, id: -amd64 } ]
         compiler: [ { cc: gcc, cxx: g++, id: -gcc }, { cc: clang, cxx: clang++, id: -clang } ]
