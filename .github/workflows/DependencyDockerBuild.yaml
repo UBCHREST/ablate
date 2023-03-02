@@ -32,7 +32,7 @@ jobs:
           echo "time_stamp=${TIMESTAMP}" >>$GITHUB_OUTPUT
 
     outputs:
-      time_stamp: ${{ steps.version.outputs.time_stamp }}
+      time_stamp: ${{ steps.version.timestamp.time_stamp }}
 
   build:
     needs: [ get-timestamp ]
