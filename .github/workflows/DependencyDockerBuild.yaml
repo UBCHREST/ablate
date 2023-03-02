@@ -22,7 +22,20 @@ env:
   PETSC_IMAGE_NAME: ghcr.io/ubchrest/petsc-docker/petsc-build
 
 jobs:
+  get-timestamp:
+    runs-on: ubuntu-latest
+    steps:
+      - id: timestamp
+        run: |
+          # Generate a unique time stamp
+          export TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          echo "time_stamp=${TIMESTAMP}" >>$GITHUB_OUTPUT
+
+    outputs:
+      time_stamp: ${{ steps.version.outputs.time_stamp }}
+
   build:
+    needs: [ get-timestamp ]
     strategy:
       matrix:
         arch: [ { runson: ARM64, id: -arm64 }, { runson: ubuntu-latest, id: -amd64 } ]
@@ -55,15 +68,16 @@ jobs:
             --provenance false \
             --build-arg PETSC_BASE_IMAGE=${PETSC_IMAGE_ID} \
             --push \
-            --tag $IMAGE_ID:latest \
+            --tag $IMAGE_ID:${{ needs.get-timestamp.outputs.time_stamp}} \
             --file DockerDependencyFile
 
   # Push the latest tag if everything build
-  push-latest:
-    needs: [build]
+  push-latest-tag:
+    needs: [get-timestamp, build]
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        arch: [ { runson: ARM64, id: -arm64 }, { runson: ubuntu-latest, id: -amd64 } ]
         compiler: [ { cc: gcc, cxx: g++, id: -gcc }, { cc: clang, cxx: clang++, id: -clang } ]
         indices: [ { index64bit: 0, id: "" },  { index64bit: 1, id: "-index64" } ]
 
@@ -76,33 +90,19 @@ jobs:
       - name: Log into registry
         run: echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ secrets.DOCKER_USER }} --password-stdin
 
-      - uses: actions/setup-go@v3
-        with:
-          go-version: '>=1.18.10'
-
-      - name: Build Manifest Tool
+      - name: Build Manifest
         run: |
-          git clone https://github.com/estesp/manifest-tool
-          cd manifest-tool && make binary
-          cd ..
-
-      - name: Build and push manifest
-        run: |
-          IMAGE_ID=ghcr.io/${{ github.repository }}/$IMAGE_NAME${{matrix.compiler.id}}${{matrix.indices.id}}
+          # Define the base image id
+          IMAGE_ID=ghcr.io/${{ github.repository }}/$IMAGE_NAME${{matrix.compiler.id}}${{ matrix.indices.id}}
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
-   
-          # Repeat for the latest tag
-          echo "image: $IMAGE_ID:latest" > config.latest.yaml
-          echo "manifests:" >> config.latest.yaml
-          echo "  - image: $IMAGE_ID-arm64:latest " >> config.latest.yaml
-          echo "    platform: " >> config.latest.yaml
-          echo "      architecture: arm64 " >> config.latest.yaml
-          echo "      os: linux " >> config.latest.yaml
-          echo "  - image: $IMAGE_ID-amd64:latest " >> config.latest.yaml
-          echo "    platform: " >> config.latest.yaml
-          echo "      architecture: amd64 " >> config.latest.yaml
-          echo "      os: linux " >> config.latest.yaml
-          
-          # Generate the manifest and push
-          manifest-tool/manifest-tool push from-spec config.latest.yaml
 
+          # check if image exists 
+          if docker manifest inspect $IMAGE_ID:${{ needs.get-timestamp.outputs.time_stamp}} > /dev/null; then
+            echo "Appending manifest"
+            docker buildx imagetools create -t $IMAGE_ID:${{ needs.get-timestamp.outputs.time_stamp}} --append $IMAGE_ID${{matrix.arch.id}}:${{ needs.get-timestamp.outputs.time_stamp}}
+            docker buildx imagetools create -t $IMAGE_ID:latest --append $IMAGE_ID${{matrix.arch.id}}:${{ needs.get-timestamp.outputs.time_stamp}}
+          else
+            echo "Creating new manifest"
+            docker buildx imagetools create -t $IMAGE_ID:${{ needs.get-timestamp.outputs.time_stamp}} $IMAGE_ID${{matrix.arch.id}}:${{ needs.get-timestamp.outputs.time_stamp}}
+            docker buildx imagetools create -t $IMAGE_ID:latest $IMAGE_ID${{matrix.arch.id}}:${{ needs.get-timestamp.outputs.time_stamp}}
+          fi
