@@ -25,12 +25,12 @@ class SootSpectrumAbsorption : public RadiationModel {
     std::vector<PetscReal> wavelengthsIn;
 
    public:
-    SootSpectrumAbsorption(std::shared_ptr<eos::EOS> eosIn, int num = 0, double min = 0.4E-6, double max = 30E-6, const std::vector<double>& wavelengths = {});
+    SootSpectrumAbsorption(std::shared_ptr<eos::EOS> eosIn, int num = 0, double min = 0.4E-6, double max = 30E-6, const std::vector<double>& wavelengths = {}, const std::vector<double> &bandwidths = {});
 
-    ThermodynamicFunction GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
-    ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
-    static PetscErrorCode SootFunction(const PetscReal* conserved, PetscReal* kappa, void* ctx);
-    static PetscErrorCode SootTemperatureFunction(const PetscReal* conserved, PetscReal temperature, PetscReal* kappa, void* ctx);
+    ThermodynamicFunction GetAbsorptionPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
+    ThermodynamicTemperatureFunction GetAbsorptionPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
+    static PetscErrorCode SootAbsorptionFunction(const PetscReal* conserved, PetscReal* kappa, void* ctx);
+    static PetscErrorCode SootAbsorptionTemperatureFunction(const PetscReal* conserved, PetscReal temperature, PetscReal* kappa, void* ctx);
 };
 }  // namespace ablate::eos::radiationProperties
 

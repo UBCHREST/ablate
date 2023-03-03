@@ -7,7 +7,7 @@ TEST(RadiationConstantTests, ShouldRecordConstantValuesForDirectRadiationFunctio
 
     auto constantModel = std::make_shared<ablate::eos::radiationProperties::Constant>(expectedAbsorptivity);
 
-    auto absorptivityFunction = constantModel->GetRadiationPropertiesFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, {});
+    auto absorptivityFunction = constantModel->GetAbsorptionPropertiesFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, {});
 
     // ACT
     PetscReal computedAbsorptivity = NAN;
@@ -24,7 +24,7 @@ TEST(ConstantTransportTests, ShouldRecordConstantValuesForRadiationTemperatureFu
 
     auto constantModel = std::make_shared<ablate::eos::radiationProperties::Constant>(expectedAbsorptivity);
 
-    auto absorptivityFunction = constantModel->GetRadiationPropertiesTemperatureFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, {});
+    auto absorptivityFunction = constantModel->GetAbsorptionPropertiesTemperatureFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, {});
 
     // ACT
     PetscReal computedAbsorptivity = NAN;

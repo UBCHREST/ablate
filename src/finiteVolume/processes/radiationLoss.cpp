@@ -7,7 +7,7 @@ void ablate::finiteVolume::processes::RadiationLoss::Setup(ablate::finiteVolume:
     // add the source function
     fvmSolver.RegisterRHSFunction(ComputeRadiationLoss, this, {ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD}, {}, {ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD});
 
-    absorptivityFunction = GetRadiationModel()->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, fvmSolver.GetSubDomain().GetFields());
+    absorptivityFunction = GetRadiationModel()->GetAbsorptionPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, fvmSolver.GetSubDomain().GetFields());
 }
 
 PetscErrorCode ablate::finiteVolume::processes::RadiationLoss::ComputeRadiationLoss(PetscInt dim, PetscReal time, const PetscFVCellGeom *cg, const PetscInt *uOff, const PetscScalar *u,

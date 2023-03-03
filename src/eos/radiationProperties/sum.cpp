@@ -33,7 +33,7 @@ PetscErrorCode ablate::eos::radiationProperties::Sum::SumTemperatureFunction(con
     PetscFunctionReturn(0);
 }
 
-ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Sum::GetRadiationPropertiesFunction(ablate::eos::radiationProperties::RadiationProperty property,
+ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Sum::GetAbsorptionPropertiesFunction(ablate::eos::radiationProperties::RadiationProperty property,
                                                                                                          const std::vector<domain::Field> &fields) const {
     // Create the function
     auto contextVector = std::make_shared<std::vector<ThermodynamicFunction>>();
@@ -41,12 +41,12 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Sum::GetRad
 
     // add each contribution
     for (auto &model : models) {
-        contextVector->push_back(model->GetRadiationPropertiesFunction(property, fields));
+        contextVector->push_back(model->GetAbsorptionPropertiesFunction(property, fields));
     }
 
     return function;
 }
-ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::Sum::GetRadiationPropertiesTemperatureFunction(ablate::eos::radiationProperties::RadiationProperty property,
+ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::Sum::GetAbsorptionPropertiesTemperatureFunction(ablate::eos::radiationProperties::RadiationProperty property,
                                                                                                                                const std::vector<domain::Field> &fields) const {
     // Create the function
     auto contextVector = std::make_shared<std::vector<ThermodynamicTemperatureFunction>>();
@@ -54,7 +54,7 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
 
     // add each contribution
     for (auto &model : models) {
-        contextVector->push_back(model->GetRadiationPropertiesTemperatureFunction(property, fields));
+        contextVector->push_back(model->GetAbsorptionPropertiesTemperatureFunction(property, fields));
     }
 
     return function;

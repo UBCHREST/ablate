@@ -18,7 +18,7 @@ class RadiationModel {
      * @param fields
      * @return
      */
-    [[nodiscard]] virtual ThermodynamicFunction GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const = 0;
+    [[nodiscard]] virtual ThermodynamicFunction GetAbsorptionPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const = 0;
 
     /**
      * Single function to produce radiation properties based upon the available fields and temperature
@@ -26,7 +26,7 @@ class RadiationModel {
      * @param fields
      * @return
      */
-    [[nodiscard]] virtual ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const = 0;
+    [[nodiscard]] virtual ThermodynamicTemperatureFunction GetAbsorptionPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const = 0;
 };
 
 /**

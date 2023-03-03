@@ -119,6 +119,14 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     //! provide access to the model used to provided the absorptivity function
     inline std::shared_ptr<eos::radiationProperties::RadiationModel> GetRadiationModel() { return radiationModel; }
 
+    static inline PetscReal BlackBodyEmissivity(const PetscReal temperature, const PetscReal wavelength, const PetscReal refractiveIndex) {
+        PetscReal E_b_lambda = (2 * ablate::utilities::Constants::pi * ablate::utilities::Constants::h * ablate::utilities::Constants::c * ablate::utilities::Constants::c);
+        E_b_lambda /= refractiveIndex * refractiveIndex * wavelength * wavelength * wavelength * wavelength * wavelength;
+        E_b_lambda /= exp((ablate::utilities::Constants::h * ablate::utilities::Constants::c) / (refractiveIndex * ablate::utilities::Constants::k * temperature)) - 1;
+
+        return 1;
+    }
+
    protected:
     //! DM which the search particles occupy.  This representations the physical particle in space
     DM radSearch = nullptr;

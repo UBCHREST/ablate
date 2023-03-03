@@ -141,7 +141,7 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerTemperatureFuncti
     PetscFunctionReturn(0);
 }
 
-ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Zimmer::GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field> &fields) const {
+ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Zimmer::GetAbsorptionPropertiesFunction(RadiationProperty property, const std::vector<domain::Field> &fields) const {
     const auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
 
     /** Check if the species exist in this run.
@@ -180,7 +180,7 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Zimmer::Get
     }
 }
 
-ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::Zimmer::GetRadiationPropertiesTemperatureFunction(RadiationProperty property,
+ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::Zimmer::GetAbsorptionPropertiesTemperatureFunction(RadiationProperty property,
                                                                                                                                   const std::vector<domain::Field> &fields) const {
     const auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
 

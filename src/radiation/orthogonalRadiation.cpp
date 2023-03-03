@@ -14,7 +14,7 @@ void ablate::radiation::OrthogonalRadiation::Setup(const ablate::domain::Range& 
      * Runs the ray initialization, finding cell indices
      * Initialize the log if provided
      */
-    absorptivityFunction = radiationModel->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, subDomain.GetFields());
+    absorptivityFunction = radiationModel->GetAbsorptionPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, subDomain.GetFields());
 
     if (log) {
         log->Initialize(subDomain.GetComm());

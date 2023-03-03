@@ -76,7 +76,7 @@ class Zimmer : public RadiationModel {
      * @param fields
      * @return
      */
-    [[nodiscard]] ThermodynamicFunction GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const override;
+    [[nodiscard]] ThermodynamicFunction GetAbsorptionPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const override;
 
     /**
      * Single function to produce thermodynamic function for any property based upon the available fields and temperature
@@ -84,7 +84,7 @@ class Zimmer : public RadiationModel {
      * @param fields
      * @return
      */
-    [[nodiscard]] ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const override;
+    [[nodiscard]] ThermodynamicTemperatureFunction GetAbsorptionPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const override;
 
     PetscInt GetFieldComponentOffset(const std::string& str, const domain::Field& field) const;
 

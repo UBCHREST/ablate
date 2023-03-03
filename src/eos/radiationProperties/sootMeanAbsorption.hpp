@@ -20,8 +20,8 @@ class SootMeanAbsorption : public RadiationModel {
     constexpr static PetscReal rhoC = 2000;  // kg/m^3
    public:
     SootMeanAbsorption(std::shared_ptr<EOS> eosIn);
-    ThermodynamicFunction GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
-    ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
+    ThermodynamicFunction GetAbsorptionPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
+    ThermodynamicTemperatureFunction GetAbsorptionPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
     static PetscErrorCode SootFunction(const PetscReal* conserved, PetscReal* kappa, void* ctx);
     static PetscErrorCode SootTemperatureFunction(const PetscReal* conserved, PetscReal temperature, PetscReal* kappa, void* ctx);
 };

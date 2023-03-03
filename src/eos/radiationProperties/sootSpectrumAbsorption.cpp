@@ -1,6 +1,6 @@
 #include "sootSpectrumAbsorption.hpp"
 
-ablate::eos::radiationProperties::SootSpectrumAbsorption::SootSpectrumAbsorption(std::shared_ptr<eos::EOS> eosIn, int num, double min, double max, const std::vector<double> &wavelengths)
+ablate::eos::radiationProperties::SootSpectrumAbsorption::SootSpectrumAbsorption(std::shared_ptr<eos::EOS> eosIn, int num, double min, double max, const std::vector<double> &wavelengths, const std::vector<double> &bandwidths)
     : eos(std::move(eosIn)), wavelengthsIn(std::move(wavelengths)) {
     if ((std::empty(wavelengthsIn) && (num == 0)) || (!std::empty(wavelengthsIn) && (num != 0))) {
         throw std::invalid_argument("The spectrum soot model requires definition of either the number of wavelengths, or a vector of wavelengths to be integrated. One must be chosen.");
@@ -13,7 +13,9 @@ ablate::eos::radiationProperties::SootSpectrumAbsorption::SootSpectrumAbsorption
     }
 }
 
-PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootFunction(const PetscReal *conserved, PetscReal *kappa, void *ctx) {
+// TODO: Bandwidth of 10 nanometers is assumed for the filters. Constant emissivity over the bandwidth.
+
+PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootAbsorptionFunction(const PetscReal *conserved, PetscReal *kappa, void *ctx) {
     PetscFunctionBeginUser;
 
     /** This model depends on mass fraction, temperature, and density in order to predict the absorption properties of the medium. */
@@ -41,7 +43,7 @@ PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootFun
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *kappa, void *ctx) {
+PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootAbsorptionTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *kappa, void *ctx) {
     PetscFunctionBeginUser;
 
     /** This model depends on mass fraction, temperature, and density in order to predict the absorption properties of the medium. */
@@ -67,7 +69,7 @@ PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootTem
     PetscFunctionReturn(0);
 }
 
-ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootSpectrumAbsorption::GetRadiationPropertiesFunction(RadiationProperty property,
+ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootSpectrumAbsorption::GetAbsorptionPropertiesFunction(RadiationProperty property,
                                                                                                                             const std::vector<domain::Field> &fields) const {
     const auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
 
@@ -89,7 +91,7 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootSpectru
     switch (property) {
         case RadiationProperty::Absorptivity:
             return ThermodynamicFunction{
-                .function = SootFunction,
+                .function = SootAbsorptionFunction,
                 .context = std::make_shared<FunctionContext>(FunctionContext{.densityYiCSolidCOffset = cOffset,
                                                                              .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
                                                                              .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields),
@@ -100,7 +102,7 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootSpectru
     }
 }
 
-ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::SootSpectrumAbsorption::GetRadiationPropertiesTemperatureFunction(RadiationProperty property,
+ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::SootSpectrumAbsorption::GetAbsorptionPropertiesTemperatureFunction(RadiationProperty property,
                                                                                                                                                   const std::vector<domain::Field> &fields) const {
     const auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
 
@@ -118,7 +120,7 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
     switch (property) {
         case RadiationProperty::Absorptivity:
             return ThermodynamicTemperatureFunction{
-                .function = SootTemperatureFunction,
+                .function = SootAbsorptionTemperatureFunction,
                 .context = std::make_shared<FunctionContext>(FunctionContext{.densityYiCSolidCOffset = cOffset,
                                                                              .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
                                                                              .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields),
@@ -133,4 +135,5 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
 REGISTER(ablate::eos::radiationProperties::RadiationModel, ablate::eos::radiationProperties::SootSpectrumAbsorption, "SootSpectrumAbsorption",
          ARG(ablate::eos::EOS, "eos", "The EOS used to compute field properties"), OPT(int, "num", "number of wavelengths that are integrated in the model"),
          OPT(double, "min", "number of wavelengths that are integrated in the model"), OPT(double, "max", "number of wavelengths that are integrated in the model"),
-         OPT(std::vector<double>, "wavelengths", "number of wavelengths that are integrated in the model"));
+         OPT(std::vector<double>, "wavelengths", "number of wavelengths that are integrated in the model"),
+         OPT(std::vector<double>, "bandwidths", "bandwidth of each associated wavelength"));
