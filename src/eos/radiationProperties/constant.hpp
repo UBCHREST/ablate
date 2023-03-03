@@ -2,13 +2,21 @@
 #define ABLATELIBRARY_RADIATIONPROPERTIESCONSTANT_H
 
 #include "radiationProperties.hpp"
+#include "radiation/radiation.hpp"
 
 namespace ablate::eos::radiationProperties {
 
 class Constant : public RadiationModel {
    private:
-    const PetscReal absorptivity;
-    const PetscReal emissivity;
+    struct FunctionContext {
+        const PetscReal absorptivity;
+        const PetscReal emissivity;
+        const ThermodynamicFunction temperatureFunction;
+    };
+
+    const std::shared_ptr<eos::EOS> eos;                                                                               //! eos is needed to compute temperature
+    PetscReal absorptivityIn;
+    PetscReal emissivityIn;
 
     /**
      * private static function for evaluating constant properties without temperature
@@ -16,7 +24,7 @@ class Constant : public RadiationModel {
      * @param property
      * @param ctx
      */
-    static PetscErrorCode ConstantFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode ConstantAbsorptionFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
 
     /**
      * private static function for evaluating constant properties without temperature
@@ -24,10 +32,30 @@ class Constant : public RadiationModel {
      * @param property
      * @param ctx
      */
-    static PetscErrorCode ConstantTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
+    static PetscErrorCode ConstantAbsorptionTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
+
+    /**
+     * Returns the black body scaled by the input value of emissivity
+     * @param conserved
+     * @param property
+     * @param ctx
+     * @return
+     */
+    static PetscErrorCode ConstantEmissionFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+
+    /**
+     * Returns the black body scaled by the input value of emissivity
+     * @param conserved
+     * @param temperature
+     * @param property
+     * @param ctx
+     * @return
+     */
+    static PetscErrorCode ConstantEmissionTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
+
 
    public:
-    explicit Constant(double absorptivity, double emissivity);
+    explicit Constant(std::shared_ptr<eos::EOS> eosIn, double absorptivity, double emissivity);
     explicit Constant(const Constant&) = delete;
     void operator=(const Constant&) = delete;
 

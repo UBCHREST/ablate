@@ -1,4 +1,5 @@
 #include "PetscTestFixture.hpp"
+#include "eos/perfectGas.hpp"
 #include "eos/radiationProperties/constant.hpp"
 #include "eos/radiationProperties/sum.hpp"
 #include "gtest/gtest.h"
@@ -15,6 +16,8 @@ TEST_P(RadiationSumTestFixture, ShouldComputeCorrectValueForGetRadiationProperti
     // arrange
     auto inputModels = GetParam().getInputModels();
     auto sumModel = std::make_shared<ablate::eos::radiationProperties::Sum>(inputModels);
+
+    std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
 
     for (const auto& [property, expectedValue] : GetParam().expectedParameters) {
         // act
@@ -33,6 +36,8 @@ TEST_P(RadiationSumTestFixture, ShouldComputeCorrectValueForGetRadiationProperti
     auto inputModels = GetParam().getInputModels();
     auto sumModel = std::make_shared<ablate::eos::radiationProperties::Sum>(inputModels);
 
+    std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
+
     for (const auto& [property, expectedValue] : GetParam().expectedParameters) {
         // act
         auto testFunction = sumModel->GetRadiationPropertiesTemperatureFunction(property, {});
@@ -48,23 +53,26 @@ TEST_P(RadiationSumTestFixture, ShouldComputeCorrectValueForGetRadiationProperti
 INSTANTIATE_TEST_SUITE_P(RadiationSumTests, RadiationSumTestFixture,
                          testing::Values((RadiationSumTestParameters){.getInputModels =
                                                                           []() {
+                                                                              auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}));
                                                                               return std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>>{
-                                                                                  std::make_shared<ablate::eos::radiationProperties::Constant>(1.4, 1),
-                                                                                  std::make_shared<ablate::eos::radiationProperties::Constant>(1.6, 1)};
+                                                                                  std::make_shared<ablate::eos::radiationProperties::Constant>(eos, 1.4, 1),
+                                                                                  std::make_shared<ablate::eos::radiationProperties::Constant>(eos, 1.6, 1)};
                                                                           },
                                                                       .expectedParameters = {{ablate::eos::radiationProperties::RadiationProperty::Absorptivity, 3.0}}},
                                          (RadiationSumTestParameters){.getInputModels =
                                                                           []() {
+                                                                              auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}));
                                                                               return std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>>{
-                                                                                  std::make_shared<ablate::eos::radiationProperties::Constant>(1.4, 1)};
+                                                                                  std::make_shared<ablate::eos::radiationProperties::Constant>(eos, 1.4, 1)};
                                                                           },
                                                                       .expectedParameters = {{ablate::eos::radiationProperties::RadiationProperty::Absorptivity, 1.4}}},
                                          (RadiationSumTestParameters){.getInputModels =
                                                                           []() {
+                                                                              auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}));
                                                                               return std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>>{
-                                                                                  std::make_shared<ablate::eos::radiationProperties::Constant>(1.4, 1),
-                                                                                  std::make_shared<ablate::eos::radiationProperties::Constant>(2.4, 1),
-                                                                                  std::make_shared<ablate::eos::radiationProperties::Constant>(3.5, 1)};
+                                                                                  std::make_shared<ablate::eos::radiationProperties::Constant>(eos, 1.4, 1),
+                                                                                  std::make_shared<ablate::eos::radiationProperties::Constant>(eos, 2.4, 1),
+                                                                                  std::make_shared<ablate::eos::radiationProperties::Constant>(eos, 3.5, 1)};
                                                                           },
                                                                       .expectedParameters = {{ablate::eos::radiationProperties::RadiationProperty::Absorptivity, 7.3}}}
 

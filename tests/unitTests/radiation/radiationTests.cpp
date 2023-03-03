@@ -163,116 +163,115 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         // initialize petsc and mpi
         ablate::environment::RunEnvironment::Initialize(argc, argv);
         ablate::utilities::PetscUtilities::Initialize();
-        {
-            // keep track of history
-            testingResources::ConvergenceTester l2History("l2");
 
-            auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}));
+        // keep track of history
+        testingResources::ConvergenceTester l2History("l2");
 
-            // determine required fields for radiation, this will include euler and temperature
-            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
+        auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}));
 
-            auto domain = std::make_shared<ablate::domain::BoxMeshBoundaryCells>("simpleMesh",
-                                                                                 fieldDescriptors,
-                                                                                 std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
-                                                                                 std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
-                                                                                 GetParam().meshFaces,
-                                                                                 GetParam().meshStart,
-                                                                                 GetParam().meshEnd,
-                                                                                 false,
-                                                                                 ablate::parameters::MapParameters::Create({{"dm_plex_hash_location", "true"}}));
+        // determine required fields for radiation, this will include euler and temperature
+        std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
 
-            // Setup the flow data
-            auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", ".4"}});
+        auto domain = std::make_shared<ablate::domain::BoxMeshBoundaryCells>("simpleMesh",
+                                                                             fieldDescriptors,
+                                                                             std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
+                                                                             std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
+                                                                             GetParam().meshFaces,
+                                                                             GetParam().meshStart,
+                                                                             GetParam().meshEnd,
+                                                                             false,
+                                                                             ablate::parameters::MapParameters::Create({{"dm_plex_hash_location", "true"}}));
 
-            // Set the initial conditions for euler (not used, so set all to zero)
-            auto initialConditionEuler = std::make_shared<ablate::mathFunctions::FieldFunction>("euler", std::make_shared<ablate::mathFunctions::ConstantValue>(0.0));
+        // Setup the flow data
+        auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", ".4"}});
+
+        // Set the initial conditions for euler (not used, so set all to zero)
+        auto initialConditionEuler = std::make_shared<ablate::mathFunctions::FieldFunction>("euler", std::make_shared<ablate::mathFunctions::ConstantValue>(0.0));
 
             // create a time stepper
             auto timeStepper = ablate::solver::TimeStepper(
                 "timeStepper", domain, ablate::parameters::MapParameters::Create({{"ts_max_steps", 0}}), {}, std::make_shared<ablate::domain::Initializer>(initialConditionEuler));
 
-            // Create an instance of radiation
-            auto radiationPropertiesModel = std::make_shared<ablate::eos::radiationProperties::Constant>(1.0);
-            auto radiationModel = GetParam().radiationFactory(radiationPropertiesModel);
-            auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
-            auto radiation = std::make_shared<ablate::radiation::VolumeRadiation>("radiation", interiorLabel, nullptr, radiationModel, nullptr, nullptr);
+        // Create an instance of radiation
+        auto radiationPropertiesModel = std::make_shared<ablate::eos::radiationProperties::Constant>(eos, 1.0, 1.0);
+        auto radiationModel = GetParam().radiationFactory(radiationPropertiesModel);
+        auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
+        auto radiation = std::make_shared<ablate::radiation::VolumeRadiation>("radiation", interiorLabel, nullptr, radiationModel, nullptr, nullptr);
 
-            // register the flowSolver with the timeStepper
-            timeStepper.Register(radiation, {std::make_shared<ablate::monitors::TimeStepMonitor>()});
-            timeStepper.Solve();
+        // register the flowSolver with the timeStepper
+        timeStepper.Register(radiation, {std::make_shared<ablate::monitors::TimeStepMonitor>()});
+        timeStepper.Solve();
 
-            // force the aux variables of temperature to a known value
-            auto auxVec = radiation->GetSubDomain().GetAuxVector();
-            radiation->GetSubDomain().ProjectFieldFunctionsToLocalVector(GetParam().initialization(), auxVec);
+        // force the aux variables of temperature to a known value
+        auto auxVec = radiation->GetSubDomain().GetAuxVector();
+        radiation->GetSubDomain().ProjectFieldFunctionsToLocalVector(GetParam().initialization(), auxVec);
 
-            // Setup the rhs for the test
-            Vec rhs;
-            DMGetLocalVector(domain->GetDM(), &rhs) >> testErrorChecker;
-            VecZeroEntries(rhs) >> testErrorChecker;
+        // Setup the rhs for the test
+        Vec rhs;
+        DMGetLocalVector(domain->GetDM(), &rhs) >> testErrorChecker;
+        VecZeroEntries(rhs) >> testErrorChecker;
 
-            // Apply the rhs function for the radiation solver
-            radiation->PreRHSFunction(timeStepper.GetTS(), 0.0, true, nullptr) >> testErrorChecker;
-            radiation->ComputeRHSFunction(0, rhs, rhs);  // The ray tracing function needs to be renamed in order to occupy the role of compute right hand side function
+        // Apply the rhs function for the radiation solver
+        radiation->PreRHSFunction(timeStepper.GetTS(), 0.0, true, nullptr) >> testErrorChecker;
+        radiation->ComputeRHSFunction(0, rhs, rhs);  // The ray tracing function needs to be renamed in order to occupy the role of compute right hand side function
 
-            // determine the euler field
-            const auto& eulerFieldInfo = domain->GetField("euler");
+        // determine the euler field
+        const auto& eulerFieldInfo = domain->GetField("euler");
 
-            // For each cell, compare the rhs against the expected
-            {
-                // get the cell geometry
-                Vec cellGeomVec;
-                DM dmCell;
-                const PetscScalar* cellGeomArray;
-                DMPlexGetGeometryFVM(domain->GetDM(), nullptr, &cellGeomVec, nullptr) >> testErrorChecker;
-                VecGetDM(cellGeomVec, &dmCell) >> testErrorChecker;
-                VecGetArrayRead(cellGeomVec, &cellGeomArray) >> testErrorChecker;
+        // For each cell, compare the rhs against the expected
+        {
+            // get the cell geometry
+            Vec cellGeomVec;
+            DM dmCell;
+            const PetscScalar* cellGeomArray;
+            DMPlexGetGeometryFVM(domain->GetDM(), nullptr, &cellGeomVec, nullptr) >> testErrorChecker;
+            VecGetDM(cellGeomVec, &dmCell) >> testErrorChecker;
+            VecGetArrayRead(cellGeomVec, &cellGeomArray) >> testErrorChecker;
 
-                // extract the rhsArray
-                const PetscScalar* rhsArray;
-                VecGetArrayRead(rhs, &rhsArray) >> testErrorChecker;
+            // extract the rhsArray
+            const PetscScalar* rhsArray;
+            VecGetArrayRead(rhs, &rhsArray) >> testErrorChecker;
 
-                /// Declare L2 norm variables
-                PetscReal l2sum = 0.0;
-                double error;  // Number of cells in the domain
+            /// Declare L2 norm variables
+            PetscReal l2sum = 0.0;
+            double error;  // Number of cells in the domain
 
-                ablate::domain::Range cellRange;
-                radiation->GetCellRange(cellRange);
-                // March over each cell
-                for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
-                    const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
+            ablate::domain::Range cellRange;
+            radiation->GetCellRange(cellRange);
+            // March over each cell
+            for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+                const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
-                    if (ablate::domain::Region::InRegion(interiorLabel, dmCell, cell)) {
-                        // Get the cell center
-                        PetscFVCellGeom* cellGeom;
-                        DMPlexPointLocalRead(dmCell, cell, cellGeomArray, &cellGeom) >> testErrorChecker;
+                if (ablate::domain::Region::InRegion(interiorLabel, dmCell, cell)) {
+                    // Get the cell center
+                    PetscFVCellGeom* cellGeom;
+                    DMPlexPointLocalRead(dmCell, cell, cellGeomArray, &cellGeom) >> testErrorChecker;
 
-                        // extract the result from the rhs
-                        PetscScalar* rhsValues;
-                        DMPlexPointLocalFieldRead(domain->GetDM(), cell, eulerFieldInfo.id, rhsArray, &rhsValues) >> testErrorChecker;
-                        PetscScalar actualResult = rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE];
-                        PetscScalar analyticalResult = ReallySolveParallelPlates(cellGeom->centroid[1]);  // Compute the analytical solution at this z height.
+                    // extract the result from the rhs
+                    PetscScalar* rhsValues;
+                    DMPlexPointLocalFieldRead(domain->GetDM(), cell, eulerFieldInfo.id, rhsArray, &rhsValues) >> testErrorChecker;
+                    PetscScalar actualResult = rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE];
+                    PetscScalar analyticalResult = ReallySolveParallelPlates(cellGeom->centroid[1]);  // Compute the analytical solution at this z height.
 
-                        /// Summing of the L2 norm values
-                        error = (analyticalResult - actualResult);
-                        l2sum += error * error;
-                    }
+                    /// Summing of the L2 norm values
+                    error = (analyticalResult - actualResult);
+                    l2sum += error * error;
                 }
-                /// Compute the L2 Norm error
-                double N = (cellRange.end - cellRange.start);
-                double l2 = sqrt(l2sum) / N;
+            }
+            /// Compute the L2 Norm error
+            double N = (cellRange.end - cellRange.start);
+            double l2 = sqrt(l2sum) / N;
 
-                PetscPrintf(MPI_COMM_WORLD, "L2 Norm: %f\n", sqrt(l2sum) / N);
-                if (l2 > 45000) {
-                    FAIL() << "Radiation test error exceeded.";
-                }
-
-                VecRestoreArrayRead(rhs, &rhsArray) >> testErrorChecker;
-                VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> testErrorChecker;
+            PetscPrintf(MPI_COMM_WORLD, "L2 Norm: %f\n", sqrt(l2sum) / N);
+            if (l2 > 45000) {
+                FAIL() << "Radiation test error exceeded.";
             }
 
-            DMRestoreLocalVector(domain->GetDM(), &rhs);
+            VecRestoreArrayRead(rhs, &rhsArray) >> testErrorChecker;
+            VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> testErrorChecker;
         }
+
+        DMRestoreLocalVector(domain->GetDM(), &rhs);
         ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI

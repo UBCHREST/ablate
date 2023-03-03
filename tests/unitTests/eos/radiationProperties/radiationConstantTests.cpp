@@ -1,3 +1,4 @@
+#include "eos/perfectGas.hpp"
 #include "eos/radiationProperties/constant.hpp"
 #include "gtest/gtest.h"
 
@@ -5,7 +6,9 @@ TEST(RadiationConstantTests, ShouldRecordConstantValuesForDirectRadiationFunctio
     // ARRANGE
     const PetscReal expectedAbsorptivity = 1;
 
-    auto constantModel = std::make_shared<ablate::eos::radiationProperties::Constant>(expectedAbsorptivity);
+    auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}));
+
+    auto constantModel = std::make_shared<ablate::eos::radiationProperties::Constant>(eos, expectedAbsorptivity, 1);
 
     auto absorptivityFunction = constantModel->GetRadiationPropertiesFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, {});
 
@@ -22,7 +25,9 @@ TEST(ConstantTransportTests, ShouldRecordConstantValuesForRadiationTemperatureFu
     // ARRANGE
     const PetscReal expectedAbsorptivity = 1;
 
-    auto constantModel = std::make_shared<ablate::eos::radiationProperties::Constant>(expectedAbsorptivity);
+    auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}));
+
+    auto constantModel = std::make_shared<ablate::eos::radiationProperties::Constant>(eos, expectedAbsorptivity, 1);
 
     auto absorptivityFunction = constantModel->GetRadiationPropertiesTemperatureFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, {});
 
