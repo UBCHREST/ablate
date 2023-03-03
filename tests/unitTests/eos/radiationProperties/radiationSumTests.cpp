@@ -18,7 +18,7 @@ TEST_P(RadiationSumTestFixture, ShouldComputeCorrectValueForGetRadiationProperti
 
     for (const auto& [property, expectedValue] : GetParam().expectedParameters) {
         // act
-        auto testFunction = sumModel->GetAbsorptionPropertiesFunction(property, {});
+        auto testFunction = sumModel->GetRadiationPropertiesFunction(property, {});
 
         PetscReal computeValue = NAN;
         testFunction.function(nullptr, &computeValue, testFunction.context.get());
@@ -35,7 +35,7 @@ TEST_P(RadiationSumTestFixture, ShouldComputeCorrectValueForGetRadiationProperti
 
     for (const auto& [property, expectedValue] : GetParam().expectedParameters) {
         // act
-        auto testFunction = sumModel->GetAbsorptionPropertiesTemperatureFunction(property, {});
+        auto testFunction = sumModel->GetRadiationPropertiesTemperatureFunction(property, {});
 
         PetscReal computeValue = NAN;
         testFunction.function(nullptr, 1000, &computeValue, testFunction.context.get());

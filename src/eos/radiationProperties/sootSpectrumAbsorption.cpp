@@ -1,9 +1,14 @@
 #include "sootSpectrumAbsorption.hpp"
 
-ablate::eos::radiationProperties::SootSpectrumAbsorption::SootSpectrumAbsorption(std::shared_ptr<eos::EOS> eosIn, int num, double min, double max, const std::vector<double> &wavelengths, const std::vector<double> &bandwidths)
-    : eos(std::move(eosIn)), wavelengthsIn(std::move(wavelengths)) {
+ablate::eos::radiationProperties::SootSpectrumAbsorption::SootSpectrumAbsorption(std::shared_ptr<eos::EOS> eosIn, int num, double min, double max, const std::vector<double> &wavelengths,
+                                                                                 const std::vector<double> &bandwidths)
+    : eos(std::move(eosIn)), wavelengthsIn(std::move(wavelengths)), bandwidthsIn(std::move(bandwidths)) {
     if ((std::empty(wavelengthsIn) && (num == 0)) || (!std::empty(wavelengthsIn) && (num != 0))) {
         throw std::invalid_argument("The spectrum soot model requires definition of either the number of wavelengths, or a vector of wavelengths to be integrated. One must be chosen.");
+    }
+
+    if (wavelengthsIn.size() != bandwidthsIn.size()) {
+        throw std::invalid_argument("The size of the wavelengths and bandwidths inputs must be equal to one another.");
     }
 
     //! If a range is given, initialize a linear variation in wavelength over the desired range.
@@ -13,7 +18,41 @@ ablate::eos::radiationProperties::SootSpectrumAbsorption::SootSpectrumAbsorption
     }
 }
 
-// TODO: Bandwidth of 10 nanometers is assumed for the filters. Constant emissivity over the bandwidth.
+// Bandwidth of 10 nanometers is assumed for the filters. Constant emissivity over the bandwidth.
+
+PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootEmissionFunction(const PetscReal *conserved, PetscReal *epsilon, void *ctx) {
+    PetscFunctionBeginUser;
+
+    auto functionContext = (FunctionContext *)ctx;
+    double temperature;                                                                                                                     //!< Variables to hold information gathered from the fields
+    PetscCall(functionContext->temperatureFunction.function(conserved, &temperature, functionContext->temperatureFunction.context.get()));  //!< Get the temperature value at this location
+
+    for (size_t i = 0; i < functionContext->wavelengths.size(); i++) {
+        epsilon[i] = ablate::radiation::Radiation::GetBlackBodyWavelengthIntensity(
+            temperature, functionContext->wavelengths[i], GetRefractiveIndex(functionContext->wavelengths[i]));  //! Get the black body intensity at the temperature and wavelength specified.
+        epsilon[i] *= functionContext->bandwidths[i];  //! Multiply it by the bandwidth under constant assumption to get the power integration.
+        /**
+         * In other models we may want to implement a smarter integration.
+         */
+    }
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootEmissionTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *epsilon, void *ctx) {
+    PetscFunctionBeginUser;
+
+    auto functionContext = (FunctionContext *)ctx;
+
+    for (size_t i = 0; i < functionContext->wavelengths.size(); i++) {
+        epsilon[i] = ablate::radiation::Radiation::GetBlackBodyWavelengthIntensity(
+            temperature, functionContext->wavelengths[i], GetRefractiveIndex(functionContext->wavelengths[i]));  //! Get the black body intensity at the temperature and wavelength specified.
+        epsilon[i] *= functionContext->bandwidths[i];  //! Multiply it by the bandwidth under constant assumption to get the power integration.
+        /**
+         * In other models we may want to implement a smarter integration.
+         */
+    }
+    PetscFunctionReturn(0);
+}
 
 PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootAbsorptionFunction(const PetscReal *conserved, PetscReal *kappa, void *ctx) {
     PetscFunctionBeginUser;
@@ -34,9 +73,8 @@ PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootAbs
     for (size_t i = 0; i < functionContext->wavelengths.size(); i++) {
         PetscReal lambda = functionContext->wavelengths[i] * 1E6;
         //! This is the wavelength. (We must integrate over the valid range of wavelengths.)
-        n = 1.811 + 0.1263 * log(lambda) + 0.027 * log(lambda) * log(lambda) + 0.0417 * log(lambda) * log(lambda) * log(lambda);  //! Fit of model to data.
-        k = 0.5821 + 0.1213 * log(lambda) + 0.2309 * log(lambda) * log(lambda) - 0.01 * log(lambda) * log(lambda) * log(lambda);  //! Fit of model to data.
-
+        n = GetRefractiveIndex(lambda);  //! Fit of model to data.
+        k = GetAbsorptiveIndex(lambda);  //! Fit of model to data.
         kappa[i] = (36 * ablate::utilities::Constants::pi * n * k * fv) / (((((n * n) - (k * k) + 2) * ((n * n) - (k * k) + 2)) + (4 * n * n * k * k)) * (lambda * 1E-6));
     }
 
@@ -60,8 +98,8 @@ PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootAbs
     for (size_t i = 0; i < functionContext->wavelengths.size(); i++) {
         PetscReal lambda = functionContext->wavelengths[i] * 1E6;  //! Must convert to micrometers because of the model fit
         //! This is the wavelength. (We must integrate over the valid range of wavelengths.)
-        n = 1.811 + 0.1263 * log(lambda) + 0.027 * log(lambda) * log(lambda) + 0.0417 * log(lambda) * log(lambda) * log(lambda);  //! Fit of model to data.
-        k = 0.5821 + 0.1213 * log(lambda) + 0.2309 * log(lambda) * log(lambda) - 0.01 * log(lambda) * log(lambda) * log(lambda);  //! Fit of model to data.
+        n = GetRefractiveIndex(lambda);  //! Fit of model to data.
+        k = GetAbsorptiveIndex(lambda);  //! Fit of model to data.
 
         kappa[i] = (36 * ablate::utilities::Constants::pi * n * k * fv) / (((((n * n) - (k * k) + 2) * ((n * n) - (k * k) + 2)) + (4 * n * n * k * k)) * (lambda * 1E-6));
     }
@@ -69,7 +107,7 @@ PetscErrorCode ablate::eos::radiationProperties::SootSpectrumAbsorption::SootAbs
     PetscFunctionReturn(0);
 }
 
-ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootSpectrumAbsorption::GetAbsorptionPropertiesFunction(RadiationProperty property,
+ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootSpectrumAbsorption::GetRadiationPropertiesFunction(RadiationProperty property,
                                                                                                                             const std::vector<domain::Field> &fields) const {
     const auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
 
@@ -97,12 +135,21 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootSpectru
                                                                              .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields),
                                                                              .wavelengths = wavelengthsIn}),
                 .propertySize = (int)wavelengthsIn.size()};  //!< Create a struct to hold the offsets
+        case RadiationProperty::Emissivity:
+            return ThermodynamicFunction{
+                .function = SootEmissionFunction,
+                .context = std::make_shared<FunctionContext>(FunctionContext{.densityYiCSolidCOffset = cOffset,
+                                                                             .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
+                                                                             .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields),
+                                                                             .wavelengths = wavelengthsIn,
+                                                                             .bandwidths = bandwidthsIn}),
+                .propertySize = (int)wavelengthsIn.size()};  //!< Create a struct to hold the offsets
         default:
             throw std::invalid_argument("Unknown radiationProperties property in ablate::eos::radiationProperties::SootAbsorptionModel");
     }
 }
 
-ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::SootSpectrumAbsorption::GetAbsorptionPropertiesTemperatureFunction(RadiationProperty property,
+ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::SootSpectrumAbsorption::GetRadiationPropertiesTemperatureFunction(RadiationProperty property,
                                                                                                                                                   const std::vector<domain::Field> &fields) const {
     const auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
 
@@ -124,7 +171,17 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
                 .context = std::make_shared<FunctionContext>(FunctionContext{.densityYiCSolidCOffset = cOffset,
                                                                              .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
                                                                              .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields),
-                                                                             .wavelengths = wavelengthsIn}),
+                                                                             .wavelengths = wavelengthsIn,
+                                                                             .bandwidths = bandwidthsIn}),
+                .propertySize = (int)wavelengthsIn.size()};  //!< Create a struct to hold the offsets
+        case RadiationProperty::Emissivity:
+            return ThermodynamicTemperatureFunction{
+                .function = SootEmissionTemperatureFunction,
+                .context = std::make_shared<FunctionContext>(FunctionContext{.densityYiCSolidCOffset = cOffset,
+                                                                             .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
+                                                                             .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields),
+                                                                             .wavelengths = wavelengthsIn,
+                                                                             .bandwidths = bandwidthsIn}),
                 .propertySize = (int)wavelengthsIn.size()};  //!< Create a struct to hold the offsets
         default:
             throw std::invalid_argument("Unknown radiationProperties property in ablate::eos::radiationProperties::SootAbsorptionModel");
@@ -135,5 +192,4 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
 REGISTER(ablate::eos::radiationProperties::RadiationModel, ablate::eos::radiationProperties::SootSpectrumAbsorption, "SootSpectrumAbsorption",
          ARG(ablate::eos::EOS, "eos", "The EOS used to compute field properties"), OPT(int, "num", "number of wavelengths that are integrated in the model"),
          OPT(double, "min", "number of wavelengths that are integrated in the model"), OPT(double, "max", "number of wavelengths that are integrated in the model"),
-         OPT(std::vector<double>, "wavelengths", "number of wavelengths that are integrated in the model"),
-         OPT(std::vector<double>, "bandwidths", "bandwidth of each associated wavelength"));
+         OPT(std::vector<double>, "wavelengths", "number of wavelengths that are integrated in the model"), OPT(std::vector<double>, "bandwidths", "bandwidth of each associated wavelength"));

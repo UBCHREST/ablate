@@ -28,7 +28,7 @@ TEST_P(SootSpectrumTestFixture, ShouldProduceExpectedValuesForField) {
     //! Later tests can be added to deal with the even distribution. For now this will not be used.
     std::vector<double> wavelengths = {650.E-9, 532.E-9, 470.E-9};
     auto sootModel = std::make_shared<ablate::eos::radiationProperties::SootSpectrumAbsorption>(eos, 0, 0, 0, wavelengths);  //!< An instantiation of the Zimmer model (with options set to nullptr)
-    auto absorptivityFunction = sootModel->GetAbsorptionPropertiesFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, SootSpectrumTestFixture::GetParam().fields);
+    auto absorptivityFunction = sootModel->GetRadiationPropertiesFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, SootSpectrumTestFixture::GetParam().fields);
 
     /** This section should set the fields with a certain distribution of material such that the absorptivity of that field produces a specific result */
 

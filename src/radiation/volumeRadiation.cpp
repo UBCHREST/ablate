@@ -31,7 +31,7 @@ void ablate::radiation::VolumeRadiation::Setup() {
     /**
      * Begins radiation properties model
      */
-    absorptivityFunction = radiation->GetRadiationModel()->GetAbsorptionPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, subDomain->GetFields());
+    absorptivityFunction = radiation->GetRadiationModel()->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, subDomain->GetFields());
     if (absorptivityFunction.propertySize != 1) throw std::invalid_argument("The volume radiation solver currently only accepts one radiation wavelength.");
 }
 

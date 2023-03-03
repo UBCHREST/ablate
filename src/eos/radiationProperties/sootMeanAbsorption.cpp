@@ -3,7 +3,29 @@
 
 ablate::eos::radiationProperties::SootMeanAbsorption::SootMeanAbsorption(std::shared_ptr<eos::EOS> eosIn) : eos(std::move(eosIn)) {}
 
-PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootFunction(const PetscReal *conserved, PetscReal *kappa, void *ctx) {
+PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootEmissionFunction(const PetscReal *conserved, PetscReal *epsilon, void *ctx) {
+    PetscFunctionBeginUser;
+
+    auto functionContext = (FunctionContext *)ctx;
+    double temperature;  //!< Variables to hold information gathered from the fields
+    PetscCall(functionContext->temperatureFunction.function(conserved, &temperature, functionContext->temperatureFunction.context.get()));   //!< Get the temperature value at this location
+
+    PetscReal refractiveIndex = GetRefractiveIndex();
+    *(epsilon) = ablate::radiation::Radiation::GetBlackBodyTotalIntensity(temperature, refractiveIndex);
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootEmissionTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *epsilon, void *ctx) {
+    PetscFunctionBeginUser;
+
+    PetscReal refractiveIndex = GetRefractiveIndex();
+    *(epsilon) = ablate::radiation::Radiation::GetBlackBodyTotalIntensity(temperature, refractiveIndex);
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootAbsorptionFunction(const PetscReal *conserved, PetscReal *kappa, void *ctx) {
     PetscFunctionBeginUser;
     /** This model depends on mass fraction, temperature, and density in order to predict the absorption properties of the medium. */
     auto functionContext = (FunctionContext *)ctx;
@@ -22,7 +44,7 @@ PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootFunctio
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *kappa, void *ctx) {
+PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootAbsorptionTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *kappa, void *ctx) {
     PetscFunctionBeginUser;
     /** This model depends on mass fraction, temperature, and density in order to predict the absorption properties of the medium. */
     auto functionContext = (FunctionContext *)ctx;
@@ -39,7 +61,7 @@ PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootTempera
     PetscFunctionReturn(0);
 }
 
-ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootMeanAbsorption::GetAbsorptionPropertiesFunction(RadiationProperty property, const std::vector<domain::Field> &fields) const {
+ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootMeanAbsorption::GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field> &fields) const {
     const auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
 
     /** Check if the species exist in this run.
@@ -59,7 +81,13 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootMeanAbs
 
     switch (property) {
         case RadiationProperty::Absorptivity:
-            return ThermodynamicFunction{.function = SootFunction,
+            return ThermodynamicFunction{.function = SootAbsorptionFunction,
+                                         .context = std::make_shared<FunctionContext>(FunctionContext{
+                                             .densityYiCSolidCOffset = cOffset,
+                                             .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
+                                             .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
+        case RadiationProperty::Emissivity:
+            return ThermodynamicFunction{.function = SootEmissionFunction,
                                          .context = std::make_shared<FunctionContext>(FunctionContext{
                                              .densityYiCSolidCOffset = cOffset,
                                              .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
@@ -69,7 +97,7 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootMeanAbs
     }
 }
 
-ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::SootMeanAbsorption::GetAbsorptionPropertiesTemperatureFunction(RadiationProperty property,
+ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::SootMeanAbsorption::GetRadiationPropertiesTemperatureFunction(RadiationProperty property,
                                                                                                                                               const std::vector<domain::Field> &fields) const {
     const auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
 
@@ -87,7 +115,14 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
     switch (property) {
         case RadiationProperty::Absorptivity:
             return ThermodynamicTemperatureFunction{
-                .function = SootTemperatureFunction,
+                .function = SootAbsorptionTemperatureFunction,
+                .context = std::make_shared<FunctionContext>(
+                    FunctionContext{.densityYiCSolidCOffset = cOffset,
+                                    .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
+                                    .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
+        case RadiationProperty::Emissivity:
+            return ThermodynamicTemperatureFunction{
+                .function = SootEmissionTemperatureFunction,
                 .context = std::make_shared<FunctionContext>(
                     FunctionContext{.densityYiCSolidCOffset = cOffset,
                                     .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),

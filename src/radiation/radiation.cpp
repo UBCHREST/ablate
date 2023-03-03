@@ -29,7 +29,8 @@ void ablate::radiation::Radiation::Setup(const ablate::domain::Range& cellRange,
      * Runs the ray initialization, finding cell indices
      * Initialize the log if provided
      */
-    absorptivityFunction = radiationModel->GetAbsorptionPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, subDomain.GetFields());
+    absorptivityFunction = radiationModel->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, subDomain.GetFields());
+    emissivityFunction = radiationModel->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Emissivity, subDomain.GetFields());
 
     if (log) {
         log->Initialize(subDomain.GetComm());
@@ -362,10 +363,6 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
     MPI_Type_commit(&carrierMpiType) >> utilities::MpiUtilities::checkError;
 }
 
-PetscReal ablate::radiation::Radiation::FlameIntensity(double epsilon, double temperature) { /** Gets the flame intensity based on temperature and emissivity (black body intensity) */
-    return epsilon * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature / ablate::utilities::Constants::pi;
-}
-
 void ablate::radiation::Radiation::UpdateCoordinates(PetscInt ipart, Virtualcoord* virtualcoord, PetscReal* coord, PetscReal adv) const {
     switch (dim) {
         case 1:
@@ -589,19 +586,22 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                 DMPlexPointLocalFieldRead(auxDm, cellSegment.cell, temperatureField.id, auxArray, &temperature);
                 if (temperature) {                                       /** Input absorptivity (kappa) values from model here. */
                     PetscReal kappa[absorptivityFunction.propertySize];  //!< Absorptivity coefficient, property of each cell. This is an array that we will iterate through for every evaluation
-                    absorptivityFunction.function(sol, *temperature, kappa, absorptivityFunctionContext);
+                    PetscReal emission[absorptivityFunction.propertySize];
+                    absorptivityFunction.function(sol, *temperature, kappa, absorptivityFunctionContext);  //! Get the absorption and emission information from the provided properties models.
+                    emissivityFunction.function(sol, *temperature, emission, absorptivityFunctionContext);
                     //! Get the pointer to the returned array of absorption values. Iterate through every wavelength for the evaluation.
                     if (cellSegment.pathLength < 0) {
                         // This is a boundary cell
                         for (int wavelengthIndex = 0; wavelengthIndex < absorptivityFunction.propertySize; ++wavelengthIndex) {
                             raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Ij +=
-                                FlameIntensity(1.0, *temperature) * raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad;
+                                emission[wavelengthIndex] * raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad;
+                            //! In the future we may want to set this intensity with a boundary condition function.
                         }
                     } else {
                         for (int wavelengthIndex = 0; wavelengthIndex < absorptivityFunction.propertySize; ++wavelengthIndex) {
                             // This is not a boundary cell
                             raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Ij +=
-                                FlameIntensity(1 - exp(-kappa[wavelengthIndex] * cellSegment.pathLength), *temperature) *
+                                emission[wavelengthIndex] * (1 - exp(-kappa[wavelengthIndex] * cellSegment.pathLength)) *
                                 raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad;
 
                             // Compute the total absorption for this domain

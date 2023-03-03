@@ -20,7 +20,7 @@ void ablate::monitors::RadiationFieldMonitor::Register(std::shared_ptr<ablate::s
     ablate::monitors::FieldMonitor::Register(dmID, solverIn, fields);
 
     // Get the density thermodynamic function
-    absorptivityFunction = radiationModel->GetAbsorptionPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, solverIn->GetSubDomain().GetFields());
+    absorptivityFunction = radiationModel->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, solverIn->GetSubDomain().GetFields());
 }
 
 PetscErrorCode ablate::monitors::RadiationFieldMonitor::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {

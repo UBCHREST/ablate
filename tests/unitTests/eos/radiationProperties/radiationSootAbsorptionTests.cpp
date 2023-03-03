@@ -28,7 +28,7 @@ TEST_P(SootTestFixture, ShouldProduceExpectedValuesForField) {
             [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) { *property = SootTestFixture::GetParam().densityIn; })));
 
     auto sootModel = std::make_shared<ablate::eos::radiationProperties::SootMeanAbsorption>(eos);  //!< An instantiation of the Zimmer model (with options set to nullptr)
-    auto absorptivityFunction = sootModel->GetAbsorptionPropertiesFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, SootTestFixture::GetParam().fields);
+    auto absorptivityFunction = sootModel->GetRadiationPropertiesFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, SootTestFixture::GetParam().fields);
 
     /** This section should set the fields with a certain distribution of material such that the absorptivity of that field produces a specific result */
 

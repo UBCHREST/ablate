@@ -92,10 +92,11 @@ static PetscReal ReallySolveParallelPlates(PetscReal z) {
      * Prescribe the top and bottom heights for the domain
      * */
     PetscReal G;
-    PetscReal IT = ablate::radiation::Radiation::FlameIntensity(1, 700);   // Intensity of rays originating from the top plate
-    PetscReal IB = ablate::radiation::Radiation::FlameIntensity(1, 1300);  // Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
-    PetscReal kappa = 1;                                                   // Kappa is not spatially dependant in this special case
-    PetscReal zBottom = -0.0105;                                           // Prescribe the top and bottom heights for the domain
+    PetscReal IT = ablate::radiation::Radiation::GetBlackBodyTotalIntensity(700, 1);  // Intensity of rays originating from the top plate
+    PetscReal IB =
+        ablate::radiation::Radiation::GetBlackBodyTotalIntensity(1300, 1);  // Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
+    PetscReal kappa = 1;                                                    // Kappa is not spatially dependant in this special case
+    PetscReal zBottom = -0.0105;                                            // Prescribe the top and bottom heights for the domain
     PetscReal zTop = 0.0105;
 
     PetscReal temperature;
@@ -121,7 +122,7 @@ static PetscReal ReallySolveParallelPlates(PetscReal z) {
             temperature = -1.179E7 * zp * zp + 2000.0;
         }
         /** Get the black body intensity here*/
-        Ibz = ablate::radiation::Radiation::FlameIntensity(1, temperature);
+        Ibz = ablate::radiation::Radiation::GetBlackBodyTotalIntensity(temperature, 1);
         Iplus.push_back(Ibz * EInteg(1, kappa * (z - zp)));
     }
     for (PetscInt nzp = 1; nzp < (nZp - 1); nzp++) {             /** Minus integral goes from z to top*/
@@ -133,7 +134,7 @@ static PetscReal ReallySolveParallelPlates(PetscReal z) {
             temperature = -1.179E7 * zp * zp + 2000.0;
         }
         /** Get the black body intensity here*/
-        Ibz = ablate::radiation::Radiation::FlameIntensity(1, temperature);
+        Ibz = ablate::radiation::Radiation::GetBlackBodyTotalIntensity(temperature, 1);
         Iminus.push_back(Ibz * EInteg(1, kappa * (zp - z)));
     }
 

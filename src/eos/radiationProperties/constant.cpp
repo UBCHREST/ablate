@@ -13,7 +13,7 @@ PetscErrorCode ablate::eos::radiationProperties::Constant::ConstantTemperatureFu
     PetscFunctionReturn(0);
 }
 
-ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Constant::GetAbsorptionPropertiesFunction(RadiationProperty property, const std::vector<domain::Field> &fields) const {
+ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Constant::GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field> &fields) const {
     switch (property) {
         case RadiationProperty::Absorptivity:
             return ThermodynamicFunction{.function = ConstantFunction, .context = std::make_shared<double>(absorptivity)};
@@ -22,7 +22,7 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Constant::G
     }
 }
 
-ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::Constant::GetAbsorptionPropertiesTemperatureFunction(RadiationProperty property,
+ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::Constant::GetRadiationPropertiesTemperatureFunction(RadiationProperty property,
                                                                                                                                     const std::vector<domain::Field> &fields) const {
     switch (property) {
         case RadiationProperty::Absorptivity:

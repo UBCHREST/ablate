@@ -6,27 +6,27 @@
 
 namespace ablate::eos::radiationProperties {
 
-enum class RadiationProperty { Absorptivity };
+enum class RadiationProperty { Absorptivity, Emissivity };
 
 class RadiationModel {
    public:
     virtual ~RadiationModel() = default;
 
     /**
-     * Single function to produce radiation properties based upon the available fields
+     * Function to produce radiation absorption properties based upon the available fields
      * @param property
      * @param fields
      * @return
      */
-    [[nodiscard]] virtual ThermodynamicFunction GetAbsorptionPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const = 0;
+    [[nodiscard]] virtual ThermodynamicFunction GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const = 0;
 
     /**
-     * Single function to produce radiation properties based upon the available fields and temperature
+     * Function to produce radiation absorption properties based upon the available fields and temperature
      * @param property
      * @param fields
      * @return
      */
-    [[nodiscard]] virtual ThermodynamicTemperatureFunction GetAbsorptionPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const = 0;
+    [[nodiscard]] virtual ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const = 0;
 };
 
 /**
@@ -38,6 +38,8 @@ constexpr std::string_view to_string(const RadiationProperty& prop) {
     switch (prop) {
         case RadiationProperty::Absorptivity:
             return "absorptivity";
+        case RadiationProperty::Emissivity:
+            return "emissivity";
     }
     return "";
 }
@@ -49,6 +51,7 @@ constexpr std::string_view to_string(const RadiationProperty& prop) {
  */
 constexpr RadiationProperty from_string(const std::string_view& prop) {
     if (prop == "absorptivity") return RadiationProperty::Absorptivity;
+    if (prop == "emissivity") return RadiationProperty::Emissivity;
     throw std::invalid_argument("No known RadiationProperty for " + std::string(prop));
 }
 
