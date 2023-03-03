@@ -7,6 +7,7 @@
 #include "radiationProperties.hpp"
 #include "solver/cellSolver.hpp"
 #include "utilities/mathUtilities.hpp"
+#include "radiation/radiation.hpp"
 
 namespace ablate::eos::radiationProperties {
 /** A radiation gas absorption model which computes the absorptivity based on the presence of certain species. */
@@ -50,20 +51,40 @@ class Zimmer : public RadiationModel {
     constexpr static double MWH2O = 2. * MWH + MWO;
 
     /**
-     * private static function for evaluating constant properties without temperature
+     * Returns black body emissivity for the gas
      * @param conserved
-     * @param property
+     * @param epsilon
      * @param ctx
+     * @return
      */
-    static PetscErrorCode ZimmerFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode ZimmerEmissionFunction(const PetscReal conserved[], PetscReal* epsilon, void* ctx);
+
+    /**
+     * Returns black body emissivity for the gas
+     * @param conserved
+     * @param temperature
+     * @param epsilon
+     * @param ctx
+     * @return
+     */
+    static PetscErrorCode ZimmerEmissionTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* epsilon, void* ctx);
+
 
     /**
      * private static function for evaluating constant properties without temperature
      * @param conserved
-     * @param property
+     * @param kappa
      * @param ctx
      */
-    static PetscErrorCode ZimmerTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
+    static PetscErrorCode ZimmerAbsorptionFunction(const PetscReal conserved[], PetscReal* kappa, void* ctx);
+
+    /**
+     * private static function for evaluating constant properties without temperature
+     * @param conserved
+     * @param kappa
+     * @param ctx
+     */
+    static PetscErrorCode ZimmerAbsorptionTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* kappa, void* ctx);
 
    public:
     explicit Zimmer(std::shared_ptr<eos::EOS> eosIn, PetscReal upperLimitIn = 0, PetscReal lowerLimitIn = 0);

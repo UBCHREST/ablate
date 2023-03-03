@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_SOOTMEANABSORPTION_HPP
-#define ABLATELIBRARY_SOOTMEANABSORPTION_HPP
+#ifndef ABLATELIBRARY_SOOTMEANPROPERTIES_HPP
+#define ABLATELIBRARY_SOOTMEANPROPERTIES_HPP
 
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "radiationProperties.hpp"
@@ -8,7 +8,7 @@
 
 namespace ablate::eos::radiationProperties {
 /** A radiation soot absorption model which computes the absorptivity of soot based on temperature and number density */
-class SootMeanAbsorption : public RadiationModel {
+class SootMeanProperties : public RadiationModel {
    private:
     struct FunctionContext {
         PetscInt densityYiCSolidCOffset;
@@ -20,7 +20,7 @@ class SootMeanAbsorption : public RadiationModel {
     constexpr static PetscReal C_0 = 7.0;
     constexpr static PetscReal rhoC = 2000;  // kg/m^3
    public:
-    SootMeanAbsorption(std::shared_ptr<EOS> eosIn);
+    SootMeanProperties(std::shared_ptr<EOS> eosIn);
     ThermodynamicFunction GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
     ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
 
@@ -33,4 +33,4 @@ class SootMeanAbsorption : public RadiationModel {
     static inline PetscReal GetRefractiveIndex() { return 1; }
 };
 }  // namespace ablate::eos::radiationProperties
-#endif  // ABLATELIBRARY_SOOTMEANABSORPTION_HPP
+#endif  // ABLATELIBRARY_SOOTMEANPROPERTIES_HPP

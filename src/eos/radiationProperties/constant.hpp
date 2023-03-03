@@ -8,6 +8,7 @@ namespace ablate::eos::radiationProperties {
 class Constant : public RadiationModel {
    private:
     const PetscReal absorptivity;
+    const PetscReal emissivity;
 
     /**
      * private static function for evaluating constant properties without temperature
@@ -26,7 +27,7 @@ class Constant : public RadiationModel {
     static PetscErrorCode ConstantTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
 
    public:
-    explicit Constant(double absorptivity);
+    explicit Constant(double absorptivity, double emissivity);
     explicit Constant(const Constant&) = delete;
     void operator=(const Constant&) = delete;
 

@@ -26,7 +26,7 @@ if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 endif ()
 
 # Create the library for ablate
-add_library(ablateLibrary SHARED src/eos/radiationProperties/sootSpectrumAbsorption.cpp src/eos/radiationProperties/sootSpectrumAbsorption.hpp)
+add_library(ablateLibrary SHARED src/eos/radiationProperties/sootSpectrumProperties.cpp src/eos/radiationProperties/sootSpectrumProperties.hpp)
 
 # Load in the subdirectories for the ablate library
 add_subdirectory(src)

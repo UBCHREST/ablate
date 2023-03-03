@@ -3,12 +3,12 @@ target_sources(ablateLibrary
         constant.cpp
         zimmer.cpp
         sum.cpp
-        sootMeanAbsorption.cpp
+        sootMeanProperties.cpp
 
         PUBLIC
         radiationProperties.hpp
         constant.hpp
         zimmer.hpp
         sum.hpp
-        sootMeanAbsorption.hpp
+        sootMeanProperties.hpp
         )

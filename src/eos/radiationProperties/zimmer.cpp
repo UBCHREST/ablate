@@ -4,7 +4,27 @@
 ablate::eos::radiationProperties::Zimmer::Zimmer(std::shared_ptr<eos::EOS> eosIn, PetscReal upperLimitIn, PetscReal lowerLimitIn)
     : eos(std::move(eosIn)), upperLimitStored((upperLimitIn == 0) ? 2500 : upperLimitIn), lowerLimitStored((lowerLimitIn == 0) ? 500 : lowerLimitIn) {}
 
-PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerFunction(const PetscReal *conserved, PetscReal *kappa, void *ctx) {
+PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerEmissionFunction(const PetscReal *conserved, PetscReal *epsilon, void *ctx) {
+    PetscFunctionBeginUser;
+
+    auto functionContext = (FunctionContext *)ctx;
+    PetscReal temperature = 0;
+    PetscCall(functionContext->temperatureFunction.function(conserved, &temperature, functionContext->temperatureFunction.context.get()));  //!< Get the temperature value at this location
+
+    *(epsilon) = ablate::radiation::Radiation::GetBlackBodyTotalIntensity(temperature, 1);
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerEmissionTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal *epsilon, void *ctx) {
+    PetscFunctionBeginUser;
+
+    *(epsilon) = ablate::radiation::Radiation::GetBlackBodyTotalIntensity(temperature, 1);
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerAbsorptionFunction(const PetscReal *conserved, PetscReal *kappa, void *ctx) {
     PetscFunctionBeginUser;
 
     /** This model depends on mass fraction, temperature, and density in order to predict the absorption properties of the medium. */
@@ -73,7 +93,7 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerFunction(const Pe
     }
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *kappa, void *ctx) {
+PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerAbsorptionTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *kappa, void *ctx) {
     PetscFunctionBeginUser;
 
     /** This model depends on mass fraction, temperature, and density in order to predict the absorption properties of the medium. */
@@ -165,7 +185,18 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Zimmer::Get
 
     switch (property) {
         case RadiationProperty::Absorptivity:
-            return ThermodynamicFunction{.function = ZimmerFunction,
+            return ThermodynamicFunction{.function = ZimmerAbsorptionFunction,
+                                         .context = std::make_shared<FunctionContext>(FunctionContext{
+                                             .densityYiH2OOffset = H2Ooffset,
+                                             .densityYiCO2Offset = CO2offset,
+                                             .densityYiCOOffset = COoffset,
+                                             .densityYiCH4Offset = CH4offset,
+                                             .upperLimit = upperLimitStored,
+                                             .lowerLimit = lowerLimitStored,
+                                             .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
+                                             .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
+        case RadiationProperty::Emissivity:
+            return ThermodynamicFunction{.function = ZimmerEmissionFunction,
                                          .context = std::make_shared<FunctionContext>(FunctionContext{
                                              .densityYiH2OOffset = H2Ooffset,
                                              .densityYiCO2Offset = CO2offset,
@@ -206,7 +237,19 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
     switch (property) {
         case RadiationProperty::Absorptivity:
             return ThermodynamicTemperatureFunction{
-                .function = ZimmerTemperatureFunction,
+                .function = ZimmerAbsorptionTemperatureFunction,
+                .context = std::make_shared<FunctionContext>(
+                    FunctionContext{.densityYiH2OOffset = H2Ooffset,
+                                    .densityYiCO2Offset = CO2offset,
+                                    .densityYiCOOffset = COoffset,
+                                    .densityYiCH4Offset = CH4offset,
+                                    .upperLimit = upperLimitStored,
+                                    .lowerLimit = lowerLimitStored,
+                                    .temperatureFunction = {},
+                                    .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
+        case RadiationProperty::Emissivity:
+            return ThermodynamicTemperatureFunction{
+                .function = ZimmerEmissionTemperatureFunction,
                 .context = std::make_shared<FunctionContext>(
                     FunctionContext{.densityYiH2OOffset = H2Ooffset,
                                     .densityYiCO2Offset = CO2offset,

@@ -1,9 +1,9 @@
-#include "sootMeanAbsorption.hpp"
 #include "eos/tChemSoot.hpp"
+#include "sootMeanProperties.hpp"
 
-ablate::eos::radiationProperties::SootMeanAbsorption::SootMeanAbsorption(std::shared_ptr<eos::EOS> eosIn) : eos(std::move(eosIn)) {}
+ablate::eos::radiationProperties::SootMeanProperties::SootMeanProperties(std::shared_ptr<eos::EOS> eosIn) : eos(std::move(eosIn)) {}
 
-PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootEmissionFunction(const PetscReal *conserved, PetscReal *epsilon, void *ctx) {
+PetscErrorCode ablate::eos::radiationProperties::SootMeanProperties::SootEmissionFunction(const PetscReal *conserved, PetscReal *epsilon, void *ctx) {
     PetscFunctionBeginUser;
 
     auto functionContext = (FunctionContext *)ctx;
@@ -16,7 +16,7 @@ PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootEmissio
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootEmissionTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *epsilon, void *ctx) {
+PetscErrorCode ablate::eos::radiationProperties::SootMeanProperties::SootEmissionTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *epsilon, void *ctx) {
     PetscFunctionBeginUser;
 
     PetscReal refractiveIndex = GetRefractiveIndex();
@@ -25,7 +25,7 @@ PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootEmissio
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootAbsorptionFunction(const PetscReal *conserved, PetscReal *kappa, void *ctx) {
+PetscErrorCode ablate::eos::radiationProperties::SootMeanProperties::SootAbsorptionFunction(const PetscReal *conserved, PetscReal *kappa, void *ctx) {
     PetscFunctionBeginUser;
     /** This model depends on mass fraction, temperature, and density in order to predict the absorption properties of the medium. */
     auto functionContext = (FunctionContext *)ctx;
@@ -44,7 +44,7 @@ PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootAbsorpt
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootAbsorptionTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *kappa, void *ctx) {
+PetscErrorCode ablate::eos::radiationProperties::SootMeanProperties::SootAbsorptionTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *kappa, void *ctx) {
     PetscFunctionBeginUser;
     /** This model depends on mass fraction, temperature, and density in order to predict the absorption properties of the medium. */
     auto functionContext = (FunctionContext *)ctx;
@@ -61,7 +61,7 @@ PetscErrorCode ablate::eos::radiationProperties::SootMeanAbsorption::SootAbsorpt
     PetscFunctionReturn(0);
 }
 
-ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootMeanAbsorption::GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field> &fields) const {
+ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootMeanProperties::GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field> &fields) const {
     const auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
 
     /** Check if the species exist in this run.
@@ -97,7 +97,7 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::SootMeanAbs
     }
 }
 
-ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::SootMeanAbsorption::GetRadiationPropertiesTemperatureFunction(RadiationProperty property,
+ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::SootMeanProperties::GetRadiationPropertiesTemperatureFunction(RadiationProperty property,
                                                                                                                                               const std::vector<domain::Field> &fields) const {
     const auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
 
@@ -133,5 +133,5 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::eos::radiationProperties::RadiationModel, ablate::eos::radiationProperties::SootMeanAbsorption, "SootMeanAbsorption",
+REGISTER(ablate::eos::radiationProperties::RadiationModel, ablate::eos::radiationProperties::SootMeanProperties, "SootMeanAbsorption",
          ARG(ablate::eos::EOS, "eos", "The EOS used to compute field properties"));

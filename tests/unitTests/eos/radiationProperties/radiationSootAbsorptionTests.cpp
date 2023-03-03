@@ -1,7 +1,5 @@
 #include <eos/mockEOS.hpp>
 #include "domain/mockField.hpp"
-#include "eos/radiationProperties/sootMeanAbsorption.hpp"
-#include "eos/tChemSoot.hpp"
 #include "gtest/gtest.h"
 
 struct SootTestParameters {
@@ -27,7 +25,7 @@ TEST_P(SootTestFixture, ShouldProduceExpectedValuesForField) {
         .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicTemperatureFunction(
             [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) { *property = SootTestFixture::GetParam().densityIn; })));
 
-    auto sootModel = std::make_shared<ablate::eos::radiationProperties::SootMeanAbsorption>(eos);  //!< An instantiation of the Zimmer model (with options set to nullptr)
+    auto sootModel = std::make_shared<ablate::eos::radiationProperties::SootMeanProperties>(eos);  //!< An instantiation of the Zimmer model (with options set to nullptr)
     auto absorptivityFunction = sootModel->GetRadiationPropertiesFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, SootTestFixture::GetParam().fields);
 
     /** This section should set the fields with a certain distribution of material such that the absorptivity of that field produces a specific result */

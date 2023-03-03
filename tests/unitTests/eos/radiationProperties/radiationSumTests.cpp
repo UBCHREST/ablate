@@ -45,27 +45,30 @@ TEST_P(RadiationSumTestFixture, ShouldComputeCorrectValueForGetRadiationProperti
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    RadiationSumTests, RadiationSumTestFixture,
-    testing::Values(
-        (RadiationSumTestParameters){.getInputModels =
-                                         []() {
-                                             return std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>>{std::make_shared<ablate::eos::radiationProperties::Constant>(1.4),
-                                                                                                                                   std::make_shared<ablate::eos::radiationProperties::Constant>(1.6)};
-                                         },
-                                     .expectedParameters = {{ablate::eos::radiationProperties::RadiationProperty::Absorptivity, 3.0}}},
-        (RadiationSumTestParameters){
-            .getInputModels = []() { return std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>>{std::make_shared<ablate::eos::radiationProperties::Constant>(1.4)}; },
-            .expectedParameters = {{ablate::eos::radiationProperties::RadiationProperty::Absorptivity, 1.4}}},
-        (RadiationSumTestParameters){.getInputModels =
-                                         []() {
-                                             return std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>>{std::make_shared<ablate::eos::radiationProperties::Constant>(1.4),
-                                                                                                                                   std::make_shared<ablate::eos::radiationProperties::Constant>(2.4),
-                                                                                                                                   std::make_shared<ablate::eos::radiationProperties::Constant>(3.5)};
-                                         },
-                                     .expectedParameters = {{ablate::eos::radiationProperties::RadiationProperty::Absorptivity, 7.3}}}
+INSTANTIATE_TEST_SUITE_P(RadiationSumTests, RadiationSumTestFixture,
+                         testing::Values((RadiationSumTestParameters){.getInputModels =
+                                                                          []() {
+                                                                              return std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>>{
+                                                                                  std::make_shared<ablate::eos::radiationProperties::Constant>(1.4, 1),
+                                                                                  std::make_shared<ablate::eos::radiationProperties::Constant>(1.6, 1)};
+                                                                          },
+                                                                      .expectedParameters = {{ablate::eos::radiationProperties::RadiationProperty::Absorptivity, 3.0}}},
+                                         (RadiationSumTestParameters){.getInputModels =
+                                                                          []() {
+                                                                              return std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>>{
+                                                                                  std::make_shared<ablate::eos::radiationProperties::Constant>(1.4, 1)};
+                                                                          },
+                                                                      .expectedParameters = {{ablate::eos::radiationProperties::RadiationProperty::Absorptivity, 1.4}}},
+                                         (RadiationSumTestParameters){.getInputModels =
+                                                                          []() {
+                                                                              return std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>>{
+                                                                                  std::make_shared<ablate::eos::radiationProperties::Constant>(1.4, 1),
+                                                                                  std::make_shared<ablate::eos::radiationProperties::Constant>(2.4, 1),
+                                                                                  std::make_shared<ablate::eos::radiationProperties::Constant>(3.5, 1)};
+                                                                          },
+                                                                      .expectedParameters = {{ablate::eos::radiationProperties::RadiationProperty::Absorptivity, 7.3}}}
 
-        ));
+                                         ));
 
 TEST(RadiationSumTests, ShouldThrowExceptionForEmptyModelList) {
     // arrange

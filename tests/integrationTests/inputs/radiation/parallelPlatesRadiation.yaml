@@ -92,5 +92,7 @@ solvers:
       properties: !ablate::eos::radiationProperties::Sum
         - !ablate::eos::radiationProperties::Constant
           absorptivity: .4
+          emissivity: 1
         - !ablate::eos::radiationProperties::Constant
           absorptivity: .6
+          emissivity: 1

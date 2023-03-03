@@ -89,9 +89,10 @@ solvers:
             id: tcp
             region:
               name: interiorCells
-            properties: !ablate::eos::radiationProperties::SootSpectrumAbsorption
+            properties: !ablate::eos::radiationProperties::SootSpectrumProperties
               eos: *eos
               wavelengths: [ 650.0E-9, 532.0E-9, 470.0E-9 ] # Red wavelength, # Green wavelength, # Blue wavelength
+              bandwidths: [ 10E-9, 10E-9 , 10E-9 ]
             log: !ablate::monitors::logs::StdOut
     eos: *eos
   - !ablate::boundarySolver::BoundarySolver

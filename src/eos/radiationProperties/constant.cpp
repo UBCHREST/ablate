@@ -1,6 +1,6 @@
 #include "constant.hpp"
 
-ablate::eos::radiationProperties::Constant::Constant(double absorptivity) : absorptivity(absorptivity) {}
+ablate::eos::radiationProperties::Constant::Constant(double absorptivity, double emissivity) : absorptivity(absorptivity), emissivity(emissivity) {}
 
 PetscErrorCode ablate::eos::radiationProperties::Constant::ConstantFunction(const PetscReal *conserved, PetscReal *property, void *ctx) {
     PetscFunctionBeginUser;
@@ -17,6 +17,8 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Constant::G
     switch (property) {
         case RadiationProperty::Absorptivity:
             return ThermodynamicFunction{.function = ConstantFunction, .context = std::make_shared<double>(absorptivity)};
+        case RadiationProperty::Emissivity:
+            return ThermodynamicFunction{.function = ConstantFunction, .context = std::make_shared<double>(emissivity)};
         default:
             throw std::invalid_argument("Unknown radiationProperties property ablate::eos::radiationProperties::Constant");
     }
@@ -27,6 +29,8 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
     switch (property) {
         case RadiationProperty::Absorptivity:
             return ThermodynamicTemperatureFunction{.function = ConstantTemperatureFunction, .context = std::make_shared<double>(absorptivity)};
+        case RadiationProperty::Emissivity:
+            return ThermodynamicTemperatureFunction{.function = ConstantTemperatureFunction, .context = std::make_shared<double>(emissivity)};
         default:
             throw std::invalid_argument("Unknown radiationProperties property in ablate::eos::radiationProperties::Constant");
     }
@@ -34,4 +38,4 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
 
 #include "registrar.hpp"
 REGISTER(ablate::eos::radiationProperties::RadiationModel, ablate::eos::radiationProperties::Constant, "constant value transport model (often used for testing)",
-         ARG(double, "absorptivity", "radiative absorptivity"));
+         ARG(double, "absorptivity", "radiative absorptivity"), ARG(double, "emissivity", "radiative emissivity"));

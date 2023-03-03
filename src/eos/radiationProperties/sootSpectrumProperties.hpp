@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_SOOTSPECTRUMABSORPTION_HPP
-#define ABLATELIBRARY_SOOTSPECTRUMABSORPTION_HPP
+#ifndef ABLATELIBRARY_SOOTSPECTRUMPROPERTIES_HPP
+#define ABLATELIBRARY_SOOTSPECTRUMPROPERTIES_HPP
 
 #include "eos/tChemSoot.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
@@ -8,7 +8,7 @@
 #include "utilities/constants.hpp"
 
 namespace ablate::eos::radiationProperties {
-class SootSpectrumAbsorption : public RadiationModel {
+class SootSpectrumProperties : public RadiationModel {
    private:
     struct FunctionContext {
         PetscInt densityYiCSolidCOffset;
@@ -28,7 +28,7 @@ class SootSpectrumAbsorption : public RadiationModel {
     std::vector<PetscReal> bandwidthsIn;
 
    public:
-    SootSpectrumAbsorption(std::shared_ptr<eos::EOS> eosIn, int num = 0, double min = 0.4E-6, double max = 30E-6, const std::vector<double>& wavelengths = {},
+    SootSpectrumProperties(std::shared_ptr<eos::EOS> eosIn, int num = 0, double min = 0.4E-6, double max = 30E-6, const std::vector<double>& wavelengths = {},
                            const std::vector<double>& bandwidths = {});
 
     ThermodynamicFunction GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
@@ -46,4 +46,4 @@ class SootSpectrumAbsorption : public RadiationModel {
 };
 }  // namespace ablate::eos::radiationProperties
 
-#endif  // ABLATELIBRARY_SOOTSPECTRUMABSORPTION_HPP
+#endif  // ABLATELIBRARY_SOOTSPECTRUMPROPERTIES_HPP
