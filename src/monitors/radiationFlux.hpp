@@ -6,6 +6,7 @@
 #include "io/interval/interval.hpp"
 #include "monitor.hpp"
 #include "radiation/radiation.hpp"
+#include "radiation/surfaceRadiation.hpp"
 #include "solver/dynamicRange.hpp"
 
 namespace ablate::monitors {
@@ -28,7 +29,7 @@ class RadiationFlux : public Monitor, public io::Serializable {
     /**
      * A vector of radiation models which describe ray tracers with different attached properties.
      */
-    std::vector<std::shared_ptr<ablate::radiation::Radiation>> radiation;
+    std::vector<std::shared_ptr<ablate::radiation::SurfaceRadiation>> radiation;
 
     /**
      * The boundary solver
@@ -46,7 +47,7 @@ class RadiationFlux : public Monitor, public io::Serializable {
     std::shared_ptr<ablate::domain::Region> radiationFluxRegion;
 
    public:
-    RadiationFlux(std::vector<std::shared_ptr<radiation::Radiation>> radiationIn, std::shared_ptr<domain::Region> radiationFluxRegionIn);
+    RadiationFlux(std::vector<std::shared_ptr<radiation::SurfaceRadiation>> radiationIn, std::shared_ptr<domain::Region> radiationFluxRegionIn);
 
     /**
      * Clean up the petsc objects
