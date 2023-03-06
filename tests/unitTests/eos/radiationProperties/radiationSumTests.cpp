@@ -1,5 +1,5 @@
 #include "PetscTestFixture.hpp"
-#include "eos/perfectGas.hpp"
+#include "eos/mockEOS.hpp"
 #include "eos/radiationProperties/constant.hpp"
 #include "eos/radiationProperties/sum.hpp"
 #include "gtest/gtest.h"
@@ -16,8 +16,6 @@ TEST_P(RadiationSumTestFixture, ShouldComputeCorrectValueForGetRadiationProperti
     // arrange
     auto inputModels = GetParam().getInputModels();
     auto sumModel = std::make_shared<ablate::eos::radiationProperties::Sum>(inputModels);
-
-    std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
 
     for (const auto& [property, expectedValue] : GetParam().expectedParameters) {
         // act
@@ -54,7 +52,7 @@ INSTANTIATE_TEST_SUITE_P(
         (RadiationSumTestParameters){
             .getInputModels =
                 []() {
-                    auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}));
+                    std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();  //!< Create a mock eos with parameters to feed to the Zimmer model.
                     std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
 
                     return std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>>{std::make_shared<ablate::eos::radiationProperties::Constant>(eos, 1.4, 1),
@@ -64,7 +62,8 @@ INSTANTIATE_TEST_SUITE_P(
         (RadiationSumTestParameters){
             .getInputModels =
                 []() {
-                    auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}));
+                    std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();  //!< Create a mock eos with parameters to feed to the Zimmer model.
+
                     std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
 
                     return std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>>{std::make_shared<ablate::eos::radiationProperties::Constant>(eos, 1.4, 1)};
@@ -73,7 +72,7 @@ INSTANTIATE_TEST_SUITE_P(
         (RadiationSumTestParameters){
             .getInputModels =
                 []() {
-                    auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}));
+                    std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();  //!< Create a mock eos with parameters to feed to the Zimmer model.
                     std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
 
                     return std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>>{std::make_shared<ablate::eos::radiationProperties::Constant>(eos, 1.4, 1),
