@@ -1,6 +1,6 @@
 #include "radiationFlux.hpp"
 
-ablate::monitors::RadiationFlux::RadiationFlux(std::vector<std::shared_ptr<radiation::Radiation>> radiationIn, std::shared_ptr<domain::Region> radiationFluxRegionIn)
+ablate::monitors::RadiationFlux::RadiationFlux(std::vector<std::shared_ptr<radiation::SurfaceRadiation>> radiationIn, std::shared_ptr<domain::Region> radiationFluxRegionIn)
     : radiation(std::move(radiationIn)), radiationFluxRegion(std::move(radiationFluxRegionIn)) {}
 
 ablate::monitors::RadiationFlux::~RadiationFlux() {}
@@ -139,19 +139,30 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
         DMPlexGetSubpointIS(fluxDm, &faceIs) >> utilities::PetscUtilities::checkError;
         ISGetIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
 
+        DMLabel ghostLabel;
+        DMGetLabel(GetSolver()->GetSubDomain().GetDM(), "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
+        DMLabel radiationRegionLabel;
+        DMGetLabel(GetSolver()->GetSubDomain().GetDM(), radiationFluxRegion->GetName().c_str(), &radiationRegionLabel) >> utilities::PetscUtilities::checkError;
+
         for (PetscInt c = cStart; c < cEnd; ++c) {
-            for (std::size_t i = 0; i < radiation.size(); i++) {
-                /**
-                 * Write the intensity into the fluxDm for outputting.
-                 * Now that the intensity has been read out of the ray tracing solver, it will need to be written to the field which stores the radiation information in the monitor.
-                 * This is where the computed information should be written to the dm that was created for the radiation flux monitor.
-                 */
-                PetscScalar* globalFaceData = nullptr;  //! The size of the pointer is equal to the number of fields that are in the DM.
-                DMPlexPointLocalRef(fluxDm, c, localFaceArray, &globalFaceData) >> utilities::PetscUtilities::checkError;
-                /**
-                 * Get the intensity calculated out of the ray tracer. Write it to the appropriate location in the face DM.
-                 */
-                globalFaceData[i] = radiation[i]->GetIntensity((c - cStart), monitorRange.GetRange(), 0, 1);
+            PetscInt boundaryPt = faceToBoundary[c];
+            PetscInt ghost = -1;
+            if (ghostLabel) DMLabelGetValue(ghostLabel, boundaryPt, &ghost) >> utilities::PetscUtilities::checkError;
+            if (!(ghost >= 0)) {
+                for (std::size_t i = 0; i < radiation.size(); i++) {
+                    /**
+                     * Write the intensity into the fluxDm for outputting.
+                     * Now that the intensity has been read out of the ray tracing solver, it will need to be written to the field which stores the radiation information in the monitor.
+                     * This is where the computed information should be written to the dm that was created for the radiation flux monitor.
+                     */
+                    PetscScalar* globalFaceData = nullptr;  //! The size of the pointer is equal to the number of fields that are in the DM.
+                    DMPlexPointLocalRef(fluxDm, c, localFaceArray, &globalFaceData) >> utilities::PetscUtilities::checkError;
+                    /**
+                     * Get the intensity calculated out of the ray tracer. Write it to the appropriate location in the face DM.
+                     */
+                    PetscReal intensity = radiation[i]->GetIntensity((c - cStart), monitorRange.GetRange(), 0, 1);
+                    globalFaceData[i] = intensity;
+                }
             }
         }
         // restore
@@ -177,5 +188,5 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
 
 #include "registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::RadiationFlux, "outputs radiation flux information about a region.",
-         ARG(std::vector<ablate::radiation::Radiation>, "radiation", "ray tracing solvers which write information to the boundary faces. Use orthogonal for a window or surface for a plate."),
+         ARG(std::vector<ablate::radiation::SurfaceRadiation>, "radiation", "ray tracing solvers which write information to the boundary faces. Use orthogonal for a window or surface for a plate."),
          ARG(ablate::domain::Region, "region", "face region where the radiation is detected. The region given to the ray tracers must not include the cells adjacent to the back of these faces."));
