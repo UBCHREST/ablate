@@ -2,7 +2,7 @@
 
 ablate::radiation::OrthogonalRadiation::OrthogonalRadiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region,
                                                             std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
-    : Radiation(solverId, region, 0, radiationModelIn, log) {}  //! The ray number should never be used because there is only one ray emanating from every boundary face
+    : SurfaceRadiation(solverId, region, 0, radiationModelIn, log) {}  //! The ray number should never be used because there is only one ray emanating from every boundary face
 
 ablate::radiation::OrthogonalRadiation::~OrthogonalRadiation() {}
 
@@ -109,7 +109,7 @@ void ablate::radiation::OrthogonalRadiation::Setup(const solver::Range& cellRang
             /** Update the physical coordinate field so that the real particle location can be updated. */
             UpdateCoordinates(ipart, virtualcoord, coord, 0.0);  //! adv value of 0.0 places the particle exactly where the virtual coordinates are.
 
-            /** Label the particle with the ray identifier. With what is known at this point**/
+            /** Label the particle with the ray identifier. With what is known at this point */
             identifier[ipart].originRank = rank;    //!< Input the ray identifier. This location scheme represents stepping four entries for every particle index increase
             identifier[ipart].originRayId = ipart;  //! This serve to identify the ray id on the origin
             identifier[ipart].remoteRank = PETSC_DECIDE;
@@ -117,8 +117,7 @@ void ablate::radiation::OrthogonalRadiation::Setup(const solver::Range& cellRang
             identifier[ipart].nSegment = -1;
 
             // Compute the intensityFactor
-            //! This doesn't really have any meaning in this case unless there is some kind of unit conversion between the intensity of the orthogonal ray and the detected intensity.
-            gainsFactor[ipart] = 1;
+            gainsFactor[ipart] = ablate::utilities::Constants::pi;  //! Intensity of the irradiation at the surface is pi * intensity integrated.
 
             /** Set the index of the field value so that it can be written to for every particle */
             ipart++;  //!< Must be iterated at the end since the value is initialized at zero.}
@@ -140,7 +139,7 @@ void ablate::radiation::OrthogonalRadiation::Setup(const solver::Range& cellRang
 }
 
 #include "registrar.hpp"
-REGISTER_DERIVED(ablate::radiation::Radiation, ablate::radiation::OrthogonalRadiation);
+REGISTER_DERIVED(ablate::radiation::SurfaceRadiation, ablate::radiation::OrthogonalRadiation);
 REGISTER(ablate::radiation::OrthogonalRadiation, ablate::radiation::OrthogonalRadiation, "A solver for radiative heat transfer in participating media",
          ARG(std::string, "id", "the name of the flow field"), ARG(ablate::domain::Region, "region", "the boundary region to apply this solver."),
          ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

@@ -63,8 +63,6 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
     /** Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solverIn.
      * The purpose of using a dynamic range is to avoid including the boundary cells within the stored range of faces that belongs to the radiation solvers in the monitor.
      * */
-    //    ablate::solver::Range solverRange;
-    //    solverIn->GetFaceRange(solverRange);
     for (PetscInt c = cStart; c < cEnd; ++c) {
         const PetscInt iCell = faceToBoundary[c];  //!< Isolates the valid cells
         PetscInt ghost = -1;
@@ -160,7 +158,7 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
                     /**
                      * Get the intensity calculated out of the ray tracer. Write it to the appropriate location in the face DM.
                      */
-                    PetscReal intensity = radiation[i]->GetIntensity((c - cStart), monitorRange.GetRange(), 0, 1);
+                    PetscReal intensity = radiation[i]->GetSurfaceIntensity(boundaryPt, 0, 1);
                     globalFaceData[i] = intensity;
                 }
             }
