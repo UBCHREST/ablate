@@ -32,6 +32,7 @@ void ablate::radiation::VolumeRadiation::Setup() {
      * Begins radiation properties model
      */
     absorptivityFunction = radiation->GetRadiationModel()->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, subDomain->GetFields());
+    emissivityFunction = radiation->GetRadiationModel()->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Emissivity, subDomain->GetFields());
     if (absorptivityFunction.propertySize != 1) throw std::invalid_argument("The volume radiation solver currently only accepts one radiation wavelength.");
 }
 
@@ -77,8 +78,10 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
     PetscReal* sol = nullptr;          //!< The solution value at any given location
     PetscReal* temperature = nullptr;  //!< The temperature at any given location
     double kappa = 1;                  //!< Absorptivity coefficient, property of each cell
+    double epsilon = 1;                  //!< Absorptivity coefficient, property of each cell
 
     auto absorptivityFunctionContext = absorptivityFunction.context.get();  //!< Get access to the absorption function
+    auto emissivityFunctionContext = emissivityFunction.context.get();  //!< Get access to the absorption function
 
     //!< This will iterate only though local cells
     auto& range = radiationCellRange.GetRange();
@@ -92,12 +95,13 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
             DMPlexPointLocalFieldRead(auxDm, iCell, temperatureFieldInfo.id, auxArray, &temperature) >> utilities::PetscUtilities::checkError;
 
             absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
+            emissivityFunction.function(sol, *temperature, &epsilon, emissivityFunctionContext);
 
             PetscScalar* rhsValues;
             DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
             PetscReal intensity[1];  //! This implies that there is currently only support for one wavelength in the volumetric radiation solver.
             //! Implement a wavelength dependant absorption integration here if desired.
-            radiation->GetIntensity(intensity, c, range, *temperature, kappa);              //!< Loop through the cells and update the equation of state
+            radiation->GetIntensity(intensity, c, range, *temperature, kappa, epsilon);              //!< Loop through the cells and update the equation of state
             rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += intensity[0];  //! Add the solution of this intensity.
         }
     }
