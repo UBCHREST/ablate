@@ -65,6 +65,125 @@ class MathUtilities {
         return dot;
     }
 
+    template <int dim, class T>
+    static inline T DotVector(const T* a, const T* b) {
+        if constexpr (dim == 3) {
+            return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+        }
+        if constexpr (dim == 2) {
+            return a[0] * b[0] + a[1] * b[1];
+        }
+        if constexpr (dim == 1) {
+            return a[0] * b[0];
+        }
+        static_assert(dim == 1 || dim == 2 || dim == 3, "ablate::utilities::MathUtilities::DotVector only support dimensions of 1, 2, or 3");
+    }
+
+    /**
+     * Compute the vector and take the resulting dot product
+     * result = (aE - aS) * b
+     *
+     * @tparam I
+     * @tparam T
+     * @param dim
+     * @param a
+     * @param b
+     * @return
+     */
+    template <class I, class T>
+    static inline T DiffDotVector(I dim, const T* aE, const T* aS, const T* b) {
+        switch (dim) {  // Take the difference of the first two points and dot it with the third vector
+            case 3: {
+                return (((aE[0] - aS[0]) * b[0]) + ((aE[1] - aS[1]) * b[1]) + ((aE[2] - aS[2]) * b[2]));
+            }
+            case 2: {
+                return (((aE[0] - aS[0]) * b[0]) + ((aE[1] - aS[1]) * b[1]));
+            }
+            default: {
+                return (((aE[0] - aS[0]) * b[0]));
+            }
+        }
+    }
+
+    /**
+     * Compute the vector and take the resulting dot product
+     * result = (aE - aS) * b
+     *
+     * @tparam I
+     * @tparam T
+     * @param dim
+     * @param a
+     * @param b
+     * @return
+     */
+    template <int dim, class T>
+    static inline T DiffDotVector(const T* aE, const T* aS, const T* b) {
+        if constexpr (dim == 3) {
+            return (((aE[0] - aS[0]) * b[0]) + ((aE[1] - aS[1]) * b[1]) + ((aE[2] - aS[2]) * b[2]));
+        }
+        if constexpr (dim == 2) {
+            return (((aE[0] - aS[0]) * b[0]) + ((aE[1] - aS[1]) * b[1]));
+        }
+        if constexpr (dim == 1) {
+            return (((aE[0] - aS[0]) * b[0]));
+        }
+        static_assert(dim == 1 || dim == 2 || dim == 3, "ablate::utilities::MathUtilities::DiffDotVector only support dimensions of 1, 2, or 3");
+    }
+
+    /**
+     * Take the cross of c = a x b
+     * @tparam I
+     * @tparam T
+     * @param dim
+     * @param a
+     * @param b
+     * @param c
+     */
+    template <class I, class T>
+    static inline void CrossVector(I dim, const T* a, const T* b, T* c) {
+        switch (dim) {
+            case 3: {
+                c[0] = (a[1] * b[2] - b[1] * a[2]);
+                c[1] = (b[0] * a[2] - a[0] * b[2]);
+                c[2] = (a[0] * b[1] - b[0] * a[1]);
+                break;
+            }
+            case 2: {
+                c[0] = (a[0] * b[1] - b[0] * a[1]);
+                break;
+            }
+            default: {
+                c[0] = 0.;
+                break;
+            }
+        }
+    }
+
+    /**
+     * Take the cross of c = a x b for a fixed size
+     * @tparam I
+     * @tparam T
+     * @param dim
+     * @param a
+     * @param b
+     * @param c
+     */
+    template <int dim, class T>
+    static inline void CrossVector(const T* a, const T* b, T* c) {
+        if constexpr (dim == 3) {
+            c[0] = (a[1] * b[2] - b[1] * a[2]);
+            c[1] = (b[0] * a[2] - a[0] * b[2]);
+            c[2] = (a[0] * b[1] - b[0] * a[1]);
+        }
+        if constexpr (dim == 2) {
+            c[0] = (a[0] * b[1] - b[0] * a[1]);
+        }
+        if constexpr (dim == 1) {
+            c[0] = 0.;
+        }
+        static_assert(dim == 1 || dim == 2 || dim == 3, "ablate::utilities::MathUtilities::CrossVector only support dimensions of 1, 2, or 3");
+    }
+
     /**
      * subtract so that c = a - b
      * @tparam I
@@ -81,6 +200,21 @@ class MathUtilities {
     }
 
     /**
+     * adds a to b; b = a+b
+     * @tparam I
+     * @tparam T
+     * @param dim
+     * @param a
+     * @param b
+     */
+    template <class I, class T>
+    static inline void Plus(I dim, const T* a, T* b) {
+        for (I i = 0; i < dim; i++) {
+            b[i] += a[i];
+        }
+    }
+
+    /**
      *  matrix vector multiplication
      *  returns out = [A]*in
      *  1st index in A is row, 2nd is col
@@ -88,11 +222,11 @@ class MathUtilities {
      * @param transformationMatrix
      */
     template <class I, class T>
-    static inline void Multiply(I dim, const T A[3][3], const T* in, T* out) {
+    static inline void Multiply(I dim, const T a[3][3], const T* in, T* out) {
         for (I i = 0; i < dim; i++) {
             out[i] = 0.0;
             for (I j = 0; j < dim; j++) {
-                out[i] += A[i][j] * in[j];
+                out[i] += a[i][j] * in[j];
             }
         }
     }
@@ -105,11 +239,11 @@ class MathUtilities {
      * @param transformationMatrix
      */
     template <class I, class T>
-    static inline void MultiplyTranspose(I dim, const T A[3][3], const T* in, T* out) {
+    static inline void MultiplyTranspose(I dim, const T a[3][3], const T* in, T* out) {
         for (I i = 0; i < dim; i++) {
             out[i] = 0.0;
             for (I j = 0; j < dim; j++) {
-                out[i] += A[j][i] * in[j];
+                out[i] += a[j][i] * in[j];
             }
         }
     }
@@ -132,7 +266,6 @@ class MathUtilities {
      */
     static PetscReal ComputeDeterminant(PetscInt dim, PetscScalar transformationMatrix[3][3]);
 
-   private:
     MathUtilities() = delete;
 };
 

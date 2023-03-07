@@ -57,7 +57,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
 
     /** SubDomain Register and Setup **/
-    void Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
+    virtual void Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
     /**
      * @param cellRange The range of cells for which rays are initialized
@@ -85,6 +85,8 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
         return abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
     }
 
+    inline std::string GetId() { return solverId; };
+
     /** Evaluates the ray intensity from the domain to update the effects of irradiation. Does not impact the solution unless the solve function is called again.
      * */
     void EvaluateGains(Vec solVec, ablate::domain::Field temperatureField, Vec auxVec);
@@ -92,6 +94,9 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     /** Determines the next location of the search particles during the initialization
      * */
     virtual void ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray, DM radReturn);  //!< Routine to move the particle one step
+
+    //! If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory and record its index
+    void IdentifyNewRaysOnRank(domain::SubDomain& subDomain, DM radReturn);
 
     /** Determines what component of the incoming radiation should be accounted for when evaluating the irradiation for each ray.
      * Dummy function that doesn't do anything unless it is overridden by the surface implementation
@@ -203,6 +208,13 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     static inline constexpr char IdentifierField[] = "identifier";
     static inline constexpr char VirtualCoordField[] = "virtual coord";
 };
+/**
+ * provide write for the id
+ * @param os
+ * @param id
+ * @return
+ */
+std::ostream& operator<<(std::ostream& os, const Radiation::Identifier& id);
 
 }  // namespace ablate::radiation
 #endif

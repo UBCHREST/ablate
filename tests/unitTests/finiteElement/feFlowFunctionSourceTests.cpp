@@ -769,7 +769,7 @@ INSTANTIATE_TEST_SUITE_P(
         (FEFlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d cubic trig tri_p2_p1_p1_tconv",
                                  .nproc = 1,
-                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1_tconv",
+                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_cubic_trig_tri_p2_p1_p1_tconv",
                                  .arguments = "-dm_plex_separate_marker -dm_refine 0 "
                                               "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
                                               "-ts_max_steps 4 -ts_dt 0.1 -ts_convergence_estimate -convest_num_refine 1 "

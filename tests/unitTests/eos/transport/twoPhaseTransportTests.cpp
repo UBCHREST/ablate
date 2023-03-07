@@ -43,6 +43,9 @@ TEST_P(TwoPhaseTransportTestFixture, ShouldComputeCorrectDirectFunction) {
     ASSERT_LT(PetscAbs((GetParam().expectedConductivity - computedK) / GetParam().expectedConductivity), 1E-5);
     ASSERT_LT(PetscAbs((GetParam().expectedViscosity - computedMu) / GetParam().expectedViscosity), 1E-5);
     ASSERT_LT(PetscAbs((GetParam().expectedDiffusivity - computedDiff) / GetParam().expectedDiffusivity), 1E-5);
+    ASSERT_DOUBLE_EQ(conductivityFunction.propertySize, 1);
+    ASSERT_DOUBLE_EQ(viscosityFunction.propertySize, 1);
+    ASSERT_DOUBLE_EQ(diffusivityFunction.propertySize, 1);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -163,6 +166,9 @@ TEST_P(TwoPhaseTransportTemperatureTestFixture, ShouldComputeCorrectTemperatureF
     ASSERT_LT(PetscAbs((GetParam().expectedConductivity - computedK) / GetParam().expectedConductivity), 1E-5);
     ASSERT_LT(PetscAbs((GetParam().expectedViscosity - computedMu) / GetParam().expectedViscosity), 1E-5);
     ASSERT_LT(PetscAbs((GetParam().expectedDiffusivity - computedDiff) / GetParam().expectedDiffusivity), 1E-5);
+    ASSERT_DOUBLE_EQ(conductivityFunction.propertySize, 1);
+    ASSERT_DOUBLE_EQ(viscosityFunction.propertySize, 1);
+    ASSERT_DOUBLE_EQ(diffusivityFunction.propertySize, 1);
 }
 
 INSTANTIATE_TEST_SUITE_P(TwoPhaseTransportTests, TwoPhaseTransportTemperatureTestFixture,

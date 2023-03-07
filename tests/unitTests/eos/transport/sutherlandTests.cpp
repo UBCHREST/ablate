@@ -32,6 +32,7 @@ TEST_P(SutherlandTransportTestFixture, ShouldComputeCorrectDirectConductivity) {
     // ACT
     PetscReal computedK = NAN;
     conductivityFunction.function(nullptr, &computedK, conductivityFunction.context.get());
+    ASSERT_EQ(1, conductivityFunction.propertySize) << " The sutherland conductivity should have a property size of 1";
 
     // ASSERT
     double error = PetscAbs((GetParam().expectedConductivity - computedK) / GetParam().expectedConductivity);
@@ -52,6 +53,7 @@ TEST_P(SutherlandTransportTestFixture, ShouldComputeCorrectTemperatureConductivi
     // ACT
     PetscReal computedK = NAN;
     conductivityFunction.function(nullptr, GetParam().temperatureIn, &computedK, conductivityFunction.context.get());
+    ASSERT_EQ(1, conductivityFunction.propertySize) << " The sutherland conductivity should have a property size of 1";
 
     // ASSERT
     double error = PetscAbs((GetParam().expectedConductivity - computedK) / GetParam().expectedConductivity);
@@ -71,6 +73,7 @@ TEST_P(SutherlandTransportTestFixture, ShouldComputeDirectCorrectViscosity) {
     // ACT
     PetscReal computedMu = NAN;
     viscosityFunction.function(nullptr, &computedMu, viscosityFunction.context.get());
+    ASSERT_EQ(1, viscosityFunction.propertySize) << " The sutherland viscosity should have a property size of 1";
 
     // ASSERT
     double error = PetscAbs((GetParam().expectedViscosity - computedMu) / GetParam().expectedViscosity);
@@ -87,6 +90,7 @@ TEST_P(SutherlandTransportTestFixture, ShouldComputeTemperatureCorrectViscosity)
     // ACT
     PetscReal computedMu = NAN;
     viscosityFunction.function(nullptr, GetParam().temperatureIn, &computedMu, viscosityFunction.context.get());
+    ASSERT_EQ(1, viscosityFunction.propertySize) << " The sutherland viscosity should have a property size of 1";
 
     // ASSERT
     double error = PetscAbs((GetParam().expectedViscosity - computedMu) / GetParam().expectedViscosity);
@@ -109,6 +113,7 @@ TEST_P(SutherlandTransportTestFixture, ShouldComputeDirectCorrectDiffusivity) {
     // ACT
     PetscReal computedDiff = NAN;
     diffusivityFunction.function(nullptr, &computedDiff, diffusivityFunction.context.get());
+    ASSERT_EQ(1, diffusivityFunction.propertySize) << " The sutherland diffusivity should have a property size of 1";
 
     // ASSERT
     double error = PetscAbs((GetParam().expectedDiffusivity - computedDiff) / GetParam().expectedDiffusivity);
@@ -128,6 +133,7 @@ TEST_P(SutherlandTransportTestFixture, ShouldComputeTemperatureCorrectDiffusivit
     // ACT
     PetscReal computedDiff = NAN;
     diffusivityFunction.function(nullptr, GetParam().temperatureIn, &computedDiff, diffusivityFunction.context.get());
+    ASSERT_EQ(1, diffusivityFunction.propertySize) << " The sutherland diffusivity should have a property size of 1";
 
     // ASSERT
     double error = PetscAbs((GetParam().expectedDiffusivity - computedDiff) / GetParam().expectedDiffusivity);

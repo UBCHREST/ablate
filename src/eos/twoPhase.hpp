@@ -16,6 +16,7 @@ class TwoPhase : public EOS {  // , public std::enabled_shared_from_this<TwoPhas
     const std::shared_ptr<eos::EOS> eos2;
     // this mixed eos does not allow species, get species from eos1 eos2
     std::vector<std::string> species;
+    std::vector<std::string> otherPropertiesList = {"VF"};  // otherProperties must include volumeFraction for Field Function initialization
     struct Parameters {
         PetscReal gamma1;
         PetscReal rGas1;
@@ -147,17 +148,26 @@ class TwoPhase : public EOS {  // , public std::enabled_shared_from_this<TwoPhas
         {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundFunctionLiquidLiquid, SpeedOfSoundTemperatureFunctionLiquidLiquid}},
         {ThermodynamicProperty::SpeciesSensibleEnthalpy, {SpeciesSensibleEnthalpyFunction, SpeciesSensibleEnthalpyTemperatureFunction}}};
 
+    /**
+     * Store a list of properties that are sized by species, everything is assumed to be size one
+     */
+    const std::set<ThermodynamicProperty> speciesSizedProperties = {ThermodynamicProperty::SpeciesSensibleEnthalpy};
+
    public:
     explicit TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<eos::EOS> eos2);
     void View(std::ostream& stream) const override;
+
+    const std::shared_ptr<ablate::eos::EOS> GetEOSGas() const { return eos1; }
+    const std::shared_ptr<ablate::eos::EOS> GetEOSLiquid() const { return eos2; }
 
     ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
 
     ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
 
     EOSFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2, std::vector<std::string> otherProperties) const override;
+    const std::vector<std::string>& GetFieldFunctionProperties() const override { return otherPropertiesList; }  // list of other properties i.e. VF;
 
-    const std::vector<std::string>& GetSpeciesVariables() const override { return species; }  // need to modify this
+    const std::vector<std::string>& GetSpeciesVariables() const override { return species; }  // lists species of eos1 first, then eos2, no distinction for which fluid the species exists in
     [[nodiscard]] virtual const std::vector<std::string>& GetProgressVariables() const override { return ablate::utilities::VectorUtilities::Empty<std::string>; }
 };
 }  // namespace ablate::eos

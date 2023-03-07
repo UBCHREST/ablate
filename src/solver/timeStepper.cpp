@@ -1,6 +1,7 @@
 #include "timeStepper.hpp"
 #include <petscdm.h>
 #include "adaptPhysics.hpp"
+#include "adaptPhysicsConstrained.hpp"
 #include "utilities/petscUtilities.hpp"
 
 ablate::solver::TimeStepper::TimeStepper(std::shared_ptr<ablate::domain::Domain> domain, std::shared_ptr<ablate::parameters::Parameters> arguments, std::shared_ptr<io::Serializer> serializer,
@@ -13,7 +14,10 @@ ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<abl
                                          std::shared_ptr<ablate::io::Serializer> serializerIn, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations,
                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances,
                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances, bool verboseSourceCheck)
-    : utilities::StaticInitializer([] { AdaptPhysics::Register(); }),
+    : utilities::StaticInitializer([] {
+          AdaptPhysics::Register();
+          AdaptPhysicsConstrained::Register();
+      }),
       name(nameIn.empty() ? "timeStepper" : nameIn),
       domain(domain),
       serializer(serializerIn),

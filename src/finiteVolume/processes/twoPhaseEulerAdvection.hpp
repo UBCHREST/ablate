@@ -16,6 +16,12 @@ class TwoPhaseEulerAdvection : public Process {
     inline const static std::string VOLUME_FRACTION_FIELD = eos::TwoPhase::VF;
     inline const static std::string DENSITY_VF_FIELD = ablate::finiteVolume::CompressibleFlowFields::CONSERVED + VOLUME_FRACTION_FIELD;
 
+    struct TimeStepData {
+        PetscReal cfl;
+        eos::ThermodynamicFunction computeSpeedOfSound;
+    };
+    TimeStepData timeStepData;
+
    private:
     struct DecodeDataStructGas {
         PetscReal etot;
@@ -158,8 +164,9 @@ class TwoPhaseEulerAdvection : public Process {
                                       PetscReal *MG, PetscReal *ML, PetscReal *p, PetscReal *T, PetscReal *alpha) override;
     };
 
-    const std::shared_ptr<eos::EOS> eosGas;
-    const std::shared_ptr<eos::EOS> eosLiquid;
+    const std::shared_ptr<eos::EOS> eosTwoPhase;
+    std::shared_ptr<eos::EOS> eosGas;
+    std::shared_ptr<eos::EOS> eosLiquid;
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas;
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid;
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidGas;
@@ -180,12 +187,15 @@ class TwoPhaseEulerAdvection : public Process {
     static PetscErrorCode UpdateAuxVelocityField2Gas(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[], const PetscScalar *conservedValues, const PetscInt aOff[],
                                                      PetscScalar *auxField, void *ctx);
 
-    TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas,
+    TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosTwoPhase, const std::shared_ptr<parameters::Parameters> &parameters, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas,
                            std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidGas,
                            std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid);
     void Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) override;
 
    private:
+    // static function to compute time step for twoPhase euler advection
+    static double ComputeCflTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver &flow, void *ctx);
+
     static PetscErrorCode CompressibleFlowComputeEulerFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscScalar fieldL[], const PetscScalar fieldR[],
                                                            const PetscInt aOff[], const PetscScalar auxL[], const PetscScalar auxR[], PetscScalar *flux, void *ctx);
     static PetscErrorCode CompressibleFlowComputeVFFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscScalar fieldL[], const PetscScalar fieldR[], const PetscInt aOff[],

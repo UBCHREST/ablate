@@ -80,6 +80,11 @@ class Sublimation : public BoundaryProcess {
     const double emissivity;
 
     /**
+     * Solid density of the fuel.  This is only used to output/report the solid regression rate.
+     */
+    const double solidDensity;
+
+    /**
      * Set the species densityYi based upon the blowing rate.  Update the energy if needed to maintain temperature
      */
     void UpdateSpecies(TS ts, ablate::solver::Solver &);
@@ -88,7 +93,8 @@ class Sublimation : public BoundaryProcess {
     explicit Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
                          const std::shared_ptr<ablate::mathFunctions::FieldFunction> & = {}, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {},
                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {}, bool diffusionFlame = false,
-                         std::shared_ptr<ablate::radiation::SurfaceRadiation> radiationIn = {}, const std::shared_ptr<io::interval::Interval> &intervalIn = {}, const double emissivityIn = 1);
+                         std::shared_ptr<ablate::radiation::SurfaceRadiation> radiationIn = {}, const std::shared_ptr<io::interval::Interval> &intervalIn = {}, const double emissivityIn = 1,
+                         const double solidDensity = 1);
 
     void Setup(ablate::boundarySolver::BoundarySolver &bSolver) override;
     void Initialize(ablate::boundarySolver::BoundarySolver &bSolver) override;

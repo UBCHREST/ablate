@@ -27,16 +27,24 @@ enum class ThermodynamicProperty {
  * Simple struct representing the context and function for computing any thermodynamic value when temperature is not available.
  */
 struct ThermodynamicFunction {
+    //! function to be called
     PetscErrorCode (*function)(const PetscReal conserved[], PetscReal* property, void* ctx) = nullptr;
+    //! optional context to pass into the function
     std::shared_ptr<void> context = nullptr;
+    //! the property size being set
+    PetscInt propertySize = 1;
 };
 
 /**
  * Simple struct representing the context and function for computing any thermodynamic value when temperature is available.
  */
 struct ThermodynamicTemperatureFunction {
+    //! function to be called
     PetscErrorCode (*function)(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx) = nullptr;
+    //! optional context to pass into the function
     std::shared_ptr<void> context = nullptr;
+    //! the property size being set
+    PetscInt propertySize = 1;
 };
 
 /**

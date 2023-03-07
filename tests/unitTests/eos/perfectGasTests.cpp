@@ -63,6 +63,7 @@ TEST_P(PGThermodynamicPropertyTestFixture, ShouldComputeProperty) {
     auto thermodynamicFunction = eos->GetThermodynamicFunction(params.thermodynamicProperty, params.fields);
     std::vector<PetscReal> computedProperty(params.expectedValue.size(), NAN);
     ASSERT_EQ(0, thermodynamicFunction.function(params.conservedValues.data(), computedProperty.data(), thermodynamicFunction.context.get()));
+
     for (std::size_t c = 0; c < params.expectedValue.size(); c++) {
         ASSERT_NEAR(computedProperty[c], params.expectedValue[c], 1E-6) << "for direct function ";
     }
@@ -70,6 +71,7 @@ TEST_P(PGThermodynamicPropertyTestFixture, ShouldComputeProperty) {
     auto temperatureFunction = eos->GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, params.fields);
     PetscReal computedTemperature;
     ASSERT_EQ(0, temperatureFunction.function(params.conservedValues.data(), &computedTemperature, temperatureFunction.context.get()));
+    ASSERT_EQ(1, temperatureFunction.propertySize) << "The temperature property size should be 1";
 
     if (params.expectedTemperature) {
         ASSERT_NEAR(computedTemperature, params.expectedTemperature.value(), 1E-6) << "for computed temperature ";
@@ -77,6 +79,7 @@ TEST_P(PGThermodynamicPropertyTestFixture, ShouldComputeProperty) {
 
     auto thermodynamicTemperatureFunction = eos->GetThermodynamicTemperatureFunction(params.thermodynamicProperty, params.fields);
     computedProperty = std::vector<PetscReal>(params.expectedValue.size(), NAN);
+    ASSERT_EQ(params.expectedValue.size(), thermodynamicFunction.propertySize) << "The " << params.thermodynamicProperty << " property size should be " << params.expectedValue.size();
     ASSERT_EQ(0, thermodynamicTemperatureFunction.function(params.conservedValues.data(), computedTemperature, computedProperty.data(), thermodynamicTemperatureFunction.context.get()));
 
     for (std::size_t c = 0; c < params.expectedValue.size(); c++) {

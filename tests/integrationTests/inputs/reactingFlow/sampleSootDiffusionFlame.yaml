@@ -1,0 +1,144 @@
+# Example 1D diffusion flame with soot and thermophoretic diffusion.  The diffusion flame only uses
+# the transport processes of the Navier–Stokes equations.
+---
+environment:
+  title: _1DSampleSootDiffusionFlame
+  tagDirectory: false
+arguments: {}
+timestepper:
+  arguments:
+    ts_type: rk
+    ts_max_time: 1
+    ts_max_steps: 50
+    ts_dt: 1.0e-10
+    ts_adapt_safety: 0.95
+    ts_adapt_type: physicsConstrained
+  domain: !ablate::domain::BoxMeshBoundaryCells
+    name: simpleBoxField
+    faces: [50]
+    lower: [ 0.0]
+    upper: [ 0.01]
+    simplex: false
+    options:
+      dm_plex_hash_location: true
+    preModifiers:
+      # distribute the mesh across the mpi rank with ghost cells
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+        ghostCellDepth: 2
+    postModifiers:
+      - !ablate::domain::modifiers::TagLabelInterface
+        # tag the left boundary faces needed to remove the boundary from the interiorFlowRegion
+        leftRegion:
+          name: boundaryCellsLeft
+        rightRegion:
+          name: domain
+        boundaryFaceRegion:
+          name: boundaryFaceLeft
+      - !ablate::domain::modifiers::SubtractLabel
+        # remove the slabBurnerFace from the flowRegion
+        differenceRegion:
+          name: interiorFlowRegion
+        minuendRegion:
+          name: interiorCells
+        subtrahendRegions:
+          - name: boundaryFaceLeft
+        incompleteLabel: true
+      - !ablate::domain::modifiers::GhostBoundaryCells
+          # the DmViewFromOptions should output once with full mesh/dm details
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::TChemSoot  &eos
+          mechFile: ../mechanisms/gri30.yml
+          options:
+            # set a minimum temperature for the chemical kinetics ode integration
+            thresholdTemperature: 560
+        conservedFieldOptions:
+          petscfv_type: leastsquares
+        region:
+          name: domain
+      - !ablate::domain::FieldDescription
+        name: pressure
+        type: FV
+        location: aux
+        region:
+          name: domain
+  initialization:
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state: &flowFieldState
+        eos: *eos
+        temperature: !ablate::mathFunctions::Peak
+          startValues: [300]
+          peakValues: [2710]
+          endValues: [300]
+          start: 0.0
+          peak:  0.007 
+          end: 0.01
+        pressure: 101325.0
+        velocity: "0.0"
+        other: !ablate::finiteVolume::fieldFunctions::MassFractions
+          &massFracs
+          eos: *eos
+          values:
+            - fieldName: O2
+              field: !ablate::mathFunctions::Linear
+                startValues: [0.0]
+                endValues: [1.0]
+                end: .01
+            - fieldName: C2H4
+              field: !ablate::mathFunctions::Linear
+                startValues: [1.0]
+                endValues: [0.0]
+                end: .01
+    - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
+      state: *flowFieldState
+
+    # Set the number density to zero
+    - fieldName: densityProgress
+      field: "0.0"
+
+
+solvers:
+  - !ablate::finiteVolume::CompressibleFlowSolver
+    id: flowField
+    region:
+      name: interiorFlowRegion
+    eos: *eos
+    transport: !ablate::eos::tChemSoot::SootSpeciesTransportModel
+      transport:  !ablate::eos::transport::Sutherland
+        eos: *eos
+    evTransport: !ablate::eos::tChemSoot::SootProgressTransportModel
+      transport:  !ablate::eos::transport::Sutherland
+        eos: *eos
+    monitors:
+    - !ablate::monitors::TimeStepMonitor
+      interval: 10
+    - !ablate::monitors::CurveMonitor
+        interval: 25
+    additionalProcesses:
+      - !ablate::finiteVolume::processes::Chemistry
+        eos: *eos
+      - !ablate::finiteVolume::processes::ConstantPressureFix
+        eos: *eos
+        pressure: 101325.0
+      - !ablate::finiteVolume::processes::ThermophoreticDiffusion
+        transport:  !ablate::eos::transport::Sutherland
+          eos: *eos
+  - !ablate::boundarySolver::BoundarySolver
+    id: walls
+    region:
+      name: boundaryCellsRight
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::Inlet
+        eos: *eos
+  - !ablate::boundarySolver::BoundarySolver
+    id: slab boundary
+    region:
+      name: boundaryCellsLeft
+    fieldBoundary:
+      name: boundaryFaceLeft
+    processes:
+      - !ablate::boundarySolver::lodi::Inlet
+        eos: *eos

@@ -464,7 +464,7 @@ bool ablate::domain::SubDomain::InRegion(const domain::Region& region) const {
     }
 
     // Compute the size of region inside the subDomain label
-    PetscInt size;
+    PetscInt size = 0;
 
     // Check to see if this region is inside of the dsLabel
     DMLabel regionLabel;

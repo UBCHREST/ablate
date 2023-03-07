@@ -293,7 +293,7 @@ INSTANTIATE_TEST_SUITE_P(
         (FEFlowDynamicSourceMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d cubic tri_p3_p2_p2",
                                  .nproc = 1,
-                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p3_p2_p2",
+                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_cubic_p3_p2_p2",
                                  .arguments = "-dm_plex_separate_marker -dm_refine 0 "
                                               "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "

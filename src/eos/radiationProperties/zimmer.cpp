@@ -1,7 +1,8 @@
 #include "zimmer.hpp"
 #include "math.h"
 
-ablate::eos::radiationProperties::Zimmer::Zimmer(std::shared_ptr<eos::EOS> eosIn) : eos(std::move(eosIn)) {}
+ablate::eos::radiationProperties::Zimmer::Zimmer(std::shared_ptr<eos::EOS> eosIn, PetscReal upperLimitIn, PetscReal lowerLimitIn)
+    : eos(std::move(eosIn)), upperLimitStored((upperLimitIn == 0) ? 2500 : upperLimitIn), lowerLimitStored((lowerLimitIn == 0) ? 500 : lowerLimitIn) {}
 
 PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerFunction(const PetscReal *conserved, PetscReal *kappa, void *ctx) {
     PetscFunctionBeginUser;
@@ -20,6 +21,9 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerFunction(const Pe
     if (density == 0) {
         *kappa = 0;
     } else {
+        if (temperature > functionContext->upperLimit) temperature = functionContext->upperLimit;  //! Limit the model to only pull constants from below the upper end of the temperature.
+        if (temperature < functionContext->lowerLimit) temperature = functionContext->lowerLimit;  //! Limit the model to only pull constants from above the lower end of the temperature.
+
         /** The Zimmer model uses a fit approximation of the absorptivity. This depends on the presence of four species which are present in combustion and shown below. */
         double kappaH2O = 0;
         double kappaCO2 = 0;
@@ -36,7 +40,6 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerFunction(const Pe
         kappaCO2 = kapparef * pow(10, kappaCO2);
 
         /** Computing the Planck mean absorption coefficient for CH4 and CO
-         * The relationship is different with enough significance to use different models above or below 750 K.
          * */
         for (int j = 0; j < 5; j++) {
             kappaCH4 += CH4_coeff.at(j) * pow(temperature, j);
@@ -85,6 +88,9 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerTemperatureFuncti
     if (density == 0) {
         *kappa = 0;
     } else {
+        if (temperature > functionContext->upperLimit) temperature = functionContext->upperLimit;  //! Limit the model to only pull constants from below the upper end of the temperature.
+        if (temperature < functionContext->lowerLimit) temperature = functionContext->lowerLimit;  //! Limit the model to only pull constants from above the lower end of the temperature.
+
         /** The Zimmer model uses a fit approximation of the absorptivity. This depends on the presence of four species which are present in combustion and shown below. */
         double kappaH2O = 0;
         double kappaCO2 = 0;
@@ -101,7 +107,6 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerTemperatureFuncti
         kappaCO2 = kapparef * pow(10, kappaCO2);
 
         /** Computing the Planck mean absorption coefficient for CH4 and CO
-         * The relationship is different with enough significance to use different models above or below 750 K.
          * */
         for (int j = 0; j < 5; j++) {
             kappaCH4 += CH4_coeff.at(j) * pow(temperature, j);
@@ -166,6 +171,8 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Zimmer::Get
                                              .densityYiCO2Offset = CO2offset,
                                              .densityYiCOOffset = COoffset,
                                              .densityYiCH4Offset = CH4offset,
+                                             .upperLimit = upperLimitStored,
+                                             .lowerLimit = lowerLimitStored,
                                              .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields),
                                              .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
         default:
@@ -205,6 +212,8 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
                                     .densityYiCO2Offset = CO2offset,
                                     .densityYiCOOffset = COoffset,
                                     .densityYiCH4Offset = CH4offset,
+                                    .upperLimit = upperLimitStored,
+                                    .lowerLimit = lowerLimitStored,
                                     .temperatureFunction = {},
                                     .densityFunction = eos->GetThermodynamicTemperatureFunction(ThermodynamicProperty::Density, fields)})};  //!< Create a struct to hold the offsets
         default:
@@ -228,4 +237,5 @@ PetscInt ablate::eos::radiationProperties::Zimmer::GetFieldComponentOffset(const
 
 #include "registrar.hpp"
 REGISTER_DEFAULT(ablate::eos::radiationProperties::RadiationModel, ablate::eos::radiationProperties::Zimmer, "Zimmer radiation properties model",
-                 ARG(ablate::eos::EOS, "eos", "The EOS used to compute field properties"));
+                 ARG(ablate::eos::EOS, "eos", "The EOS used to compute field properties"), OPT(double, "upperLimit", "The limit at which the model is clipped on the upper end. Defaults to 2500K."),
+                 OPT(double, "lowerLimit", "The limit at which the model is clipped on the lower end. Defaults to 500K."));

@@ -1,5 +1,6 @@
 #ifndef ABLATELIBRARY_VECTORUTILITIES_HPP
 #define ABLATELIBRARY_VECTORUTILITIES_HPP
+#include <functional>
 #include <map>
 #include <numeric>
 #include <string>
