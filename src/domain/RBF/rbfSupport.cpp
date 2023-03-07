@@ -132,6 +132,7 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
   PetscInt        l, i;
   PetscScalar     x0[3];
   PetscErrorCode  ierr;
+  PetscInt        type = 0; // 0: numberCells, 1: maxLevels, 2: maxDist
 
   PetscFunctionBegin;
 
@@ -141,14 +142,17 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
   if (numberCells > 0) {
     maxLevels = PETSC_MAX_INT;
     maxDist = PETSC_MAX_REAL;
+    type = 0;
   }
   else if (maxLevels > 0) {
     numberCells = PETSC_MAX_INT;
     maxDist = PETSC_MAX_REAL;
+    type = 1;
   }
   else { // Must be maxDist
     maxLevels = PETSC_MAX_INT;
     numberCells = PETSC_MAX_INT;
+    type = 2;
   }
 
   ierr = DMPlexComputeCellGeometryFVM(dm, p, NULL, x0, NULL);CHKERRQ(ierr); // Center of the cell-of-interest
@@ -173,21 +177,26 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
     numAdd = n - n0; // The true number of nodes added, after removal of duplicates.
   }
 
-  // Now only include the the numberCells closest cells
-  PetscScalar x[3];
-  PetscReal *dist;
-  PetscInt j, dim;
-  ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);                            // The dimension of the grid
-  ierr = PetscMalloc1(n, &dist);CHKERRQ(ierr);
-  for (i = 0; i < n; ++i) {
-    ierr = DMPlexComputeCellGeometryFVM(dm, list[i], NULL, x, NULL);CHKERRQ(ierr); // Center of the cell-of-interest
-    dist[i] = 0.0;
-    for (j = 0; j < dim; ++j) { // Compute the distance so that we can check if it's within the required distance.
-      dist[i] += PetscSqr(x0[j] - x[j]);
+  if (type==0) {
+    // Now only include the the numberCells closest cells
+    PetscScalar x[3];
+    PetscReal *dist;
+    PetscInt j, dim;
+    ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);                            // The dimension of the grid
+    ierr = PetscMalloc1(n, &dist);CHKERRQ(ierr);
+    for (i = 0; i < n; ++i) {
+      ierr = DMPlexComputeCellGeometryFVM(dm, list[i], NULL, x, NULL);CHKERRQ(ierr); // Center of the cell-of-interest
+      dist[i] = 0.0;
+      for (j = 0; j < dim; ++j) { // Compute the distance so that we can check if it's within the required distance.
+        dist[i] += PetscSqr(x0[j] - x[j]);
+      }
     }
+    PetscSortRealWithArrayInt(n, dist, list);
+    ierr = PetscFree(dist);CHKERRQ(ierr);
   }
-  PetscSortRealWithArrayInt(n, dist, list);
-  ierr = PetscFree(dist);CHKERRQ(ierr);
+  else {
+    numberCells = n;
+  }
 
   ierr = PetscMalloc1(numberCells, cells);CHKERRQ(ierr);
   ierr = PetscArraycpy(*cells, list, numberCells);CHKERRQ(ierr);
