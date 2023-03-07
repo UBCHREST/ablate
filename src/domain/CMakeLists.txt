@@ -32,3 +32,4 @@ target_sources(ablateLibrary
         )
 
 add_subdirectory(modifiers)
+add_subdirectory(RBF)
