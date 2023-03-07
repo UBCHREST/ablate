@@ -5,9 +5,8 @@ using namespace ablate::domain::rbf;
 
 
 // Return an array of length-3 containing the location, even for 1D or 2D domains
-void RBF::Loc3D(PetscReal xIn[], PetscReal x[3]){
+void RBF::Loc3D(PetscInt dim, PetscReal xIn[], PetscReal x[3]){
   PetscInt d;
-  PetscInt dim = subDomain->GetDimensions();
 
   for (d = 0; d < dim; ++d) {
     x[d] = xIn[d];
@@ -20,8 +19,7 @@ void RBF::Loc3D(PetscReal xIn[], PetscReal x[3]){
 
 
 // Distance between two points
-PetscReal RBF::DistanceSquared(PetscReal x[], PetscReal y[]){
-  PetscInt dim = subDomain->GetDimensions();
+PetscReal RBF::DistanceSquared(PetscInt dim, PetscReal x[], PetscReal y[]){
   PetscReal r = 0.0;
   for (PetscInt d = 0; d < dim; ++d) {
     r += (x[d] - y[d]) * (x[d] - y[d]);
@@ -31,8 +29,7 @@ PetscReal RBF::DistanceSquared(PetscReal x[], PetscReal y[]){
 }
 
 // Distance between point and the origin
-PetscReal RBF::DistanceSquared(PetscReal x[]){
-  PetscInt dim = subDomain->GetDimensions();
+PetscReal RBF::DistanceSquared(PetscInt dim, PetscReal x[]){
   PetscReal r = 0.0;
   for (PetscInt d = 0; d < dim; ++d) {
     r += x[d] * x[d];
@@ -40,6 +37,91 @@ PetscReal RBF::DistanceSquared(PetscReal x[]){
   return r;
 }
 
+#include <slepcsvd.h>
+PetscErrorCode ConditionNumber(Mat A){
+  SVD            svd;             /* singular value solver context */
+  PetscReal      sigma_1,sigma_n;
+  PetscInt nconv1, nconv2;
+
+  PetscFunctionBeginUser;
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+             Create the singular value solver and set the solution method
+     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+
+  /*
+     Create singular value context
+  */
+  PetscCall(SVDCreate(PETSC_COMM_WORLD,&svd));
+
+  /*
+     Set operator
+  */
+  PetscCall(SVDSetOperators(svd,A,NULL));
+
+  /*
+    Set the method to use
+  */
+  PetscCall(SVDSetType(svd,SVDLAPACK));
+
+  /*
+     Set solver parameters at runtime
+  */
+  PetscCall(SVDSetFromOptions(svd));
+  PetscCall(SVDSetDimensions(svd,1,PETSC_DEFAULT,PETSC_DEFAULT));
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                      Solve the singular value problem
+     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+
+  /*
+     First request a singular value from one end of the spectrum
+  */
+  PetscCall(SVDSetWhichSingularTriplets(svd,SVD_LARGEST));
+  PetscCall(SVDSolve(svd));
+  /*
+     Get number of converged singular values
+  */
+  PetscCall(SVDGetConverged(svd,&nconv1));
+  /*
+     Get converged singular values: largest singular value is stored in sigma_1.
+     In this example, we are not interested in the singular vectors
+  */
+  if (nconv1 > 0) PetscCall(SVDGetSingularTriplet(svd,0,&sigma_1,NULL,NULL));
+  else PetscCall(PetscPrintf(PETSC_COMM_WORLD," Unable to compute large singular value!\n\n"));
+
+  /*
+     Request a singular value from the other end of the spectrum
+  */
+  PetscCall(SVDSetWhichSingularTriplets(svd,SVD_SMALLEST));
+  PetscCall(SVDSolve(svd));
+  /*
+     Get number of converged singular triplets
+  */
+  PetscCall(SVDGetConverged(svd,&nconv2));
+  /*
+     Get converged singular values: smallest singular value is stored in sigma_n.
+     As before, we are not interested in the singular vectors
+  */
+  if (nconv2 > 0) PetscCall(SVDGetSingularTriplet(svd,0,&sigma_n,NULL,NULL));
+  else PetscCall(PetscPrintf(PETSC_COMM_WORLD," Unable to compute small singular value!\n\n"));
+
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                    Display solution and clean up
+     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  if (nconv1 > 0 && nconv2 > 0) {
+    PetscCall(PetscPrintf(PETSC_COMM_WORLD," Computed singular values: sigma_1=%.4e, sigma_n=%.4e\n",(double)sigma_1,(double)sigma_n));
+    PetscCall(PetscPrintf(PETSC_COMM_WORLD," Estimated condition number: sigma_1/sigma_n=%.4e\n\n",(double)(sigma_1/sigma_n)));
+  }
+
+  /*
+     Free work space
+  */
+  PetscCall(SVDDestroy(&svd));
+
+  return 0;
+
+}
 
 
 static PetscInt fac[11] =  {1,1,2,6,24,120,720,5040,40320,362880,3628800}; // Pre-computed factorials
@@ -89,6 +171,7 @@ void RBF::Matrix(const PetscInt c, PetscReal **xCenters, Mat *LUA) {
     }
 //    printf("\n");
   }
+//  exit(0);
 
   matSize = nCells + nPoly;
 
@@ -103,7 +186,7 @@ void RBF::Matrix(const PetscInt c, PetscReal **xCenters, Mat *LUA) {
   // RBF contributions to the matrix
   for (i = 0; i < nCells; ++i) {
     for (j = i; j < nCells; ++j) {
-      vals[i*matSize + j] = vals[j*matSize + i] = RBFVal(&x[i*dim], &x[j*dim]);
+      vals[i*matSize + j] = vals[j*matSize + i] = RBFVal(dim, &x[i*dim], &x[j*dim]);
     }
   }
 
@@ -150,8 +233,9 @@ void RBF::Matrix(const PetscInt c, PetscReal **xCenters, Mat *LUA) {
 
   MatDenseRestoreArrayWrite(A, &vals) >> utilities::PetscUtilities::checkError;
   MatViewFromOptions(A,NULL,"-ablate::domain::rbf::RBF::A_view") >> utilities::PetscUtilities::checkError;
-
+//  ConditionNumber(A);
   // Factor the matrix
+//  MatQRFactor(A, NULL, NULL) >> utilities::PetscUtilities::checkError;
   MatLUFactor(A, NULL, NULL, NULL) >> utilities::PetscUtilities::checkError;
 
   PetscFree(xp) >> utilities::PetscUtilities::checkError;
@@ -227,7 +311,7 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
   // Derivatives of the RBF
   for (i = 0; i < nCells; ++i) {
     for (j = 0; j < nDer; ++j) {
-      vals[i + j*matSize] = RBFDer(&x[i*dim], dxyz[j*3 + 0], dxyz[j*3 + 1], dxyz[j*3 + 2]);
+      vals[i + j*matSize] = RBFDer(dim, &x[i*dim], dxyz[j*3 + 0], dxyz[j*3 + 1], dxyz[j*3 + 2]);
     }
   }
 
@@ -468,7 +552,7 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
   PetscReal   interpVal = 0.0;
   VecGetArray(weights, &vals) >> utilities::PetscUtilities::checkError;
   for (i = 0; i < nCells; ++i) {
-    interpVal += vals[i]*RBFVal(x0, &x[i*dim]);
+    interpVal += vals[i]*RBFVal(dim, x0, &x[i*dim]);
   }
 
   // Augmented polynomial contributions
@@ -586,30 +670,25 @@ void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
 //   The number of polynomial values is (p+2)(p+1)/2 in 2D and (p+3)(p+2)(p+1)/6 in 3D
   PetscInt p = RBF::polyOrder;
 
-  if (p>0) {
-
-    if (dim == 1) {
-      RBF::nPoly = p+1;
-    } else if (dim == 2) {
-      RBF::nPoly = (p+2)*(p+1)/2;
-    } else {
-      RBF::nPoly = (p+3)*(p+2)*(p+1)/6;
-    }
-
-    // Set the minimum number of cells to get compute the RBF matrix
-    RBF::minNumberCells = PetscMax((PetscInt)floor(2*(RBF::nPoly)), 30);
-  }
-  else {
+  // Set the size of the augmented polynomial. A value of p<0 means no augmented polynomials.
+  if (p<0) {
     RBF::nPoly = 0;
-    RBF::minNumberCells = 30;
+  } else if (dim == 1) {
+    RBF::nPoly = p+1;
+  } else if (dim == 2) {
+    RBF::nPoly = (p+2)*(p+1)/2;
+  } else {
+    RBF::nPoly = (p+3)*(p+2)*(p+1)/6;
   }
 
+  // Set the minimum number of cells to get compute the RBF matrix
+  RBF::minNumberCells = (PetscInt)floor(2*(RBF::nPoly));
 
   if (RBF::hasDerivatives) {
 
     // Now setup the derivatives required for curvature/normal calculations. This should probably move over to user-option
     PetscInt nDer = 0;
-    PetscInt dx[11], dy[11], dz[11];
+    PetscInt dx[10], dy[10], dz[10];
 
     dx[nDer] = 0; dy[nDer] = 0; dz[nDer++] = 0;
 
@@ -629,7 +708,6 @@ void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
       dx[nDer] = 1; dy[nDer] = 0; dz[nDer++] = 1;
       dx[nDer] = 0; dy[nDer] = 1; dz[nDer++] = 1;
       dx[nDer] = 0; dy[nDer] = 0; dz[nDer++] = 2;
-      dx[nDer] = 1; dy[nDer] = 1; dz[nDer++] = 1;
     }
 
 

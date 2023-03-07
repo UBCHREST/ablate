@@ -4,6 +4,7 @@ target_sources(ablateLibrary
         imq.cpp
         mq.cpp
         phs.cpp
+        hybrid.cpp
         rbf.cpp
         rbfSupport.cpp
 
@@ -12,6 +13,7 @@ target_sources(ablateLibrary
         imq.hpp
         mq.hpp
         phs.hpp
+        hybrid.hpp
         rbf.hpp
         rbfSupport.hpp
         )

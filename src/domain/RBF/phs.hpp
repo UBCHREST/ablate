@@ -3,7 +3,7 @@
 
 #include "rbf.hpp"
 
-#define __RBF_PHS_DEFAULT_PARAM 9
+#define __RBF_PHS_DEFAULT_PARAM 5
 
 namespace ablate::domain::rbf {
 
@@ -15,10 +15,10 @@ class PHS : public RBF {
 
     std::string_view type() const override { return "PHS"; }
 
-    PHS(PetscInt p = 4, PetscInt phsOrder = 4, bool hasDerivatives = false, bool hasInterpolation = false);
+    PHS(PetscInt p = 4, PetscInt phsOrder = 4, bool doesNotHaveDerivatives = false, bool doesNotHaveInterpolation = false);
 
-    PetscReal RBFVal(PetscReal x[], PetscReal y[]) override;
-    PetscReal RBFDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) override;
+    PetscReal RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) override;
+    PetscReal RBFDer(PetscInt dim, PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) override;
 
 
 };

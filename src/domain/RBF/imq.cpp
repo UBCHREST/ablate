@@ -4,31 +4,31 @@
 using namespace ablate::domain::rbf;
 
 /************ Begin Inverse Multiquadric Derived Class **********************/
-IMQ::IMQ(PetscInt p, PetscReal scale, bool hasDerivatives, bool hasInterpolation) :
-  RBF(p, hasDerivatives, hasInterpolation),
+IMQ::IMQ(PetscInt p, PetscReal scale, bool doesNotHaveDerivatives, bool doesNotHaveInterpolation) :
+  RBF(p, !doesNotHaveDerivatives, !doesNotHaveInterpolation),
   scale(scale < PETSC_SMALL ? __RBF_IMQ_DEFAULT_PARAM : scale) {};
 
 
 // Multiquadric: sqrt(1+(er)^2)
-PetscReal IMQ::RBFVal(PetscReal x[], PetscReal y[]) {
+PetscReal IMQ::RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) {
 
   PetscReal h = IMQ::scale;
   PetscReal e2 = 1.0/(h*h);
-  PetscReal r2 = IMQ::DistanceSquared(x, y);
+  PetscReal r2 = IMQ::DistanceSquared(dim, x, y);
 
   return 1.0/PetscSqrtReal(1.0 + e2*r2);
 }
 
 // Derivatives of Multiquadric spline at a location.
-PetscReal IMQ::RBFDer(PetscReal xIn[], PetscInt dx, PetscInt dy, PetscInt dz) {
+PetscReal IMQ::RBFDer(PetscInt dim, PetscReal xIn[], PetscInt dx, PetscInt dy, PetscInt dz) {
 
   PetscReal h = IMQ::scale;
   PetscReal e2 = 1.0/(h*h);
-  PetscReal r2 = IMQ::DistanceSquared(xIn);
+  PetscReal r2 = IMQ::DistanceSquared(dim, xIn);
   PetscReal imq = PetscSqrtReal(1.0 + e2*r2);
   PetscReal x[3];
 
-  IMQ::Loc3D(xIn, x);
+  IMQ::Loc3D(dim, xIn, x);
 
   switch (dx + 10*dy + 100*dz) {
     case 0:
@@ -77,6 +77,6 @@ PetscReal IMQ::RBFDer(PetscReal xIn[], PetscInt dx, PetscInt dy, PetscInt dz) {
 REGISTER(ablate::domain::rbf::RBF, ablate::domain::rbf::IMQ, "Radial Basis Function",
          OPT(PetscInt, "polyOrder", "Order of the augmenting RBF polynomial. Must be >= 1. Any value <1 will result in a polyOrder of 4."),
          OPT(PetscReal, "scale", "Scaling parameter. Must be >0. Any value <PETSC_SMALL will result in a default scale of 0.1."),
-         OPT(bool, "hasDerivatives", "Compute derivative information. Default is false."),
-         OPT(bool, "hasInterpolation", "Compute interpolation information. Default is false.")
+         OPT(bool, "doesNotHaveDerivatives", "Compute derivative information. Default is false."),
+         OPT(bool, "doesNotHaveInterpolation", "Compute interpolation information. Default is false.")
          );

@@ -15,10 +15,10 @@ class IMQ: public RBF {
 
     std::string_view type() const override { return "IMQ"; }
 
-    IMQ(PetscInt p = 4, PetscReal scale = 0.1, bool hasDerivatives = false, bool hasInterpolation = false);
+    IMQ(PetscInt p = 4, PetscReal scale = 0.1, bool doesNotHaveDerivatives = false, bool doesNotHaveInterpolation = false);
 
-    PetscReal RBFVal(PetscReal x[], PetscReal y[]) override;
-    PetscReal RBFDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) override;
+    PetscReal RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) override;
+    PetscReal RBFDer(PetscInt dim, PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) override;
 
 };
 

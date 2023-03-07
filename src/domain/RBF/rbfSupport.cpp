@@ -121,13 +121,13 @@ PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscReal x0[3], PetscInt 
 // dm - The mesh
 // maxLevels - Number of neighboring cells to check
 // maxDist - Maximum distance to include
-// minNumberCells - The minimum number of cells to return.
+// numberCells - The number of cells to return.
 // nCells - Number of neighboring cells
 // cells - The list of neighboring cell IDs
 //
 // Note: The intended use is to use either maxLevels OR maxDist OR minNumberCells. Right now a check isn't done on only selecting one, but that might be added in the future.
-PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt minNumberCells, PetscBool useVertices, PetscInt *nCells, PetscInt *cells[]) {
-  PetscInt        numAdd, *addList;
+PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useVertices, PetscInt *nCells, PetscInt *cells[]) {
+  PetscInt        numAdd = 1, *addList;
   PetscInt        n = 0, n0, list[10000];
   PetscInt        l, i;
   PetscScalar     x0[3];
@@ -135,20 +135,20 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
 
   PetscFunctionBegin;
 
-  PetscCheck(((maxLevels>0) + (maxDist>0) + (minNumberCells>0))==1, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "Only one of maxLevels, maxDist, and minNumberCells can be set. The others whould be <0.");
+  PetscCheck(((maxLevels>0) + (maxDist>0) + (numberCells>0))==1, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "Only one of maxLevels, maxDist, and minNumberCells can be set. The others whould be <0.");
 
   // Use minNumberCells if provided
-  if (minNumberCells > 0) {
+  if (numberCells > 0) {
     maxLevels = PETSC_MAX_INT;
     maxDist = PETSC_MAX_REAL;
   }
   else if (maxLevels > 0) {
-    minNumberCells = PETSC_MAX_INT;
+    numberCells = PETSC_MAX_INT;
     maxDist = PETSC_MAX_REAL;
   }
   else { // Must be maxDist
     maxLevels = PETSC_MAX_INT;
-    minNumberCells = PETSC_MAX_INT;
+    numberCells = PETSC_MAX_INT;
   }
 
   ierr = DMPlexComputeCellGeometryFVM(dm, p, NULL, x0, NULL);CHKERRQ(ierr); // Center of the cell-of-interest
@@ -160,7 +160,7 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
 
   // When the number of cells added at a particular level is zero then terminate the loop. This is for the case where
   // maxLevels is set very large but all cells within the maximum distance have already been found.
-  while (l < maxLevels && n < minNumberCells && numAdd > 0) {
+  while (l < maxLevels && n < numberCells && numAdd > 0) {
     ++l;
     n0 = n;
     for (i = 0; i < n0; ++i) {
@@ -173,9 +173,25 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
     numAdd = n - n0; // The true number of nodes added, after removal of duplicates.
   }
 
-  ierr = PetscMalloc1(n, cells);CHKERRQ(ierr);
-  ierr = PetscArraycpy(*cells, list, n);CHKERRQ(ierr);
-  *nCells = n;
+  // Now only include the the numberCells closest cells
+  PetscScalar x[3];
+  PetscReal *dist;
+  PetscInt j, dim;
+  ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);                            // The dimension of the grid
+  ierr = PetscMalloc1(n, &dist);CHKERRQ(ierr);
+  for (i = 0; i < n; ++i) {
+    ierr = DMPlexComputeCellGeometryFVM(dm, list[i], NULL, x, NULL);CHKERRQ(ierr); // Center of the cell-of-interest
+    dist[i] = 0.0;
+    for (j = 0; j < dim; ++j) { // Compute the distance so that we can check if it's within the required distance.
+      dist[i] += PetscSqr(x0[j] - x[j]);
+    }
+  }
+  PetscSortRealWithArrayInt(n, dist, list);
+  ierr = PetscFree(dist);CHKERRQ(ierr);
+
+  ierr = PetscMalloc1(numberCells, cells);CHKERRQ(ierr);
+  ierr = PetscArraycpy(*cells, list, numberCells);CHKERRQ(ierr);
+  *nCells = numberCells;
 
   PetscFunctionReturn(0);
 }

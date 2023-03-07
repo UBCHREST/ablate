@@ -83,7 +83,7 @@ PetscReal LevelSetSolver::Curvature2D(PetscInt c) {
   std::shared_ptr<ablate::domain::rbf::RBF> rbf = LevelSetSolver::rbf;
   const ablate::domain::Field *lsField = LevelSetSolver::lsField;
 
-  cx = rbf->EvalDer(LevelSetSolver::lsField, c, 1, 0, 0);
+  cx = rbf->EvalDer(lsField, c, 1, 0, 0);
   cy = rbf->EvalDer(lsField, c, 0, 1, 0);
   cxx = rbf->EvalDer(lsField, c, 2, 0, 0);
   cyy = rbf->EvalDer(lsField, c, 0, 2, 0);

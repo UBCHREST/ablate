@@ -5,7 +5,7 @@
 #include "solver/solver.hpp" // For solver::Range
 #include "rbfSupport.hpp"
 
-#define __RBF_DEFAULT_POLYORDER 4
+#define __RBF_DEFAULT_POLYORDER 3
 
 namespace ablate::domain::rbf {
 
@@ -49,13 +49,13 @@ class RBF {
 
 
   protected:
-    PetscReal DistanceSquared(PetscReal x[], PetscReal y[]);
-    PetscReal DistanceSquared(PetscReal x[]);
-    void Loc3D(PetscReal xIn[], PetscReal x[3]);
+    PetscReal DistanceSquared(PetscInt dim, PetscReal x[], PetscReal y[]);
+    PetscReal DistanceSquared(PetscInt dim, PetscReal x[]);
+    void Loc3D(PetscInt dim, PetscReal xIn[], PetscReal x[3]);
 
   public:
 
-    RBF(PetscInt polyOrder, bool hasDerivatives, bool hasInterpolation);
+    RBF(PetscInt polyOrder = 4, bool hasDerivatives = true, bool hasInterpolation = true);
 
     ~RBF();
 
@@ -81,8 +81,8 @@ class RBF {
     void RestoreRange(ablate::solver::Range &range) const;
 
     // These will be overwritten in the derived classes
-    virtual PetscReal RBFVal(PetscReal x[], PetscReal y[]) = 0;   // Radial function evaluated using the distance between two points
-    virtual PetscReal RBFDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) = 0; // Derivative of the radial function assuming that the center point is at zero.
+    virtual PetscReal RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) = 0;   // Radial function evaluated using the distance between two points
+    virtual PetscReal RBFDer(PetscInt dim, PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) = 0; // Derivative of the radial function assuming that the center point is at zero.
     virtual std::string_view type() const = 0;
 
 
