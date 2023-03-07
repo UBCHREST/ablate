@@ -1,6 +1,7 @@
 import argparse
 import pathlib
 import re
+import os
 import shutil
 from dataclasses import dataclass
 
@@ -105,19 +106,26 @@ def create_example_files(example_input_directory, example_output_directory):
             example_meta_datas = []
 
             # make sure that there are input files here
-            yaml_files = len(list(example_directory.glob("*.yaml")))
+            yaml_files = len(list(example_directory.rglob("*.yaml")))
             if yaml_files:
-                # create the directory
-                output_category_directory = example_output_directory / example_directory.stem
-                output_category_directory.mkdir(parents=True, exist_ok=True)
 
                 # copy over and convert yaml file
-                for file in example_directory.glob("*"):
+                for file in example_directory.rglob("*"):
+                    # use a relative path
+                    example_directory_name = os.path.relpath(file.parent, example_directory.parent)
+
+                    # create the output directory if needed
+                    output_category_directory = example_output_directory / example_directory_name
+                    output_category_directory.mkdir(parents=True, exist_ok=True)
+
+                    if file.name.startswith('.'):
+                        continue
                     if file.suffix == '.yaml':
+
                         # compute the metadata
                         example_title = inflection.humanize(inflection.underscore(file.stem))
-                        example_doc_url = f'./{example_output_directory.name}/{example_directory.name}/{file.stem}.html'
-                        example_file_url = BaseExampleUrl + example_directory.name + "/" + file.name
+                        example_doc_url = f'./{example_output_directory.name}/{example_directory_name}/{file.stem}.html'
+                        example_file_url = BaseExampleUrl + example_directory_name + "/" + file.name
                         example_meta_datas.append(ExampleMetaData(example_title, example_doc_url, example_file_url))
 
                         # copy over the input as markdown
@@ -144,7 +152,10 @@ def create_example_files(example_input_directory, example_output_directory):
                                             markdown_file.write("```yaml\n")
 
                                     if header_region:
-                                        markdown_file.write(row.replace("#", "", 1).replace(" ", "", 1))
+                                        row = row.replace("#", "", 1)
+                                        # if row.startswith(" "):
+                                        #     row = row.replace(" ", "", 1)
+                                        markdown_file.write(row)
                                     else:
                                         markdown_file.write(row)
 
@@ -153,14 +164,10 @@ def create_example_files(example_input_directory, example_output_directory):
 
                     # just copy the file
                     else:
-                        import os
-                        relative_path = os.path.relpath(file, example_directory)
                         # check if directory
-                        if file.is_dir():
-                            shutil.copytree(file, output_category_directory / relative_path, dirs_exist_ok=True)
-                        else:
+                        if not file.is_dir():
                             # old fashion file copy
-                            shutil.copy(file, output_category_directory / relative_path)
+                            shutil.copy(file, output_category_directory / file.name)
 
             if example_meta_datas:
                 categories_meta_data[example_category_title] = example_meta_datas

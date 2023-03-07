@@ -1,43 +1,44 @@
 # This is an example and tutorial of setting up a 2D gmsh input file for compressible flow with LODI extruded boundaries.  The tutorial provides guidance/examples on creating the gmsh mesh using the GUI.
+### Geometry
 #
-#   ## Geometry
-#   1. Install [Gmsh](https://gmsh.info) and open a new document
-#   2. Define the outline of the pipe using a series of points under 'Modules > Geometry > Elementary entities > Add > Point#
+#1. Install [Gmsh](https://gmsh.info) and open a new document
+#2. Define the outline of the pipe using a series of points under ```Modules > Geometry > Elementary entities > Add > Point```
 #
-# - 0.0, 0.0, 0.0
-# - 0.5, 0.0, 0.0
-# - 0.5, .1, 0.0
-# - 0.0, .1, 0.0
+#   - 0.0, 0.0, 0.0
+#   - 0.5, 0.0, 0.0
+#   - 0.5, .1, 0.0
+#   - 0.0, .1, 0.0
 #
-#   3. Connect the points using 'Modules > Geometry > Elementary entities > Add > Line'
-#   ![gMesh Line Connect Step](assets/gMshLineConnect.png)
+#3. Connect the points using ```Modules > Geometry > Elementary entities > Add > Line```
+#![gMesh Line Connect Step](assets/gMshLineConnect.png)
 #
-#   4. Define a new surface using 'Modules > Geometry > Elementary entities > Add > Plane surface'
-#   ![gMesh Plane Surface Connect Step](assets/gMshPlaneSurface.png)
+#4. Define a new surface using ```Modules > Geometry > Elementary entities > Add > Plane surface```
+#![gMesh Plane Surface Connect Step](assets/gMshPlaneSurface.png)
 #
-#   5. Define the boundary conditions using physical groups.  Define the left boundary as 'inlet' using 'Modules > Geometry > Physical groups > Add > Curve'.  Repeat for the 'wall' (top/bottom) and 'outlet' (right hand side).
+#5. Define the boundary conditions using physical groups.  Define the left boundary as ```inlet``` using ```Modules > Geometry > Physical groups > Add > Curve```.  Repeat for the ```wall``` (top/bottom) and ```outlet``` (right hand side).
 #
-#   6. Define the 'main' mesh using a physical group.  Define the surface as 'main' using 'Modules > Geometry > Physical groups > Add > Surface'.
+#6. Define the ```main``` mesh using a physical group.  Define the surface as ```main``` using ```Modules > Geometry > Physical groups > Add > Surface```.
 #
-#   ## Meshing
-#   1. Configure Gmsh to produce hexes/quads using the following settings in 'Tools > Options > Mesh > General Tab'
+### Meshing
+#
+#1. Configure Gmsh to produce hexes/quads using the following settings in ```Tools > Options > Mesh > General Tab```
+#
 #   | setting  | value |
 #   |:-----------|:------|
 #   | 2D algorithm |  Frontal-Delaunay for Quads (experimental)  |
 #   | 3D algorithm        |  Delaunay |
 #   | 2D recombination algorithm        |  Blossom Full-Quad |
-#   | Recombine all triangular meshes     |  'check' |
+#   | Recombine all triangular meshes     |  ```check``` |
 #   | Subdivision algorithm | All Quads |
 #   | Min/Max element size | Reasonable values for mesh |
 #
 #   ![gMesh Hex Options](assets/gMshHexOptions.png)
-#   2. Generate the mesh
-#   1. Generate the line mesh 'Modules > Mesh > 1D'
-#   2. Generate the surface mesh 'Modules > Mesh > 2D'
-#   3. If creating a 3D mesh, 'Modules > Mesh > 3D'
-#   4. If a higher resolution mesh is needed, adjust the settings in Step 1 or select 'Modules > Mesh > Refine by splitting'
-#
-#   3. Output the mesh.  'File > Save Mesh' should produce a *.msh file with the same name as the geometry.  The [pipeFlow.geo](pipeFlow.geo) [pipeFlow.msh](pipeFlow.msh) files used in this example are provided to download.
+#2. Generate the mesh
+#    1. Generate the line mesh ```Modules > Mesh > 1D```
+#    2. Generate the surface mesh ```Modules > Mesh > 2D```
+#    3. If creating a 3D mesh, ```Modules > Mesh > 3D```
+#    4. If a higher resolution mesh is needed, adjust the settings in Step 1 or select ```Modules > Mesh > Refine by splitting```
+#3. Output the mesh.  ```File > Save Mesh``` should produce a *.msh file with the same name as the geometry.  The [pipeFlow.geo](pipeFlow.geo) [pipeFlow.msh](pipeFlow.msh) files used in this example are provided to download.
 ---
 # metadata for the simulation
 environment:
