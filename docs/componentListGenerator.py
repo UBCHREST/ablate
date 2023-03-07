@@ -88,6 +88,13 @@ class ExampleMetaData:
     file_url: str
 
 
+infection_special_cases = {
+    "1D": "_1d_",
+    "2D": "_2d_",
+    "3D": "_3d_"
+}
+
+
 # Convert each yaml input into a markdown example for the website
 def create_example_files(example_input_directory, example_output_directory):
     if example_output_directory is None:
@@ -123,7 +130,11 @@ def create_example_files(example_input_directory, example_output_directory):
                     if file.suffix == '.yaml':
 
                         # compute the metadata
-                        example_title = inflection.humanize(inflection.underscore(file.stem))
+                        example_title = file.stem
+                        for word, replace in infection_special_cases.items():
+                            example_title = example_title.replace(word, replace)
+
+                        example_title = inflection.humanize(inflection.underscore(example_title))
                         example_doc_url = f'./{example_output_directory.name}/{example_directory_name}/{file.stem}.html'
                         example_file_url = BaseExampleUrl + example_directory_name + "/" + file.name
                         example_meta_datas.append(ExampleMetaData(example_title, example_doc_url, example_file_url))
