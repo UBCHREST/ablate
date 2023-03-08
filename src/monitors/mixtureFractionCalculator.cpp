@@ -3,9 +3,9 @@
 
 ablate::monitors::MixtureFractionCalculator::MixtureFractionCalculator(const std::shared_ptr<ablate::eos::EOS>& eosIn, std::map<std::string, double> massFractionsFuel,
                                                                        std::map<std::string, double> massFractionsOxidizer, const std::vector<std::string>& trackingElementsIn)
-    : eos(std::dynamic_pointer_cast<eos::TChem>(eosIn)), trackingElements(trackingElementsIn.empty() ? std::vector<std::string>{"C", "H"} : trackingElementsIn) {
+    : eos(std::dynamic_pointer_cast<eos::TChemBase>(eosIn)), trackingElements(trackingElementsIn.empty() ? std::vector<std::string>{"C", "H"} : trackingElementsIn) {
     // make sure that the eos is set
-    if (!std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
+    if (!std::dynamic_pointer_cast<eos::TChemBase>(eosIn)) {
         throw std::invalid_argument("ablate::chemistry::MixtureFractionCalculator only accepts EOS of type eos::TChem");
     }
 
