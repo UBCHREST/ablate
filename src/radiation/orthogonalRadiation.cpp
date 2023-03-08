@@ -15,6 +15,7 @@ void ablate::radiation::OrthogonalRadiation::Setup(const ablate::domain::Range& 
      * Initialize the log if provided
      */
     absorptivityFunction = radiationModel->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, subDomain.GetFields());
+    emissivityFunction = radiationModel->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Emissivity, subDomain.GetFields());
 
     if (log) {
         log->Initialize(subDomain.GetComm());
