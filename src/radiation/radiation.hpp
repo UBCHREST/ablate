@@ -96,9 +96,9 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * @param kappa the absorptivity of the cell
      * @return
      */
-    inline void GetIntensity(PetscReal* intensity, PetscInt index, const solver::Range& cellRange, PetscReal temperature, PetscReal kappa, PetscReal epsilon) {
+    inline void GetIntensity(PetscReal* intensity, PetscInt index, const solver::Range& cellRange, PetscReal temperature, PetscReal kappa) {
         for (int i = 0; i < (int)absorptivityFunction.propertySize; ++i) {  // Compute the losses
-            PetscReal netIntensity = -4.0 * epsilon * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
+            PetscReal netIntensity = -4.0 * ablate::utilities::Constants::pi * GetBlackBodyTotalIntensity(temperature, 1); //TODO: This should take the emission as an input
 
             // add in precomputed gains
             netIntensity += evaluatedGains[absorptivityFunction.propertySize * (index - cellRange.start) + i];

@@ -1,5 +1,5 @@
-#include "eos/tChemSoot.hpp"
 #include "sootMeanProperties.hpp"
+#include "eos/tChemSoot.hpp"
 
 ablate::eos::radiationProperties::SootMeanProperties::SootMeanProperties(std::shared_ptr<eos::EOS> eosIn) : eos(std::move(eosIn)) {}
 
@@ -7,10 +7,10 @@ PetscErrorCode ablate::eos::radiationProperties::SootMeanProperties::SootEmissio
     PetscFunctionBeginUser;
 
     auto functionContext = (FunctionContext *)ctx;
-    double temperature;  //!< Variables to hold information gathered from the fields
-    PetscCall(functionContext->temperatureFunction.function(conserved, &temperature, functionContext->temperatureFunction.context.get()));   //!< Get the temperature value at this location
+    double temperature;                                                                                                                     //!< Variables to hold information gathered from the fields
+    PetscCall(functionContext->temperatureFunction.function(conserved, &temperature, functionContext->temperatureFunction.context.get()));  //!< Get the temperature value at this location
 
-    PetscReal refractiveIndex = GetRefractiveIndex();
+    PetscReal refractiveIndex = GetRefractiveIndex();  //! We may want to incorporate this at some point?
     *(epsilon) = ablate::radiation::Radiation::GetBlackBodyTotalIntensity(temperature, refractiveIndex);
 
     PetscFunctionReturn(0);

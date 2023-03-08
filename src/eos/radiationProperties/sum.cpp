@@ -56,6 +56,7 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
     for (auto &model : models) {
         contextVector->push_back(model->GetRadiationPropertiesTemperatureFunction(property, fields));
     }
+    // TODO: Return the black body intensity for the emission instead of the sum of the models. Only the absorption should be summed between the materials.
 
     return function;
 }

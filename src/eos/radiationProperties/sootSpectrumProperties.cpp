@@ -14,7 +14,11 @@ ablate::eos::radiationProperties::SootSpectrumProperties::SootSpectrumProperties
     //! If a range is given, initialize a linear variation in wavelength over the desired range.
     if (std::empty(wavelengthsIn)) {
         wavelengthsIn.resize(num);
-        for (int i = 0; i < num; i++) wavelengthsIn[i] = min + ((double)i / (double)num) * max;
+        double widths = (max - min) / num;
+        for (int i = 0; i < num; i++) {
+            wavelengthsIn[i] = min + ((double)i / (double)num) * max;
+            bandwidthsIn[i] = widths; //! Default the bandwidths to cover the whole range.
+        }
     }
 }
 

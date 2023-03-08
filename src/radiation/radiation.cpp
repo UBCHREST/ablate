@@ -566,6 +566,7 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
 
     // Get access to the absorption function
     auto absorptivityFunctionContext = absorptivityFunction.context.get();
+    auto emissivityFunctionContext = emissivityFunction.context.get();
 
     // Start by marching over all rays in this rank
     for (std::size_t raySegmentIndex = 0; raySegmentIndex < raySegments.size(); ++raySegmentIndex) {
@@ -588,18 +589,18 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                     PetscReal kappa[absorptivityFunction.propertySize];  //!< Absorptivity coefficient, property of each cell. This is an array that we will iterate through for every evaluation
                     PetscReal emission[absorptivityFunction.propertySize];
                     absorptivityFunction.function(sol, *temperature, kappa, absorptivityFunctionContext);  //! Get the absorption and emission information from the provided properties models.
-                    emissivityFunction.function(sol, *temperature, emission, absorptivityFunctionContext);
+                    emissivityFunction.function(sol, *temperature, emission, emissivityFunctionContext);
                     //! Get the pointer to the returned array of absorption values. Iterate through every wavelength for the evaluation.
                     if (cellSegment.pathLength < 0) {
                         // This is a boundary cell
                         for (int wavelengthIndex = 0; wavelengthIndex < absorptivityFunction.propertySize; ++wavelengthIndex) {
                             raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Ij +=
                                 emission[wavelengthIndex] * raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad;
-                            //! In the future we may want to set this intensity with a boundary condition function.
+                            //! In the future we may want to set this intensity with a boundary condition class.
                         }
                     } else {
+                        // This is not a boundary cell
                         for (int wavelengthIndex = 0; wavelengthIndex < absorptivityFunction.propertySize; ++wavelengthIndex) {
-                            // This is not a boundary cell
                             raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Ij +=
                                 emission[wavelengthIndex] * (1 - exp(-kappa[wavelengthIndex] * cellSegment.pathLength)) *
                                 raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad;

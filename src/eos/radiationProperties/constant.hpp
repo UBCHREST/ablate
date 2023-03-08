@@ -1,8 +1,8 @@
 #ifndef ABLATELIBRARY_RADIATIONPROPERTIESCONSTANT_H
 #define ABLATELIBRARY_RADIATIONPROPERTIESCONSTANT_H
 
-#include "radiationProperties.hpp"
 #include "radiation/radiation.hpp"
+#include "radiationProperties.hpp"
 
 namespace ablate::eos::radiationProperties {
 
@@ -14,9 +14,15 @@ class Constant : public RadiationModel {
         const ThermodynamicFunction temperatureFunction;
     };
 
-    const std::shared_ptr<eos::EOS> eos;                                                                               //! eos is needed to compute temperature
+    const std::shared_ptr<eos::EOS> eos;  //! eos is needed to compute temperature
     PetscReal absorptivityIn;
     PetscReal emissivityIn;
+
+    /**
+     * Get the refractive index for the material.
+     * @return
+     */
+    static inline PetscReal GetRefractiveIndex() { return 1; }
 
     /**
      * private static function for evaluating constant properties without temperature
@@ -52,7 +58,6 @@ class Constant : public RadiationModel {
      * @return
      */
     static PetscErrorCode ConstantEmissionTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
-
 
    public:
     explicit Constant(std::shared_ptr<eos::EOS> eosIn, double absorptivity, double emissivity);
