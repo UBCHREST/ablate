@@ -1,3 +1,4 @@
+#include "eos/mockEOS.hpp"
 #include "eos/perfectGas.hpp"
 #include "eos/radiationProperties/constant.hpp"
 #include "gtest/gtest.h"
@@ -6,7 +7,7 @@ TEST(RadiationConstantTests, ShouldRecordConstantValuesForDirectRadiationFunctio
     // ARRANGE
     const PetscReal expectedAbsorptivity = 1;
 
-    auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}));
+    std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();  //!< Create a mock eos with parameters to feed to the model.
 
     auto constantModel = std::make_shared<ablate::eos::radiationProperties::Constant>(eos, expectedAbsorptivity, 1);
 
@@ -25,7 +26,7 @@ TEST(ConstantTransportTests, ShouldRecordConstantValuesForRadiationTemperatureFu
     // ARRANGE
     const PetscReal expectedAbsorptivity = 1;
 
-    auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}));
+    std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();  //!< Create a mock eos with parameters to feed to the model.
 
     auto constantModel = std::make_shared<ablate::eos::radiationProperties::Constant>(eos, expectedAbsorptivity, 1);
 

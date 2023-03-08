@@ -39,7 +39,7 @@ PetscErrorCode ablate::eos::radiationProperties::Sum::EmissionFunction(const Pet
 
     /**
      * Only take the first value of emission in the vector.
-     * We don't want to sum the emissions because the emission value is only dependent on the temperature, not the volume / mass fraction of the contributer.
+     * We don't want to sum the emissions because the emission value is only dependent on the temperature, not the volume / mass fraction of the contributor.
      */
     auto vector = (std::vector<ThermodynamicFunction> *)ctx;
 
@@ -58,7 +58,7 @@ PetscErrorCode ablate::eos::radiationProperties::Sum::EmissionTemperatureFunctio
 
     /**
      * Only take the first value of emission in the vector.
-     * We don't want to sum the emissions because the emission value is only dependent on the temperature, not the volume / mass fraction of the contributer.
+     * We don't want to sum the emissions because the emission value is only dependent on the temperature, not the volume / mass fraction of the contributor.
      */
     auto vector = (std::vector<ThermodynamicTemperatureFunction> *)ctx;
 
