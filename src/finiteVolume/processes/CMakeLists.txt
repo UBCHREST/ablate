@@ -13,6 +13,7 @@ target_sources(ablateLibrary
         les.cpp
         chemistry.cpp
         radiationLoss.cpp
+        thermophoreticDiffusion.cpp
         surfaceForce.cpp
 
         PUBLIC
@@ -30,5 +31,6 @@ target_sources(ablateLibrary
         les.hpp
         chemistry.hpp
         radiationLoss.hpp
+        thermophoreticDiffusion.hpp
         surfaceForce.hpp
         )
