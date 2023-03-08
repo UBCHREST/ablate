@@ -19,7 +19,7 @@ timestepper:
     ts_adapt_safety: 0.9
   # io controls how often the results are saved to a file for visualization and restart
   io:
-    interval: 0 # results are saved at every 5 steps.  In real simulations this should be much larger.
+    interval: 0 # results are saved at every 0 steps.  In real simulations this should be much larger.
 
   # Create a simple box mesh to start
   domain: !ablate::domain::BoxMesh

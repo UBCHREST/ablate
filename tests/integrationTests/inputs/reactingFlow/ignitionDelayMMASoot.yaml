@@ -28,7 +28,7 @@ timestepper:
       # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...) and species mass fractions
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: &eos !ablate::eos::TChemSoot # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked
-          mechFile: ../mechanisms/MMAReduced.yaml
+          mechFile: ../mechanisms/MMAReduced.yml
 
   # set the initial conditions of the flow field
   initialization:

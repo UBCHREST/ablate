@@ -1,23 +1,27 @@
-# This case is inspired by the setup for Direct Numerical Simulation of turbulent channel flow up to Ret=590 (Moser et al. Physics of Fluids, 11(4):943–945, 1999).
-# The case is a statistically-developing internal flow through parallel smooth walls.
-# The domain comprises a 3D rectangular channel.
-# Longitudinal direction (Mean-flow direction)
-# Vertical direction (Wall-normal direction)
-# Spanwise direction (Statistically homogeneous direction).
-# Large eddy simulation (LES) is used to model sub-grid-scales and wall models are deployed near the wall regions.
+#This case is inspired by the setup for Direct Numerical Simulation of turbulent channel flow up to Ret=590 (Moser et al. Physics of Fluids, 11(4):943–945, 1999).
+#The case is a statistically-developing internal flow through parallel smooth walls.
+#The domain comprises a 3D rectangular channel.
+#Longitudinal direction (Mean-flow direction)
+#Vertical direction (Wall-normal direction)
+#Spanwise direction (Statistically homogeneous direction).
+#Large eddy simulation (LES) is used to model sub-grid-scales and wall models are deployed near the wall regions.
 
-# Turbulent inflow is imposed at the intel. Turbulent velocity profile is approximated from 1/7 power-low.
+#Turbulent inflow is imposed at the intel. Turbulent velocity profile is approximated from 1/7 power-low.
 
-# ### Bulk velocity of flow:
+#### Bulk velocity of flow:
 # - $$ U_b=(17.55,0.00,0.00) m/s$$
-# ### Max velocity:
+
+#### Max velocity:
 # - $$U_max = 19.86 m/s$$
-# ### Reynolds Number:
+
+#### Reynolds Number:
 # - $$Re = 5E+6$$
-# ### velocity profile
-# - $$u = U_max (y/Re)^1/7$$
-# ### turbulence intensity
-# - $$U_mean* 10%$$
+
+#### velocity profile
+# - $$u = U_max (y/Re)^{1/7}$$
+
+#### turbulence intensity
+# - $$U_{mean}* 10%$$
 
 ---
 # metadata for the simulation

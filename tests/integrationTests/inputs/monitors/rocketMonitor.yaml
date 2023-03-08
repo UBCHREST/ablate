@@ -1,5 +1,5 @@
-# ### Description
-# A test of the rocket monitor output (thrust, specific impulse) using a simple 2d 5x20 plane of cells
+#### Description
+#A test of the rocket monitor output (thrust, specific impulse) using a simple 2d 5x20 plane of cells
 ---
 
 environment:
