@@ -6,6 +6,7 @@ environment:
   tagDirectory: true
 arguments: { }
 timestepper:
+  name: theMainTimeStepper
   arguments:
     ts_type: rk
     ts_max_steps: 4
@@ -51,11 +52,17 @@ timestepper:
         other: !ablate::finiteVolume::fieldFunctions::MassFractions
           # the mass fraction class allows for a subset of mass fractions to be specified. The rest are assumed zero.
           eos: *eos
-          values:
-            - fieldName: N2
-              field: 0.724672103
-            - fieldName: C_solid
-              field: "1 - 0.724672103"
+          values: !ablate::mathFunctions::geom::Sphere
+            center: [ 0, 0, 0 ]
+            radius: 0.125
+            insideValues:
+              - fieldName: N2
+                field: 0.724672103
+              - fieldName: C_solid
+                field: "1 - 0.724672103"
+            outsideValues:
+              - fieldName: N2
+                field: 1
 
     # the DensityMassFractions reuses the initState to set the densityMassFractions for all species.
     - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
