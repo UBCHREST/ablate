@@ -25,14 +25,15 @@ PetscErrorCode ablate::eos::radiationProperties::Constant::ConstantEmissionFunct
     PetscCall(functionContext->temperatureFunction.function(conserved, &temperature, functionContext->temperatureFunction.context.get()));  //!< Get the temperature value at this location
 
     PetscReal refractiveIndex = GetRefractiveIndex();  //! We may want to incorporate this at some point?
-    *(property) = ablate::radiation::Radiation::GetBlackBodyTotalIntensity(temperature, refractiveIndex);
+    *(property) = functionContext->emissivity * ablate::radiation::Radiation::GetBlackBodyTotalIntensity(temperature, refractiveIndex);
     PetscFunctionReturn(0);
 }
 
 PetscErrorCode ablate::eos::radiationProperties::Constant::ConstantEmissionTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal *property, void *ctx) {
     PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
     PetscReal refractiveIndex = GetRefractiveIndex();  //! We may want to incorporate this at some point?
-    *(property) = ablate::radiation::Radiation::GetBlackBodyTotalIntensity(temperature, refractiveIndex);
+    *(property) = functionContext->emissivity * ablate::radiation::Radiation::GetBlackBodyTotalIntensity(temperature, refractiveIndex);
     PetscFunctionReturn(0);
 }
 

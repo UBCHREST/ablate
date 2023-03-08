@@ -23,10 +23,26 @@ class Sum : public RadiationModel {
      * @param property
      * @param ctx
      */
-    static PetscErrorCode SumFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode EmissionFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+
+    /**
+     * private static function for evaluating constant properties with temperature
+     * @param conserved
+     * @param property
+     * @param ctx
+     */
+    static PetscErrorCode EmissionTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
 
     /**
      * private static function for evaluating constant properties without temperature
+     * @param conserved
+     * @param property
+     * @param ctx
+     */
+    static PetscErrorCode SumFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+
+    /**
+     * private static function for evaluating constant properties with temperature
      * @param conserved
      * @param property
      * @param ctx
