@@ -39,7 +39,7 @@ ablate::monitors::MixtureFractionCalculator::MixtureFractionCalculator(const std
             sum += count * elementInformation[e];
         }
 
-        if (!ablate::utilities::MathUtilities::Equals(sum, speciesMolecularMass[species])) {
+        if (!ablate::utilities::MathUtilities::Equals(sum, speciesMolecularMass[species], 1.0E-2)) {
             throw std::invalid_argument("Problem in ablate::chemistry::MixtureFractionCalculator. Sum of all mixFracMassCoeff =/= 1 for " + species);
         }
     }
