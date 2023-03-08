@@ -254,11 +254,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
 
                 } else if (fcg->centroid[d] > xyz[d]) {
                     divergentNormal[d] -= vertexNormal[d];
-
                     grad[d] -= magVertexNormal;
-                } else {
-                    divergentNormal[d] = 0;
-                    grad[d] = 0;
                 }
             }
         }
