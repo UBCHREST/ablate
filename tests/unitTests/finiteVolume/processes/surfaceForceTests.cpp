@@ -108,11 +108,8 @@ TEST_P(SurfaceForceTestFixture, ShouldComputeCorrectSurfaceForce) {
             // store coordinates of the vortex
             stencilData.stencilCoord[d] = xyz[d];
         }
-
         stencilData.gradientWeights = {0, 0, 0};
         stencilData.stencilSize = 0;
-        // PetscInt nCell =0;
-        //  extract faces of the vertex
         PetscInt *star = nullptr;
         PetscInt numStar;
         DMPlexGetTransitiveClosure(dm, v, PETSC_FALSE, &numStar, &star);
