@@ -166,9 +166,6 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
 
                 } else if (cg->centroid[d] < info.stencilCoord[d]) {
                     alphaVal[d] = -*alpha;
-
-                } else {
-                    alphaVal[d] = 0;
                 }
                 totalAlpha[d] += alphaVal[d];
             }
@@ -255,9 +252,6 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
                 } else if (fcg->centroid[d] > xyz[d]) {
                     divergentNormal[d] -= vertexNormal[d];
                     grad[d] -= magVertexNormal;
-                } else {
-                    divergentNormal[d] = 0;
-                    grad[d] = 0;
                 }
             }
         }
