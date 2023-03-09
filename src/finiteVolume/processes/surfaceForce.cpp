@@ -9,13 +9,12 @@ ablate::finiteVolume::processes::SurfaceForce::SurfaceForce(PetscReal sigma) : s
 void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) {
     /** Make stencils for connected cells of each vertex and store them
      * extract the vortices and get their coordinates
-     *  March over each vertex and store the vertex point
+     * march over each vertex and store the vertex point
      * extract the cells in the domain then identify the connected cells to the vertex using "PETSc-Closure" and store
      * extract the connected cells info and store
      * calculate the weights for gradient by summing the distances of connected cells to the vertex and store
      * push back for this vertex
      **/
-
     auto dim = flow.GetSubDomain().GetDimensions();
     auto dm = flow.GetSubDomain().GetDM();
     Vec cellGeomVec;
@@ -25,7 +24,7 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
     VecGetDM(cellGeomVec, &dmCell);
     VecGetArrayRead(cellGeomVec, &cellGeomArray);
 
-    // extract the local x array
+    // extract the local coordinates array
     Vec localCoordsVector;
     PetscSection coordsSection;
     PetscScalar *coordsArray;
@@ -40,7 +39,6 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
     // march over vortices
     for (PetscInt v = vStart; v < vEnd; v++) {
         auto newStencil = VertexStencil{};
-
         // store the vertex point
         newStencil.vertexId = v;
         newStencil.stencilCoord = {0, 0, 0};
@@ -78,7 +76,6 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
             newStencil.stencilSize += 1;
         }
         DMPlexRestoreTransitiveClosure(dm, v, PETSC_FALSE, &numStar, &star);
-
         // store the stencils of this vertex
         vertexStencils.push_back(std::move(newStencil));
     }
@@ -92,9 +89,9 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     PetscFunctionBegin;
 
     /** Now use the stored vertex information to calculate curvature at each cell center
-     * March over the stored vortices to read the alpha values of connected cells
+     * march over the stored vortices to read the alpha values of connected cells
      * calculate the normal at each vertex using alpha values of it's cells
-     * Now march over cells in the domain
+     * march over cells in the domain
      * extract connected vortices to each cell using "closure" and read the saved normals of vortices
      * calculate the normal at the cell center
      * calculate the gradient of magnitude of vertex normals and divergent of normals at the cell center
@@ -131,14 +128,21 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     // get the coordinate domain
     DM cdm;
     DMGetCoordinateDM(dm, &cdm);
-    // create a local array to save normals
+
+    // create a domain to get a local vector to save normals
+    DM dmData;
+    PetscFE fe_coords;
+    PetscInt k = 1;
+    DMClone(dm, &dmData);
+    PetscFECreateLagrange(PETSC_COMM_SELF, dim, dim, PETSC_TRUE, k, PETSC_DETERMINE, &fe_coords);
+    DMSetField(dmData, 0, NULL, (PetscObject)fe_coords);
+    DMCreateDS(dmData);
     Vec localVec;
-    DMGetLocalVector(dm, &localVec);
+    DMGetLocalVector(dmData, &localVec);
     PetscScalar *normalArray = NULL;
     VecGetArray(localVec, &normalArray);
-
     PetscScalar *vertexNormal;
-
+    // extract the local coordinates array
     Vec localCoordsVector;
     PetscSection coordsSection;
     PetscScalar *coordsArray = NULL;
@@ -149,7 +153,6 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     // march over the stored vortices
     for (const auto &info : process->vertexStencils) {
         PetscReal totalAlpha[3] = {0, 0, 0};
-
         // march over the connected cells to each vertex and get the cell info and filed value
         for (PetscInt p = 0; p < info.stencilSize; p++) {
             PetscFVCellGeom *cg = nullptr;
@@ -176,7 +179,6 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
             vertexNormal[d] = totalAlpha[d] / info.gradientWeights[d];
         }
     }
-
     // march over cells
     for (PetscInt i = cellRange.start; i < cellRange.end; ++i) {
         const PetscInt c = cellRange.points ? cellRange.points[i] : i;
@@ -219,8 +221,6 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
         PetscInt vStart, vEnd;
         DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd);
         PetscReal distance[3] = {0, 0, 0};
-
-        // extract the local x array
         PetscReal xyz[3];
         PetscInt offset;
 
@@ -260,7 +260,6 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
             gradNormal[d] = grad[d] / distance[d];
             cellCenterNormal[d] = centerNormal[d] / numVertex;
         }
-
         // magnitude of normal at the center
         const PetscReal magCellNormal = utilities::MathUtilities::MagVector(dim, cellCenterNormal);
         if (magCellNormal > 0) {
@@ -287,8 +286,11 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
     VecRestoreArray(locFVec, &fArray);
     VecRestoreArray(localCoordsVector, &coordsArray);
-    DMRestoreLocalVector(dm, &localVec) >> utilities::PetscUtilities::checkError;
+    DMRestoreLocalVector(dmData, &localVec);
+    PetscFEDestroy(&fe_coords);
     VecRestoreArrayRead(locX, &solArray);
+    DMDestroy(&dmData);
+
     PetscFunctionReturn(0);
 }
 
