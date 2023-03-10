@@ -160,8 +160,8 @@ PetscErrorCode PetscSortedArrayComplement(const PetscInt nb, const PetscInt b[],
 // Note: The intended use is to use either maxLevels OR maxDist OR minNumberCells. Right now a check isn't done on only selecting one, but that might be added in the future.
 PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useVertices, PetscInt *nCells, PetscInt *cells[]) {
 
-  PetscInt        numNew, nLevelList[10];
-  PetscInt        *addList, levelList[10][1000]; // There will be one list for every level.
+  PetscInt        numNew, nLevelList[2];
+  PetscInt        *addList, levelList[2][1000], currentLevelLoc, prevLevelLoc;
   PetscInt        n = 0, list[100000];
   PetscInt        l, i;
   PetscScalar     x0[3];
@@ -180,7 +180,7 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
   }
   else if (maxLevels > 0) {
 
-    PetscCheck(maxLevels<=10, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "The maximum number of levels to obtain is 10.");
+//    PetscCheck(maxLevels<=DMPlexGetNeighborCells_MaxLevels, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "The maximum number of levels requested exceeds the maximum possible.");
 
     numberCells = PETSC_MAX_INT;
     maxDist = PETSC_MAX_REAL;
@@ -196,28 +196,36 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
 
   // Start with only the center cell
   l = 0;
-  list[l] = p;
-  n = nLevelList[l] = 1;
-  levelList[l][0] = p;
+  list[0] = p;
+  n = nLevelList[0] = 1;
+  levelList[0][0] = p;
+  currentLevelLoc = 0;
 
   // When the number of cells added at a particular level is zero then terminate the loop. This is for the case where
   // maxLevels is set very large but all cells within the maximum distance have already been found.
-  while (l < maxLevels && n < numberCells && nLevelList[l] > 0) {
+  while (l < maxLevels && n < numberCells && nLevelList[currentLevelLoc] > 0) {
     ++l;
-    nLevelList[l] = 0;
-    for (i = 0; i < nLevelList[l-1]; ++i) { // Iterate over each of the locations on the prior level
-      ierr = DMPlexGetNeighborCells_Internal(dm, x0, levelList[l-1][i], maxDist, useVertices, &numNew, &addList);CHKERRQ(ierr);CHKERRQ(ierr);
-      ierr = PetscArraycpy(&levelList[l][nLevelList[l]], addList, numNew);CHKERRQ(ierr);
-      nLevelList[l] += numNew;
+
+    // This will alternate between the levelLists
+    currentLevelLoc = l%2;
+    prevLevelLoc = (l+1)%2;
+
+//    PetscCheck(l<=DMPlexGetNeighborCells_MaxLevels, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "The maximum number of levels required exceeds the maximum possible.");
+
+    nLevelList[currentLevelLoc] = 0;
+    for (i = 0; i < nLevelList[prevLevelLoc]; ++i) { // Iterate over each of the locations on the prior level
+      ierr = DMPlexGetNeighborCells_Internal(dm, x0, levelList[prevLevelLoc][i], maxDist, useVertices, &numNew, &addList);CHKERRQ(ierr);CHKERRQ(ierr);
+      ierr = PetscArraycpy(&levelList[currentLevelLoc][nLevelList[currentLevelLoc]], addList, numNew);CHKERRQ(ierr);
+      nLevelList[currentLevelLoc] += numNew;
       ierr = PetscFree(addList);CHKERRQ(ierr);
     }
-    ierr = PetscSortRemoveDupsInt(&nLevelList[l], levelList[l]);CHKERRQ(ierr);
+    ierr = PetscSortRemoveDupsInt(&nLevelList[currentLevelLoc], levelList[currentLevelLoc]);CHKERRQ(ierr);
 
     // This removes any cells which are already in the list. Not point in re-doing the search for those.
-    ierr = PetscSortedArrayComplement(n, list, &nLevelList[l], levelList[l]);CHKERRQ(ierr);
+    ierr = PetscSortedArrayComplement(n, list, &nLevelList[currentLevelLoc], levelList[currentLevelLoc]);CHKERRQ(ierr);
 
-    ierr = PetscArraycpy(&list[n], levelList[l], nLevelList[l]);CHKERRQ(ierr);
-    n += nLevelList[l];
+    ierr = PetscArraycpy(&list[n], levelList[currentLevelLoc], nLevelList[currentLevelLoc]);CHKERRQ(ierr);
+    n += nLevelList[currentLevelLoc];
 
     ierr = PetscSortRemoveDupsInt(&n, list);CHKERRQ(ierr);
   }
