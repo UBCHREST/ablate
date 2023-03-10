@@ -680,7 +680,7 @@ void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
   PetscInt p = RBF::polyOrder;
 
   // Set the size of the augmented polynomial. A value of p<0 means no augmented polynomials.
-  if (p<0) {
+  if (p < 0) {
     RBF::nPoly = 0;
   } else if (dim == 1) {
     RBF::nPoly = p+1;
@@ -690,8 +690,16 @@ void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
     RBF::nPoly = (p+3)*(p+2)*(p+1)/6;
   }
 
-  // Set the minimum number of cells to get compute the RBF matrix
-  RBF::minNumberCells = (PetscInt)floor(2*(RBF::nPoly));
+
+  if (p < 0) {
+    // If there isn't an augmenting polynomial (not recommended) then set the number of point to 5^dim.
+    RBF::minNumberCells = PetscPowInt(5, dim);
+  }
+  else {
+    // Set the minimum number of cells to get compute the RBF matrix
+    // The unisolvency requirement is that the number of points to use be larger than twice the number of elements in the augmenting polynomial.
+    RBF::minNumberCells = (PetscInt)floor(2*(RBF::nPoly));
+  }
 
   if (RBF::hasDerivatives) {
 

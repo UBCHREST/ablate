@@ -359,8 +359,6 @@ TEST_P(RBFTestFixture_Derivative, CheckPointFunctions) {
             err = PetscMax(err, PetscAbsReal(val - RBFTestFixture_Function(x, dx[i], dy[i], dz[i])));
           }
 
-          printf("%10s: %d,%d %e\t%e\n", rbfList[j]->type().data(), dx[i], dy[i], err, maxError);
-
           EXPECT_LT(err, maxError) << "RBF: " << rbfList[j]->type() << ", dx: " << dx[i] << ", dy:" << dy[i] << ", dz: " << dz[i] << " Error: " << err;
         }
 
