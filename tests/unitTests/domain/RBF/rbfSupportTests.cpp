@@ -180,53 +180,6 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
     EndWithMPI
 }
 
-// One thing that is NOT being tested right now is periodicity.
-// This is the code used to generate the results. Modify as necessary. It would be relatively easy to automate the unit-test creation, but for right
-//  now it's done manually as the results need to be initially checked.
-//
-//
-//#include "domain/boxMesh.hpp"
-//#include "domain/modifiers/distributeWithGhostCells.hpp"
-//    auto mesh = std::make_shared<domain::BoxMesh>(
-//                "mesh",
-//                std::vector<std::shared_ptr<domain::FieldDescriptor>>{},
-//                std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(3)},
-//                std::vector<int>{10, 10},
-//                std::vector<double>{0.0, 0.0},
-//                std::vector<double>{1.0, 1.0},
-//                std::vector<std::string>{},
-//                false);
-
-
-//      DMViewFromOptions(mesh->GetDM(), NULL, "-dm_view");
-
-
-//      PetscMPIInt rank;
-//      MPI_Comm_rank(PetscObjectComm((PetscObject)mesh->GetDM()), &rank);
-
-//      PetscInt nCells, *cells;
-//      PetscInt centerCell = -1;
-//      if(rank==0) centerCell = 55;
-//      else centerCell = 55;
-//      PetscInt maxLevels = 2;
-//      PetscReal maxDist = -1;
-//      PetscInt minNumberCells = -1;
-
-//      DMPlexGetNeighborCells(mesh->GetDM(), centerCell, maxLevels, maxDist, minNumberCells, PETSC_TRUE, &nCells, &cells) >> utilities::PetscUtilities::checkError;
-//      printf("%d: center: %d\n", rank, centerCell);
-//      printf("%d: nCells: %d\n", rank, nCells);
-//      printf("%d: ", rank);
-//      for(int i=0;i<nCells;++i){
-//        printf("%d,", cells[i]);
-//      }
-//      printf("\n");
-
-
-//    PetscInt cell;
-//    PetscScalar xyz[2] = {0.55, 0.25};
-//    DMPlexGetContainingCell(mesh->GetDM(), xyz, &cell) >> utilities::PetscUtilities::checkError;
-//    printf("Cell: %d\n", cell);
-
 INSTANTIATE_TEST_SUITE_P(
     MeshTests, RBFSupportTestFixture_NeighborCells,
     testing::Values((RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DQuadVert", .nproc = 1},
