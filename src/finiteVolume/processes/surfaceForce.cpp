@@ -295,4 +295,4 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
 }
 
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::SurfaceForce, "calculates surface tension force and adds source terms",
-         ARG(PetscReal, "value", "sigma, surface tension coefficient"));
+         ARG(PetscReal, "sigma", "sigma, surface tension coefficient"));
