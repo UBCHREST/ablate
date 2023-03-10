@@ -1,5 +1,5 @@
 # This is an example of setting up a 2D SlabBurner Simulation using the gMsh python api with a series of derived slab burner points.
-### Geometry
+### Mesh Generation Script
 #
 #1. Open the [slabBurnerMeshGen.py](slabBurnerMeshGen.py) python
 #2. Update the geometry if necessary
@@ -21,19 +21,20 @@ timestepper:
   arguments:
     ts_type: rk
     ts_max_time: 100000
-    ts_max_steps: 3
+    ts_max_steps: 100
     ts_dt: 1.0E-10
     ts_adapt_safety: 0.9
     ts_adapt_type: physicsConstrained
   # io controls how often the results are saved to a file for visualization and restart
-  io:
-    interval: 0 # results are saved at every 5 steps.  In real simulations this should be much larger.
+  io: !ablate::io::Hdf5MultiFileSerializer
+    interval: 10 # results are saved at every 5 steps.  In real simulations this should be much larger.
   # load in the gmsh produced mesh file
   domain: !ablate::domain::MeshFile
     path: slabBurnerMesh.msh
     options:
-      dm_plex_check_all: true
+      dm_plex_check_all: true # check to make sure the mesh if valid from gMsh
       dm_distribute: false # turn off default dm_distribute so that we can extrude label first
+      dm_plex_hash_location: true # enable the fast look up particle locations
     # specify any modifications to be performed to the mesh/domain
     modifiers:
       - # GMsh/dm_plex_gmsh_use_regions creates individual labels with their separate values. By collapsing the labels to the default values
@@ -45,7 +46,7 @@ timestepper:
           - name: outlet
           - name: slab
           - name: main
-      - # use the newly collapsed labels to extrude the boundary.  Do not extrude the cell
+      - # use the newly collapsed labels to extrude the boundary.  Do not extrude the main mesh
         !ablate::domain::modifiers::ExtrudeLabel
         regions:
           - name: inlet
@@ -66,33 +67,27 @@ timestepper:
       - !ablate::domain::modifiers::DistributeWithGhostCells
         ghostCellDepth: 2
 
+      # remove the slabBurnerFace from the flowRegion so that the ablate::boundarySolver::physics::Sublimation can handle the boundary condition
       - !ablate::domain::modifiers::SubtractLabel
-        # remove the slabBurnerFace from the flowRegion
         differenceRegion:
           name: interiorFlowRegion
         minuendRegion:
           name: flowRegion
         subtrahendRegions:
           - name: slab
-        incompleteLabel: true
-
-      # it may be helpful to print the dm and labels to debug
-      - !ablate::monitors::DmViewFromOptions
-        options: ":$OutputDirectory/slabBurner.tex:ascii_latex"
-      - !ablate::monitors::DmViewFromOptions
-        options: ascii::ascii_info_detail
-
-
+        incompleteLabel: true # allow the faces to be removed the flowRegion
 
     fields:
       # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
       # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
       - !ablate::finiteVolume::CompressibleFlowFields
+        # The soot equation of state is an extension of the tChem eos with support for a simple soot model
         eos: !ablate::eos::TChemSoot  &eos
           mechFile: MMAReduced.yml
           options:
             # set a minimum temperature for the chemical kinetics ode integration
             thresholdTemperature: 560
+        # use a higher order field for the conserved field transport options
         conservedFieldOptions:
           petscfv_type: leastsquares
           petsclimiter_type: vanleer
@@ -103,121 +98,139 @@ timestepper:
         location: aux
   # set the initial conditions of the flow field
   initialization:
+    # initialize the flow the entire domain with the default values using the flow state.  The flow state can be used to compute
+    # both ablate::finiteVolume::fieldFunctions::Euler and ablate::finiteVolume::fieldFunctions::DensityMassFractions consistently
     - !ablate::finiteVolume::fieldFunctions::Euler
+      # the ablate::finiteVolume::fieldFunctions::CompressibleFlowState defines a field given T, P, vel, and Yi
       state: &flowFieldState
         eos: *eos
+        # use a sphere geometry to set up an ignition kernel
         temperature: !ablate::mathFunctions::geom::Sphere
           center: [ 0.0182024,  0.007 ]
           radius: 0.005
           insideValues: 1673.15
           outsideValues: 300
+        # set the entire domain to atmospheric pressure
         pressure: 101325.0
+        # set the velocity everywhere to zero
         velocity: "0.0, 0.0"
+        # the eos requires mass fractions to compute initial conditions
         other: !ablate::finiteVolume::fieldFunctions::MassFractions
           &oxMassFrac
           eos: *eos
           values:
             - fieldName: O2
               field: 1.0
+    # using the same CompressibleFlowState set the initial conserved mass fractions
     - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
       state: *flowFieldState
 
-    # Set the number density to zero
+    # Set the soot number density to zero
     - fieldName: densityProgress
       field: "0.0"
 
+    # Set the boundary cells for the slab to a different initial condition
     - !ablate::finiteVolume::fieldFunctions::Euler
       # slab Burner
       region:
         name: slab
       state: &fuelFieldState
         eos: *eos
+        # the fuel is assumed to be at 653.0K
         temperature: 653.0 #fuel temperature
         pressure: 101325.0
         velocity: "0.0, 0.0"
+        # set the mass fractions in the fuel boundary cells to 100% mma
         other: !ablate::finiteVolume::fieldFunctions::MassFractions
           &fuelMassFrac
           eos: *eos
           values:
             - fieldName: MMETHAC_C5H8O2 # The fuel boundary condition
               field: 1.0
+
+    # using the fuelFieldState set the initial conserved mass fractions in the boundary slab region
     - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
       region:
         name: slab
       state: *fuelFieldState
-# solvers can be combined
+
+# list the solvers that apply over the main mesh and the boundary cells
 solvers:
   # The compressible flow solver will solve the compressible flow equations over the interiorCells
   - !ablate::finiteVolume::CompressibleFlowSolver
     id: flowField
+    # the flow solver should only operate over the interiorFlowRegion.  This does not include boundary cells or slab boundary faces
     region:
       name: interiorFlowRegion
+    # set the cfl constraint to be used by the physicsConstrained time stepper
     parameters:
       cfl: 0.45
+
+    # the flow solver requires access to the eos
     eos: *eos
+    # the primary transport model applies to everything but the extra variables.
     transport: !ablate::eos::tChemSoot::SootSpeciesTransportModel
+      # the SootSpeciesTransportModel adjusts the diffusion coefficient to carbon appropriately
       transport: !ablate::eos::transport::Sutherland
         eos: *eos
+    # if specified, the evTransport is used for the ndd transport
     evTransport: !ablate::eos::tChemSoot::SootProgressTransportModel
       transport: !ablate::eos::transport::Sutherland
         eos: *eos
+    # additional monitors can be added to the flow solver.
     monitors:
+      # The time step monitor outputs the current timestep and dt every 10 steps
       - !ablate::monitors::TimeStepMonitor
-        interval: 25
+        interval: 10
+      # The TurbFlowStats monitor starts to take statistics after 0.01 seconds every 25 time steps
       - !ablate::monitors::TurbFlowStats
         fields: [ velocity, temperature ]
         eos: *eos
         interval: !ablate::io::interval::DelayInterval
           interval: 25
           minimumSimulationTime: .01 #about 1 flow
-      - !ablate::monitors::RadiationFlux
-        id: slabFluxMonitor
-        region:
-          name: heatFluxMonitorFaces
-        radiation:
-          - !ablate::radiation::SurfaceRadiation
-            id: slabMonitorTracer
-            region:
-              name: heatFluxMonitorRegion
-            rays: 25
-            properties: !ablate::eos::radiationProperties::Sum
-              - !ablate::eos::radiationProperties::Zimmer
-                eos: *eos
-              - !ablate::eos::radiationProperties::SootMeanAbsorption
-                eos: *eos
-
+      # The mixture fraction calculator outputs zMix and Yi everytime the serializer saves
       - !ablate::monitors::MixtureFractionMonitor
         mixtureFractionCalculator: !ablate::monitors::MixtureFractionCalculator
           eos: *eos
           massFractionsFuel: *fuelMassFrac
           massFractionsOxidizer: *oxMassFrac
+    # additional processes can be added to the flow solver
     additionalProcesses:
+      # in addition to the default process PressureGradientScaling can be used to speed up the simulation.
+      # the pgs must be supplied to other components to keep consistent calculations
       - !ablate::finiteVolume::processes::PressureGradientScaling
         &pgs
         eos: *eos
         alphaInit: 5.0
         maxAlphaAllowed: 100.0
         domainLength: 0.165354
-        log: !ablate::monitors::logs::StdOut
+      # the chemistry process is used to compute the species and energy source terms from the reactions
       - !ablate::finiteVolume::processes::Chemistry
         eos: *eos
+      # ThermophoreticDiffusion diffusion controls the diffusion of solid carbon and ndd
       - !ablate::finiteVolume::processes::ThermophoreticDiffusion
         transport: !ablate::eos::transport::Sutherland
           eos: *eos
+    # a flux calculator must be specified to so solver for advection
     fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
       pgs: *pgs
 
+  # each boundary can be updated with a separate boundary solver
   - !ablate::boundarySolver::BoundarySolver
     id: inlet
+    # works over the extruded cells that were labeled inlet in gMsh
     region:
       name: inlet
     fieldBoundary:
       name: boundaryFaces
     mergeFaces: true
     processes:
+      # The LODI inlet boundary can adjust velocity over time
       - !ablate::boundarySolver::lodi::Inlet
         eos: *eos
         pgs: *pgs
+        # The velocity is specified with a nested, nested formula to simplify specifying a radius based function
         velocity: !ablate::mathFunctions::Formula
           formula: "max(0.0, min(vel, t*vel/.001)), 0.0"
           nested:
@@ -233,6 +246,7 @@ solvers:
                     yc: 0.0127
                     xc: 0.0
 
+  # the outlet boundary uses a reference pressure and maxAcousticsLength
   - !ablate::boundarySolver::BoundarySolver
     id: outlet
     region:
@@ -247,6 +261,8 @@ solvers:
         reflectFactor: 1.5
         pgs: *pgs
         eos: *eos
+
+  # The no slip/isothermal walls are applied everywhere except the slab
   - !ablate::boundarySolver::BoundarySolver
     id: walls
     region:
@@ -259,6 +275,7 @@ solvers:
         eos: *eos
         pgs: *pgs
 
+  # The slab boundary id used to couple the flow and heat/mass transfer from the fuel
   - !ablate::boundarySolver::BoundarySolver
     id: slab boundary
     region:
@@ -266,33 +283,50 @@ solvers:
     fieldBoundary:
       name: boundaryFaces
     processes:
+      # the sublimation boundary solver is responsible for predicting mass release and flow source terms
       - !ablate::boundarySolver::physics::Sublimation
+        # the latent heat of fusion of PMMA is used to predict the mass release from heating
         latentHeatOfFusion: 840890
+        # the transport model is enforce to update the zero slip wall condition
         transportModel: !ablate::eos::transport::Sutherland
           eos: *eos
+        # the eos/pgs is used tor pressure boundary condition
         pgs: *pgs
         eos: *eos
+        # the specified mass fractions are assumed off-gassed by the fuel
         massFractions: *fuelMassFrac
+        # the radiviative heat flux to the surface is updated every 10 flow time steps
         radiationInterval: 10
+
+        # a surface radiation solver is used to compute heat flux to the surface
         radiation: !ablate::radiation::SurfaceRadiation
           id: surfaceflux
+          # the region is used to describe the area in which the flow solver is valid
           region:
             name: flowRegion
           rays: 25
+          # the properties are a function of both gas and soot
           properties: !ablate::eos::radiationProperties::Sum
             - !ablate::eos::radiationProperties::Zimmer
               eos: *eos
             - !ablate::eos::radiationProperties::SootMeanAbsorption
               eos: *eos
         emissivity: 0.9
-        solidDensity: 1190.0 #density of pmma used to output reg rate
+        #density of pmma used to output reg rate
+        solidDensity: 1190.0
     monitors:
+      # the boundary solver monitor is used to record regression rate and heat flux to the surface
       - !ablate::monitors::BoundarySolverMonitor
+
+  # the volume radiation solver compute the gas/gas energy transfer within the gas phase
   - !ablate::radiation::VolumeRadiation
     id: radiationSolver
+    # this is the region for which the solver operates (no boundary cells)
     region:
       name: flowRegion
+    # update the entire radiation solver every 10 flow steps
     interval: 10
+    # The radiation solver and the associated region
     radiation: !ablate::radiation::Radiation
       id: volRad
       region:
