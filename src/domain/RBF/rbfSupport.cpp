@@ -11,6 +11,7 @@
 //  cell - The cell containing xyz. Will return -1 if this point is not in the local part of the DM
 //
 // Note: This is adapted from DMInterpolationSetUp. If the cell containing the point is a ghost cell then this will return -1.
+//        If the point is in the upper corner of the domain it will not be able to find the containing cell.
 PetscErrorCode DMPlexGetContainingCell(DM dm, PetscScalar *xyz, PetscInt *cell) {
   PetscSF         cellSF = NULL;
   Vec             pointVec;
@@ -97,7 +98,7 @@ PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscReal x0[3], PetscInt 
             dist += PetscSqr(x0[i] - x[i]);
           }
 
-          if (dist <= maxDist) {   // Only add if the distance is within maxDist
+          if (dist <= maxDist && star[st]!=p) {   // Only add if the distance is within maxDist and it's not the center cell
             list[n++] = star[st];
           }
         }
@@ -116,6 +117,37 @@ PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscReal x0[3], PetscInt 
   PetscFunctionReturn(0);
 }
 
+// Return all values in sorted array a that are NOT in sorted array b. This is done in-place on array b.
+PetscErrorCode PetscSortedArrayComplement(const PetscInt nb, const PetscInt b[], PetscInt *na, PetscInt a[]) {
+  PetscFunctionBegin;
+
+  PetscInt i = 0, j = 0;
+  PetscInt n = 0;
+
+  while (i < *na && j < nb) {
+    if (a[i] < b[j]) { //If the current element in b[] is larger, therefore a[i] cannot be included in b[j..p-1].
+      a[n++] = a[i];
+      i++;
+    } else if (a[i] > b[j]) { // Smaller elements of b[] are skipped
+      j++;
+    } else if (a[i] == b[j]) { // Same elements detected (skipping in both arrays)
+      i++;
+      j++;
+    }
+  }
+
+  // If a[] is larger than b[] then all remaining values must be unique as this is a sorted array.
+  for ( ; i < *na; ++i) {
+    a[n++] = a[i];
+  }
+
+  // Assign the number of unique values
+  *na = n;
+
+
+  PetscFunctionReturn(0);
+}
+
 
 // Return the list of neighboring cells to cell p using a combination of number of levels and maximum distance
 // dm - The mesh
@@ -127,8 +159,10 @@ PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscReal x0[3], PetscInt 
 //
 // Note: The intended use is to use either maxLevels OR maxDist OR minNumberCells. Right now a check isn't done on only selecting one, but that might be added in the future.
 PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useVertices, PetscInt *nCells, PetscInt *cells[]) {
-  PetscInt        numAdd = 1, *addList;
-  PetscInt        n = 0, n0, list[10000];
+
+  PetscInt        numNew, nLevelList[10];
+  PetscInt        *addList, levelList[10][1000]; // There will be one list for every level.
+  PetscInt        n = 0, list[100000];
   PetscInt        l, i;
   PetscScalar     x0[3];
   PetscErrorCode  ierr;
@@ -145,6 +179,9 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
     type = 0;
   }
   else if (maxLevels > 0) {
+
+    PetscCheck(maxLevels<=10, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "The maximum number of levels to obtain is 10.");
+
     numberCells = PETSC_MAX_INT;
     maxDist = PETSC_MAX_REAL;
     type = 1;
@@ -158,24 +195,33 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
   ierr = DMPlexComputeCellGeometryFVM(dm, p, NULL, x0, NULL);CHKERRQ(ierr); // Center of the cell-of-interest
 
   // Start with only the center cell
-  list[0] = p;
-  n = numAdd = 1;
   l = 0;
+  list[l] = p;
+  n = nLevelList[l] = 1;
+  levelList[l][0] = p;
 
   // When the number of cells added at a particular level is zero then terminate the loop. This is for the case where
   // maxLevels is set very large but all cells within the maximum distance have already been found.
-  while (l < maxLevels && n < numberCells && numAdd > 0) {
+  while (l < maxLevels && n < numberCells && nLevelList[l] > 0) {
     ++l;
-    n0 = n;
-    for (i = 0; i < n0; ++i) {
-      ierr = DMPlexGetNeighborCells_Internal(dm, x0, list[i], maxDist, useVertices, &numAdd, &addList);CHKERRQ(ierr);
-      ierr = PetscArraycpy(&list[n], addList, numAdd);
-      n += numAdd;
-      ierr = PetscFree(addList);
+    nLevelList[l] = 0;
+    for (i = 0; i < nLevelList[l-1]; ++i) { // Iterate over each of the locations on the prior level
+      ierr = DMPlexGetNeighborCells_Internal(dm, x0, levelList[l-1][i], maxDist, useVertices, &numNew, &addList);CHKERRQ(ierr);CHKERRQ(ierr);
+      ierr = PetscArraycpy(&levelList[l][nLevelList[l]], addList, numNew);CHKERRQ(ierr);
+      nLevelList[l] += numNew;
+      ierr = PetscFree(addList);CHKERRQ(ierr);
     }
+    ierr = PetscSortRemoveDupsInt(&nLevelList[l], levelList[l]);CHKERRQ(ierr);
+
+    // This removes any cells which are already in the list. Not point in re-doing the search for those.
+    ierr = PetscSortedArrayComplement(n, list, &nLevelList[l], levelList[l]);CHKERRQ(ierr);
+
+    ierr = PetscArraycpy(&list[n], levelList[l], nLevelList[l]);CHKERRQ(ierr);
+    n += nLevelList[l];
+
     ierr = PetscSortRemoveDupsInt(&n, list);CHKERRQ(ierr);
-    numAdd = n - n0; // The true number of nodes added, after removal of duplicates.
   }
+
 
   if (type==0) {
     // Now only include the the numberCells closest cells
