@@ -72,7 +72,7 @@ jobs:
 
       # if any of the regression tests changed also run all regression tests
       - name: Check and run the regression tests
-        if: check-regression-test-files.outputs.any_changed == 'true'
+        if: steps.check-regression-test-files.outputs.any_changed == 'true'
         run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ctest -L 'regressionTests'
 
       # copy the configured docs from the test image container
