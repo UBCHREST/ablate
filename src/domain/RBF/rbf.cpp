@@ -162,16 +162,16 @@ void RBF::Matrix(const PetscInt c) {
     DMPlexComputeCellGeometryFVM(dm, list[i], NULL, &x[i*dim], NULL) >> utilities::PetscUtilities::checkError;
     for (d = 0; d < dim; ++d) {
       x[i*dim+d] -= x0[d];
-//      printf("%+f ", x[i*dim+d]);
+
       // Precompute the powers for later use
       xp[(i*dim+d)*p1 + 0] = 1.0;
       for (px = 1; px < p1; ++px) {
         xp[(i*dim+d)*p1 + px] = xp[(i*dim+d)*p1 + (px-1)]*x[i*dim+d];
       }
     }
-//    printf("\n");
+
   }
-//  exit(0);
+
 
   matSize = nCells + nPoly;
 
@@ -233,6 +233,7 @@ void RBF::Matrix(const PetscInt c) {
 
   MatDenseRestoreArrayWrite(A, &vals) >> utilities::PetscUtilities::checkError;
   MatViewFromOptions(A,NULL,"-ablate::domain::rbf::RBF::A_view") >> utilities::PetscUtilities::checkError;
+
 //  ConditionNumber(A);
   // Factor the matrix
 //  MatQRFactor(A, NULL, NULL) >> utilities::PetscUtilities::checkError;
@@ -243,8 +244,7 @@ void RBF::Matrix(const PetscInt c) {
   // Assign output
   RBF::RBFMatrix[c] = A;
   RBF::stencilXLocs[c] = x;
-//  *xCenters = x;
-//  *LUA = A;
+
 
 }
 
@@ -515,6 +515,7 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
     // DMPlexPointLocalFieldRead isn't behaving like I would expect. If I don't make f a pointer then it just returns zero.
     //    Additionally, it looks like it allows for the editing of the value.
     DMPlexPointLocalFieldRead(dm, lst[i], field->id, fvals, &v) >> utilities::PetscUtilities::checkError;
+
     vals[i] = *v;
   }
 

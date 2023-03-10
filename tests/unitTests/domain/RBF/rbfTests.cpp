@@ -227,7 +227,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 
 
-struct RBFParameters_Derivative {
+struct RBFParameters_DerivativeInterpolation {
     testingResources::MpiTestParameter mpiTestParameter;
     std::vector<int> meshFaces;
     std::vector<double> meshStart;
@@ -237,10 +237,11 @@ struct RBFParameters_Derivative {
     std::vector<PetscInt> dx;
     std::vector<PetscInt> dy;
     std::vector<PetscInt> dz;
+    std::vector<std::vector<PetscReal>> x;
     std::vector<PetscReal> maxError;
 };
 
-class RBFTestFixture_Derivative : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<RBFParameters_Derivative> {
+class RBFTestFixture_Derivative : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<RBFParameters_DerivativeInterpolation> {
    public:
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
@@ -295,7 +296,7 @@ void RBFTestFixture_SetData(ablate::solver::Range cellRange, const ablate::domai
 
 
 // This tests single-cell derivative functions.
-TEST_P(RBFTestFixture_Derivative, CheckPointFunctions) {
+TEST_P(RBFTestFixture_Derivative, CheckDerivativeFunctions) {
     StartWithMPI
 
     {
@@ -381,7 +382,7 @@ TEST_P(RBFTestFixture_Derivative, CheckPointFunctions) {
 // This tests both the absolute error and the convergene for two data points
 INSTANTIATE_TEST_SUITE_P(
     MeshTests, RBFTestFixture_Derivative,
-    testing::Values((RBFParameters_Derivative){.mpiTestParameter = {.testName = "1DN81_1Proc"},
+    testing::Values((RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "1DN81_1Proc"},
                                               .meshFaces = {81},
                                               .meshStart = {-1.0},
                                               .meshEnd = {1.0},
@@ -401,7 +402,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dy = {0, 0, 0},
                                               .dz = {0, 0, 0},
                                               .maxError = {8.9e-16, 1.2e-03, 1.6e-01}},
-                  (RBFParameters_Derivative){.mpiTestParameter = {.testName = "1DN161_1Proc"},
+                  (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "1DN161_1Proc"},
                                               .meshFaces = {161},
                                               .meshStart = {-1.0},
                                               .meshEnd = {1.0},
@@ -421,7 +422,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dy = {0, 0, 0},
                                               .dz = {0, 0, 0},
                                               .maxError = {1.4e-15, 6.5e-05, 1.8e-02}},
-                  (RBFParameters_Derivative){.mpiTestParameter = {.testName = "2DQuadN21_1Proc"},
+                  (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "2DQuadN21_1Proc"},
                                               .meshFaces = {21, 21},
                                               .meshStart = {-1.0, -1.0},
                                               .meshEnd = {1.0, 1.0},
@@ -441,7 +442,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dy = {0, 0, 0, 1, 1, 2},
                                               .dz = {0, 0, 0, 0, 0, 0},
                                               .maxError = {4.0e-15, 3.2e-02, 1.4e+00, 3.2e-02, 3.5e-01, 1.4e+00}},
-                    (RBFParameters_Derivative){.mpiTestParameter = {.testName = "2DQuadN41_1Proc"},
+                    (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "2DQuadN41_1Proc"},
                                               .meshFaces = {41, 41},
                                               .meshStart = {-1.0, -1.0},
                                               .meshEnd = {1.0, 1.0},
@@ -461,7 +462,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dy = {0, 0, 0, 1, 1, 2},
                                               .dz = {0, 0, 0, 0, 0, 0},
                                               .maxError = {4.9e-15, 2.2e-03, 1.8e-01, 2.2e-03, 4.9e-02, 1.73e-01}},
-                    (RBFParameters_Derivative){.mpiTestParameter = {.testName = "2DTriN21_1Proc"},
+                    (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "2DTriN21_1Proc"},
                                               .meshFaces = {21, 21},
                                               .meshStart = {-1.0, -1.0},
                                               .meshEnd = {1.0, 1.0},
@@ -481,7 +482,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dy = {0, 0, 0, 1, 1, 2},
                                               .dz = {0, 0, 0, 0, 0, 0},
                                               .maxError = {4.9e-15, 1.4e-02, 6.1e-01, 1.5e-02, 2.5e-01, 7.5e-01 }},
-                      (RBFParameters_Derivative){.mpiTestParameter = {.testName = "2DTriN41_1Proc"},
+                      (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "2DTriN41_1Proc"},
                                               .meshFaces = {41, 41},
                                               .meshStart = {-1.0, -1.0},
                                               .meshEnd = {1.0, 1.0},
@@ -501,7 +502,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dy = {0, 0, 0, 1, 1, 2},
                                               .dz = {0, 0, 0, 0, 0, 0},
                                               .maxError = {4.5e-15, 1.7e-03, 1.21e-01, 8.9e-04, 4.8e-02, 1.1e-01 }},
-                      (RBFParameters_Derivative){.mpiTestParameter = {.testName = "2DQuadN21_2Proc", .nproc = 2},
+                      (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "2DQuadN21_2Proc", .nproc = 2},
                                               .meshFaces = {21, 21},
                                               .meshStart = {-1.0, -1.0},
                                               .meshEnd = {1.0, 1.0},
@@ -521,7 +522,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dy = {0, 0, 0, 1, 1, 2},
                                               .dz = {0, 0, 0, 0, 0, 0},
                                               .maxError = {3.6e-15, 4.3e-02, 1.75e+00, 3.2e-02, 4.11e-01, 1.34e+00}},
-                    (RBFParameters_Derivative){.mpiTestParameter = {.testName = "2DQuadN41_2Proc", .nproc = 2},
+                    (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "2DQuadN41_2Proc", .nproc = 2},
                                               .meshFaces = {41, 41},
                                               .meshStart = {-1.0, -1.0},
                                               .meshEnd = {1.0, 1.0},
@@ -541,7 +542,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dy = {0, 0, 0, 1, 1, 2},
                                               .dz = {0, 0, 0, 0, 0, 0},
                                               .maxError = {4.9e-15, 2.28e-03, 1.86e-01, 2.2e-03, 4.98e-02, 1.76e-01}},
-                    (RBFParameters_Derivative){.mpiTestParameter = {.testName = "2DTriN21_2Proc", .nproc = 2},
+                    (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "2DTriN21_2Proc", .nproc = 2},
                                               .meshFaces = {21, 21},
                                               .meshStart = {-1.0, -1.0},
                                               .meshEnd = {1.0, 1.0},
@@ -561,7 +562,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dy = {0, 0, 0, 1, 1, 2},
                                               .dz = {0, 0, 0, 0, 0, 0},
                                               .maxError = {4.9e-15, 2.20e-02, 8.94e-01, 1.71e-02, 4.45e-01, 7.41e-01 }},
-                      (RBFParameters_Derivative){.mpiTestParameter = {.testName = "2DTriN41_2Proc", .nproc = 2},
+                      (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "2DTriN41_2Proc", .nproc = 2},
                                               .meshFaces = {41, 41},
                                               .meshStart = {-1.0, -1.0},
                                               .meshEnd = {1.0, 1.0},
@@ -582,6 +583,277 @@ INSTANTIATE_TEST_SUITE_P(
                                               .dz = {0, 0, 0, 0, 0, 0},
                                               .maxError = {4.0e-15, 1.61e-03, 1.21e-01, 9.35e-04, 4.77e-02, 1.05e-01 }}
                   ),
-    [](const testing::TestParamInfo<RBFParameters_Derivative>& info) { return info.param.mpiTestParameter.getTestName(); });
+    [](const testing::TestParamInfo<RBFParameters_DerivativeInterpolation>& info) { return info.param.mpiTestParameter.getTestName(); });
 
+
+class RBFTestFixture_Interpolation : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<RBFParameters_DerivativeInterpolation> {
+   public:
+    void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
+};
+
+// This tests single-cell derivative functions.
+TEST_P(RBFTestFixture_Interpolation, CheckInterpolationFunctions) {
+    StartWithMPI
+
+    {
+      // initialize petsc and mpi
+      environment::RunEnvironment::Initialize(argc, argv);
+      utilities::PetscUtilities::Initialize();
+      auto testingParam = GetParam();
+      std::vector<std::shared_ptr<domain::rbf::RBF>> rbfList = testingParam.rbfList;
+      std::vector<std::vector<PetscReal>> x = testingParam.x;
+
+
+
+      //             Make the field
+      std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptor = {std::make_shared<ablate::domain::FieldDescription>("fieldA", "", ablate::domain::FieldDescription::ONECOMPONENT, ablate::domain::FieldLocation::AUX, ablate::domain::FieldType::FVM)};
+
+      //             Create the mesh
+//      Note that using -dm_view :mesh.tex:ascii_latex -dm_plex_view_scale 10 -dm_plex_view_numbers_depth 1,0,1 will create a mesh, changing numbers_depth as appropriate
+      auto mesh = std::make_shared<domain::BoxMesh>(
+      "mesh", fieldDescriptor, std::vector<std::shared_ptr<domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(3)}, testingParam.meshFaces, testingParam.meshStart, testingParam.meshEnd, std::vector<std::string>{}, testingParam.meshSimplex);
+
+      mesh->InitializeSubDomains();
+
+      std::shared_ptr<ablate::domain::SubDomain> subDomain = mesh->GetSubDomain(domain::Region::ENTIREDOMAIN);
+
+
+      // The field containing the data
+      const ablate::domain::Field *field = &(subDomain->GetField("fieldA"));
+
+
+      ablate::solver::Range cellRange;
+      for (long int j = 0; j < rbfList.size(); ++j) {
+        rbfList[j]->Setup(subDomain); // This causes issues (I think)
+
+//         Initialize
+        rbfList[j]->GetCellRange(subDomain, nullptr, cellRange);
+        rbfList[j]->Initialize(cellRange);
+        rbfList[j]->RestoreRange(cellRange);
+      }
+
+      // Now set the data using the first RBF. All will use the same data
+      rbfList[0]->GetCellRange(subDomain, nullptr, cellRange);
+      RBFTestFixture_SetData(cellRange, field, subDomain);
+
+
+
+
+
+
+      std::vector<PetscInt> dx = testingParam.dx, dy = testingParam.dy, dz = testingParam.dz;
+      PetscInt c, cell;
+      PetscReal maxError;
+      PetscReal err, val, truth;
+      DM dm = subDomain->GetDM();
+
+      for (int i = 0; i < x.size(); ++i) { // Iterate over each of the requested locations
+        maxError = testingParam.maxError[i];
+
+        for (long int j = 0; j < rbfList.size(); ++j) {  // Check each RBF
+          truth = RBFTestFixture_Function(x[i].data(), 0, 0, 0);
+          val = rbfList[j]->Interpolate(field, x[i].data());
+          err = PetscAbsReal(val - truth);
+          EXPECT_LT(err, maxError) << "RBF: " << rbfList[j]->type() << " Error: " << err;
+        }
+      }
+
+      rbfList[0]->RestoreRange(cellRange);
+
+//      ablate::environment::RunEnvironment::Finalize();
+
+
+    }
+
+
+
+
+    EndWithMPI
+}
+
+// This tests both the absolute error and the convergene for two data points
+INSTANTIATE_TEST_SUITE_P(
+    MeshTests, RBFTestFixture_Interpolation,
+    testing::Values((RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_1DN11"},
+                                              .meshFaces = {11},
+                                              .meshStart = {-1.0},
+                                              .meshEnd = {1.0},
+                                              .meshSimplex = false,
+                                              .rbfList = {
+                                                std::make_shared<ablate::domain::rbf::GA>(4, 1.818181818181817e-01, false, false),
+                                                std::make_shared<ablate::domain::rbf::MQ>(4, 1.818181818181817e-01, false, false),
+                                                std::make_shared<ablate::domain::rbf::IMQ>(4, 1.818181818181817e-01, false, false),
+                                                std::make_shared<ablate::domain::rbf::PHS>(4, 2, false, false),
+                                                std::make_shared<ablate::domain::rbf::HYBRID>(4, std::vector<double>{1.0, 0.001},
+                                                  std::vector<std::shared_ptr<ablate::domain::rbf::RBF>>{
+                                                    std::make_shared<ablate::domain::rbf::GA>(-1, 1.818181818181817e-01, false, false),
+                                                    std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
+                                                  false, false)
+                                                },
+                                              .x = {{0.52, 0.0, 0.0}},
+                                              .maxError = {2.83e-3}},
+                    (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_1DN21"},
+                                              .meshFaces = {21},
+                                              .meshStart = {-1.0},
+                                              .meshEnd = {1.0},
+                                              .meshSimplex = false,
+                                              .rbfList = {
+                                                std::make_shared<ablate::domain::rbf::GA>(4, 9.523809523809512e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::MQ>(4, 9.523809523809512e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::IMQ>(4, 9.523809523809512e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::PHS>(4, 2, false, false),
+                                                std::make_shared<ablate::domain::rbf::HYBRID>(4, std::vector<double>{1.0, 0.001},
+                                                  std::vector<std::shared_ptr<ablate::domain::rbf::RBF>>{
+                                                    std::make_shared<ablate::domain::rbf::GA>(-1, 9.523809523809512e-02, false, false),
+                                                    std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
+                                                  false, false)
+                                                },
+                                              .x = {{0.52, 0.0, 0.0}},
+                                              .maxError = {5.38e-5}},
+                    (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_2DQuadN11"},
+                                              .meshFaces = {11, 11},
+                                              .meshStart = {-1.0, -1.0},
+                                              .meshEnd = {1.0, 1.0},
+                                              .meshSimplex = false,
+                                              .rbfList = {
+                                                std::make_shared<ablate::domain::rbf::GA>(4, 1.818181818181814e-01, false, false),
+                                                std::make_shared<ablate::domain::rbf::MQ>(4, 1.818181818181814e-01, false, false),
+                                                std::make_shared<ablate::domain::rbf::IMQ>(4, 1.818181818181814e-01, false, false),
+                                                std::make_shared<ablate::domain::rbf::PHS>(4, 2, false, false),
+                                                std::make_shared<ablate::domain::rbf::HYBRID>(4, std::vector<double>{1.0, 0.001},
+                                                  std::vector<std::shared_ptr<ablate::domain::rbf::RBF>>{
+                                                    std::make_shared<ablate::domain::rbf::GA>(-1, 1.818181818181814e-01, false, false),
+                                                    std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
+                                                  false, false)
+                                                },
+                                              .x = {{0.52, 0.52, 0.0}},
+                                              .maxError = {7.89e-4}},
+                    (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_2DQuadN21"},
+                                              .meshFaces = {21, 21},
+                                              .meshStart = {-1.0, -1.0},
+                                              .meshEnd = {1.0, 1.0},
+                                              .meshSimplex = false,
+                                              .rbfList = {
+                                                std::make_shared<ablate::domain::rbf::GA>(4, 9.523809523809490e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::MQ>(4, 9.523809523809490e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::IMQ>(4, 9.523809523809490e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::PHS>(4, 2, false, false),
+                                                std::make_shared<ablate::domain::rbf::HYBRID>(4, std::vector<double>{1.0, 0.001},
+                                                  std::vector<std::shared_ptr<ablate::domain::rbf::RBF>>{
+                                                    std::make_shared<ablate::domain::rbf::GA>(-1, 9.523809523809490e-02, false, false),
+                                                    std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
+                                                  false, false)
+                                                },
+                                              .x = {{0.52, 0.52, 0.0}},
+                                              .maxError = {9.79e-5}},
+                    (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_2DTriN11"},
+                                              .meshFaces = {11, 11},
+                                              .meshStart = {-1.0, -1.0},
+                                              .meshEnd = {1.0, 1.0},
+                                              .meshSimplex = true,
+                                              .rbfList = {
+                                                std::make_shared<ablate::domain::rbf::GA>(4, 8.570991287109628e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::MQ>(4, 8.570991287109628e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::IMQ>(4, 8.570991287109628e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::PHS>(4, 2, false, false),
+                                                std::make_shared<ablate::domain::rbf::HYBRID>(4, std::vector<double>{1.0, 0.001},
+                                                  std::vector<std::shared_ptr<ablate::domain::rbf::RBF>>{
+                                                    std::make_shared<ablate::domain::rbf::GA>(-1, 8.570991287109628e-02, false, false),
+                                                    std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
+                                                  false, false)
+                                                },
+                                              .x = {{0.52, 0.52, 0.0}},
+                                              .maxError = {2.01e-5}},
+                    (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_2DTriN21"},
+                                              .meshFaces = {41, 41},
+                                              .meshStart = {-1.0, -1.0},
+                                              .meshEnd = {1.0, 1.0},
+                                              .meshSimplex = true,
+                                              .rbfList = {
+                                                std::make_shared<ablate::domain::rbf::GA>(4, 4.489566864676461e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::MQ>(4, 4.489566864676461e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::IMQ>(4, 4.489566864676461e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::PHS>(4, 2, false, false),
+                                                std::make_shared<ablate::domain::rbf::HYBRID>(4, std::vector<double>{1.0, 0.001},
+                                                  std::vector<std::shared_ptr<ablate::domain::rbf::RBF>>{
+                                                    std::make_shared<ablate::domain::rbf::GA>(-1, 4.489566864676461e-02, false, false),
+                                                    std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
+                                                  false, false)
+                                                },
+                                              .x = {{0.52, 0.52, 0.0}},
+                                              .maxError = {4.03e-5}},
+                    (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_3DQuadN11"},
+                                              .meshFaces = {11, 11, 11},
+                                              .meshStart = {-1.0, -1.0, -1.0},
+                                              .meshEnd = {1.0, 1.0, 1.0},
+                                              .meshSimplex = false,
+                                              .rbfList = {
+                                                std::make_shared<ablate::domain::rbf::GA>(4, 1.818181818181814e-01, false, false),
+                                                std::make_shared<ablate::domain::rbf::MQ>(4, 1.818181818181814e-01, false, false),
+                                                std::make_shared<ablate::domain::rbf::IMQ>(4, 1.818181818181814e-01, false, false),
+                                                std::make_shared<ablate::domain::rbf::PHS>(4, 2, false, false),
+                                                std::make_shared<ablate::domain::rbf::HYBRID>(4, std::vector<double>{1.0, 0.001},
+                                                  std::vector<std::shared_ptr<ablate::domain::rbf::RBF>>{
+                                                    std::make_shared<ablate::domain::rbf::GA>(-1, 1.818181818181814e-01, false, false),
+                                                    std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
+                                                  false, false)
+                                                },
+                                              .x = {{0.52, 0.52, 0.52}},
+                                              .maxError = {1.47e-3}},
+                    (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_3DQuadN21"},
+                                              .meshFaces = {21, 21, 21},
+                                              .meshStart = {-1.0, -1.0, -1.0},
+                                              .meshEnd = {1.0, 1.0, 1.0},
+                                              .meshSimplex = false,
+                                              .rbfList = {
+                                                std::make_shared<ablate::domain::rbf::GA>(4, 9.523809523809490e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::MQ>(4, 9.523809523809490e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::IMQ>(4, 9.523809523809490e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::PHS>(4, 2, false, false),
+                                                std::make_shared<ablate::domain::rbf::HYBRID>(4, std::vector<double>{1.0, 0.001},
+                                                  std::vector<std::shared_ptr<ablate::domain::rbf::RBF>>{
+                                                    std::make_shared<ablate::domain::rbf::GA>(-1, 9.523809523809490e-02, false, false),
+                                                    std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
+                                                  false, false)
+                                                },
+                                              .x = {{0.52, 0.52, 0.52}},
+                                              .maxError = {9.61e-5}},
+                    (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_3DTriN11"},
+                                              .meshFaces = {11, 11, 11},
+                                              .meshStart = {-1.0, -1.0, -1.0},
+                                              .meshEnd = {1.0, 1.0, 1.0},
+                                              .meshSimplex = true,
+                                              .rbfList = {
+                                                std::make_shared<ablate::domain::rbf::GA>(4, 7.422696190252021e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::MQ>(4, 7.422696190252021e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::IMQ>(4, 7.422696190252021e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::PHS>(4, 2, false, false),
+                                                std::make_shared<ablate::domain::rbf::HYBRID>(4, std::vector<double>{1.0, 0.001},
+                                                  std::vector<std::shared_ptr<ablate::domain::rbf::RBF>>{
+                                                    std::make_shared<ablate::domain::rbf::GA>(-1, 7.422696190252021e-02, false, false),
+                                                    std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
+                                                  false, false)
+                                                },
+                                              .x = {{0.52, 0.52, 0.52}},
+                                              .maxError = {2.59e-4}},
+                    (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_3DTriN21"},
+                                              .meshFaces = {21, 21, 21},
+                                              .meshStart = {-1.0, -1.0, -1.0},
+                                              .meshEnd = {1.0, 1.0, 1.0},
+                                              .meshSimplex = true,
+                                              .rbfList = {
+                                                std::make_shared<ablate::domain::rbf::GA>(4, 3.888078956798655e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::MQ>(4, 3.888078956798655e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::IMQ>(4, 3.888078956798655e-02, false, false),
+                                                std::make_shared<ablate::domain::rbf::PHS>(4, 2, false, false),
+                                                std::make_shared<ablate::domain::rbf::HYBRID>(4, std::vector<double>{1.0, 0.001},
+                                                  std::vector<std::shared_ptr<ablate::domain::rbf::RBF>>{
+                                                    std::make_shared<ablate::domain::rbf::GA>(-1, 3.888078956798655e-02, false, false),
+                                                    std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
+                                                  false, false)
+                                                },
+                                              .x = {{0.52, 0.52, 0.52}},
+                                              .maxError = {1.29e-5}}
+                  ),
+    [](const testing::TestParamInfo<RBFParameters_DerivativeInterpolation>& info) { return info.param.mpiTestParameter.getTestName(); });
 
