@@ -45,7 +45,7 @@ class RBF {
     Mat *RBFMatrix = nullptr;
 
     // Compute the LU-decomposition of the augmented RBF matrix given a cell list.
-    void Matrix(const PetscInt c, PetscReal **x, Mat *LUA);
+    void Matrix(const PetscInt c);
 
 
   protected:
@@ -69,11 +69,9 @@ class RBF {
     void SetupDerivativeStencils();   // Setup all derivative stencils. Useful if someone wants to remove setup cost when testing
 
     PetscReal EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz);  // Evaluate a derivative
-    PetscReal EvalDer(DM dm, Vec vec, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz);
 
     // Interpolation stuff
     PetscReal Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]);
-    PetscReal Interpolate(DM dm, Vec f, PetscReal xEval[3]);
 
     // To make setup easier
     void GetRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::solver::Range &range) const;

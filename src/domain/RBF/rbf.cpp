@@ -130,7 +130,7 @@ static PetscInt fac[11] =  {1,1,2,6,24,120,720,5040,40320,362880,3628800}; // Pr
 // c - Location in cellRange
 // xCenters - Shifted centers of all the cells (output)
 // A - The LU-factorization of the augmented RBF matrix (output)
-void RBF::Matrix(const PetscInt c, PetscReal **xCenters, Mat *LUA) {
+void RBF::Matrix(const PetscInt c) {
 
   PetscInt              i, j, d, px, py, pz, matSize;
   PetscInt              nCells, *list;
@@ -241,8 +241,10 @@ void RBF::Matrix(const PetscInt c, PetscReal **xCenters, Mat *LUA) {
   PetscFree(xp) >> utilities::PetscUtilities::checkError;
 
   // Assign output
-  *xCenters = x;
-  *LUA = A;
+  RBF::RBFMatrix[c] = A;
+  RBF::stencilXLocs[c] = x;
+//  *xCenters = x;
+//  *LUA = A;
 
 }
 
@@ -286,13 +288,12 @@ void RBF::SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt d
 // c - The center cell in cellRange ordering
 void RBF::SetupDerivativeStencils(PetscInt c) {
 
-  Mat       A = RBF::RBFMatrix[c], B = nullptr;
-  PetscReal *x = nullptr;   // Shifted cell-centers of the neigbor list
-  // This also computes nStencil[c]
-  if (A == nullptr) {
-    RBF::Matrix(c, &x, &A);
+  if (RBF::RBFMatrix[c] == nullptr) {
+    RBF::Matrix(c);
   }
 
+  Mat       A = RBF::RBFMatrix[c], B = nullptr;
+  PetscReal *x = RBF::stencilXLocs[c];   // Shifted cell-centers of the neigbor list
   PetscInt    dim = subDomain->GetDimensions();
   PetscInt    nCells = RBF::nStencil[c];
   PetscInt    matSize = nCells + RBF::nPoly;
@@ -397,8 +398,6 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
 
 }
 
-
-
 void RBF::SetupDerivativeStencils() {
   const PetscInt cStart = RBF::cStart, cEnd = RBF::cEnd;
 
@@ -407,8 +406,6 @@ void RBF::SetupDerivativeStencils() {
   }
 
 }
-
-
 
 // Return the requested derivative
 // field - The field to take the derivative of
@@ -464,13 +461,7 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt 
 
   return val;
 }
-
-
-
 /************ End Derivative Code **********************/
-
-
-
 
 /************ Begin Interpolation Code **********************/
 
@@ -479,16 +470,15 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt 
 // field - The field to interpolate
 // xEval - The location to interpolate at
 PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]) {
-
-
   PetscMPIInt       size;
   PetscInt          i, c, nCells, *lst;
-  PetscScalar       *vals;
+  PetscScalar       *vals, *v;
   const PetscScalar *fvals;
   PetscReal         *x, x0[3];
   Mat               A;
   Vec               weights, rhs, f = subDomain->GetVec(*field);
   DM                dm  = subDomain->GetFieldDM(*field);
+
 
   MPI_Comm_size(PetscObjectComm((PetscObject)dm), &size);
   if (field->location==FieldLocation::SOL && size>1) {
@@ -499,14 +489,16 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
 
   DMPlexGetContainingCell(dm, xEval, &c) >> utilities::PetscUtilities::checkError;
 
+  if (c < 0) {
+    throw std::runtime_error("ablate::domain::RBF::Interpolate could not determine the location of (" + std::to_string(x[0]) + ", " + std::to_string(x[1]) + ", " + std::to_string(x[2]) + ").");
+  }
+
+  if (RBF::RBFMatrix[c] == nullptr) {
+    RBF::Matrix(c);
+  }
+
   A = RBF::RBFMatrix[c];
   x = RBF::stencilXLocs[c];
-
-  if (A == nullptr) {
-    RBF::Matrix(c, &x, &A);
-    RBF::RBFMatrix[c] = A;
-    RBF::stencilXLocs[c] = x;
-  }
 
   nCells = RBF::nStencil[c];
   lst = RBF::stencilList[c];
@@ -518,9 +510,14 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
   // The function values
   VecGetArrayRead(f, &fvals) >> utilities::PetscUtilities::checkError;
   VecGetArray(rhs, &vals) >> utilities::PetscUtilities::checkError;
+
   for (i = 0; i < nCells; ++i) {
-    DMPlexPointLocalFieldRead(dm, lst[i], field->id, fvals, &vals[i]) >> utilities::PetscUtilities::checkError;
+    // DMPlexPointLocalFieldRead isn't behaving like I would expect. If I don't make f a pointer then it just returns zero.
+    //    Additionally, it looks like it allows for the editing of the value.
+    DMPlexPointLocalFieldRead(dm, lst[i], field->id, fvals, &v) >> utilities::PetscUtilities::checkError;
+    vals[i] = *v;
   }
+
   VecRestoreArrayRead(f, &fvals) >> utilities::PetscUtilities::checkError;
   VecRestoreArray(rhs, &vals) >> utilities::PetscUtilities::checkError;
 
@@ -556,21 +553,33 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
   }
 
   // Augmented polynomial contributions
-  if (dim == 2) {
-    for (py = 0; py < p1; ++py) {
-      for (px = 0; px < p1-py; ++px) {
-        interpVal += vals[i++] * xp[0*p1 + px] * xp[1*p1 + py];
+  switch (dim) {
+    case 1:
+      for (px = 0; px < p1; ++px) {
+        interpVal += vals[i++] * xp[0*p1 + px];
       }
-    }
-  } else {
-    for (pz = 0; pz < p1; ++pz) {
-      for (py = 0; py < p1-pz; ++py) {
-        for (px = 0; px < p1-py-pz; ++px ){
-          interpVal += vals[i++] * xp[0*p1 + px] * xp[1*p1 + py] * xp[2*p1 + pz];
+      break;
+    case 2:
+      for (py = 0; py < p1; ++py) {
+        for (px = 0; px < p1-py; ++px) {
+          interpVal += vals[i++] * xp[0*p1 + px] * xp[1*p1 + py];
         }
       }
-    }
+      break;
+    case 3:
+      for (pz = 0; pz < p1; ++pz) {
+        for (py = 0; py < p1-pz; ++py) {
+          for (px = 0; px < p1-py-pz; ++px ){
+            interpVal += vals[i++] * xp[0*p1 + px] * xp[1*p1 + py] * xp[2*p1 + pz];
+          }
+        }
+      }
+      break;
+    default:
+      throw std::runtime_error("ablate::domain::RBF::Interpolate encountered an unknown dimension.");
+
   }
+
   VecRestoreArray(weights, &vals) >> utilities::PetscUtilities::checkError;
   VecDestroy(&weights) >> utilities::PetscUtilities::checkError;
   PetscFree(xp) >> utilities::PetscUtilities::checkError;

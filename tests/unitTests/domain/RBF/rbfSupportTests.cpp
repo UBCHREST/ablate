@@ -159,12 +159,14 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
             auto mesh = std::make_shared<domain::BoxMesh>(
                 "mesh", std::vector<std::shared_ptr<domain::FieldDescriptor>>{}, testingParam.meshModifiers, testingParam.meshFaces, testingParam.meshStart, testingParam.meshEnd, std::vector<std::string>{}, testingParam.meshSimplex);
 
-
             PetscInt nCells, *cells;
             PetscMPIInt rank;
             MPI_Comm_rank(PetscObjectComm((PetscObject)mesh->GetDM()), &rank);
 
             DMPlexGetNeighborCells(mesh->GetDM(), testingParam.centerCell[rank], testingParam.numLevels, testingParam.maxDistance, testingParam.minNumberCells, testingParam.useVertices, &nCells, &cells) >> utilities::PetscUtilities::checkError;
+
+            PetscSortInt(nCells, cells);
+            PetscSortInt(testingParam.expectedNumberOfCells[rank], testingParam.expectedCellList[rank].data()); // Should probably enter as a sorted list. Leaving for later.
 
             ASSERT_EQ(nCells, testingParam.expectedNumberOfCells[rank]);
 
