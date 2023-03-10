@@ -262,15 +262,14 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
         }
         // magnitude of normal at the center
         const PetscReal magCellNormal = utilities::MathUtilities::MagVector(dim, cellCenterNormal);
-        if (magCellNormal > 0) {
-            for (PetscInt d = 0; d < dim; ++d) {
-                // (ni,j/ |ni,j| . Delta)
-                gradMagNormal[d] = (cellCenterNormal[d] / magCellNormal) * gradNormal[d];
-                totalGradMagNormal += gradMagNormal[d];
-            }
-            // calculate curvature -->  kappa = 1/n [(n/|n|. Delta) |n| - (Delta.n)]
-            curvature = (totalGradMagNormal - totalDivNormal) / magCellNormal;
+        for (PetscInt d = 0; d < dim; ++d) {
+            // (ni,j/ |ni,j| . Delta)
+            gradMagNormal[d] = (cellCenterNormal[d] / (magCellNormal + utilities::Constants::tiny)) * gradNormal[d];
+            totalGradMagNormal += gradMagNormal[d];
         }
+        // calculate curvature -->  kappa = 1/n [(n/|n|. Delta) |n| - (Delta.n)]
+        curvature = (totalGradMagNormal - totalDivNormal) / (magCellNormal + utilities::Constants::tiny);
+
         for (PetscInt d = 0; d < dim; ++d) {
             // calculate surface force and energy
             surfaceForce[d] = process->sigma * curvature * cellCenterNormal[d];
