@@ -1,23 +1,23 @@
-# This is an example of a well documented regression or integration test with linked files and images.
-# Anything before the first set of ___ will be treated as part of the ablate.dev website documentation (with the first # removed.
-# Everything after the first # in this section will be treated as markdown allowing for
-# ## Equations
-# $$a*x^2 + b*x + c = 0$$
+#This is an example of a well documented regression or integration test with linked files and images.
+#Anything before the first set of ___ will be treated as part of the ablate.dev website documentation (with the first # removed.
+#Everything after the first # in this section will be treated as markdown allowing for
+### Equations
+#$$a*x^2 + b*x + c = 0$$
 #
-# ## Images
-# Images should be placed locally and specified as a relative file path (node the ! for images).  This can be but doesn't have to be in subdirectories.
+### Images
+#Images should be placed locally and specified as a relative file path (node the ! for images).  This can be but doesn't have to be in subdirectories.
 #
-# ![example regression rate image](exampleImage.png)
+#![example regression rate image](exampleImage.png)
 #
-# ## Linked files
-# [Linked files](assets/exampleFile.txt) work in a way that is similar to the images but without the !. This can be but doesn't have to be in subdirectories.
+### Linked files
+#[Linked files](assets/exampleFile.txt) work in a way that is similar to the images but without the !. This can be but doesn't have to be in subdirectories.
 #
-# ## Tables
+### Tables
 #
-# | parameters  | value |
-# |:-----------|:------|
-# | a    |  101  |
-# | b         |  102 |
+#| parameters  | value |
+#|:-----------|:------|
+#| a    |  101  |
+#| b         |  102 |
 #
 ---
 # metadata for the simulation

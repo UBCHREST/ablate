@@ -1,24 +1,24 @@
-# ### Description
-# A radiation solver verification case using parallel plates and an absorbing media with black body bounding surfaces.
-# This is a 2-dimensional case using a 3x20 plane of cells in order to predict a quasi-1D solution.
-# The temperature field of the media between the plates is prescribed as an asymmetrical piecewise parabola.
+#### Description
+#A radiation solver verification case using parallel plates and an absorbing media with black body bounding surfaces.
+#This is a 2-dimensional case using a 3x20 plane of cells in order to predict a quasi-1D solution.
+#The temperature field of the media between the plates is prescribed as an asymmetrical piecewise parabola.
 #
-# ### Parameters
-# The tunable parameter of this problem is the absorptivity ($$\kappa$$), which controls how much radiation
-# is attenuated or emitted by the absorbing media based on its temperature excess relative to black body.
+#### Parameters
+#The tunable parameter of this problem is the absorptivity ($$\kappa$$), which controls how much radiation
+#is attenuated or emitted by the absorbing media based on its temperature excess relative to black body.
 #
-# | parameters | formula | value |
-# |:----------|:---------|:------|
-# | $$\kappa$$ | $$\frac{d I}{d x} = \kappa (\frac{\sigma T^4}{\pi} - I)$$ | 1.0  |
+#| parameters | formula | value |
+#|:----------|:---------|:------|
+#| $$\kappa$$ | $$\frac{d I}{d x} = \kappa (\frac{\sigma T^4}{\pi} - I)$$ | 1.0  |
 #
-# ### Fields
-# The temperature field in this problem is assigned explicitly as an input. Based on this temperature field and
-# the absorptivity of the medium, the analytical solution for the net radiation heat transfer can be calculated
-# through a numerical integration.
-# if $$y < 0$$
-# $$T = -6.349E6 y^2 + 2000.0 [K]$$
-# if $$y > 0$$
-# $$-1.179E7 y^2 + 2000.0 [K]$$
+#### Fields
+#The temperature field in this problem is assigned explicitly as an input. Based on this temperature field and
+#the absorptivity of the medium, the analytical solution for the net radiation heat transfer can be calculated
+#through a numerical integration.
+#if $$y < 0$$
+#$$T = -6.349E6 y^2 + 2000.0 [K]$$
+#if $$y > 0$$
+#$$-1.179E7 y^2 + 2000.0 [K]$$
 #
 ---
 
