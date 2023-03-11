@@ -11,22 +11,19 @@
 namespace ablate::domain::rbf {
 
 class HYBRID : public RBF {
-  private:
+   private:
     const std::vector<double> weights;
     std::vector<std::shared_ptr<RBF>> rbfList;
 
-  public:
-
+   public:
     std::string_view type() const override { return "HYBRID"; }
 
     HYBRID(PetscInt p = 4, std::vector<double> weights = {}, std::vector<std::shared_ptr<RBF>> rbfList = {}, bool doesNotHaveDerivatives = false, bool doesNotHaveInterpolation = false);
 
     PetscReal RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) override;
     PetscReal RBFDer(PetscInt dim, PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) override;
-
-
 };
 
-}  // namespace ablate::domain::RBF
+}  // namespace ablate::domain::rbf
 
 #endif  // ABLATELIBRARY_RBF_HYBRID_HPP
