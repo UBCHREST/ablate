@@ -4,7 +4,7 @@
 
 ablate::domain::MeshFile::MeshFile(const std::string& nameIn, const std::filesystem::path& pathIn, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors,
                                    std::vector<std::shared_ptr<modifiers::Modifier>> modifiers, const std::shared_ptr<parameters::Parameters>& options)
-    : Domain(ReadDMFromFile(nameIn, pathIn), nameIn, std::move(fieldDescriptors), std::move(modifiers), options) {}
+    : Domain(ReadDMFromFile(nameIn, pathIn), nameIn.empty() ? pathIn.filename().stem().string() : nameIn, std::move(fieldDescriptors), std::move(modifiers), options) {}
 
 ablate::domain::MeshFile::~MeshFile() {
     if (dm) {
@@ -24,7 +24,7 @@ DM ablate::domain::MeshFile::ReadDMFromFile(const std::string& name, const std::
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::domain::Domain, ablate::domain::MeshFile, "read a DMPlex from a file", ARG(std::string, "name", "the name of the domain/mesh object"),
+REGISTER(ablate::domain::Domain, ablate::domain::MeshFile, "read a DMPlex from a file", OPT(std::string, "name", "the name of the domain/mesh object"),
          ARG(std::filesystem::path, "path", "the path to the mesh file"), OPT(std::vector<ablate::domain::FieldDescriptor>, "fields", "a list of fields/field descriptors"),
          OPT(std::vector<ablate::domain::modifiers::Modifier>, "modifiers", "a list of domain modifier"),
          OPT(ablate::parameters::Parameters, "options", "PETSc options specific to this dm.  Default value allows the dm to access global options."));
