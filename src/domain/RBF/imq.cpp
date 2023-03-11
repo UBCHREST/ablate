@@ -6,7 +6,7 @@ using namespace ablate::domain::rbf;
 IMQ::IMQ(PetscInt p, PetscReal scale, bool doesNotHaveDerivatives, bool doesNotHaveInterpolation)
     : RBF(p, !doesNotHaveDerivatives, !doesNotHaveInterpolation), scale(scale < PETSC_SMALL ? __RBF_IMQ_DEFAULT_PARAM : scale){};
 
-// Multiquadric: sqrt(1+(er)^2)
+// Inverse Multiquadric: 1/sqrt(1+(er)^2)
 PetscReal IMQ::RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) {
     PetscReal h = IMQ::scale;
     PetscReal e2 = 1.0 / (h * h);
@@ -15,7 +15,7 @@ PetscReal IMQ::RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) {
     return 1.0 / PetscSqrtReal(1.0 + e2 * r2);
 }
 
-// Derivatives of Multiquadric spline at a location.
+// Derivatives of Inverse Multiquadric spline at a location.
 PetscReal IMQ::RBFDer(PetscInt dim, PetscReal xIn[], PetscInt dx, PetscInt dy, PetscInt dz) {
     PetscReal h = IMQ::scale;
     PetscReal e2 = 1.0 / (h * h);

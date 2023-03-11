@@ -8,7 +8,6 @@ using namespace ablate::domain::rbf;
 HYBRID::HYBRID(PetscInt p, std::vector<double> weights, std::vector<std::shared_ptr<RBF>> rbfList, bool doesNotHaveDerivatives, bool doesNotHaveInterpolation)
     : RBF(p, !doesNotHaveDerivatives, !doesNotHaveInterpolation), weights(weights), rbfList(rbfList){};
 
-// Polyharmonic spline: r^(2*m+1)
 PetscReal HYBRID::RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) {
     PetscReal val = 0.0;
     for (long unsigned int i = 0; i < HYBRID::rbfList.size(); ++i) {
@@ -17,7 +16,6 @@ PetscReal HYBRID::RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) {
     return val;
 }
 
-// Derivatives of Polyharmonic spline at a location.
 PetscReal HYBRID::RBFDer(PetscInt dim, PetscReal xIn[], PetscInt dx, PetscInt dy, PetscInt dz) {
     PetscReal val = 0.0;
     for (long unsigned int i = 0; i < HYBRID::rbfList.size(); ++i) {
