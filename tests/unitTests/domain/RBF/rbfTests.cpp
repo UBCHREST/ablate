@@ -748,11 +748,6 @@ TEST_P(RBFTestFixture_Interpolation, CheckInterpolationFunctions) {
       rbfList[0]->GetCellRange(subDomain, nullptr, cellRange);
       RBFTestFixture_SetData(cellRange, field, subDomain);
 
-
-
-
-
-
       std::vector<PetscInt> dx = testingParam.dx, dy = testingParam.dy, dz = testingParam.dz;
       PetscInt c, cell;
       PetscReal maxError;
@@ -773,12 +768,7 @@ TEST_P(RBFTestFixture_Interpolation, CheckInterpolationFunctions) {
       rbfList[0]->RestoreRange(cellRange);
 
 //      ablate::environment::RunEnvironment::Finalize();
-
-
     }
-
-
-
 
     EndWithMPI
 }
@@ -968,4 +958,3 @@ INSTANTIATE_TEST_SUITE_P(
                                               .maxError = {1.29e-5}}
                   ),
     [](const testing::TestParamInfo<RBFParameters_DerivativeInterpolation>& info) { return info.param.mpiTestParameter.getTestName(); });
-
