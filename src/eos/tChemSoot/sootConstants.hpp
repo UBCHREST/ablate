@@ -11,7 +11,7 @@ namespace ablate::eos::tChemSoot {
 //! Molecular Weight of Carbon
 [[maybe_unused]] inline static const double MWCarbon = 12.0107;
 //! Scaling term for Ndd going into the Tines ODE Solver
-[[maybe_unused]] inline static double NddScaling = 1e22;
+[[maybe_unused]] inline static double NddScaling = 1e20;
 
 }  // namespace ablate::eos::tChemSoot
 #endif
