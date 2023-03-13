@@ -44,9 +44,9 @@ class SurfaceForce : public Process {
      * public function to link this process with the flow
      * a@param flow
      */
-    ~SurfaceForce();
+    ~SurfaceForce() override;
 
-    void Setup(ablate::finiteVolume::FiniteVolumeSolver &flow);
+    void Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) override;
     /**
      * static function private function to compute surface force and add source to eulerset
      * @param solver
@@ -59,5 +59,5 @@ class SurfaceForce : public Process {
      */
     static PetscErrorCode ComputeSource(const FiniteVolumeSolver &solver, DM dm, PetscReal time, Vec locX, Vec locFVec, void *ctx);
 };
-}
+}  // namespace ablate::finiteVolume::processes
 #endif
