@@ -44,11 +44,11 @@ class SurfaceForce : public Process {
      * public function to link this process with the flow
      * a@param flow
      */
+    ~SurfaceForce();
 
     void Setup(ablate::finiteVolume::FiniteVolumeSolver &flow);
-    ~SurfaceForce() override;
     /**
-     * static function private function to compute surface force and add source to euler
+     * static function private function to compute surface force and add source to eulerset
      * @param solver
      * @param dm
      * @param time
