@@ -23,7 +23,7 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
     DMPlexGetGeometryFVM(dm, nullptr, &cellGeomVec, nullptr);
     VecGetDM(cellGeomVec, &dmCell);
     VecGetArrayRead(cellGeomVec, &cellGeomArray);
-    //create a domain function, dmData, to use it in main function for storing any calculated data/field. Here the vertex normals will be stored on vortices, therefore k = 1
+    // create a domain function, dmData, to use it in main function for storing any calculated data/field. Here the vertex normals will be stored on vortices, therefore k = 1
     PetscFE fe_coords;
     PetscInt k = 1;
     DMClone(dm, &dmData);
