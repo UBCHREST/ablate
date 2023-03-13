@@ -90,7 +90,7 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
 
     flow.RegisterRHSFunction(ComputeSource, this);
 }
-ablate::finiteVolume::processes::SurfaceForce::~SurfaceForce() {}
+
 PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(const FiniteVolumeSolver &solver, DM dm, PetscReal time, Vec locX, Vec locFVec, void *ctx) {
     PetscFunctionBegin;
 
@@ -287,6 +287,8 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
 
     PetscFunctionReturn(0);
 }
+
+ablate::finiteVolume::processes::SurfaceForce::~SurfaceForce() { DMDestroy(&dmData); }
 
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::SurfaceForce, "calculates surface tension force and adds source terms",
          ARG(PetscReal, "sigma", "sigma, surface tension coefficient"));
