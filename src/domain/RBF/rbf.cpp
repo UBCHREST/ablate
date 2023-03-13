@@ -144,7 +144,8 @@ void RBF::Matrix(const PetscInt c) {
     RBF::stencilList[c] = list;
 
     if (nPoly >= nCells) {
-        throw std::invalid_argument("Number of surrounding cells, " + std::to_string(nCells) + ", can not support a requested polynomial order of " + std::to_string(p) + " which requires " + std::to_string(nPoly) + " number of cells.");
+        throw std::invalid_argument("Number of surrounding cells, " + std::to_string(nCells) + ", can not support a requested polynomial order of " + std::to_string(p) + " which requires " +
+                                    std::to_string(nPoly) + " number of cells.");
     }
 
     PetscMalloc1(nCells * dim * p1, &xp) >> utilities::PetscUtilities::checkError;
@@ -656,24 +657,44 @@ void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
         PetscInt nDer = 0;
         PetscInt dx[10], dy[10], dz[10];
 
-        dx[nDer] = 0; dy[nDer] = 0; dz[nDer++] = 0;
+        dx[nDer] = 0;
+        dy[nDer] = 0;
+        dz[nDer++] = 0;
 
         if (dim >= 1) {
-            dx[nDer] = 1; dy[nDer] = 0; dz[nDer++] = 0;
-            dx[nDer] = 2; dy[nDer] = 0; dz[nDer++] = 0;
+            dx[nDer] = 1;
+            dy[nDer] = 0;
+            dz[nDer++] = 0;
+            dx[nDer] = 2;
+            dy[nDer] = 0;
+            dz[nDer++] = 0;
         }
 
         if (dim >= 2) {
-            dx[nDer] = 0; dy[nDer] = 1; dz[nDer++] = 0;
-            dx[nDer] = 1; dy[nDer] = 1; dz[nDer++] = 0;
-            dx[nDer] = 0; dy[nDer] = 2; dz[nDer++] = 0;
+            dx[nDer] = 0;
+            dy[nDer] = 1;
+            dz[nDer++] = 0;
+            dx[nDer] = 1;
+            dy[nDer] = 1;
+            dz[nDer++] = 0;
+            dx[nDer] = 0;
+            dy[nDer] = 2;
+            dz[nDer++] = 0;
         }
 
         if (dim == 3) {
-            dx[nDer] = 0; dy[nDer] = 0; dz[nDer++] = 1;
-            dx[nDer] = 1; dy[nDer] = 0; dz[nDer++] = 1;
-            dx[nDer] = 0; dy[nDer] = 1; dz[nDer++] = 1;
-            dx[nDer] = 0; dy[nDer] = 0; dz[nDer++] = 2;
+            dx[nDer] = 0;
+            dy[nDer] = 0;
+            dz[nDer++] = 1;
+            dx[nDer] = 1;
+            dy[nDer] = 0;
+            dz[nDer++] = 1;
+            dx[nDer] = 0;
+            dy[nDer] = 1;
+            dz[nDer++] = 1;
+            dx[nDer] = 0;
+            dy[nDer] = 0;
+            dz[nDer++] = 2;
         }
 
         SetDerivatives(nDer, dx, dy, dz);
@@ -697,7 +718,8 @@ void RBF::Initialize(solver::Range cellRange) {
 
     // Both interpolation and derivatives need the list of points
     PetscInt nCells = RBF::cEnd - RBF::cStart;
-    PetscMalloc6(nCells, &(RBF::cellList), nCells, &(RBF::nStencil), nCells, &(RBF::stencilList), nCells, &(RBF::RBFMatrix), nCells, &(RBF::stencilXLocs), nCells, &(RBF::stencilWeights)) >> utilities::PetscUtilities::checkError;
+    PetscMalloc6(nCells, &(RBF::cellList), nCells, &(RBF::nStencil), nCells, &(RBF::stencilList), nCells, &(RBF::RBFMatrix), nCells, &(RBF::stencilXLocs), nCells, &(RBF::stencilWeights)) >>
+        utilities::PetscUtilities::checkError;
 
     // Shift so that we can use cell range directly
     RBF::cellList -= cStart;
