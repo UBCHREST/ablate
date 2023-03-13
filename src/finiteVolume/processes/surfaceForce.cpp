@@ -23,7 +23,13 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
     DMPlexGetGeometryFVM(dm, nullptr, &cellGeomVec, nullptr);
     VecGetDM(cellGeomVec, &dmCell);
     VecGetArrayRead(cellGeomVec, &cellGeomArray);
-
+    //create a domain function, dmData, to use it in main function for storing any calculated data/field. Here the vertex normals will be stored on vortices, therefore k = 1
+    PetscFE fe_coords;
+    PetscInt k = 1;
+    DMClone(dm, &dmData);
+    PetscFECreateLagrange(PETSC_COMM_SELF, dim, dim, PETSC_TRUE, k, PETSC_DETERMINE, &fe_coords);
+    DMSetField(dmData, 0, NULL, (PetscObject)fe_coords);
+    DMCreateDS(dmData);
     // extract the local coordinates array
     Vec localCoordsVector;
     PetscSection coordsSection;
@@ -84,7 +90,7 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
 
     flow.RegisterRHSFunction(ComputeSource, this);
 }
-
+ablate::finiteVolume::processes::SurfaceForce::~SurfaceForce() {}
 PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(const FiniteVolumeSolver &solver, DM dm, PetscReal time, Vec locX, Vec locFVec, void *ctx) {
     PetscFunctionBegin;
 
@@ -128,17 +134,9 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     // get the coordinate domain
     DM cdm;
     DMGetCoordinateDM(dm, &cdm);
-
     // create a domain to get a local vector to save normals
-    DM dmData;
-    PetscFE fe_coords;
-    PetscInt k = 1;
-    DMClone(dm, &dmData);
-    PetscFECreateLagrange(PETSC_COMM_SELF, dim, dim, PETSC_TRUE, k, PETSC_DETERMINE, &fe_coords);
-    DMSetField(dmData, 0, NULL, (PetscObject)fe_coords);
-    DMCreateDS(dmData);
     Vec localVec;
-    DMGetLocalVector(dmData, &localVec);
+    DMGetLocalVector(process->dmData, &localVec);
     PetscScalar *normalArray = NULL;
     VecGetArray(localVec, &normalArray);
     PetscScalar *vertexNormal;
@@ -285,10 +283,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
     VecRestoreArray(locFVec, &fArray);
     VecRestoreArray(localCoordsVector, &coordsArray);
-    DMRestoreLocalVector(dmData, &localVec);
-    PetscFEDestroy(&fe_coords);
     VecRestoreArrayRead(locX, &solArray);
-    DMDestroy(&dmData);
 
     PetscFunctionReturn(0);
 }

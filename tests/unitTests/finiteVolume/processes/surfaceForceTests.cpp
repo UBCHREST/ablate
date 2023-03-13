@@ -68,77 +68,6 @@ TEST_P(SurfaceForceTestFixture, ShouldComputeCorrectSurfaceForce) {
                                                                                std::vector<std::shared_ptr<ablate::finiteVolume::boundaryConditions::BoundaryCondition>>{});
     // initialize it
     domain->InitializeSubDomains({fvSolver}, {initialConditionFV, initialConditionEuler});
-
-    ablate::finiteVolume::processes::SurfaceForce::VertexStencil stencilData;
-    std::vector<ablate::finiteVolume::processes::SurfaceForce::VertexStencil> vertexStencils;
-
-    DM dm;
-    dm = domain->GetDM();
-
-    Vec cellGeomVec;
-    DM dmCell;
-    const PetscScalar *cellGeomArray;
-    DMPlexGetGeometryFVM(dm, nullptr, &cellGeomVec, nullptr);
-    VecGetDM(cellGeomVec, &dmCell);
-    VecGetArrayRead(cellGeomVec, &cellGeomArray);
-
-    // extract the local x array
-    Vec localCoordsVector;
-    PetscSection coordsSection;
-    PetscScalar *coordsArray;
-    DMGetCoordinateSection(dm, &coordsSection);
-    DMGetCoordinatesLocal(dm, &localCoordsVector);
-    VecGetArray(localCoordsVector, &coordsArray);
-
-    PetscInt vStart, vEnd, cStart, cEnd, cl;
-    // extract vortices of domain
-    DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd);
-
-    // march over vortices
-    for (PetscInt v = vStart; v < vEnd; v++) {
-        // store the vortex point
-        stencilData.vertexId = v;
-        stencilData.stencilCoord = {0, 0, 0};
-        PetscInt off;
-        PetscReal xyz[3];
-        // extract x, y, z values
-        PetscSectionGetOffset(coordsSection, v, &off);
-        for (PetscInt d = 0; d < dim; ++d) {
-            xyz[d] = coordsArray[off + d];
-            // store coordinates of the vortex
-            stencilData.stencilCoord[d] = xyz[d];
-        }
-        stencilData.gradientWeights = {0, 0, 0};
-        stencilData.stencilSize = 0;
-        PetscInt *star = nullptr;
-        PetscInt numStar;
-        DMPlexGetTransitiveClosure(dm, v, PETSC_FALSE, &numStar, &star);
-        DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd);
-
-        PetscInt cell;
-        stencilData.stencil[10];
-        // extract the connected cells and store them
-        for (cl = 0; cl < numStar * 2; cl += 2) {
-            cell = star[cl];
-            if (cell < cStart || cell >= cEnd) continue;
-
-            stencilData.stencil.push_back(cell);
-            // extract and save the cell info
-            PetscFVCellGeom *cg;
-            DMPlexPointLocalRead(dmCell, cell, cellGeomArray, &cg);
-
-            for (PetscInt d = 0; d < dim; ++d) {
-                // add up distance of cell centers to the vertex and store
-                stencilData.gradientWeights[d] += abs(cg->centroid[d] - xyz[d]);
-            }
-            stencilData.stencilSize += 1;
-        }
-        DMPlexRestoreTransitiveClosure(dm, v, PETSC_FALSE, &numStar, &star);
-        // store the stencils of this vertex
-        vertexStencils.push_back(std::move(stencilData));
-    }
-
-    vertexStencils.data();
     PetscScalar *eulerSource = nullptr;
     Vec computedF;
     PetscScalar *sourceArray;
@@ -156,7 +85,7 @@ TEST_P(SurfaceForceTestFixture, ShouldComputeCorrectSurfaceForce) {
     VecRestoreArray(domain->GetSolutionVector(), &solution);
 
     auto process = ablate::finiteVolume::processes::SurfaceForce(GetParam().sigma);
-    process.vertexStencils = vertexStencils;
+    process.Setup(*fvSolver);
     DMGetLocalVector(domain->GetDM(), &computedF);
     VecZeroEntries(computedF);
 
