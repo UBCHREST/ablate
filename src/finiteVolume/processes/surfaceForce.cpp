@@ -20,27 +20,27 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
     Vec cellGeomVec;
     DM dmCell;
     const PetscScalar *cellGeomArray;
-    DMPlexGetGeometryFVM(dm, nullptr, &cellGeomVec, nullptr);
+    DMPlexGetGeometryFVM(dm, nullptr, &cellGeomVec, nullptr) >> utilities::PetscUtilities::checkError;
     VecGetDM(cellGeomVec, &dmCell);
     VecGetArrayRead(cellGeomVec, &cellGeomArray);
     // create a domain function, dmData, to use it in main function for storing any calculated data/field. Here the vertex normals will be stored on vortices, therefore k = 1
     PetscFE fe_coords;
     PetscInt k = 1;
-    DMClone(dm, &dmData);
-    PetscFECreateLagrange(PETSC_COMM_SELF, dim, dim, PETSC_TRUE, k, PETSC_DETERMINE, &fe_coords);
-    DMSetField(dmData, 0, NULL, (PetscObject)fe_coords);
-    DMCreateDS(dmData);
+    DMClone(dm, &dmData) >> utilities::PetscUtilities::checkError;
+    PetscFECreateLagrange(PETSC_COMM_SELF, dim, dim, PETSC_TRUE, k, PETSC_DETERMINE, &fe_coords) >> utilities::PetscUtilities::checkError;
+    DMSetField(dmData, 0, NULL, (PetscObject)fe_coords) >> utilities::PetscUtilities::checkError;
+    DMCreateDS(dmData) >> utilities::PetscUtilities::checkError;
     // extract the local coordinates array
     Vec localCoordsVector;
     PetscSection coordsSection;
     PetscScalar *coordsArray;
-    DMGetCoordinateSection(dm, &coordsSection);
-    DMGetCoordinatesLocal(dm, &localCoordsVector);
-    VecGetArray(localCoordsVector, &coordsArray);
+    DMGetCoordinateSection(dm, &coordsSection) >> utilities::PetscUtilities::checkError;
+    DMGetCoordinatesLocal(dm, &localCoordsVector) >> utilities::PetscUtilities::checkError;
+    VecGetArray(localCoordsVector, &coordsArray) >> utilities::PetscUtilities::checkError;
 
     PetscInt vStart, vEnd, cStart, cEnd, cl;
     // extract vortices of domain
-    DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd);
+    DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd) >> utilities::PetscUtilities::checkError;
 
     // march over vortices
     for (PetscInt v = vStart; v < vEnd; v++) {
@@ -51,7 +51,7 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
         PetscInt off;
         PetscReal xyz[3];
         // extract x, y, z values
-        PetscSectionGetOffset(coordsSection, v, &off);
+        PetscSectionGetOffset(coordsSection, v, &off) >> utilities::PetscUtilities::checkError;
         for (PetscInt d = 0; d < dim; ++d) {
             xyz[d] = coordsArray[off + d];
             // store coordinates of the vertex
@@ -63,17 +63,17 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
         // extract nodes of the vertex
         PetscInt *star = nullptr;
         PetscInt numStar;
-        DMPlexGetTransitiveClosure(dm, v, PETSC_FALSE, &numStar, &star);
+        DMPlexGetTransitiveClosure(dm, v, PETSC_FALSE, &numStar, &star) >> utilities::PetscUtilities::checkError;
 
         // extract the connected cells and store them
-        DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd);
+        DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
         PetscInt cell;
         for (cl = 0; cl < numStar * 2; cl += 2) {
             cell = star[cl];
             if (cell < cStart || cell >= cEnd) continue;
             newStencil.stencil.push_back(cell);
             PetscFVCellGeom *cg;
-            DMPlexPointLocalRead(dmCell, cell, cellGeomArray, &cg);
+            DMPlexPointLocalRead(dmCell, cell, cellGeomArray, &cg) >> utilities::PetscUtilities::checkError;
 
             for (PetscInt d = 0; d < dim; ++d) {
                 // add up distance of cell centers to the vertex and store
@@ -81,12 +81,12 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
             }
             newStencil.stencilSize += 1;
         }
-        DMPlexRestoreTransitiveClosure(dm, v, PETSC_FALSE, &numStar, &star);
+        DMPlexRestoreTransitiveClosure(dm, v, PETSC_FALSE, &numStar, &star) >> utilities::PetscUtilities::checkError;
         // store the stencils of this vertex
         vertexStencils.push_back(std::move(newStencil));
     }
     VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
-    VecRestoreArray(localCoordsVector, &coordsArray);
+    VecRestoreArray(localCoordsVector, &coordsArray) >> utilities::PetscUtilities::checkError;
 
     flow.RegisterRHSFunction(ComputeSource, this);
 }
@@ -115,28 +115,28 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     solver::Range cellRange;
     solver.GetCellRangeWithoutGhost(cellRange);
     PetscScalar *fArray;
-    VecGetArray(locFVec, &fArray);
+    VecGetArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
 
     auto dim = solver.GetSubDomain().GetDimensions();
 
     // get the flowSolution
     const PetscScalar *solArray;
-    VecGetArrayRead(locX, &solArray);
+    VecGetArrayRead(locX, &solArray) >> utilities::PetscUtilities::checkError;
 
     // Get the cell geometry
     Vec cellGeomVec;
     DM dmCell;
     const PetscScalar *cellGeomArray;
-    DMPlexGetGeometryFVM(dm, nullptr, &cellGeomVec, nullptr);
-    VecGetDM(cellGeomVec, &dmCell);
-    VecGetArrayRead(cellGeomVec, &cellGeomArray);
+    DMPlexGetGeometryFVM(dm, nullptr, &cellGeomVec, nullptr) >> utilities::PetscUtilities::checkError;
+    VecGetDM(cellGeomVec, &dmCell) >> utilities::PetscUtilities::checkError;
+    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
 
     // get the coordinate domain
     DM cdm;
-    DMGetCoordinateDM(dm, &cdm);
+    DMGetCoordinateDM(dm, &cdm) >> utilities::PetscUtilities::checkError;
     // create a domain to get a local vector to save normals
     Vec localVec;
-    DMGetLocalVector(process->dmData, &localVec);
+    DMGetLocalVector(process->dmData, &localVec) >> utilities::PetscUtilities::checkError;
     PetscScalar *normalArray = NULL;
     VecGetArray(localVec, &normalArray);
     PetscScalar *vertexNormal;
@@ -144,9 +144,9 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     Vec localCoordsVector;
     PetscSection coordsSection;
     PetscScalar *coordsArray = NULL;
-    DMGetCoordinateSection(dm, &coordsSection);
-    DMGetCoordinatesLocal(dm, &localCoordsVector);
-    VecGetArray(localCoordsVector, &coordsArray);
+    DMGetCoordinateSection(dm, &coordsSection) >> utilities::PetscUtilities::checkError;
+    DMGetCoordinatesLocal(dm, &localCoordsVector) >> utilities::PetscUtilities::checkError;
+    VecGetArray(localCoordsVector, &coordsArray) >> utilities::PetscUtilities::checkError;
 
     // march over the stored vortices
     for (const auto &info : process->vertexStencils) {
@@ -154,10 +154,10 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
         // march over the connected cells to each vertex and get the cell info and filed value
         for (PetscInt p = 0; p < info.stencilSize; p++) {
             PetscFVCellGeom *cg = nullptr;
-            DMPlexPointLocalRead(dmCell, info.stencil[p], cellGeomArray, &cg);
+            DMPlexPointLocalRead(dmCell, info.stencil[p], cellGeomArray, &cg) >> utilities::PetscUtilities::checkError;
 
             PetscScalar *alpha = nullptr;
-            DMPlexPointLocalFieldRead(dm, info.stencil[p], VFfield.id, solArray, &alpha);
+            DMPlexPointLocalFieldRead(dm, info.stencil[p], VFfield.id, solArray, &alpha) >> utilities::PetscUtilities::checkError;
 
             // add up the contribution of the cell. Front cells have positive and back cells have negative contribution to the vertex normal
             PetscReal alphaVal[dim];
@@ -172,7 +172,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
             }
         }
         // calculate and save the normal of the vertex
-        DMPlexPointLocalRef(cdm, info.vertexId, normalArray, &vertexNormal);
+        DMPlexPointLocalRef(cdm, info.vertexId, normalArray, &vertexNormal) >> utilities::PetscUtilities::checkError;
         for (PetscInt d = 0; d < dim; ++d) {
             vertexNormal[d] = totalAlpha[d] / info.gradientWeights[d];
         }
@@ -182,7 +182,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
         const PetscInt c = cellRange.points ? cellRange.points[i] : i;
         // get current euler solution here to get velocity
         const PetscScalar *euler = nullptr;
-        DMPlexPointLocalFieldRead(dm, c, eulerField.id, solArray, &euler);
+        DMPlexPointLocalFieldRead(dm, c, eulerField.id, solArray, &euler) >> utilities::PetscUtilities::checkError;
         auto density = euler[ablate::finiteVolume::CompressibleFlowFields::RHO];
 
         PetscScalar vel[dim];
@@ -192,7 +192,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
 
         // add calculated sources to euler
         PetscScalar *eulerSource = nullptr;
-        DMPlexPointLocalFieldRef(dm, c, eulerField.id, fArray, &eulerSource);
+        DMPlexPointLocalFieldRef(dm, c, eulerField.id, fArray, &eulerSource) >> utilities::PetscUtilities::checkError;
 
         PetscReal surfaceEnergy = 0;
         PetscReal totalGradMagNormal = 0;
@@ -204,12 +204,12 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
 
         // get the centroid information for the cell
         PetscFVCellGeom *fcg;
-        DMPlexPointLocalRead(dmCell, c, cellGeomArray, &fcg);
+        DMPlexPointLocalRead(dmCell, c, cellGeomArray, &fcg) >> utilities::PetscUtilities::checkError;
 
         // extract connected vortices to the cell
         PetscInt *closure = NULL;
         PetscInt numClosure;
-        DMPlexGetTransitiveClosure(dm, c, PETSC_TRUE, &numClosure, &closure);
+        DMPlexGetTransitiveClosure(dm, c, PETSC_TRUE, &numClosure, &closure) >> utilities::PetscUtilities::checkError;
         PetscInt cl, numVertex = 0;
 
         PetscReal centerNormal[3] = {0, 0, 0};
@@ -217,7 +217,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
         PetscReal cellCenterNormal[dim];
         PetscReal totalDivNormal = 0;
         PetscInt vStart, vEnd;
-        DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd);
+        DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd) >> utilities::PetscUtilities::checkError;
         PetscReal distance[3] = {0, 0, 0};
         PetscReal xyz[3];
         PetscInt offset;
@@ -228,11 +228,11 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
             if (vertex < vStart || vertex >= vEnd) continue;
             // sum up the number of connected vortices
             numVertex += 1;
-            PetscSectionGetOffset(coordsSection, vertex, &offset);
+            PetscSectionGetOffset(coordsSection, vertex, &offset) >> utilities::PetscUtilities::checkError;
 
             for (PetscInt d = 0; d < dim; ++d) {
                 // extract coordinates of vortices of this cell and calculate the distance to the center
-                DMPlexPointLocalRead(cdm, vertex, normalArray, &vertexNormal);
+                DMPlexPointLocalRead(cdm, vertex, normalArray, &vertexNormal) >> utilities::PetscUtilities::checkError;
                 xyz[d] = coordsArray[offset + d];
 
                 // calculate normal at each cell center using normals of connected vortices to the cell
@@ -276,14 +276,14 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
             eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = surfaceForce[d];
             eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] = surfaceEnergy;
         }
-        DMPlexRestoreTransitiveClosure(dm, c, PETSC_TRUE, &numClosure, &closure);
+        DMPlexRestoreTransitiveClosure(dm, c, PETSC_TRUE, &numClosure, &closure) >> utilities::PetscUtilities::checkError;
     }
     // cleanup
     solver.RestoreRange(cellRange);
     VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
-    VecRestoreArray(locFVec, &fArray);
-    VecRestoreArray(localCoordsVector, &coordsArray);
-    VecRestoreArrayRead(locX, &solArray);
+    VecRestoreArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArray(localCoordsVector, &coordsArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(locX, &solArray) >> utilities::PetscUtilities::checkError;
 
     PetscFunctionReturn(0);
 }
