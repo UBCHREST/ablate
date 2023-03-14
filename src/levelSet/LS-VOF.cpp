@@ -497,38 +497,3 @@ void VOF_3D_Hex_Test( ){
   printf("VOL: %d\t%+f\t%+f\n", PetscAbsReal(vol - trueVol)<1.e-8 , vol, trueVol);
 
 }
-
-
-
-
-
-
-//  PetscInt  derID = -1, nDer = RBF::nDer, *dxyz = RBF::dxyz;
-//  // Search for the particular index. Probably need to do something different in the future to avoid re-doing the same calculation many times
-//  while ((dxyz[++derID*3 + 0] != dx || dxyz[derID*3 + 1] != dy || dxyz[derID*3 + 2] != dz) && derID<nDer){ }
-
-//  if (derID==nDer) {
-//    throw std::invalid_argument("Derivative of (" + std::to_string(dx) + ", " + std::to_string(dy) + ", " + std::to_string(dz) + ") is not setup.");
-//  }
-
-//  // If the stencil hasn't been setup yet do so
-//  if (RBF::nStencil[c] < 1) {
-//    RBF::SetupDerivativeStencils(c);
-//  }
-
-//  PetscReal         *wt = RBF::stencilWeights[c];
-//  PetscInt          nStencil = RBF::nStencil[c], *lst = RBF::stencilList[c];
-//  Vec               vec = subDomain->GetVec(*field);
-//  DM                dm  = subDomain->GetFieldDM(*field);
-//  PetscScalar       val = 0.0, f;
-//  const PetscScalar *array;
-//  VecGetArrayRead(vec, &array) >> utilities::PetscUtilities::checkError;
-
-//  for (PetscInt i = 0; i < nStencil; ++i) {
-//    DMPlexPointLocalFieldRead(dm, lst[i], field->id, array, &f) >> utilities::PetscUtilities::checkError;
-//    val += wt[i*nDer + derID]*f;
-//  }
-
-//  VecRestoreArrayRead(vec, &array);
-
-
