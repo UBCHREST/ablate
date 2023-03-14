@@ -55,12 +55,12 @@ slabBoundaryLocations = [(0.0132, 0),
 # convert the locations to points
 slabBoundary = convertToPoint(slabBoundaryLocations)
 
-# define the chamber boundary with associated names
+# define the chamber boundary with associated names, define the nodes in a counterclockwise order
 boundary_ids = []
-defineBoundary([[lowerLeft, upperLeft]], "inlet", boundary_ids)
+defineBoundary([[upperLeft, lowerLeft]], "inlet", boundary_ids)
 defineBoundary([[upperRight, lowerRight]], "outlet", boundary_ids)
 defineBoundary([
-    [upperLeft, upperRight],
+    [upperRight, upperLeft],
     [lowerLeft, slabBoundary[0]],
     [slabBoundary[-1], lowerRight]
 ], "wall", boundary_ids)
@@ -75,10 +75,10 @@ gmsh.model.setPhysicalName(2, gmsh.model.geo.addPhysicalGroup(2, [surface_id]), 
 gmsh.model.geo.synchronize()
 
 # set the default properties to generate quad mesh
-gmsh.option.setNumber("Mesh.Algorithm", 8)  # 8: Frontal-Delaunay for Quads
+gmsh.option.setNumber("Mesh.Algorithm", 11)  #11: Quasi-structured Quad
 gmsh.option.setNumber("Mesh.Algorithm3D", 1)  # 1: Delaunay
 gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 3)  # 3: blossom full-quad
-gmsh.option.setNumber("Mesh.MeshSizeMin", 0.0005)
+gmsh.option.setNumber("Mesh.MeshSizeMin", 0.001)
 gmsh.option.setNumber("Mesh.MeshSizeMax", 0.001)  # assume about 1mm resolution
 gmsh.option.setNumber("Mesh.SubdivisionAlgorithm", 1)  # 1: all quadrangles
 gmsh.option.setNumber("Mesh.RecombineAll", 1)  # true
