@@ -130,22 +130,22 @@ static PetscInt fac[11] = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 362880
 void RBF::Matrix(const PetscInt c) {
     PetscInt i, j, d, px, py, pz, matSize;
     PetscInt nCells, *list;
-    const PetscInt dim = subDomain->GetDimensions();
-    const PetscInt nPoly = RBF::nPoly, p = RBF::polyOrder, p1 = PetscMax(p + 1, 1);
+    const PetscInt dim = RBF::subDomain->GetDimensions();
+    const PetscInt numPoly = RBF::nPoly, p = RBF::polyOrder, p1 = PetscMax(p + 1, 1);
     Mat A;
     PetscReal *x, *vals;
     PetscReal x0[dim];  // Center of the cell of interest
     PetscReal *xp;      // Powers of the cell centers
-    const DM dm = subDomain->GetSubDM();
+    const DM dm = RBF::subDomain->GetSubDM();
 
     // Get the list of neighbor cells
     DMPlexGetNeighborCells(dm, c, -1, -1.0, RBF::minNumberCells, RBF::useVertices, &nCells, &list);
     RBF::nStencil[c] = nCells;
     RBF::stencilList[c] = list;
 
-    if (nPoly >= nCells) {
+    if (numPoly >= nCells) {
         throw std::invalid_argument("Number of surrounding cells, " + std::to_string(nCells) + ", can not support a requested polynomial order of " + std::to_string(p) + " which requires " +
-                                    std::to_string(nPoly) + " number of cells.");
+                                    std::to_string(numPoly) + " number of cells.");
     }
 
     PetscMalloc1(nCells * dim * p1, &xp) >> utilities::PetscUtilities::checkError;
@@ -168,7 +168,7 @@ void RBF::Matrix(const PetscInt c) {
         }
     }
 
-    matSize = nCells + nPoly;
+    matSize = nCells + numPoly;
 
     // Create the matrix
     MatCreateSeqDense(PETSC_COMM_SELF, matSize, matSize, NULL, &A) >> utilities::PetscUtilities::checkError;
@@ -185,7 +185,7 @@ void RBF::Matrix(const PetscInt c) {
         }
     }
 
-    if (nPoly > 0) {
+    if (numPoly > 0) {
         // Augmented polynomial contributions
         switch (dim) {
             case 1:
@@ -242,18 +242,18 @@ void RBF::Matrix(const PetscInt c) {
 /************ Begin Derivative Code **********************/
 
 // Set the derivatives to use
-// nDer - Number of derivatives to set
-// dx, dy, dz - Lists of length nDer indicating the derivatives
+// numDer - Number of derivatives to set
+// dx, dy, dz - Lists of length numDer indicating the derivatives
 // useVertices - Use common vertices when determining neighbors. If false then use common edges.
-void RBF::SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVertices) {
-    if (nDer > 0) {
+void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVertices) {
+    if (numDer > 0) {
         RBF::useVertices = useVertices;
-        RBF::nDer = nDer;
+        RBF::nDer = numDer;
 
-        PetscMalloc1(3 * nDer, &(RBF::dxyz)) >> utilities::PetscUtilities::checkError;
+        PetscMalloc1(3 * numDer, &(RBF::dxyz)) >> utilities::PetscUtilities::checkError;
 
         // Store the derivatives
-        for (PetscInt i = 0; i < nDer; ++i) {
+        for (PetscInt i = 0; i < numDer; ++i) {
             RBF::dxyz[i * 3 + 0] = dx[i];
             RBF::dxyz[i * 3 + 1] = dy[i];
             RBF::dxyz[i * 3 + 2] = dz[i];
@@ -262,7 +262,7 @@ void RBF::SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt d
 }
 
 // Set derivatives, defaulting to using vertices
-void RBF::SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]) { RBF::SetDerivatives(nDer, dx, dy, dz, PETSC_TRUE); }
+void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]) { RBF::SetDerivatives(numDer, dx, dy, dz, PETSC_TRUE); }
 
 // Compute the RBF weights at the cell center of p using a cell-list
 // c - The center cell in cellRange ordering
@@ -273,25 +273,25 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
 
     Mat A = RBF::RBFMatrix[c], B = nullptr;
     PetscReal *x = RBF::stencilXLocs[c];  // Shifted cell-centers of the neigbor list
-    PetscInt dim = subDomain->GetDimensions();
+    PetscInt dim = RBF::subDomain->GetDimensions();
     PetscInt nCells = RBF::nStencil[c];
     PetscInt matSize = nCells + RBF::nPoly;
-    PetscInt nDer = RBF::nDer;
-    PetscInt *dxyz = RBF::dxyz;
+    PetscInt numDer = RBF::nDer;
+    PetscInt *derXYZ = RBF::dxyz;
     PetscInt i, j;
     PetscInt px, py, pz, p1 = PetscMax(RBF::polyOrder + 1, 1);
     PetscScalar *vals = nullptr;
 
     // Create the RHS
-    MatCreateSeqDense(PETSC_COMM_SELF, matSize, nDer, NULL, &B) >> utilities::PetscUtilities::checkError;
+    MatCreateSeqDense(PETSC_COMM_SELF, matSize, numDer, NULL, &B) >> utilities::PetscUtilities::checkError;
     PetscObjectSetName((PetscObject)B, "ablate::domain::rbf::RBF::rhs") >> utilities::PetscUtilities::checkError;
     MatZeroEntries(B) >> utilities::PetscUtilities::checkError;
     MatDenseGetArrayWrite(B, &vals) >> utilities::PetscUtilities::checkError;
 
     // Derivatives of the RBF
     for (i = 0; i < nCells; ++i) {
-        for (j = 0; j < nDer; ++j) {
-            vals[i + j * matSize] = RBFDer(dim, &x[i * dim], dxyz[j * 3 + 0], dxyz[j * 3 + 1], dxyz[j * 3 + 2]);
+        for (j = 0; j < numDer; ++j) {
+            vals[i + j * matSize] = RBFDer(dim, &x[i * dim], derXYZ[j * 3 + 0], derXYZ[j * 3 + 1], derXYZ[j * 3 + 2]);
         }
     }
 
@@ -299,10 +299,10 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
         // Derivatives of the augmented polynomials
         switch (dim) {
             case 1:
-                for (j = 0; j < nDer; ++j) {
+                for (j = 0; j < numDer; ++j) {
                     i = nCells;
                     for (px = 0; px < p1; ++px) {
-                        if (dxyz[j * 3 + 0] == px) {
+                        if (derXYZ[j * 3 + 0] == px) {
                             vals[i + j * matSize] = (PetscReal)fac[px];
                         }
                         ++i;
@@ -310,11 +310,11 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
                 }
                 break;
             case 2:
-                for (j = 0; j < nDer; ++j) {
+                for (j = 0; j < numDer; ++j) {
                     i = nCells;
                     for (py = 0; py < p1; ++py) {
                         for (px = 0; px < p1 - py; ++px) {
-                            if (dxyz[j * 3 + 0] == px && dxyz[j * 3 + 1] == py) {
+                            if (derXYZ[j * 3 + 0] == px && derXYZ[j * 3 + 1] == py) {
                                 vals[i + j * matSize] = (PetscReal)(fac[px] * fac[py]);
                             }
                             ++i;
@@ -323,12 +323,12 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
                 }
                 break;
             case 3:
-                for (j = 0; j < nDer; ++j) {
+                for (j = 0; j < numDer; ++j) {
                     i = nCells;
                     for (pz = 0; pz < p1; ++pz) {
                         for (py = 0; py < p1 - pz; ++py) {
                             for (px = 0; px < p1 - py - pz; ++px) {
-                                if (dxyz[j * 3 + 0] == px && dxyz[j * 3 + 1] == py && dxyz[j * 3 + 2] == pz) {
+                                if (derXYZ[j * 3 + 0] == px && derXYZ[j * 3 + 1] == py && derXYZ[j * 3 + 2] == pz) {
                                     vals[i + j * matSize] = (PetscReal)(fac[px] * fac[py] * fac[pz]);
                                 }
                                 ++i;
@@ -351,12 +351,12 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
     MatViewFromOptions(B, NULL, "-ablate::domain::rbf::RBF::sol_view") >> utilities::PetscUtilities::checkError;
 
     // Now populate the output
-    PetscMalloc1(nDer * nCells, &(RBF::stencilWeights[c])) >> utilities::PetscUtilities::checkError;
+    PetscMalloc1(numDer * nCells, &(RBF::stencilWeights[c])) >> utilities::PetscUtilities::checkError;
     PetscReal *wt = RBF::stencilWeights[c];
     MatDenseGetArrayWrite(B, &vals) >> utilities::PetscUtilities::checkError;
     for (i = 0; i < nCells; ++i) {
-        for (j = 0; j < nDer; ++j) {
-            wt[i * nDer + j] = vals[i + j * matSize];
+        for (j = 0; j < numDer; ++j) {
+            wt[i * numDer + j] = vals[i + j * matSize];
         }
     }
     MatDenseGetArrayWrite(B, &vals) >> utilities::PetscUtilities::checkError;
@@ -391,10 +391,10 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt 
     PetscReal *wt = nullptr;
     PetscScalar val = 0.0, *f;
     const PetscScalar *array;
-    PetscInt nStencil = -1, *lst = nullptr;
-    PetscInt derID = -1, nDer = RBF::nDer, *dxyz = RBF::dxyz;
-    Vec vec = subDomain->GetVec(*field);
-    DM dm = subDomain->GetFieldDM(*field);
+    PetscInt nCells = -1, *lst = nullptr;
+    PetscInt derID = -1, numDer = RBF::nDer, *derXYZ = RBF::dxyz;
+    Vec vec = RBF::subDomain->GetVec(*field);
+    DM dm = RBF::subDomain->GetFieldDM(*field);
 
     MPI_Comm_size(PetscObjectComm((PetscObject)dm), &size);
     if (field->location == FieldLocation::SOL && size > 1) {
@@ -404,10 +404,10 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt 
     }
 
     // Search for the particular index. Probably need to do something different in the future to avoid re-doing the same calculation many times
-    while ((dxyz[++derID * 3 + 0] != dx || dxyz[derID * 3 + 1] != dy || dxyz[derID * 3 + 2] != dz) && derID < nDer) {
+    while ((derXYZ[++derID * 3 + 0] != dx || derXYZ[derID * 3 + 1] != dy || derXYZ[derID * 3 + 2] != dz) && derID < numDer) {
     }
 
-    if (derID == nDer) {
+    if (derID == numDer) {
         throw std::invalid_argument("RBF: Derivative of (" + std::to_string(dx) + ", " + std::to_string(dy) + ", " + std::to_string(dz) + ") is not setup.");
     }
 
@@ -417,16 +417,16 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt 
     }
 
     wt = RBF::stencilWeights[c];
-    nStencil = RBF::nStencil[c];
+    nCells = RBF::nStencil[c];
     lst = RBF::stencilList[c];
 
     VecGetArrayRead(vec, &array) >> utilities::PetscUtilities::checkError;
 
-    for (PetscInt i = 0; i < nStencil; ++i) {
+    for (PetscInt i = 0; i < nCells; ++i) {
         // DMPlexPointLocalFieldRead isn't behaving like I would expect. If I don't make f a pointer then it just returns zero.
         //    Additionally, it looks like it allows for the editing of the value.
         DMPlexPointLocalFieldRead(dm, lst[i], field->id, array, &f) >> utilities::PetscUtilities::checkError;
-        val += wt[i * nDer + derID] * (*f);
+        val += wt[i * numDer + derID] * (*f);
     }
 
     VecRestoreArrayRead(vec, &array) >> utilities::PetscUtilities::checkError;
@@ -447,8 +447,8 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
     const PetscScalar *fvals;
     PetscReal *x, x0[3];
     Mat A;
-    Vec weights, rhs, f = subDomain->GetVec(*field);
-    DM dm = subDomain->GetFieldDM(*field);
+    Vec weights, rhs, f = RBF::subDomain->GetVec(*field);
+    DM dm = RBF::subDomain->GetFieldDM(*field);
 
     MPI_Comm_size(PetscObjectComm((PetscObject)dm), &size);
     if (field->location == FieldLocation::SOL && size > 1) {
@@ -460,7 +460,7 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
     DMPlexGetContainingCell(dm, xEval, &c) >> utilities::PetscUtilities::checkError;
 
     if (c < 0) {
-        throw std::runtime_error("ablate::domain::RBF::Interpolate could not determine the location of (" + std::to_string(x[0]) + ", " + std::to_string(x[1]) + ", " + std::to_string(x[2]) + ").");
+        throw std::runtime_error("ablate::domain::RBF::Interpolate could not determine the location of (" + std::to_string(xEval[0]) + ", " + std::to_string(xEval[1]) + ", " + std::to_string(xEval[2]) + ").");
     }
 
     if (RBF::RBFMatrix[c] == nullptr) {
@@ -562,18 +562,18 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
 // Return the range of DMPlex objects at a given depth in a subDomain and region. This is pulled from ablate::solver::Solver::GetRange
 //    which already has the subDomain and region information.
 //    Note: This seems like it should be in ablate::domain and the solver will call this. Need to talk to Matt M. about it.
-void RBF::GetRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::solver::Range &range) const {
+void RBF::GetRange(std::shared_ptr<ablate::domain::SubDomain> subDomainIn, const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::solver::Range &range) {
     // Start out getting all the points
     IS allPointIS;
-    DMGetStratumIS(subDomain->GetDM(), "dim", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
+    DMGetStratumIS(subDomainIn->GetDM(), "dim", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
     if (!allPointIS) {
-        DMGetStratumIS(subDomain->GetDM(), "depth", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
+        DMGetStratumIS(subDomainIn->GetDM(), "depth", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
     }
 
     // If there is a label for this solver, get only the parts of the mesh that here
     if (region) {
         DMLabel label;
-        DMGetLabel(subDomain->GetDM(), region->GetName().c_str(), &label);
+        DMGetLabel(subDomainIn->GetDM(), region->GetName().c_str(), &label);
 
         IS labelIS;
         DMLabelGetStratumIS(label, region->GetValue(), &labelIS) >> utilities::PetscUtilities::checkError;
@@ -599,14 +599,14 @@ void RBF::GetRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const s
     ISDestroy(&allPointIS) >> utilities::PetscUtilities::checkError;
 }
 
-void RBF::GetCellRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, ablate::solver::Range &cellRange) const {
+void RBF::GetCellRange(std::shared_ptr<ablate::domain::SubDomain> subDomainIn, const std::shared_ptr<ablate::domain::Region> region, ablate::solver::Range &cellRange) {
     // Start out getting all the cells
     PetscInt depth;
-    DMPlexGetDepth(subDomain->GetDM(), &depth) >> utilities::PetscUtilities::checkError;
-    RBF::GetRange(subDomain, region, depth, cellRange);
+    DMPlexGetDepth(subDomainIn->GetDM(), &depth) >> utilities::PetscUtilities::checkError;
+    RBF::GetRange(subDomainIn, region, depth, cellRange);
 }
 
-void RBF::RestoreRange(ablate::solver::Range &range) const {
+void RBF::RestoreRange(ablate::solver::Range &range) {
     if (range.is) {
         ISRestorePointRange(range.is, &range.start, &range.end, &range.points) >> utilities::PetscUtilities::checkError;
         ISDestroy(&range.is) >> utilities::PetscUtilities::checkError;
@@ -620,14 +620,14 @@ RBF::RBF(PetscInt polyOrder, bool hasDerivatives, bool hasInterpolation) : polyO
 RBF::~RBF() {}
 
 // This is done once
-void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
+void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) {
     if ((!RBF::hasDerivatives) && (!RBF::hasInterpolation)) {
         throw std::runtime_error("ablate::domain::RBF requires either derivatives or interpolation.");
     }
 
-    RBF::subDomain = subDomain;
+    RBF::subDomain = subDomainIn;
 
-    PetscInt dim = subDomain->GetDimensions();
+    PetscInt dim = subDomainIn->GetDimensions();
 
     //   The number of polynomial values is (p+2)(p+1)/2 in 2D and (p+3)(p+2)(p+1)/6 in 3D
     PetscInt p = RBF::polyOrder;
@@ -654,50 +654,50 @@ void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
 
     if (RBF::hasDerivatives) {
         // Now setup the derivatives required for curvature/normal calculations. This should probably move over to user-option
-        PetscInt nDer = 0;
+        PetscInt numDer = 0;
         PetscInt dx[10], dy[10], dz[10];
 
-        dx[nDer] = 0;
-        dy[nDer] = 0;
-        dz[nDer++] = 0;
+        dx[numDer] = 0;
+        dy[numDer] = 0;
+        dz[numDer++] = 0;
 
         if (dim >= 1) {
-            dx[nDer] = 1;
-            dy[nDer] = 0;
-            dz[nDer++] = 0;
-            dx[nDer] = 2;
-            dy[nDer] = 0;
-            dz[nDer++] = 0;
+            dx[numDer] = 1;
+            dy[numDer] = 0;
+            dz[numDer++] = 0;
+            dx[numDer] = 2;
+            dy[numDer] = 0;
+            dz[numDer++] = 0;
         }
 
         if (dim >= 2) {
-            dx[nDer] = 0;
-            dy[nDer] = 1;
-            dz[nDer++] = 0;
-            dx[nDer] = 1;
-            dy[nDer] = 1;
-            dz[nDer++] = 0;
-            dx[nDer] = 0;
-            dy[nDer] = 2;
-            dz[nDer++] = 0;
+            dx[numDer] = 0;
+            dy[numDer] = 1;
+            dz[numDer++] = 0;
+            dx[numDer] = 1;
+            dy[numDer] = 1;
+            dz[numDer++] = 0;
+            dx[numDer] = 0;
+            dy[numDer] = 2;
+            dz[numDer++] = 0;
         }
 
         if (dim == 3) {
-            dx[nDer] = 0;
-            dy[nDer] = 0;
-            dz[nDer++] = 1;
-            dx[nDer] = 1;
-            dy[nDer] = 0;
-            dz[nDer++] = 1;
-            dx[nDer] = 0;
-            dy[nDer] = 1;
-            dz[nDer++] = 1;
-            dx[nDer] = 0;
-            dy[nDer] = 0;
-            dz[nDer++] = 2;
+            dx[numDer] = 0;
+            dy[numDer] = 0;
+            dz[numDer++] = 1;
+            dx[numDer] = 1;
+            dy[numDer] = 0;
+            dz[numDer++] = 1;
+            dx[numDer] = 0;
+            dy[numDer] = 1;
+            dz[numDer++] = 1;
+            dx[numDer] = 0;
+            dy[numDer] = 0;
+            dz[numDer++] = 2;
         }
 
-        SetDerivatives(nDer, dx, dy, dz);
+        SetDerivatives(numDer, dx, dy, dz);
     }
 }
 
