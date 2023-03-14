@@ -49,15 +49,16 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
   id: SOD Problem
   processes:
     - !ablate::finiteVolume::processes::TwoPhaseEulerAdvection
-      eosGas: !ablate::eos::PerfectGas &eosAir
-        parameters:
-          gamma: 1.4
-          Rgas: 287.0
-      eosLiquid: !ablate::eos::StiffenedGas &eosWater
-        parameters:
-          gamma: 1.932
-          Cp: 8095.08
-          p0: 1164500000.0
+      eos: !ablate::eos::TwoPhase
+        eos1: !ablate::eos::PerfectGas &eosAir
+          parameters:
+            gamma: 1.4
+            Rgas: 287.0
+        eos2: !ablate::eos::StiffenedGas &eosWater
+          parameters:
+            gamma: 1.932
+            Cp: 8095.08
+            p0: 1164500000.0
       fluxCalculatorGasGas: !ablate::finiteVolume::fluxCalculator::RiemannStiff
         eosL: *eosAir
         eosR: *eosAir

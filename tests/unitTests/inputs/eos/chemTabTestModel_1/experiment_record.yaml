@@ -57,18 +57,20 @@ input_data_cols:
 - YiN2
 - YiAR
 ipscaler: null
-kernel_constraint: N
+kernel_constraint: Y
 kernel_regularizer: Y
-model_R2: 0.9905698718339888
-noOfCpv: 8
-opscaler: RobustScaler
+model_R2: 0.853419593981954
+noOfCpv: 12
+opscaler: StandardScaler
 val_losses:
-  dynamic_source_prediction_R2_split: 0.959162175655365
-  dynamic_source_prediction_loss: -0.9590349793434143
-  dynamic_source_prediction_source_pred_mean: -8.681800842285156
-  dynamic_source_prediction_source_true_mean: -8.489093780517578
-  emb_and_regression_model_R2: 0.9746235609054565
-  emb_and_regression_model_loss: -0.9745512008666992
-  emb_and_regression_model_mae: 4.475362300872803
-  emb_and_regression_model_mse: 332.89642333984375
-  loss: -1.9208297729492188
+  dynamic_source_prediction_R2_split: 0.987128734588623
+  dynamic_source_prediction_loss: -0.9872372150421143
+  dynamic_source_prediction_source_pred_mean: 0.877754807472229
+  dynamic_source_prediction_source_true_mean: 1.1688774824142456
+  loss: -1.8002454042434692
+  static_source_prediction_R2: 0.8570267558097839
+  static_source_prediction_R2_inv: 0.8549008369445801
+  static_source_prediction_loss: -0.857187032699585
+  static_source_prediction_mae: 0.1016734316945076
+  static_source_prediction_mape: 621.65869140625
+  static_source_prediction_mse: 0.15007615089416504

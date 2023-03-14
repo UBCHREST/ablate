@@ -29,8 +29,10 @@ ablate::eos::ThermodynamicFunction ablate::eos::StiffenedGas::GetThermodynamicFu
         throw std::invalid_argument("The ablate::eos::StiffenedGas requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
     }
 
-    return ThermodynamicFunction{.function = thermodynamicFunctions.at(property).first,
-                                 .context = std::make_shared<FunctionContext>(FunctionContext{.dim = eulerField->numberComponents - 2, .eulerOffset = eulerField->offset, .parameters = parameters})};
+    return ThermodynamicFunction{
+        .function = std::get<0>(thermodynamicFunctions.at(property)),
+        .context = std::make_shared<FunctionContext>(FunctionContext{.dim = eulerField->numberComponents - 2, .eulerOffset = eulerField->offset, .parameters = parameters}),
+        .propertySize = std::get<2>(thermodynamicFunctions.at(property)) == SPECIES_SIZE ? (PetscInt)species.size() : PetscInt(std::get<2>(thermodynamicFunctions.at(property)))};
 }
 ablate::eos::ThermodynamicTemperatureFunction ablate::eos::StiffenedGas::GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty property,
                                                                                                              const std::vector<domain::Field> &fields) const {
@@ -41,8 +43,9 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::StiffenedGas::GetTher
     }
 
     return ThermodynamicTemperatureFunction{
-        .function = thermodynamicFunctions.at(property).second,
-        .context = std::make_shared<FunctionContext>(FunctionContext{.dim = eulerField->numberComponents - 2, .eulerOffset = eulerField->offset, .parameters = parameters})};
+        .function = std::get<1>(thermodynamicFunctions.at(property)),
+        .context = std::make_shared<FunctionContext>(FunctionContext{.dim = eulerField->numberComponents - 2, .eulerOffset = eulerField->offset, .parameters = parameters}),
+        .propertySize = std::get<2>(thermodynamicFunctions.at(property)) == SPECIES_SIZE ? (PetscInt)species.size() : PetscInt(std::get<2>(thermodynamicFunctions.at(property)))};
 }
 
 ablate::eos::EOSFunction ablate::eos::StiffenedGas::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1, ablate::eos::ThermodynamicProperty property2,

@@ -18,6 +18,9 @@ class Zimmer : public RadiationModel {
         PetscInt densityYiCOOffset;
         PetscInt densityYiCH4Offset;
 
+        PetscReal upperLimit;
+        PetscReal lowerLimit;
+
         const ThermodynamicFunction temperatureFunction;
         const ThermodynamicTemperatureFunction densityFunction;
     };
@@ -63,7 +66,7 @@ class Zimmer : public RadiationModel {
     static PetscErrorCode ZimmerTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
 
    public:
-    explicit Zimmer(std::shared_ptr<eos::EOS> eosIn);
+    explicit Zimmer(std::shared_ptr<eos::EOS> eosIn, PetscReal upperLimitIn = 0, PetscReal lowerLimitIn = 0);
     explicit Zimmer(const Zimmer&) = delete;
     void operator=(const Zimmer&) = delete;
 
@@ -84,6 +87,9 @@ class Zimmer : public RadiationModel {
     [[nodiscard]] ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const override;
 
     PetscInt GetFieldComponentOffset(const std::string& str, const domain::Field& field) const;
+
+    PetscReal upperLimitStored;
+    PetscReal lowerLimitStored;
 };
 
 }  // namespace ablate::eos::radiationProperties

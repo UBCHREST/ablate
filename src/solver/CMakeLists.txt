@@ -4,6 +4,7 @@ target_sources(ablateLibrary
         solver.cpp
         cellSolver.cpp
         adaptPhysics.cpp
+        adaptPhysicsConstrained.cpp
 
         PUBLIC
         timeStepper.hpp
@@ -17,4 +18,5 @@ target_sources(ablateLibrary
         reverseRange.hpp
         adaptPhysics.hpp
         physicsTimeStepFunction.hpp
+        adaptPhysicsConstrained.cpp
         )

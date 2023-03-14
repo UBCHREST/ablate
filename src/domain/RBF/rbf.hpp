@@ -2,41 +2,36 @@
 #define ABLATELIBRARY_RBF_HPP
 #include <petsc.h>
 #include "domain/subDomain.hpp"
-#include "solver/solver.hpp" // For solver::Range
 #include "rbfSupport.hpp"
+#include "solver/solver.hpp"  // For solver::Range
 
 #define __RBF_DEFAULT_POLYORDER 3
 
 namespace ablate::domain::rbf {
 
 class RBF {
-
-  private:
-
-
+   private:
     std::shared_ptr<ablate::domain::SubDomain> subDomain = nullptr;
 
     // Radial Basis Function type and parameters
     const PetscInt polyOrder = 4;
 
-    PetscInt  nPoly = -1;               // The number of polynomial components to include
-    PetscInt  minNumberCells = -1;      // Minimum number of cells needed to compute the RBF
-    PetscBool useVertices = PETSC_TRUE; // Use vertices or edges/faces when computing neighbor cells
-
+    PetscInt nPoly = -1;                 // The number of polynomial components to include
+    PetscInt minNumberCells = -1;        // Minimum number of cells needed to compute the RBF
+    PetscBool useVertices = PETSC_TRUE;  // Use vertices or edges/faces when computing neighbor cells
 
     // Information from the subDomain cell range
     PetscInt cStart = 0, cEnd = 0;  // The cell range
     PetscInt *cellList;             // List of the cells to compute over. Length of cEnd - cStart
 
-
     // Derivative data
     const bool hasDerivatives;
-    PetscInt nDer = 0;                      // Number of derivative stencils which are pre-computed
-    PetscInt *dxyz = nullptr;               // The derivatives which have been setup
-    PetscInt *nStencil = nullptr;           // Length of each stencil. Needed for both derivatives and interpolation.
-    PetscInt **stencilList = nullptr;       // IDs of the points in the stencil. Needed for both derivatives and interpolation.
-    PetscReal **stencilWeights = nullptr;   // Weights of the points in the stencil. Needed only for derivatives.
-    PetscReal **stencilXLocs = nullptr;     // Locations wrt a cell center. Needed only for interpolation.
+    PetscInt nDer = 0;                     // Number of derivative stencils which are pre-computed
+    PetscInt *dxyz = nullptr;              // The derivatives which have been setup
+    PetscInt *nStencil = nullptr;          // Length of each stencil. Needed for both derivatives and interpolation.
+    PetscInt **stencilList = nullptr;      // IDs of the points in the stencil. Needed for both derivatives and interpolation.
+    PetscReal **stencilWeights = nullptr;  // Weights of the points in the stencil. Needed only for derivatives.
+    PetscReal **stencilXLocs = nullptr;    // Locations wrt a cell center. Needed only for interpolation.
 
     // Setup the derivative stencil at a point. There is no need for anyone outside of RBF to call this
     void SetupDerivativeStencils(PetscInt c);
@@ -45,19 +40,17 @@ class RBF {
     Mat *RBFMatrix = nullptr;
 
     // Compute the LU-decomposition of the augmented RBF matrix given a cell list.
-    void Matrix(const PetscInt c, PetscReal **x, Mat *LUA);
+    void Matrix(const PetscInt c);
 
-
-  protected:
+   protected:
     PetscReal DistanceSquared(PetscInt dim, PetscReal x[], PetscReal y[]);
     PetscReal DistanceSquared(PetscInt dim, PetscReal x[]);
     void Loc3D(PetscInt dim, PetscReal xIn[], PetscReal x[3]);
 
-  public:
-
+   public:
     RBF(PetscInt polyOrder = 4, bool hasDerivatives = true, bool hasInterpolation = true);
 
-    ~RBF();
+    virtual ~RBF();
 
     /** SubDomain Register and Setup **/
     void Initialize(solver::Range cellRange);
@@ -66,29 +59,24 @@ class RBF {
     // Derivative stuff
     void SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVertices);
     void SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]);
-    void SetupDerivativeStencils();   // Setup all derivative stencils. Useful if someone wants to remove setup cost when testing
+    void SetupDerivativeStencils();  // Setup all derivative stencils. Useful if someone wants to remove setup cost when testing
 
     PetscReal EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz);  // Evaluate a derivative
-    PetscReal EvalDer(DM dm, Vec vec, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz);
 
     // Interpolation stuff
     PetscReal Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]);
-    PetscReal Interpolate(DM dm, Vec f, PetscReal xEval[3]);
 
     // To make setup easier
-    void GetRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::solver::Range &range) const;
-    void GetCellRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, ablate::solver::Range &range) const;
-    void RestoreRange(ablate::solver::Range &range) const;
+    void GetRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::solver::Range &range);
+    void GetCellRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, ablate::solver::Range &range);
+    void RestoreRange(ablate::solver::Range &range);
 
     // These will be overwritten in the derived classes
-    virtual PetscReal RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) = 0;   // Radial function evaluated using the distance between two points
-    virtual PetscReal RBFDer(PetscInt dim, PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) = 0; // Derivative of the radial function assuming that the center point is at zero.
+    virtual PetscReal RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) = 0;                          // Radial function evaluated using the distance between two points
+    virtual PetscReal RBFDer(PetscInt dim, PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) = 0;  // Derivative of the radial function assuming that the center point is at zero.
     virtual std::string_view type() const = 0;
-
-
-
 };
 
-}  // namespace ablate::domain
+}  // namespace ablate::domain::rbf
 
 #endif  // ABLATELIBRARY_RBF_HPP

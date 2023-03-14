@@ -11,7 +11,8 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                                                                      const std::shared_ptr<eos::transport::TransportModel>& transport,
                                                                      const std::shared_ptr<fluxCalculator::FluxCalculator>& fluxCalculatorIn,
                                                                      std::vector<std::shared_ptr<processes::Process>> additionalProcesses,
-                                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions)
+                                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                                     const std::shared_ptr<eos::transport::TransportModel>& evTransport)
     : FiniteVolumeSolver(std::move(solverId), std::move(region), std::move(options),
                          utilities::VectorUtilities::Merge(
                              {
@@ -19,7 +20,7 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                                  std::make_shared<ablate::finiteVolume::processes::NavierStokesTransport>(
                                      parameters, eosIn, fluxCalculatorIn, transport, utilities::VectorUtilities::Find<ablate::finiteVolume::processes::PressureGradientScaling>(additionalProcesses)),
                                  std::make_shared<ablate::finiteVolume::processes::SpeciesTransport>(eosIn, fluxCalculatorIn, transport, parameters),
-                                 std::make_shared<ablate::finiteVolume::processes::EVTransport>(eosIn, fluxCalculatorIn, transport),
+                                 std::make_shared<ablate::finiteVolume::processes::EVTransport>(eosIn, fluxCalculatorIn, evTransport ? evTransport : transport),
                              },
                              additionalProcesses),
                          std::move(boundaryConditions)) {}
@@ -28,8 +29,9 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                                                                      const std::shared_ptr<eos::EOS>& eosIn, const std::shared_ptr<parameters::Parameters>& parameters,
                                                                      const std::shared_ptr<eos::transport::TransportModel>& transport,
                                                                      const std::shared_ptr<fluxCalculator::FluxCalculator>& fluxCalculatorIn,
-                                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions)
-    : CompressibleFlowSolver(std::move(solverId), std::move(region), std::move(options), eosIn, parameters, transport, fluxCalculatorIn, {}, std::move(boundaryConditions)) {}
+                                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                                     const std::shared_ptr<eos::transport::TransportModel>& evTransport)
+    : CompressibleFlowSolver(std::move(solverId), std::move(region), std::move(options), eosIn, parameters, transport, fluxCalculatorIn, {}, std::move(boundaryConditions), evTransport) {}
 
 #include "registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::finiteVolume::CompressibleFlowSolver, "compressible finite volume flow", ARG(std::string, "id", "the name of the flow field"),
@@ -38,4 +40,5 @@ REGISTER(ablate::solver::Solver, ablate::finiteVolume::CompressibleFlowSolver, "
          OPT(ablate::eos::transport::TransportModel, "transport", "the diffusion transport model"),
          OPT(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculators (defaults to none)"),
          OPT(std::vector<ablate::finiteVolume::processes::Process>, "additionalProcesses", "any additional processes besides euler/yi/ev transport"),
-         OPT(std::vector<ablate::finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"));
+         OPT(std::vector<ablate::finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
+         OPT(ablate::eos::transport::TransportModel, "evTransport", "when provided, this model will be used for ev transport instead of default"));

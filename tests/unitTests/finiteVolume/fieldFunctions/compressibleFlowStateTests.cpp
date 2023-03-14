@@ -100,7 +100,7 @@ INSTANTIATE_TEST_SUITE_P(
                         .expectedEuler = {.9, .9 * 1.56E5, 0},
                         .expectedDensityYi = {}},
                     (CompressibleFlowStateTestParameters){.location = {0.0, 0.0, 0.0},
-                                                          .eosFunction = []() { return std::make_shared<eos::TChem>("inputs/eos/grimech30.dat", "inputs/eos/thermo30.dat"); },
+                                                          .eosFunction = []() { return std::make_shared<eos::TChem>(std::filesystem::path("inputs/eos/grimech30.dat"), "inputs/eos/thermo30.dat"); },
                                                           .temperature = mathFunctions::Create(499.25),
                                                           .pressure = mathFunctions::Create(197710.5),
                                                           .velocity = mathFunctions::Create(std::vector<double>{10, -20, 30}),

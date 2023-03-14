@@ -26,14 +26,14 @@ static inline void SimpleGasGasDecode(PetscInt dim, ablate::eos::TwoPhase::Decod
         rho2 = rho;
         e2 = e;
         p = (gamma2 - 1) * rho2 * e2;
-        T = e2 * cv2;
+        T = e2 / cv2;
         rho1 = p / R1 / T;
         e1 = cv1 * T;
     } else if (alpha > 1 - 10E-16) {  // all air
         rho1 = rho;
         e1 = e;
         p = (gamma1 - 1) * rho1 * e1;
-        T = e1 * cv1;
+        T = e1 / cv1;
         rho2 = p / R2 / T;
         e2 = cv2 * T;
     } else {
@@ -78,7 +78,7 @@ static inline void SimpleGasStiffDecode(PetscInt dim, ablate::eos::TwoPhase::Dec
         rho1 = rho;
         e1 = e;
         p = (gamma1 - 1) * rho1 * e1;
-        T = e1 * cv1;
+        T = e1 / cv1;
         rho2 = (p + p02) * gamma2 / (gamma2 - 1) / T / cp2;
         e2 = cp2 / gamma2 * T + p02 / rho2;
     } else {
@@ -186,6 +186,7 @@ ablate::eos::TwoPhase::TwoPhase(std::shared_ptr<eos::EOS> eos1, std::shared_ptr<
             parameters.species2 = stiffenedGasEos2->GetSpeciesVariables();
         }
         species.resize(parameters.numberSpecies1 + parameters.numberSpecies2);
+
         for (PetscInt c = 0; c < parameters.numberSpecies1; c++) {
             species[c] = parameters.species1[c];
         }
@@ -227,34 +228,41 @@ ablate::eos::ThermodynamicFunction ablate::eos::TwoPhase::GetThermodynamicFuncti
         throw std::invalid_argument("The ablate::eos::TwoPhase requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
     }
 
+    // Determine the property size
+    PetscInt propertySize = speciesSizedProperties.count(property) ? (PetscInt)species.size() : 1;
+
     if (parameters.p01 == 0 && parameters.p02 == 0) {  // GasGas case
         return ThermodynamicFunction{.function = thermodynamicFunctionsGasGas.at(property).first,
                                      .context = std::make_shared<FunctionContext>(FunctionContext{.dim = eulerField->numberComponents - 2,
                                                                                                   .eulerOffset = eulerField->offset,
                                                                                                   .densityVFOffset = densityVFField->offset,
                                                                                                   .volumeFractionOffset = volumeFractionField->offset,
-                                                                                                  .parameters = parameters})};
+                                                                                                  .parameters = parameters}),
+                                     .propertySize = propertySize};
     } else if (parameters.p01 == 0 && parameters.p02 != 0) {  // GasLiquid case
         return ThermodynamicFunction{.function = thermodynamicFunctionsGasLiquid.at(property).first,
                                      .context = std::make_shared<FunctionContext>(FunctionContext{.dim = eulerField->numberComponents - 2,
                                                                                                   .eulerOffset = eulerField->offset,
                                                                                                   .densityVFOffset = densityVFField->offset,
                                                                                                   .volumeFractionOffset = volumeFractionField->offset,
-                                                                                                  .parameters = parameters})};
+                                                                                                  .parameters = parameters}),
+                                     .propertySize = propertySize};
     } else if (parameters.p01 != 0 && parameters.p02 != 0) {  // LiquidLiquid case
         return ThermodynamicFunction{.function = thermodynamicFunctionsLiquidLiquid.at(property).first,
                                      .context = std::make_shared<FunctionContext>(FunctionContext{.dim = eulerField->numberComponents - 2,
                                                                                                   .eulerOffset = eulerField->offset,
                                                                                                   .densityVFOffset = densityVFField->offset,
                                                                                                   .volumeFractionOffset = volumeFractionField->offset,
-                                                                                                  .parameters = parameters})};
+                                                                                                  .parameters = parameters}),
+                                     .propertySize = propertySize};
     } else {  // default ?? here default is GasLiquid air/water
         return ThermodynamicFunction{.function = thermodynamicFunctionsGasLiquid.at(property).first,
                                      .context = std::make_shared<FunctionContext>(FunctionContext{.dim = eulerField->numberComponents - 2,
                                                                                                   .eulerOffset = eulerField->offset,
                                                                                                   .densityVFOffset = densityVFField->offset,
                                                                                                   .volumeFractionOffset = volumeFractionField->offset,
-                                                                                                  .parameters = parameters})};
+                                                                                                  .parameters = parameters}),
+                                     .propertySize = propertySize};
     }
 }
 ablate::eos::ThermodynamicTemperatureFunction ablate::eos::TwoPhase::GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {

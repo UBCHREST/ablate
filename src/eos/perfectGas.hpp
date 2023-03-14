@@ -10,6 +10,9 @@ namespace ablate::eos {
 
 class PerfectGas : public EOS {
    private:
+    // constant to be replaced with the number of species for thermodynamic properties
+    constexpr static inline int SPECIES_SIZE = -1;
+
     // the perfect gas does not allow species
     const std::vector<std::string> species;
     struct Parameters {
@@ -69,16 +72,16 @@ class PerfectGas : public EOS {
      */
     using ThermodynamicStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal* property, void* ctx);
     using ThermodynamicTemperatureStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
-    std::map<ThermodynamicProperty, std::pair<ThermodynamicStaticFunction, ThermodynamicTemperatureStaticFunction>> thermodynamicFunctions = {
-        {ThermodynamicProperty::Density, {DensityFunction, DensityTemperatureFunction}},
-        {ThermodynamicProperty::Pressure, {PressureFunction, PressureTemperatureFunction}},
-        {ThermodynamicProperty::Temperature, {TemperatureFunction, TemperatureTemperatureFunction}},
-        {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction, InternalSensibleEnergyTemperatureFunction}},
-        {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyFunction, SensibleEnthalpyTemperatureFunction}},
-        {ThermodynamicProperty::SpecificHeatConstantVolume, {SpecificHeatConstantVolumeFunction, SpecificHeatConstantVolumeTemperatureFunction}},
-        {ThermodynamicProperty::SpecificHeatConstantPressure, {SpecificHeatConstantPressureFunction, SpecificHeatConstantPressureTemperatureFunction}},
-        {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundFunction, SpeedOfSoundTemperatureFunction}},
-        {ThermodynamicProperty::SpeciesSensibleEnthalpy, {SpeciesSensibleEnthalpyFunction, SpeciesSensibleEnthalpyTemperatureFunction}}};
+    std::map<ThermodynamicProperty, std::tuple<ThermodynamicStaticFunction, ThermodynamicTemperatureStaticFunction, int>> thermodynamicFunctions = {
+        {ThermodynamicProperty::Density, {DensityFunction, DensityTemperatureFunction, 1}},
+        {ThermodynamicProperty::Pressure, {PressureFunction, PressureTemperatureFunction, 1}},
+        {ThermodynamicProperty::Temperature, {TemperatureFunction, TemperatureTemperatureFunction, 1}},
+        {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction, InternalSensibleEnergyTemperatureFunction, 1}},
+        {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyFunction, SensibleEnthalpyTemperatureFunction, 1}},
+        {ThermodynamicProperty::SpecificHeatConstantVolume, {SpecificHeatConstantVolumeFunction, SpecificHeatConstantVolumeTemperatureFunction, 1}},
+        {ThermodynamicProperty::SpecificHeatConstantPressure, {SpecificHeatConstantPressureFunction, SpecificHeatConstantPressureTemperatureFunction, 1}},
+        {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundFunction, SpeedOfSoundTemperatureFunction, 1}},
+        {ThermodynamicProperty::SpeciesSensibleEnthalpy, {SpeciesSensibleEnthalpyFunction, SpeciesSensibleEnthalpyTemperatureFunction, SPECIES_SIZE}}};
 
    public:
     explicit PerfectGas(const std::shared_ptr<ablate::parameters::Parameters>&, std::vector<std::string> species = {});

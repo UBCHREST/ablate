@@ -3,9 +3,9 @@
 
 ablate::monitors::MixtureFractionCalculator::MixtureFractionCalculator(const std::shared_ptr<ablate::eos::EOS>& eosIn, std::map<std::string, double> massFractionsFuel,
                                                                        std::map<std::string, double> massFractionsOxidizer, const std::vector<std::string>& trackingElementsIn)
-    : eos(std::dynamic_pointer_cast<eos::TChem>(eosIn)), trackingElements(trackingElementsIn.empty() ? std::vector<std::string>{"C", "H"} : trackingElementsIn) {
+    : eos(std::dynamic_pointer_cast<eos::TChemBase>(eosIn)), trackingElements(trackingElementsIn.empty() ? std::vector<std::string>{"C", "H"} : trackingElementsIn) {
     // make sure that the eos is set
-    if (!std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
+    if (!std::dynamic_pointer_cast<eos::TChemBase>(eosIn)) {
         throw std::invalid_argument("ablate::chemistry::MixtureFractionCalculator only accepts EOS of type eos::TChem");
     }
 
@@ -39,7 +39,7 @@ ablate::monitors::MixtureFractionCalculator::MixtureFractionCalculator(const std
             sum += count * elementInformation[e];
         }
 
-        if (!ablate::utilities::MathUtilities::Equals(sum, speciesMolecularMass[species])) {
+        if (!ablate::utilities::MathUtilities::Equals(sum, speciesMolecularMass[species], 1.0E-2)) {
             throw std::invalid_argument("Problem in ablate::chemistry::MixtureFractionCalculator. Sum of all mixFracMassCoeff =/= 1 for " + species);
         }
     }

@@ -17,10 +17,6 @@ PetscErrorCode ablate::solver::AdaptPhysics::TSAdaptChoose(TSAdapt adapt, TS ts,
     // Scale the physics dt by the safety factor
     physicsDt *= adapt->safety;
 
-    // Determine if we are on the first timestep
-    PetscInt step;
-    PetscCall(TSGetStepNumber(ts, &step));
-
     /* The optimal new step based purely on CFL constraint for this step. */
     *nextDt = PetscClipInterval(physicsDt, adapt->dt_min, adapt->dt_max);
 
