@@ -284,6 +284,8 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     VecRestoreArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
     VecRestoreArray(localCoordsVector, &coordsArray) >> utilities::PetscUtilities::checkError;
     VecRestoreArrayRead(locX, &solArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArray(localVec, &normalArray);
+    DMRestoreLocalVector(process->dmData, &localVec);
 
     PetscFunctionReturn(0);
 }
