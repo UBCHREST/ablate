@@ -11,7 +11,7 @@ namespace ablate::levelSet {
 
 
 class LevelSetSolver : public ablate::solver::Solver {
-//  private:
+  private:
 ////    const ablate::RBF::RBFType rbfType = ablate::RBF::RBFType::MQ;
 
 //    void Reinitialize(TS ts, ablate::solver::Solver &solver);
@@ -20,8 +20,10 @@ class LevelSetSolver : public ablate::solver::Solver {
 
 
     // Internal curvature and normal calculations
+    PetscReal Curvature1D(PetscInt c);
     PetscReal Curvature2D(PetscInt c);
     PetscReal Curvature3D(PetscInt c);
+    void Normal1D(PetscInt c, PetscReal *n);
     void Normal2D(PetscInt c, PetscReal *n);
     void Normal3D(PetscInt c, PetscReal *n);
 

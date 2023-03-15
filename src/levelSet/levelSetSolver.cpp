@@ -28,7 +28,6 @@ void LevelSetSolver::Setup() {
 
   // Setup the RBF
   LevelSetSolver::rbf->Setup(subDomain);
-
 }
 
 // Done whenever the subDomain changes
@@ -43,6 +42,19 @@ void LevelSetSolver::Initialize() {
 }
 
 ///*************   Begin Curvature and Normal Vector functions ******************/
+
+// Might want to have this based on cell values rather than RBF
+void LevelSetSolver::Normal1D(PetscInt c, PetscScalar *n) {
+
+  PetscReal cx = 0.0, g = 0.0;
+  std::shared_ptr<ablate::domain::rbf::RBF> rbf = LevelSetSolver::rbf;
+  const ablate::domain::Field *lsField = LevelSetSolver::lsField;
+
+  cx = rbf->EvalDer(lsField, c, 1, 0, 0);
+  g = PetscSqrtReal(cx*cx);
+
+  n[0] = cx/g;
+}
 
 void LevelSetSolver::Normal2D(PetscInt c, PetscScalar *n) {
 
@@ -74,6 +86,11 @@ void LevelSetSolver::Normal3D(PetscInt c, PetscReal *n) {
   n[0] = cx/g;
   n[1] = cy/g;
   n[2] = cz/g;
+}
+
+
+PetscReal LevelSetSolver::Curvature1D(PetscInt c) {
+  return 0.0;
 }
 
 PetscReal LevelSetSolver::Curvature2D(PetscInt c) {
@@ -118,22 +135,30 @@ PetscReal LevelSetSolver::Curvature3D(PetscInt c) {
   return k;
 }
 
-// There has to be a better way of doing this so that the curvature/normal function points directly to either 2D or 3D during setup.
+// Maybe have it point directly to the function during setup
 PetscReal LevelSetSolver::Curvature(PetscInt c) {
-  if (subDomain->GetDimensions()==2) {
-    return LevelSetSolver::Curvature2D(c);
-  }
-  else {
-    return LevelSetSolver::Curvature3D(c);
+  switch (subDomain->GetDimensions()) {
+    case 1:
+      return 0.0;
+    case 2:
+      return LevelSetSolver::Curvature2D(c);
+    case 3:
+      return LevelSetSolver::Curvature3D(c);
+    default:
+      throw std::runtime_error("ablate::levelSet::LevelSetSolver::Curvature encountered an unknown dimension.");
   }
 }
 
 void LevelSetSolver::Normal(PetscInt c, PetscReal *n) {
-  if (subDomain->GetDimensions()==2) {
-    return LevelSetSolver::Normal2D(c, n);
-  }
-  else {
-    return LevelSetSolver::Normal3D(c, n);
+  switch (subDomain->GetDimensions()) {
+    case 1:
+      throw std::runtime_error("Still need to setup ablate::levelSet::LevelSetSolver::Normal for 1D grids.\n");
+    case 2:
+      return LevelSetSolver::Normal2D(c, n);
+    case 3:
+      return LevelSetSolver::Normal3D(c, n);
+    default:
+      throw std::runtime_error("ablate::levelSet::LevelSetSolver::Normal encountered an unknown dimension.");
   }
 }
 
@@ -240,7 +265,8 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
   DMPlexGetCellType(dm, p, &ct) >> utilities::PetscUtilities::checkError;
   switch (ct) {
     case DM_POLYTOPE_SEGMENT:
-      throw std::invalid_argument("No element geometry for cell " + std::to_string(p) + " with type " + DMPolytopeTypes[ct]);
+      VOF_1D(coords, c, vof, area, vol);
+      break;
     case DM_POLYTOPE_TRIANGLE:
       VOF_2D_Tri(coords, c, vof, area, vol);
       break;

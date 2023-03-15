@@ -27,7 +27,7 @@ class LSVOFTestFixture : public ::testing::TestWithParam<LSVOFTestFixture_Parame
 
 
 // Tests the radial functions RBFVal and RBFDer, which returns the function value between two locations and the derivative at a location, respectively.
-TEST_P(LSVOFTestFixture, CheckLSVOFFunctions) {
+TEST_P(LSVOFTestFixture, CheckLSFunctions) {
 
 
   auto testingParam = GetParam();
