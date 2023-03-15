@@ -64,7 +64,7 @@ thickness = 0.0254
 offset = -thickness / 2.0
 
 # define an approximate mesh size
-dx = 0.0007
+dx = 0.0015
 
 # define the experimental chamber points
 lowerLeft = convertToPoint((0.0, 0.0, offset))

@@ -77,7 +77,8 @@ timestepper:
         incompleteLabel: true # allow the faces to be removed the flowRegion
 
       # this can be enabled to print a domain summary
-      # - !ablate::domain::modifiers::PrintDomainSummary
+#      - !ablate::domain::modifiers::PrintDomainSummary
+
     fields:
       # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
       # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
