@@ -1,10 +1,10 @@
 # This is an example of setting up a 2D SlabBurner Simulation using the gMsh python api with a series of derived slab burner points.
 ### Mesh Generation Script
 #
-#1. Open the [slabBurnerMeshGen.py](slabBurnerMeshGen.py) python
+#1. Open the [slabBurner2DMeshGen.py](slabBurner2DMeshGen.py) python
 #2. Update the geometry if necessary
 #3. To preview the resulting mesh run with the ```--preview``` argument
-#4. Generate the [slabBurnerMesh.msh](slabBurnerMesh.msh) mesh file by running without the preview argument.
+#4. Generate the [slabBurner2DMesh.msh](slabBurner2DMesh.msh) mesh file by running without the preview argument.
 #
 ---
 # metadata for the simulation
@@ -30,7 +30,7 @@ timestepper:
     interval: 10 # results are saved at every 5 steps.  In real simulations this should be much larger.
   # load in the gmsh produced mesh file
   domain: !ablate::domain::MeshFile
-    path: slabBurnerMesh.msh
+    path: slabBurner2DMesh.msh
     options:
       dm_plex_check_all: true # check to make sure the mesh if valid from gMsh
       dm_distribute: false # turn off default dm_distribute so that we can extrude label first
@@ -76,6 +76,9 @@ timestepper:
         subtrahendRegions:
           - name: slab
         incompleteLabel: true # allow the faces to be removed the flowRegion
+
+      # this can be enabled to print a domain summary
+      # - !ablate::domain::modifiers::PrintDomainSummary
 
     fields:
       # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
