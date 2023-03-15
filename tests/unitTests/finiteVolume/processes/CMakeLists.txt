@@ -5,4 +5,5 @@ target_sources(unitTests
         buoyancyTests.cpp
         pressureGradientScalingTests.cpp
         lesSourceTests.cpp
+        surfaceForceTests.cpp
         )
