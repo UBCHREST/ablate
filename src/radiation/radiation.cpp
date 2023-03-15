@@ -1,13 +1,4 @@
 #include "radiation.hpp"
-#include <petsc/private/dmimpl.h>
-#include <petscdm.h>
-#include <petscdmswarm.h>
-#include <petscsf.h>
-#include <utility>
-#include "finiteVolume/compressibleFlowFields.hpp"
-#include "finiteVolume/finiteVolumeSolver.hpp"
-#include "utilities/mpiUtilities.hpp"
-#include "utilities/petscUtilities.hpp"
 
 ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber,
                                         std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)

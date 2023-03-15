@@ -5,6 +5,7 @@
 #include "radiationProperties.hpp"
 #include "utilities/constants.hpp"
 #include "radiation/radiation.hpp"
+#include "eos/tChemSoot.hpp"
 
 namespace ablate::eos::radiationProperties {
 /** A radiation soot absorption model which computes the absorptivity of soot based on temperature and number density */

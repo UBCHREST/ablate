@@ -1,5 +1,4 @@
 #include "sootMeanProperties.hpp"
-#include "eos/tChemSoot.hpp"
 
 ablate::eos::radiationProperties::SootMeanProperties::SootMeanProperties(std::shared_ptr<eos::EOS> eosIn) : eos(std::move(eosIn)) {}
 

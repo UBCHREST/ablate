@@ -12,6 +12,15 @@
 #include "solver/timeStepper.hpp"
 #include "utilities/constants.hpp"
 #include "utilities/loggable.hpp"
+#include <petsc/private/dmimpl.h>
+#include <petscdm.h>
+#include <petscdmswarm.h>
+#include <petscsf.h>
+#include <utility>
+#include "finiteVolume/compressibleFlowFields.hpp"
+#include "finiteVolume/finiteVolumeSolver.hpp"
+#include "utilities/mpiUtilities.hpp"
+#include "utilities/petscUtilities.hpp"
 
 namespace ablate::radiation {
 
