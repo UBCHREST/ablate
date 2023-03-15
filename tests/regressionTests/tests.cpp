@@ -9,3 +9,9 @@ INSTANTIATE_TEST_SUITE_P(
         .testName = "inputs/exampleRegressionTest/exampleRegressionTest.yaml", .nproc = 1, .expectedOutputFile = "outputs/exampleRegressionTest/expectedOutput.txt", .arguments = ""}),
 
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
+
+INSTANTIATE_TEST_SUITE_P(MilestoneExamples, RegressionTestsSpecifier,
+                         testing::Values((MpiTestParameter){
+                             .testName = "inputs/slabBurner2D/slabBurner2D.yaml", .nproc = 2, .expectedOutputFile = "outputs/slabBurner2D/expectedOutput.txt", .arguments = ""}),
+
+                         [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
