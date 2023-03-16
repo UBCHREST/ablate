@@ -3,7 +3,7 @@
 using namespace ablate::domain::rbf;
 
 /************ Begin Inverse Multiquadric Derived Class **********************/
-IMQ::IMQ(PetscInt p, PetscReal scale, bool doesNotHaveDerivatives, bool doesNotHaveInterpolation)
+IMQ::IMQ(int p, double scale, bool doesNotHaveDerivatives, bool doesNotHaveInterpolation)
     : RBF(p, !doesNotHaveDerivatives, !doesNotHaveInterpolation), scale(scale < PETSC_SMALL ? __RBF_IMQ_DEFAULT_PARAM : scale){};
 
 // Inverse Multiquadric: 1/sqrt(1+(er)^2)
@@ -70,6 +70,6 @@ PetscReal IMQ::RBFDer(PetscInt dim, PetscReal xIn[], PetscInt dx, PetscInt dy, P
 
 #include "registrar.hpp"
 REGISTER(ablate::domain::rbf::RBF, ablate::domain::rbf::IMQ, "Radial Basis Function",
-         OPT(PetscInt, "polyOrder", "Order of the augmenting RBF polynomial. Must be >= 1. Any value <1 will result in a polyOrder of 4."),
-         OPT(PetscReal, "scale", "Scaling parameter. Must be >0. Any value <PETSC_SMALL will result in a default scale of 0.1."),
+         OPT(int, "polyOrder", "Order of the augmenting RBF polynomial. Must be >= 1. Any value <1 will result in a polyOrder of 4."),
+         OPT(double, "scale", "Scaling parameter. Must be >0. Any value <PETSC_SMALL will result in a default scale of 0.1."),
          OPT(bool, "doesNotHaveDerivatives", "Compute derivative information. Default is false."), OPT(bool, "doesNotHaveInterpolation", "Compute interpolation information. Default is false."));

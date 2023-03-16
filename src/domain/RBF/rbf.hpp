@@ -14,7 +14,7 @@ class RBF {
     std::shared_ptr<ablate::domain::SubDomain> subDomain = nullptr;
 
     // Radial Basis Function type and parameters
-    const PetscInt polyOrder = 4;
+    const int polyOrder = 4;
 
     PetscInt nPoly = -1;                 // The number of polynomial components to include
     PetscInt minNumberCells = -1;        // Minimum number of cells needed to compute the RBF
@@ -48,7 +48,7 @@ class RBF {
     void Loc3D(PetscInt dim, PetscReal xIn[], PetscReal x[3]);
 
    public:
-    RBF(PetscInt polyOrder = 4, bool hasDerivatives = true, bool hasInterpolation = true);
+    RBF(int polyOrder = 4, bool hasDerivatives = true, bool hasInterpolation = true);
 
     virtual ~RBF();
 

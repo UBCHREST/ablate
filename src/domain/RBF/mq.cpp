@@ -4,7 +4,7 @@ using namespace ablate::domain::rbf;
 
 /************ Begin Multiquadric Derived Class **********************/
 
-MQ::MQ(PetscInt p, PetscReal scale, bool doesNotHaveDerivatives, bool doesNotHaveInterpolation)
+MQ::MQ(int p, double scale, bool doesNotHaveDerivatives, bool doesNotHaveInterpolation)
     : RBF(p, !doesNotHaveDerivatives, !doesNotHaveInterpolation), scale(scale < PETSC_SMALL ? __RBF_MQ_DEFAULT_PARAM : scale){};
 
 // Multiquadric: sqrt(1+(er)^2)
@@ -71,6 +71,6 @@ PetscReal MQ::RBFDer(PetscInt dim, PetscReal xIn[], PetscInt dx, PetscInt dy, Pe
 
 #include "registrar.hpp"
 REGISTER(ablate::domain::rbf::RBF, ablate::domain::rbf::MQ, "Radial Basis Function",
-         OPT(PetscInt, "polyOrder", "Order of the augmenting RBF polynomial. Must be >= 1. Any value <1 will result in a polyOrder of 4."),
-         OPT(PetscReal, "scale", "Scaling parameter. Must be >0. Any value <PETSC_SMALL will result in a default scale of 0.1."),
+         OPT(int, "polyOrder", "Order of the augmenting RBF polynomial. Must be >= 1. Any value <1 will result in a polyOrder of 4."),
+         OPT(double, "scale", "Scaling parameter. Must be >0. Any value <PETSC_SMALL will result in a default scale of 0.1."),
          OPT(bool, "doesNotHaveDerivatives", "Compute derivative information. Default is false."), OPT(bool, "doesNotHaveInterpolation", "Compute interpolation information. Default is false."));

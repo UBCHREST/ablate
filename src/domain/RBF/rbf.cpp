@@ -615,7 +615,7 @@ void RBF::RestoreRange(ablate::solver::Range &range) {
 /************ End Ablate support Code **********************/
 
 /************ Constructor, Setup, and Initialization Code **********************/
-RBF::RBF(PetscInt polyOrder, bool hasDerivatives, bool hasInterpolation) : polyOrder(polyOrder), hasDerivatives(hasDerivatives), hasInterpolation(hasInterpolation) {}
+RBF::RBF(int polyOrder, bool hasDerivatives, bool hasInterpolation) : polyOrder(polyOrder), hasDerivatives(hasDerivatives), hasInterpolation(hasInterpolation) {}
 
 RBF::~RBF() {}
 
