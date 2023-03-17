@@ -460,7 +460,8 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
     DMPlexGetContainingCell(dm, xEval, &c) >> utilities::PetscUtilities::checkError;
 
     if (c < 0) {
-        throw std::runtime_error("ablate::domain::RBF::Interpolate could not determine the location of (" + std::to_string(xEval[0]) + ", " + std::to_string(xEval[1]) + ", " + std::to_string(xEval[2]) + ").");
+        throw std::runtime_error("ablate::domain::RBF::Interpolate could not determine the location of (" + std::to_string(xEval[0]) + ", " + std::to_string(xEval[1]) + ", " +
+                                 std::to_string(xEval[2]) + ").");
     }
 
     if (RBF::RBFMatrix[c] == nullptr) {
