@@ -67,6 +67,7 @@ target_link_libraries(ablateLibrary
 set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
 set_property(TARGET ablateLibrary PROPERTY CMAKE_CXX_STANDARD_REQUIRED ON)
 set_property(TARGET ablateLibrary PROPERTY CXX_STANDARD 17)
+set_property(TARGET ablateLibrary PROPERTY CXX_VISIBILITY_PRESET default)
 
 # Setup and configure testing
 if (BUILD_TESTING)

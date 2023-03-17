@@ -37,17 +37,6 @@ static void FillDensityMassFraction(const ablate::domain::Field& densityYiField,
     }
 }
 
-static void FillMassFraction(const std::vector<std::string>& species, const std::map<std::string, PetscReal>& yiIn, std::vector<PetscReal>& conservedValues) {
-    for (const auto& value : yiIn) {
-        // Get the index
-        auto it = std::find(species.begin(), species.end(), value.first);
-        if (it != species.end()) {
-            auto index = std::distance(species.begin(), it);
-            conservedValues[index] = value.second;
-        }
-    }
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// EOS create and view tests
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

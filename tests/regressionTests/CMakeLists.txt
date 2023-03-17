@@ -1,5 +1,5 @@
 add_executable(regressionTests "")
-target_link_libraries(regressionTests PUBLIC GTest::gtest ablateLibrary testingResources)
+target_link_libraries(regressionTests PUBLIC GTest::gtest ablateLibrary testingResources PRIVATE chrestCompilerFlags)
 
 target_sources(regressionTests
         PRIVATE

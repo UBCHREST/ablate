@@ -89,7 +89,7 @@ TEST_P(SurfaceForceTestFixture, ShouldComputeCorrectSurfaceForce) {
     DMGetLocalVector(domain->GetDM(), &computedF);
     VecZeroEntries(computedF);
 
-    ablate::finiteVolume::processes::SurfaceForce::ComputeSource(*fvSolver, domain->GetDM(), NULL, domain->GetSolutionVector(), computedF, &process);
+    ablate::finiteVolume::processes::SurfaceForce::ComputeSource(*fvSolver, domain->GetDM(), 0.0, domain->GetSolutionVector(), computedF, &process);
 
     // ASSERT
     VecGetArray(computedF, &sourceArray);

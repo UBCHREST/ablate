@@ -535,8 +535,6 @@ static void SourceFunction(f0_incompressible_cubic_trig_w) {
 TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
         {
-            PetscReal t;
-
             // Get the testing param
             auto testingParam = GetParam();
 
@@ -606,7 +604,7 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             DMSetApplicationContext(mesh->GetDM(), flowObject.get());
             TSSetComputeInitialCondition(timeStepper.GetTS(), SetInitialConditions) >> testErrorChecker; /* Must come after SetFromOptions() */
 
-            DMSetOutputSequenceNumber(mesh->GetDM(), 0, t) >> testErrorChecker;
+            DMSetOutputSequenceNumber(mesh->GetDM(), 0, 0) >> testErrorChecker;
             DMTSCheckFromOptions(timeStepper.GetTS(), mesh->GetSolutionVector()) >> testErrorChecker;
             TSMonitorSet(timeStepper.GetTS(), MonitorError, NULL, NULL) >> testErrorChecker;
 
