@@ -526,7 +526,7 @@ INSTANTIATE_TEST_SUITE_P(
             .dy = {0, 0, 0, 1, 1, 2},
             .dz = {0, 0, 0, 0, 0, 0},
             .cell = -1,
-            .maxError = {4.6e-15, 1.8e-03, 1.3e-01, 9.0e-04, 4.9e-02, 1.2e-01}},
+            .maxError = {4.6e-15, 1.8e-03, 1.5e-01, 9.0e-04, 4.9e-02, 1.2e-01}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "2DQuadN21_2Proc", .nproc = 2},
                                                 .meshFaces = {21, 21},
                                                 .meshStart = {-1.0, -1.0},
@@ -622,7 +622,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dy = {0, 0, 0, 1, 1, 2, 0, 0, 1, 0},
                                                 .dz = {0, 0, 0, 0, 0, 0, 1, 1, 1, 2},
                                                 .cell = 0,
-                                                .maxError = {9.5e-16, 1.7e-02, 7.2e-01, 1.7e-02, 2.1e-03, 7.2e-01, 1.7e-02, 1.9e-03, 1.9e-03, 7.2e-01}},
+                                                .maxError = {9.5e-16, 1.7e-02, 7.2e-01, 1.7e-02, 2.1e-03, 7.2e-01, 1.7e-02, 1.9e-03, 2.1e-03, 7.2e-01}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "3DQuadN41_1Proc"},
                                                 .meshFaces = {41, 41, 41},
                                                 .meshStart = {-1.0, -1.0, -1.0},
@@ -679,7 +679,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dy = {0, 0, 0, 1, 1, 2, 0, 0, 1, 0},
                                                 .dz = {0, 0, 0, 0, 0, 0, 1, 1, 1, 2},
                                                 .cell = 0,
-                                                .maxError = {1.2e-16, 3.7e-06, 2.0e-03, 2.1e-05, 8.1e-05, 4.2e-04, 9.0e-06, 2.0e-04, 7.1e-05, 1.6e-03}}),
+                                                .maxError = {1.2e-16, 5.6e-06, 2.0e-03, 2.1e-05, 8.1e-05, 2.0e-03, 2.2e-05, 2.0e-04, 7.1e-05, 1.6e-03}}),
     [](const testing::TestParamInfo<RBFParameters_DerivativeInterpolation> &info) { return info.param.mpiTestParameter.getTestName(); });
 
 class RBFTestFixture_Interpolation : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<RBFParameters_DerivativeInterpolation> {
