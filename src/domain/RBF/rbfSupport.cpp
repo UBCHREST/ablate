@@ -166,9 +166,11 @@ PetscErrorCode PetscSortedArrayComplement(const PetscInt nb, const PetscInt b[],
 //
 // Note: The intended use is to use either maxLevels OR maxDist OR minNumberCells. Right now a check isn't done on only selecting one, but that might be added in the future.
 PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useVertices, PetscInt *nCells, PetscInt *cells[]) {
+    const PetscInt maxLevelListSize = 10000;
+    const PetscInt maxListSize = 100000;
     PetscInt numNew, nLevelList[2];
-    PetscInt *addList, levelList[2][1000], currentLevelLoc, prevLevelLoc;
-    PetscInt n = 0, list[100000];
+    PetscInt *addList, levelList[2][maxLevelListSize], currentLevelLoc, prevLevelLoc;
+    PetscInt n = 0, list[maxListSize];
     PetscInt l, i;
     PetscScalar x0[3];
     PetscErrorCode ierr;
@@ -185,8 +187,6 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
         maxDist = PETSC_MAX_REAL;
         type = 0;
     } else if (maxLevels > 0) {
-        //    PetscCheck(maxLevels<=DMPlexGetNeighborCells_MaxLevels, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "The maximum number of levels requested exceeds the maximum possible.");
-
         numberCells = PETSC_MAX_INT;
         maxDist = PETSC_MAX_REAL;
         type = 1;
@@ -215,16 +215,20 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
         currentLevelLoc = l % 2;
         prevLevelLoc = (l + 1) % 2;
 
-        //    PetscCheck(l<=DMPlexGetNeighborCells_MaxLevels, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "The maximum number of levels required exceeds the maximum possible.");
-
         nLevelList[currentLevelLoc] = 0;
         for (i = 0; i < nLevelList[prevLevelLoc]; ++i) {  // Iterate over each of the locations on the prior level
             ierr = DMPlexGetNeighborCells_Internal(dm, x0, levelList[prevLevelLoc][i], maxDist, useVertices, &numNew, &addList);
             CHKERRQ(ierr);
-            CHKERRQ(ierr);
+
+            PetscCheck((nLevelList[currentLevelLoc] + numNew) < maxLevelListSize,
+                       PETSC_COMM_SELF,
+                       PETSC_ERR_ARG_INCOMP,
+                       "Requested level list size has exceeded the maximum possible in DMPlexGetNeighborCells.");
+
             ierr = PetscArraycpy(&levelList[currentLevelLoc][nLevelList[currentLevelLoc]], addList, numNew);
             CHKERRQ(ierr);
             nLevelList[currentLevelLoc] += numNew;
+
             ierr = PetscFree(addList);
             CHKERRQ(ierr);
         }
@@ -234,6 +238,8 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
         // This removes any cells which are already in the list. Not point in re-doing the search for those.
         ierr = PetscSortedArrayComplement(n, list, &nLevelList[currentLevelLoc], levelList[currentLevelLoc]);
         CHKERRQ(ierr);
+
+        PetscCheck((n + nLevelList[currentLevelLoc]) < maxListSize, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "Requested list size has exceeded the maximum possible in DMPlexGetNeighborCells.");
 
         ierr = PetscArraycpy(&list[n], levelList[currentLevelLoc], nLevelList[currentLevelLoc]);
         CHKERRQ(ierr);
