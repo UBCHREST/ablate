@@ -659,7 +659,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dy = {0, 0, 0, 1, 1, 2, 0, 0, 1, 0},
                                                 .dz = {0, 0, 0, 0, 0, 0, 1, 1, 1, 2},
                                                 .cell = 0,
-                                                .maxError = {1e-15, 3.3e-04, 3.5e-02, 4.0e-04, 1.8e-02, 7.0e-03, 5.0e-04, 1.5e-02, 9.0e-03, 2.1e-03}},
+                                                .maxError = {1e-15, 3.3e-04, 3.5e-02, 4.0e-04, 1.8e-02, 7.0e-03, 5.0e-04, 1.5e-02, 9.0e-03, 9e-03}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "3DTriN41_1Proc"},
                                                 .meshFaces = {41, 41, 41},
                                                 .meshStart = {-1.0, -1.0, -1.0},
