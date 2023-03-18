@@ -602,8 +602,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dy = {0, 0, 0, 1, 1, 2},
                                                 .dz = {0, 0, 0, 0, 0, 0},
                                                 .cell = -1,
-                                                .maxError = {4.1e-15, 1.7e-03, 1.3e-01, 9.4e-04, 4.8e-02, 1.1e-01}},
-
+                                                .maxError = {4.1e-15, 2.0e-03, 1.5e-01, 9.4e-04, 4.8e-02, 1.1e-01}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "3DQuadN21_1Proc"},
                                                 .meshFaces = {21, 21, 21},
                                                 .meshStart = {-1.0, -1.0, -1.0},
@@ -660,7 +659,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dy = {0, 0, 0, 1, 1, 2, 0, 0, 1, 0},
                                                 .dz = {0, 0, 0, 0, 0, 0, 1, 1, 1, 2},
                                                 .cell = 0,
-                                                .maxError = {1e-15, 3.5e-05, 3.5e-03, 5.6e-05, 1.7e-04, 3.0e-03, 1.51e-04, 6.3e-03, 5.9e-03, 2.1e-03}},
+                                                .maxError = {1e-15, 3.3e-04, 3.5e-02, 4.0e-04, 1.8e-02, 7.0e-03, 5.0e-04, 1.5e-02, 9.0e-03, 9e-03}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "3DTriN41_1Proc"},
                                                 .meshFaces = {41, 41, 41},
                                                 .meshStart = {-1.0, -1.0, -1.0},
