@@ -59,28 +59,28 @@ PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscReal x0[3], PetscInt 
 
     PetscFunctionBegin;
 
-    PetscCall(DMGetDimension(dm, &dim)); // The dimension of the grid
+    PetscCall(DMGetDimension(dm, &dim));  // The dimension of the grid
 
-    PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));// Range of cells
+    PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));  // Range of cells
 
     if (useVertices) {
-        PetscCall(DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd)); // Range of vertices
+        PetscCall(DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd));  // Range of vertices
     } else {
-        PetscCall(DMPlexGetHeightStratum(dm, 1, &vStart, &vEnd)); // Range of edges (2D) or faces (3D)
+        PetscCall(DMPlexGetHeightStratum(dm, 1, &vStart, &vEnd));  // Range of edges (2D) or faces (3D)
     }
 
     n = 0;
-    PetscCall(DMPlexGetTransitiveClosure(dm, p, PETSC_TRUE, &nClosure, &closure)); // All points associated with the cell
+    PetscCall(DMPlexGetTransitiveClosure(dm, p, PETSC_TRUE, &nClosure, &closure));  // All points associated with the cell
 
     maxDist = PetscSqr(maxDist) + PETSC_MACHINE_EPSILON;  // So we don't need PetscSqrtReal in the check
 
     for (cl = 0; cl < nClosure * 2; cl += 2) {
-        if (closure[cl] >= vStart && closure[cl] < vEnd) {  // Only use the points corresponding to either a vertex or edge/face.
-            PetscCall(DMPlexGetTransitiveClosure(dm, closure[cl], PETSC_FALSE, &nStar, &star)); // Get all points using this vertex or edge/face.
+        if (closure[cl] >= vStart && closure[cl] < vEnd) {                                       // Only use the points corresponding to either a vertex or edge/face.
+            PetscCall(DMPlexGetTransitiveClosure(dm, closure[cl], PETSC_FALSE, &nStar, &star));  // Get all points using this vertex or edge/face.
 
             for (st = 0; st < nStar * 2; st += 2) {
-                if (star[st] >= cStart && star[st] < cEnd) {  // If the point is a cell add it.
-                    PetscCall(DMPlexComputeCellGeometryFVM(dm, star[st], NULL, x, NULL)); // Center of the candidate cell.
+                if (star[st] >= cStart && star[st] < cEnd) {                               // If the point is a cell add it.
+                    PetscCall(DMPlexComputeCellGeometryFVM(dm, star[st], NULL, x, NULL));  // Center of the candidate cell.
                     dist = 0.0;
                     for (i = 0; i < dim; ++i) {  // Compute the distance so that we can check if it's within the required distance.
                         dist += PetscSqr(x0[i] - x[i]);
@@ -92,15 +92,15 @@ PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscReal x0[3], PetscInt 
                 }
             }
 
-            PetscCall(DMPlexRestoreTransitiveClosure(dm, closure[cl], PETSC_FALSE, &nStar, &star)); // Restore the points
+            PetscCall(DMPlexRestoreTransitiveClosure(dm, closure[cl], PETSC_FALSE, &nStar, &star));  // Restore the points
         }
     }
 
     PetscCall(DMPlexRestoreTransitiveClosure(dm, p, PETSC_TRUE, &nClosure, &closure));  // Restore the points
-    PetscCall(PetscSortRemoveDupsInt(&n, list)); // Cleanup the list
-    if(!(*cells)) PetscCall(PetscMalloc1(n, cells)); // Allocate the output
-    PetscCall(PetscArraycpy(*cells, list, n)); // Copy the cell list
-    *nCells = n;    // Set the number of cells for output
+    PetscCall(PetscSortRemoveDupsInt(&n, list));                                        // Cleanup the list
+    if (!(*cells)) PetscCall(PetscMalloc1(n, cells));                                   // Allocate the output
+    PetscCall(PetscArraycpy(*cells, list, n));                                          // Copy the cell list
+    *nCells = n;                                                                        // Set the number of cells for output
 
     PetscFunctionReturn(0);
 }
@@ -174,7 +174,7 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
         type = 2;
     }
 
-    PetscCall(DMPlexComputeCellGeometryFVM(dm, p, NULL, x0, NULL)); // Center of the cell-of-interest
+    PetscCall(DMPlexComputeCellGeometryFVM(dm, p, NULL, x0, NULL));  // Center of the cell-of-interest
 
     // Start with only the center cell
     l = 0;
@@ -212,7 +212,6 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
 
         PetscCheck((n + nLevelList[currentLevelLoc]) < maxListSize, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "Requested list size has exceeded the maximum possible in DMPlexGetNeighborCells.");
 
-
         PetscCall(PetscArraycpy(&list[n], levelList[currentLevelLoc], nLevelList[currentLevelLoc]));
         n += nLevelList[currentLevelLoc];
 
@@ -226,10 +225,10 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
         PetscScalar x[3];
         PetscReal *dist;
         PetscInt j, dim;
-        PetscCall(DMGetDimension(dm, &dim)); // The dimension of the grid
+        PetscCall(DMGetDimension(dm, &dim));  // The dimension of the grid
         PetscCall(PetscMalloc1(n, &dist));
         for (i = 0; i < n; ++i) {
-            PetscCall(DMPlexComputeCellGeometryFVM(dm, list[i], NULL, x, NULL)); // Center of the cell-of-interest
+            PetscCall(DMPlexComputeCellGeometryFVM(dm, list[i], NULL, x, NULL));  // Center of the cell-of-interest
             dist[i] = 0.0;
             for (j = 0; j < dim; ++j) {  // Compute the distance so that we can check if it's within the required distance.
                 dist[i] += PetscSqr(x0[j] - x[j]);
@@ -263,7 +262,6 @@ PetscErrorCode DMGetFieldVec(DM dm, Vec v, PetscInt field, PetscInt height, IS *
 }
 
 PetscErrorCode DMRestoreFieldVec(DM dm, Vec v, PetscInt field, PetscInt height, IS *is, Vec *subv) {
-
     PetscFunctionBegin;
 
     PetscCall(VecRestoreSubVector(v, *is, subv));
