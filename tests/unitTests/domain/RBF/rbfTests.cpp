@@ -68,7 +68,7 @@ TEST_P(RBFTestFixture_RBFValues, CheckRBFFunctions) {
             EXPECT_DOUBLE_EQ(testingParam.expectedValue, rbf->RBFVal(dim, x0, x));
 
             // Now check derivatives
-            for (int i = 0; i < dx.size(); ++i) {
+            for (std::size_t i = 0; i < dx.size(); ++i) {
                 EXPECT_DOUBLE_EQ(testingParam.expectedDerivatives[i], rbf->RBFDer(dim, x, dx[i], dy[i], dz[i]));
             }
         }
@@ -353,7 +353,7 @@ TEST_P(RBFTestFixture_Derivative, CheckDerivativeFunctions) {
         const ablate::domain::Field *field = &(subDomain->GetField("fieldA"));
 
         ablate::solver::Range cellRange;
-        for (long int j = 0; j < rbfList.size(); ++j) {
+        for (std::size_t j = 0; j < rbfList.size(); ++j) {
             rbfList[j]->Setup(subDomain);  // This causes issues (I think)
 
             //         Initialize
@@ -368,19 +368,19 @@ TEST_P(RBFTestFixture_Derivative, CheckDerivativeFunctions) {
 
         // Now check derivatives
         std::vector<PetscInt> dx = testingParam.dx, dy = testingParam.dy, dz = testingParam.dz;
-        PetscInt c, cell;
+        PetscInt cell;
         PetscReal maxError;
         PetscReal x[3];
         PetscReal err = -1.0, val;
         DM dm = subDomain->GetDM();
 
-        for (int i = 0; i < dx.size(); ++i) {  // Iterate over each of the requested derivatives
+        for (std::size_t i = 0; i < dx.size(); ++i) {  // Iterate over each of the requested derivatives
             maxError = testingParam.maxError[i];
 
             if (testingParam.cell > -1) {
                 // 3D results take too long to run, so just check a corner
-                for (long int j = 0; j < rbfList.size(); ++j) {  // Check each RBF
-                    c = testingParam.cell;
+                for (std::size_t j = 0; j < rbfList.size(); ++j) {  // Check each RBF
+                    PetscInt c = testingParam.cell;
 
                     cell = cellRange.points ? cellRange.points[c] : c;
                     val = rbfList[j]->EvalDer(field, c, dx[i], dy[i], dz[i]);
@@ -391,7 +391,7 @@ TEST_P(RBFTestFixture_Derivative, CheckDerivativeFunctions) {
                     EXPECT_LT(err, maxError) << "RBF: " << rbfList[j]->type() << ", dx: " << dx[i] << ", dy:" << dy[i] << ", dz: " << dz[i] << " Error: " << err;
                 }
             } else {
-                for (long int j = 0; j < rbfList.size(); ++j) {  // Check each RBF
+                for (std::size_t j = 0; j < rbfList.size(); ++j) {  // Check each RBF
                     err = -1.0;
                     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {  // Iterate over the entire subDomain
 
@@ -725,7 +725,7 @@ TEST_P(RBFTestFixture_Interpolation, CheckInterpolationFunctions) {
         const ablate::domain::Field *field = &(subDomain->GetField("fieldA"));
 
         ablate::solver::Range cellRange;
-        for (long int j = 0; j < rbfList.size(); ++j) {
+        for (std::size_t j = 0; j < rbfList.size(); ++j) {
             rbfList[j]->Setup(subDomain);  // This causes issues (I think)
 
             //         Initialize
@@ -739,15 +739,13 @@ TEST_P(RBFTestFixture_Interpolation, CheckInterpolationFunctions) {
         RBFTestFixture_SetData(cellRange, field, subDomain);
 
         std::vector<PetscInt> dx = testingParam.dx, dy = testingParam.dy, dz = testingParam.dz;
-        PetscInt c, cell;
         PetscReal maxError;
         PetscReal err, val, truth;
-        DM dm = subDomain->GetDM();
 
-        for (int i = 0; i < x.size(); ++i) {  // Iterate over each of the requested locations
+        for (std::size_t i = 0; i < x.size(); ++i) {  // Iterate over each of the requested locations
             maxError = testingParam.maxError[i];
 
-            for (long int j = 0; j < rbfList.size(); ++j) {  // Check each RBF
+            for (std::size_t j = 0; j < rbfList.size(); ++j) {  // Check each RBF
                 truth = RBFTestFixture_Function(x[i].data(), 0, 0, 0);
                 val = rbfList[j]->Interpolate(field, x[i].data());
                 err = PetscAbsReal(val - truth);
