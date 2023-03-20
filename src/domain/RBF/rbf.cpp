@@ -569,61 +569,6 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
 
 /************ End Interpolation Code **********************/
 
-/************ Begin Ablate support Code **********************/
-// Return the range of DMPlex objects at a given depth in a subDomain and region. This is pulled from ablate::solver::Solver::GetRange
-//    which already has the subDomain and region information.
-//    Note: This seems like it should be in ablate::domain and the solver will call this. Need to talk to Matt M. about it.
-void RBF::GetRange(std::shared_ptr<ablate::domain::SubDomain> subDomainIn, const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::solver::Range &range) {
-    // Start out getting all the points
-    IS allPointIS;
-    DMGetStratumIS(subDomainIn->GetDM(), "dim", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
-    if (!allPointIS) {
-        DMGetStratumIS(subDomainIn->GetDM(), "depth", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
-    }
-
-    // If there is a label for this solver, get only the parts of the mesh that here
-    if (region) {
-        DMLabel label;
-        DMGetLabel(subDomainIn->GetDM(), region->GetName().c_str(), &label);
-
-        IS labelIS;
-        DMLabelGetStratumIS(label, region->GetValue(), &labelIS) >> utilities::PetscUtilities::checkError;
-        ISIntersect_Caching_Internal(allPointIS, labelIS, &range.is) >> utilities::PetscUtilities::checkError;
-        ISDestroy(&labelIS) >> utilities::PetscUtilities::checkError;
-    } else {
-        PetscObjectReference((PetscObject)allPointIS) >> utilities::PetscUtilities::checkError;
-        range.is = allPointIS;
-    }
-
-    // Get the point range
-    if (range.is == nullptr) {
-        // There are no points in this region, so skip
-        range.start = 0;
-        range.end = 0;
-        range.points = nullptr;
-    } else {
-        // Get the range
-        ISGetPointRange(range.is, &range.start, &range.end, &range.points) >> utilities::PetscUtilities::checkError;
-    }
-
-    // Clean up the allCellIS
-    ISDestroy(&allPointIS) >> utilities::PetscUtilities::checkError;
-}
-
-void RBF::GetCellRange(std::shared_ptr<ablate::domain::SubDomain> subDomainIn, const std::shared_ptr<ablate::domain::Region> region, ablate::solver::Range &cellRange) {
-    // Start out getting all the cells
-    PetscInt depth;
-    DMPlexGetDepth(subDomainIn->GetDM(), &depth) >> utilities::PetscUtilities::checkError;
-    RBF::GetRange(subDomainIn, region, depth, cellRange);
-}
-
-void RBF::RestoreRange(ablate::solver::Range &range) {
-    if (range.is) {
-        ISRestorePointRange(range.is, &range.start, &range.end, &range.points) >> utilities::PetscUtilities::checkError;
-        ISDestroy(&range.is) >> utilities::PetscUtilities::checkError;
-    }
-}
-/************ End Ablate support Code **********************/
 
 /************ Constructor, Setup, and Initialization Code **********************/
 RBF::RBF(int polyOrder, bool hasDerivatives, bool hasInterpolation) : polyOrder(polyOrder), hasDerivatives(hasDerivatives), hasInterpolation(hasInterpolation) {}

@@ -322,91 +322,89 @@ void RBFTestFixture_SetData(ablate::solver::Range cellRange, const ablate::domai
 }
 
 // This tests single-cell derivative functions.
-TEST_P(RBFTestFixture_Derivative, CheckDerivativeFunctions){StartWithMPI
+TEST_P(RBFTestFixture_Derivative, CheckDerivativeFunctions){
+  StartWithMPI
 
-                                                            {// initialize petsc and mpi
-                                                             environment::RunEnvironment::Initialize(argc, argv);
-utilities::PetscUtilities::Initialize();
-auto testingParam = GetParam();
-std::vector<std::shared_ptr<domain::rbf::RBF>> rbfList = testingParam.rbfList;
+  // initialize petsc and mpi
+   environment::RunEnvironment::Initialize(argc, argv);
+  utilities::PetscUtilities::Initialize();
+  auto testingParam = GetParam();
+  std::vector<std::shared_ptr<domain::rbf::RBF>> rbfList = testingParam.rbfList;
 
-//             Make the field
-std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptor = {
-    std::make_shared<ablate::domain::FieldDescription>("fieldA", "", ablate::domain::FieldDescription::ONECOMPONENT, ablate::domain::FieldLocation::AUX, ablate::domain::FieldType::FVM)};
+  //             Make the field
+  std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptor = {
+      std::make_shared<ablate::domain::FieldDescription>("fieldA", "", ablate::domain::FieldDescription::ONECOMPONENT, ablate::domain::FieldLocation::AUX, ablate::domain::FieldType::FVM)};
 
-//             Create the mesh
-//      Note that using -dm_view :mesh.tex:ascii_latex -dm_plex_view_scale 10 -dm_plex_view_numbers_depth 1,0,1 will create a mesh, changing numbers_depth as appropriate
-auto mesh = std::make_shared<domain::BoxMesh>("mesh", fieldDescriptor, std::vector<std::shared_ptr<domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(3)},
-                                              testingParam.meshFaces, testingParam.meshStart, testingParam.meshEnd, std::vector<std::string>{}, testingParam.meshSimplex);
+  //             Create the mesh
+  //      Note that using -dm_view :mesh.tex:ascii_latex -dm_plex_view_scale 10 -dm_plex_view_numbers_depth 1,0,1 will create a mesh, changing numbers_depth as appropriate
+  auto mesh = std::make_shared<domain::BoxMesh>("mesh", fieldDescriptor, std::vector<std::shared_ptr<domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(3)},
+                                                testingParam.meshFaces, testingParam.meshStart, testingParam.meshEnd, std::vector<std::string>{}, testingParam.meshSimplex);
 
-mesh->InitializeSubDomains();
+  mesh->InitializeSubDomains();
 
-std::shared_ptr<ablate::domain::SubDomain> subDomain = mesh->GetSubDomain(domain::Region::ENTIREDOMAIN);
+  std::shared_ptr<ablate::domain::SubDomain> subDomain = mesh->GetSubDomain(domain::Region::ENTIREDOMAIN);
 
-// The field containing the data
-const ablate::domain::Field *field = &(subDomain->GetField("fieldA"));
+  // The field containing the data
+  const ablate::domain::Field *field = &(subDomain->GetField("fieldA"));
 
-ablate::solver::Range cellRange;
-for (long int j = 0; j < rbfList.size(); ++j) {
-    rbfList[j]->Setup(subDomain);  // This causes issues (I think)
+  ablate::solver::Range cellRange;
+  subDomain->GetCellRange(nullptr, cellRange);
+  for (long int j = 0; j < rbfList.size(); ++j) {
+      rbfList[j]->Setup(subDomain);  // This causes issues (I think)
 
-    //         Initialize
-    rbfList[j]->GetCellRange(subDomain, nullptr, cellRange);
-    rbfList[j]->Initialize(cellRange);
-    rbfList[j]->RestoreRange(cellRange);
-}
+      //         Initialize
+      rbfList[j]->Initialize(cellRange);
+  }
 
-// Now set the data using the first RBF. All will use the same data
-rbfList[0]->GetCellRange(subDomain, nullptr, cellRange);
-RBFTestFixture_SetData(cellRange, field, subDomain);
+  // Now set the data using the first RBF. All will use the same data
+  RBFTestFixture_SetData(cellRange, field, subDomain);
 
-// Now check derivatives
-std::vector<PetscInt> dx = testingParam.dx, dy = testingParam.dy, dz = testingParam.dz;
-PetscInt c, cell;
-PetscReal maxError;
-PetscReal x[3];
-PetscReal err = -1.0, val;
-DM dm = subDomain->GetDM();
+  // Now check derivatives
+  std::vector<PetscInt> dx = testingParam.dx, dy = testingParam.dy, dz = testingParam.dz;
+  PetscInt c, cell;
+  PetscReal maxError;
+  PetscReal x[3];
+  PetscReal err = -1.0, val;
+  DM dm = subDomain->GetDM();
 
-for (int i = 0; i < dx.size(); ++i) {  // Iterate over each of the requested derivatives
-    maxError = testingParam.maxError[i];
+  for (int i = 0; i < dx.size(); ++i) {  // Iterate over each of the requested derivatives
+      maxError = testingParam.maxError[i];
 
-    if (testingParam.cell > -1) {
-        // 3D results take too long to run, so just check a corner
-        for (long int j = 0; j < rbfList.size(); ++j) {  // Check each RBF
-            c = testingParam.cell;
+      if (testingParam.cell > -1) {
+          // 3D results take too long to run, so just check a corner
+          for (long int j = 0; j < rbfList.size(); ++j) {  // Check each RBF
+              c = testingParam.cell;
 
-            cell = cellRange.points ? cellRange.points[c] : c;
-            val = rbfList[j]->EvalDer(field, c, dx[i], dy[i], dz[i]);
+              cell = cellRange.points ? cellRange.points[c] : c;
+              val = rbfList[j]->EvalDer(field, c, dx[i], dy[i], dz[i]);
 
-            DMPlexComputeCellGeometryFVM(dm, cell, NULL, x, NULL) >> ablate::utilities::PetscUtilities::checkError;
-            err = PetscAbsReal(val - RBFTestFixture_Function(x, dx[i], dy[i], dz[i]));
+              DMPlexComputeCellGeometryFVM(dm, cell, NULL, x, NULL) >> ablate::utilities::PetscUtilities::checkError;
+              err = PetscAbsReal(val - RBFTestFixture_Function(x, dx[i], dy[i], dz[i]));
 
-            EXPECT_LT(err, maxError) << "RBF: " << rbfList[j]->type() << ", dx: " << dx[i] << ", dy:" << dy[i] << ", dz: " << dz[i] << " Error: " << err;
-        }
-    } else {
-        for (long int j = 0; j < rbfList.size(); ++j) {  // Check each RBF
-            err = -1.0;
-            for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {  // Iterate over the entire subDomain
+              EXPECT_LT(err, maxError) << "RBF: " << rbfList[j]->type() << ", dx: " << dx[i] << ", dy:" << dy[i] << ", dz: " << dz[i] << " Error: " << err;
+          }
+      } else {
+          for (long int j = 0; j < rbfList.size(); ++j) {  // Check each RBF
+              err = -1.0;
+              for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {  // Iterate over the entire subDomain
 
-                cell = cellRange.points ? cellRange.points[c] : c;
-                val = rbfList[j]->EvalDer(field, c, dx[i], dy[i], dz[i]);
+                  cell = cellRange.points ? cellRange.points[c] : c;
+                  val = rbfList[j]->EvalDer(field, c, dx[i], dy[i], dz[i]);
 
-                DMPlexComputeCellGeometryFVM(dm, cell, NULL, x, NULL) >> ablate::utilities::PetscUtilities::checkError;
-                err = PetscMax(err, PetscAbsReal(val - RBFTestFixture_Function(x, dx[i], dy[i], dz[i])));
-            }
+                  DMPlexComputeCellGeometryFVM(dm, cell, NULL, x, NULL) >> ablate::utilities::PetscUtilities::checkError;
+                  err = PetscMax(err, PetscAbsReal(val - RBFTestFixture_Function(x, dx[i], dy[i], dz[i])));
+              }
 
-            EXPECT_LT(err, maxError) << "RBF: " << rbfList[j]->type() << ", dx: " << dx[i] << ", dy:" << dy[i] << ", dz: " << dz[i] << " Error: " << err;
-        }
-    }
-}
+              EXPECT_LT(err, maxError) << "RBF: " << rbfList[j]->type() << ", dx: " << dx[i] << ", dy:" << dy[i] << ", dz: " << dz[i] << " Error: " << err;
+          }
+      }
+  }
 
-rbfList[0]->RestoreRange(cellRange);
+  subDomain->RestoreRange(cellRange);
 
-//      ablate::environment::RunEnvironment::Finalize();
-}
+  //      ablate::environment::RunEnvironment::Finalize();
 
-EndWithMPI
+  EndWithMPI
 }
 
 // This tests both the absolute error and the convergence for two data points
@@ -687,68 +685,64 @@ class RBFTestFixture_Interpolation : public testingResources::MpiTestFixture, pu
 };
 
 // This tests single-cell derivative functions.
-TEST_P(RBFTestFixture_Interpolation, CheckInterpolationFunctions){StartWithMPI
+TEST_P(RBFTestFixture_Interpolation, CheckInterpolationFunctions){
+  StartWithMPI
+  // initialize petsc and mpi
+  environment::RunEnvironment::Initialize(argc, argv);
+  utilities::PetscUtilities::Initialize();
+  auto testingParam = GetParam();
+  std::vector<std::shared_ptr<domain::rbf::RBF>> rbfList = testingParam.rbfList;
+  std::vector<std::vector<PetscReal>> x = testingParam.x;
 
-                                                                  {// initialize petsc and mpi
-                                                                   environment::RunEnvironment::Initialize(argc, argv);
-utilities::PetscUtilities::Initialize();
-auto testingParam = GetParam();
-std::vector<std::shared_ptr<domain::rbf::RBF>> rbfList = testingParam.rbfList;
-std::vector<std::vector<PetscReal>> x = testingParam.x;
+  //             Make the field
+  std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptor = {
+      std::make_shared<ablate::domain::FieldDescription>("fieldA", "", ablate::domain::FieldDescription::ONECOMPONENT, ablate::domain::FieldLocation::AUX, ablate::domain::FieldType::FVM)};
 
-//             Make the field
-std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptor = {
-    std::make_shared<ablate::domain::FieldDescription>("fieldA", "", ablate::domain::FieldDescription::ONECOMPONENT, ablate::domain::FieldLocation::AUX, ablate::domain::FieldType::FVM)};
+  //             Create the mesh
+  //      Note that using -dm_view :mesh.tex:ascii_latex -dm_plex_view_scale 10 -dm_plex_view_numbers_depth 1,0,1 will create a mesh, changing numbers_depth as appropriate
+  auto mesh = std::make_shared<domain::BoxMesh>("mesh", fieldDescriptor, std::vector<std::shared_ptr<domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(3)},
+                                                testingParam.meshFaces, testingParam.meshStart, testingParam.meshEnd, std::vector<std::string>{}, testingParam.meshSimplex);
 
-//             Create the mesh
-//      Note that using -dm_view :mesh.tex:ascii_latex -dm_plex_view_scale 10 -dm_plex_view_numbers_depth 1,0,1 will create a mesh, changing numbers_depth as appropriate
-auto mesh = std::make_shared<domain::BoxMesh>("mesh", fieldDescriptor, std::vector<std::shared_ptr<domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(3)},
-                                              testingParam.meshFaces, testingParam.meshStart, testingParam.meshEnd, std::vector<std::string>{}, testingParam.meshSimplex);
+  mesh->InitializeSubDomains();
 
-mesh->InitializeSubDomains();
+  std::shared_ptr<ablate::domain::SubDomain> subDomain = mesh->GetSubDomain(domain::Region::ENTIREDOMAIN);
 
-std::shared_ptr<ablate::domain::SubDomain> subDomain = mesh->GetSubDomain(domain::Region::ENTIREDOMAIN);
+  // The field containing the data
+  const ablate::domain::Field *field = &(subDomain->GetField("fieldA"));
 
-// The field containing the data
-const ablate::domain::Field *field = &(subDomain->GetField("fieldA"));
+  ablate::solver::Range cellRange;
+  subDomain->GetCellRange(nullptr, cellRange);
+  for (long int j = 0; j < rbfList.size(); ++j) {
+      rbfList[j]->Setup(subDomain);  // This causes issues (I think)
 
-ablate::solver::Range cellRange;
-for (long int j = 0; j < rbfList.size(); ++j) {
-    rbfList[j]->Setup(subDomain);  // This causes issues (I think)
+      //         Initialize
+      rbfList[j]->Initialize(cellRange);
+  }
 
-    //         Initialize
-    rbfList[j]->GetCellRange(subDomain, nullptr, cellRange);
-    rbfList[j]->Initialize(cellRange);
-    rbfList[j]->RestoreRange(cellRange);
-}
+  // Now set the data using the first RBF. All will use the same data
+  RBFTestFixture_SetData(cellRange, field, subDomain);
 
-// Now set the data using the first RBF. All will use the same data
-rbfList[0]->GetCellRange(subDomain, nullptr, cellRange);
-RBFTestFixture_SetData(cellRange, field, subDomain);
+  std::vector<PetscInt> dx = testingParam.dx, dy = testingParam.dy, dz = testingParam.dz;
+  PetscInt c, cell;
+  PetscReal maxError;
+  PetscReal err, val, truth;
+  DM dm = subDomain->GetDM();
 
-std::vector<PetscInt> dx = testingParam.dx, dy = testingParam.dy, dz = testingParam.dz;
-PetscInt c, cell;
-PetscReal maxError;
-PetscReal err, val, truth;
-DM dm = subDomain->GetDM();
+  for (int i = 0; i < x.size(); ++i) {  // Iterate over each of the requested locations
+      maxError = testingParam.maxError[i];
 
-for (int i = 0; i < x.size(); ++i) {  // Iterate over each of the requested locations
-    maxError = testingParam.maxError[i];
+      for (long int j = 0; j < rbfList.size(); ++j) {  // Check each RBF
+          truth = RBFTestFixture_Function(x[i].data(), 0, 0, 0);
+          val = rbfList[j]->Interpolate(field, x[i].data());
+          err = PetscAbsReal(val - truth);
+          EXPECT_LT(err, maxError) << "RBF: " << rbfList[j]->type() << " Error: " << err;
+      }
+  }
 
-    for (long int j = 0; j < rbfList.size(); ++j) {  // Check each RBF
-        truth = RBFTestFixture_Function(x[i].data(), 0, 0, 0);
-        val = rbfList[j]->Interpolate(field, x[i].data());
-        err = PetscAbsReal(val - truth);
-        EXPECT_LT(err, maxError) << "RBF: " << rbfList[j]->type() << " Error: " << err;
-    }
-}
+  subDomain->RestoreRange(cellRange);
 
-rbfList[0]->RestoreRange(cellRange);
-
-//      ablate::environment::RunEnvironment::Finalize();
-}
-
-EndWithMPI
+ ablate::environment::RunEnvironment::Finalize();
+ EndWithMPI
 }
 
 // This tests both the absolute error and the convergene for two data points

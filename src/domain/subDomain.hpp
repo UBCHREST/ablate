@@ -10,6 +10,7 @@
 #include "fieldDescription.hpp"
 #include "io/serializable.hpp"
 #include "utilities/petscUtilities.hpp"
+#include "solver/range.hpp" // This will need to be moved here once all GetRange calls are moved to subDomain calls.
 
 namespace ablate::domain {
 
@@ -393,6 +394,30 @@ class SubDomain : public io::Serializable {
      * @param inDM
      */
     void CreateEmptySubDM(DM* inDM, std::shared_ptr<domain::Region> region = {});
+
+    /**
+     * Return the range of DMPlex objects at a given depth in the subDomain and region.
+     * @param region
+     * @param depth
+     * @param range
+    */
+    void GetRange(const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::solver::Range &range);
+
+
+    /**
+     * Return the range of cells in the subDomain and region.
+     * @param region
+     * @param cellRange
+    */
+    void RBF::GetCellRange(const std::shared_ptr<ablate::domain::Region> region, ablate::solver::Range &cellRange);
+
+    /**
+     * Restore the range of cells in the subDomain and region.
+     * @param cellRange
+    */
+    void RBF::RestoreRange(ablate::solver::Range &cellRange);
+
+
 };
 
 }  // namespace ablate::domain

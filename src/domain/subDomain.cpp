@@ -749,3 +749,55 @@ std::vector<ablate::domain::Field> ablate::domain::SubDomain::GetFields(ablate::
 
     return taggedFields;
 }
+
+
+void ablate::domain::SubDomain::GetRange(const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::solver::Range &range) {
+    // Start out getting all the points
+    IS allPointIS;
+    DMGetStratumIS(subDomain->GetDM(), "dim", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
+    if (!allPointIS) {
+        DMGetStratumIS(subDomain->GetDM(), "depth", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
+    }
+
+    // If there is a label for this solver, get only the parts of the mesh that here
+    if (region) {
+        DMLabel label;
+        DMGetLabel(subDomain->GetDM(), region->GetName().c_str(), &label);
+
+        IS labelIS;
+        DMLabelGetStratumIS(label, region->GetValue(), &labelIS) >> utilities::PetscUtilities::checkError;
+        ISIntersect_Caching_Internal(allPointIS, labelIS, &range.is) >> utilities::PetscUtilities::checkError;
+        ISDestroy(&labelIS) >> utilities::PetscUtilities::checkError;
+    } else {
+        PetscObjectReference((PetscObject)allPointIS) >> utilities::PetscUtilities::checkError;
+        range.is = allPointIS;
+    }
+
+    // Get the point range
+    if (range.is == nullptr) {
+        // There are no points in this region, so skip
+        range.start = 0;
+        range.end = 0;
+        range.points = nullptr;
+    } else {
+        // Get the range
+        ISGetPointRange(range.is, &range.start, &range.end, &range.points) >> utilities::PetscUtilities::checkError;
+    }
+
+    // Clean up the allCellIS
+    ISDestroy(&allPointIS) >> utilities::PetscUtilities::checkError;
+}
+
+void ablate::domain::SubDomain::GetCellRange(const std::shared_ptr<ablate::domain::Region> region, ablate::solver::Range &cellRange) {
+    // Start out getting all the cells
+    PetscInt depth;
+    DMPlexGetDepth(subDomain->GetDM(), &depth) >> utilities::PetscUtilities::checkError;
+    RBF::GetRange(region, depth, cellRange);
+}
+
+void ablate::domain::SubDomain::RestoreRange(ablate::solver::Range &range) {
+    if (range.is) {
+        ISRestorePointRange(range.is, &range.start, &range.end, &range.points) >> utilities::PetscUtilities::checkError;
+        ISDestroy(&range.is) >> utilities::PetscUtilities::checkError;
+    }
+}
