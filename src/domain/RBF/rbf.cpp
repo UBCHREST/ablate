@@ -241,10 +241,12 @@ void RBF::Matrix(const PetscInt c) {
 
 /************ Begin Derivative Code **********************/
 
-// Set the derivatives to use
-// numDer - Number of derivatives to set
-// dx, dy, dz - Lists of length numDer indicating the derivatives
-// useVertices - Use common vertices when determining neighbors. If false then use common edges.
+/**
+ * Set the derivatives to use
+ * numDer - Number of derivatives to set
+ * dx, dy, dz - Lists of length numDer indicating the derivatives
+ * useVertices - Use common vertices when determining neighbors. If false then use common edges.
+ */
 void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVertices) {
     if (numDer > 0) {
         RBF::useVertices = useVertices;
@@ -261,7 +263,9 @@ void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt
     }
 }
 
-// Set derivatives, defaulting to using vertices
+/**
+ * Set derivatives, defaulting to using vertices
+ */
 void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]) { RBF::SetDerivatives(numDer, dx, dy, dz, PETSC_TRUE); }
 
 // Compute the RBF weights at the cell center of p using a cell-list
@@ -373,7 +377,9 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
     MatDestroy(&B) >> utilities::PetscUtilities::checkError;
 }
 
-// Setup all derivative stencils for the entire subDomain
+/*
+ * Setup all derivative stencils for the entire subDomain
+ */
 void RBF::SetupDerivativeStencils() {
     const PetscInt cStart = RBF::cStart, cEnd = RBF::cEnd;
 
@@ -382,10 +388,12 @@ void RBF::SetupDerivativeStencils() {
     }
 }
 
-// Return the requested derivative
-// field - The field to take the derivative of
-// c - The location in ablate::solver::Range
-// dx, dy, dz - The derivatives
+/**
+ * Return the requested derivative
+ * field - The field to take the derivative of
+ * c - The location in ablate::solver::Range
+ * dx, dy, dz - The derivatives
+ */
 PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz) {
     PetscMPIInt size;
     PetscReal *wt = nullptr;
@@ -437,9 +445,11 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt 
 
 /************ Begin Interpolation Code **********************/
 
-// Return the interpolation of a field at a given location
-// field - The field to interpolate
-// xEval - The location where to perform the interpolatoin
+/**
+ * Return the interpolation of a field at a given location
+ * field - The field to interpolate
+ * xEval - The location where to perform the interpolatoin
+ */
 PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]) {
     PetscMPIInt size;
     PetscInt i, c, nCells, *lst;

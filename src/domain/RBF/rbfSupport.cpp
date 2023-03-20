@@ -1,16 +1,18 @@
 #include "rbfSupport.hpp"
 #include <petsc/private/vecimpl.h>
 
-// Return the cell containing the location xyz
-// Inputs:
-//  dm - The mesh
-//  xyz - Array containing the point
-//
-// Outputs:
-//  cell - The cell containing xyz. Will return -1 if this point is not in the local part of the DM
-//
-// Note: This is adapted from DMInterpolationSetUp. If the cell containing the point is a ghost cell then this will return -1.
-//        If the point is in the upper corner of the domain it will not be able to find the containing cell.
+/**
+ * Return the cell containing the location xyz
+ * Inputs:
+ *  dm - The mesh
+ *  xyz - Array containing the point
+ *
+ * Outputs:
+ *  cell - The cell containing xyz. Will return -1 if this point is not in the local part of the DM
+ *
+ * Note: This is adapted from DMInterpolationSetUp. If the cell containing the point is a ghost cell then this will return -1.
+ *        If the point is in the upper corner of the domain it will not be able to find the containing cell.
+ */
 PetscErrorCode DMPlexGetContainingCell(DM dm, PetscScalar *xyz, PetscInt *cell) {
     PetscSF cellSF = NULL;
     Vec pointVec;
@@ -38,17 +40,19 @@ PetscErrorCode DMPlexGetContainingCell(DM dm, PetscScalar *xyz, PetscInt *cell) 
     PetscFunctionReturn(0);
 }
 
-// Return all cells which share an vertex or edge/face with a center cell
-// Inputs:
-//    dm - The mesh
-//    x0 - The location of the true center cell
-//    p - The cell to get the neighboors of
-//    maxDist - Maximum distance from p to consider adding
-//    useVertices - Should we include cells which share a vertex (TRUE) or an edge/face (FALSE)
-//
-// Outputs:
-//    nCells - Number of cells found
-//    cells - The IDs of the cells found.
+/**
+ * Return all cells which share an vertex or edge/face with a center cell
+ * Inputs:
+ *    dm - The mesh
+ *    x0 - The location of the true center cell
+ *    p - The cell to get the neighboors of
+ *    maxDist - Maximum distance from p to consider adding
+ *    useVertices - Should we include cells which share a vertex (TRUE) or an edge/face (FALSE)
+ *
+ * Outputs:
+ *    nCells - Number of cells found
+ *    cells - The IDs of the cells found.
+ */
 PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscReal x0[3], PetscInt p, PetscReal maxDist, PetscBool useVertices, PetscInt *nCells, PetscInt *cells[]) {
     PetscInt cStart, cEnd, vStart, vEnd;
     PetscInt cl, nClosure, *closure = NULL;
@@ -105,7 +109,18 @@ PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscReal x0[3], PetscInt 
     PetscFunctionReturn(0);
 }
 
-// Return all values in sorted array a that are NOT in sorted array b. This is done in-place on array a.
+/**
+ * Return all values in sorted array a that are NOT in sorted array b. This is done in-place on array a.
+ * Inputs:
+ *    nb - Size of sorted array b[]
+ *    b - Array of integers
+ *    na - Size of sorted array a[]
+ *    a - Array or integers
+ *
+ * Outputs:
+ *    na - Number of integers in b but not in a
+ *    a - All integers in b but not in a
+ */
 PetscErrorCode PetscSortedArrayComplement(const PetscInt nb, const PetscInt b[], PetscInt *na, PetscInt a[]) {
     PetscFunctionBegin;
 
@@ -135,15 +150,17 @@ PetscErrorCode PetscSortedArrayComplement(const PetscInt nb, const PetscInt b[],
     PetscFunctionReturn(0);
 }
 
-// Return the list of neighboring cells to cell p using a combination of number of levels and maximum distance
-// dm - The mesh
-// maxLevels - Number of neighboring cells to check
-// maxDist - Maximum distance to include
-// numberCells - The number of cells to return.
-// nCells - Number of neighboring cells
-// cells - The list of neighboring cell IDs
-//
-// Note: The intended use is to use either maxLevels OR maxDist OR minNumberCells. Right now a check isn't done on only selecting one, but that might be added in the future.
+/**
+ * Return the list of neighboring cells to cell p using a combination of number of levels and maximum distance
+ * dm - The mesh
+ * maxLevels - Number of neighboring cells to check
+ * maxDist - Maximum distance to include
+ * numberCells - The number of cells to return.
+ * nCells - Number of neighboring cells
+ * cells - The list of neighboring cell IDs
+ *
+ * Note: The intended use is to use either maxLevels OR maxDist OR minNumberCells. Right now a check isn't done on only selecting one, but that might be added in the future.
+ */
 PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useVertices, PetscInt *nCells, PetscInt *cells[]) {
     const PetscInt maxLevelListSize = 10000;
     const PetscInt maxListSize = 100000;
