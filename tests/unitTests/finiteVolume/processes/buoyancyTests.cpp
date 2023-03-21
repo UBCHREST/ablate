@@ -19,8 +19,6 @@ class BuoyancyTestFixture : public testingResources::PetscTestFixture, public ::
 
 TEST_P(BuoyancyTestFixture, ShouldComputeCorrectFlux) {
     // arrange
-    const auto& params = GetParam();
-
     // create a mock eos
     auto mockEOS = std::make_shared<ablateTesting::eos::MockEOS>();
     EXPECT_CALL(*mockEOS, GetSpeciesVariables).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(ablate::utilities::VectorUtilities::Empty<std::string>));
@@ -59,7 +57,6 @@ TEST_P(BuoyancyTestFixture, ShouldComputeCorrectFlux) {
     // assert
     // March over each cell
     PetscInt cStart, cEnd;
-    const PetscInt* cells = nullptr;
     DMPlexGetSimplexOrBoxCells(fvObject->GetSubDomain().GetDM(), 0, &cStart, &cEnd);
     // get access to the array
     const PetscReal* locFArray;
@@ -85,7 +82,7 @@ TEST_P(BuoyancyTestFixture, ShouldComputeCorrectFlux) {
         std::vector<double> expectedSource(5);
         GetParam().expectedSourceFunction->Eval(centroid, 3, 0.0, expectedSource);
 
-        for (PetscInt d = 0; d < expectedSource.size(); d++) {
+        for (std::size_t d = 0; d < expectedSource.size(); d++) {
             ASSERT_NEAR(data[d], expectedSource[d], 1E-8) << "Expected buoyancy source is incorrect for component " << d << " in cell " << c;
         }
     }

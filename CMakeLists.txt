@@ -1,22 +1,10 @@
 cmake_minimum_required(VERSION 3.18.4)
-find_package(PkgConfig REQUIRED)
 
-# Check if a C compiler is explicitly stated
-if (NOT DEFINED CMAKE_C_COMPILER)
-    # Set the compilers based upon the PETSc package
-    pkg_get_variable(PETSC_C_COMPILER PETSc ccompiler)
-    set(CMAKE_C_COMPILER ${PETSC_C_COMPILER})
-endif ()
-
-# Check if a CXX compiler is explicitly stated
-if (NOT DEFINED CMAKE_CXX_COMPILER)
-    # Set the compilers based upon the PETSc package
-    pkg_get_variable(PETSC_CXX_COMPILER PETSc cxxcompiler)
-    set(CMAKE_CXX_COMPILER ${PETSC_CXX_COMPILER})
-endif ()
+# configure cmake to use the same compilers/flags as petsc
+include(config/petscCompilers.cmake)
 
 # Set the project details
-project(ablateLibrary VERSION 0.11.00)
+project(ablateLibrary VERSION 0.11.1)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED IMPORTED_TARGET GLOBAL PETSc)
@@ -79,6 +67,7 @@ target_link_libraries(ablateLibrary
 set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
 set_property(TARGET ablateLibrary PROPERTY CMAKE_CXX_STANDARD_REQUIRED ON)
 set_property(TARGET ablateLibrary PROPERTY CXX_STANDARD 17)
+set_property(TARGET ablateLibrary PROPERTY CXX_VISIBILITY_PRESET default)
 
 # Setup and configure testing
 if (BUILD_TESTING)

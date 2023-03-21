@@ -129,9 +129,6 @@ TEST_P(BoundarySolverFluxTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
         PetscInt totalDim;
         PetscDSGetTotalDimension(boundarySolver->GetSubDomain().GetDiscreteSystem(), &totalDim) >> utilities::PetscUtilities::checkError;
 
-        // determine the cell size
-        PetscReal stencilRadius = .5;
-
         // for each
         boundarySolver->RegisterFunction(
             [](PetscInt dim,
