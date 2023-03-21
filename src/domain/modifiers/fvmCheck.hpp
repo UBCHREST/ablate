@@ -5,7 +5,7 @@
 #include <memory>
 #include "mathFunctions/mathFunction.hpp"
 #include "modifier.hpp"
-#include "solver/range.hpp"
+#include "domain/range.hpp"
 
 namespace ablate::domain::modifiers {
 
@@ -22,20 +22,6 @@ class FvmCheck : public Modifier {
 
     //! The number of expected nodes for each cell
     const PetscInt expectedNodeCount;
-
-   private:
-    /**
-     * modified version of the get range call
-     * @param dm
-     * @param depth
-     * @param range
-     */
-    void GetRange(DM dm, PetscInt depth, ablate::solver::Range &range) const;
-
-    /**
-     * modified version of the restore range call
-     */
-    static void RestoreRange(DM dm, ablate::solver::Range &range);
 
    public:
     /**

@@ -40,7 +40,7 @@ ablate::finiteVolume::CellInterpolant::~CellInterpolant() {
 }
 
 void ablate::finiteVolume::CellInterpolant::ComputeRHS(PetscReal time, Vec locXVec, Vec locAuxVec, Vec locFVec, const std::shared_ptr<domain::Region>& solverRegion,
-                                                       std::vector<CellInterpolant::DiscontinuousFluxFunctionDescription>& rhsFunctions, const solver::Range& faceRange, const solver::Range& cellRange,
+                                                       std::vector<CellInterpolant::DiscontinuousFluxFunctionDescription>& rhsFunctions, const ablate::domain::Range& faceRange, const ablate::domain::Range& cellRange,
                                                        Vec cellGeomVec, Vec faceGeomVec) {
     auto dm = subDomain->GetDM();
     auto dmAux = subDomain->GetAuxDM();
@@ -140,7 +140,7 @@ void ablate::finiteVolume::CellInterpolant::ComputeRHS(PetscReal time, Vec locXV
 }
 
 void ablate::finiteVolume::CellInterpolant::ComputeRHS(PetscReal time, Vec locXVec, Vec locAuxVec, Vec locFVec, const std::shared_ptr<domain::Region>& solverRegion,
-                                                       std::vector<CellInterpolant::PointFunctionDescription>& rhsFunctions, const solver::Range& cellRange, Vec cellGeomVec) {
+                                                       std::vector<CellInterpolant::PointFunctionDescription>& rhsFunctions, const ablate::domain::Range& cellRange, Vec cellGeomVec) {
     auto dm = subDomain->GetDM();
     auto dmAux = subDomain->GetAuxDM();
 
@@ -326,7 +326,7 @@ static PetscErrorCode DMPlexApplyLimiter_Internal(DM dm, DM dmCell, PetscLimiter
 }
 
 void ablate::finiteVolume::CellInterpolant::ComputeFieldGradients(const domain::Field& field, Vec xLocalVec, Vec& gradLocVec, DM& dmGrad, Vec cellGeomVec, Vec faceGeomVec,
-                                                                  const solver::Range& faceRange, const solver::Range& cellRange) {
+                                                                  const ablate::domain::Range& faceRange, const ablate::domain::Range& cellRange) {
     // get the FVM petsc field associated with this field
     auto fvm = (PetscFV)subDomain->GetPetscFieldObject(field);
     auto dm = subDomain->GetFieldDM(field);
@@ -480,8 +480,8 @@ void ablate::finiteVolume::CellInterpolant::ComputeFluxSourceTerms(DM dm, PetscD
                                                                    const PetscScalar* auxArray, DM faceDM, const PetscScalar* faceGeomArray, DM cellDM, const PetscScalar* cellGeomArray,
                                                                    std::vector<DM>& dmGrads, std::vector<const PetscScalar*>& locGradArrays, PetscScalar* locFArray,
                                                                    const std::shared_ptr<domain::Region>& solverRegion,
-                                                                   std::vector<CellInterpolant::DiscontinuousFluxFunctionDescription>& rhsFunctions, const solver::Range& faceRange,
-                                                                   const solver::Range& cellRange) {
+                                                                   std::vector<CellInterpolant::DiscontinuousFluxFunctionDescription>& rhsFunctions, const ablate::domain::Range& faceRange,
+                                                                   const ablate::domain::Range& cellRange) {
     PetscInt dim = subDomain->GetDimensions();
 
     // Size up the work arrays (uL, uR, gradL, gradR, auxL, auxR, gradAuxL, gradAuxR), these are only sized for one face at a time

@@ -391,7 +391,7 @@ void RBF::SetupDerivativeStencils() {
 /**
  * Return the requested derivative
  * field - The field to take the derivative of
- * c - The location in ablate::solver::Range
+ * c - The location in ablate::domain::Range
  * dx, dy, dz - The derivatives
  */
 PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz) {
@@ -656,7 +656,7 @@ void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) {
     }
 }
 
-void RBF::Initialize(solver::Range cellRange) {
+void RBF::Initialize(ablate::domain::Range cellRange) {
     // If this is called due to a grid change then release the old memory. In this case cEnd - cStart will be greater than zero.
     if ((RBF::cEnd - RBF::cStart) > 0) {
         for (PetscInt c = RBF::cStart; c < RBF::cEnd; ++c) {

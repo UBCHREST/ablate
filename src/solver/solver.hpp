@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 #include "io/serializable.hpp"
-#include "range.hpp"
+#include "domain/range.hpp"
 
 namespace ablate::solver {
 
@@ -106,40 +106,33 @@ class Solver {
     inline void RegisterPostEvaluate(const std::function<void(TS ts, Solver&)>& postEval) { this->postEvaluateFunctions.push_back(postEval); }
 
     /**
-     * Get the cellIS and range over valid cells in this region
-     * @param cellIS
-     * @param pStart
-     * @param pEnd
-     * @param points
+     * Get the range of cells defined over the region for this solver.
+     * @param cellRange
      */
-    void GetCellRange(Range& cellRange) const;
+    void GetCellRange(ablate::domain::Range& cellRange) const { ablate::domain::GetCellRange(this->subDomain->GetDM(), this->GetRegion(), cellRange); }
+;
 
     /**
-     * Get the faceIS and range over valid faces in this region
-     * @param cellIS
-     * @param pStart
-     * @param pEnd
-     * @param points
+     * Get the range of faces/edges defined over the region for this solver.
+     * @param faceRange
      */
-    void GetFaceRange(Range& faceRange) const;
+    void GetFaceRange(ablate::domain::Range& faceRange) const { ablate::domain::GetFaceRange(this->subDomain->GetDM(), this->GetRegion(), faceRange); }
 
     /**
-     * Get the valid range over specified depth
-     * @param cellIS
-     * @param pStart
-     * @param pEnd
-     * @param points
+     * Get the range of DMPlex objects at a particular depth defined over the region for this solver.
+     * @param depth
+     * @param range
      */
-    void GetRange(PetscInt depth, Range& range) const;
+    void GetRange(PetscInt depth, ablate::domain::Range& range) const { ablate::domain::GetRange(this->subDomain->GetDM(), this->GetRegion(), depth, range); }
 
     /**
-     * Restores the is and range
+     * Restores the is and range - This needs to be removed and replaced with subDomain->RestoreRange
      * @param cellIS
      * @param pStart
      * @param pEnd
      * @param points
      */
-    void RestoreRange(Range& range) const;
+    void RestoreRange(ablate::domain::Range& range) const { ablate::domain::RestoreRange(range); }
 };
 
 }  // namespace ablate::solver

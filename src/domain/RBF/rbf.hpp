@@ -3,7 +3,7 @@
 #include <petsc.h>
 #include "domain/subDomain.hpp"
 #include "rbfSupport.hpp"
-#include "solver/solver.hpp"  // For solver::Range
+#include "domain/range.hpp"  // For domain::Range
 
 #define __RBF_DEFAULT_POLYORDER 3
 
@@ -53,7 +53,7 @@ class RBF {
     virtual ~RBF();
 
     /** SubDomain Register and Setup **/
-    void Initialize(solver::Range cellRange);
+    void Initialize(ablate::domain::Range cellRange);
     void Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain);
 
     // Derivative stuff

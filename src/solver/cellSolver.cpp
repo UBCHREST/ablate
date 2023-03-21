@@ -45,7 +45,7 @@ void ablate::solver::CellSolver::UpdateAuxFields(PetscReal time, Vec locXVec, Ve
     DMConvert(GetSubDomain().GetDM(), DMPLEX, &plex) >> utilities::PetscUtilities::checkError;
 
     // Get the valid cell range over this region
-    solver::Range cellRange;
+    ablate::domain::Range cellRange;
     GetCellRange(cellRange);
 
     // Extract the cell geometry, and the dm that holds the information

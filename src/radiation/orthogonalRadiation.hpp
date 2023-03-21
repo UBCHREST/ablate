@@ -13,7 +13,7 @@ class OrthogonalRadiation : public ablate::radiation::SurfaceRadiation {
                         std::shared_ptr<ablate::monitors::logs::Log> = {});
     ~OrthogonalRadiation();
 
-    void Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) override;
+    void Setup(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain) override;
 };
 }  // namespace ablate::radiation
 

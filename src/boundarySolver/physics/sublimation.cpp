@@ -343,7 +343,7 @@ void ablate::boundarySolver::physics::Sublimation::UpdateSpecies(TS ts, ablate::
     VecGetArray(auxVec, &auxArray) >> utilities::PetscUtilities::checkError;
 
     // March over each cell in this domain
-    solver::Range cellRange;
+    ablate::domain::Range cellRange;
     solver.GetCellRange(cellRange);
     auto dim = solver.GetSubDomain().GetDimensions();
 

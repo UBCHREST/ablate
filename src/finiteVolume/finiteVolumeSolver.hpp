@@ -200,7 +200,7 @@ class FiniteVolumeSolver : public solver::CellSolver,
      * @param pEnd
      * @param points
      */
-    void GetCellRangeWithoutGhost(solver::Range& faceRange) const;
+    void GetCellRangeWithoutGhost(ablate::domain::Range& faceRange) const;
 
     /**
      * Returns first instance of process of type specifed

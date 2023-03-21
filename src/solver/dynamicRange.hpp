@@ -2,7 +2,7 @@
 #define ABLATELIBRARY_DYNAMICRANGE_HPP
 #include <vector>
 #include "petsc.h"
-#include "range.hpp"
+#include "domain/range.hpp"
 
 namespace ablate::solver {
 
@@ -15,7 +15,7 @@ class DynamicRange {
     std::vector<PetscInt> points;
 
     // the updated range object
-    Range range;
+    ablate::domain::Range range;
 
    public:
     /**
@@ -28,7 +28,7 @@ class DynamicRange {
      * Get the current range
      * @return
      */
-    inline const Range& GetRange() {
+    inline const ablate::domain::Range& GetRange() {
         range.points = points.data();
         range.start = 0;
         range.end = (PetscInt)points.size();

@@ -735,7 +735,7 @@ std::map<std::string, double> ablate::eos::TChemSoot::GetSpeciesMolecularMass() 
     return mw;
 }
 
-std::shared_ptr<ablate::eos::ChemistryModel::SourceCalculator> ablate::eos::TChemSoot::CreateSourceCalculator(const std::vector<domain::Field> &fields, const ablate::solver::Range &cellRange) {
+std::shared_ptr<ablate::eos::ChemistryModel::SourceCalculator> ablate::eos::TChemSoot::CreateSourceCalculator(const std::vector<domain::Field> &fields, const ablate::domain::Range &cellRange) {
     return std::make_shared<ablate::eos::tChemSoot::SourceCalculatorSoot>(fields, shared_from_this(), constraints, cellRange);
 }
 

@@ -2,7 +2,7 @@
 #define ABLATELIBRARY_REVERSERANGE_HPP
 #include <vector>
 #include "petsc.h"
-#include "range.hpp"
+#include "domain/range.hpp"
 namespace ablate::solver {
 
 /**
@@ -15,7 +15,7 @@ struct ReverseRange {
     std::vector<PetscInt> indices;
 
    public:
-    explicit ReverseRange(const Range& range) {
+    explicit ReverseRange(const ablate::domain::Range& range) {
         rangeStart = range.start;
         if (range.points && (range.start != range.end)) {
             // find the min/max point

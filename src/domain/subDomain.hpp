@@ -10,7 +10,6 @@
 #include "fieldDescription.hpp"
 #include "io/serializable.hpp"
 #include "utilities/petscUtilities.hpp"
-#include "solver/range.hpp" // This will need to be moved here once all GetRange calls are moved to subDomain calls.
 
 namespace ablate::domain {
 
@@ -401,7 +400,7 @@ class SubDomain : public io::Serializable {
      * @param depth
      * @param range
     */
-    void GetRange(const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::solver::Range &range);
+    void GetRange(const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::domain::Range &range) const { ablate::domain::GetRange( this->GetDM(), region, depth, range); }
 
 
     /**
@@ -409,13 +408,20 @@ class SubDomain : public io::Serializable {
      * @param region
      * @param cellRange
     */
-    void GetCellRange(const std::shared_ptr<ablate::domain::Region> region, ablate::solver::Range &cellRange);
+    void GetCellRange(const std::shared_ptr<ablate::domain::Region> region, ablate::domain::Range &cellRange) const { ablate::domain::GetCellRange( this->GetDM(), region, cellRange); }
+
+    /**
+     * Return the range of faces/edges in the subDomain and region.
+     * @param region
+     * @param cellRange
+    */
+    void GetFaceRange(const std::shared_ptr<ablate::domain::Region> region, ablate::domain::Range &faceRange) const { ablate::domain::GetFaceRange( this->GetDM(), region, faceRange); }
 
     /**
      * Restore the range of cells in the subDomain and region.
      * @param cellRange
     */
-    void RestoreRange(ablate::solver::Range &cellRange);
+    void RestoreRange(ablate::domain::Range &cellRange) const { ablate::domain::RestoreRange(cellRange); }
 
 
 };

@@ -17,7 +17,7 @@ class SurfaceRadiation : public ablate::radiation::Radiation {
                      std::shared_ptr<ablate::monitors::logs::Log> = {});
     ~SurfaceRadiation();
 
-    void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) override;
+    void Initialize(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain) override;
     /**
      * Computes the normal component for this ray
      * @param normal

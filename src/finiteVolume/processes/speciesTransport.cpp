@@ -360,7 +360,7 @@ void ablate::finiteVolume::processes::SpeciesTransport::NormalizeSpecies(TS ts, 
     VecGetArray(solVec, &solutionArray) >> utilities::PetscUtilities::checkError;
 
     // March over each cell in this domain
-    solver::Range cellRange;
+    ablate::domain::Range cellRange;
     solver.GetCellRange(cellRange);
 
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
@@ -423,7 +423,7 @@ double ablate::finiteVolume::processes::SpeciesTransport::ComputeViscousDiffusio
     DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius) >> utilities::PetscUtilities::checkError;
 
     // Get the valid cell range over this region
-    solver::Range cellRange;
+    ablate::domain::Range cellRange;
     flow.GetCellRangeWithoutGhost(cellRange);
 
     // Get the solution data

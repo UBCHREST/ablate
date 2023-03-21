@@ -20,7 +20,7 @@ ablate::radiation::Radiation::~Radiation() {
 }
 
 /** allows initialization after the subdomain and dm is established */
-void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) {
+void ablate::radiation::Radiation::Setup(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain) {
     dim = subDomain.GetDimensions();   //!< Number of dimensions already defined in the setup
     nTheta = (dim == 1) ? 1 : nTheta;  //!< Reduce the number of rays if one dimensional symmetry can be taken advantage of
 
@@ -159,7 +159,7 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
     EndEvent();
 }
 
-void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) {
+void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain) {
     StartEvent("Radiation::Initialize");
     DM faceDM;
     const PetscScalar* faceGeomArray;

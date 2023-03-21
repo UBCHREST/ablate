@@ -7,7 +7,7 @@
 #include "finiteVolume/fluxCalculator/fluxCalculator.hpp"
 #include "flowProcess.hpp"
 #include "process.hpp"
-#include "solver/range.hpp"
+#include "domain/range.hpp"
 #include "solver/solver.hpp"
 #include "twoPhaseEulerAdvection.hpp"
 
