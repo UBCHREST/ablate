@@ -276,9 +276,6 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeFieldFromProgressVariable) {
 
     ASSERT_TRUE(initializers.size() > 1) << "All ChemTab models should have at least two initializers";
 
-    // get the test params
-    const auto& params = GetParam();
-
     // March over each initializer
     for (const auto& [label, speciesMap] : initializers) {
         // compute yi scratch for tchem
