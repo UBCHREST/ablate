@@ -3,6 +3,8 @@
 #include <sstream>
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/petscUtilities.hpp"
+#include <petsc/private/dmpleximpl.h> // For ISIntersect_Caching_Internal, used in ablate::domain::SubDomain::GetRange
+
 
 ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const std::vector<std::shared_ptr<FieldDescription>>& allAuxFields)
     : domain(domainIn),
@@ -754,15 +756,16 @@ std::vector<ablate::domain::Field> ablate::domain::SubDomain::GetFields(ablate::
 void ablate::domain::SubDomain::GetRange(const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::solver::Range &range) {
     // Start out getting all the points
     IS allPointIS;
-    DMGetStratumIS(subDomain->GetDM(), "dim", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
+    DM dm = ablate::domain::SubDomain::GetDM();
+    DMGetStratumIS(dm, "dim", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
     if (!allPointIS) {
-        DMGetStratumIS(subDomain->GetDM(), "depth", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
+        DMGetStratumIS(dm, "depth", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
     }
 
     // If there is a label for this solver, get only the parts of the mesh that here
     if (region) {
         DMLabel label;
-        DMGetLabel(subDomain->GetDM(), region->GetName().c_str(), &label);
+        DMGetLabel(dm, region->GetName().c_str(), &label);
 
         IS labelIS;
         DMLabelGetStratumIS(label, region->GetValue(), &labelIS) >> utilities::PetscUtilities::checkError;
@@ -791,8 +794,8 @@ void ablate::domain::SubDomain::GetRange(const std::shared_ptr<ablate::domain::R
 void ablate::domain::SubDomain::GetCellRange(const std::shared_ptr<ablate::domain::Region> region, ablate::solver::Range &cellRange) {
     // Start out getting all the cells
     PetscInt depth;
-    DMPlexGetDepth(subDomain->GetDM(), &depth) >> utilities::PetscUtilities::checkError;
-    RBF::GetRange(region, depth, cellRange);
+    DMPlexGetDepth(ablate::domain::SubDomain::GetDM(), &depth) >> utilities::PetscUtilities::checkError;
+    ablate::domain::SubDomain::GetRange(region, depth, cellRange);
 }
 
 void ablate::domain::SubDomain::RestoreRange(ablate::solver::Range &range) {
@@ -801,3 +804,4 @@ void ablate::domain::SubDomain::RestoreRange(ablate::solver::Range &range) {
         ISDestroy(&range.is) >> utilities::PetscUtilities::checkError;
     }
 }
+

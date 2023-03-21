@@ -409,13 +409,13 @@ class SubDomain : public io::Serializable {
      * @param region
      * @param cellRange
     */
-    void RBF::GetCellRange(const std::shared_ptr<ablate::domain::Region> region, ablate::solver::Range &cellRange);
+    void GetCellRange(const std::shared_ptr<ablate::domain::Region> region, ablate::solver::Range &cellRange);
 
     /**
      * Restore the range of cells in the subDomain and region.
      * @param cellRange
     */
-    void RBF::RestoreRange(ablate::solver::Range &cellRange);
+    void RestoreRange(ablate::solver::Range &cellRange);
 
 
 };

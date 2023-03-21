@@ -66,11 +66,6 @@ class RBF {
     // Interpolation stuff
     PetscReal Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]);
 
-    // To make setup easier
-    void GetRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::solver::Range &range);
-    void GetCellRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, ablate::solver::Range &range);
-    void RestoreRange(ablate::solver::Range &range);
-
     // These will be overwritten in the derived classes
     virtual PetscReal RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) = 0;                          // Radial function evaluated using the distance between two points
     virtual PetscReal RBFDer(PetscInt dim, PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) = 0;  // Derivative of the radial function assuming that the center point is at zero.
