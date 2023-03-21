@@ -114,14 +114,14 @@ static void ExpandExpectedValues(std::vector<std::string>& expectedValues) {
         if (std::isdigit(expectedValues[e][0])) {
             // get the number of times to apply this
             auto split = expectedValues[e].find_first_not_of(" 0123456789");
-            auto numberOfTimes = std::stoi(expectedValues[e].substr(0, split));
+            int numberOfTimes = std::stoi(expectedValues[e].substr(0, split));
             auto expectedValue = expectedValues[e].substr(split);
 
             // Delete this component
             expectedValues.erase(expectedValues.begin() + e);
 
             // replace the values
-            for (std::size_t n = 0; n < numberOfTimes; n++) {
+            for (int n = 0; n < numberOfTimes; n++) {
                 expectedValues.insert(expectedValues.begin() + e, expectedValue);
             }
         }

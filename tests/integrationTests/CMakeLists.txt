@@ -1,5 +1,5 @@
 add_executable(integrationTests "")
-target_link_libraries(integrationTests PUBLIC GTest::gtest ablateLibrary testingResources)
+target_link_libraries(integrationTests PUBLIC GTest::gtest ablateLibrary testingResources PRIVATE chrestCompilerFlags)
 
 target_sources(integrationTests
         PRIVATE

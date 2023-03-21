@@ -5,3 +5,4 @@ target_sources(unitTests
         )
 
 add_subdirectory(modifiers)
+add_subdirectory(RBF)

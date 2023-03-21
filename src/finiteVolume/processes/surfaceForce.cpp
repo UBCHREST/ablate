@@ -57,7 +57,7 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
             // store coordinates of the vertex
             newStencil.stencilCoord[d] = xyz[d];
         }
-        newStencil.stencil[10];
+
         newStencil.gradientWeights = {0, 0, 0};
         newStencil.stencilSize = 0;
         // extract nodes of the vertex
