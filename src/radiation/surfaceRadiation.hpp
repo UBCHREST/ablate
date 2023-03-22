@@ -2,6 +2,7 @@
 #define ABLATELIBRARY_SURFACERADIATION_HPP
 
 #include "domain/range.hpp"
+#include "domain/reverseRange.hpp"
 #include "radiation.hpp"
 #include "utilities/constants.hpp"
 

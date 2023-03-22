@@ -419,9 +419,9 @@ class SubDomain : public io::Serializable {
 
     /**
      * Restore the range of cells in the subDomain and region.
-     * @param cellRange
+     * @param range
      */
-    void RestoreRange(ablate::domain::Range& cellRange) const { ablate::domain::RestoreRange(cellRange); }
+    void RestoreRange(ablate::domain::Range& range) const { ablate::domain::RestoreRange(range); }
 };
 
 }  // namespace ablate::domain

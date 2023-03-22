@@ -1,7 +1,7 @@
 #ifndef ABLATELIBRARY_VOLUMERADIATION_HPP
 #define ABLATELIBRARY_VOLUMERADIATION_HPP
 
-#include "domain/range.hpp"
+#include "domain/dynamicRange.hpp"
 #include "io/interval/interval.hpp"
 #include "radiation.hpp"
 

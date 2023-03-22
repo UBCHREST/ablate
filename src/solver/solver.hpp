@@ -109,20 +109,20 @@ class Solver {
      * Get the range of cells defined over the region for this solver.
      * @param cellRange
      */
-    void GetCellRange(ablate::domain::Range& cellRange) const { ablate::domain::GetCellRange(this->subDomain->GetDM(), this->GetRegion(), cellRange); };
+    void GetCellRange(ablate::domain::Range& cellRange) const { this->subDomain->GetCellRange(this->GetRegion(), cellRange); };
 
     /**
      * Get the range of faces/edges defined over the region for this solver.
      * @param faceRange
      */
-    void GetFaceRange(ablate::domain::Range& faceRange) const { ablate::domain::GetFaceRange(this->subDomain->GetDM(), this->GetRegion(), faceRange); }
+    void GetFaceRange(ablate::domain::Range& faceRange) const { this->subDomain->GetFaceRange(this->GetRegion(), faceRange); }
 
     /**
      * Get the range of DMPlex objects at a particular depth defined over the region for this solver.
      * @param depth
      * @param range
      */
-    void GetRange(PetscInt depth, ablate::domain::Range& range) const { ablate::domain::GetRange(this->subDomain->GetDM(), this->GetRegion(), depth, range); }
+    void GetRange(PetscInt depth, ablate::domain::Range& range) const { this->subDomain->GetRange(this->GetRegion(), depth, range); }
 
     /**
      * Restores the is and range - This needs to be removed and replaced with subDomain->RestoreRange
@@ -131,7 +131,7 @@ class Solver {
      * @param pEnd
      * @param points
      */
-    void RestoreRange(ablate::domain::Range& range) const { ablate::domain::RestoreRange(range); }
+    void RestoreRange(ablate::domain::Range& range) const { this->subDomain->RestoreRange(range); }
 };
 
 }  // namespace ablate::solver

@@ -1,6 +1,6 @@
 #include <petsc.h>
 #include <fstream>
-#include "domain/range.hpp"
+#include "domain/dynamicRange.hpp"
 #include "gtest/gtest.h"
 
 namespace ablateTesting::solver {
