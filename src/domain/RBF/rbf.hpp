@@ -1,9 +1,9 @@
 #ifndef ABLATELIBRARY_RBF_HPP
 #define ABLATELIBRARY_RBF_HPP
 #include <petsc.h>
+#include "domain/range.hpp"  // For domain::Range
 #include "domain/subDomain.hpp"
 #include "rbfSupport.hpp"
-#include "solver/solver.hpp"  // For solver::Range
 
 #define __RBF_DEFAULT_POLYORDER 3
 
@@ -14,7 +14,7 @@ class RBF {
     std::shared_ptr<ablate::domain::SubDomain> subDomain = nullptr;
 
     // Radial Basis Function type and parameters
-    const PetscInt polyOrder = 4;
+    const int polyOrder = 4;
 
     PetscInt nPoly = -1;                 // The number of polynomial components to include
     PetscInt minNumberCells = -1;        // Minimum number of cells needed to compute the RBF
@@ -48,12 +48,12 @@ class RBF {
     void Loc3D(PetscInt dim, PetscReal xIn[], PetscReal x[3]);
 
    public:
-    RBF(PetscInt polyOrder = 4, bool hasDerivatives = true, bool hasInterpolation = true);
+    RBF(int polyOrder = 4, bool hasDerivatives = true, bool hasInterpolation = true);
 
     virtual ~RBF();
 
     /** SubDomain Register and Setup **/
-    void Initialize(solver::Range cellRange);
+    void Initialize(ablate::domain::Range cellRange);
     void Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain);
 
     // Derivative stuff
@@ -65,11 +65,6 @@ class RBF {
 
     // Interpolation stuff
     PetscReal Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]);
-
-    // To make setup easier
-    void GetRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::solver::Range &range);
-    void GetCellRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, ablate::solver::Range &range);
-    void RestoreRange(ablate::solver::Range &range);
 
     // These will be overwritten in the derived classes
     virtual PetscReal RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) = 0;                          // Radial function evaluated using the distance between two points

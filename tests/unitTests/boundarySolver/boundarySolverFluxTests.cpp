@@ -129,9 +129,6 @@ TEST_P(BoundarySolverFluxTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
         PetscInt totalDim;
         PetscDSGetTotalDimension(boundarySolver->GetSubDomain().GetDiscreteSystem(), &totalDim) >> utilities::PetscUtilities::checkError;
 
-        // determine the cell size
-        PetscReal stencilRadius = .5;
-
         // for each
         boundarySolver->RegisterFunction(
             [](PetscInt dim,
@@ -274,7 +271,7 @@ TEST_P(BoundarySolverFluxTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
         VecGetArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
 
         // March over each cell
-        solver::Range boundaryCellRange;
+        ablate::domain::Range boundaryCellRange;
         boundarySolver->GetCellRange(boundaryCellRange);
         for (PetscInt c = boundaryCellRange.start; c < boundaryCellRange.end; ++c) {
             // if there is a cell array, use it, otherwise it is just c

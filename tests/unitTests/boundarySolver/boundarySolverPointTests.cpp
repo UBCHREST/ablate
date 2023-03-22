@@ -226,7 +226,7 @@ TEST_P(BoundarySolverPointTestFixture, ShouldComputeCorrectGradientsOnBoundary) 
         auto expectedAuxBGradient = ablate::mathFunctions::Create(GetParam().expectedAuxBGradient);
 
         // March over each cell
-        solver::Range cellRange;
+        ablate::domain::Range cellRange;
         boundarySolver->GetCellRange(cellRange);
         PetscInt cOffset = 0;  // Keep track of the cell offset
         for (PetscInt c = cellRange.start; c < cellRange.end; ++c, cOffset++) {

@@ -31,12 +31,12 @@ class ChemistryModel : public eos::EOS {
         /**
          * The compute source can be used as a prestep allowing the add source to be used at each stage without reevaluating
          */
-        virtual void ComputeSource(const solver::Range& cellRange, PetscReal time, PetscReal dt, Vec solution) = 0;
+        virtual void ComputeSource(const ablate::domain::Range& cellRange, PetscReal time, PetscReal dt, Vec solution) = 0;
 
         /**
          * Adds the source that was computed in the presetp to the supplied vector
          */
-        virtual void AddSource(const solver::Range& cellRange, Vec solution, Vec source) = 0;
+        virtual void AddSource(const ablate::domain::Range& cellRange, Vec solution, Vec source) = 0;
     };
 
     /**
@@ -44,7 +44,7 @@ class ChemistryModel : public eos::EOS {
      * @param cellRange
      * @return
      */
-    virtual std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) = 0;
+    virtual std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const ablate::domain::Range& cellRange) = 0;
 };
 }  // namespace ablate::eos
 

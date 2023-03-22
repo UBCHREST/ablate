@@ -1,10 +1,10 @@
 #include <numeric>
 #include "PetscTestFixture.hpp"
 #include "domain/boxMesh.hpp"
+#include "domain/range.hpp"
 #include "eos/tChemSoot.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
-#include "solver/dynamicRange.hpp"
 
 /*
  * Helper function to fill mass fraction
@@ -33,17 +33,6 @@ static void FillDensityMassFraction(const ablate::domain::Field& densityYiField,
             auto index = std::distance(species.begin(), it);
 
             conservedValues[index + densityYiField.offset] = density * value.second;
-        }
-    }
-}
-
-static void FillMassFraction(const std::vector<std::string>& species, const std::map<std::string, PetscReal>& yiIn, std::vector<PetscReal>& conservedValues) {
-    for (const auto& value : yiIn) {
-        // Get the index
-        auto it = std::find(species.begin(), species.end(), value.first);
-        if (it != species.end()) {
-            auto index = std::distance(species.begin(), it);
-            conservedValues[index] = value.second;
         }
     }
 }
@@ -928,7 +917,7 @@ TEST_P(TChemSootComputeSourceTestFixture, ShouldComputeCorrectSource) {
     VecZeroEntries(computedF) >> ablate::utilities::PetscUtilities::checkError;
 
     // ACT
-    ablate::solver::DynamicRange range;
+    ablate::domain::DynamicRange range;
     range.Add(0);
     auto sourceTermCalculator = eos->CreateSourceCalculator(domain->GetFields(), range.GetRange());
 

@@ -1,5 +1,5 @@
 add_executable(unitTests "")
-target_link_libraries(unitTests PUBLIC GTest::gtest GTest::gmock ablateLibrary testingResources CHREST::cppParserTestLibrary)
+target_link_libraries(unitTests PUBLIC GTest::gtest GTest::gmock ablateLibrary testingResources CHREST::cppParserTestLibrary PRIVATE chrestCompilerFlags)
 
 target_sources(unitTests
         PRIVATE

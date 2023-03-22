@@ -6,7 +6,8 @@ ablate::radiation::SurfaceRadiation::SurfaceRadiation(const std::string& solverI
 
 ablate::radiation::SurfaceRadiation::~SurfaceRadiation() {}
 
-void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) { /** Declare some information associated with the field declarations */
+void ablate::radiation::SurfaceRadiation::Initialize(const ablate::domain::Range& cellRange,
+                                                     ablate::domain::SubDomain& subDomain) { /** Declare some information associated with the field declarations */
     StartEvent("SurfaceRadiation::Initialize");
     PetscReal* coord;
     PetscInt* index;                    //!< Pointer to the coordinate field information
@@ -54,7 +55,7 @@ void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRa
     ablate::radiation::Radiation::Initialize(cellRange, subDomain);
 
     // set up the reverse lookup for faces
-    indexLookup = solver::ReverseRange(cellRange);
+    indexLookup = ablate::domain::ReverseRange(cellRange);
 }
 
 PetscReal ablate::radiation::SurfaceRadiation::SurfaceComponent(const PetscReal normal[], PetscInt iCell, PetscInt nphi, PetscInt ntheta) {

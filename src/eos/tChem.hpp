@@ -123,7 +123,7 @@ class TChem : public TChemBase, public std::enable_shared_from_this<ablate::eos:
      * @param cellRange
      * @return
      */
-    std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override;
+    std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const ablate::domain::Range& cellRange) override;
 
    protected:
     /**

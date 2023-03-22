@@ -4,7 +4,7 @@
 using namespace ablate::domain::rbf;
 
 /************ Begin Polyharmonic Spline Derived Class **********************/
-HYBRID::HYBRID(PetscInt p, std::vector<double> weights, std::vector<std::shared_ptr<RBF>> rbfList, bool doesNotHaveDerivatives, bool doesNotHaveInterpolation)
+HYBRID::HYBRID(int p, std::vector<double> weights, std::vector<std::shared_ptr<RBF>> rbfList, bool doesNotHaveDerivatives, bool doesNotHaveInterpolation)
     : RBF(p, !doesNotHaveDerivatives, !doesNotHaveInterpolation), weights(weights), rbfList(rbfList){};
 
 PetscReal HYBRID::RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) {
@@ -27,7 +27,7 @@ PetscReal HYBRID::RBFDer(PetscInt dim, PetscReal xIn[], PetscInt dx, PetscInt dy
 
 #include "registrar.hpp"
 REGISTER(ablate::domain::rbf::RBF, ablate::domain::rbf::HYBRID, "Radial Basis Function",
-         OPT(PetscInt, "polyOrder", "Order of the augmenting RBF polynomial. Must be >= dim. Any value <dim will result in a polyOrder of 4."),
+         OPT(int, "polyOrder", "Order of the augmenting RBF polynomial. Must be >= dim. Any value <dim will result in a polyOrder of 4."),
          ARG(std::vector<double>, "weights", "The scale to apply to each sub-RBF. This must match the order in which they are defined."),
          ARG(std::vector<ablate::domain::rbf::RBF>, "rbfList", "List of RBF kernels to use."), OPT(bool, "doesNotHaveDerivatives", "Compute derivative information. Default is false."),
          OPT(bool, "doesNotHaveInterpolation", "Compute interpolation information. Default is false."));

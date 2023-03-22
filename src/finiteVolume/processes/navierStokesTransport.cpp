@@ -217,7 +217,7 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeCflTimeSte
     DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius) >> utilities::PetscUtilities::checkError;
 
     // Get the valid cell range over this region
-    solver::Range cellRange;
+    ablate::domain::Range cellRange;
     flow.GetCellRangeWithoutGhost(cellRange);
 
     const PetscScalar* x;
@@ -287,7 +287,7 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeConduction
     DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius) >> utilities::PetscUtilities::checkError;
 
     // Get the valid cell range over this region
-    solver::Range cellRange;
+    ablate::domain::Range cellRange;
     flow.GetCellRangeWithoutGhost(cellRange);
 
     // Get the solution data
@@ -366,7 +366,7 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeViscousDif
     DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius) >> utilities::PetscUtilities::checkError;
 
     // Get the valid cell range over this region
-    solver::Range cellRange;
+    ablate::domain::Range cellRange;
     flow.GetCellRangeWithoutGhost(cellRange);
 
     // Get the solution data

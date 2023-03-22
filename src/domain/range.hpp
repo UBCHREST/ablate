@@ -1,9 +1,56 @@
-#ifndef ABLATELIBRARY_REVERSERANGE_HPP
-#define ABLATELIBRARY_REVERSERANGE_HPP
-#include <vector>
+#ifndef ABLATELIBRARY_RANGE_HPP
+#define ABLATELIBRARY_RANGE_HPP
 #include "petsc.h"
-#include "range.hpp"
-namespace ablate::solver {
+#include "region.hpp"
+
+namespace ablate::domain {
+
+/**
+ * Simple struct used to describe a range in the dm
+ */
+struct Range {
+    IS is = nullptr;
+    PetscInt start;
+    PetscInt end;
+    const PetscInt *points = nullptr;
+
+    /**
+     * Get the point for the index i
+     * @param i
+     * @return
+     */
+    inline PetscInt GetPoint(PetscInt i) const { return points ? points[i] : i; }
+};
+
+/**
+ * An helper class to build a range dynamically
+ */
+class DynamicRange {
+   private:
+    // The points in this range
+    std::vector<PetscInt> points;
+
+    // the updated range object
+    ablate::domain::Range range;
+
+   public:
+    /**
+     * Add point to the range
+     * @param p
+     */
+    inline void Add(PetscInt p) { points.push_back(p); }
+
+    /**
+     * Get the current range
+     * @return
+     */
+    inline const ablate::domain::Range &GetRange() {
+        range.points = points.data();
+        range.start = 0;
+        range.end = (PetscInt)points.size();
+        return range;
+    }
+};
 
 /**
  * Results in a mapping from the point (face/cell id) to the index in the range
@@ -15,7 +62,7 @@ struct ReverseRange {
     std::vector<PetscInt> indices;
 
    public:
-    explicit ReverseRange(const Range& range) {
+    explicit ReverseRange(const ablate::domain::Range &range) {
         rangeStart = range.start;
         if (range.points && (range.start != range.end)) {
             // find the min/max point
@@ -51,5 +98,11 @@ struct ReverseRange {
      */
     inline PetscInt GetAbsoluteIndex(PetscInt point) const { return GetIndex(point) - rangeStart; }
 };
-}  // namespace ablate::solver
+
+void GetRange(DM dm, const std::shared_ptr<Region> region, PetscInt depth, Range &range);
+void GetCellRange(DM dm, const std::shared_ptr<Region> region, Range &cellRange);
+void GetFaceRange(DM dm, const std::shared_ptr<Region> region, Range &faceRange);
+void RestoreRange(Range &range);
+
+}  // namespace ablate::domain
 #endif  // ABLATELIBRARY_RANGE_HPP

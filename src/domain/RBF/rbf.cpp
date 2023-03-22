@@ -241,10 +241,12 @@ void RBF::Matrix(const PetscInt c) {
 
 /************ Begin Derivative Code **********************/
 
-// Set the derivatives to use
-// numDer - Number of derivatives to set
-// dx, dy, dz - Lists of length numDer indicating the derivatives
-// useVertices - Use common vertices when determining neighbors. If false then use common edges.
+/**
+ * Set the derivatives to use
+ * numDer - Number of derivatives to set
+ * dx, dy, dz - Lists of length numDer indicating the derivatives
+ * useVertices - Use common vertices when determining neighbors. If false then use common edges.
+ */
 void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVertices) {
     if (numDer > 0) {
         RBF::useVertices = useVertices;
@@ -261,7 +263,9 @@ void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt
     }
 }
 
-// Set derivatives, defaulting to using vertices
+/**
+ * Set derivatives, defaulting to using vertices
+ */
 void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]) { RBF::SetDerivatives(numDer, dx, dy, dz, PETSC_TRUE); }
 
 // Compute the RBF weights at the cell center of p using a cell-list
@@ -373,7 +377,9 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
     MatDestroy(&B) >> utilities::PetscUtilities::checkError;
 }
 
-// Setup all derivative stencils for the entire subDomain
+/*
+ * Setup all derivative stencils for the entire subDomain
+ */
 void RBF::SetupDerivativeStencils() {
     const PetscInt cStart = RBF::cStart, cEnd = RBF::cEnd;
 
@@ -382,10 +388,12 @@ void RBF::SetupDerivativeStencils() {
     }
 }
 
-// Return the requested derivative
-// field - The field to take the derivative of
-// c - The location in ablate::solver::Range
-// dx, dy, dz - The derivatives
+/**
+ * Return the requested derivative
+ * field - The field to take the derivative of
+ * c - The location in ablate::domain::Range
+ * dx, dy, dz - The derivatives
+ */
 PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz) {
     PetscMPIInt size;
     PetscReal *wt = nullptr;
@@ -437,9 +445,11 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt 
 
 /************ Begin Interpolation Code **********************/
 
-// Return the interpolation of a field at a given location
-// field - The field to interpolate
-// xEval - The location where to perform the interpolatoin
+/**
+ * Return the interpolation of a field at a given location
+ * field - The field to interpolate
+ * xEval - The location where to perform the interpolatoin
+ */
 PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]) {
     PetscMPIInt size;
     PetscInt i, c, nCells, *lst;
@@ -460,7 +470,8 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
     DMPlexGetContainingCell(dm, xEval, &c) >> utilities::PetscUtilities::checkError;
 
     if (c < 0) {
-        throw std::runtime_error("ablate::domain::RBF::Interpolate could not determine the location of (" + std::to_string(xEval[0]) + ", " + std::to_string(xEval[1]) + ", " + std::to_string(xEval[2]) + ").");
+        throw std::runtime_error("ablate::domain::RBF::Interpolate could not determine the location of (" + std::to_string(xEval[0]) + ", " + std::to_string(xEval[1]) + ", " +
+                                 std::to_string(xEval[2]) + ").");
     }
 
     if (RBF::RBFMatrix[c] == nullptr) {
@@ -558,64 +569,8 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
 
 /************ End Interpolation Code **********************/
 
-/************ Begin Ablate support Code **********************/
-// Return the range of DMPlex objects at a given depth in a subDomain and region. This is pulled from ablate::solver::Solver::GetRange
-//    which already has the subDomain and region information.
-//    Note: This seems like it should be in ablate::domain and the solver will call this. Need to talk to Matt M. about it.
-void RBF::GetRange(std::shared_ptr<ablate::domain::SubDomain> subDomainIn, const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::solver::Range &range) {
-    // Start out getting all the points
-    IS allPointIS;
-    DMGetStratumIS(subDomainIn->GetDM(), "dim", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
-    if (!allPointIS) {
-        DMGetStratumIS(subDomainIn->GetDM(), "depth", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
-    }
-
-    // If there is a label for this solver, get only the parts of the mesh that here
-    if (region) {
-        DMLabel label;
-        DMGetLabel(subDomainIn->GetDM(), region->GetName().c_str(), &label);
-
-        IS labelIS;
-        DMLabelGetStratumIS(label, region->GetValue(), &labelIS) >> utilities::PetscUtilities::checkError;
-        ISIntersect_Caching_Internal(allPointIS, labelIS, &range.is) >> utilities::PetscUtilities::checkError;
-        ISDestroy(&labelIS) >> utilities::PetscUtilities::checkError;
-    } else {
-        PetscObjectReference((PetscObject)allPointIS) >> utilities::PetscUtilities::checkError;
-        range.is = allPointIS;
-    }
-
-    // Get the point range
-    if (range.is == nullptr) {
-        // There are no points in this region, so skip
-        range.start = 0;
-        range.end = 0;
-        range.points = nullptr;
-    } else {
-        // Get the range
-        ISGetPointRange(range.is, &range.start, &range.end, &range.points) >> utilities::PetscUtilities::checkError;
-    }
-
-    // Clean up the allCellIS
-    ISDestroy(&allPointIS) >> utilities::PetscUtilities::checkError;
-}
-
-void RBF::GetCellRange(std::shared_ptr<ablate::domain::SubDomain> subDomainIn, const std::shared_ptr<ablate::domain::Region> region, ablate::solver::Range &cellRange) {
-    // Start out getting all the cells
-    PetscInt depth;
-    DMPlexGetDepth(subDomainIn->GetDM(), &depth) >> utilities::PetscUtilities::checkError;
-    RBF::GetRange(subDomainIn, region, depth, cellRange);
-}
-
-void RBF::RestoreRange(ablate::solver::Range &range) {
-    if (range.is) {
-        ISRestorePointRange(range.is, &range.start, &range.end, &range.points) >> utilities::PetscUtilities::checkError;
-        ISDestroy(&range.is) >> utilities::PetscUtilities::checkError;
-    }
-}
-/************ End Ablate support Code **********************/
-
 /************ Constructor, Setup, and Initialization Code **********************/
-RBF::RBF(PetscInt polyOrder, bool hasDerivatives, bool hasInterpolation) : polyOrder(polyOrder), hasDerivatives(hasDerivatives), hasInterpolation(hasInterpolation) {}
+RBF::RBF(int polyOrder, bool hasDerivatives, bool hasInterpolation) : polyOrder(polyOrder), hasDerivatives(hasDerivatives), hasInterpolation(hasInterpolation) {}
 
 RBF::~RBF() {}
 
@@ -701,7 +656,7 @@ void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) {
     }
 }
 
-void RBF::Initialize(solver::Range cellRange) {
+void RBF::Initialize(ablate::domain::Range cellRange) {
     // If this is called due to a grid change then release the old memory. In this case cEnd - cStart will be greater than zero.
     if ((RBF::cEnd - RBF::cStart) > 0) {
         for (PetscInt c = RBF::cStart; c < RBF::cEnd; ++c) {

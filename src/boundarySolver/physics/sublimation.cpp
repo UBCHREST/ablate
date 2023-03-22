@@ -1,8 +1,8 @@
 #include "sublimation.hpp"
 #include <utility>
+#include "domain/range.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "io/interval/fixedInterval.hpp"
-#include "solver/dynamicRange.hpp"
 #include "utilities/mathUtilities.hpp"
 
 using fp = ablate::finiteVolume::CompressibleFlowFields;
@@ -91,7 +91,7 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
         DMGetLabel(bSolver.GetSubDomain().GetDM(), "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
 
         //!< Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solver.
-        solver::DynamicRange faceRange;
+        ablate::domain::DynamicRange faceRange;
         for (const auto &i : bSolver.GetBoundaryGeometry()) {
             PetscInt ghost = -1;
             if (ghostLabel) DMLabelGetValue(ghostLabel, i.geometry.faceId, &ghost) >> utilities::PetscUtilities::checkError;
@@ -343,7 +343,7 @@ void ablate::boundarySolver::physics::Sublimation::UpdateSpecies(TS ts, ablate::
     VecGetArray(auxVec, &auxArray) >> utilities::PetscUtilities::checkError;
 
     // March over each cell in this domain
-    solver::Range cellRange;
+    ablate::domain::Range cellRange;
     solver.GetCellRange(cellRange);
     auto dim = solver.GetSubDomain().GetDimensions();
 

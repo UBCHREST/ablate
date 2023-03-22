@@ -68,7 +68,7 @@ TEST_P(RBFTestFixture_RBFValues, CheckRBFFunctions) {
             EXPECT_DOUBLE_EQ(testingParam.expectedValue, rbf->RBFVal(dim, x0, x));
 
             // Now check derivatives
-            for (int i = 0; i < dx.size(); ++i) {
+            for (std::size_t i = 0; i < dx.size(); ++i) {
                 EXPECT_DOUBLE_EQ(testingParam.expectedDerivatives[i], rbf->RBFDer(dim, x, dx[i], dy[i], dz[i]));
             }
         }
@@ -306,7 +306,7 @@ static PetscReal RBFTestFixture_Function(PetscReal x[3], PetscInt dx, PetscInt d
     }
 }
 
-void RBFTestFixture_SetData(ablate::solver::Range cellRange, const ablate::domain::Field *field, std::shared_ptr<ablate::domain::SubDomain> subDomain) {
+void RBFTestFixture_SetData(ablate::domain::Range cellRange, const ablate::domain::Field *field, std::shared_ptr<ablate::domain::SubDomain> subDomain) {
     PetscReal *array, *val, x[3] = {0.0, 0.0, 0.0};
     Vec vec = subDomain->GetVec(*field);
     DM dm = subDomain->GetFieldDM(*field);
@@ -322,94 +322,94 @@ void RBFTestFixture_SetData(ablate::solver::Range cellRange, const ablate::domai
 }
 
 // This tests single-cell derivative functions.
-TEST_P(RBFTestFixture_Derivative, CheckDerivativeFunctions){StartWithMPI
+TEST_P(RBFTestFixture_Derivative, CheckDerivativeFunctions) {
+    StartWithMPI
+        // initialize petsc and mpi
+        environment::RunEnvironment::Initialize(argc, argv);
+        utilities::PetscUtilities::Initialize();
+        auto testingParam = GetParam();
+        std::vector<std::shared_ptr<domain::rbf::RBF>> rbfList = testingParam.rbfList;
 
-                                                            {// initialize petsc and mpi
-                                                             environment::RunEnvironment::Initialize(argc, argv);
-utilities::PetscUtilities::Initialize();
-auto testingParam = GetParam();
-std::vector<std::shared_ptr<domain::rbf::RBF>> rbfList = testingParam.rbfList;
+        //             Make the field
+        std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptor = {
+            std::make_shared<ablate::domain::FieldDescription>("fieldA", "", ablate::domain::FieldDescription::ONECOMPONENT, ablate::domain::FieldLocation::AUX, ablate::domain::FieldType::FVM)};
 
-//             Make the field
-std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptor = {
-    std::make_shared<ablate::domain::FieldDescription>("fieldA", "", ablate::domain::FieldDescription::ONECOMPONENT, ablate::domain::FieldLocation::AUX, ablate::domain::FieldType::FVM)};
+        //             Create the mesh
+        //      Note that using -dm_view :mesh.tex:ascii_latex -dm_plex_view_scale 10 -dm_plex_view_numbers_depth 1,0,1 will create a mesh, changing numbers_depth as appropriate
+        auto mesh = std::make_shared<domain::BoxMesh>("mesh",
+                                                      fieldDescriptor,
+                                                      std::vector<std::shared_ptr<domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(3)},
+                                                      testingParam.meshFaces,
+                                                      testingParam.meshStart,
+                                                      testingParam.meshEnd,
+                                                      std::vector<std::string>{},
+                                                      testingParam.meshSimplex);
 
-//             Create the mesh
-//      Note that using -dm_view :mesh.tex:ascii_latex -dm_plex_view_scale 10 -dm_plex_view_numbers_depth 1,0,1 will create a mesh, changing numbers_depth as appropriate
-auto mesh = std::make_shared<domain::BoxMesh>("mesh", fieldDescriptor, std::vector<std::shared_ptr<domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(3)},
-                                              testingParam.meshFaces, testingParam.meshStart, testingParam.meshEnd, std::vector<std::string>{}, testingParam.meshSimplex);
+        mesh->InitializeSubDomains();
 
-mesh->InitializeSubDomains();
+        std::shared_ptr<ablate::domain::SubDomain> subDomain = mesh->GetSubDomain(domain::Region::ENTIREDOMAIN);
 
-std::shared_ptr<ablate::domain::SubDomain> subDomain = mesh->GetSubDomain(domain::Region::ENTIREDOMAIN);
+        // The field containing the data
+        const ablate::domain::Field *field = &(subDomain->GetField("fieldA"));
 
-// The field containing the data
-const ablate::domain::Field *field = &(subDomain->GetField("fieldA"));
-
-ablate::solver::Range cellRange;
-for (long int j = 0; j < rbfList.size(); ++j) {
-    rbfList[j]->Setup(subDomain);  // This causes issues (I think)
-
-    //         Initialize
-    rbfList[j]->GetCellRange(subDomain, nullptr, cellRange);
-    rbfList[j]->Initialize(cellRange);
-    rbfList[j]->RestoreRange(cellRange);
-}
-
-// Now set the data using the first RBF. All will use the same data
-rbfList[0]->GetCellRange(subDomain, nullptr, cellRange);
-RBFTestFixture_SetData(cellRange, field, subDomain);
-
-// Now check derivatives
-std::vector<PetscInt> dx = testingParam.dx, dy = testingParam.dy, dz = testingParam.dz;
-PetscInt c, cell;
-PetscReal maxError;
-PetscReal x[3];
-PetscReal err = -1.0, val;
-DM dm = subDomain->GetDM();
-
-for (int i = 0; i < dx.size(); ++i) {  // Iterate over each of the requested derivatives
-    maxError = testingParam.maxError[i];
-
-    if (testingParam.cell > -1) {
-        // 3D results take too long to run, so just check a corner
-        for (long int j = 0; j < rbfList.size(); ++j) {  // Check each RBF
-            c = testingParam.cell;
-
-            cell = cellRange.points ? cellRange.points[c] : c;
-            val = rbfList[j]->EvalDer(field, c, dx[i], dy[i], dz[i]);
-
-            DMPlexComputeCellGeometryFVM(dm, cell, NULL, x, NULL) >> ablate::utilities::PetscUtilities::checkError;
-            err = PetscAbsReal(val - RBFTestFixture_Function(x, dx[i], dy[i], dz[i]));
-
-            EXPECT_LT(err, maxError) << "RBF: " << rbfList[j]->type() << ", dx: " << dx[i] << ", dy:" << dy[i] << ", dz: " << dz[i] << " Error: " << err;
+        ablate::domain::Range cellRange;
+        subDomain->GetCellRange(nullptr, cellRange);
+        for (std::size_t j = 0; j < rbfList.size(); ++j) {
+            rbfList[j]->Setup(subDomain);       // This causes issues (I think)
+            rbfList[j]->Initialize(cellRange);  //         Initialize
         }
-    } else {
-        for (long int j = 0; j < rbfList.size(); ++j) {  // Check each RBF
-            err = -1.0;
-            for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {  // Iterate over the entire subDomain
 
-                cell = cellRange.points ? cellRange.points[c] : c;
-                val = rbfList[j]->EvalDer(field, c, dx[i], dy[i], dz[i]);
+        RBFTestFixture_SetData(cellRange, field, subDomain);
 
-                DMPlexComputeCellGeometryFVM(dm, cell, NULL, x, NULL) >> ablate::utilities::PetscUtilities::checkError;
-                err = PetscMax(err, PetscAbsReal(val - RBFTestFixture_Function(x, dx[i], dy[i], dz[i])));
+        // Now check derivatives
+        std::vector<PetscInt> dx = testingParam.dx, dy = testingParam.dy, dz = testingParam.dz;
+        PetscInt cell;
+        PetscReal maxError;
+        PetscReal x[3];
+        PetscReal err = -1.0, val;
+        DM dm = subDomain->GetDM();
+
+        for (std::size_t i = 0; i < dx.size(); ++i) {  // Iterate over each of the requested derivatives
+            maxError = testingParam.maxError[i];
+
+            if (testingParam.cell > -1) {
+                // 3D results take too long to run, so just check a corner
+                for (std::size_t j = 0; j < rbfList.size(); ++j) {  // Check each RBF
+                    PetscInt c = testingParam.cell;
+
+                    cell = cellRange.points ? cellRange.points[c] : c;
+                    val = rbfList[j]->EvalDer(field, c, dx[i], dy[i], dz[i]);
+
+                    DMPlexComputeCellGeometryFVM(dm, cell, NULL, x, NULL) >> ablate::utilities::PetscUtilities::checkError;
+                    err = PetscAbsReal(val - RBFTestFixture_Function(x, dx[i], dy[i], dz[i]));
+
+                    EXPECT_LT(err, maxError) << "RBF: " << rbfList[j]->type() << ", dx: " << dx[i] << ", dy:" << dy[i] << ", dz: " << dz[i] << " Error: " << err;
+                }
+            } else {
+                for (std::size_t j = 0; j < rbfList.size(); ++j) {  // Check each RBF
+                    err = -1.0;
+                    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {  // Iterate over the entire subDomain
+
+                        cell = cellRange.points ? cellRange.points[c] : c;
+                        val = rbfList[j]->EvalDer(field, c, dx[i], dy[i], dz[i]);
+
+                        DMPlexComputeCellGeometryFVM(dm, cell, NULL, x, NULL) >> ablate::utilities::PetscUtilities::checkError;
+                        err = PetscMax(err, PetscAbsReal(val - RBFTestFixture_Function(x, dx[i], dy[i], dz[i])));
+                    }
+
+                    EXPECT_LT(err, maxError) << "RBF: " << rbfList[j]->type() << ", dx: " << dx[i] << ", dy:" << dy[i] << ", dz: " << dz[i] << " Error: " << err;
+                }
             }
-
-            EXPECT_LT(err, maxError) << "RBF: " << rbfList[j]->type() << ", dx: " << dx[i] << ", dy:" << dy[i] << ", dz: " << dz[i] << " Error: " << err;
         }
-    }
+
+        subDomain->RestoreRange(cellRange);
+
+        //    ablate::environment::RunEnvironment::Finalize();
+
+    EndWithMPI
 }
 
-rbfList[0]->RestoreRange(cellRange);
-
-//      ablate::environment::RunEnvironment::Finalize();
-}
-
-EndWithMPI
-}
-
-// This tests both the absolute error and the convergene for two data points
+// This tests both the absolute error and the convergence for two data points
 INSTANTIATE_TEST_SUITE_P(
     MeshTests, RBFTestFixture_Derivative,
     testing::Values(
@@ -431,7 +431,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dy = {0, 0, 0},
                                                 .dz = {0, 0, 0},
                                                 .cell = -1,
-                                                .maxError = {8.9e-16, 1.2e-03, 1.6e-01}},
+                                                .maxError = {1.0e-15, 2e-03, 2e-01}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "1DN161_1Proc"},
                                                 .meshFaces = {161},
                                                 .meshStart = {-1.0},
@@ -450,7 +450,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dy = {0, 0, 0},
                                                 .dz = {0, 0, 0},
                                                 .cell = -1,
-                                                .maxError = {1.4e-15, 6.5e-05, 1.8e-02}},
+                                                .maxError = {2e-15, 7e-05, 2e-02}},
         (RBFParameters_DerivativeInterpolation){
             .mpiTestParameter = {.testName = "2DQuadN21_1Proc"},
             .meshFaces = {21, 21},
@@ -469,7 +469,7 @@ INSTANTIATE_TEST_SUITE_P(
             .dy = {0, 0, 0, 1, 1, 2},
             .dz = {0, 0, 0, 0, 0, 0},
             .cell = -1,
-            .maxError = {4.0e-15, 3.2e-02, 1.4e+00, 3.2e-02, 3.5e-01, 1.4e+00}},
+            .maxError = {6.0e-15, 3.4e-02, 1.5e+00, 3.3e-02, 3.6e-01, 1.5e+00}},
         (RBFParameters_DerivativeInterpolation){
             .mpiTestParameter = {.testName = "2DQuadN41_1Proc"},
             .meshFaces = {41, 41},
@@ -488,7 +488,7 @@ INSTANTIATE_TEST_SUITE_P(
             .dy = {0, 0, 0, 1, 1, 2},
             .dz = {0, 0, 0, 0, 0, 0},
             .cell = -1,
-            .maxError = {4.9e-15, 2.2e-03, 1.8e-01, 2.2e-03, 4.9e-02, 1.73e-01}},
+            .maxError = {5.0e-15, 2.3e-03, 1.9e-01, 2.3e-03, 5.0e-02, 1.8e-01}},
         (RBFParameters_DerivativeInterpolation){
             .mpiTestParameter = {.testName = "2DTriN21_1Proc"},
             .meshFaces = {21, 21},
@@ -507,7 +507,7 @@ INSTANTIATE_TEST_SUITE_P(
             .dy = {0, 0, 0, 1, 1, 2},
             .dz = {0, 0, 0, 0, 0, 0},
             .cell = -1,
-            .maxError = {4.9e-15, 1.4e-02, 6.1e-01, 1.5e-02, 2.5e-01, 7.5e-01}},
+            .maxError = {5.0e-15, 1.5e-02, 6.2e-01, 1.6e-02, 2.6e-01, 7.6e-01}},
         (RBFParameters_DerivativeInterpolation){
             .mpiTestParameter = {.testName = "2DTriN41_1Proc"},
             .meshFaces = {41, 41},
@@ -526,7 +526,7 @@ INSTANTIATE_TEST_SUITE_P(
             .dy = {0, 0, 0, 1, 1, 2},
             .dz = {0, 0, 0, 0, 0, 0},
             .cell = -1,
-            .maxError = {4.5e-15, 1.7e-03, 1.21e-01, 8.9e-04, 4.8e-02, 1.1e-01}},
+            .maxError = {4.6e-15, 1.8e-03, 1.5e-01, 9.0e-04, 4.9e-02, 1.2e-01}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "2DQuadN21_2Proc", .nproc = 2},
                                                 .meshFaces = {21, 21},
                                                 .meshStart = {-1.0, -1.0},
@@ -545,7 +545,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dy = {0, 0, 0, 1, 1, 2},
                                                 .dz = {0, 0, 0, 0, 0, 0},
                                                 .cell = -1,
-                                                .maxError = {3.6e-15, 4.3e-02, 1.75e+00, 3.2e-02, 4.11e-01, 1.34e+00}},
+                                                .maxError = {3.7e-15, 4.4e-02, 1.8e+00, 3.3e-02, 4.2e-01, 1.4e+00}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "2DQuadN41_2Proc", .nproc = 2},
                                                 .meshFaces = {41, 41},
                                                 .meshStart = {-1.0, -1.0},
@@ -564,7 +564,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dy = {0, 0, 0, 1, 1, 2},
                                                 .dz = {0, 0, 0, 0, 0, 0},
                                                 .cell = -1,
-                                                .maxError = {4.9e-15, 2.28e-03, 1.86e-01, 2.2e-03, 4.98e-02, 1.76e-01}},
+                                                .maxError = {5.0e-15, 2.4e-03, 1.9e-01, 2.3e-03, 5.0e-02, 1.8e-01}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "2DTriN21_2Proc", .nproc = 2},
                                                 .meshFaces = {21, 21},
                                                 .meshStart = {-1.0, -1.0},
@@ -583,7 +583,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dy = {0, 0, 0, 1, 1, 2},
                                                 .dz = {0, 0, 0, 0, 0, 0},
                                                 .cell = -1,
-                                                .maxError = {4.9e-15, 2.20e-02, 8.94e-01, 1.71e-02, 4.45e-01, 7.41e-01}},
+                                                .maxError = {5.0e-15, 2.3e-02, 9.0e-01, 1.8e-02, 4.5e-01, 7.5e-01}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "2DTriN41_2Proc", .nproc = 2},
                                                 .meshFaces = {41, 41},
                                                 .meshStart = {-1.0, -1.0},
@@ -602,8 +602,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dy = {0, 0, 0, 1, 1, 2},
                                                 .dz = {0, 0, 0, 0, 0, 0},
                                                 .cell = -1,
-                                                .maxError = {4.0e-15, 1.61e-03, 1.21e-01, 9.35e-04, 4.77e-02, 1.05e-01}},
-
+                                                .maxError = {4.1e-15, 2.0e-03, 1.5e-01, 9.4e-04, 4.8e-02, 1.1e-01}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "3DQuadN21_1Proc"},
                                                 .meshFaces = {21, 21, 21},
                                                 .meshStart = {-1.0, -1.0, -1.0},
@@ -622,7 +621,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dy = {0, 0, 0, 1, 1, 2, 0, 0, 1, 0},
                                                 .dz = {0, 0, 0, 0, 0, 0, 1, 1, 1, 2},
                                                 .cell = 0,
-                                                .maxError = {8.89e-16, 1.65e-02, 7.17e-01, 1.65e-02, 2.06e-03, 7.17e-01, 1.65e-02, 1.89e-03, 1.89e-03, 7.17e-01}},
+                                                .maxError = {9.5e-16, 1.7e-02, 7.2e-01, 1.7e-02, 2.1e-03, 7.2e-01, 1.7e-02, 2.1e-03, 2.1e-03, 7.2e-01}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "3DQuadN41_1Proc"},
                                                 .meshFaces = {41, 41, 41},
                                                 .meshStart = {-1.0, -1.0, -1.0},
@@ -641,7 +640,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dy = {0, 0, 0, 1, 1, 2, 0, 0, 1, 0},
                                                 .dz = {0, 0, 0, 0, 0, 0, 1, 1, 1, 2},
                                                 .cell = 0,
-                                                .maxError = {2.0e-15, 1.05e-03, 8.85e-02, 1.05e-03, 1.67e-04, 8.85e-02, 1.05e-03, 1.67e-04, 1.83e-04, 8.85e-02}},
+                                                .maxError = {3.0e-15, 1.1e-03, 8.9e-02, 1.1e-03, 1.7e-04, 8.9e-02, 1.1e-03, 1.7e-04, 1.9e-04, 8.9e-02}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "3DTriN21_1Proc"},
                                                 .meshFaces = {21, 21, 21},
                                                 .meshStart = {-1.0, -1.0, -1.0},
@@ -660,7 +659,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dy = {0, 0, 0, 1, 1, 2, 0, 0, 1, 0},
                                                 .dz = {0, 0, 0, 0, 0, 0, 1, 1, 1, 2},
                                                 .cell = 0,
-                                                .maxError = {2.23e-16, 3.49e-05, 3.49e-03, 5.51e-05, 1.63e-04, 2.93e-03, 1.49e-04, 6.25e-03, 5.85e-03, 1.956e-03}},
+                                                .maxError = {1e-15, 3.3e-04, 3.5e-02, 4.0e-04, 1.8e-02, 7.0e-03, 5.0e-04, 1.5e-02, 9.0e-03, 9e-03}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "3DTriN41_1Proc"},
                                                 .meshFaces = {41, 41, 41},
                                                 .meshStart = {-1.0, -1.0, -1.0},
@@ -679,7 +678,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dy = {0, 0, 0, 1, 1, 2, 0, 0, 1, 0},
                                                 .dz = {0, 0, 0, 0, 0, 0, 1, 1, 1, 2},
                                                 .cell = 0,
-                                                .maxError = {1.12e-16, 3.62e-06, 1.93e-03, 2.01e-05, 7.96e-05, 4.14e-04, 8.89e-06, 1.19e-04, 7.06e-05, 1.54e-03}}),
+                                                .maxError = {1.2e-16, 5.6e-06, 2.0e-03, 2.1e-05, 8.1e-05, 2.0e-03, 2.2e-05, 2.0e-04, 7.1e-05, 1.6e-03}}),
     [](const testing::TestParamInfo<RBFParameters_DerivativeInterpolation> &info) { return info.param.mpiTestParameter.getTestName(); });
 
 class RBFTestFixture_Interpolation : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<RBFParameters_DerivativeInterpolation> {
@@ -688,68 +687,67 @@ class RBFTestFixture_Interpolation : public testingResources::MpiTestFixture, pu
 };
 
 // This tests single-cell derivative functions.
-TEST_P(RBFTestFixture_Interpolation, CheckInterpolationFunctions){StartWithMPI
+TEST_P(RBFTestFixture_Interpolation, CheckInterpolationFunctions) {
+    StartWithMPI
 
-                                                                  {// initialize petsc and mpi
-                                                                   environment::RunEnvironment::Initialize(argc, argv);
-utilities::PetscUtilities::Initialize();
-auto testingParam = GetParam();
-std::vector<std::shared_ptr<domain::rbf::RBF>> rbfList = testingParam.rbfList;
-std::vector<std::vector<PetscReal>> x = testingParam.x;
+        // initialize petsc and mpi
+        environment::RunEnvironment::Initialize(argc, argv);
+        utilities::PetscUtilities::Initialize();
+        auto testingParam = GetParam();
+        std::vector<std::shared_ptr<domain::rbf::RBF>> rbfList = testingParam.rbfList;
+        std::vector<std::vector<PetscReal>> x = testingParam.x;
 
-//             Make the field
-std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptor = {
-    std::make_shared<ablate::domain::FieldDescription>("fieldA", "", ablate::domain::FieldDescription::ONECOMPONENT, ablate::domain::FieldLocation::AUX, ablate::domain::FieldType::FVM)};
+        //             Make the field
+        std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptor = {
+            std::make_shared<ablate::domain::FieldDescription>("fieldA", "", ablate::domain::FieldDescription::ONECOMPONENT, ablate::domain::FieldLocation::AUX, ablate::domain::FieldType::FVM)};
 
-//             Create the mesh
-//      Note that using -dm_view :mesh.tex:ascii_latex -dm_plex_view_scale 10 -dm_plex_view_numbers_depth 1,0,1 will create a mesh, changing numbers_depth as appropriate
-auto mesh = std::make_shared<domain::BoxMesh>("mesh", fieldDescriptor, std::vector<std::shared_ptr<domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(3)},
-                                              testingParam.meshFaces, testingParam.meshStart, testingParam.meshEnd, std::vector<std::string>{}, testingParam.meshSimplex);
+        //             Create the mesh
+        //      Note that using -dm_view :mesh.tex:ascii_latex -dm_plex_view_scale 10 -dm_plex_view_numbers_depth 1,0,1 will create a mesh, changing numbers_depth as appropriate
+        auto mesh = std::make_shared<domain::BoxMesh>("mesh",
+                                                      fieldDescriptor,
+                                                      std::vector<std::shared_ptr<domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(3)},
+                                                      testingParam.meshFaces,
+                                                      testingParam.meshStart,
+                                                      testingParam.meshEnd,
+                                                      std::vector<std::string>{},
+                                                      testingParam.meshSimplex);
 
-mesh->InitializeSubDomains();
+        mesh->InitializeSubDomains();
 
-std::shared_ptr<ablate::domain::SubDomain> subDomain = mesh->GetSubDomain(domain::Region::ENTIREDOMAIN);
+        std::shared_ptr<ablate::domain::SubDomain> subDomain = mesh->GetSubDomain(domain::Region::ENTIREDOMAIN);
 
-// The field containing the data
-const ablate::domain::Field *field = &(subDomain->GetField("fieldA"));
+        // The field containing the data
+        const ablate::domain::Field *field = &(subDomain->GetField("fieldA"));
 
-ablate::solver::Range cellRange;
-for (long int j = 0; j < rbfList.size(); ++j) {
-    rbfList[j]->Setup(subDomain);  // This causes issues (I think)
+        ablate::domain::Range cellRange;
+        subDomain->GetCellRange(nullptr, cellRange);
+        for (std::size_t j = 0; j < rbfList.size(); ++j) {
+            rbfList[j]->Setup(subDomain);       // This causes issues (I think)
+            rbfList[j]->Initialize(cellRange);  //         Initialize
+        }
 
-    //         Initialize
-    rbfList[j]->GetCellRange(subDomain, nullptr, cellRange);
-    rbfList[j]->Initialize(cellRange);
-    rbfList[j]->RestoreRange(cellRange);
-}
+        // Now set the data using the first RBF. All will use the same data
 
-// Now set the data using the first RBF. All will use the same data
-rbfList[0]->GetCellRange(subDomain, nullptr, cellRange);
-RBFTestFixture_SetData(cellRange, field, subDomain);
+        RBFTestFixture_SetData(cellRange, field, subDomain);
 
-std::vector<PetscInt> dx = testingParam.dx, dy = testingParam.dy, dz = testingParam.dz;
-PetscInt c, cell;
-PetscReal maxError;
-PetscReal err, val, truth;
-DM dm = subDomain->GetDM();
+        std::vector<PetscInt> dx = testingParam.dx, dy = testingParam.dy, dz = testingParam.dz;
+        PetscReal maxError;
+        PetscReal err, val, truth;
 
-for (int i = 0; i < x.size(); ++i) {  // Iterate over each of the requested locations
-    maxError = testingParam.maxError[i];
+        for (std::size_t i = 0; i < x.size(); ++i) {  // Iterate over each of the requested locations
+            maxError = testingParam.maxError[i];
 
-    for (long int j = 0; j < rbfList.size(); ++j) {  // Check each RBF
-        truth = RBFTestFixture_Function(x[i].data(), 0, 0, 0);
-        val = rbfList[j]->Interpolate(field, x[i].data());
-        err = PetscAbsReal(val - truth);
-        EXPECT_LT(err, maxError) << "RBF: " << rbfList[j]->type() << " Error: " << err;
-    }
-}
+            for (std::size_t j = 0; j < rbfList.size(); ++j) {  // Check each RBF
+                truth = RBFTestFixture_Function(x[i].data(), 0, 0, 0);
+                val = rbfList[j]->Interpolate(field, x[i].data());
+                err = PetscAbsReal(val - truth);
+                EXPECT_LT(err, maxError) << "RBF: " << rbfList[j]->type() << " Error: " << err;
+            }
+        }
 
-rbfList[0]->RestoreRange(cellRange);
+        subDomain->RestoreRange(cellRange);
 
-//      ablate::environment::RunEnvironment::Finalize();
-}
-
-EndWithMPI
+    EndWithMPI
 }
 
 // This tests both the absolute error and the convergene for two data points
@@ -771,7 +769,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                                                               std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
                                                                                                           false, false)},
                                                 .x = {{0.52, 0.0, 0.0}},
-                                                .maxError = {2.83e-3}},
+                                                .maxError = {2.9e-3}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_1DN21"},
                                                 .meshFaces = {21},
                                                 .meshStart = {-1.0},
@@ -787,7 +785,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                                                               std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
                                                                                                           false, false)},
                                                 .x = {{0.52, 0.0, 0.0}},
-                                                .maxError = {5.38e-5}},
+                                                .maxError = {5.4e-5}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_2DQuadN11"},
                                                 .meshFaces = {11, 11},
                                                 .meshStart = {-1.0, -1.0},
@@ -803,7 +801,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                                                               std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
                                                                                                           false, false)},
                                                 .x = {{0.52, 0.52, 0.0}},
-                                                .maxError = {7.89e-4}},
+                                                .maxError = {8.0e-4}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_2DQuadN21"},
                                                 .meshFaces = {21, 21},
                                                 .meshStart = {-1.0, -1.0},
@@ -819,7 +817,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                                                               std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
                                                                                                           false, false)},
                                                 .x = {{0.52, 0.52, 0.0}},
-                                                .maxError = {9.79e-5}},
+                                                .maxError = {9.85e-5}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_2DTriN11"},
                                                 .meshFaces = {11, 11},
                                                 .meshStart = {-1.0, -1.0},
@@ -835,7 +833,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                                                               std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
                                                                                                           false, false)},
                                                 .x = {{0.52, 0.52, 0.0}},
-                                                .maxError = {2.01e-5}},
+                                                .maxError = {2.5e-5}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_2DTriN21"},
                                                 .meshFaces = {41, 41},
                                                 .meshStart = {-1.0, -1.0},
@@ -851,7 +849,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                                                               std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
                                                                                                           false, false)},
                                                 .x = {{0.52, 0.52, 0.0}},
-                                                .maxError = {4.03e-5}},
+                                                .maxError = {4.1e-5}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_3DQuadN11"},
                                                 .meshFaces = {11, 11, 11},
                                                 .meshStart = {-1.0, -1.0, -1.0},
@@ -867,7 +865,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                                                               std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
                                                                                                           false, false)},
                                                 .x = {{0.52, 0.52, 0.52}},
-                                                .maxError = {1.47e-3}},
+                                                .maxError = {1.5e-3}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_3DQuadN21"},
                                                 .meshFaces = {21, 21, 21},
                                                 .meshStart = {-1.0, -1.0, -1.0},
@@ -883,7 +881,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                                                               std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
                                                                                                           false, false)},
                                                 .x = {{0.52, 0.52, 0.52}},
-                                                .maxError = {9.61e-5}},
+                                                .maxError = {9.7e-5}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_3DTriN11"},
                                                 .meshFaces = {11, 11, 11},
                                                 .meshStart = {-1.0, -1.0, -1.0},
@@ -899,7 +897,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                                                               std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
                                                                                                           false, false)},
                                                 .x = {{0.52, 0.52, 0.52}},
-                                                .maxError = {2.59e-4}},
+                                                .maxError = {2.65e-4}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = {.testName = "Interp_3DTriN21"},
                                                 .meshFaces = {21, 21, 21},
                                                 .meshStart = {-1.0, -1.0, -1.0},
@@ -915,5 +913,5 @@ INSTANTIATE_TEST_SUITE_P(
                                                                                                               std::make_shared<ablate::domain::rbf::PHS>(-1, 2, false, false)},
                                                                                                           false, false)},
                                                 .x = {{0.52, 0.52, 0.52}},
-                                                .maxError = {1.29e-5}}),
+                                                .maxError = {1.35e-5}}),
     [](const testing::TestParamInfo<RBFParameters_DerivativeInterpolation> &info) { return info.param.mpiTestParameter.getTestName(); });

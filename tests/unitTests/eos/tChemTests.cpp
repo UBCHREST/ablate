@@ -1,10 +1,10 @@
 #include <numeric>
 #include "PetscTestFixture.hpp"
 #include "domain/boxMesh.hpp"
+#include "domain/range.hpp"
 #include "eos/tChem.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
-#include "solver/dynamicRange.hpp"
 
 /*
  * Helper function to fill mass fraction
@@ -215,9 +215,6 @@ TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputePropertyUsingMassFractio
 
     // get the test params
     const auto& params = GetParam();
-
-    // Get the euler size
-    auto eulerField = std::find_if(params.fields.begin(), params.fields.end(), [](const auto& field) { return field.name == "euler"; });
 
     // build the total conserved values
     auto conservedValuesSize = std::accumulate(params.fields.begin(), params.fields.end(), 0, [](int a, const ablate::domain::Field& field) { return a + field.numberComponents; });
@@ -977,7 +974,7 @@ TEST_P(TCComputeSourceTestFixture, ShouldComputeCorrectSource) {
     VecZeroEntries(computedF) >> ablate::utilities::PetscUtilities::checkError;
 
     // ACT
-    ablate::solver::DynamicRange range;
+    ablate::domain::DynamicRange range;
     range.Add(0);
     auto sourceTermCalculator = eos->CreateSourceCalculator(domain->GetFields(), range.GetRange());
 

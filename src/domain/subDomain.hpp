@@ -9,6 +9,7 @@
 #include "domain.hpp"
 #include "fieldDescription.hpp"
 #include "io/serializable.hpp"
+#include "range.hpp"
 #include "utilities/petscUtilities.hpp"
 
 namespace ablate::domain {
@@ -394,6 +395,33 @@ class SubDomain : public io::Serializable {
      */
     void CreateEmptySubDM(DM* inDM, std::shared_ptr<domain::Region> region = {});
 
+    /**
+     * Return the range of DMPlex objects at a given depth in the subDomain and region.
+     * @param region
+     * @param depth
+     * @param range
+     */
+    void GetRange(const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::domain::Range& range) const { ablate::domain::GetRange(this->GetDM(), region, depth, range); }
+
+    /**
+     * Return the range of cells in the subDomain and region.
+     * @param region
+     * @param cellRange
+     */
+    void GetCellRange(const std::shared_ptr<ablate::domain::Region> region, ablate::domain::Range& cellRange) const { ablate::domain::GetCellRange(this->GetDM(), region, cellRange); }
+
+    /**
+     * Return the range of faces/edges in the subDomain and region.
+     * @param region
+     * @param cellRange
+     */
+    void GetFaceRange(const std::shared_ptr<ablate::domain::Region> region, ablate::domain::Range& faceRange) const { ablate::domain::GetFaceRange(this->GetDM(), region, faceRange); }
+
+    /**
+     * Restore the range of cells in the subDomain and region.
+     * @param cellRange
+     */
+    void RestoreRange(ablate::domain::Range& cellRange) const { ablate::domain::RestoreRange(cellRange); }
 };
 
 }  // namespace ablate::domain
