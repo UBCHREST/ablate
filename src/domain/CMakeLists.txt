@@ -31,6 +31,8 @@ target_sources(ablateLibrary
         cadFile.hpp
         dmTransfer.hpp
         range.hpp
+        dynamicRange.hpp
+        reverseRange.hpp
         )
 
 add_subdirectory(modifiers)

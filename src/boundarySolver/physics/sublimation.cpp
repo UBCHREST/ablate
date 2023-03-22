@@ -1,6 +1,6 @@
 #include "sublimation.hpp"
 #include <utility>
-#include "domain/range.hpp"
+#include "domain/dynamicRange.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "io/interval/fixedInterval.hpp"
 #include "utilities/mathUtilities.hpp"

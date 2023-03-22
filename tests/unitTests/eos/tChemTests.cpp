@@ -1,7 +1,7 @@
 #include <numeric>
 #include "PetscTestFixture.hpp"
 #include "domain/boxMesh.hpp"
-#include "domain/range.hpp"
+#include "domain/dynamicRange.hpp"
 #include "eos/tChem.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"

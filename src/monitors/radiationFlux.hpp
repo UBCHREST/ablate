@@ -2,7 +2,7 @@
 #define ABLATELIBRARY_VIRTUALTCP_H
 
 #include "boundarySolver/boundarySolver.hpp"
-#include "domain/range.hpp"
+#include "domain/dynamicRange.hpp"
 #include "io/interval/fixedInterval.hpp"
 #include "io/interval/interval.hpp"
 #include "monitor.hpp"
