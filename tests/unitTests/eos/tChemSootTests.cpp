@@ -1,10 +1,10 @@
 #include <numeric>
 #include "PetscTestFixture.hpp"
 #include "domain/boxMesh.hpp"
+#include "domain/range.hpp"
 #include "eos/tChemSoot.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
-#include "solver/dynamicRange.hpp"
 
 /*
  * Helper function to fill mass fraction
@@ -917,7 +917,7 @@ TEST_P(TChemSootComputeSourceTestFixture, ShouldComputeCorrectSource) {
     VecZeroEntries(computedF) >> ablate::utilities::PetscUtilities::checkError;
 
     // ACT
-    ablate::solver::DynamicRange range;
+    ablate::domain::DynamicRange range;
     range.Add(0);
     auto sourceTermCalculator = eos->CreateSourceCalculator(domain->GetFields(), range.GetRange());
 

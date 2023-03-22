@@ -7,8 +7,8 @@
 #include <parameters/parameters.hpp>
 #include <string>
 #include <vector>
-#include "io/serializable.hpp"
 #include "domain/range.hpp"
+#include "io/serializable.hpp"
 
 namespace ablate::solver {
 
@@ -109,8 +109,7 @@ class Solver {
      * Get the range of cells defined over the region for this solver.
      * @param cellRange
      */
-    void GetCellRange(ablate::domain::Range& cellRange) const { ablate::domain::GetCellRange(this->subDomain->GetDM(), this->GetRegion(), cellRange); }
-;
+    void GetCellRange(ablate::domain::Range& cellRange) const { ablate::domain::GetCellRange(this->subDomain->GetDM(), this->GetRegion(), cellRange); };
 
     /**
      * Get the range of faces/edges defined over the region for this solver.

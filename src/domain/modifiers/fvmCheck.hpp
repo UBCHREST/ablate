@@ -3,9 +3,9 @@
 
 #include <domain/region.hpp>
 #include <memory>
+#include "domain/range.hpp"
 #include "mathFunctions/mathFunction.hpp"
 #include "modifier.hpp"
-#include "domain/range.hpp"
 
 namespace ablate::domain::modifiers {
 

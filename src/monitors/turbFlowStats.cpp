@@ -1,8 +1,8 @@
 #include "monitors/turbFlowStats.hpp"
 #include <iostream>
+#include "domain/range.hpp"
 #include "io/interval/fixedInterval.hpp"
 #include "petscmath.h"
-#include "domain/range.hpp"
 #include "utilities/constants.hpp"
 
 using tp = ablate::eos::ThermodynamicProperty;

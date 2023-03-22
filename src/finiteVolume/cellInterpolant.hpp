@@ -3,9 +3,9 @@
 
 #include <petsc.h>
 #include <vector>
+#include "domain/range.hpp"
 #include "domain/region.hpp"
 #include "domain/subDomain.hpp"
-#include "domain/range.hpp"
 namespace ablate::finiteVolume {
 
 class CellInterpolant {
@@ -109,7 +109,8 @@ class CellInterpolant {
      * @param locFVec
      */
     void ComputeRHS(PetscReal time, Vec locXVec, Vec locAuxVec, Vec locFVec, const std::shared_ptr<domain::Region>& solverRegion,
-                    std::vector<CellInterpolant::DiscontinuousFluxFunctionDescription>& rhsFunctions, const ablate::domain::Range& faceRange, const ablate::domain::Range& cellRange, Vec cellGeomVec, Vec faceGeomVec);
+                    std::vector<CellInterpolant::DiscontinuousFluxFunctionDescription>& rhsFunctions, const ablate::domain::Range& faceRange, const ablate::domain::Range& cellRange, Vec cellGeomVec,
+                    Vec faceGeomVec);
 
     /**
      * Adds in contributions for face based rhs point cell functions

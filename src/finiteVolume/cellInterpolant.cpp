@@ -40,8 +40,8 @@ ablate::finiteVolume::CellInterpolant::~CellInterpolant() {
 }
 
 void ablate::finiteVolume::CellInterpolant::ComputeRHS(PetscReal time, Vec locXVec, Vec locAuxVec, Vec locFVec, const std::shared_ptr<domain::Region>& solverRegion,
-                                                       std::vector<CellInterpolant::DiscontinuousFluxFunctionDescription>& rhsFunctions, const ablate::domain::Range& faceRange, const ablate::domain::Range& cellRange,
-                                                       Vec cellGeomVec, Vec faceGeomVec) {
+                                                       std::vector<CellInterpolant::DiscontinuousFluxFunctionDescription>& rhsFunctions, const ablate::domain::Range& faceRange,
+                                                       const ablate::domain::Range& cellRange, Vec cellGeomVec, Vec faceGeomVec) {
     auto dm = subDomain->GetDM();
     auto dmAux = subDomain->GetAuxDM();
 

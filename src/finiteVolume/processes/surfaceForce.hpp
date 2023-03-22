@@ -4,10 +4,10 @@
 #include <petsc.h>
 #include <memory>
 #include <vector>
+#include "domain/range.hpp"
 #include "finiteVolume/fluxCalculator/fluxCalculator.hpp"
 #include "flowProcess.hpp"
 #include "process.hpp"
-#include "domain/range.hpp"
 #include "solver/solver.hpp"
 #include "twoPhaseEulerAdvection.hpp"
 

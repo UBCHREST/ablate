@@ -1,9 +1,9 @@
 #ifndef ABLATELIBRARY_RBF_HPP
 #define ABLATELIBRARY_RBF_HPP
 #include <petsc.h>
+#include "domain/range.hpp"  // For domain::Range
 #include "domain/subDomain.hpp"
 #include "rbfSupport.hpp"
-#include "domain/range.hpp"  // For domain::Range
 
 #define __RBF_DEFAULT_POLYORDER 3
 

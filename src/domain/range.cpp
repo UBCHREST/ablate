@@ -1,6 +1,6 @@
 #include "range.hpp"
+#include <petsc/private/dmpleximpl.h>  // For ISIntersect_Caching_Internal, used in ablate::domain::SubDomain::GetRange
 #include "utilities/petscUtilities.hpp"
-#include <petsc/private/dmpleximpl.h> // For ISIntersect_Caching_Internal, used in ablate::domain::SubDomain::GetRange
 
 void ablate::domain::GetRange(DM dm, const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::domain::Range &range) {
     // Start out getting all the points
@@ -46,7 +46,6 @@ void ablate::domain::GetCellRange(DM dm, const std::shared_ptr<ablate::domain::R
     ablate::domain::GetRange(dm, region, depth, cellRange);
 }
 
-
 void ablate::domain::GetFaceRange(DM dm, const std::shared_ptr<ablate::domain::Region> region, ablate::domain::Range &faceRange) {
     // Start out getting all the faces
     PetscInt depth;
@@ -60,4 +59,3 @@ void ablate::domain::RestoreRange(ablate::domain::Range &range) {
         ISDestroy(&range.is) >> utilities::PetscUtilities::checkError;
     }
 }
-

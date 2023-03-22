@@ -2,12 +2,12 @@
 #define ABLATELIBRARY_VIRTUALTCP_H
 
 #include "boundarySolver/boundarySolver.hpp"
+#include "domain/range.hpp"
 #include "io/interval/fixedInterval.hpp"
 #include "io/interval/interval.hpp"
 #include "monitor.hpp"
 #include "radiation/radiation.hpp"
 #include "radiation/surfaceRadiation.hpp"
-#include "solver/dynamicRange.hpp"
 
 namespace ablate::monitors {
 
@@ -39,7 +39,7 @@ class RadiationFlux : public Monitor, public io::Serializable {
     /**
      * Face range stored by the radiation to locate the
      */
-    solver::DynamicRange monitorRange;
+    ablate::domain::DynamicRange monitorRange;
 
     /**
      * Region for the radiation solver to monitor

@@ -13,8 +13,6 @@ target_sources(ablateLibrary
         rhsFunction.hpp
         boundaryFunction.hpp
         cellSolver.hpp
-        dynamicRange.hpp
-        reverseRange.hpp
         adaptPhysics.hpp
         physicsTimeStepFunction.hpp
         adaptPhysicsConstrained.cpp

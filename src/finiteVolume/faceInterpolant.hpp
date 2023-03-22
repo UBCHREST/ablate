@@ -2,8 +2,8 @@
 #define ABLATELIBRARY_FACEINTERPOLANT_HPP
 
 #include <memory>
-#include "domain/subDomain.hpp"
 #include "domain/range.hpp"
+#include "domain/subDomain.hpp"
 #include "stencils/stencil.hpp"
 
 namespace ablate::finiteVolume {

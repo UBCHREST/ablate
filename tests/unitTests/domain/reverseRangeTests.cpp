@@ -1,8 +1,7 @@
 #include <petsc.h>
 #include <fstream>
+#include "domain/range.hpp"
 #include "gtest/gtest.h"
-#include "solver/dynamicRange.hpp"
-#include "solver/reverseRange.hpp"
 
 namespace ablateTesting::solver {
 
@@ -12,7 +11,7 @@ TEST_P(ReverseRangeTestFixture, ShouldBuildAndUseRange) {
     // arrange
     auto range = GetParam().first;
     auto expectedAbsoluteIndex = GetParam().second;
-    ablate::solver::ReverseRange reverseRange(range);
+    ablate::domain::ReverseRange reverseRange(range);
 
     // act/assert
     for (PetscInt index = range.start; index < range.end; ++index) {

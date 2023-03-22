@@ -5,10 +5,10 @@
 #include <map>
 #include <set>
 #include <utility>
+#include "domain/range.hpp"
 #include "utilities/mathUtilities.hpp"
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/petscUtilities.hpp"
-#include "domain/range.hpp"
 
 ablate::domain::modifiers::FvmCheck::FvmCheck(std::shared_ptr<domain::Region> fvmRegion, int expectedFaceCount, int expectedNodeCount)
     : region(std::move(fvmRegion)), expectedFaceCount(expectedFaceCount), expectedNodeCount(expectedNodeCount) {}
