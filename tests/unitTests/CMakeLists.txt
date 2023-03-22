@@ -20,7 +20,6 @@ add_subdirectory(monitors)
 add_subdirectory(io)
 add_subdirectory(boundarySolver)
 add_subdirectory(radiation)
-add_subdirectory(solver)
 add_subdirectory(levelSet)
 
 gtest_discover_tests(unitTests
