@@ -69,12 +69,12 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
         /**
          * There is no need to precompute source for the chemtab model
          */
-        void ComputeSource(const solver::Range& cellRange, PetscReal time, PetscReal dt, Vec solution) override{};
+        void ComputeSource(const ablate::domain::Range& cellRange, PetscReal time, PetscReal dt, Vec solution) override{};
 
         /**
          * Computes and adds the source to the supplied vector
          */
-        void AddSource(const solver::Range& cellRange, Vec locSolution, Vec locSource) override;
+        void AddSource(const ablate::domain::Range& cellRange, Vec locSolution, Vec locSource) override;
     };
 
     /**
@@ -188,7 +188,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @param fields
      * @return
      */
-    std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override;
+    std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const ablate::domain::Range& cellRange) override;
 
     /**
      * Print the details of this eos
@@ -261,7 +261,7 @@ class ChemTab : public ChemistryModel {
 
     [[nodiscard]] const std::vector<std::string>& GetProgressVariables() const override { throw std::runtime_error(errorMessage); }
 
-    std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const solver::Range& cellRange) override { throw std::runtime_error(errorMessage); }
+    std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const ablate::domain::Range& cellRange) override { throw std::runtime_error(errorMessage); }
 
     void View(std::ostream& stream) const override { throw std::runtime_error(errorMessage); }
 

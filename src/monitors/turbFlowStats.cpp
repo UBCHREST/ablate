@@ -1,14 +1,14 @@
 #include "monitors/turbFlowStats.hpp"
 #include <iostream>
+#include "domain/range.hpp"
 #include "io/interval/fixedInterval.hpp"
 #include "petscmath.h"
-#include "solver/range.hpp"
 #include "utilities/constants.hpp"
 
 using tp = ablate::eos::ThermodynamicProperty;
 using fLoc = ablate::domain::FieldLocation;
 using Constant = ablate::utilities::Constants;
-typedef ablate::solver::Range Range;
+typedef ablate::domain::Range Range;
 
 ablate::monitors::TurbFlowStats::TurbFlowStats(const std::vector<std::string> nameIn, const std::shared_ptr<ablate::eos::EOS> eosIn, std::shared_ptr<io::interval::Interval> intervalIn)
     : fieldNames(nameIn), eos(eosIn), interval(intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>()) {

@@ -10,7 +10,7 @@ ablate::radiation::VolumeRadiation::VolumeRadiation(const std::string& solverId1
 ablate::radiation::VolumeRadiation::~VolumeRadiation() = default;
 
 void ablate::radiation::VolumeRadiation::Setup() {
-    solver::Range cellRange;
+    ablate::domain::Range cellRange;
     GetCellRange(cellRange);  //!< Gets the cell range that should be applied to the radiation solver
 
     // check for ghost cells

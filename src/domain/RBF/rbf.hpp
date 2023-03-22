@@ -1,9 +1,9 @@
 #ifndef ABLATELIBRARY_RBF_HPP
 #define ABLATELIBRARY_RBF_HPP
 #include <petsc.h>
+#include "domain/range.hpp"  // For domain::Range
 #include "domain/subDomain.hpp"
 #include "rbfSupport.hpp"
-#include "solver/solver.hpp"  // For solver::Range
 
 #define __RBF_DEFAULT_POLYORDER 3
 
@@ -53,7 +53,7 @@ class RBF {
     virtual ~RBF();
 
     /** SubDomain Register and Setup **/
-    void Initialize(solver::Range cellRange);
+    void Initialize(ablate::domain::Range cellRange);
     void Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain);
 
     // Derivative stuff
@@ -65,11 +65,6 @@ class RBF {
 
     // Interpolation stuff
     PetscReal Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]);
-
-    // To make setup easier
-    void GetRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::solver::Range &range);
-    void GetCellRange(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<ablate::domain::Region> region, ablate::solver::Range &range);
-    void RestoreRange(ablate::solver::Range &range);
 
     // These will be overwritten in the derived classes
     virtual PetscReal RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) = 0;                          // Radial function evaluated using the distance between two points

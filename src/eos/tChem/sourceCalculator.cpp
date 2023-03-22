@@ -25,7 +25,7 @@ void ablate::eos::tChem::SourceCalculator::ChemistryConstraints::Set(const std::
 }
 
 ablate::eos::tChem::SourceCalculator::SourceCalculator(const std::vector<domain::Field>& fields, const std::shared_ptr<TChem> eosIn,
-                                                       ablate::eos::tChem::SourceCalculator::ChemistryConstraints constraints, const solver::Range& cellRange)
+                                                       ablate::eos::tChem::SourceCalculator::ChemistryConstraints constraints, const ablate::domain::Range& cellRange)
     : chemistryConstraints(constraints), eos(eosIn), numberSpecies(eosIn->GetSpeciesVariables().size()) {
     // determine the number of required cells
     std::size_t numberCells = cellRange.end - cellRange.start;
@@ -105,7 +105,7 @@ ablate::eos::tChem::SourceCalculator::SourceCalculator(const std::vector<domain:
     densityYiId = densityYiField->id;
 }
 
-void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::solver::Range& cellRange, PetscReal time, PetscReal dt, Vec globFlowVec) {
+void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::Range& cellRange, PetscReal time, PetscReal dt, Vec globFlowVec) {
     StartEvent("tChem::SourceCalculator::ComputeSource");
     // Get the valid cell range over this region
     auto numberCells = cellRange.end - cellRange.start;
@@ -310,7 +310,7 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::solver::R
     Kokkos::deep_copy(sourceTermsHost, sourceTermsDevice);
     EndEvent();
 }
-void ablate::eos::tChem::SourceCalculator::AddSource(const ablate::solver::Range& cellRange, Vec, Vec locFVec) {
+void ablate::eos::tChem::SourceCalculator::AddSource(const ablate::domain::Range& cellRange, Vec, Vec locFVec) {
     StartEvent("tChem::SourceCalculator::AddSource");
     // get access to the fArray
     PetscScalar* fArray;

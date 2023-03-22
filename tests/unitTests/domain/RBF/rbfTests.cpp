@@ -306,7 +306,7 @@ static PetscReal RBFTestFixture_Function(PetscReal x[3], PetscInt dx, PetscInt d
     }
 }
 
-void RBFTestFixture_SetData(ablate::solver::Range cellRange, const ablate::domain::Field *field, std::shared_ptr<ablate::domain::SubDomain> subDomain) {
+void RBFTestFixture_SetData(ablate::domain::Range cellRange, const ablate::domain::Field *field, std::shared_ptr<ablate::domain::SubDomain> subDomain) {
     PetscReal *array, *val, x[3] = {0.0, 0.0, 0.0};
     Vec vec = subDomain->GetVec(*field);
     DM dm = subDomain->GetFieldDM(*field);
@@ -352,18 +352,13 @@ TEST_P(RBFTestFixture_Derivative, CheckDerivativeFunctions) {
         // The field containing the data
         const ablate::domain::Field *field = &(subDomain->GetField("fieldA"));
 
-        ablate::solver::Range cellRange;
+        ablate::domain::Range cellRange;
+        subDomain->GetCellRange(nullptr, cellRange);
         for (std::size_t j = 0; j < rbfList.size(); ++j) {
-            rbfList[j]->Setup(subDomain);  // This causes issues (I think)
-
-            //         Initialize
-            rbfList[j]->GetCellRange(subDomain, nullptr, cellRange);
-            rbfList[j]->Initialize(cellRange);
-            rbfList[j]->RestoreRange(cellRange);
+            rbfList[j]->Setup(subDomain);       // This causes issues (I think)
+            rbfList[j]->Initialize(cellRange);  //         Initialize
         }
 
-        // Now set the data using the first RBF. All will use the same data
-        rbfList[0]->GetCellRange(subDomain, nullptr, cellRange);
         RBFTestFixture_SetData(cellRange, field, subDomain);
 
         // Now check derivatives
@@ -407,7 +402,7 @@ TEST_P(RBFTestFixture_Derivative, CheckDerivativeFunctions) {
             }
         }
 
-        rbfList[0]->RestoreRange(cellRange);
+        subDomain->RestoreRange(cellRange);
 
         //    ablate::environment::RunEnvironment::Finalize();
 
@@ -724,18 +719,15 @@ TEST_P(RBFTestFixture_Interpolation, CheckInterpolationFunctions) {
         // The field containing the data
         const ablate::domain::Field *field = &(subDomain->GetField("fieldA"));
 
-        ablate::solver::Range cellRange;
+        ablate::domain::Range cellRange;
+        subDomain->GetCellRange(nullptr, cellRange);
         for (std::size_t j = 0; j < rbfList.size(); ++j) {
-            rbfList[j]->Setup(subDomain);  // This causes issues (I think)
-
-            //         Initialize
-            rbfList[j]->GetCellRange(subDomain, nullptr, cellRange);
-            rbfList[j]->Initialize(cellRange);
-            rbfList[j]->RestoreRange(cellRange);
+            rbfList[j]->Setup(subDomain);       // This causes issues (I think)
+            rbfList[j]->Initialize(cellRange);  //         Initialize
         }
 
         // Now set the data using the first RBF. All will use the same data
-        rbfList[0]->GetCellRange(subDomain, nullptr, cellRange);
+
         RBFTestFixture_SetData(cellRange, field, subDomain);
 
         std::vector<PetscInt> dx = testingParam.dx, dy = testingParam.dy, dz = testingParam.dz;
@@ -753,7 +745,7 @@ TEST_P(RBFTestFixture_Interpolation, CheckInterpolationFunctions) {
             }
         }
 
-        rbfList[0]->RestoreRange(cellRange);
+        subDomain->RestoreRange(cellRange);
 
     EndWithMPI
 }

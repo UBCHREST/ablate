@@ -57,12 +57,12 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
 
     /** SubDomain Register and Setup **/
-    virtual void Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
+    virtual void Setup(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
     /**
      * @param cellRange The range of cells for which rays are initialized
      */
-    virtual void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
+    virtual void Initialize(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
     /**
      * Compute total intensity (pre computed gains + current loss) with
@@ -72,7 +72,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * @param kappa the absorptivity of the cell
      * @return
      */
-    inline PetscReal GetIntensity(PetscInt index, const solver::Range& cellRange, PetscReal temperature, PetscReal kappa) {
+    inline PetscReal GetIntensity(PetscInt index, const ablate::domain::Range& cellRange, PetscReal temperature, PetscReal kappa) {
         // Compute the losses
         PetscReal netIntensity = -4.0 * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
 

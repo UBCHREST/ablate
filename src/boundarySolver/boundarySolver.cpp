@@ -112,7 +112,7 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
     PetscInt maxCellDepth = dim;
 
     // March over each cell in this region to create the stencil
-    solver::Range cellRange;
+    ablate::domain::Range cellRange;
     GetCellRange(cellRange);
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
         // if there is a cell array, use it, otherwise it is just c
@@ -602,7 +602,7 @@ void ablate::boundarySolver::BoundarySolver::InsertFieldFunctions(const std::vec
         VecGetArray(vec, &array) >> utilities::PetscUtilities::checkError;
 
         // March over each cell
-        solver::Range cellRange;
+        ablate::domain::Range cellRange;
         GetCellRange(cellRange);
         PetscInt dim = subDomain->GetDimensions();
 

@@ -3,9 +3,9 @@
 
 #include <petsc.h>
 #include <vector>
+#include "domain/range.hpp"
 #include "domain/region.hpp"
 #include "domain/subDomain.hpp"
-#include "solver/range.hpp"
 namespace ablate::finiteVolume {
 
 class CellInterpolant {
@@ -56,7 +56,7 @@ class CellInterpolant {
     void ComputeFluxSourceTerms(DM dm, PetscDS ds, PetscInt totDim, const PetscScalar* xArray, DM dmAux, PetscDS dsAux, PetscInt totDimAux, const PetscScalar* auxArray, DM faceDM,
                                 const PetscScalar* faceGeomArray, DM cellDM, const PetscScalar* cellGeomArray, std::vector<DM>& dmGrads, std::vector<const PetscScalar*>& locGradArrays,
                                 PetscScalar* locFArray, const std::shared_ptr<domain::Region>& solverRegion, std::vector<CellInterpolant::DiscontinuousFluxFunctionDescription>& rhsFunctions,
-                                const solver::Range& faceRange, const solver::Range& cellRange);
+                                const ablate::domain::Range& faceRange, const ablate::domain::Range& cellRange);
 
     /**
      * support call to project to a single face from a side
@@ -75,8 +75,8 @@ class CellInterpolant {
      * @param faceRange
      * @param cellRange
      */
-    void ComputeFieldGradients(const domain::Field& field, Vec xLocalVec, Vec& gradLocVec, DM& dmGrad, Vec cellGeomVec, Vec faceGeomVec, const solver::Range& faceRange,
-                               const solver::Range& cellRange);
+    void ComputeFieldGradients(const domain::Field& field, Vec xLocalVec, Vec& gradLocVec, DM& dmGrad, Vec cellGeomVec, Vec faceGeomVec, const ablate::domain::Range& faceRange,
+                               const ablate::domain::Range& cellRange);
 
     /**
      * Helper function to compute the gradient at each cell
@@ -109,7 +109,8 @@ class CellInterpolant {
      * @param locFVec
      */
     void ComputeRHS(PetscReal time, Vec locXVec, Vec locAuxVec, Vec locFVec, const std::shared_ptr<domain::Region>& solverRegion,
-                    std::vector<CellInterpolant::DiscontinuousFluxFunctionDescription>& rhsFunctions, const solver::Range& faceRange, const solver::Range& cellRange, Vec cellGeomVec, Vec faceGeomVec);
+                    std::vector<CellInterpolant::DiscontinuousFluxFunctionDescription>& rhsFunctions, const ablate::domain::Range& faceRange, const ablate::domain::Range& cellRange, Vec cellGeomVec,
+                    Vec faceGeomVec);
 
     /**
      * Adds in contributions for face based rhs point cell functions
@@ -118,7 +119,7 @@ class CellInterpolant {
      * @param locFVec
      */
     void ComputeRHS(PetscReal time, Vec locXVec, Vec locAuxVec, Vec locFVec, const std::shared_ptr<domain::Region>& solverRegion, std::vector<CellInterpolant::PointFunctionDescription>& rhsFunctions,
-                    const solver::Range& cellRange, Vec cellGeomVec);
+                    const ablate::domain::Range& cellRange, Vec cellGeomVec);
 };
 
 }  // namespace ablate::finiteVolume

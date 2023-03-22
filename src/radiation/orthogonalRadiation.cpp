@@ -6,7 +6,7 @@ ablate::radiation::OrthogonalRadiation::OrthogonalRadiation(const std::string& s
 
 ablate::radiation::OrthogonalRadiation::~OrthogonalRadiation() {}
 
-void ablate::radiation::OrthogonalRadiation::Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) {
+void ablate::radiation::OrthogonalRadiation::Setup(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain) {
     dim = subDomain.GetDimensions();   //!< Number of dimensions already defined in the setup
     nTheta = (dim == 1) ? 1 : nTheta;  //!< Reduce the number of rays if one dimensional symmetry can be taken advantage of
 

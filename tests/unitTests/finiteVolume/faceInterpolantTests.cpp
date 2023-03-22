@@ -117,7 +117,7 @@ TEST_P(FaceInterpolantTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
         faceInterpolant.GetInterpolatedFaceVectors(subDomain->GetSolutionVector(), auxVec, faceSolutionVec, faceAuxVec, faceSolutionGradVec, faceAuxGradVec);
 
         // run over each face to see if it computed the gradient correctly
-        solver::Range faceRange;
+        ablate::domain::Range faceRange;
         fvSolver->GetFaceRange(faceRange);
 
         // extract the arrays for each of the vec

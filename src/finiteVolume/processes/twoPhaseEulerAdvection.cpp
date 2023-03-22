@@ -255,7 +255,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Multipha
     PetscFunctionBegin;
     // Get flow field data
     const auto &fvSolver = dynamic_cast<ablate::finiteVolume::FiniteVolumeSolver &>(solver);
-    solver::Range cellRange;
+    ablate::domain::Range cellRange;
     fvSolver.GetCellRangeWithoutGhost(cellRange);
     PetscInt dim;
     PetscCall(DMGetDimension(fvSolver.GetSubDomain().GetDM(), &dim));
@@ -331,7 +331,7 @@ double ablate::finiteVolume::processes::TwoPhaseEulerAdvection::ComputeCflTimeSt
     DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius) >> utilities::PetscUtilities::checkError;
 
     // Get the valid cell range over this region
-    solver::Range cellRange;
+    ablate::domain::Range cellRange;
     flow.GetCellRange(cellRange);
 
     const PetscScalar *x;

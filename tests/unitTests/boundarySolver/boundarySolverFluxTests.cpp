@@ -271,7 +271,7 @@ TEST_P(BoundarySolverFluxTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
         VecGetArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
 
         // March over each cell
-        solver::Range boundaryCellRange;
+        ablate::domain::Range boundaryCellRange;
         boundarySolver->GetCellRange(boundaryCellRange);
         for (PetscInt c = boundaryCellRange.start; c < boundaryCellRange.end; ++c) {
             // if there is a cell array, use it, otherwise it is just c

@@ -1,7 +1,7 @@
 #include <petsc.h>
 #include <fstream>
+#include "domain/dynamicRange.hpp"
 #include "gtest/gtest.h"
-#include "solver/dynamicRange.hpp"
 
 namespace ablateTesting::solver {
 
@@ -9,7 +9,7 @@ class DynamicRangeTestFixture : public ::testing::TestWithParam<std::vector<Pets
 
 TEST_P(DynamicRangeTestFixture, ShouldBuildAndUseRange) {
     // arrange
-    ablate::solver::DynamicRange dynamicRange;
+    ablate::domain::DynamicRange dynamicRange;
 
     for (const auto& i : GetParam()) {
         dynamicRange.Add(i);

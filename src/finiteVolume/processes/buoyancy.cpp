@@ -24,7 +24,7 @@ PetscErrorCode ablate::finiteVolume::processes::Buoyancy::UpdateAverageDensity(T
     PetscCall(VecGetArrayRead(globFlowVec, &flowArray));
 
     // Get the valid cell range over this region
-    solver::Range cellRange;
+    ablate::domain::Range cellRange;
     flow.GetCellRange(cellRange);
 
     // March over each cell

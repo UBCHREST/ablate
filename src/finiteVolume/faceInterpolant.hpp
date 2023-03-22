@@ -2,8 +2,8 @@
 #define ABLATELIBRARY_FACEINTERPOLANT_HPP
 
 #include <memory>
+#include "domain/range.hpp"
 #include "domain/subDomain.hpp"
-#include "solver/range.hpp"
 #include "stencils/stencil.hpp"
 
 namespace ablate::finiteVolume {
@@ -97,7 +97,7 @@ class FaceInterpolant {
      * @param locFVec
      */
     void ComputeRHS(PetscReal time, Vec locXVec, Vec locAuxVec, Vec locFVec, const std::shared_ptr<domain::Region>& solverRegion,
-                    std::vector<FaceInterpolant::ContinuousFluxFunctionDescription>& rhsFunctions, const solver::Range& faceRange, Vec cellGeomVec, Vec faceGeomVec);
+                    std::vector<FaceInterpolant::ContinuousFluxFunctionDescription>& rhsFunctions, const ablate::domain::Range& faceRange, Vec cellGeomVec, Vec faceGeomVec);
 
     /**
      * function to get the interpolated values on the face
