@@ -5,6 +5,7 @@
 #include <map>
 #include <set>
 #include <utility>
+#include "domain/range.hpp"
 #include "utilities/mathUtilities.hpp"
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/petscUtilities.hpp"
@@ -17,8 +18,8 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
     DMPlexGetDepth(dm, &depth) >> utilities::PetscUtilities::checkError;
 
     // Get the faces in this range
-    ablate::solver::Range faceRange;
-    GetRange(dm, depth - 1, faceRange);
+    ablate::domain::Range faceRange;
+    ablate::domain::GetFaceRange(dm, this->region, faceRange);
 
     // get the label for this region
     DMLabel regionLabel = nullptr;
@@ -333,55 +334,12 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
     VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
     VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
 
-    RestoreRange(dm, faceRange);
+    ablate::domain::RestoreRange(faceRange);
     VecDestroy(&faceGeomVec) >> utilities::PetscUtilities::checkError;
     VecDestroy(&cellGeomVec) >> utilities::PetscUtilities::checkError;
 }
 
 std::string ablate::domain::modifiers::FvmCheck::ToString() const { return "ablate::domain::modifiers::FvmCheck: " + (region ? region->ToString() : ""); }
-
-void ablate::domain::modifiers::FvmCheck::GetRange(DM dm, PetscInt depth, ablate::solver::Range& range) const {
-    // Start out getting all the points
-    IS allPointIS;
-    DMGetStratumIS(dm, "dim", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
-    if (!allPointIS) {
-        DMGetStratumIS(dm, "depth", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
-    }
-
-    // If there is a label for this solver, get only the parts of the mesh that here
-    if (region) {
-        DMLabel label;
-        DMGetLabel(dm, region->GetName().c_str(), &label);
-
-        IS labelIS;
-        DMLabelGetStratumIS(label, region->GetValue(), &labelIS) >> utilities::PetscUtilities::checkError;
-        ISIntersect_Caching_Internal(allPointIS, labelIS, &range.is) >> utilities::PetscUtilities::checkError;
-        ISDestroy(&labelIS) >> utilities::PetscUtilities::checkError;
-    } else {
-        PetscObjectReference((PetscObject)allPointIS) >> utilities::PetscUtilities::checkError;
-        range.is = allPointIS;
-    }
-
-    // Get the point range
-    if (range.is == nullptr) {
-        // There are no points in this region, so skip
-        range.start = 0;
-        range.end = 0;
-        range.points = nullptr;
-    } else {
-        // Get the range
-        ISGetPointRange(range.is, &range.start, &range.end, &range.points) >> utilities::PetscUtilities::checkError;
-    }
-
-    // Clean up the allCellIS
-    ISDestroy(&allPointIS) >> utilities::PetscUtilities::checkError;
-}
-void ablate::domain::modifiers::FvmCheck::RestoreRange(DM, ablate::solver::Range& range) {
-    if (range.is) {
-        ISRestorePointRange(range.is, &range.start, &range.end, &range.points) >> utilities::PetscUtilities::checkError;
-        ISDestroy(&range.is) >> utilities::PetscUtilities::checkError;
-    }
-}
 
 #include "registrar.hpp"
 REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::FvmCheck,

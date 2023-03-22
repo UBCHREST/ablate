@@ -25,17 +25,17 @@ class SourceCalculatorSoot : public ChemistryModel::SourceCalculator, private ut
      * @param cellRange
      */
     SourceCalculatorSoot(const std::vector<domain::Field>& fields, const std::shared_ptr<TChemSoot>& tChemEos, ablate::eos::tChem::SourceCalculator::ChemistryConstraints constraints,
-                         const solver::Range& cellRange);
+                         const ablate::domain::Range& cellRange);
 
     /**
      * The compute source can be used as a prestep allowing the add source to be used at each stage without reevaluating
      */
-    void ComputeSource(const solver::Range& cellRange, PetscReal time, PetscReal dt, Vec globalSolution) override;
+    void ComputeSource(const ablate::domain::Range& cellRange, PetscReal time, PetscReal dt, Vec globalSolution) override;
 
     /**
      * Adds the source that was computed in the ComputeSource to the supplied vector
      */
-    void AddSource(const solver::Range& cellRange, Vec localXVec, Vec localFVec) override;
+    void AddSource(const ablate::domain::Range& cellRange, Vec localXVec, Vec localFVec) override;
 
    private:
     //! copy of constraints

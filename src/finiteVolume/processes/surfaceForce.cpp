@@ -112,7 +112,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     const auto &VFfield = solver.GetSubDomain().GetField(TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD);
 
     // get the cell range
-    solver::Range cellRange;
+    ablate::domain::Range cellRange;
     solver.GetCellRangeWithoutGhost(cellRange);
     PetscScalar *fArray;
     VecGetArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;

@@ -18,7 +18,7 @@ void ablate::finiteVolume::processes::Chemistry::Setup(ablate::finiteVolume::Fin
 
 void ablate::finiteVolume::processes::Chemistry::Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) {
     // determine the number of nodes we need to compute based upon the local solver
-    solver::Range cellRange;
+    ablate::domain::Range cellRange;
     flow.GetCellRangeWithoutGhost(cellRange);
 
     // size up a calculator for this number of fields and cell range
@@ -40,7 +40,7 @@ PetscErrorCode ablate::finiteVolume::processes::Chemistry::ChemistryPreStage(TS 
 
     // Get the valid cell range over this region
     auto& fvSolver = dynamic_cast<ablate::finiteVolume::FiniteVolumeSolver&>(solver);
-    solver::Range cellRange;
+    ablate::domain::Range cellRange;
     fvSolver.GetCellRangeWithoutGhost(cellRange);
 
     // store the current dt
@@ -68,7 +68,7 @@ PetscErrorCode ablate::finiteVolume::processes::Chemistry::AddChemistrySourceToF
     auto process = (ablate::finiteVolume::processes::Chemistry*)ctx;
 
     // get the cell range
-    solver::Range cellRange;
+    ablate::domain::Range cellRange;
     solver.GetCellRangeWithoutGhost(cellRange);
 
     // add in contributions

@@ -1,8 +1,8 @@
 #ifndef ABLATELIBRARY_ORTHOGONALRADIATION_HPP
 #define ABLATELIBRARY_ORTHOGONALRADIATION_HPP
 
+#include "domain/range.hpp"
 #include "radiation.hpp"
-#include "solver/reverseRange.hpp"
 #include "surfaceRadiation.hpp"
 
 namespace ablate::radiation {
@@ -13,7 +13,7 @@ class OrthogonalRadiation : public ablate::radiation::SurfaceRadiation {
                         std::shared_ptr<ablate::monitors::logs::Log> = {});
     ~OrthogonalRadiation();
 
-    void Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) override;
+    void Setup(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain) override;
 };
 }  // namespace ablate::radiation
 

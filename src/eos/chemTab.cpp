@@ -272,7 +272,7 @@ void ablate::eos::ChemTab::ChemistrySource(PetscReal density, const PetscReal de
 
 void ablate::eos::ChemTab::View(std::ostream &stream) const { stream << "EOS: " << type << std::endl; }
 
-std::shared_ptr<ablate::eos::ChemistryModel::SourceCalculator> ablate::eos::ChemTab::CreateSourceCalculator(const std::vector<domain::Field> &fields, const ablate::solver::Range &cellRange) {
+std::shared_ptr<ablate::eos::ChemistryModel::SourceCalculator> ablate::eos::ChemTab::CreateSourceCalculator(const std::vector<domain::Field> &fields, const ablate::domain::Range &cellRange) {
     // Look for the euler field
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
     if (eulerField == fields.end()) {
@@ -442,7 +442,7 @@ ablate::eos::ChemTab::ChemTabSourceCalculator::ChemTabSourceCalculator(PetscInt 
                                                                        std::shared_ptr<ChemTab> chemTabModel)
     : densityOffset(densityOffset), densityEnergyOffset(densityEnergyOffset), densityProgressVariableOffset(densityProgressVariableOffset), chemTabModel(std::move(chemTabModel)) {}
 
-void ablate::eos::ChemTab::ChemTabSourceCalculator::AddSource(const ablate::solver::Range &cellRange, Vec locX, Vec locFVec) {
+void ablate::eos::ChemTab::ChemTabSourceCalculator::AddSource(const ablate::domain::Range &cellRange, Vec locX, Vec locFVec) {
     // get access to the xArray, fArray
     PetscScalar *fArray;
     VecGetArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;

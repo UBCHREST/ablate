@@ -234,7 +234,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             PetscReal l2sum = 0.0;
             double error;  // Number of cells in the domain
 
-            ablate::solver::Range cellRange;
+            ablate::domain::Range cellRange;
             radiation->GetCellRange(cellRange);
             // March over each cell
             for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {

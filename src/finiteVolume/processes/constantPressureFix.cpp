@@ -45,7 +45,7 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
         PetscReal velocityScratch[3];
 
         // Get the valid cell range over this region
-        solver::Range cellRange;
+        ablate::domain::Range cellRange;
         fvSolver.GetCellRange(cellRange);
 
         // get the solution vec

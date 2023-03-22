@@ -36,7 +36,7 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
     PetscCall(VecGetArrayRead(globFlowVec, &flowArray));
 
     // Get the valid cell range over this region
-    solver::Range cellRange;
+    ablate::domain::Range cellRange;
     flow.GetCellRange(cellRange);
 
     // get decode state function/context

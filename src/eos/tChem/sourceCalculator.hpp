@@ -45,17 +45,17 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
      * @param constraints
      * @param cellRange
      */
-    SourceCalculator(const std::vector<domain::Field>& fields, std::shared_ptr<TChem> tChemEos, ChemistryConstraints constraints, const solver::Range& cellRange);
+    SourceCalculator(const std::vector<domain::Field>& fields, std::shared_ptr<TChem> tChemEos, ChemistryConstraints constraints, const ablate::domain::Range& cellRange);
 
     /**
      * The compute source can be used as a prestep allowing the add source to be used at each stage without reevaluating
      */
-    void ComputeSource(const solver::Range& cellRange, PetscReal time, PetscReal dt, Vec globalSolution) override;
+    void ComputeSource(const ablate::domain::Range& cellRange, PetscReal time, PetscReal dt, Vec globalSolution) override;
 
     /**
      * Adds the source that was computed in the ComputeSource to the supplied vector
      */
-    void AddSource(const solver::Range& cellRange, Vec localXVec, Vec localFVec) override;
+    void AddSource(const ablate::domain::Range& cellRange, Vec localXVec, Vec localFVec) override;
 
    private:
     //! copy of constraints

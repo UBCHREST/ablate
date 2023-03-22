@@ -3,7 +3,7 @@
 #include <vector>
 #include "petsc.h"
 #include "range.hpp"
-namespace ablate::solver {
+namespace ablate::domain {
 
 /**
  * Results in a mapping from the point (face/cell id) to the index in the range
@@ -15,7 +15,7 @@ struct ReverseRange {
     std::vector<PetscInt> indices;
 
    public:
-    explicit ReverseRange(const Range& range) {
+    explicit ReverseRange(const ablate::domain::Range& range) {
         rangeStart = range.start;
         if (range.points && (range.start != range.end)) {
             // find the min/max point
@@ -51,5 +51,5 @@ struct ReverseRange {
      */
     inline PetscInt GetAbsoluteIndex(PetscInt point) const { return GetIndex(point) - rangeStart; }
 };
-}  // namespace ablate::solver
+}  // namespace ablate::domain
 #endif  // ABLATELIBRARY_RANGE_HPP

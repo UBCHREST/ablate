@@ -260,7 +260,7 @@ void ablate::finiteVolume::FaceInterpolant::RestoreInterpolatedFaceVectors(Vec, 
     }
 }
 void ablate::finiteVolume::FaceInterpolant::ComputeRHS(PetscReal time, Vec locXVec, Vec locAuxVec, Vec locFVec, const std::shared_ptr<domain::Region>& solverRegion,
-                                                       std::vector<FaceInterpolant::ContinuousFluxFunctionDescription>& rhsFunctions, const solver::Range& faceRange, Vec cellGeomVec,
+                                                       std::vector<FaceInterpolant::ContinuousFluxFunctionDescription>& rhsFunctions, const ablate::domain::Range& faceRange, Vec cellGeomVec,
                                                        Vec faceGeomVec) {
     // get the dm
     auto dm = subDomain->GetDM();

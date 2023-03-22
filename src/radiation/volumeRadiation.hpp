@@ -1,9 +1,9 @@
 #ifndef ABLATELIBRARY_VOLUMERADIATION_HPP
 #define ABLATELIBRARY_VOLUMERADIATION_HPP
 
+#include "domain/dynamicRange.hpp"
 #include "io/interval/interval.hpp"
 #include "radiation.hpp"
-#include "solver/dynamicRange.hpp"
 
 namespace ablate::radiation {
 
@@ -47,7 +47,7 @@ class VolumeRadiation : public solver::CellSolver, public solver::RHSFunction {
    private:
     const std::shared_ptr<io::interval::Interval> interval;
     std::shared_ptr<ablate::radiation::Radiation> radiation;
-    solver::DynamicRange radiationCellRange;
+    ablate::domain::DynamicRange radiationCellRange;
 
     //! hold a pointer to the absorptivity function
     eos::ThermodynamicTemperatureFunction absorptivityFunction;

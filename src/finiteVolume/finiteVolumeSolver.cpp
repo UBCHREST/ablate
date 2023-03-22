@@ -76,7 +76,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
 
     {  // get the cell is for the solver minus ghost cell
         // Get the original range
-        solver::Range cellRange;
+        ablate::domain::Range cellRange;
         GetCellRange(cellRange);
 
         // create a new label
@@ -121,7 +121,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
 
 PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) {
     PetscFunctionBeginUser;
-    solver::Range faceRange, cellRange;
+    ablate::domain::Range faceRange, cellRange;
     GetFaceRange(faceRange);
     GetCellRange(cellRange);
     try {
@@ -305,7 +305,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::Restore(PetscViewer viewer, Petsc
     }
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::GetCellRangeWithoutGhost(solver::Range& faceRange) const {
+void ablate::finiteVolume::FiniteVolumeSolver::GetCellRangeWithoutGhost(ablate::domain::Range& faceRange) const {
     // Get the point range
     DMLabel solverRegionMinusGhostLabel;
     PetscInt solverRegionMinusGhostValue;
