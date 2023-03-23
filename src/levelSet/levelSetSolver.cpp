@@ -34,7 +34,7 @@ void LevelSetSolver::Setup() {
 void LevelSetSolver::Initialize() {
 
   // Initialize the RBF data structures
-  ablate::solver::Range cellRange;
+  ablate::domain::Range cellRange;
   GetCellRange(cellRange);
   LevelSetSolver::rbf->Initialize(cellRange);
   RestoreRange(cellRange);
@@ -165,7 +165,7 @@ void LevelSetSolver::Normal(PetscInt c, PetscReal *n) {
 
 void LevelSetSolver::ComputeAllNormal() {
   DM            dm = subDomain->GetDM();
-  solver::Range cellRange;
+  domain::Range cellRange;
   PetscReal    *array, *n;
   Vec           auxVec = subDomain->GetAuxVector();       // For normal vector
 
@@ -182,7 +182,7 @@ void LevelSetSolver::ComputeAllNormal() {
 
 void LevelSetSolver::ComputeAllCurvature() {
   DM            dm = subDomain->GetDM();
-  solver::Range cellRange;
+  domain::Range cellRange;
   PetscReal    *array, *h;
   Vec           auxVec = subDomain->GetAuxVector();       // For normal vector
 

@@ -6,6 +6,7 @@
 #include <vector>
 #include "levelSetFields.hpp"
 #include "domain/RBF/rbf.hpp"
+#include "solver/solver.hpp"
 
 namespace ablate::levelSet {
 
