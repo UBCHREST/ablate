@@ -405,9 +405,6 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, Vec vec, PetscInt c, 
     if (!hasKey) throw std::invalid_argument("RBF: Derivative of (" + std::to_string(dx) + ", " + std::to_string(dy) + ", " + std::to_string(dz) + ") is not setup.");
     PetscHMapIGet(RBF::hash, derKey, &derID);
 
-
-
-
     // If the stencil hasn't been setup yet do so
     if (RBF::nStencil[c] < 1) {
         RBF::SetupDerivativeStencils(c);

@@ -1,10 +1,10 @@
 #ifndef ABLATELIBRARY_RBF_HPP
 #define ABLATELIBRARY_RBF_HPP
 #include <petsc.h>
+#include <petsc/private/hashmapi.h>
 #include "domain/range.hpp"  // For domain::Range
 #include "domain/subDomain.hpp"
 #include "rbfSupport.hpp"
-#include <petsc/private/hashmapi.h>
 
 #define __RBF_DEFAULT_POLYORDER 3
 
@@ -36,7 +36,7 @@ class RBF {
     PetscReal **stencilXLocs = nullptr;    // Locations wrt a cell center. Needed only for interpolation.
 
     // The derivative->key map for the hash
-    PetscInt derivativeKey(PetscInt dx, PetscInt dy, PetscInt dz) const { return (100*dx + 10*dy + dz); };
+    PetscInt derivativeKey(PetscInt dx, PetscInt dy, PetscInt dz) const { return (100 * dx + 10 * dy + dz); };
 
     // Setup the derivative stencil at a point. There is no need for anyone outside of RBF to call this
     void SetupDerivativeStencils(PetscInt c);
@@ -48,8 +48,6 @@ class RBF {
     void Matrix(const PetscInt c);
 
     void CheckField(const ablate::domain::Field *field);  // Checks whether the field is SOL or AUX
-
-
 
    protected:
     PetscReal DistanceSquared(PetscInt dim, PetscReal x[], PetscReal y[]);
