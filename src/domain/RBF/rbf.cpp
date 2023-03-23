@@ -241,24 +241,20 @@ void RBF::Matrix(const PetscInt c) {
 
 /************ Begin Derivative Code **********************/
 
-/**
- * Set the derivatives to use
- * numDer - Number of derivatives to set
- * dx, dy, dz - Lists of length numDer indicating the derivatives
- * useVertices - Use common vertices when determining neighbors. If false then use common edges.
- */
 void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVertices) {
     if (numDer > 0) {
         RBF::useVertices = useVertices;
         RBF::nDer = numDer;
 
         PetscMalloc1(3 * numDer, &(RBF::dxyz)) >> utilities::PetscUtilities::checkError;
+        PetscHMapICreate(&(RBF::hash)) >> utilities::PetscUtilities::checkError;
 
         // Store the derivatives
         for (PetscInt i = 0; i < numDer; ++i) {
             RBF::dxyz[i * 3 + 0] = dx[i];
             RBF::dxyz[i * 3 + 1] = dy[i];
             RBF::dxyz[i * 3 + 2] = dz[i];
+            PetscHMapISet(RBF::hash, RBF::derivativeKey(dx[i], dy[i], dz[i]), i);
         }
     }
 }
@@ -388,36 +384,26 @@ void RBF::SetupDerivativeStencils() {
     }
 }
 
-/**
- * Return the requested derivative
- * field - The field to take the derivative of
- * c - The location in ablate::domain::Range
- * dx, dy, dz - The derivatives
- */
 PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz) {
-    PetscMPIInt size;
+    RBF::CheckField(field);
+
+    return RBF::EvalDer(field, RBF::subDomain->GetVec(*field), c, dx, dy, dz);
+}
+
+PetscReal RBF::EvalDer(const ablate::domain::Field *field, Vec vec, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz) {
     PetscReal *wt = nullptr;
     PetscScalar val = 0.0, *f;
     const PetscScalar *array;
     PetscInt nCells = -1, *lst = nullptr;
-    PetscInt derID = -1, numDer = RBF::nDer, *derXYZ = RBF::dxyz;
-    Vec vec = RBF::subDomain->GetVec(*field);
+    PetscInt derID = -1, numDer = RBF::nDer;
     DM dm = RBF::subDomain->GetFieldDM(*field);
+    const PetscInt fid = field->id;
 
-    MPI_Comm_size(PetscObjectComm((PetscObject)dm), &size);
-    if (field->location == FieldLocation::SOL && size > 1) {
-        // Only global vectors of SOL fields are stored in the subDomain. The subDomain needs to be augmented to also store the local vector of SOL fields
-        //  before this function can work on them. One work around is to copy the SOL field into a dummy AUX field and work on that.
-        throw std::runtime_error("ablate::domain::RBF::EvalDer does not work on SOL fields in parallel. A local vector needs to be obtained first.");
-    }
-
-    // Search for the particular index. Probably need to do something different in the future to avoid re-doing the same calculation many times
-    while ((derXYZ[++derID * 3 + 0] != dx || derXYZ[derID * 3 + 1] != dy || derXYZ[derID * 3 + 2] != dz) && derID < numDer) {
-    }
-
-    if (derID == numDer) {
-        throw std::invalid_argument("RBF: Derivative of (" + std::to_string(dx) + ", " + std::to_string(dy) + ", " + std::to_string(dz) + ") is not setup.");
-    }
+    PetscBool hasKey;
+    PetscInt derKey = RBF::derivativeKey(dx, dy, dz);
+    PetscHMapIHas(RBF::hash, derKey, &hasKey);
+    if (!hasKey) throw std::invalid_argument("RBF: Derivative of (" + std::to_string(dx) + ", " + std::to_string(dy) + ", " + std::to_string(dz) + ") is not setup.");
+    PetscHMapIGet(RBF::hash, derKey, &derID);
 
     // If the stencil hasn't been setup yet do so
     if (RBF::nStencil[c] < 1) {
@@ -433,7 +419,12 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt 
     for (PetscInt i = 0; i < nCells; ++i) {
         // DMPlexPointLocalFieldRead isn't behaving like I would expect. If I don't make f a pointer then it just returns zero.
         //    Additionally, it looks like it allows for the editing of the value.
-        DMPlexPointLocalFieldRead(dm, lst[i], field->id, array, &f) >> utilities::PetscUtilities::checkError;
+        if (fid >= 0) {
+            DMPlexPointLocalFieldRead(dm, lst[i], fid, array, &f) >> utilities::PetscUtilities::checkError;
+        } else {
+            DMPlexPointLocalRead(dm, lst[i], array, &f) >> utilities::PetscUtilities::checkError;
+        }
+
         val += wt[i * numDer + derID] * (*f);
     }
 
@@ -445,27 +436,21 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt 
 
 /************ Begin Interpolation Code **********************/
 
-/**
- * Return the interpolation of a field at a given location
- * field - The field to interpolate
- * xEval - The location where to perform the interpolatoin
- */
 PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]) {
-    PetscMPIInt size;
+    RBF::CheckField(field);
+
+    return RBF::Interpolate(field, RBF::subDomain->GetVec(*field), xEval);
+}
+
+PetscReal RBF::Interpolate(const ablate::domain::Field *field, Vec f, PetscReal xEval[3]) {
     PetscInt i, c, nCells, *lst;
     PetscScalar *vals, *v;
     const PetscScalar *fvals;
     PetscReal *x, x0[3];
     Mat A;
-    Vec weights, rhs, f = RBF::subDomain->GetVec(*field);
+    Vec weights, rhs;
     DM dm = RBF::subDomain->GetFieldDM(*field);
-
-    MPI_Comm_size(PetscObjectComm((PetscObject)dm), &size);
-    if (field->location == FieldLocation::SOL && size > 1) {
-        // Only global vectors of SOL fields are stored in the subDomain. The subDomain needs to be augmented to also store the local vector of SOL fields
-        //  before this function can work on them. One work around is to copy the SOL field into a dummy AUX field and work on that.
-        throw std::runtime_error("ablate::domain::RBF::Interpolate does not work on SOL fields in parallel. A local vector needs to be obtained first.");
-    }
+    const PetscInt fid = field->id;
 
     DMPlexGetContainingCell(dm, xEval, &c) >> utilities::PetscUtilities::checkError;
 
@@ -495,7 +480,11 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
     for (i = 0; i < nCells; ++i) {
         // DMPlexPointLocalFieldRead isn't behaving like I would expect. If I don't make f a pointer then it just returns zero.
         //    Additionally, it looks like it allows for the editing of the value.
-        DMPlexPointLocalFieldRead(dm, lst[i], field->id, fvals, &v) >> utilities::PetscUtilities::checkError;
+        if (fid >= 0) {
+            DMPlexPointLocalFieldRead(dm, lst[i], fid, fvals, &v) >> utilities::PetscUtilities::checkError;
+        } else {
+            DMPlexPointLocalRead(dm, lst[i], fvals, &v) >> utilities::PetscUtilities::checkError;
+        }
 
         vals[i] = *v;
     }
@@ -573,6 +562,18 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
 RBF::RBF(int polyOrder, bool hasDerivatives, bool hasInterpolation) : polyOrder(polyOrder), hasDerivatives(hasDerivatives), hasInterpolation(hasInterpolation) {}
 
 RBF::~RBF() {}
+
+void RBF::CheckField(const ablate::domain::Field *field) {  // Checks whether the field is SOL or AUX
+    PetscMPIInt size;
+    DM dm = RBF::subDomain->GetFieldDM(*field);
+
+    MPI_Comm_size(PetscObjectComm((PetscObject)dm), &size);
+    if (field->location == FieldLocation::SOL && size > 1) {
+        // Only global vectors of SOL fields are stored in the subDomain. The subDomain needs to be augmented to also store the local vector of SOL fields
+        //  before this function can work on them. One work around is to copy the SOL field into a dummy AUX field and work on that.
+        throw std::runtime_error("ablate::domain::RBF does not work on SOL fields in parallel. A local vector needs to be obtained first.");
+    }
+}
 
 // This is done once
 void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) {
