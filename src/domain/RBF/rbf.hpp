@@ -4,6 +4,7 @@
 #include "domain/range.hpp"  // For domain::Range
 #include "domain/subDomain.hpp"
 #include "rbfSupport.hpp"
+#include <petsc/private/hashmapi.h>
 
 #define __RBF_DEFAULT_POLYORDER 3
 
@@ -28,10 +29,14 @@ class RBF {
     const bool hasDerivatives;
     PetscInt nDer = 0;                     // Number of derivative stencils which are pre-computed
     PetscInt *dxyz = nullptr;              // The derivatives which have been setup
+    PetscHMapI hash = nullptr;             // Hash of the derivative
     PetscInt *nStencil = nullptr;          // Length of each stencil. Needed for both derivatives and interpolation.
     PetscInt **stencilList = nullptr;      // IDs of the points in the stencil. Needed for both derivatives and interpolation.
     PetscReal **stencilWeights = nullptr;  // Weights of the points in the stencil. Needed only for derivatives.
     PetscReal **stencilXLocs = nullptr;    // Locations wrt a cell center. Needed only for interpolation.
+
+    // The derivative->key map for the hash
+    PetscInt derivativeKey(PetscInt dx, PetscInt dy, PetscInt dz) const { return (100*dx + 10*dy + dz); };
 
     // Setup the derivative stencil at a point. There is no need for anyone outside of RBF to call this
     void SetupDerivativeStencils(PetscInt c);
@@ -41,6 +46,10 @@ class RBF {
 
     // Compute the LU-decomposition of the augmented RBF matrix given a cell list.
     void Matrix(const PetscInt c);
+
+    void CheckField(const ablate::domain::Field *field);  // Checks whether the field is SOL or AUX
+
+
 
    protected:
     PetscReal DistanceSquared(PetscInt dim, PetscReal x[], PetscReal y[]);
@@ -57,18 +66,79 @@ class RBF {
     void Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain);
 
     // Derivative stuff
+    /**
+     * Set the derivatives to use
+     * @param numDer - Number of derivatives to set
+     * @param dx, dy, dz - Lists of length numDer indicating the derivatives
+     * @param useVertices - Use common vertices when determining neighbors. If false then use common edges.
+     */
     void SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVertices);
+
+    /**
+     * Set the derivatives to use, defaulting to useVertices=TRUE
+     * @param numDer - Number of derivatives to set
+     * @param dx, dy, dz - Lists of length numDer indicating the derivatives
+     */
     void SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]);
+
+    /**
+     * Setup all derivatives in the subdomain.
+     */
     void SetupDerivativeStencils();  // Setup all derivative stencils. Useful if someone wants to remove setup cost when testing
 
+    /**
+     * Return the derivative of a field at a given location
+     * @param field - The field to take the derivative of
+     * @param c - The location in ablate::domain::Range
+     * @param dx, dy, dz - The derivative
+     */
     PetscReal EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz);  // Evaluate a derivative
 
+    /**
+     * Return the derivative of a field at a given location
+     * @param field - The field to take the derivative of
+     * @param f - The local vector containing the data
+     * @param c - The location in ablate::domain::Range
+     * @param dx, dy, dz - The derivative
+     */
+    PetscReal EvalDer(const ablate::domain::Field *field, Vec f, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz);  // Evaluate a derivative
+
     // Interpolation stuff
+    /**
+     * Return the interpolation of a field at a given location
+     * @param field - The field to interpolate
+     * @param f - The local vector containing the data
+     * @param xEval - The location where to perform the interpolation
+     */
+    PetscReal Interpolate(const ablate::domain::Field *field, Vec f, PetscReal xEval[3]);
+
+    /**
+     * Return the interpolation of a field at a given location
+     * @param field - The field to interpolate
+     * @param xEval - The location where to perform the interpolation
+     */
     PetscReal Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]);
 
     // These will be overwritten in the derived classes
-    virtual PetscReal RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) = 0;                          // Radial function evaluated using the distance between two points
+    /**
+     * The RBF kernel value between two points
+     * @param dim
+     * @param x
+     * @param y
+     */
+    virtual PetscReal RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) = 0;  // Radial function evaluated using the distance between two points
+
+    /**
+     * The RBF kernel derivative between at a location
+     * @param dim
+     * @param x
+     * @param dx, dy, dz - The derivative
+     */
     virtual PetscReal RBFDer(PetscInt dim, PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) = 0;  // Derivative of the radial function assuming that the center point is at zero.
+
+    /**
+     * The RBF kernel type
+     */
     virtual std::string_view type() const = 0;
 };
 
