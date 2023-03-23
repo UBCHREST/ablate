@@ -31,6 +31,8 @@ add_library(ablateLibrary SHARED)
 # Load in the subdirectories for the ablate library
 add_subdirectory(src)
 
+add_compile_options(KOKKOS_DEPENDENCE)
+
 # find and load required libraries
 include(config/cmakeFunctions.cmake)
 include(config/findKokkos.cmake)
