@@ -1,5 +1,6 @@
 #include "levelSetSolver.hpp"
 #include "LS-VOF.hpp"
+#include "levelSetUtilities.hpp"
 
 using namespace ablate::levelSet;
 
@@ -210,81 +211,23 @@ void LevelSetSolver::ComputeAllCurvature() {
 //  by Holdych, Noble, and Secor, Int. J. Numer. Meth. Engng 2008; 73:1310-1327.
 void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, PetscReal *vol) {
 
-  DMPolytopeType    ct;
   DM                dm = subDomain->GetDM();
-  const PetscInt    dim = subDomain->GetDimensions();
-  PetscInt          Nc, nVerts, i, j;
-  PetscReal         x0[3] = {0.0, 0.0, 0.0};
-  PetscReal         *c = NULL, *coords = NULL;
-  PetscScalar       c0, n[3] = {0.0, 0.0, 0.0}, g;
+  PetscScalar       c0, n[3] = {0.0, 0.0, 0.0};
   const PetscScalar *array;
-  PetscBool         isDG;
   Vec               solVec = subDomain->GetSolutionVector();  // For level set
   Vec               auxVec = subDomain->GetAuxVector();       // For normal vector
 
-  // The cell center
-  DMPlexComputeCellGeometryFVM(dm, p, NULL, x0, NULL) >> utilities::PetscUtilities::checkError;
-
-
   // Level-set value at cell-center
-  VecGetArrayRead(solVec, &array) >> utilities::PetscUtilities::checkError;
-  DMPlexPointLocalFieldRead(dm, p, LevelSetSolver::lsField->id, array, &c0) >> utilities::PetscUtilities::checkError;
-  VecRestoreArrayRead(solVec, &array) >> utilities::PetscUtilities::checkError;
+  VecGetArrayRead(solVec, &array) >> ablate::utilities::PetscUtilities::checkError;
+  DMPlexPointLocalFieldRead(dm, p, LevelSetSolver::lsField->id, array, &c0) >> ablate::utilities::PetscUtilities::checkError;
+  VecRestoreArrayRead(solVec, &array) >> ablate::utilities::PetscUtilities::checkError;
 
   // Normal vector
-  VecGetArrayRead(auxVec, &array) >> utilities::PetscUtilities::checkError;
-  DMPlexPointLocalFieldRead(dm, p, LevelSetSolver::normalField->id, array, n) >> utilities::PetscUtilities::checkError;
-  VecRestoreArrayRead(auxVec, &array) >> utilities::PetscUtilities::checkError;
+  VecGetArrayRead(auxVec, &array) >> ablate::utilities::PetscUtilities::checkError;
+  DMPlexPointLocalFieldRead(dm, p, LevelSetSolver::normalField->id, array, n) >> ablate::utilities::PetscUtilities::checkError;
+  VecRestoreArrayRead(auxVec, &array) >> ablate::utilities::PetscUtilities::checkError;
 
-  g = 0.0;
-  for (i = 0; i < dim; ++i) g += PetscSqr(n[i]);
-  g = PetscSqrtReal(g);
-  for (i = 0; i < dim; ++i) n[i] /= g;
-
-
-
-
-  // Coordinates of the cell vertices
-  DMPlexGetCellCoordinates(dm, p, &isDG, &Nc, &array, &coords) >> utilities::PetscUtilities::checkError;
-
-  // Number of vertices
-  nVerts = Nc/dim;
-
-  PetscMalloc1(nVerts, &c) >> utilities::PetscUtilities::checkError;
-
-  // The level set value of each vertex. This assumes that the interface is a line/plane
-  //    with the given unit normal.
-  for (i = 0; i < nVerts; ++i) {
-    c[i] = c0;
-    for (j = 0; j < dim; ++j) {
-      c[i] += n[j]*(coords[i*dim + j] - x0[j]);
-    }
-  }
-
-  // Get the cell type and call appropriate VOF function
-  DMPlexGetCellType(dm, p, &ct) >> utilities::PetscUtilities::checkError;
-  switch (ct) {
-    case DM_POLYTOPE_SEGMENT:
-      VOF_1D(coords, c, vof, area, vol);
-      break;
-    case DM_POLYTOPE_TRIANGLE:
-      VOF_2D_Tri(coords, c, vof, area, vol);
-      break;
-    case DM_POLYTOPE_QUADRILATERAL:
-      VOF_2D_Quad(coords, c, vof, area, vol);
-      break;
-    case DM_POLYTOPE_TETRAHEDRON:
-      VOF_3D_Tetra(coords, c, vof, area, vol);
-      break;
-    case DM_POLYTOPE_HEXAHEDRON:
-      VOF_3D_Hex(coords, c, vof, area, vol);
-      break;
-    default:
-      throw std::invalid_argument("No element geometry for cell " + std::to_string(p) + " with type " + DMPolytopeTypes[ct]);
-  }
-
-  DMPlexRestoreCellCoordinates(dm, p, &isDG, &Nc, &array, &coords) >> utilities::PetscUtilities::checkError;
-  PetscFree(c) >> utilities::PetscUtilities::checkError;
+  ablate::levelSet::Utilities::VOF(dm, p, c0, n, vof, area, vol);
 
 }
 
