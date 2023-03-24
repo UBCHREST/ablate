@@ -232,14 +232,13 @@ class FiniteVolumeSolver : public solver::CellSolver,
      */
     PetscErrorCode PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) override;
 
-
     /**
      * returns the dm and localVector for meshCharacteristicsLocalVec
      */
-     inline void GetMeshCharacteristics(DM& dm, Vec& vec){
+    inline void GetMeshCharacteristics(DM& dm, Vec& vec) {
         dm = meshCharacteristicsDm;
         vec = meshCharacteristicsLocalVec;
-     }
+    }
 };
 }  // namespace ablate::finiteVolume
 

@@ -1,14 +1,14 @@
 Timestep: 0000 time = 0        dt = 1e-10
-Timestep: 0010 time = (.*) dt = (.*)<expects> >1E-6 >1E-6
-Timestep: 0020 time = (.*) dt = (.*)<expects> >1E-5 >1E-6
-Timestep: 0030 time = (.*) dt = (.*)<expects> >1E-5 >1E-6
-Timestep: 0040 time = (.*) dt = (.*)<expects> >1E-5 >1E-6
-Timestep: 0050 time = (.*) dt = (.*)<expects> >1E-5 >1E-6
-Timestep: 0060 time = (.*) dt = (.*)<expects> >1E-5 >1E-6
-Timestep: 0070 time = (.*) dt = (.*)<expects> >1E-4 >1E-6
-Timestep: 0080 time = (.*) dt = (.*)<expects> >1E-4 >1E-6
-Timestep: 0090 time = (.*) dt = (.*)<expects> >1E-4 >1E-6
-Timestep: 0100 time = (.*) dt = (.*)<expects> >1E-4 >1E-6
+Timestep: 0010 time = (.*) dt = (.*)<expects> >1E-6 >4E-7
+Timestep: 0020 time = (.*) dt = (.*)<expects> >1E-5 >4E-7
+Timestep: 0030 time = (.*) dt = (.*)<expects> >1E-5 >4E-7
+Timestep: 0040 time = (.*) dt = (.*)<expects> >1E-5 >4E-7
+Timestep: 0050 time = (.*) dt = (.*)<expects> >1E-5 >4E-7
+Timestep: 0060 time = (.*) dt = (.*)<expects> >1E-5 >4E-7
+Timestep: 0070 time = (.*) dt = (.*)<expects> >1E-4 >4E-7
+Timestep: 0080 time = (.*) dt = (.*)<expects> >1E-4 >4E-7
+Timestep: 0090 time = (.*) dt = (.*)<expects> >1E-4 >4E-7
+Timestep: 0100 time = (.*) dt = (.*)<expects> >1E-4 >4E-7
 ResultFiles:
 domain
 domain.00000.hdf5
