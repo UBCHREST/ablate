@@ -35,6 +35,7 @@ flowField.00007.hdf5
 flowField.00008.hdf5
 flowField.00009.hdf5
 flowField.00010.hdf5
+flowField.xmf
 flowField_mixtureFraction
 flowField_mixtureFraction.00000.hdf5
 flowField_mixtureFraction.00001.hdf5

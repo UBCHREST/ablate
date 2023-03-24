@@ -1,9 +1,9 @@
 Timestep: 0000 time = 0        dt = 1e-10 <expects>
-Timestep: 0010 time = (.*) dt = (.*)<expects> n0.003866 n0.00137409
-Timestep: 0020 time = (.*) dt = (.*)<expects> n0.01742  n0.00132952
-Timestep: 0030 time = (.*) dt = (.*)<expects> n0.03048  n0.00127294
-Timestep: 0040 time = (.*) dt = (.*)<expects> n0.04283  n0.00118392
-Timestep: 0050 time = (.*) dt = (.*)<expects> n0.05424  n0.00108862
+Timestep: 0010 time = (.*) dt = (.*)<expects> n0.004349 n0.00161408
+Timestep: 0020 time = (.*) dt = (.*)<expects> n0.02022  n0.00155114
+Timestep: 0030 time = (.*) dt = (.*)<expects> n0.03538  n0.00145972
+Timestep: 0040 time = (.*) dt = (.*)<expects> n0.0494   n0.00132986
+Timestep: 0050 time = (.*) dt = (.*)<expects> n0.06211  n0.00120157
 ResultFiles:
 domain.hdf5
 domain.xmf
