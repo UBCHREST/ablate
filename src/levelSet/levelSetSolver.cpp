@@ -1,5 +1,4 @@
 #include "levelSetSolver.hpp"
-#include "LS-VOF.hpp"
 #include "levelSetUtilities.hpp"
 
 using namespace ablate::levelSet;
