@@ -10,3 +10,4 @@ domain.xmf
 pgsLog
 restart.rst
 vortexFlowField.hdf5
+vortexFlowField.xmf

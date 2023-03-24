@@ -67,12 +67,24 @@ class FiniteVolumeSolver : public solver::CellSolver,
     //! hold the class responsible for compute cell based values;
     std::unique_ptr<CellInterpolant> cellInterpolant = nullptr;
 
-    //!! Store an region of all cells not in the ghost for faster iteration
+    //! Store an region of all cells not in the ghost for faster iteration
     std::shared_ptr<domain::Region> solverRegionMinusGhost;
+
+    //! Store a dm for mesh characteristics specific to the fvm
+    DM meshCharacteristicsDm = nullptr;
+
+    //! Store a dm, vec and array for mesh characteristics specific to the fvm
+    Vec meshCharacteristicsLocalVec = nullptr;
+
+    //! store an enum for the fields in the meshCharacteristicsDm
+    enum MeshCharacteristics { MIN_CELL_RADIUS = 0, MAX_CELL_RADIUS };
 
    public:
     FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<processes::Process>> flowProcesses,
                        std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions);
+
+    //! cleanup
+    ~FiniteVolumeSolver() override;
 
     /** SubDomain Register and Setup **/
     void Setup() override;
