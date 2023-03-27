@@ -75,11 +75,11 @@ PetscErrorCode ablate::eos::radiationProperties::SootSpectrumProperties::SootAbs
     PetscReal k;
     PetscReal fv = density * YinC / rhoC;
     for (size_t i = 0; i < functionContext->wavelengths.size(); i++) {
-        PetscReal lambda = functionContext->wavelengths[i] * 1E6;
+        PetscReal lambda = functionContext->wavelengths[i];
         //! This is the wavelength. (We must integrate over the valid range of wavelengths.)
         n = GetRefractiveIndex(lambda);  //! Fit of model to data.
         k = GetAbsorptiveIndex(lambda);  //! Fit of model to data.
-        kappa[i] = (36 * ablate::utilities::Constants::pi * n * k * fv) / (((((n * n) - (k * k) + 2) * ((n * n) - (k * k) + 2)) + (4 * n * n * k * k)) * (lambda * 1E-6));
+        kappa[i] = (36 * ablate::utilities::Constants::pi * n * k * fv) / (((((n * n) - (k * k) + 2) * ((n * n) - (k * k) + 2)) + (4 * n * n * k * k)) * (lambda));
     }
 
     PetscFunctionReturn(0);
@@ -100,12 +100,12 @@ PetscErrorCode ablate::eos::radiationProperties::SootSpectrumProperties::SootAbs
     PetscReal k;
     PetscReal fv = density * YinC / rhoC;
     for (size_t i = 0; i < functionContext->wavelengths.size(); i++) {
-        PetscReal lambda = functionContext->wavelengths[i] * 1E6;  //! Must convert to micrometers because of the model fit
+        PetscReal lambda = functionContext->wavelengths[i];  //! Must convert to micrometers because of the model fit
         //! This is the wavelength. (We must integrate over the valid range of wavelengths.)
         n = GetRefractiveIndex(lambda);  //! Fit of model to data.
         k = GetAbsorptiveIndex(lambda);  //! Fit of model to data.
 
-        kappa[i] = (36 * ablate::utilities::Constants::pi * n * k * fv) / (((((n * n) - (k * k) + 2) * ((n * n) - (k * k) + 2)) + (4 * n * n * k * k)) * (lambda * 1E-6));
+        kappa[i] = (36 * ablate::utilities::Constants::pi * n * k * fv) / (((((n * n) - (k * k) + 2) * ((n * n) - (k * k) + 2)) + (4 * n * n * k * k)) * (lambda));
     }
 
     PetscFunctionReturn(0);

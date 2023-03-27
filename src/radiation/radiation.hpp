@@ -75,6 +75,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
 
     /**
      * Returns the black body intensity at a specific wavelength. This must be integrated over a bandwidth.
+     *
      * @param temperature
      * @param wavelength
      * @param refractiveIndex
@@ -83,8 +84,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     static inline PetscReal GetBlackBodyWavelengthIntensity(const PetscReal temperature, const PetscReal wavelength, const PetscReal refractiveIndex) {
         PetscReal E_lambda = (2 * ablate::utilities::Constants::pi * ablate::utilities::Constants::h * ablate::utilities::Constants::c * ablate::utilities::Constants::c);
         E_lambda /= refractiveIndex * refractiveIndex * wavelength * wavelength * wavelength * wavelength * wavelength;
-        E_lambda /= exp((ablate::utilities::Constants::h * ablate::utilities::Constants::c) / (refractiveIndex * ablate::utilities::Constants::k * temperature)) - 1;
-        E_lambda /= ablate::utilities::Constants::pi;
+        E_lambda /= exp((ablate::utilities::Constants::h * ablate::utilities::Constants::c) / (refractiveIndex * wavelength * ablate::utilities::Constants::k * temperature)) - 1;
 
         return E_lambda;
     }

@@ -41,8 +41,14 @@ class SootSpectrumProperties : public RadiationModel {
     static PetscErrorCode SootEmissionTemperatureFunction(const PetscReal* conserved, PetscReal temperature, PetscReal* epsilon, void* ctx);
 
     //! Polynomial fits to soot data for hydrocarbon combustion conditions (Modest, ch. 11 pg. 432)
-    static inline PetscReal GetRefractiveIndex(PetscReal lambda) { return 1.811 + 0.1263 * log(lambda) + 0.027 * log(lambda) * log(lambda) + 0.0417 * log(lambda) * log(lambda) * log(lambda); }
-    static inline PetscReal GetAbsorptiveIndex(PetscReal lambda) { return 0.5821 + 0.1213 * log(lambda) + 0.2309 * log(lambda) * log(lambda) - 0.01 * log(lambda) * log(lambda) * log(lambda); }
+    static inline PetscReal GetRefractiveIndex(PetscReal lambda) {
+        lambda *= 1E6;
+        return 1.811 + (0.1263 * log(lambda)) + (0.027 * log(lambda) * log(lambda)) + (0.0417 * log(lambda) * log(lambda) * log(lambda));
+    }
+    static inline PetscReal GetAbsorptiveIndex(PetscReal lambda) {
+        lambda *= 1E6;
+        return 0.5821 + (0.1213 * log(lambda)) + (0.2309 * log(lambda) * log(lambda)) - (0.01 * log(lambda) * log(lambda) * log(lambda));
+    }
 };
 }  // namespace ablate::eos::radiationProperties
 

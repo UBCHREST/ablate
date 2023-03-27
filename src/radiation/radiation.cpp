@@ -258,7 +258,7 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
                  * It doesn't matter which method is used,
                  * this will be the same procedure.
                  * */
-                UpdateCoordinates(ipart, virtualcoord, coord, 0.1);  //!< Update the coordinates of the particle to move it to the center of the adjacent particle.
+                UpdateCoordinates(ipart, virtualcoord, coord, 0.1);  //!< Update the coordinates of the particle to move it beyond the face of the adjacent cell.
                 virtualcoord[ipart].hhere = 0;                       //!< Reset the path length to zero
             }
         }
