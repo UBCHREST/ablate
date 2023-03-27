@@ -85,6 +85,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
         PetscReal E_lambda = (2 * ablate::utilities::Constants::pi * ablate::utilities::Constants::h * ablate::utilities::Constants::c * ablate::utilities::Constants::c);
         E_lambda /= refractiveIndex * refractiveIndex * wavelength * wavelength * wavelength * wavelength * wavelength;
         E_lambda /= exp((ablate::utilities::Constants::h * ablate::utilities::Constants::c) / (refractiveIndex * wavelength * ablate::utilities::Constants::k * temperature)) - 1;
+        E_lambda /= ablate::utilities::Constants::pi;
 
         return E_lambda;
     }
