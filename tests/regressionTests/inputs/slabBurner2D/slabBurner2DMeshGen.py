@@ -7,7 +7,7 @@ import argparse
 
 
 # function to convert the specified locations to gMsh points
-def convertToPoint(locations):
+def convert_to_point(locations):
     if type(locations) is list:
         points = []
         for location in locations:
@@ -17,8 +17,8 @@ def convertToPoint(locations):
         return gmsh.model.geo.add_point(locations[0], locations[1], 0.0)
 
 
-# the sideList is a list of list of sides
-def defineBoundary(sides, name, boundary_list):
+# the sideList is a list of sides
+def define_boundary(sides, name, boundary_list):
     line_ids = []
     # march over and add each side
     for side in sides:
@@ -36,10 +36,10 @@ def defineBoundary(sides, name, boundary_list):
 gmsh.initialize()
 
 # define the experimental chamber points
-lowerLeft = convertToPoint((0.0, 0.0))
-upperLeft = convertToPoint((0.0, 0.0254))
-lowerRight = convertToPoint((0.1, 0.0))
-upperRight = convertToPoint((0.1, 0.0254))
+lowerLeft = convert_to_point((0.0, 0.0))
+upperLeft = convert_to_point((0.0, 0.0254))
+lowerRight = convert_to_point((0.1, 0.0))
+upperRight = convert_to_point((0.1, 0.0254))
 
 # define a list of points for the slab burner, starting with the left most point
 slabBoundaryLocations = [(0.0132, 0),
@@ -54,18 +54,18 @@ slabBoundaryLocations = [(0.0132, 0),
                          (0.0728, 0)]
 
 # convert the locations to points
-slabBoundary = convertToPoint(slabBoundaryLocations)
+slabBoundary = convert_to_point(slabBoundaryLocations)
 
 # define the chamber boundary with associated names, define the nodes in a counterclockwise order
 boundary_ids = []
-defineBoundary([[upperLeft, lowerLeft]], "inlet", boundary_ids)
-defineBoundary([[upperRight, lowerRight]], "outlet", boundary_ids)
-defineBoundary([
+define_boundary([[upperLeft, lowerLeft]], "inlet", boundary_ids)
+define_boundary([[upperRight, lowerRight]], "outlet", boundary_ids)
+define_boundary([
     [upperRight, upperLeft],
     [lowerLeft, slabBoundary[0]],
     [slabBoundary[-1], lowerRight]
 ], "wall", boundary_ids)
-defineBoundary([slabBoundary], "slab", boundary_ids)
+define_boundary([slabBoundary], "slab", boundary_ids)
 
 # define the curve and resulting plane
 curve_id = gmsh.model.geo.add_curve_loop(boundary_ids, reorient=True)
@@ -115,9 +115,10 @@ if args.summary:
         number_nodes = len(node_ids)
         for n in range(number_nodes):
             node_n = gmsh.model.mesh.get_node(node_ids[n])[0]
-            for nn in range(n+1, number_nodes):
+            for nn in range(n + 1, number_nodes):
                 node_nn = gmsh.model.mesh.get_node(node_ids[nn])[0]
-                distance = math.sqrt((node_n[0]-node_nn[0])**2+(node_n[1]-node_nn[1])**2+(node_n[2]-node_nn[2])**2)
+                distance = math.sqrt(
+                    (node_n[0] - node_nn[0]) ** 2 + (node_n[1] - node_nn[1]) ** 2 + (node_n[2] - node_nn[2]) ** 2)
                 minDistance = min(minDistance, distance)
                 maxDistance = max(maxDistance, distance)
     print(f'Min/Max Distance: {minDistance}/{maxDistance}')
@@ -129,14 +130,6 @@ if args.preview:
 else:
     # # Write mesh data:
     gmsh.write("slabBurner2DMesh.msh")
-
-
-
-
-
-
-
-
 
 # It finalizes the Gmsh API
 gmsh.finalize()

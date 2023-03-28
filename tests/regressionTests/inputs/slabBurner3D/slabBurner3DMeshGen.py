@@ -7,7 +7,7 @@ import argparse
 
 
 # function to convert the specified locations to gMsh points
-def convertToPoint(locations):
+def convert_to_point(locations):
     if type(locations) is list:
         points = []
         for location in locations:
@@ -17,42 +17,43 @@ def convertToPoint(locations):
         return gmsh.model.geo.add_point(locations[0], locations[1], locations[2])
 
 
-# the sideList is a list of list of sides
+# the sideList is a list of sides
 boundary_ids = []
 curve_dict = dict()
 
-def defineBoundary(sides, name):
+
+def define_boundary(sides, bc_name):
     line_ids = []
     # march over and add each side
     for side in sides:
         line_ids.append(gmsh.model.geo.add_bspline(side))
 
     boundary_ids.extend(line_ids)
-    curve_dict[name] = line_ids
+    curve_dict[bc_name] = line_ids
 
 
 boundary_physical_group_dict = dict()
 
 
-def assign_boundary_group(entity, default_group):
-    upper_adjacencies, lower_adjacencies = gmsh.model.get_adjacencies(entity[0], entity[1])
+def assign_boundary_group(bc_entity, default_group):
+    upper_adjacencies, lower_adjacencies = gmsh.model.get_adjacencies(bc_entity[0], bc_entity[1])
     # check if any of the lower_adjacencies are in the curve curve_dict
     for lower_adj in lower_adjacencies:
-        for name, curves in curve_dict.items():
+        for curve_name, curves in curve_dict.items():
             if lower_adj in curves:
-                if name in boundary_physical_group_dict:
-                    boundary_physical_group_dict[name].append(entity[1])
+                if curve_name in boundary_physical_group_dict:
+                    boundary_physical_group_dict[curve_name].append(bc_entity[1])
                     return
                 else:
-                    boundary_physical_group_dict[name] = [entity[1]]
+                    boundary_physical_group_dict[curve_name] = [bc_entity[1]]
                     return
 
     # add to default
     if default_group in boundary_physical_group_dict:
-        boundary_physical_group_dict[default_group].append(entity[1])
+        boundary_physical_group_dict[default_group].append(bc_entity[1])
         return
     else:
-        boundary_physical_group_dict[default_group] = [entity[1]]
+        boundary_physical_group_dict[default_group] = [bc_entity[1]]
         return
 
 
@@ -67,10 +68,10 @@ offset = -thickness / 2.0
 dx = 0.0015
 
 # define the experimental chamber points
-lowerLeft = convertToPoint((0.0, 0.0, offset))
-upperLeft = convertToPoint((0.0, 0.0254, offset))
-lowerRight = convertToPoint((0.1, 0.0, offset))
-upperRight = convertToPoint((0.1, 0.0254, offset))
+lowerLeft = convert_to_point((0.0, 0.0, offset))
+upperLeft = convert_to_point((0.0, 0.0254, offset))
+lowerRight = convert_to_point((0.1, 0.0, offset))
+upperRight = convert_to_point((0.1, 0.0254, offset))
 
 # define a list of points for the slab burner, starting with the left most point
 slabBoundaryLocations = [(0.0132, 0, offset),
@@ -85,18 +86,18 @@ slabBoundaryLocations = [(0.0132, 0, offset),
                          (0.0728, 0, offset)]
 
 # convert the locations to points
-slabBoundary = convertToPoint(slabBoundaryLocations)
+slabBoundary = convert_to_point(slabBoundaryLocations)
 
 # define the chamber boundary in a counterclockwise order
 
-defineBoundary([[upperLeft, lowerLeft]], "inlet")
-defineBoundary([[upperRight, lowerRight]], "outlet")
-defineBoundary([
+define_boundary([[upperLeft, lowerLeft]], "inlet")
+define_boundary([[upperRight, lowerRight]], "outlet")
+define_boundary([
     [upperRight, upperLeft],
     [lowerLeft, slabBoundary[0]],
     [slabBoundary[-1], lowerRight]
 ], "wall")
-defineBoundary([slabBoundary], "slab")
+define_boundary([slabBoundary], "slab")
 
 # define the curve and resulting plane
 curve_id = gmsh.model.geo.add_curve_loop(boundary_ids, reorient=True)
@@ -132,7 +133,7 @@ gmsh.option.setNumber("Mesh.Algorithm", 8)  # 8: Frontal-Delaunay for Quads (11 
 gmsh.option.setNumber("Mesh.Algorithm3D", 2)  # 1: Delaunay
 gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 3)  # 3: blossom full-quad
 gmsh.option.setNumber("Mesh.MeshSizeMin", dx)
-gmsh.option.setNumber("Mesh.MeshSizeMax", dx*1.1)
+gmsh.option.setNumber("Mesh.MeshSizeMax", dx * 1.1)
 gmsh.option.setNumber("Mesh.SubdivisionAlgorithm", 1)  # 1: all quadrangles
 gmsh.option.setNumber("Mesh.RecombineAll", 1)  # true
 
