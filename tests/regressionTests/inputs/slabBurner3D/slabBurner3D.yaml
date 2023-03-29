@@ -1,15 +1,15 @@
 # This is an example of setting up a 2D SlabBurner Simulation using the gMsh python api with a series of derived slab burner points.
 ### Mesh Generation Script
 #
-#1. Open the [slabBurner2DMeshGen.py](slabBurner2DMeshGen.py) python
+#1. Open the [slabBurner3DMeshGen.py](slabBurner3DMeshGen.py) python
 #2. Update the geometry if necessary
 #3. To preview the resulting mesh run with the ```--preview``` argument
-#4. Generate the [slabBurner2DMesh.msh](slabBurner2DMesh.msh) mesh file by running without the preview argument.
+#4. Generate the [slabBurner3DMesh.msh](slabBurner3DMesh.msh) mesh file by running without the preview argument.
 #
 ---
 # metadata for the simulation
 environment:
-  title: _slabBurner2D
+  title: _slabBurner3D
   tagDirectory: false
 # global arguments that can be used by petsc
 arguments:
@@ -30,7 +30,7 @@ timestepper:
     interval: 10 # results are saved at every 5 steps.  In real simulations this should be much larger.
   # load in the gmsh produced mesh file
   domain: !ablate::domain::MeshFile
-    path: slabBurner2DMesh.msh
+    path: slabBurner3DMesh.msh
     options:
       dm_plex_check_all: true # check to make sure the mesh if valid from gMsh
       dm_distribute: false # turn off default dm_distribute so that we can extrude label first
@@ -46,7 +46,7 @@ timestepper:
           - name: outlet
           - name: slab
           - name: main
-      - # use the newly collapsed labels to extrude the boundary.  Do not extrude the main mesh
+      - # this can be enabled to print a domain summary
         !ablate::domain::modifiers::ExtrudeLabel
         regions:
           - name: inlet
@@ -62,10 +62,9 @@ timestepper:
         # tag the new boundary cells for easy boundary condition specifications
         extrudedRegion:
           name: boundaryCells
-
       # if using mpi, this modifier distributes cells
       - !ablate::domain::modifiers::DistributeWithGhostCells
-        ghostCellDepth: 2
+        ghostCellDepth: 3
 
       # remove the slabBurnerFace from the flowRegion so that the ablate::boundarySolver::physics::Sublimation can handle the boundary condition
       - !ablate::domain::modifiers::SubtractLabel
@@ -78,7 +77,7 @@ timestepper:
         incompleteLabel: true # allow the faces to be removed the flowRegion
 
       # this can be enabled to print a domain summary
-      # - !ablate::domain::modifiers::PrintDomainSummary
+#      - !ablate::domain::modifiers::PrintDomainSummary
 
     fields:
       # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
@@ -109,14 +108,14 @@ timestepper:
         eos: *eos
         # use a sphere geometry to set up an ignition kernel
         temperature: !ablate::mathFunctions::geom::Sphere
-          center: [ 0.0182024,  0.007 ]
+          center: [ 0.0182024,  0.007 , 0.0]
           radius: 0.005
           insideValues: 1673.15
           outsideValues: 300
         # set the entire domain to atmospheric pressure
         pressure: 101325.0
         # set the velocity everywhere to zero
-        velocity: "0.0, 0.0"
+        velocity: "0.0, 0.0, 0.0"
         # the eos requires mass fractions to compute initial conditions
         other: !ablate::finiteVolume::fieldFunctions::MassFractions
           &oxMassFrac
@@ -142,7 +141,7 @@ timestepper:
         # the fuel is assumed to be at 653.0K
         temperature: 653.0 #fuel temperature
         pressure: 101325.0
-        velocity: "0.0, 0.0"
+        velocity: "0.0, 0.0, 0.0"
         # set the mass fractions in the fuel boundary cells to 100% mma
         other: !ablate::finiteVolume::fieldFunctions::MassFractions
           &fuelMassFrac
@@ -235,7 +234,7 @@ solvers:
         pgs: *pgs
         # The velocity is specified with a nested, nested formula to simplify specifying a radius based function
         velocity: !ablate::mathFunctions::Formula
-          formula: "max(0.0, min(vel, t*vel/.001)), 0.0"
+          formula: "max(0.0, min(vel, t*vel/.001)), 0.0, 0.0"
           nested:
             vel: !ablate::mathFunctions::Formula
               formula: velFac*(1 - r/(dia/2.0))^(1/7)

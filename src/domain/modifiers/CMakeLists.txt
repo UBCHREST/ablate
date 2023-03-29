@@ -22,6 +22,7 @@ target_sources(ablateLibrary
         edgeClusteringMapper.cpp
         twoPointClusteringMapper.cpp
         collapseLabels.cpp
+        printDomainSummary.cpp
 
         PUBLIC
         modifier.hpp
@@ -46,4 +47,5 @@ target_sources(ablateLibrary
         edgeClusteringMapper.hpp
         twoPointClusteringMapper.hpp
         collapseLabels.hpp
+        printDomainSummary.hpp
         )

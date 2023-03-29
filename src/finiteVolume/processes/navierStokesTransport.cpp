@@ -213,8 +213,11 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeCflTimeSte
     auto advectionData = timeStepData->advectionData;
 
     // Get the fv geom
-    PetscReal minCellRadius;
-    DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius) >> utilities::PetscUtilities::checkError;
+    Vec locCharacteristicsVec;
+    DM characteristicsDm;
+    const PetscScalar* locCharacteristicsArray;
+    flow.GetMeshCharacteristics(characteristicsDm, locCharacteristicsVec);
+    VecGetArrayRead(locCharacteristicsVec, &locCharacteristicsArray) >> utilities::PetscUtilities::checkError;
 
     // Get the valid cell range over this region
     ablate::domain::Range cellRange;
@@ -226,9 +229,6 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeCflTimeSte
     // Get the dim from the dm
     PetscInt dim;
     DMGetDimension(dm, &dim) >> utilities::PetscUtilities::checkError;
-
-    // assume the smallest cell is the limiting factor for now
-    const PetscReal dx = 2.0 * minCellRadius;
 
     // Get field location for euler and densityYi
     auto eulerId = flow.GetSubDomain().GetField("euler").id;
@@ -246,8 +246,10 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeCflTimeSte
 
         const PetscReal* euler;
         const PetscReal* conserved = NULL;
+        const PetscReal* cellCharacteristics = NULL;
         DMPlexPointGlobalFieldRead(dm, cell, eulerId, x, &euler) >> utilities::PetscUtilities::checkError;
         DMPlexPointGlobalRead(dm, cell, x, &conserved) >> utilities::PetscUtilities::checkError;
+        DMPlexPointLocalRead(characteristicsDm, cell, locCharacteristicsArray, &cellCharacteristics) >> utilities::PetscUtilities::checkError;
 
         if (euler) {  // must be real cell and not ghost
             PetscReal rho = euler[CompressibleFlowFields::RHO];
@@ -257,6 +259,8 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeCflTimeSte
             advectionData->computeTemperature.function(conserved, &temperature, advectionData->computeTemperature.context.get()) >> utilities::PetscUtilities::checkError;
             PetscReal a;
             advectionData->computeSpeedOfSound.function(conserved, temperature, &a, advectionData->computeSpeedOfSound.context.get()) >> utilities::PetscUtilities::checkError;
+
+            PetscReal dx = 2.0 * cellCharacteristics[FiniteVolumeSolver::MIN_CELL_RADIUS];
 
             PetscReal velSum = 0.0;
             for (PetscInt d = 0; d < dim; d++) {
@@ -269,6 +273,8 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeCflTimeSte
     }
     VecRestoreArrayRead(v, &x) >> utilities::PetscUtilities::checkError;
     flow.RestoreRange(cellRange);
+    VecRestoreArrayRead(locCharacteristicsVec, &locCharacteristicsArray) >> utilities::PetscUtilities::checkError;
+
     return dtMin;
 }
 
@@ -283,8 +289,11 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeConduction
     auto diffusionData = (DiffusionTimeStepData*)ctx;
 
     // Get the fv geom
-    PetscReal minCellRadius;
-    DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius) >> utilities::PetscUtilities::checkError;
+    Vec locCharacteristicsVec;
+    DM characteristicsDm;
+    const PetscScalar* locCharacteristicsArray;
+    flow.GetMeshCharacteristics(characteristicsDm, locCharacteristicsVec);
+    VecGetArrayRead(locCharacteristicsVec, &locCharacteristicsArray) >> utilities::PetscUtilities::checkError;
 
     // Get the valid cell range over this region
     ablate::domain::Range cellRange;
@@ -302,9 +311,6 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeConduction
     // Get the dim from the dm
     PetscInt dim;
     DMGetDimension(dm, &dim) >> utilities::PetscUtilities::checkError;
-
-    // assume the smallest cell is the limiting factor for now
-    const PetscReal dx2 = PetscSqr(2.0 * minCellRadius);
 
     // Get field location for temperature
     auto temperatureField = flow.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD).id;
@@ -329,6 +335,9 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeConduction
         const PetscReal* temperature = NULL;
         DMPlexPointLocalFieldRead(auxDM, cell, temperatureField, aux, &temperature) >> utilities::PetscUtilities::checkError;
 
+        const PetscReal* cellCharacteristics = NULL;
+        DMPlexPointLocalRead(characteristicsDm, cell, locCharacteristicsArray, &cellCharacteristics) >> utilities::PetscUtilities::checkError;
+
         if (conserved) {  // must be real cell and not ghost
             PetscReal k;
             kFunction(conserved, *temperature, &k, kFunctionContext) >> utilities::PetscUtilities::checkError;
@@ -340,6 +349,8 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeConduction
             // Compute alpha
             PetscReal alpha = k / (rho * cv);
 
+            PetscReal dx2 = PetscSqr(2.0 * cellCharacteristics[FiniteVolumeSolver::MIN_CELL_RADIUS]);
+
             // compute dt
             double dt = PetscAbs(stabFactor * dx2 / alpha);
             dtMin = PetscMin(dtMin, dt);
@@ -347,7 +358,9 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeConduction
     }
     VecRestoreArrayRead(v, &x) >> utilities::PetscUtilities::checkError;
     VecRestoreArrayRead(flow.GetSubDomain().GetAuxGlobalVector(), &aux) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(locCharacteristicsVec, &locCharacteristicsArray) >> utilities::PetscUtilities::checkError;
     flow.RestoreRange(cellRange);
+
     return dtMin;
 }
 
@@ -362,8 +375,11 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeViscousDif
     auto diffusionData = (DiffusionTimeStepData*)ctx;
 
     // Get the fv geom
-    PetscReal minCellRadius;
-    DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius) >> utilities::PetscUtilities::checkError;
+    Vec locCharacteristicsVec;
+    DM characteristicsDm;
+    const PetscScalar* locCharacteristicsArray;
+    flow.GetMeshCharacteristics(characteristicsDm, locCharacteristicsVec);
+    VecGetArrayRead(locCharacteristicsVec, &locCharacteristicsArray) >> utilities::PetscUtilities::checkError;
 
     // Get the valid cell range over this region
     ablate::domain::Range cellRange;
@@ -381,9 +397,6 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeViscousDif
     // Get the dim from the dm
     PetscInt dim;
     DMGetDimension(dm, &dim) >> utilities::PetscUtilities::checkError;
-
-    // assume the smallest cell is the limiting factor for now
-    const PetscReal dx2 = PetscSqr(2.0 * minCellRadius);
 
     // Get field location for temperature
     auto temperatureField = flow.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD).id;
@@ -406,6 +419,9 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeViscousDif
         const PetscReal* temperature = NULL;
         DMPlexPointLocalFieldRead(auxDM, cell, temperatureField, aux, &temperature) >> utilities::PetscUtilities::checkError;
 
+        const PetscReal* cellCharacteristics = NULL;
+        DMPlexPointLocalRead(characteristicsDm, cell, locCharacteristicsArray, &cellCharacteristics) >> utilities::PetscUtilities::checkError;
+
         if (conserved) {  // must be real cell and not ghost
             PetscReal mu;
             muFunction(conserved, *temperature, &mu, muFunctionContext) >> utilities::PetscUtilities::checkError;
@@ -415,6 +431,8 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeViscousDif
             // Compute nu
             PetscReal nu = mu / rho;
 
+            PetscReal dx2 = PetscSqr(2.0 * cellCharacteristics[FiniteVolumeSolver::MIN_CELL_RADIUS]);
+
             // compute dt
             double dt = PetscAbs(stabFactor * dx2 / nu);
             dtMin = PetscMin(dtMin, dt);
@@ -422,6 +440,7 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeViscousDif
     }
     VecRestoreArrayRead(v, &x) >> utilities::PetscUtilities::checkError;
     VecRestoreArrayRead(flow.GetSubDomain().GetAuxGlobalVector(), &aux) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(locCharacteristicsVec, &locCharacteristicsArray) >> utilities::PetscUtilities::checkError;
     flow.RestoreRange(cellRange);
     return dtMin;
 }

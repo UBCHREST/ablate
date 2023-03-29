@@ -1,4 +1,5 @@
 # this simple python script is used to generate a 2D hex mesh for the specified slab burner geometry
+import math
 import sys
 
 import gmsh
@@ -6,7 +7,7 @@ import argparse
 
 
 # function to convert the specified locations to gMsh points
-def convertToPoint(locations):
+def convert_to_point(locations):
     if type(locations) is list:
         points = []
         for location in locations:
@@ -16,8 +17,8 @@ def convertToPoint(locations):
         return gmsh.model.geo.add_point(locations[0], locations[1], 0.0)
 
 
-# the sideList is a list of list of sides
-def defineBoundary(sides, name, boundary_list):
+# the sideList is a list of sides
+def define_boundary(sides, name, boundary_list):
     line_ids = []
     # march over and add each side
     for side in sides:
@@ -35,10 +36,10 @@ def defineBoundary(sides, name, boundary_list):
 gmsh.initialize()
 
 # define the experimental chamber points
-lowerLeft = convertToPoint((0.0, 0.0))
-upperLeft = convertToPoint((0.0, 0.0254))
-lowerRight = convertToPoint((0.1, 0.0))
-upperRight = convertToPoint((0.1, 0.0254))
+lowerLeft = convert_to_point((0.0, 0.0))
+upperLeft = convert_to_point((0.0, 0.0254))
+lowerRight = convert_to_point((0.1, 0.0))
+upperRight = convert_to_point((0.1, 0.0254))
 
 # define a list of points for the slab burner, starting with the left most point
 slabBoundaryLocations = [(0.0132, 0),
@@ -53,18 +54,18 @@ slabBoundaryLocations = [(0.0132, 0),
                          (0.0728, 0)]
 
 # convert the locations to points
-slabBoundary = convertToPoint(slabBoundaryLocations)
+slabBoundary = convert_to_point(slabBoundaryLocations)
 
-# define the chamber boundary with associated names
+# define the chamber boundary with associated names, define the nodes in a counterclockwise order
 boundary_ids = []
-defineBoundary([[lowerLeft, upperLeft]], "inlet", boundary_ids)
-defineBoundary([[upperRight, lowerRight]], "outlet", boundary_ids)
-defineBoundary([
-    [upperLeft, upperRight],
+define_boundary([[upperLeft, lowerLeft]], "inlet", boundary_ids)
+define_boundary([[upperRight, lowerRight]], "outlet", boundary_ids)
+define_boundary([
+    [upperRight, upperLeft],
     [lowerLeft, slabBoundary[0]],
     [slabBoundary[-1], lowerRight]
 ], "wall", boundary_ids)
-defineBoundary([slabBoundary], "slab", boundary_ids)
+define_boundary([slabBoundary], "slab", boundary_ids)
 
 # define the curve and resulting plane
 curve_id = gmsh.model.geo.add_curve_loop(boundary_ids, reorient=True)
@@ -75,11 +76,11 @@ gmsh.model.setPhysicalName(2, gmsh.model.geo.addPhysicalGroup(2, [surface_id]), 
 gmsh.model.geo.synchronize()
 
 # set the default properties to generate quad mesh
-gmsh.option.setNumber("Mesh.Algorithm", 8)  # 8: Frontal-Delaunay for Quads
+gmsh.option.setNumber("Mesh.Algorithm", 11)  # 11: Quasi-structured Quad
 gmsh.option.setNumber("Mesh.Algorithm3D", 1)  # 1: Delaunay
 gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 3)  # 3: blossom full-quad
-gmsh.option.setNumber("Mesh.MeshSizeMin", 0.0005)
-gmsh.option.setNumber("Mesh.MeshSizeMax", 0.001)  # assume about 1mm resolution
+gmsh.option.setNumber("Mesh.MeshSizeMin", 0.003)
+gmsh.option.setNumber("Mesh.MeshSizeMax", 0.0035)  # with the other options this results in about 0.6 mm element size
 gmsh.option.setNumber("Mesh.SubdivisionAlgorithm", 1)  # 1: all quadrangles
 gmsh.option.setNumber("Mesh.RecombineAll", 1)  # true
 
@@ -87,18 +88,40 @@ gmsh.option.setNumber("Mesh.RecombineAll", 1)  # true
 gmsh.option.setNumber("Mesh.MeshSizeFromPoints", 0)
 gmsh.option.setNumber("Mesh.MeshSizeFromCurvature", 0)
 gmsh.option.setNumber("Mesh.MeshSizeExtendFromBoundary", 0)
+gmsh.option.setNumber("Mesh.Smoothing", 10)
 
 # generate the mesh
 gmsh.model.mesh.setRecombine(2, surface_id)
 gmsh.model.mesh.generate(2)
-gmsh.model.mesh.reverse() # we have to reverse the element orientation for petsc
 
 # parse input arguments
 parser = argparse.ArgumentParser(
     description='Generates 2D slabBurner Hex Mesh')
 parser.add_argument('--preview', dest='preview', action='store_true',
                     help='If true, preview mesh instead of saving', default=False)
+parser.add_argument('--summary', dest='summary', action='store_true',
+                    help='If true, computes the element summary', default=False)
 args = parser.parse_args()
+
+if args.summary:
+    # print a summary of mesh information
+    elements = gmsh.model.mesh.getElements(2)
+    print(f'Number Elements: {len(elements[1][0])}')
+    minDistance = 1E30
+    maxDistance = 0
+    for ele_tag in elements[1][0]:
+        element = gmsh.model.mesh.getElement(ele_tag)
+        node_ids = element[1]
+        number_nodes = len(node_ids)
+        for n in range(number_nodes):
+            node_n = gmsh.model.mesh.get_node(node_ids[n])[0]
+            for nn in range(n + 1, number_nodes):
+                node_nn = gmsh.model.mesh.get_node(node_ids[nn])[0]
+                distance = math.sqrt(
+                    (node_n[0] - node_nn[0]) ** 2 + (node_n[1] - node_nn[1]) ** 2 + (node_n[2] - node_nn[2]) ** 2)
+                minDistance = min(minDistance, distance)
+                maxDistance = max(maxDistance, distance)
+    print(f'Min/Max Distance: {minDistance}/{maxDistance}')
 
 if args.preview:
     # Creates  graphical user interface
@@ -106,7 +129,7 @@ if args.preview:
         gmsh.fltk.run()
 else:
     # # Write mesh data:
-    gmsh.write("slabBurnerMesh.msh")
+    gmsh.write("slabBurner2DMesh.msh")
 
-# It finalize the Gmsh API
+# It finalizes the Gmsh API
 gmsh.finalize()
