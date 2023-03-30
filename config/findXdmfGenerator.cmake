@@ -12,7 +12,7 @@ ELSE ()
     set(DISABLE_XDMFGENERATOR_TESTS ON CACHE BOOL "" FORCE)
     FetchContent_Declare(
             xdmfGeneratorLibrary
-            GIT_REPOSITORY https://github.com/mmcgurn/XdmfGenerator.git
+            GIT_REPOSITORY https://github.com/mmcgurn/petscXdmfGenerator.git
             GIT_TAG mgurn/cuda-build
     )
     FetchContent_MakeAvailable(xdmfGeneratorLibrary)
