@@ -819,7 +819,15 @@ ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasPerfectGasDec
                                                                                                                   const std::shared_ptr<eos::PerfectGas> &eosLiquid)
     : eosGas(eosGas), eosLiquid(eosLiquid) {
     // Create the fake euler field
-    auto fakeEulerField = ablate::domain::Field{.name = CompressibleFlowFields::EULER_FIELD, .numberComponents = 2 + dim, .offset = 0};
+    auto fakeEulerField = ablate::domain::Field{.name = CompressibleFlowFields::EULER_FIELD,
+                                                .numberComponents = 2 + dim,
+                                                .components = {},
+                                                .id = PETSC_DEFAULT,
+                                                .subId = PETSC_DEFAULT,
+                                                .offset = 0,
+                                                .location = ablate::domain::FieldLocation::SOL,
+                                                .type = ablate::domain::FieldType::FVM,
+                                                .tags = {}};
 
     // size up the scratch vars
     gasEulerFieldScratch.resize(2 + dim);
@@ -935,7 +943,15 @@ ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffenedGasD
                                                                                                                       const std::shared_ptr<eos::StiffenedGas> &eosLiquid)
     : eosGas(eosGas), eosLiquid(eosLiquid) {
     // Create the fake euler field
-    auto fakeEulerField = ablate::domain::Field{.name = CompressibleFlowFields::EULER_FIELD, .numberComponents = 2 + dim, .offset = 0};
+    auto fakeEulerField = ablate::domain::Field{.name = CompressibleFlowFields::EULER_FIELD,
+                                                .numberComponents = 2 + dim,
+                                                .components = {},
+                                                .id = PETSC_DEFAULT,
+                                                .subId = PETSC_DEFAULT,
+                                                .offset = 0,
+                                                .location = ablate::domain::FieldLocation::SOL,
+                                                .type = ablate::domain::FieldType::FVM,
+                                                .tags = {}};
 
     // size up the scratch vars
     gasEulerFieldScratch.resize(2 + dim);
@@ -1124,7 +1140,15 @@ ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffenedGa
                                                                                                                           const std::shared_ptr<eos::StiffenedGas> &eosLiquid)
     : eosGas(eosGas), eosLiquid(eosLiquid) {
     // Create the fake euler field
-    auto fakeEulerField = ablate::domain::Field{.name = CompressibleFlowFields::EULER_FIELD, .numberComponents = 2 + dim, .offset = 0};
+    auto fakeEulerField = ablate::domain::Field{.name = CompressibleFlowFields::EULER_FIELD,
+                                                .numberComponents = 2 + dim,
+                                                .components = {},
+                                                .id = PETSC_DEFAULT,
+                                                .subId = PETSC_DEFAULT,
+                                                .offset = 0,
+                                                .location = ablate::domain::FieldLocation::SOL,
+                                                .type = ablate::domain::FieldType::FVM,
+                                                .tags = {}};
 
     // size up the scratch vars
     gasEulerFieldScratch.resize(2 + dim);
