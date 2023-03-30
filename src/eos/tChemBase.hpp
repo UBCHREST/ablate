@@ -127,11 +127,11 @@ class TChemBase : public ChemistryModel {
         real_type_1d_view mixtureDevice;
 
         //! per species state
-        real_type_2d_view stateHost;
+        real_type_2d_view_host stateHost;
         //! per species array
-        real_type_2d_view perSpeciesHost;
+        real_type_2d_view_host perSpeciesHost;
         //! mass weighted mixture
-        real_type_1d_view mixtureHost;
+        real_type_1d_view_host mixtureHost;
 
         //! store the enthalpyReferencePerSpecies
         real_type_1d_view enthalpyReference;
