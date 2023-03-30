@@ -30,3 +30,5 @@ target_include_directories(testingResources PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 if (COMPILE_MPI_COMMAND)
     target_compile_definitions(testingResources PUBLIC COMPILE_MPI_COMMAND=${COMPILE_MPI_COMMAND})
 endif ()
+
+set_property(TARGET testingResources PROPERTY CXX_STANDARD 20)

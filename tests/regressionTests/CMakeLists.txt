@@ -17,3 +17,5 @@ gtest_discover_tests(regressionTests
 
 copy_to_test_directory(${CMAKE_CURRENT_SOURCE_DIR}/outputs/)
 copy_to_test_directory(${CMAKE_CURRENT_SOURCE_DIR}/inputs/)
+
+set_property(TARGET regressionTests PROPERTY CXX_STANDARD 20)
