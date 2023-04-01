@@ -142,7 +142,7 @@ class TChemBase : public ChemistryModel {
         real_type_1d_view_host mixtureHost;
 
         //! store the enthalpyReferencePerSpecies
-        real_type_1d_view enthalpyReferenceHost;
+        real_type_1d_view_host enthalpyReferenceHost;
 
         //! the kokkos team policy for this function
         tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type policy;
