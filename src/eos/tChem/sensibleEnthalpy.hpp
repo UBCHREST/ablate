@@ -18,6 +18,8 @@ struct SensibleEnthalpy {
 
     using kinetic_model_type = KineticModelConstData<device_type>;
 
+    using kinetic_model_host_type = KineticModelConstData<host_device_type>;
+
     static inline ordinal_type getWorkSpaceSize(ordinal_type numberSpecies) { return numberSpecies; }
 
     /**
@@ -58,7 +60,7 @@ struct SensibleEnthalpy {
         /// useful scratch
         const real_type_2d_view_host_type& enthalpyMass,
         /// const data from kinetic model
-        const real_type_1d_view_host_type& enthalpyRef, const kinetic_model_type& kmcd);
+        const real_type_1d_view_host_type& enthalpyRef, const kinetic_model_host_type& kmcd);
 };
 
 }  // namespace ablate::eos::tChem
