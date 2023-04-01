@@ -56,6 +56,6 @@ void SensibleInternalEnergy_TemplateRun(const std::string& profile_name,
                                                                                const ablate::eos::tChem::SensibleInternalEnergy::real_type_1d_view_host_type& internalEnergyRef,
                                                                                const ablate::eos::tChem::SensibleInternalEnergy::real_type_2d_view_host_type& enthalpyMass,
                                                                                const ablate::eos::tChem::SensibleInternalEnergy::real_type_1d_view_host_type& enthalpyRef,
-                                                                               const ablate::eos::tChem::SensibleInternalEnergy::kinetic_model_type& kmcd) {
+                                                                               const ablate::eos::tChem::SensibleInternalEnergy::kinetic_model_host_type& kmcd) {
     ablate::eos::tChem::impl::SensibleInternalEnergy_TemplateRun("ablate::eos::tChem::SensibleInternalEnergy::runHostBatch", policy, state, internalEnergyRef, enthalpyMass, enthalpyRef, kmcd);
 }
