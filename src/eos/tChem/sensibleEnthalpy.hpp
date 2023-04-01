@@ -38,7 +38,7 @@ struct SensibleEnthalpy {
         /// useful scratch
         const real_type_2d_view_type& enthalpyMass,
         /// const data from kinetic model
-        const real_type_1d_view_host_type& enthalpyRef, const kinetic_model_type& kmcd);
+        const real_type_1d_view_type& enthalpyRef, const kinetic_model_type& kmcd);
 
     /**
      * tchem like function to compute temperature on host
