@@ -55,13 +55,16 @@ std::shared_ptr<ablate::eos::TChem::FunctionContext> ablate::eos::TChem::BuildFu
                                                              .perSpeciesDevice = perSpeciesDevice,
                                                              .mixtureDevice = mixtureDevice,
 
+                                                             // store the reference enthalpy
+                                                             .enthalpyReferenceDevice = enthalpyReferenceDevice,
+
                                                              // copy host info
                                                              .stateHost = Kokkos::create_mirror_view(stateDevice),
                                                              .perSpeciesHost = Kokkos::create_mirror_view(perSpeciesDevice),
                                                              .mixtureHost = Kokkos::create_mirror_view(mixtureDevice),
 
                                                              // store the reference enthalpy
-                                                             .enthalpyReference = enthalpyReferenceDevice,
+                                                             .enthalpyReferenceHost = enthalpyReferenceHost,
 
                                                              // policy
                                                              .policy = policy,
@@ -147,7 +150,7 @@ PetscErrorCode ablate::eos::TChem::TemperatureTemperatureFunction(const PetscRea
                                                     functionContext->stateDevice,
                                                     functionContext->mixtureDevice,
                                                     functionContext->perSpeciesDevice,
-                                                    functionContext->enthalpyReference,
+                                                    functionContext->enthalpyReferenceDevice,
                                                     *functionContext->kineticsModelDataDevice);
 
     // copy back the results
@@ -184,7 +187,7 @@ PetscErrorCode ablate::eos::TChem::TemperatureTemperatureMassFractionFunction(co
                                                     functionContext->stateDevice,
                                                     functionContext->mixtureDevice,
                                                     functionContext->perSpeciesDevice,
-                                                    functionContext->enthalpyReference,
+                                                    functionContext->enthalpyReferenceDevice,
                                                     *functionContext->kineticsModelDataDevice);
 
     // copy back the results
@@ -224,7 +227,7 @@ PetscErrorCode ablate::eos::TChem::InternalSensibleEnergyTemperatureFunction(con
                                                                functionContext->stateDevice,
                                                                functionContext->mixtureDevice,
                                                                functionContext->perSpeciesDevice,
-                                                               functionContext->enthalpyReference,
+                                                               functionContext->enthalpyReferenceDevice,
                                                                *functionContext->kineticsModelDataDevice);
 
     Kokkos::deep_copy(functionContext->mixtureHost, functionContext->mixtureDevice);
@@ -256,7 +259,7 @@ PetscErrorCode ablate::eos::TChem::InternalSensibleEnergyTemperatureMassFraction
                                                                functionContext->stateDevice,
                                                                functionContext->mixtureDevice,
                                                                functionContext->perSpeciesDevice,
-                                                               functionContext->enthalpyReference,
+                                                               functionContext->enthalpyReferenceDevice,
                                                                *functionContext->kineticsModelDataDevice);
 
     Kokkos::deep_copy(functionContext->mixtureHost, functionContext->mixtureDevice);
@@ -346,7 +349,7 @@ PetscErrorCode ablate::eos::TChem::SensibleEnthalpyTemperatureFunction(const Pet
                                                          functionContext->stateDevice,
                                                          functionContext->mixtureDevice,
                                                          functionContext->perSpeciesDevice,
-                                                         functionContext->enthalpyReference,
+                                                         functionContext->enthalpyReferenceDevice,
                                                          *functionContext->kineticsModelDataDevice);
 
     Kokkos::deep_copy(functionContext->mixtureHost, functionContext->mixtureDevice);
@@ -378,7 +381,7 @@ PetscErrorCode ablate::eos::TChem::SensibleEnthalpyTemperatureMassFractionFuncti
                                                          functionContext->stateDevice,
                                                          functionContext->mixtureDevice,
                                                          functionContext->perSpeciesDevice,
-                                                         functionContext->enthalpyReference,
+                                                         functionContext->enthalpyReferenceDevice,
                                                          *functionContext->kineticsModelDataDevice);
 
     Kokkos::deep_copy(functionContext->mixtureHost, functionContext->mixtureDevice);
@@ -577,7 +580,7 @@ PetscErrorCode ablate::eos::TChem::SpeciesSensibleEnthalpyTemperatureFunction(co
                                                          functionContext->stateDevice,
                                                          functionContext->mixtureDevice,
                                                          functionContext->perSpeciesDevice,
-                                                         functionContext->enthalpyReference,
+                                                         functionContext->enthalpyReferenceDevice,
                                                          *functionContext->kineticsModelDataDevice);
 
     Kokkos::View<PetscReal *> hiHost(hi, functionContext->kineticsModelDataDevice->nSpec);
@@ -608,7 +611,7 @@ PetscErrorCode ablate::eos::TChem::SpeciesSensibleEnthalpyTemperatureMassFractio
                                                          functionContext->stateDevice,
                                                          functionContext->mixtureDevice,
                                                          functionContext->perSpeciesDevice,
-                                                         functionContext->enthalpyReference,
+                                                         functionContext->enthalpyReferenceDevice,
                                                          *functionContext->kineticsModelDataDevice);
 
     Kokkos::View<PetscReal *> hiHost(hi, functionContext->kineticsModelDataDevice->nSpec);
