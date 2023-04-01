@@ -482,7 +482,7 @@ ablate::eos::EOSFunction ablate::eos::TChemSoot::GetFieldFunctionFunction(const 
                         auto cpks = real_type_1d_view_host((real_type *)work.data(), per_team_extent);
 
                         auto sensibleInternalEnergy = ablate::eos::tChemSoot::impl::SensibleInternalEnergyFcn<real_type, host_device_type>::team_invoke(
-                            member, Yc, sv_gas, enthalpy, cpks, enthalpyReferenceDevice, kineticsModelDataHost);
+                            member, Yc, sv_gas, enthalpy, cpks, enthalpyReferenceHost, kineticsModelDataHost);
 
                         // convert to total sensibleEnergy
                         PetscReal kineticEnergy = 0;
