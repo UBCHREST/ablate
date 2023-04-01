@@ -887,7 +887,7 @@ ablate::eos::EOSFunction ablate::eos::TChem::GetFieldFunctionFunction(const std:
                 double R = kineticsModelDataHost.Runiv / mwMix(0);
 
                 // compute the temperature
-                eos::tChem::Temperature::runHostBatch(policy, stateHostView, internalEnergy, enthalpy, enthalpyReferenceDevice, kineticsModelDataHost);
+                eos::tChem::Temperature::runHostBatch(policy, stateHostView, internalEnergy, enthalpy, enthalpyReferenceHost, kineticsModelDataHost);
 
                 // compute pressure p = rho*R*T
                 PetscReal density = pressure / (stateHost.Temperature() * R);
