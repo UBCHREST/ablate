@@ -26,6 +26,9 @@ ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::p
     kineticsModelDataDevice = std::make_shared<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<exec_space>::type>>(
         tChemLib::createGasKineticModelConstData<typename Tines::UseThisDevice<exec_space>::type>(kineticsModel));
 
+    kineticsModelDataHost = std::make_shared<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<host_exec_space>::type>>(
+        tChemLib::createGasKineticModelConstData<typename Tines::UseThisDevice<host_exec_space>::type>(kineticsModel));
+
     // copy the species information
     const auto speciesNamesHost = Kokkos::create_mirror_view(kineticsModelDataDevice->speciesNames);
     Kokkos::deep_copy(speciesNamesHost, kineticsModelDataDevice->speciesNames);

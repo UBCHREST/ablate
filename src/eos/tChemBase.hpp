@@ -44,6 +44,12 @@ class TChemBase : public ChemistryModel {
     /**
      * Store the primary kinetics data on the device
      */
+    std::shared_ptr<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<exec_space>::type>> kineticsModelDataHost;
+
+
+    /**
+     * Store the primary kinetics data on the device
+     */
     std::shared_ptr<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<exec_space>::type>> kineticsModelDataDevice;
 
     /**
@@ -125,16 +131,6 @@ class TChemBase : public ChemistryModel {
         PetscInt densityYiOffset;
 
         //! per species state
-        real_type_2d_view stateDevice;
-        //! per species array
-        real_type_2d_view perSpeciesDevice;
-        //! mass weighted mixture
-        real_type_1d_view mixtureDevice;
-
-        //! store the enthalpyReferencePerSpecies
-        real_type_1d_view enthalpyReferenceDevice;
-
-        //! per species state
         real_type_2d_view_host stateHost;
         //! per species array
         real_type_2d_view_host perSpeciesHost;
@@ -145,10 +141,10 @@ class TChemBase : public ChemistryModel {
         real_type_1d_view_host enthalpyReferenceHost;
 
         //! the kokkos team policy for this function
-        tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type policy;
+        tChemLib::UseThisTeamPolicy<tChemLib::host_exec_space>::type policy;
 
         //! the kinetics data
-        std::shared_ptr<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<exec_space>::type>> kineticsModelDataDevice;
+        std::shared_ptr<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<host_exec_space>::type>> kineticsModelDataHost;
     };
 
    public:
