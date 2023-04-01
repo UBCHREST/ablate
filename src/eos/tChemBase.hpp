@@ -44,7 +44,7 @@ class TChemBase : public ChemistryModel {
     /**
      * Store the primary kinetics data on the device
      */
-    std::shared_ptr<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<exec_space>::type>> kineticsModelDataHost;
+    std::shared_ptr<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<host_exec_space>::type>> kineticsModelDataHost;
 
 
     /**
