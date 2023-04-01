@@ -20,16 +20,18 @@ ablate::eos::TChemSoot::TChemSoot(std::filesystem::path mechanismFile, std::file
     species.insert(species.begin(), CSolidName);
 
     // Use the computed enthalpy and insert solid carbon as first index
-    auto enthalpyReferenceWithCarbon = real_type_1d_view("reference enthalpy", kineticsModelDataDevice->nSpec + 1);
+    enthalpyReferenceDevice = real_type_1d_view("reference enthalpy", kineticsModelDataDevice->nSpec + 1);
+    auto enthalpyReferenceWithCarbonHost = Kokkos::create_mirror_view(enthalpyReferenceDevice);
 
     // copy to enthalpyReference
-    Kokkos::deep_copy(Kokkos::subview(enthalpyReferenceWithCarbon, std::make_pair(1, kineticsModelDataDevice->nSpec + 1)), enthalpyReference);
+    Kokkos::deep_copy(Kokkos::subview(enthalpyReferenceWithCarbonHost, std::make_pair(1, kineticsModelDataDevice->nSpec + 1)), enthalpyReferenceHost);
 
     // Now put in reference enthalpy for Carbon
-    enthalpyReferenceWithCarbon(0) = CarbonEnthalpy_R_T(TREF) * TREF * kineticsModelDataDevice->Runiv / tChemSoot::MWCarbon;
+    enthalpyReferenceWithCarbonHost(0) = CarbonEnthalpy_R_T(TREF) * TREF * kineticsModelDataDevice->Runiv / tChemSoot::MWCarbon;
 
     // Replace the org calc
-    enthalpyReference = enthalpyReferenceWithCarbon;
+    enthalpyReferenceHost = enthalpyReferenceWithCarbonHost;
+    Kokkos::deep_copy(enthalpyReferenceDevice, enthalpyReferenceHost);
 }
 
 std::shared_ptr<ablate::eos::TChemSoot::FunctionContext> ablate::eos::TChemSoot::BuildFunctionContext(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
@@ -76,7 +78,7 @@ std::shared_ptr<ablate::eos::TChemSoot::FunctionContext> ablate::eos::TChemSoot:
                                                              .mixtureHost = Kokkos::create_mirror_view(mixtureDevice),
 
                                                              // store the reference enthalpy
-                                                             .enthalpyReference = enthalpyReference,  // Full Reference enthalpy information
+                                                             .enthalpyReference = enthalpyReferenceDevice,  // Full Reference enthalpy information
 
                                                              // policy
                                                              .policy = policy,
@@ -480,7 +482,7 @@ ablate::eos::EOSFunction ablate::eos::TChemSoot::GetFieldFunctionFunction(const 
                         auto cpks = real_type_1d_view_host((real_type *)work.data(), per_team_extent);
 
                         auto sensibleInternalEnergy = ablate::eos::tChemSoot::impl::SensibleInternalEnergyFcn<real_type, host_device_type>::team_invoke(
-                            member, Yc, sv_gas, enthalpy, cpks, enthalpyReference, kineticsModelDataHost);
+                            member, Yc, sv_gas, enthalpy, cpks, enthalpyReferenceDevice, kineticsModelDataHost);
 
                         // convert to total sensibleEnergy
                         PetscReal kineticEnergy = 0;
@@ -541,7 +543,7 @@ ablate::eos::EOSFunction ablate::eos::TChemSoot::GetFieldFunctionFunction(const 
                 stateHost.MassFractionCarbon() = Yc;
 
                 // compute the temperature
-                eos::tChemSoot::Temperature::runHostBatch(policy, stateHostView, internalEnergy, enthalpy, enthalpyReference, kineticsModelDataHost);
+                eos::tChemSoot::Temperature::runHostBatch(policy, stateHostView, internalEnergy, enthalpy, enthalpyReferenceDevice, kineticsModelDataHost);
 
                 // Compute the Density
                 Kokkos::parallel_for(
@@ -648,7 +650,7 @@ ablate::eos::EOSFunction ablate::eos::TChemSoot::GetFieldFunctionFunction(const 
                 stateHost.MassFractionCarbon() = Yc;
 
                 // compute the temperature
-                eos::tChemSoot::Temperature::runHostBatch(policy, stateHostView, internalEnergy, enthalpy, enthalpyReference, kineticsModelDataHost);
+                eos::tChemSoot::Temperature::runHostBatch(policy, stateHostView, internalEnergy, enthalpy, enthalpyReferenceDevice, kineticsModelDataHost);
 
                 // Compute the Density
                 Kokkos::parallel_for(

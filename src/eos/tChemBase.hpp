@@ -54,7 +54,12 @@ class TChemBase : public ChemistryModel {
     /**
      * The reference enthalpy per species
      */
-    real_type_1d_view enthalpyReference;
+    real_type_1d_view enthalpyReferenceDevice;
+
+    /**
+     * The reference enthalpy per species
+     */
+    real_type_1d_view_host enthalpyReferenceHost;
 
    public:
     /**
@@ -97,7 +102,7 @@ class TChemBase : public ChemistryModel {
     /**
      * Get the  reference enthalpy per species
      */
-    real_type_1d_view GetEnthalpyOfFormation() { return enthalpyReference; };
+    real_type_1d_view GetEnthalpyOfFormation() { return enthalpyReferenceDevice; };
 
     /**
      * Species supported by this EOS

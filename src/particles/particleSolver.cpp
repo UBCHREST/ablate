@@ -183,7 +183,7 @@ void ablate::particles::ParticleSolver::RegisterParticleField(const FieldDescrip
         .dataType = fieldDescription.dataType,
 
         //! The offset in the local array, 0 for aux, computed for sol
-        .offset = field.location == domain::FieldLocation::SOL
+        .offset = fieldDescription.location == domain::FieldLocation::SOL
                       ? std::accumulate(
                             fields.begin(), fields.end(), 0, [&](PetscInt count, const Field &field) { return count + (field.location == domain::FieldLocation::SOL ? field.numberComponents : 0); })
                       : 0,

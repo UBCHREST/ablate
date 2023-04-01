@@ -40,7 +40,7 @@ ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::p
     Kokkos::fence();
 
     // compute the reference enthalpy
-    enthalpyReference = real_type_1d_view("reference enthalpy", kineticsModelDataDevice->nSpec);
+    enthalpyReferenceDevice = real_type_1d_view("reference enthalpy", kineticsModelDataDevice->nSpec);
 
     {  // manually compute reference enthalpy on the device
         const auto per_team_extent_h = tChemLib::EnthalpyMass::getWorkSpaceSize(*kineticsModelDataDevice);
@@ -64,8 +64,12 @@ ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::p
         tChemLib::EnthalpyMass::runDeviceBatch(policy_enthalpy, stateDevice, perSpeciesDevice, mixtureDevice, *kineticsModelDataDevice);
 
         // copy to enthalpyReference
-        Kokkos::deep_copy(enthalpyReference, Kokkos::subview(perSpeciesDevice, 0, Kokkos::ALL()));
+        Kokkos::deep_copy(enthalpyReferenceDevice, Kokkos::subview(perSpeciesDevice, 0, Kokkos::ALL()));
     }
+
+    // Also create a copy on host
+    enthalpyReferenceHost = Kokkos::create_mirror_view(enthalpyReferenceDevice);
+    Kokkos::deep_copy(enthalpyReferenceHost, enthalpyReferenceDevice);
 
     // set the chemistry constraints
     constraints.Set(options);
