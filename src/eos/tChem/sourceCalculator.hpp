@@ -53,6 +53,11 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
     void ComputeSource(const ablate::domain::Range& cellRange, PetscReal time, PetscReal dt, Vec globalSolution) override;
 
     /**
+     * The compute source can be used as a prestep allowing the add source to be used at each stage without reevaluating
+     */
+    static void ComputeSource(SourceCalculator& sourceCalculator, const ablate::domain::Range& cellRange, PetscReal time, PetscReal dt, Vec globalSolution);
+
+    /**
      * Adds the source that was computed in the ComputeSource to the supplied vector
      */
     void AddSource(const ablate::domain::Range& cellRange, Vec localXVec, Vec localFVec) override;
