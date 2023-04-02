@@ -1,3 +1,4 @@
+#include <Kokkos_Core.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
 #include <functional>
 #include "eos/tChemSoot/sootProgressTransportModel.hpp"

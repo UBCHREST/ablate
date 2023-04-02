@@ -1,4 +1,6 @@
+#include <Kokkos_Core.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
+
 #include "sootSpeciesTransportModel.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 

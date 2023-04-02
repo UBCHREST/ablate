@@ -1,6 +1,7 @@
 #ifndef ABLATE_SOOTDENSITYFCN_HPP
-#ifndef KOKKOS_ENABLE_CUDA
 #define ABLATE_SOOTDENSITYFCN_HPP
+#include <Kokkos_Core.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
 
 #include <TChem_Impl_RhoMixMs.hpp>
 #include "TChem_KineticModelData.hpp"

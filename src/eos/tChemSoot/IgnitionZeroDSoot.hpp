@@ -19,8 +19,9 @@ Questions? Contact Cosmin Safta at <csafta@sandia.gov>, or
 Sandia National Laboratories, Livermore, CA, USA
 ===================================================================================== */
 #ifndef ABLATELIBRARY_TCHEM_IGNITION_ZEROD_SOOT_HPP
-#ifndef KOKKOS_ENABLE_CUDA
 #define ABLATELIBRARY_TCHEM_IGNITION_ZEROD_SOOT_HPP
+#include <Kokkos_Core.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
 
 #include "TChem_KineticModelData.hpp"
 #include "TChem_Util.hpp"

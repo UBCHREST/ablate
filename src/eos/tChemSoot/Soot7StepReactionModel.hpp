@@ -1,6 +1,9 @@
 #ifndef ABLATELIBRARY_SOOT7STEPREACTIONMODEL_HPP
-#ifndef KOKKOS_ENABLE_CUDA
 #define ABLATELIBRARY_SOOT7STEPREACTIONMODEL_HPP
+
+#include <Kokkos_Core.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
+
 #include <cmath>
 #include <iostream>
 #include "TChem_Impl_EnthalpySpecMl.hpp"

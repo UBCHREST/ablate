@@ -1,6 +1,8 @@
 #ifndef ABLATELIBRARY_SOOTPROGRESSTRANSPORTMODEL_HPP
-#ifndef KOKKOS_ENABLE_CUDA
 #define ABLATELIBRARY_SOOTPROGRESSTRANSPORTMODEL_HPP
+
+#include <Kokkos_Core.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
 
 #include <eos/eos.hpp>
 #include <memory>

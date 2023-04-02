@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_TCHEM_SOURCECALCULATORSOOT_HPP
-#ifndef KOKKOS_ENABLE_CUDA
 #define ABLATELIBRARY_TCHEM_SOURCECALCULATORSOOT_HPP
+#include <Kokkos_Core.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
 
 #include <TChem_KineticModelGasConstData.hpp>
 #include "eos/chemistryModel.hpp"

@@ -1,5 +1,5 @@
 #include "tChemSoot.hpp"
-
+#include <Kokkos_Core.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
 #include <utility>
 #include "eos/tChemSoot/densityFcn.hpp"

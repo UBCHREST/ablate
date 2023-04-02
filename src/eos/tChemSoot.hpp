@@ -3,7 +3,7 @@
 
 #include "eos.hpp"
 #include "tChem.hpp"
-
+#include <Kokkos_Core.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
 
 #include <filesystem>
