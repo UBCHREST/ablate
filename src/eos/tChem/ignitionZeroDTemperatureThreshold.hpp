@@ -26,10 +26,10 @@ Sandia National Laboratories, Livermore, CA, USA
 #include "TChem_KineticModelData.hpp"
 #include "TChem_Util.hpp"
 
-namespace ablate::eos::tChem {
+namespace ablate::eos::tChem::IgnitionZeroDTemperatureThreshold {
 
 struct IgnitionZeroDTemperatureThreshold {
-   private:
+   public:
     template <typename PolicyType, typename ValueType,
               typename DeviceType>
     static void IgnitionZeroDTemperatureThreshold_TemplateRun(  /// required template arguments
