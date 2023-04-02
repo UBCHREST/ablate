@@ -127,7 +127,7 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
 
     // Use a parallel for loop to load up the tChem state
     Kokkos::parallel_for(
-        "stateLoadHost", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const auto i) {
+        "stateLoadHost", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(cellRange.start, cellRange.end), [&](const auto i) {
             // get the host data from the petsc field
             const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
             const std::size_t chemIndex = i - cellRange.start;
