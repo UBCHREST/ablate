@@ -195,15 +195,15 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
     double minimumPressure = 0;
     for (int attempt = 0; (attempt < chemistryConstraints.maxAttempts) && minimumPressure == 0; ++attempt) {
         // Use a parallel for updating timeAdvanceDevice dt
-        Kokkos::parallel_for(
-            "timeAdvanceUpdate", Kokkos::RangePolicy<typename tChemLib::exec_space>(0, numberCells), KOKKOS_LAMBDA(const auto i) {
+//        Kokkos::parallel_for(
+//            "timeAdvanceUpdate", Kokkos::RangePolicy<typename tChemLib::exec_space>(0, numberCells), KOKKOS_LAMBDA(const auto i) {
 //                auto& tAdvAtI = timeAdvanceDevice(i);
 //                tAdvAtI._tbeg = time;
 //                tAdvAtI._tend = time + dt;
 //                tAdvAtI._dt = PetscMax(PetscMin(PetscMin(dtViewDevice(i) * chemistryConstraints.dtEstimateFactor, dt), tAdvAtI._dtmax) / (PetscPowInt(2, attempt)), tAdvAtI._dtmin);
 //                // set the default time information
 //                timeViewDevice(i) = time;
-            });
+//            });
 
         auto chemistryFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(::tChemLib::exec_space(), numberCells, Kokkos::AUTO());
         chemistryFunctionPolicy.set_scratch_size(1, Kokkos::PerTeam(::tChemLib::Scratch<real_type_1d_view>::shmem_size(::tChemLib::IgnitionZeroD::getWorkSpaceSize(kineticModelGasConstDataDevice))));
