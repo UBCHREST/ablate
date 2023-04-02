@@ -20,7 +20,7 @@ struct densityFcn {
     KOKKOS_INLINE_FUNCTION static value_type team_invoke(const MemberType& member,
                                                          /// input
                                                          StateVectorSoot<real_type_1d_view_type> totalState, const KineticModelConstDataType& kmcd) {
-//        member.team_barrier();
+        member.team_barrier();
 //        auto gaseousState = real_type_1d_view_type("Gaseous", ::TChem::Impl::getStateVectorSize(kmcd.nSpec));
 //        ::TChem::Impl::StateVector svGas = ::TChem::Impl::StateVector(kmcd.nSpec, gaseousState);
 //
