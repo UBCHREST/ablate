@@ -191,7 +191,7 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
     // Compute the pressure into the state field in the device
     ablate::eos::tChem::Pressure::runDeviceBatch(pressureFunctionPolicy, stateDevice, kineticModelGasConstDataDevice);
 
-//    auto timeAdvanceDeviceLocal = timeAdvanceDevice;
+    auto timeAdvanceDeviceLocal = timeAdvanceDevice;
     auto dtViewDeviceLocal = dtViewDevice;
     auto chemistryConstraintsLocal = chemistryConstraints;
     auto timeViewDeviceLocal = timeViewDevice;
@@ -202,7 +202,7 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
         // Use a parallel for updating timeAdvanceDevice dt
         Kokkos::parallel_for(
             "timeAdvanceUpdate", Kokkos::RangePolicy<tChemLib::exec_space>(0, numberCells), KOKKOS_LAMBDA(const ordinal_type& i) {
-                auto& tAdvAtI = timeAdvanceDevice(i);
+                auto& tAdvAtI = timeAdvanceDeviceLocal(i);
 
                 tAdvAtI._tbeg = time;
                 tAdvAtI._tend = time + dt;
