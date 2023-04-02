@@ -1,3 +1,5 @@
+#ifndef KOKKOS_ENABLE_CUDA
+
 #include "sootTransportModel.hpp"
 #include <algorithm>
 
@@ -121,3 +123,4 @@ PetscErrorCode ablate::eos::tChemSoot::SootTransportModel::AdjustSpeciesDiffusio
 
 #include "registrar.hpp"
 REGISTER_DERIVED(ablate::eos::transport::TransportModel, ablate::eos::tChemSoot::SootTransportModel);
+#endif

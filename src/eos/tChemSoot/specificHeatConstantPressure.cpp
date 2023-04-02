@@ -1,3 +1,5 @@
+#ifndef KOKKOS_ENABLE_CUDA
+
 #include "specificHeatConstantPressure.hpp"
 #include "TChem_Impl_CpMixMs.hpp"
 #include "TChem_Impl_MolarWeights.hpp"
@@ -67,3 +69,4 @@ void SpecificHeatConstantPressure_TemplateRun(const std::string& profile_name,
                                                                                          const ablate::eos::tChemSoot::SpecificHeatConstantPressure::kinetic_model_host_type& kmcd) {
     ablate::eos::tChemSoot::impl::SpecificHeatConstantPressure_TemplateRun("ablate::eos::tChemSoot::SpecificHeatConstantPressure", policy, state, CpMix, kmcd);
 }
+#endif

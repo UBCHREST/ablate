@@ -1,3 +1,4 @@
+#ifndef KOKKOS_ENABLE_CUDA
 #include "speedOfSound.hpp"
 #include "TChem_Impl_CpMixMs.hpp"
 #include "TChem_Impl_MolarWeights.hpp"
@@ -77,3 +78,4 @@ void SpeedOfSound_TemplateRun(const std::string& profile_name,
                                                                          const ablate::eos::tChemSoot::SpeedOfSound::kinetic_model_host_type& kmcd) {
     ablate::eos::tChemSoot::impl::SpeedOfSound_TemplateRun("ablate::eos::tChemSoot::SpeedOfSound::runHostBatch", policy, state, speedOfSound, kmcd);
 }
+#endif

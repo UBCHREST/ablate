@@ -1,3 +1,4 @@
+#ifndef KOKKOS_ENABLE_CUDA
 #include "sensibleEnthalpy.hpp"
 #include "eos/tChem/sensibleEnthalpyFcn.hpp"
 #include "eos/tChemSoot.hpp"
@@ -76,3 +77,4 @@ void SensibleEnthalpy_TemplateRun(const std::string& profile_name,
                                                                              const ablate::eos::tChem::SensibleEnthalpy::kinetic_model_host_type& kmcd) {
     ablate::eos::tChemSoot::impl::SensibleEnthalpy_TemplateRun("ablate::eos::tChemSoot::SensibleEnthalpy::runHostBatch", policy, state, enthalpyMassMixture, enthalpyMass, enthalpyRef, kmcd);
 }
+#endif

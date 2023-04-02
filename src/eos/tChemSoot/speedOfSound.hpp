@@ -1,4 +1,5 @@
 #ifndef ABLATELIBRARY_TCHEMSOOT_SPEEDOFSOUND_HPP
+#ifndef KOKKOS_ENABLE_CUDA
 #define ABLATELIBRARY_TCHEMSOOT_SPEEDOFSOUND_HPP
 
 #include "TChem_KineticModelData.hpp"
@@ -59,4 +60,5 @@ struct SpeedOfSound {
 };
 
 }  // namespace ablate::eos::tChemSoot
+#endif
 #endif

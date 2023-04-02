@@ -3,6 +3,7 @@
 //
 
 #ifndef ABLATE_SPECIFICHEATCONSTANTPRESSURE_HPP
+#ifndef KOKKOS_ENABLE_CUDA
 #define ABLATE_SPECIFICHEATCONSTANTPRESSURE_HPP
 
 #include "TChem_KineticModelData.hpp"
@@ -65,3 +66,4 @@ const real_type_2d_view_host_type& state,
 
 }  // namespace ablate::eos::tChemSoot
 #endif  // ABLATE_SPECIFICHEATCONSTANTPRESSURE_HPP
+#endif

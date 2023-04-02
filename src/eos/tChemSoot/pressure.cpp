@@ -1,3 +1,5 @@
+#ifndef KOKKOS_ENABLE_CUDA
+
 #include "pressure.hpp"
 #include "eos/tChem/pressureFcn.hpp"
 #include "eos/tChemSoot.hpp"
@@ -46,3 +48,4 @@ void Pressure_TemplateRun(const std::string& profile_name,
                                                                      const ablate::eos::tChemSoot::Pressure::kinetic_model_host_type& kmcd) {
     ablate::eos::tChemSoot::impl::Pressure_TemplateRun("ablate::eos::tChem::Pressure::runHostBatch", policy, state, kmcd);
 }
+#endif

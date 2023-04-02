@@ -1,4 +1,5 @@
 #ifndef ABLATELIBRARY_TCHEMSOOT_SENSIBLEENTHALPY_HPP
+#ifndef KOKKOS_ENABLE_CUDA
 #define ABLATELIBRARY_TCHEMSOOT_SENSIBLEENTHALPY_HPP
 
 #include "TChem_KineticModelData.hpp"
@@ -64,4 +65,5 @@ struct SensibleEnthalpy {
 };
 
 }  // namespace ablate::eos::tChemSoot
+#endif
 #endif

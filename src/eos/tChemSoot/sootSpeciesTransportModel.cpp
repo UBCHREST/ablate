@@ -1,3 +1,4 @@
+#ifndef KOKKOS_ENABLE_CUDA
 #include "sootSpeciesTransportModel.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 
@@ -7,3 +8,4 @@ ablate::eos::tChemSoot::SootSpeciesTransportModel::SootSpeciesTransportModel(con
 #include "registrar.hpp"
 REGISTER(ablate::eos::transport::TransportModel, ablate::eos::tChemSoot::SootSpeciesTransportModel, "Modifies the transport species model for soot",
          ARG(ablate::eos::transport::TransportModel, "transport", "The baseline transport model.)"));
+#endif

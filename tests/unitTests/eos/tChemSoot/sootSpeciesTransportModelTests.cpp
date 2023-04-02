@@ -1,3 +1,4 @@
+#ifndef KOKKOS_ENABLE_CUDA
 #include <functional>
 #include "eos/tChemSoot/sootSpeciesTransportModel.hpp"
 #include "eos/transport/constant.hpp"
@@ -114,3 +115,4 @@ INSTANTIATE_TEST_SUITE_P(SootSpeciesTransportTests, SootSpeciesTransportModelTes
                              }),
 
                          [](const testing::TestParamInfo<SootSpeciesTransportModelTestParameters>& info) { return std::to_string(info.index) + "_" + info.param.name; });
+#endif

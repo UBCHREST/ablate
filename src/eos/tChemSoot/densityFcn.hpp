@@ -1,4 +1,5 @@
 #ifndef ABLATE_SOOTDENSITYFCN_HPP
+#ifndef KOKKOS_ENABLE_CUDA
 #define ABLATE_SOOTDENSITYFCN_HPP
 
 #include <TChem_Impl_RhoMixMs.hpp>
@@ -21,7 +22,7 @@ struct densityFcn {
                                                          /// input
                                                          StateVectorSoot<real_type_1d_view_type> totalState, const KineticModelConstDataType& kmcd) {
         member.team_barrier();
-        auto gaseousState = real_type_1d_view_host("Gaseous", ::TChem::Impl::getStateVectorSize(kmcd.nSpec));
+        real_type_1d_view gaseousState = real_type_1d_view_type("Gaseous", ::TChem::Impl::getStateVectorSize(kmcd.nSpec));
         ::TChem::Impl::StateVector svGas = ::TChem::Impl::StateVector(kmcd.nSpec, gaseousState);
 
         totalState.SplitYiState(svGas);
@@ -39,4 +40,5 @@ struct densityFcn {
 };
 
 }  // namespace ablate::eos::tChemSoot::impl
+#endif
 #endif

@@ -18,6 +18,7 @@ Questions? Contact Cosmin Safta at <csafta@sandia.gov>, or
 
 Sandia National Laboratories, Livermore, CA, USA
 ===================================================================================== */
+#ifndef KOKKOS_ENABLE_CUDA
 #include "IgnitionZeroDSoot.hpp"
 #include "IgnitionZeroDSoot_Implemenatation.hpp"
 #include "TChem_Util.hpp"
@@ -183,3 +184,4 @@ void IgnitionZeroDSoot_TemplateRun(  /// required template arguments
 }
 
 }  // namespace ablate::eos::tChemSoot
+#endif

@@ -1,4 +1,5 @@
 #ifndef ABLATELIBRARY_TCHEMSOOT_PRESSURE_HPP
+#ifndef KOKKOS_ENABLE_CUDA
 #define ABLATELIBRARY_TCHEMSOOT_PRESSURE_HPP
 
 #include "TChem_KineticModelData.hpp"
@@ -54,4 +55,5 @@ struct Pressure {
 };
 
 }  // namespace ablate::eos::tChemSoot
+#endif
 #endif

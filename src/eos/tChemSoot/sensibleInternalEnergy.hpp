@@ -1,4 +1,5 @@
 #ifndef ABLATELIBRARY_TCHEMSOOT_SENSIBLEINTERNALENERGY_HPP
+#ifndef KOKKOS_ENABLE_CUDA
 #define ABLATELIBRARY_TCHEMSOOT_SENSIBLEINTERNALENERGY_HPP
 
 #include "TChem_KineticModelData.hpp"
@@ -63,4 +64,5 @@ struct SensibleInternalEnergy {
 };
 
 }  // namespace ablate::eos::tChemSoot
+#endif
 #endif

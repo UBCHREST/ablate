@@ -19,6 +19,7 @@ Questions? Contact Cosmin Safta at <csafta@sandia.gov>, or
 Sandia National Laboratories, Livermore, CA, USA
 ===================================================================================== */
 #ifndef ABLATELIBRARY_IGNITION_ZEROD_SOOT_PROBLEM_HPP
+#ifndef KOKKOS_ENABLE_CUDA
 #define ABLATELIBRARY_IGNITION_ZEROD_SOOT_PROBLEM_HPP
 
 #include "Tines_Internal.hpp"
@@ -186,4 +187,5 @@ struct IgnitionZeroD_ProblemSoot {
     //        }
 };
 }  // namespace ablate::eos::tChemSoot
+#endif
 #endif

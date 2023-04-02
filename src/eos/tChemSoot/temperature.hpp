@@ -1,4 +1,5 @@
 #ifndef ABLATELIBRARY_TCHEM_TEMPERATURESOOT_HPP
+#ifndef KOKKOS_ENABLE_CUDA
 #define ABLATELIBRARY_TCHEM_TEMPERATURESOOT_HPP
 
 #include "TChem_KineticModelData.hpp"
@@ -59,4 +60,5 @@ struct Temperature {
 };
 
 }  // namespace ablate::eos::tChemSoot
+#endif
 #endif

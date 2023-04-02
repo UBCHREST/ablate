@@ -1,3 +1,5 @@
+#ifndef KOKKOS_ENABLE_CUDA
+
 #include "sourceCalculatorSoot.hpp"
 #include <algorithm>
 #include "eos/tChemSoot.hpp"
@@ -374,3 +376,4 @@ void ablate::eos::tChemSoot::SourceCalculatorSoot::AddSource(const ablate::domai
     VecRestoreArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
     EndEvent();
 }
+#endif
