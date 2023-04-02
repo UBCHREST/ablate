@@ -206,13 +206,15 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(SourceCalculator& sourc
 
     double minimumPressure = 0;
     for (int attempt = 0; (attempt < sourceCalculator.chemistryConstraints.maxAttempts) && minimumPressure == 0; ++attempt) {
+
+        auto factor = PetscPowInt(2, attempt);
         // Use a parallel for updating timeAdvanceDevice dt
         Kokkos::parallel_for(
             "timeAdvanceUpdate", Kokkos::RangePolicy<typename tChemLib::exec_space>(0, numberCells), KOKKOS_LAMBDA(const auto i) {
                 auto& tAdvAtI = timeAdvanceDeviceLocal(i);
                 tAdvAtI._tbeg = time;
                 tAdvAtI._tend = time + dt;
-                tAdvAtI._dt = PetscMax(PetscMin(PetscMin(dtViewDeviceLocal(i) * chemistryConstraintsLocal.dtEstimateFactor, dt), tAdvAtI._dtmax) / (PetscPowInt(2, attempt)), tAdvAtI._dtmin);
+                tAdvAtI._dt = PetscMax(PetscMin(PetscMin(dtViewDeviceLocal(i) * chemistryConstraintsLocal.dtEstimateFactor, dt), tAdvAtI._dtmax) / factor, tAdvAtI._dtmin);
                 // set the default time information
                 timeViewDeviceLocal(i) = time;
             });
