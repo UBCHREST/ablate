@@ -26,7 +26,7 @@ Sandia National Laboratories, Livermore, CA, USA
 #include "TChem_KineticModelData.hpp"
 #include "TChem_Util.hpp"
 
-namespace ablate::eos::tChem::IgnitionZeroDTemperatureThreshold {
+namespace ablate::eos::tChem {
 
 struct IgnitionZeroDTemperatureThreshold {
    public:
