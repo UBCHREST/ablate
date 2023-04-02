@@ -35,13 +35,13 @@ ablate::eos::tChem::SourceCalculator::SourceCalculator(const std::vector<domain:
     const ordinal_type stateVecDim = Impl::getStateVectorSize(kineticModelGasConstData.nSpec);
 
     // allocate the tChem memory
-    stateHost = real_type_2d_view_host("stateVectorDevices", numberCells, stateVecDim);
-    stateDevice = Kokkos::create_mirror(stateHost);
+    stateDevice = real_type_2d_view("stateVectorDevices", numberCells, stateVecDim);
+    stateHost = Kokkos::create_mirror(stateDevice);
     endStateDevice = real_type_2d_view("stateVectorDevicesEnd", numberCells, stateVecDim);
-    internalEnergyRefHost = real_type_1d_view_host("internalEnergyRefHost", numberCells);
-    internalEnergyRefDevice = Kokkos::create_mirror(internalEnergyRefHost);
-    sourceTermsHost = real_type_2d_view_host("sourceTermsHost", numberCells, kineticModelGasConstData.nSpec + 1);
-    sourceTermsDevice = Kokkos::create_mirror(sourceTermsHost);
+    internalEnergyRefDevice =  real_type_1d_view("internalEnergyRefHost", numberCells);
+    internalEnergyRefHost =Kokkos::create_mirror(internalEnergyRefDevice);
+    sourceTermsDevice = real_type_2d_view("sourceTermsHost", numberCells, kineticModelGasConstData.nSpec + 1);
+    sourceTermsHost = Kokkos::create_mirror(sourceTermsDevice);
     perSpeciesScratchDevice = real_type_2d_view("perSpeciesScratchDevice", numberCells, kineticModelGasConstData.nSpec);
     timeViewDevice = real_type_1d_view("time", numberCells);
     dtViewDevice = real_type_1d_view("delta time", numberCells);
