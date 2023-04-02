@@ -21,7 +21,7 @@ struct densityFcn {
                                                          /// input
                                                          StateVectorSoot<real_type_1d_view_type> totalState, const KineticModelConstDataType& kmcd) {
         member.team_barrier();
-//        auto gaseousState = real_type_1d_view_type("Gaseous", kmcd.nSpec +3 /*::TChem::Impl::getStateVectorSize()*/);
+        auto gaseousState = real_type_1d_view_type("Gaseous", kmcd.nSpec +3 /*::TChem::Impl::getStateVectorSize()*/);
 //        ::TChem::Impl::StateVector svGas = ::TChem::Impl::StateVector(kmcd.nSpec, gaseousState);
 
 //        totalState.SplitYiState(svGas);
