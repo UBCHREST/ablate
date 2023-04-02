@@ -214,7 +214,7 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(SourceCalculator& sourc
                 auto& tAdvAtI = timeAdvanceDeviceLocal(i);
                 tAdvAtI._tbeg = time;
                 tAdvAtI._tend = time + dt;
-                tAdvAtI._dt = PetscMax(PetscMin(PetscMin(dtViewDeviceLocal(i) * chemistryConstraintsLocal.dtEstimateFactor, dt), tAdvAtI._dtmax) / factor, tAdvAtI._dtmin);
+//                tAdvAtI._dt = PetscMax(PetscMin(PetscMin(dtViewDeviceLocal(i) * chemistryConstraintsLocal.dtEstimateFactor, dt), tAdvAtI._dtmax) / factor, tAdvAtI._dtmin);
                 // set the default time information
                 timeViewDeviceLocal(i) = time;
             });
