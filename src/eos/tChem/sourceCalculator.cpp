@@ -211,6 +211,7 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(SourceCalculator& sourc
         // Use a parallel for updating timeAdvanceDevice dt
         Kokkos::parallel_for(
             "timeAdvanceUpdate", Kokkos::RangePolicy<typename tChemLib::exec_space>(0, numberCells), KOKKOS_LAMBDA(const auto i) {
+                                                                                                         auto blue = i +1;
 //                auto& tAdvAtI = timeAdvanceDeviceLocal(i);
 //                tAdvAtI._tbeg = time;
 //                tAdvAtI._tend = time + dt;
