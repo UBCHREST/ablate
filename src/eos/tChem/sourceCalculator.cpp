@@ -63,7 +63,7 @@ ablate::eos::tChem::SourceCalculator::SourceCalculator(const std::vector<domain:
     Kokkos::deep_copy(dtViewDevice, 1E-4);
 
     // determine the number of equations
-    auto numberOfEquations = ::tChemLib::Impl::IgnitionZeroD_Problem<real_type, Tines::UseThisDevice<exec_space>::type>::getNumberOfTimeODEs(kineticModelGasConstData);
+    auto numberOfEquations = ::tChemLib::Impl::IgnitionZeroD_Problem<real_type, Tines::UseThisDevice<host_exec_space>::type>::getNumberOfTimeODEs(kineticModelGasConstData);
 
     // size up the tolerance constraints
     tolTimeDevice = real_type_2d_view("tolTimeDevice", numberOfEquations, 2);
@@ -289,20 +289,25 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
                 }
 
                 // compute the cell centroid
-                PetscReal centroid[3];
-                DMPlexComputeCellGeometryFVM(solutionDm, cell, nullptr, centroid, nullptr) >> utilities::PetscUtilities::checkError;
+                 if constexpr(std::is_same<tChemLib::exec_space,tChemLib::host_exec_space>::value) {
+                    PetscReal centroid[3];
+                    DMPlexComputeCellGeometryFVM(solutionDm, cell, nullptr, centroid, nullptr) >> utilities::PetscUtilities::checkError;
 
-                // Output error information
-                std::stringstream warningMessage;
-                warningMessage << "Warning: Could not integrate chemistry at cell " << cell << " on rank " << rank << " at location " << utilities::VectorUtilities::Concatenate(centroid, dim) << "\n";
-                warningMessage << "dt: " << std::setprecision(16) << dt << "\n";
-                warningMessage << "state: "
-                               << "\n";
-                for (std::size_t s = 0; s < stateAtI.size(); ++s) {
-                    warningMessage << "\t[" << s << "] " << stateAtI[s] << "\n";
+                    // Output error information
+                    std::stringstream warningMessage;
+                    warningMessage << "Warning: Could not integrate chemistry at cell " << cell << " on rank " << rank << " at location " << utilities::VectorUtilities::Concatenate(centroid, dim)
+                                   << "\n";
+                    warningMessage << "dt: " << std::setprecision(16) << dt << "\n";
+                    warningMessage << "state: "
+                                   << "\n";
+                    for (std::size_t s = 0; s < stateAtI.size(); ++s) {
+                        warningMessage << "\t[" << s << "] " << stateAtI[s] << "\n";
+                    }
+
+                    std::cout << warningMessage.str() << std::endl;
+                }else{
+                    printf("Warning: Could not integrate chemistry at cell %d on rank %d\n", cell, rank );
                 }
-
-                std::cout << warningMessage.str() << std::endl;
             }
         });
 
