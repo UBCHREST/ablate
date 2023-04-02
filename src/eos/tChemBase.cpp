@@ -37,7 +37,7 @@ ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::p
     auto speciesArray = species.data();
 
     Kokkos::parallel_for(
-        "speciesInit", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(0, kineticsModelDataDevice->nSpec), KOKKOS_LAMBDA(const auto i) {
+        "speciesInit", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(0, kineticsModelDataDevice->nSpec), [&speciesArray, speciesNamesHost](const auto i) {
             speciesArray[i] = std::string(&speciesNamesHost(i, 0));
         });
     Kokkos::fence();
