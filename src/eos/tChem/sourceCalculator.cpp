@@ -212,10 +212,10 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(SourceCalculator& sourc
         Kokkos::parallel_for(
             "timeAdvanceUpdate", Kokkos::RangePolicy<tChemLib::exec_space>(0, numberCells), KOKKOS_LAMBDA(const ordinal_type& i) {
                 auto& tAdvAtI = timeAdvanceDeviceLocal(i);
-                printf("%f", tAdvAtI._dt);
+//                printf("%f", tAdvAtI._dt);
 
-//                tAdvAtI._tbeg = time;
-//                tAdvAtI._tend = time + dt;
+                tAdvAtI._tbeg = time;
+                tAdvAtI._tend = time + dt;
 ////                tAdvAtI._dt = PetscMax(PetscMin(PetscMin(dtViewDeviceLocal(i) * chemistryConstraintsLocal.dtEstimateFactor, dt), tAdvAtI._dtmax) / factor, tAdvAtI._dtmin);
 //                // set the default time information
 //                timeViewDeviceLocal(i) = time;
