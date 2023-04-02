@@ -197,12 +197,12 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
         // Use a parallel for updating timeAdvanceDevice dt
         Kokkos::parallel_for(
             "timeAdvanceUpdate", Kokkos::RangePolicy<typename tChemLib::exec_space>(0, numberCells), KOKKOS_LAMBDA(const auto i) {
-                auto& tAdvAtI = timeAdvanceDevice(i);
-                tAdvAtI._tbeg = time;
-                tAdvAtI._tend = time + dt;
-                tAdvAtI._dt = PetscMax(PetscMin(PetscMin(dtViewDevice(i) * chemistryConstraints.dtEstimateFactor, dt), tAdvAtI._dtmax) / (PetscPowInt(2, attempt)), tAdvAtI._dtmin);
-                // set the default time information
-                timeViewDevice(i) = time;
+//                auto& tAdvAtI = timeAdvanceDevice(i);
+//                tAdvAtI._tbeg = time;
+//                tAdvAtI._tend = time + dt;
+//                tAdvAtI._dt = PetscMax(PetscMin(PetscMin(dtViewDevice(i) * chemistryConstraints.dtEstimateFactor, dt), tAdvAtI._dtmax) / (PetscPowInt(2, attempt)), tAdvAtI._dtmin);
+//                // set the default time information
+//                timeViewDevice(i) = time;
             });
 
         auto chemistryFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(::tChemLib::exec_space(), numberCells, Kokkos::AUTO());
@@ -228,88 +228,88 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
                 chemistryFunctionPolicy, tolNewtonDevice, tolTimeDevice, facDevice, timeAdvanceDevice, stateDevice, timeViewDevice, dtViewDevice, endStateDevice, kineticModelGasConstDataDevices);
         }
         // check the output pressure, if it is zero the integration failed
-        Kokkos::parallel_reduce(
-            "pressureCheck",
-            Kokkos::RangePolicy<typename tChemLib::exec_space>(0, numberCells),
-            KOKKOS_LAMBDA(const int& chemIndex, double& pressureMin) {
-                // cast the state at i to a state vector
-                const auto stateAtI = Kokkos::subview(endStateDevice, chemIndex, Kokkos::ALL());
-                Impl::StateVector<real_type_1d_view> stateVector(kineticModelGasConstDataDevice.nSpec, stateAtI);
-                auto pressureAtI = stateVector.Pressure();
-                if (pressureAtI < pressureMin) {
-                    pressureMin = pressureAtI;
-                }
-            },
-            Kokkos::Min<double>(minimumPressure));
+//        Kokkos::parallel_reduce(
+//            "pressureCheck",
+//            Kokkos::RangePolicy<typename tChemLib::exec_space>(0, numberCells),
+//            KOKKOS_LAMBDA(const int& chemIndex, double& pressureMin) {
+//                // cast the state at i to a state vector
+//                const auto stateAtI = Kokkos::subview(endStateDevice, chemIndex, Kokkos::ALL());
+//                Impl::StateVector<real_type_1d_view> stateVector(kineticModelGasConstDataDevice.nSpec, stateAtI);
+//                auto pressureAtI = stateVector.Pressure();
+//                if (pressureAtI < pressureMin) {
+//                    pressureMin = pressureAtI;
+//                }
+//            },
+//            Kokkos::Min<double>(minimumPressure));
     }
 
     // Use a parallel for computing the source term
     auto enthalpyOfFormation = eos->GetEnthalpyOfFormation();
-    Kokkos::parallel_for(
-        "sourceTermCompute", Kokkos::RangePolicy<typename tChemLib::exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const auto i) {
-            // get the host data from the petsc field
-            const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
-            const std::size_t chemIndex = i - cellRange.start;
-
-            // cast the state at i to a state vector
-            const auto stateAtI = Kokkos::subview(stateDevice, chemIndex, Kokkos::ALL());
-            Impl::StateVector<real_type_1d_view> stateVector(kineticModelGasConstDataDevice.nSpec, stateAtI);
-            const auto ys = stateVector.MassFractions();
-
-            const auto endStateAtI = Kokkos::subview(endStateDevice, chemIndex, Kokkos::ALL());
-            Impl::StateVector<real_type_1d_view> endStateVector(kineticModelGasConstDataDevice.nSpec, endStateAtI);
-            const auto ye = endStateVector.MassFractions();
-
-            // get the source term at this chemIndex
-            const auto sourceTermAtI = Kokkos::subview(sourceTermsDevice, chemIndex, Kokkos::ALL());
-
-            // the IgnitionZeroD::runDeviceBatch sets the pressure to zero if it does not converge
-            if (endStateVector.Pressure() > 0) {
-                // compute the source term from the change in the heat of formation
-                sourceTermAtI(0) = 0.0;
-                for (ordinal_type s = 0; s < stateVector.NumSpecies(); s++) {
-                    sourceTermAtI(0) += (ys(s) - ye(s)) * enthalpyOfFormation(s);
-                }
-
-                for (ordinal_type s = 0; s < stateVector.NumSpecies(); ++s) {
-                    // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-                    sourceTermAtI(s + 1) = ye(s) - ys(s);
-                }
-
-                // Now scale everything by density/dt
-                for (std::size_t j = 0; j < sourceTermAtI.extent(0); ++j) {
-                    // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-                    sourceTermAtI(j) *= stateVector.Density() / dt;
-                }
-            } else {
-                // set to zero
-                sourceTermAtI(0) = 0.0;
-                for (ordinal_type s = 0; s < stateVector.NumSpecies(); ++s) {
-                    sourceTermAtI(s + 1) = 0.0;
-                }
-
-                // compute the cell centroid
-                 if constexpr(std::is_same<tChemLib::exec_space,tChemLib::host_exec_space>::value) {
-                    PetscReal centroid[3];
-                    DMPlexComputeCellGeometryFVM(solutionDm, cell, nullptr, centroid, nullptr) >> utilities::PetscUtilities::checkError;
-
-                    // Output error information
-                    std::stringstream warningMessage;
-                    warningMessage << "Warning: Could not integrate chemistry at cell " << cell << " on rank " << rank << " at location " << utilities::VectorUtilities::Concatenate(centroid, dim)
-                                   << "\n";
-                    warningMessage << "dt: " << std::setprecision(16) << dt << "\n";
-                    warningMessage << "state: "
-                                   << "\n";
-                    for (std::size_t s = 0; s < stateAtI.size(); ++s) {
-                        warningMessage << "\t[" << s << "] " << stateAtI[s] << "\n";
-                    }
-
-                    std::cout << warningMessage.str() << std::endl;
-                }else{
-                    printf("Warning: Could not integrate chemistry at cell %d on rank %d\n", cell, rank );
-                }
-            }
-        });
+//    Kokkos::parallel_for(
+//        "sourceTermCompute", Kokkos::RangePolicy<typename tChemLib::exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const auto i) {
+//            // get the host data from the petsc field
+//            const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
+//            const std::size_t chemIndex = i - cellRange.start;
+//
+//            // cast the state at i to a state vector
+//            const auto stateAtI = Kokkos::subview(stateDevice, chemIndex, Kokkos::ALL());
+//            Impl::StateVector<real_type_1d_view> stateVector(kineticModelGasConstDataDevice.nSpec, stateAtI);
+//            const auto ys = stateVector.MassFractions();
+//
+//            const auto endStateAtI = Kokkos::subview(endStateDevice, chemIndex, Kokkos::ALL());
+//            Impl::StateVector<real_type_1d_view> endStateVector(kineticModelGasConstDataDevice.nSpec, endStateAtI);
+//            const auto ye = endStateVector.MassFractions();
+//
+//            // get the source term at this chemIndex
+//            const auto sourceTermAtI = Kokkos::subview(sourceTermsDevice, chemIndex, Kokkos::ALL());
+//
+//            // the IgnitionZeroD::runDeviceBatch sets the pressure to zero if it does not converge
+//            if (endStateVector.Pressure() > 0) {
+//                // compute the source term from the change in the heat of formation
+//                sourceTermAtI(0) = 0.0;
+//                for (ordinal_type s = 0; s < stateVector.NumSpecies(); s++) {
+//                    sourceTermAtI(0) += (ys(s) - ye(s)) * enthalpyOfFormation(s);
+//                }
+//
+//                for (ordinal_type s = 0; s < stateVector.NumSpecies(); ++s) {
+//                    // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
+//                    sourceTermAtI(s + 1) = ye(s) - ys(s);
+//                }
+//
+//                // Now scale everything by density/dt
+//                for (std::size_t j = 0; j < sourceTermAtI.extent(0); ++j) {
+//                    // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
+//                    sourceTermAtI(j) *= stateVector.Density() / dt;
+//                }
+//            } else {
+//                // set to zero
+//                sourceTermAtI(0) = 0.0;
+//                for (ordinal_type s = 0; s < stateVector.NumSpecies(); ++s) {
+//                    sourceTermAtI(s + 1) = 0.0;
+//                }
+//
+//                // compute the cell centroid
+//                 if constexpr(std::is_same<tChemLib::exec_space,tChemLib::host_exec_space>::value) {
+//                    PetscReal centroid[3];
+//                    DMPlexComputeCellGeometryFVM(solutionDm, cell, nullptr, centroid, nullptr) >> utilities::PetscUtilities::checkError;
+//
+//                    // Output error information
+//                    std::stringstream warningMessage;
+//                    warningMessage << "Warning: Could not integrate chemistry at cell " << cell << " on rank " << rank << " at location " << utilities::VectorUtilities::Concatenate(centroid, dim)
+//                                   << "\n";
+//                    warningMessage << "dt: " << std::setprecision(16) << dt << "\n";
+//                    warningMessage << "state: "
+//                                   << "\n";
+//                    for (std::size_t s = 0; s < stateAtI.size(); ++s) {
+//                        warningMessage << "\t[" << s << "] " << stateAtI[s] << "\n";
+//                    }
+//
+//                    std::cout << warningMessage.str() << std::endl;
+//                }else{
+//                    printf("Warning: Could not integrate chemistry at cell %d on rank %d\n", cell, rank );
+//                }
+//            }
+//        });
 
     // copy the updated state back to host
     Kokkos::deep_copy(sourceTermsHost, sourceTermsDevice);
