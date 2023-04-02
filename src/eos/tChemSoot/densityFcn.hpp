@@ -17,7 +17,7 @@ struct densityFcn {
     using kinetic_model_type = KineticModelConstData<device_type>;
 
     template <typename MemberType, typename KineticModelConstDataType>
-    KOKKOS_INLINE_FUNCTION static value_type team_invoke(const MemberType& member,
+    KOKKOS_FUNCTION static value_type team_invoke(const MemberType& member,
                                                          /// input
                                                          StateVectorSoot<real_type_1d_view_type> totalState, const KineticModelConstDataType& kmcd) {
         member.team_barrier();
