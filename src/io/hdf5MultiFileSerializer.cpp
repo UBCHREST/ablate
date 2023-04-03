@@ -42,6 +42,16 @@ ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer(std::shared_ptr<abl
     }
 }
 
+ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer(PetscInt sequenceNumberIn, std::shared_ptr<parameters::Parameters> options) {
+    sequenceNumber = sequenceNumberIn;  //! Set the sequence number manually so that the domain can be restored at the chosen time step.
+
+    // setup petsc options if provided
+    if (options) {
+        PetscOptionsCreate(&petscOptions) >> utilities::PetscUtilities::checkError;
+        options->Fill(petscOptions);
+    }
+}
+
 ablate::io::Hdf5MultiFileSerializer::~Hdf5MultiFileSerializer() {
     // save each serializer
     for (std::string id : postProcessesIds) {

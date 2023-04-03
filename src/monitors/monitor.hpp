@@ -32,6 +32,11 @@ class Monitor {
      */
     virtual void* GetContext() { return this; }
 
+    void CallMonitor(TS ts, PetscInt steps, PetscReal time, Vec u) {
+        auto function = GetPetscFunction();
+        function(ts, steps, time, u, GetContext()) >> utilities::PetscUtilities::checkError;
+    }
+
    protected:
     std::shared_ptr<solver::Solver> GetSolver() { return solver; }
 };

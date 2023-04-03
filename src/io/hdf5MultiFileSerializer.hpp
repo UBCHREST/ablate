@@ -55,6 +55,8 @@ class Hdf5MultiFileSerializer : public Serializer, private utilities::Loggable<H
      */
     explicit Hdf5MultiFileSerializer(std::shared_ptr<ablate::io::interval::Interval>, std::shared_ptr<parameters::Parameters> options = nullptr);
 
+    explicit Hdf5MultiFileSerializer(PetscInt sequenceNumberIn, std::shared_ptr<parameters::Parameters> options = nullptr);
+
     /**
      * Allow file cleanup
      */
