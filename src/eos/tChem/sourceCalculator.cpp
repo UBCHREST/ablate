@@ -252,6 +252,12 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
             Kokkos::Min<double>(minimumPressure));
     }
 
+    // Get the local copies
+    auto stateDeviceLocal = stateDevice;
+    auto endStateDeviceLocal = endStateDevice;
+    auto nSpecLocal = kineticModelGasConstDataDevice.nSpec;
+    auto sourceTermsDeviceLocal = sourceTermsDevice;
+
     // Use a parallel for computing the source term
     auto enthalpyOfFormationLocal = eos->GetEnthalpyOfFormation();
         Kokkos::parallel_for(
@@ -261,16 +267,16 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
                 const std::size_t chemIndex = i - cellRange.start;
 
                 // cast the state at i to a state vector
-                const auto stateAtI = Kokkos::subview(stateDevice, chemIndex, Kokkos::ALL());
-                Impl::StateVector<real_type_1d_view> stateVector(kineticModelGasConstDataDevice.nSpec, stateAtI);
+                const auto stateAtI = Kokkos::subview(stateDeviceLocal, chemIndex, Kokkos::ALL());
+                Impl::StateVector<real_type_1d_view> stateVector(nSpecLocal, stateAtI);
                 const auto ys = stateVector.MassFractions();
 
-                const auto endStateAtI = Kokkos::subview(endStateDevice, chemIndex, Kokkos::ALL());
-                Impl::StateVector<real_type_1d_view> endStateVector(kineticModelGasConstDataDevice.nSpec, endStateAtI);
+                const auto endStateAtI = Kokkos::subview(endStateDeviceLocal, chemIndex, Kokkos::ALL());
+                Impl::StateVector<real_type_1d_view> endStateVector(nSpecLocal, endStateAtI);
                 const auto ye = endStateVector.MassFractions();
 
                 // get the source term at this chemIndex
-                const auto sourceTermAtI = Kokkos::subview(sourceTermsDevice, chemIndex, Kokkos::ALL());
+                const auto sourceTermAtI = Kokkos::subview(sourceTermsDeviceLocal, chemIndex, Kokkos::ALL());
 
                 // the IgnitionZeroD::runDeviceBatch sets the pressure to zero if it does not converge
                 if (endStateVector.Pressure() > 0) {
@@ -298,7 +304,7 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
                     }
 
                     // compute the cell centroid
-                     if constexpr(std::is_same<tChemLib::exec_space,tChemLib::host_exec_space>::value) {
+                     if constexpr(std::is_same<typename tChemLib::exec_space,tChemLib::host_exec_space>::value) {
                         PetscReal centroid[3];
                         DMPlexComputeCellGeometryFVM(solutionDm, cell, nullptr, centroid, nullptr) >> utilities::PetscUtilities::checkError;
 
