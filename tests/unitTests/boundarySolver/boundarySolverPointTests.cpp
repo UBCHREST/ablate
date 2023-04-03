@@ -287,7 +287,7 @@ TEST_P(BoundarySolverPointTestFixture, ShouldComputeCorrectGradientsOnBoundary) 
 INSTANTIATE_TEST_SUITE_P(BoundarySolver, BoundarySolverPointTestFixture,
                          testing::Values(
                              (BoundarySolverPointTestParameters){
-                                 .mpiTestParameter = {.testName = "1D BoundarySolver", .nproc = 1, .arguments = ""},
+                                 .mpiTestParameter = testingResources::MpiTestParameter("1D BoundarySolver"),
                                  .dim = 1,
                                  .fieldAFunction = "x + x*y+ y + z",
                                  .fieldBFunction = "10*x + 3*y + z*x +2*z",
@@ -300,7 +300,7 @@ INSTANTIATE_TEST_SUITE_P(BoundarySolver, BoundarySolverPointTestFixture,
 
                              },
                              (BoundarySolverPointTestParameters){
-                                 .mpiTestParameter = {.testName = "2D BoundarySolver", .nproc = 1, .arguments = ""},
+                                 .mpiTestParameter = testingResources::MpiTestParameter("2D BoundarySolver"),
                                  .dim = 2,
                                  .fieldAFunction = "x + y + z",
                                  .fieldBFunction = "10*x + 3*y +2*z",
@@ -313,7 +313,7 @@ INSTANTIATE_TEST_SUITE_P(BoundarySolver, BoundarySolverPointTestFixture,
 
                              },
                              (BoundarySolverPointTestParameters){
-                                 .mpiTestParameter = {.testName = "3D BoundarySolver", .nproc = 1, .arguments = ""},
+                                 .mpiTestParameter = testingResources::MpiTestParameter("3D BoundarySolver"),
                                  .dim = 3,
                                  .fieldAFunction = "x + y + z",
                                  .fieldBFunction = "10*x + 3*y +2*z",
