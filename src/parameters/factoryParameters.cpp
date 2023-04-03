@@ -5,7 +5,7 @@ ablate::parameters::FactoryParameters::FactoryParameters(std::shared_ptr<cppPars
 
 std::optional<std::string> ablate::parameters::FactoryParameters::GetString(std::string paramName) const {
     if (factory->Contains(paramName)) {
-        auto stringArgument = cppParser::ArgumentIdentifier<std::string>{.inputName = paramName};
+        auto stringArgument = cppParser::ArgumentIdentifier<std::string>{.inputName = paramName,  .description = "", .optional = false};
         return factory->Get(stringArgument);
     }
     return std::optional<std::string>();

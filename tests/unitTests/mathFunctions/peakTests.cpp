@@ -11,13 +11,19 @@ TEST(PeakTests, ShouldBeCreatedFromRegistar) {
     std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
     const std::string expectedClassType = "ablate::mathFunctions::Peak";
     EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
-    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<std::vector<double>>{.inputName = "startValues"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(std::vector<double>{0.0}));
-    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<std::vector<double>>{.inputName = "peakValues"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(std::vector<double>{0.5}));
-    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<std::vector<double>>{.inputName = "endValues"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(std::vector<double>{1.0}));
-    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<double>{.inputName = "start", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(0.0));
-    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<double>{.inputName = "peak", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(1.0));
-    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<double>{.inputName = "end", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(1.0));
-    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<int>{.inputName = "dir", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(0));
+    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<std::vector<double>>{.inputName = "startValues", .description = "", .optional = false}))
+        .Times(::testing::Exactly(1))
+        .WillOnce(::testing::Return(std::vector<double>{0.0}));
+    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<std::vector<double>>{.inputName = "peakValues", .description = "", .optional = false}))
+        .Times(::testing::Exactly(1))
+        .WillOnce(::testing::Return(std::vector<double>{0.5}));
+    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<std::vector<double>>{.inputName = "endValues", .description = "", .optional = false}))
+        .Times(::testing::Exactly(1))
+        .WillOnce(::testing::Return(std::vector<double>{1.0}));
+    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<double>{.inputName = "start", .description = "", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(0.0));
+    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<double>{.inputName = "peak", .description = "", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(1.0));
+    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<double>{.inputName = "end", .description = "", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(1.0));
+    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<int>{.inputName = "dir", .description = "", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(0));
 
     // act
     auto createMethod = Creator<ablate::mathFunctions::MathFunction>::GetCreateMethod(mockFactory->GetClassType());
