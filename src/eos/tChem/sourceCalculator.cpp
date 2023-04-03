@@ -300,28 +300,28 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
                 for (ordinal_type s = 0; s < stateVector.NumSpecies(); ++s) {
                     sourceTermAtI(s + 1) = 0.0;
                 }
-//
-//// compute the cell centroid
-//#ifndef KOKKOS_ENABLE_CUDA
-//                PetscReal centroid[3];
-//            const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
-//                DMPlexComputeCellGeometryFVM(solutionDm, cell, nullptr, centroid, nullptr) >> utilities::PetscUtilities::checkError;
-//
-//                // Output error information
-//                std::stringstream warningMessage;
-//                warningMessage << "Warning: Could not integrate chemistry at cell " << cell << " on rank " << rank << " at location " << utilities::VectorUtilities::Concatenate(centroid, dim) << "\n";
-//                warningMessage << "dt: " << std::setprecision(16) << dt << "\n";
-//                warningMessage << "state: "
-//                               << "\n";
-//                for (std::size_t s = 0; s < stateAtI.size(); ++s) {
-//                    warningMessage << "\t[" << s << "] " << stateAtI[s] << "\n";
-//                }
-//
-//                std::cout << warningMessage.str() << std::endl;
-//#else
-//                        printf("Warning: Could not integrate chemistry at cell %" PetscInt_FMT " on rank %d\n", cell, rank );
-//#endif
-//            }
+
+#ifndef KOKKOS_ENABLE_CUDA
+                // compute the cell centroid
+                PetscReal centroid[3];
+                const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
+                DMPlexComputeCellGeometryFVM(solutionDm, cell, nullptr, centroid, nullptr) >> utilities::PetscUtilities::checkError;
+
+                // Output error information
+                std::stringstream warningMessage;
+                warningMessage << "Warning: Could not integrate chemistry at cell " << cell << " on rank " << rank << " at location " << utilities::VectorUtilities::Concatenate(centroid, dim) << "\n";
+                warningMessage << "dt: " << std::setprecision(16) << dt << "\n";
+                warningMessage << "state: "
+                               << "\n";
+                for (std::size_t s = 0; s < stateAtI.size(); ++s) {
+                    warningMessage << "\t[" << s << "] " << stateAtI[s] << "\n";
+                }
+
+                std::cout << warningMessage.str() << std::endl;
+#else
+                        printf("Warning: Could not integrate chemistry at cell %" PetscInt_FMT " on rank %d\n", cell, rank );
+#endif
+            }
         });
 
     // copy the updated state back to host
