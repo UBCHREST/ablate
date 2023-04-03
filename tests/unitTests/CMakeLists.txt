@@ -33,5 +33,3 @@ target_include_directories(unitTests PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 ## Copy all input/output files needed for testing
 copy_to_test_directory(${CMAKE_CURRENT_SOURCE_DIR}/outputs)
 copy_to_test_directory(${CMAKE_CURRENT_SOURCE_DIR}/inputs)
-
-set_property(TARGET unitTests PROPERTY CXX_STANDARD 20)
