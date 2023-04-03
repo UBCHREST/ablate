@@ -42,16 +42,6 @@ ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer(std::shared_ptr<abl
     }
 }
 
-ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer(PetscInt sequenceNumberIn, std::shared_ptr<parameters::Parameters> options) {
-    sequenceNumber = sequenceNumberIn;  //! Set the sequence number manually so that the domain can be restored at the chosen time step.
-
-    // setup petsc options if provided
-    if (options) {
-        PetscOptionsCreate(&petscOptions) >> utilities::PetscUtilities::checkError;
-        options->Fill(petscOptions);
-    }
-}
-
 ablate::io::Hdf5MultiFileSerializer::~Hdf5MultiFileSerializer() {
     // save each serializer
     for (std::string id : postProcessesIds) {
@@ -221,6 +211,34 @@ std::filesystem::path ablate::io::Hdf5MultiFileSerializer::GetOutputFilePath(con
 }
 
 std::filesystem::path ablate::io::Hdf5MultiFileSerializer::GetOutputDirectoryPath(const std::string& objectId) { return environment::RunEnvironment::Get().GetOutputDirectory() / objectId; }
+
+void ablate::io::Hdf5MultiFileSerializer::RestoreFromSequence(PetscInt currentSequenceNumber, std::weak_ptr<Serializable> serializable) {
+    sequenceNumber = currentSequenceNumber;  //! Update the serializer to the current sequence so that it can restore this time step.
+
+    if (auto serializableObject = serializable.lock()) {
+        auto filePath = GetOutputFilePath(serializableObject->GetId());
+
+        PetscViewer petscViewer = nullptr;
+        StartEvent("PetscViewerHDF5Open");
+        PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_UPDATE, &petscViewer) >> utilities::PetscUtilities::checkError;
+        EndEvent();
+
+        // set the petsc options if provided
+        PetscObjectSetOptions((PetscObject)petscViewer, petscOptions) >> utilities::PetscUtilities::checkError;
+        PetscViewerSetFromOptions(petscViewer) >> utilities::PetscUtilities::checkError;
+        PetscViewerViewFromOptions(petscViewer, nullptr, "-hdf5ViewerView") >> utilities::PetscUtilities::checkError;
+
+        // Restore the simulation
+        StartEvent("Restore");
+        // NOTE: as far as the output file the sequence number is always zero because it is a new file
+        serializableObject->Restore(petscViewer, 0, time);
+        EndEvent();
+
+        StartEvent("PetscViewerHDF5Destroy");
+        PetscViewerDestroy(&petscViewer) >> utilities::PetscUtilities::checkError;
+        EndEvent();
+    }
+}
 
 #include "registrar.hpp"
 REGISTER(ablate::io::Serializer, ablate::io::Hdf5MultiFileSerializer, "serializer for IO that writes each time to a separate hdf5 file",

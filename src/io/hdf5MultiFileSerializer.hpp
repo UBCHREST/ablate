@@ -55,8 +55,6 @@ class Hdf5MultiFileSerializer : public Serializer, private utilities::Loggable<H
      */
     explicit Hdf5MultiFileSerializer(std::shared_ptr<ablate::io::interval::Interval>, std::shared_ptr<parameters::Parameters> options = nullptr);
 
-    explicit Hdf5MultiFileSerializer(PetscInt sequenceNumberIn, std::shared_ptr<parameters::Parameters> options = nullptr);
-
     /**
      * Allow file cleanup
      */
@@ -74,6 +72,12 @@ class Hdf5MultiFileSerializer : public Serializer, private utilities::Loggable<H
     PetscSerializeFunction GetSerializeFunction() override { return Hdf5MultiFileSerializerSaveStateFunction; }
 
     void RestoreTS(TS ts) override;
+
+    /**
+     * Restores a specific sequence number from the collection of output files in the directory.
+     * @param sequenceNumber
+     */
+    void RestoreFromSequence(PetscInt currentSequenceNumber, std::weak_ptr<Serializable> serializable);
 };
 
 }  // namespace ablate::io
