@@ -176,6 +176,7 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
     Kokkos::deep_copy(internalEnergyRefDevice, internalEnergyRefHost);
     Kokkos::deep_copy(stateDevice, stateHost);
 
+
     // setup the enthalpy, temperature, pressure, chemistry function policies
     auto temperatureFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(::tChemLib::exec_space(), numberCells, Kokkos::AUTO());
     temperatureFunctionPolicy.set_scratch_size(
