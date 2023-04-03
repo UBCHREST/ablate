@@ -268,38 +268,38 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
             const auto stateAtI = Kokkos::subview(stateDeviceLocal, chemIndex, Kokkos::ALL());
             Impl::StateVector<real_type_1d_view> stateVector(nSpecLocal, stateAtI);
             const auto ys = stateVector.MassFractions();
-//
-//            const auto endStateAtI = Kokkos::subview(endStateDeviceLocal, chemIndex, Kokkos::ALL());
-//            Impl::StateVector<real_type_1d_view> endStateVector(nSpecLocal, endStateAtI);
-//            const auto ye = endStateVector.MassFractions();
-//
-//            // get the source term at this chemIndex
-//            const auto sourceTermAtI = Kokkos::subview(sourceTermsDeviceLocal, chemIndex, Kokkos::ALL());
-//
-//            // the IgnitionZeroD::runDeviceBatch sets the pressure to zero if it does not converge
-//            if (endStateVector.Pressure() > 0) {
-//                // compute the source term from the change in the heat of formation
-//                sourceTermAtI(0) = 0.0;
-//                for (ordinal_type s = 0; s < stateVector.NumSpecies(); s++) {
-//                    sourceTermAtI(0) += (ys(s) - ye(s)) * enthalpyOfFormationLocal(s);
-//                }
-//
-//                for (ordinal_type s = 0; s < stateVector.NumSpecies(); ++s) {
-//                    // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-//                    sourceTermAtI(s + 1) = ye(s) - ys(s);
-//                }
-//
-//                // Now scale everything by density/dt
-//                for (std::size_t j = 0; j < sourceTermAtI.extent(0); ++j) {
-//                    // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-//                    sourceTermAtI(j) *= stateVector.Density() / dt;
-//                }
-//            } else {
-//                // set to zero
-//                sourceTermAtI(0) = 0.0;
-//                for (ordinal_type s = 0; s < stateVector.NumSpecies(); ++s) {
-//                    sourceTermAtI(s + 1) = 0.0;
-//                }
+
+            const auto endStateAtI = Kokkos::subview(endStateDeviceLocal, chemIndex, Kokkos::ALL());
+            Impl::StateVector<real_type_1d_view> endStateVector(nSpecLocal, endStateAtI);
+            const auto ye = endStateVector.MassFractions();
+
+            // get the source term at this chemIndex
+            const auto sourceTermAtI = Kokkos::subview(sourceTermsDeviceLocal, chemIndex, Kokkos::ALL());
+
+            // the IgnitionZeroD::runDeviceBatch sets the pressure to zero if it does not converge
+            if (endStateVector.Pressure() > 0) {
+                // compute the source term from the change in the heat of formation
+                sourceTermAtI(0) = 0.0;
+                for (ordinal_type s = 0; s < stateVector.NumSpecies(); s++) {
+                    sourceTermAtI(0) += (ys(s) - ye(s)) * enthalpyOfFormationLocal(s);
+                }
+
+                for (ordinal_type s = 0; s < stateVector.NumSpecies(); ++s) {
+                    // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
+                    sourceTermAtI(s + 1) = ye(s) - ys(s);
+                }
+
+                // Now scale everything by density/dt
+                for (std::size_t j = 0; j < sourceTermAtI.extent(0); ++j) {
+                    // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
+                    sourceTermAtI(j) *= stateVector.Density() / dt;
+                }
+            } else {
+                // set to zero
+                sourceTermAtI(0) = 0.0;
+                for (ordinal_type s = 0; s < stateVector.NumSpecies(); ++s) {
+                    sourceTermAtI(s + 1) = 0.0;
+                }
 //
 //// compute the cell centroid
 //#ifndef KOKKOS_ENABLE_CUDA
