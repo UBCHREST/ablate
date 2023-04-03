@@ -107,7 +107,7 @@ ablate::eos::tChem::SourceCalculator::SourceCalculator(const std::vector<domain:
 
 void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::Range& cellRange, PetscReal time, PetscReal dt, Vec globFlowVec) {
     StartEvent("tChem::SourceCalculator::ComputeSource");
-    //Get the valid cell range over this region
+    // Get the valid cell range over this region
     auto numberCells = cellRange.end - cellRange.start;
 
     // Get the solution dm
@@ -234,23 +234,25 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
                 chemistryFunctionPolicy, tolNewtonDevice, tolTimeDevice, facDevice, timeAdvanceDevice, stateDevice, timeViewDevice, dtViewDevice, endStateDevice, kineticModelGasConstDataDevices);
         }
         // check the output pressure, if it is zero the integration failed
-        //        Kokkos::parallel_reduce(
-        //            "pressureCheck",
-        //            Kokkos::RangePolicy<typename tChemLib::exec_space>(0, numberCells),
-        //            KOKKOS_LAMBDA(const int& chemIndex, double& pressureMin) {
-        //                // cast the state at i to a state vector
-        //                const auto stateAtI = Kokkos::subview(endStateDevice, chemIndex, Kokkos::ALL());
-        //                Impl::StateVector<real_type_1d_view> stateVector(kineticModelGasConstDataDevice.nSpec, stateAtI);
-        //                auto pressureAtI = stateVector.Pressure();
-        //                if (pressureAtI < pressureMin) {
-        //                    pressureMin = pressureAtI;
-        //                }
-        //            },
-        //            Kokkos::Min<double>(minimumPressure));
+        auto endStateDeviceLocal = endStateDevice;
+        auto nSpecLocal = kineticModelGasConstDataDevice.nSpec;
+        Kokkos::parallel_reduce(
+            "pressureCheck",
+            Kokkos::RangePolicy<typename tChemLib::exec_space>(0, numberCells),
+            KOKKOS_LAMBDA(const int& chemIndex, double& pressureMin) {
+                // cast the state at i to a state vector
+                const auto stateAtI = Kokkos::subview(endStateDeviceLocal, chemIndex, Kokkos::ALL());
+                Impl::StateVector<real_type_1d_view> stateVector(nSpecLocal, stateAtI);
+                auto pressureAtI = stateVector.Pressure();
+                if (pressureAtI < pressureMin) {
+                    pressureMin = pressureAtI;
+                }
+            },
+            Kokkos::Min<double>(minimumPressure));
     }
 
     // Use a parallel for computing the source term
-    auto enthalpyOfFormation = eos->GetEnthalpyOfFormation();
+    auto enthalpyOfFormationLocal = eos->GetEnthalpyOfFormation();
     //    Kokkos::parallel_for(
     //        "sourceTermCompute", Kokkos::RangePolicy<typename tChemLib::exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const auto i) {
     //            // get the host data from the petsc field
