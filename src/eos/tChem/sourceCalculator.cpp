@@ -260,7 +260,7 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
     // Use a parallel for computing the source term
     auto enthalpyOfFormationLocal = eos->GetEnthalpyOfFormation();
     Kokkos::parallel_for(
-        "sourceTermCompute", Kokkos::RangePolicy<typename tChemLib::exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const auto i) {
+        "sourceTermCompute", Kokkos::RangePolicy<typename tChemLib::exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const ordinal_type& i) {
             // get the host data from the petsc field
 //            const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
             const std::size_t chemIndex = i - cellRangeStartLocal;
