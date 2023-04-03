@@ -36,7 +36,7 @@ struct ParsedSeriesTestsScalarParameters {
     std::string formula;
     int lowerBound;
     int upperBound;
-    std::shared_ptr<ablate::parameters::Parameters> constants = nullptr;
+    std::shared_ptr<ablate::parameters::Parameters> constants;
     double expectedResult;
 };
 
@@ -63,9 +63,9 @@ TEST_P(ParsedSeriesTestsScalarFixture, ShouldComputeCorrectAnswerFromCoord) {
 }
 
 INSTANTIATE_TEST_SUITE_P(ParsedSeriesTests, ParsedSeriesTestsScalarFixture,
-                         testing::Values((ParsedSeriesTestsScalarParameters){.formula = "i*x", .lowerBound = 1, .upperBound = 100, .expectedResult = 5050},
-                                         (ParsedSeriesTestsScalarParameters){.formula = "i*x + y", .lowerBound = 0, .upperBound = 0, .expectedResult = 2},
-                                         (ParsedSeriesTestsScalarParameters){.formula = "t*i*i", .lowerBound = 0, .upperBound = 10, .expectedResult = 1540},
+                         testing::Values((ParsedSeriesTestsScalarParameters){.formula = "i*x", .lowerBound = 1, .upperBound = 100, .constants = {}, .expectedResult = 5050},
+                                         (ParsedSeriesTestsScalarParameters){.formula = "i*x + y", .lowerBound = 0, .upperBound = 0, .constants = {}, .expectedResult = 2},
+                                         (ParsedSeriesTestsScalarParameters){.formula = "t*i*i", .lowerBound = 0, .upperBound = 10, .constants = {}, .expectedResult = 1540},
                                          (ParsedSeriesTestsScalarParameters){
                                              .formula = "t*i*i*a", .lowerBound = 0, .upperBound = 10, .constants = ablate::parameters::MapParameters::Create({{"a", "0.5"}}), .expectedResult = 770}));
 
@@ -133,11 +133,11 @@ TEST_P(ParsedSeriesTestsVectorFixture, ShouldComputeCorrectAnswerPetscFunction) 
     }
 }
 INSTANTIATE_TEST_SUITE_P(ParsedSeriesTests, ParsedSeriesTestsVectorFixture,
-                         testing::Values((ParsedSeriesTestsVectorParameters){.formula = "i*x", .lowerBound = 1, .upperBound = 100, .expectedResult = {5050}},
-                                         (ParsedSeriesTestsVectorParameters){.formula = "i*x + y", .lowerBound = 0, .upperBound = 0, .expectedResult = {2}},
-                                         (ParsedSeriesTestsVectorParameters){.formula = "t*i*i", .lowerBound = 0, .upperBound = 10, .expectedResult = {1540}},
-                                         (ParsedSeriesTestsVectorParameters){.formula = "i*x, i*x + y", .lowerBound = 1, .upperBound = 100, .expectedResult = {5050, 5250}},
-                                         (ParsedSeriesTestsVectorParameters){.formula = "0, i*y, t", .lowerBound = 1, .upperBound = 10, .expectedResult = {0, 110, 40}},
+                         testing::Values((ParsedSeriesTestsVectorParameters){.formula = "i*x", .lowerBound = 1, .upperBound = 100, .constants = {}, .expectedResult = {5050}},
+                                         (ParsedSeriesTestsVectorParameters){.formula = "i*x + y", .lowerBound = 0, .upperBound = 0, .constants = {}, .expectedResult = {2}},
+                                         (ParsedSeriesTestsVectorParameters){.formula = "t*i*i", .lowerBound = 0, .upperBound = 10, .constants = {}, .expectedResult = {1540}},
+                                         (ParsedSeriesTestsVectorParameters){.formula = "i*x, i*x + y", .lowerBound = 1, .upperBound = 100, .constants = {}, .expectedResult = {5050, 5250}},
+                                         (ParsedSeriesTestsVectorParameters){.formula = "0, i*y, t", .lowerBound = 1, .upperBound = 10, .constants = {}, .expectedResult = {0, 110, 40}},
                                          (ParsedSeriesTestsVectorParameters){.formula = "b, i*y*a, t*c",
                                                                              .lowerBound = 1,
                                                                              .upperBound = 10,
