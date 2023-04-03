@@ -34,7 +34,7 @@ class Monitor {
 
     void CallMonitor(TS ts, PetscInt steps, PetscReal time, Vec u) {
         auto function = GetPetscFunction();
-        function(ts, steps, time, u, GetContext()) >> utilities::PetscUtilities::checkError;
+        if (function) function(ts, steps, time, u, GetContext()) >> utilities::PetscUtilities::checkError;
     }
 
    protected:
