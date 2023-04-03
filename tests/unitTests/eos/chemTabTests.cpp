@@ -5,6 +5,7 @@
 #include "gtest/gtest.h"
 #include "localPath.hpp"
 #include "mockFactory.hpp"
+#include "domain/mockField.hpp"
 
 #ifndef WITH_TENSORFLOW
 #define ONLY_WITH_TENSORFLOW_CHECK                                       \
@@ -181,11 +182,9 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectThermalProperties) {
         }
 
         // create fake fields for testings
-        auto fields = {ablate::domain::Field{.name = ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD, .numberComponents = 3, .offset = 1},
-                       ablate::domain::Field{.name = ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD,
-                                             .numberComponents = (PetscInt)inputProgressVariablesNames.size(),
-                                             .components = inputProgressVariablesNames,
-                                             .offset = (PetscInt)eulerConserved.size()}};
+        auto fields = {ablateTesting::domain::MockField::Create(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD,3,1),
+                       ablateTesting::domain::MockField::Create(ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD,
+                                             inputProgressVariablesNames, (PetscInt)eulerConserved.size())};
 
         // compute the reference temperature for other calculations
         auto tChemTemperatureFunction = tchem->GetThermodynamicMassFractionFunction(ablate::eos::ThermodynamicProperty::Temperature, fields);

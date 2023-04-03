@@ -5,6 +5,7 @@
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
+#include "domain/mockField.hpp"
 
 struct SootSpeciesTransportModelTestParameters {
     //! the name of the test
@@ -92,7 +93,7 @@ INSTANTIATE_TEST_SUITE_P(SootSpeciesTransportTests, SootSpeciesTransportModelTes
                              (SootSpeciesTransportModelTestParameters){
                                  .name = "constant_diff",
                                  .getBaseTransportModel = []() { return std::make_shared<ablate::eos::transport::Constant>(.1, .2, .3); },
-                                 .fields = {ablate::domain::Field{.name = ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD, .numberComponents = 6}},
+                                 .fields = { ablateTesting::domain::MockField::Create(ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD, 6)},
 
                                  // expected values
                                  .expectedK = .1,
@@ -106,7 +107,7 @@ INSTANTIATE_TEST_SUITE_P(SootSpeciesTransportTests, SootSpeciesTransportModelTes
                                      []() {
                                          return std::make_shared<ablate::eos::transport::Constant>(.1, .2, std::vector<double>{.3, .4, .5, .6});
                                      },
-                                 .fields = {ablate::domain::Field{.name = ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD, .numberComponents = 4}},
+                                 .fields = {ablateTesting::domain::MockField::Create(ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD, 4)},
 
                                  // expected values
                                  .expectedK = .1,
