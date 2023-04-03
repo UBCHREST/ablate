@@ -176,7 +176,6 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
     Kokkos::deep_copy(internalEnergyRefDevice, internalEnergyRefHost);
     Kokkos::deep_copy(stateDevice, stateHost);
 
-
     // setup the enthalpy, temperature, pressure, chemistry function policies
     auto temperatureFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(::tChemLib::exec_space(), numberCells, Kokkos::AUTO());
     temperatureFunctionPolicy.set_scratch_size(
@@ -260,72 +259,70 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
 
     // Use a parallel for computing the source term
     auto enthalpyOfFormationLocal = eos->GetEnthalpyOfFormation();
-        Kokkos::parallel_for(
-            "sourceTermCompute", Kokkos::RangePolicy<typename tChemLib::exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const auto i) {
-                // get the host data from the petsc field
-                const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
-                const std::size_t chemIndex = i - cellRange.start;
+    Kokkos::parallel_for(
+        "sourceTermCompute", Kokkos::RangePolicy<typename tChemLib::exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const auto i) {
+            // get the host data from the petsc field
+            const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
+            const std::size_t chemIndex = i - cellRange.start;
 
-                // cast the state at i to a state vector
-                const auto stateAtI = Kokkos::subview(stateDeviceLocal, chemIndex, Kokkos::ALL());
-                Impl::StateVector<real_type_1d_view> stateVector(nSpecLocal, stateAtI);
-                const auto ys = stateVector.MassFractions();
+            // cast the state at i to a state vector
+            const auto stateAtI = Kokkos::subview(stateDeviceLocal, chemIndex, Kokkos::ALL());
+            Impl::StateVector<real_type_1d_view> stateVector(nSpecLocal, stateAtI);
+            const auto ys = stateVector.MassFractions();
 
-                const auto endStateAtI = Kokkos::subview(endStateDeviceLocal, chemIndex, Kokkos::ALL());
-                Impl::StateVector<real_type_1d_view> endStateVector(nSpecLocal, endStateAtI);
-                const auto ye = endStateVector.MassFractions();
+            const auto endStateAtI = Kokkos::subview(endStateDeviceLocal, chemIndex, Kokkos::ALL());
+            Impl::StateVector<real_type_1d_view> endStateVector(nSpecLocal, endStateAtI);
+            const auto ye = endStateVector.MassFractions();
 
-                // get the source term at this chemIndex
-                const auto sourceTermAtI = Kokkos::subview(sourceTermsDeviceLocal, chemIndex, Kokkos::ALL());
+            // get the source term at this chemIndex
+            const auto sourceTermAtI = Kokkos::subview(sourceTermsDeviceLocal, chemIndex, Kokkos::ALL());
 
-                // the IgnitionZeroD::runDeviceBatch sets the pressure to zero if it does not converge
-                if (endStateVector.Pressure() > 0) {
-                    // compute the source term from the change in the heat of formation
-                    sourceTermAtI(0) = 0.0;
-                    for (ordinal_type s = 0; s < stateVector.NumSpecies(); s++) {
-                        sourceTermAtI(0) += (ys(s) - ye(s)) * enthalpyOfFormationLocal(s);
-                    }
-
-                    for (ordinal_type s = 0; s < stateVector.NumSpecies(); ++s) {
-                        // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-                        sourceTermAtI(s + 1) = ye(s) - ys(s);
-                    }
-
-                    // Now scale everything by density/dt
-                    for (std::size_t j = 0; j < sourceTermAtI.extent(0); ++j) {
-                        // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-                        sourceTermAtI(j) *= stateVector.Density() / dt;
-                    }
-                } else {
-                    // set to zero
-                    sourceTermAtI(0) = 0.0;
-                    for (ordinal_type s = 0; s < stateVector.NumSpecies(); ++s) {
-                        sourceTermAtI(s + 1) = 0.0;
-                    }
-
-                    // compute the cell centroid
-                     if constexpr(std::is_same<typename tChemLib::exec_space,tChemLib::host_exec_space>::value) {
-                        PetscReal centroid[3];
-                        DMPlexComputeCellGeometryFVM(solutionDm, cell, nullptr, centroid, nullptr) >> utilities::PetscUtilities::checkError;
-
-                        // Output error information
-                        std::stringstream warningMessage;
-                        warningMessage << "Warning: Could not integrate chemistry at cell " << cell << " on rank " << rank << " at location " << utilities::VectorUtilities::Concatenate(centroid,
-                        dim)
-                                       << "\n";
-                        warningMessage << "dt: " << std::setprecision(16) << dt << "\n";
-                        warningMessage << "state: "
-                                       << "\n";
-                        for (std::size_t s = 0; s < stateAtI.size(); ++s) {
-                            warningMessage << "\t[" << s << "] " << stateAtI[s] << "\n";
-                        }
-
-                        std::cout << warningMessage.str() << std::endl;
-                    }else{
-                        printf("Warning: Could not integrate chemistry at cell %d on rank %d\n", cell, rank );
-                    }
+            // the IgnitionZeroD::runDeviceBatch sets the pressure to zero if it does not converge
+            if (endStateVector.Pressure() > 0) {
+                // compute the source term from the change in the heat of formation
+                sourceTermAtI(0) = 0.0;
+                for (ordinal_type s = 0; s < stateVector.NumSpecies(); s++) {
+                    sourceTermAtI(0) += (ys(s) - ye(s)) * enthalpyOfFormationLocal(s);
                 }
-            });
+
+                for (ordinal_type s = 0; s < stateVector.NumSpecies(); ++s) {
+                    // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
+                    sourceTermAtI(s + 1) = ye(s) - ys(s);
+                }
+
+                // Now scale everything by density/dt
+                for (std::size_t j = 0; j < sourceTermAtI.extent(0); ++j) {
+                    // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
+                    sourceTermAtI(j) *= stateVector.Density() / dt;
+                }
+            } else {
+                // set to zero
+                sourceTermAtI(0) = 0.0;
+                for (ordinal_type s = 0; s < stateVector.NumSpecies(); ++s) {
+                    sourceTermAtI(s + 1) = 0.0;
+                }
+
+// compute the cell centroid
+#ifndef KOKKOS_ENABLE_CUDA
+                PetscReal centroid[3];
+                DMPlexComputeCellGeometryFVM(solutionDm, cell, nullptr, centroid, nullptr) >> utilities::PetscUtilities::checkError;
+
+                // Output error information
+                std::stringstream warningMessage;
+                warningMessage << "Warning: Could not integrate chemistry at cell " << cell << " on rank " << rank << " at location " << utilities::VectorUtilities::Concatenate(centroid, dim) << "\n";
+                warningMessage << "dt: " << std::setprecision(16) << dt << "\n";
+                warningMessage << "state: "
+                               << "\n";
+                for (std::size_t s = 0; s < stateAtI.size(); ++s) {
+                    warningMessage << "\t[" << s << "] " << stateAtI[s] << "\n";
+                }
+
+                std::cout << warningMessage.str() << std::endl;
+#else
+                        printf("Warning: Could not integrate chemistry at cell %d on rank %d\n", cell, rank );
+#endif
+            }
+        });
 
     // copy the updated state back to host
     Kokkos::deep_copy(sourceTermsHost, sourceTermsDevice);
