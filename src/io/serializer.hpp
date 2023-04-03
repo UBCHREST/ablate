@@ -3,6 +3,7 @@
 #include <petsc.h>
 #include <memory>
 #include "serializable.hpp"
+#include "utilities/petscUtilities.hpp"
 
 namespace ablate::io {
 
