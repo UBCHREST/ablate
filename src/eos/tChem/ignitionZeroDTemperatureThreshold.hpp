@@ -140,7 +140,7 @@ void IgnitionZeroDTemperatureThreshold_TemplateRun(  /// required template argum
                         density_out() = Impl::RhoMixMs<real_type, DeviceType>::team_invoke(member, temperature_out(), pressure_out(), Ys_out, kmcd_at_i);
                         member.team_barrier();
                     } else {
-                        for (ordinal_type s = 0; s < sv_at_i.size(); ++s){
+                        for (ordinal_type s = 0; s < sv_at_i.size(); ++s) {
                             state_out_at_i[s] = state_at_i[s];
                         }
                     }

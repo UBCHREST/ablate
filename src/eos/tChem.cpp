@@ -137,11 +137,11 @@ PetscErrorCode ablate::eos::TChem::TemperatureTemperatureFunction(const PetscRea
 
     // compute the temperature
     ablate::eos::tChem::Temperature::runHostBatch(functionContext->policy,
-                                                    functionContext->stateHost,
-                                                    functionContext->mixtureHost,
-                                                    functionContext->perSpeciesHost,
-                                                    functionContext->enthalpyReferenceHost,
-                                                    *functionContext->kineticsModelDataHost);
+                                                  functionContext->stateHost,
+                                                  functionContext->mixtureHost,
+                                                  functionContext->perSpeciesHost,
+                                                  functionContext->enthalpyReferenceHost,
+                                                  *functionContext->kineticsModelDataHost);
 
     // copy back the results
     *temperature = stateHost.Temperature();
@@ -171,11 +171,11 @@ PetscErrorCode ablate::eos::TChem::TemperatureTemperatureMassFractionFunction(co
 
     // compute the temperature
     ablate::eos::tChem::Temperature::runHostBatch(functionContext->policy,
-                                                    functionContext->stateHost,
-                                                    functionContext->mixtureHost,
-                                                    functionContext->perSpeciesHost,
-                                                    functionContext->enthalpyReferenceHost,
-                                                    *functionContext->kineticsModelDataHost);
+                                                  functionContext->stateHost,
+                                                  functionContext->mixtureHost,
+                                                  functionContext->perSpeciesHost,
+                                                  functionContext->enthalpyReferenceHost,
+                                                  *functionContext->kineticsModelDataHost);
 
     // copy back the results
     *temperature = stateHost.Temperature();
@@ -209,11 +209,11 @@ PetscErrorCode ablate::eos::TChem::InternalSensibleEnergyTemperatureFunction(con
     FillWorkingVectorFromDensityMassFractions(density, temperature, conserved + functionContext->densityYiOffset, stateHost);
 
     ablate::eos::tChem::SensibleInternalEnergy::runHostBatch(functionContext->policy,
-                                                               functionContext->stateHost,
-                                                               functionContext->mixtureHost,
-                                                               functionContext->perSpeciesHost,
-                                                               functionContext->enthalpyReferenceHost,
-                                                               *functionContext->kineticsModelDataHost);
+                                                             functionContext->stateHost,
+                                                             functionContext->mixtureHost,
+                                                             functionContext->perSpeciesHost,
+                                                             functionContext->enthalpyReferenceHost,
+                                                             *functionContext->kineticsModelDataHost);
 
     *sensibleEnergyTemperature = functionContext->mixtureHost(0);
 
@@ -239,11 +239,11 @@ PetscErrorCode ablate::eos::TChem::InternalSensibleEnergyTemperatureMassFraction
     FillWorkingVectorFromMassFractions(density, temperature, yi, stateHost);
 
     ablate::eos::tChem::SensibleInternalEnergy::runHostBatch(functionContext->policy,
-                                                               functionContext->stateHost,
-                                                               functionContext->mixtureHost,
-                                                               functionContext->perSpeciesHost,
-                                                               functionContext->enthalpyReferenceHost,
-                                                               *functionContext->kineticsModelDataHost);
+                                                             functionContext->stateHost,
+                                                             functionContext->mixtureHost,
+                                                             functionContext->perSpeciesHost,
+                                                             functionContext->enthalpyReferenceHost,
+                                                             *functionContext->kineticsModelDataHost);
 
     *sensibleEnergyTemperature = functionContext->mixtureHost(0);
 
@@ -323,11 +323,11 @@ PetscErrorCode ablate::eos::TChem::SensibleEnthalpyTemperatureFunction(const Pet
     FillWorkingVectorFromDensityMassFractions(density, temperature, conserved + functionContext->densityYiOffset, stateHost);
 
     ablate::eos::tChem::SensibleEnthalpy::runHostBatch(functionContext->policy,
-                                                         functionContext->stateHost,
-                                                         functionContext->mixtureHost,
-                                                         functionContext->perSpeciesHost,
-                                                         functionContext->enthalpyReferenceHost,
-                                                         *functionContext->kineticsModelDataHost);
+                                                       functionContext->stateHost,
+                                                       functionContext->mixtureHost,
+                                                       functionContext->perSpeciesHost,
+                                                       functionContext->enthalpyReferenceHost,
+                                                       *functionContext->kineticsModelDataHost);
 
     *sensibleEnthalpy = functionContext->mixtureHost(0);
 
@@ -353,11 +353,11 @@ PetscErrorCode ablate::eos::TChem::SensibleEnthalpyTemperatureMassFractionFuncti
     FillWorkingVectorFromMassFractions(density, temperature, yi, stateHost);
 
     ablate::eos::tChem::SensibleEnthalpy::runHostBatch(functionContext->policy,
-                                                         functionContext->stateHost,
-                                                         functionContext->mixtureHost,
-                                                         functionContext->perSpeciesHost,
-                                                         functionContext->enthalpyReferenceHost,
-                                                         *functionContext->kineticsModelDataHost);
+                                                       functionContext->stateHost,
+                                                       functionContext->mixtureHost,
+                                                       functionContext->perSpeciesHost,
+                                                       functionContext->enthalpyReferenceHost,
+                                                       *functionContext->kineticsModelDataHost);
 
     *sensibleEnthalpy = functionContext->mixtureHost(0);
 
@@ -538,11 +538,11 @@ PetscErrorCode ablate::eos::TChem::SpeciesSensibleEnthalpyTemperatureFunction(co
     FillWorkingVectorFromDensityMassFractions(density, temperature, conserved + functionContext->densityYiOffset, stateHost);
 
     ablate::eos::tChem::SensibleEnthalpy::runHostBatch(functionContext->policy,
-                                                         functionContext->stateHost,
-                                                         functionContext->mixtureHost,
-                                                         functionContext->perSpeciesHost,
-                                                         functionContext->enthalpyReferenceHost,
-                                                         *functionContext->kineticsModelDataHost);
+                                                       functionContext->stateHost,
+                                                       functionContext->mixtureHost,
+                                                       functionContext->perSpeciesHost,
+                                                       functionContext->enthalpyReferenceHost,
+                                                       *functionContext->kineticsModelDataHost);
 
     Kokkos::View<PetscReal *> hiHost(hi, functionContext->kineticsModelDataHost->nSpec);
     Kokkos::deep_copy(hiHost, Kokkos::subview(functionContext->perSpeciesHost, 0, Kokkos::ALL()));
@@ -568,11 +568,11 @@ PetscErrorCode ablate::eos::TChem::SpeciesSensibleEnthalpyTemperatureMassFractio
     FillWorkingVectorFromMassFractions(density, temperature, yi, stateHost);
 
     ablate::eos::tChem::SensibleEnthalpy::runHostBatch(functionContext->policy,
-                                                         functionContext->stateHost,
-                                                         functionContext->mixtureHost,
-                                                         functionContext->perSpeciesHost,
-                                                         functionContext->enthalpyReferenceHost,
-                                                         *functionContext->kineticsModelDataHost);
+                                                       functionContext->stateHost,
+                                                       functionContext->mixtureHost,
+                                                       functionContext->perSpeciesHost,
+                                                       functionContext->enthalpyReferenceHost,
+                                                       *functionContext->kineticsModelDataHost);
 
     Kokkos::View<PetscReal *> hiHost(hi, functionContext->kineticsModelDataHost->nSpec);
     Kokkos::deep_copy(hiHost, Kokkos::subview(functionContext->perSpeciesHost, 0, Kokkos::ALL()));

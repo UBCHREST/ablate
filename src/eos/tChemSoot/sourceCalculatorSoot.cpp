@@ -1,11 +1,11 @@
 #include <Kokkos_Core.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
 
-#include "sourceCalculatorSoot.hpp"
 #include <algorithm>
 #include "eos/tChemSoot.hpp"
 #include "eos/tChemSoot/IgnitionZeroDSoot.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "sourceCalculatorSoot.hpp"
 #include "utilities/mpiUtilities.hpp"
 
 ablate::eos::tChemSoot::SourceCalculatorSoot::SourceCalculatorSoot(const std::vector<domain::Field>& fields, const std::shared_ptr<TChemSoot>& eosIn,

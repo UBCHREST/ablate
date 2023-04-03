@@ -1,10 +1,10 @@
 #include <Kokkos_Core.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
 
-#include "speedOfSound.hpp"
 #include "TChem_Impl_CpMixMs.hpp"
 #include "TChem_Impl_MolarWeights.hpp"
 #include "eos/tChemSoot.hpp"
+#include "speedOfSound.hpp"
 
 namespace tChemLib = TChem;
 // In a LHF Formulation, Speed of sound is just the gaseous speed of sound

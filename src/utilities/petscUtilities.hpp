@@ -34,8 +34,6 @@ class PetscUtilities {
         }
     };
 
-
-
    public:
     /**
      * static call to setup petsc petsc and register cleanup call

@@ -1,7 +1,7 @@
 #include <Kokkos_Core.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
-#include "temperature.hpp"
 #include "eos/tChemSoot/temperatureFcn.hpp"
+#include "temperature.hpp"
 
 namespace ablate::eos::tChemSoot::impl {
 template <typename PolicyType, typename DeviceType>

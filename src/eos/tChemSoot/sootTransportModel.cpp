@@ -1,8 +1,8 @@
 #include <Kokkos_Core.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
 
-#include "sootTransportModel.hpp"
 #include <algorithm>
+#include "sootTransportModel.hpp"
 
 ablate::eos::tChemSoot::SootTransportModel::SootTransportModel(const std::shared_ptr<TransportModel>& transport, std::string fieldName) : fieldName(fieldName), transport(transport) {}
 ablate::eos::ThermodynamicFunction ablate::eos::tChemSoot::SootTransportModel::GetTransportFunction(ablate::eos::transport::TransportProperty property,

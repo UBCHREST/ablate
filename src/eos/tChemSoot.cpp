@@ -142,14 +142,13 @@ PetscErrorCode ablate::eos::TChemSoot::TemperatureTemperatureFunction(const Pets
     FillWorkingVectorFromDensityMassFractions(density, temperatureGuess, conserved + functionContext->densityYiOffset, stateHost);
     functionContext->mixtureHost[0] = internalEnergyRef;
 
-
     // compute the temperature
     ablate::eos::tChemSoot::Temperature::runHostBatch(functionContext->policy,
-                                                        functionContext->stateHost,
-                                                        functionContext->mixtureHost,
-                                                        functionContext->perSpeciesHost,
-                                                        functionContext->enthalpyReferenceHost,
-                                                        *functionContext->kineticsModelDataHost);
+                                                      functionContext->stateHost,
+                                                      functionContext->mixtureHost,
+                                                      functionContext->perSpeciesHost,
+                                                      functionContext->enthalpyReferenceHost,
+                                                      *functionContext->kineticsModelDataHost);
 
     // copy back the results
     *temperature = stateHost.Temperature();
@@ -184,11 +183,11 @@ PetscErrorCode ablate::eos::TChemSoot::InternalSensibleEnergyTemperatureFunction
     FillWorkingVectorFromDensityMassFractions(density, temperature, conserved + functionContext->densityYiOffset, stateHost);
 
     ablate::eos::tChemSoot::SensibleInternalEnergy::runHostBatch(functionContext->policy,
-                                                                   functionContext->stateHost,
-                                                                   functionContext->mixtureHost,
-                                                                   functionContext->perSpeciesHost,
-                                                                   functionContext->enthalpyReferenceHost,
-                                                                   *functionContext->kineticsModelDataHost);
+                                                                 functionContext->stateHost,
+                                                                 functionContext->mixtureHost,
+                                                                 functionContext->perSpeciesHost,
+                                                                 functionContext->enthalpyReferenceHost,
+                                                                 *functionContext->kineticsModelDataHost);
 
     *sensibleEnergyTemperature = functionContext->mixtureHost(0);
 
@@ -253,11 +252,11 @@ PetscErrorCode ablate::eos::TChemSoot::SensibleEnthalpyTemperatureFunction(const
     FillWorkingVectorFromDensityMassFractions(density, temperature, conserved + functionContext->densityYiOffset, stateHost);
 
     ablate::eos::tChemSoot::SensibleEnthalpy::runHostBatch(functionContext->policy,
-                                                             functionContext->stateHost,
-                                                             functionContext->mixtureHost,
-                                                             functionContext->perSpeciesHost,
-                                                             functionContext->enthalpyReferenceHost,
-                                                             *functionContext->kineticsModelDataHost);
+                                                           functionContext->stateHost,
+                                                           functionContext->mixtureHost,
+                                                           functionContext->perSpeciesHost,
+                                                           functionContext->enthalpyReferenceHost,
+                                                           *functionContext->kineticsModelDataHost);
 
     *sensibleEnthalpy = functionContext->mixtureHost(0);
 
@@ -314,8 +313,7 @@ PetscErrorCode ablate::eos::TChemSoot::SpecificHeatConstantPressureTemperatureFu
     auto stateHost = tChemSoot::StateVectorSoot<real_type_1d_view_host>(functionContext->kineticsModelDataHost->nSpec, Kokkos::subview(functionContext->stateHost, 0, Kokkos::ALL()));
     FillWorkingVectorFromDensityMassFractions(density, temperature, conserved + functionContext->densityYiOffset, stateHost);
 
-    ablate::eos::tChemSoot::SpecificHeatConstantPressure::runHostBatch(
-        functionContext->policy, functionContext->stateHost, functionContext->mixtureHost, *functionContext->kineticsModelDataHost);
+    ablate::eos::tChemSoot::SpecificHeatConstantPressure::runHostBatch(functionContext->policy, functionContext->stateHost, functionContext->mixtureHost, *functionContext->kineticsModelDataHost);
 
     *cp = functionContext->mixtureHost(0);
     PetscFunctionReturn(0);
@@ -341,8 +339,7 @@ PetscErrorCode ablate::eos::TChemSoot::SpecificHeatConstantVolumeTemperatureFunc
     auto stateHost = tChemSoot::StateVectorSoot<real_type_1d_view_host>(functionContext->kineticsModelDataHost->nSpec, Kokkos::subview(functionContext->stateHost, 0, Kokkos::ALL()));
     FillWorkingVectorFromDensityMassFractions(density, temperature, conserved + functionContext->densityYiOffset, stateHost);
 
-    ablate::eos::tChemSoot::SpecificHeatConstantVolume::runHostBatch(
-        functionContext->policy, functionContext->stateHost, functionContext->mixtureHost, *functionContext->kineticsModelDataHost);
+    ablate::eos::tChemSoot::SpecificHeatConstantVolume::runHostBatch(functionContext->policy, functionContext->stateHost, functionContext->mixtureHost, *functionContext->kineticsModelDataHost);
 
     *cv = functionContext->mixtureHost(0);
     PetscFunctionReturn(0);
@@ -370,11 +367,11 @@ PetscErrorCode ablate::eos::TChemSoot::SpeciesSensibleEnthalpyTemperatureFunctio
     FillWorkingVectorFromDensityMassFractions(density, temperature, conserved + functionContext->densityYiOffset, stateHost);
 
     ablate::eos::tChemSoot::SensibleEnthalpy::runHostBatch(functionContext->policy,
-                                                             functionContext->stateHost,
-                                                             functionContext->mixtureHost,
-                                                             functionContext->perSpeciesHost,
-                                                             functionContext->enthalpyReferenceHost,
-                                                             *functionContext->kineticsModelDataHost);
+                                                           functionContext->stateHost,
+                                                           functionContext->mixtureHost,
+                                                           functionContext->perSpeciesHost,
+                                                           functionContext->enthalpyReferenceHost,
+                                                           *functionContext->kineticsModelDataHost);
 
     Kokkos::View<PetscReal *> hiHost(hi, functionContext->kineticsModelDataHost->nSpec + 1);
     Kokkos::deep_copy(hiHost, Kokkos::subview(functionContext->perSpeciesHost, 0, Kokkos::ALL()));
@@ -722,7 +719,7 @@ std::shared_ptr<ablate::eos::ChemistryModel::SourceCalculator> ablate::eos::TChe
     return std::make_shared<ablate::eos::tChemSoot::SourceCalculatorSoot>(fields, shared_from_this(), constraints, cellRange);
 }
 
-#endif //KOKKOS_ENABLE_CUDA
+#endif  // KOKKOS_ENABLE_CUDA
 
 #include "registrar.hpp"
 REGISTER(ablate::eos::EOS, ablate::eos::TChemSoot, "[TChemV2](https://github.com/sandialabs/TChem) ideal gas eos augmented with a soot formation mechanism",

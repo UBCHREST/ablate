@@ -1,9 +1,9 @@
 #include <Kokkos_Core.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
 
-#include "pressure.hpp"
 #include "eos/tChem/pressureFcn.hpp"
 #include "eos/tChemSoot.hpp"
+#include "pressure.hpp"
 
 namespace tChemLib = TChem;
 

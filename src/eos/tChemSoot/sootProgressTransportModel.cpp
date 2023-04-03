@@ -1,8 +1,8 @@
 #include <Kokkos_Core.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
 
-#include "sootProgressTransportModel.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "sootProgressTransportModel.hpp"
 
 ablate::eos::tChemSoot::SootProgressTransportModel::SootProgressTransportModel(const std::shared_ptr<TransportModel>& transportModel)
     : SootTransportModel(transportModel, finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD) {}

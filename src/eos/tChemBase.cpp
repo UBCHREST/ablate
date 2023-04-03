@@ -36,10 +36,9 @@ ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::p
     species.resize(kineticsModelDataDevice->nSpec);
     auto speciesArray = species.data();
 
-    Kokkos::parallel_for(
-        "speciesInit", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(0, kineticsModelDataDevice->nSpec), [&speciesArray, speciesNamesHost](const auto i) {
-            speciesArray[i] = std::string(&speciesNamesHost(i, 0));
-        });
+    Kokkos::parallel_for("speciesInit", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(0, kineticsModelDataDevice->nSpec), [&speciesArray, speciesNamesHost](const auto i) {
+        speciesArray[i] = std::string(&speciesNamesHost(i, 0));
+    });
     Kokkos::fence();
 
     // compute the reference enthalpy
