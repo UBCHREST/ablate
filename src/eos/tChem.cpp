@@ -650,6 +650,10 @@ ablate::eos::EOSFunction ablate::eos::TChem::GetFieldFunctionFunction(const std:
             // store hi for the
             real_type_1d_view_host enthalpy("enthalpy", kineticsModelDataDevice->nSpec);
 
+            // get local variables
+            auto enthalpyReferenceHostLocal = enthalpyReferenceHost;
+            auto rUnivLocal = kineticsModelDataHost.Runiv;
+            auto nSpecLocal = kineticsModelDataHost.nSpec;
             auto tp = [=](PetscReal temperature, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
                 Kokkos::parallel_for(
                     "tp init", policy, KOKKOS_LAMBDA(const host_type &member) {
@@ -657,14 +661,14 @@ ablate::eos::EOSFunction ablate::eos::TChem::GetFieldFunctionFunction(const std:
                         stateHost.Temperature() = temperature;
                         stateHost.Pressure() = pressure;
                         auto yiHost = stateHost.MassFractions();
-                        Kokkos::parallel_for(Tines::RangeFactory<real_type>::TeamVectorRange(member, kineticsModelDataHost.nSpec), [&](const ordinal_type &i) { yiHost[i] = yi[i]; });
+                        Kokkos::parallel_for(Tines::RangeFactory<real_type>::TeamVectorRange(member, nSpecLocal), [&](const ordinal_type &i) { yiHost[i] = yi[i]; });
 
                         // compute the mw of the mix
                         const real_type mwMix = tChemLib::Impl::MolarWeights<real_type, host_device_type>::team_invoke(member, yiHost, kineticsModelDataHost);
                         member.team_barrier();
 
                         // compute r
-                        double R = kineticsModelDataHost.Runiv / mwMix;
+                        double R = rUnivLocal / mwMix;
 
                         // compute pressure p = rho*R*T
                         PetscReal density = pressure / (temperature * R);
@@ -674,7 +678,7 @@ ablate::eos::EOSFunction ablate::eos::TChem::GetFieldFunctionFunction(const std:
                         auto cpks = real_type_1d_view_host((real_type *)work.data(), per_team_extent);
 
                         auto sensibleInternalEnergy = ablate::eos::tChem::impl::SensibleInternalEnergyFcn<real_type, host_device_type>::team_invoke(
-                            member, temperature, yiHost, enthalpy, cpks, enthalpyReferenceHost, kineticsModelDataHost);
+                            member, temperature, yiHost, enthalpy, cpks, enthalpyReferenceHostLocal, kineticsModelDataHost);
 
                         // convert to total sensibleEnergy
                         PetscReal kineticEnergy = 0;
