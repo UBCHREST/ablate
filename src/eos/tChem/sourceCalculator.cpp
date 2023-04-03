@@ -319,7 +319,7 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
 
                 std::cout << warningMessage.str() << std::endl;
 #else
-                        printf("Warning: Could not integrate chemistry at cell %d on rank %d\n", cell, rank );
+                        printf("Warning: Could not integrate chemistry at cell %" PetscInt_FMT " on rank %d\n", cell, rank );
 #endif
             }
         });
