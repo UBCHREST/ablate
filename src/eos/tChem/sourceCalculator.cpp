@@ -262,15 +262,12 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
     Kokkos::parallel_for(
         "sourceTermCompute", Kokkos::RangePolicy<typename tChemLib::exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const ordinal_type& i) {
             // get the host data from the petsc field
-//            const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
             const std::size_t chemIndex = i - cellRangeStartLocal;
-            printf("print %zu", chemIndex);
 
-//
-//            // cast the state at i to a state vector
-//            const auto stateAtI = Kokkos::subview(stateDeviceLocal, chemIndex, Kokkos::ALL());
-//            Impl::StateVector<real_type_1d_view> stateVector(nSpecLocal, stateAtI);
-//            const auto ys = stateVector.MassFractions();
+            // cast the state at i to a state vector
+            const auto stateAtI = Kokkos::subview(stateDeviceLocal, chemIndex, Kokkos::ALL());
+            Impl::StateVector<real_type_1d_view> stateVector(nSpecLocal, stateAtI);
+            const auto ys = stateVector.MassFractions();
 //
 //            const auto endStateAtI = Kokkos::subview(endStateDeviceLocal, chemIndex, Kokkos::ALL());
 //            Impl::StateVector<real_type_1d_view> endStateVector(nSpecLocal, endStateAtI);
@@ -307,6 +304,7 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
 //// compute the cell centroid
 //#ifndef KOKKOS_ENABLE_CUDA
 //                PetscReal centroid[3];
+//            const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
 //                DMPlexComputeCellGeometryFVM(solutionDm, cell, nullptr, centroid, nullptr) >> utilities::PetscUtilities::checkError;
 //
 //                // Output error information
