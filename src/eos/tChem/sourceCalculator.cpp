@@ -256,15 +256,16 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
     auto endStateDeviceLocal = endStateDevice;
     auto nSpecLocal = kineticModelGasConstDataDevice.nSpec;
     auto sourceTermsDeviceLocal = sourceTermsDevice;
-
+    auto cellRangeStartLocal = cellRange.start;
     // Use a parallel for computing the source term
     auto enthalpyOfFormationLocal = eos->GetEnthalpyOfFormation();
     Kokkos::parallel_for(
         "sourceTermCompute", Kokkos::RangePolicy<typename tChemLib::exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const auto i) {
             // get the host data from the petsc field
-            const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
-            printf("print %" PetscInt_FMT, cell);
-//            const std::size_t chemIndex = i - cellRange.start;
+//            const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
+            const std::size_t chemIndex = i - cellRangeStartLocal;
+            printf("print %zu", chemIndex);
+
 //
 //            // cast the state at i to a state vector
 //            const auto stateAtI = Kokkos::subview(stateDeviceLocal, chemIndex, Kokkos::ALL());
