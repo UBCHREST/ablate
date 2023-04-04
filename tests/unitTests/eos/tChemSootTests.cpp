@@ -7,6 +7,15 @@
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
 
+#ifndef KOKKOS_ENABLE_CUDA
+#define ONLY_WITH_CUDA_CHECK \
+    {}
+#else
+#define ONLY_WITH_CUDA_CHECK                                          \
+    SUCCEED() << ("Test is only applicable when built without Cuda"); \
+    return;
+#endif
+
 /*
  * Helper function to fill mass fraction
  */
@@ -50,6 +59,7 @@ struct TChemSootCreateAndViewParameters {
 class TChemSootCreateAndViewFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemSootCreateAndViewParameters> {};
 
 TEST_P(TChemSootCreateAndViewFixture, ShouldCreateAndView) {
+    ONLY_WITH_CUDA_CHECK
     // arrange
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChemSoot>(GetParam().mechFile, GetParam().thermoFile);
 
@@ -91,6 +101,7 @@ struct TChemSootGetSpeciesParameters {
 class TChemSootGetSpeciesFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemSootGetSpeciesParameters> {};
 
 TEST_P(TChemSootGetSpeciesFixture, ShouldGetCorrectSpecies) {
+    ONLY_WITH_CUDA_CHECK
     // arrange
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChemSoot>(GetParam().mechFile, GetParam().thermoFile);
 
@@ -138,6 +149,7 @@ struct TChemSootTestParameters {
 class TChemSootThermodynamicPropertyTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemSootTestParameters> {};
 
 TEST_P(TChemSootThermodynamicPropertyTestFixture, ShouldComputeProperty) {
+    ONLY_WITH_CUDA_CHECK
     // arrange
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChemSoot>(GetParam().mechFile, GetParam().thermoFile);
 
@@ -524,6 +536,7 @@ struct TChemSootFieldFunctionTestParameters {
 class TChemSootFieldFunctionTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemSootFieldFunctionTestParameters> {};
 
 TEST_P(TChemSootFieldFunctionTestFixture, ShouldComputeField) {
+    ONLY_WITH_CUDA_CHECK
     // arrange
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChemSoot>(GetParam().mechFile, GetParam().thermoFile);
     auto yi = GetMassFraction(eos->GetSpeciesVariables(), GetParam().yiMap);
@@ -731,6 +744,7 @@ struct TChemSootElementTestParameters {
 class TChemSootElementTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemSootElementTestParameters> {};
 
 TEST_P(TChemSootElementTestFixture, ShouldDetermineElements) {
+    ONLY_WITH_CUDA_CHECK
     // arrange
     auto eos = std::make_shared<ablate::eos::TChemSoot>(GetParam().mechFile, GetParam().thermoFile);
 
@@ -766,6 +780,7 @@ struct TChemSootSpeciesInformationTestParameters {
 class TChemSootSpeciesInformationTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemSootSpeciesInformationTestParameters> {};
 
 TEST_P(TChemSootSpeciesInformationTestFixture, ShouldDetermineSpeciesElementInformation) {
+    ONLY_WITH_CUDA_CHECK
     // arrange
     auto eos = std::make_shared<ablate::eos::TChemSoot>(GetParam().mechFile, GetParam().thermoFile);
 
@@ -781,6 +796,7 @@ TEST_P(TChemSootSpeciesInformationTestFixture, ShouldDetermineSpeciesElementInfo
 }
 
 TEST_P(TChemSootSpeciesInformationTestFixture, ShouldDetermineSpeciesMolecularMass) {
+    ONLY_WITH_CUDA_CHECK
     // arrange
     auto eos = std::make_shared<ablate::eos::TChemSoot>(GetParam().mechFile, GetParam().thermoFile);
 
@@ -897,6 +913,7 @@ struct TChemSootComputeSourceTestParameters {
 class TChemSootComputeSourceTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemSootComputeSourceTestParameters> {};
 
 TEST_P(TChemSootComputeSourceTestFixture, ShouldComputeCorrectSource) {
+    ONLY_WITH_CUDA_CHECK
     // ARRANGE
     auto eos = std::make_shared<ablate::eos::TChemSoot>(GetParam().mechFile, GetParam().thermoFile);
 

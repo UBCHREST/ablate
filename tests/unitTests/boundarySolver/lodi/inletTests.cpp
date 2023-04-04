@@ -61,7 +61,7 @@ TEST_P(InletTestFixture, ShouldComputeCorrectSourceTerm) {
         .Times(::testing::Exactly(1))
         .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction(params.computeStencilPressureFunction)));
     // create the boundary
-    std::shared_ptr<ablate::boundarySolver::lodi::LODIBoundary> boundary = std::make_shared<ablate::boundarySolver::lodi::Inlet>(mockEOS, params.getPgs());
+    std::shared_ptr<ablate::boundarySolver::lodi::LODIBoundary> boundary = std::make_shared<ablate::boundarySolver::lodi::Inlet>(mockEOS, params.getPgs ? params.getPgs() : nullptr);
     boundary->Setup(params.dim, params.nEqs, params.nSpecEqs, params.nEvComps, params.fields);
 
     PetscInt uOff[4] = {0, params.dim + 2, params.dim + 2 + params.nSpecEqs, params.dim + 2 + params.nSpecEqs + (params.nEvComps.empty() ? 0 : params.nEvComps[0])};

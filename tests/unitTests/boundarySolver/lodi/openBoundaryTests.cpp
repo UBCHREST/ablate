@@ -67,8 +67,8 @@ TEST_P(OpenBoundaryTestFixture, ShouldComputeCorrectSourceTerm) {
         .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction(params.computeStencilPressureFunction)));
 
     // create the boundary
-    std::shared_ptr<ablate::boundarySolver::lodi::LODIBoundary> boundary =
-        std::make_shared<ablate::boundarySolver::lodi::OpenBoundary>(mockEOS, GetParam().reflectFactor, GetParam().referencePressure, GetParam().maxAcousticsLength, params.getPgs());
+    std::shared_ptr<ablate::boundarySolver::lodi::LODIBoundary> boundary = std::make_shared<ablate::boundarySolver::lodi::OpenBoundary>(
+        mockEOS, GetParam().reflectFactor, GetParam().referencePressure, GetParam().maxAcousticsLength, params.getPgs ? params.getPgs() : nullptr);
     boundary->Setup(params.dim, params.nEqs, params.nSpecEqs, params.nEvComps, params.fields);
 
     PetscInt uOff[4] = {0, params.dim + 2, params.dim + 2 + params.nSpecEqs, params.dim + 2 + params.nSpecEqs + (params.nEvComps.empty() ? 0 : params.nEvComps[0])};
