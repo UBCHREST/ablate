@@ -26,8 +26,6 @@ class SurfaceForceTestFixture : public testingResources::MpiTestFixture, public 
 
 TEST_P(SurfaceForceTestFixture, ShouldComputeCorrectSurfaceForce) {
     ablate::utilities::PetscUtilities::Initialize();
-    const auto &params = GetParam();
-
     PetscReal errorTolerance = 1E-3;
     PetscReal sigma = 0.07;
 
