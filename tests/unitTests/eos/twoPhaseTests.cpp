@@ -127,6 +127,7 @@ INSTANTIATE_TEST_SUITE_P(
                                 1.1614401858304297 * 30,
                                 1.1614401858304297,
                                 1.0},  // rho, rhoE, rhoU, rhoV, rhoW, rhoAlpha, alpha
+            .expectedTemperature = {},
             .expectedValue = {300.0}},
         (TPTestParameters){
             // all second gas
@@ -139,6 +140,7 @@ INSTANTIATE_TEST_SUITE_P(
             .conservedValues =
                 {3.132832080200501, 3.132832080200501 * (74232.5581395349 + 700.0), 3.132832080200501 * 10, 3.132832080200501 * -20, 3.132832080200501 * 30, 0.0, 0.0},  // rho, rhoE, rhoU, rhoV, rhoW,
                                                                                                                                                                          // rhoAlpha, alpha
+            .expectedTemperature = {},
             .expectedValue = {300.0}},
         (TPTestParameters){
             // mix
@@ -155,6 +157,7 @@ INSTANTIATE_TEST_SUITE_P(
                                 2.3442753224524724 * 30,
                                 0.4645760743321719,
                                 0.4},  // rho, rhoE, rhoU, rhoV, rhoW, rhoAlpha, alpha
+            .expectedTemperature = {},
             .expectedValue = {102178.6483126649}},
 
         (TPTestParameters){
@@ -167,6 +170,7 @@ INSTANTIATE_TEST_SUITE_P(
                        ablateTesting::domain::MockField::Create("densityvolumeFraction", 1, 5),
                        ablateTesting::domain::MockField::Create("volumeFraction", 1, 6)},
             .conservedValues = {1.1614401858304297, 1.1614401858304297 * (215250.0 + 700), 1.1614401858304297 * 10, 1.1614401858304297 * -20, 1.1614401858304297 * 30, 1.1614401858304297, 1.0},
+            .expectedTemperature = {},
             .expectedValue = {347.18870949384285}},
         (TPTestParameters){
             // all water
@@ -178,6 +182,7 @@ INSTANTIATE_TEST_SUITE_P(
                        ablateTesting::domain::MockField::Create("densityvolumeFraction", 1, 5),
                        ablateTesting::domain::MockField::Create("volumeFraction", 1, 6)},
             .conservedValues = {994.0897497618486, 994.0897497618486 * (2428423.405461103 + 700), 994.0897497618486 * 10, 994.0897497618486 * -20, 994.0897497618486 * 30, 0.0, 0.0},
+            .expectedTemperature = {},
             .expectedValue = {1504.4548407978223}},
         (TPTestParameters){
             // mix
@@ -189,6 +194,7 @@ INSTANTIATE_TEST_SUITE_P(
                        ablateTesting::domain::MockField::Create("densityvolumeFraction", 1, 5),
                        ablateTesting::domain::MockField::Create("volumeFraction", 1, 6)},
             .conservedValues = {497.6255949738395, 497.6255949738395 * (2425840.672019258 + 700), 497.6255949738395 * 10, 497.6255949738395 * -20, 497.6255949738395 * 30, 0.5807200929152149, 0.5},
+            .expectedTemperature = {},
             .expectedValue = {20.04845783548275}},
 
         (TPTestParameters){
@@ -202,6 +208,7 @@ INSTANTIATE_TEST_SUITE_P(
                        ablateTesting::domain::MockField::Create("densityvolumeFraction", 1, 5),
                        ablateTesting::domain::MockField::Create("volumeFraction", 1, 6)},
             .conservedValues = {768.3978307143822, 768.3978307143822 * (1392890.3090808005 + 700), 768.3978307143822 * 10, 768.3978307143822 * -20, 768.3978307143822 * 30, 768.3978307143822, 1.0},
+            .expectedTemperature = {},
             .expectedValue = {100000.00000023842}},
         (TPTestParameters){// all second liquid
                            .eos1 = std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
@@ -213,6 +220,7 @@ INSTANTIATE_TEST_SUITE_P(
                                       ablateTesting::domain::MockField::Create("densityvolumeFraction", 1, 5),
                                       ablateTesting::domain::MockField::Create("volumeFraction", 1, 6)},
                            .conservedValues = {994.0897497618486, 994.0897497618486 * (2428423.405461103 + 700), 994.0897497618486 * 10, 994.0897497618486 * -20, 994.0897497618486 * 30, 0.0, 0.0},
+                           .expectedTemperature = {},
                            .expectedValue = {100000.0}},
         (TPTestParameters){
             // mix
@@ -225,6 +233,7 @@ INSTANTIATE_TEST_SUITE_P(
                        ablateTesting::domain::MockField::Create("densityvolumeFraction", 1, 5),
                        ablateTesting::domain::MockField::Create("volumeFraction", 1, 6)},
             .conservedValues = {836.105406428622, 836.105406428622 * (1762250.2589397137 + 700), 836.105406428622 * 10, 836.105406428622 * -20, 836.105406428622 * 30, 537.8784815000674, 0.7},
+            .expectedTemperature = {},
             .expectedValue = {100000.00000023842}},
 
         (TPTestParameters){
@@ -236,6 +245,7 @@ INSTANTIATE_TEST_SUITE_P(
                        ablateTesting::domain::MockField::Create("densityvolumeFraction", 1, 5),
                        ablateTesting::domain::MockField::Create("volumeFraction", 1, 6)},
             .conservedValues = {NAN, NAN, 538.8183311241276, 538.8183311241276 * 1390590.2017535304, 0.0, 0.9398496240601503, 0.3},
+            .expectedTemperature = {},
             .expectedValue = {1390590.2017535304}},
         (TPTestParameters){
             .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
@@ -246,6 +256,7 @@ INSTANTIATE_TEST_SUITE_P(
                        ablateTesting::domain::MockField::Create("densityvolumeFraction", 1, 5),
                        ablateTesting::domain::MockField::Create("volumeFraction", 1, 6)},
             .conservedValues = {NAN, NAN, 538.8183311241276, 538.8183311241276 * 1390590.2017535304, 0.0, 0.9398496240601503, 0.3},
+            .expectedTemperature = {},
             .expectedValue = {24.87318022730244}},
         (TPTestParameters){
             .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
@@ -256,6 +267,7 @@ INSTANTIATE_TEST_SUITE_P(
                        ablateTesting::domain::MockField::Create("densityvolumeFraction", 1, 5),
                        ablateTesting::domain::MockField::Create("volumeFraction", 1, 6)},
             .conservedValues = {NAN, NAN, 538.8183311241276, 538.8183311241276 * 1390590.2017535304, 0.0, 0.9398496240601503, 0.3},
+            .expectedTemperature = {},
             .expectedValue = {538.8183311241276}},
         (TPTestParameters){
             .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
@@ -266,6 +278,7 @@ INSTANTIATE_TEST_SUITE_P(
                        ablateTesting::domain::MockField::Create("densityvolumeFraction", 1, 5),
                        ablateTesting::domain::MockField::Create("volumeFraction", 1, 6)},
             .conservedValues = {NAN, NAN, 636.2369625573178, 636.2369625573178 * 806491.803515885, 0.0, 469.92481203007515, 0.6},
+            .expectedTemperature = {},
             .expectedValue = {50000000.00000003}},
 
         (TPTestParameters){
@@ -277,6 +290,7 @@ INSTANTIATE_TEST_SUITE_P(
                        ablateTesting::domain::MockField::Create("densityvolumeFraction", 1, 5),
                        ablateTesting::domain::MockField::Create("volumeFraction", 1, 6)},
             .conservedValues = {462.2918312607095, 462.2918312607095 * (1389315.828178823 + 700), 462.2918312607095 * 10, 462.2918312607095 * 20, 462.2918312607095 * 30, 1.2531328320802004, 0.4},
+            .expectedTemperature = {},
             .expectedValue = {300}},
         (TPTestParameters){
             .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
@@ -287,6 +301,7 @@ INSTANTIATE_TEST_SUITE_P(
                        ablateTesting::domain::MockField::Create("densityvolumeFraction", 1, 5),
                        ablateTesting::domain::MockField::Create("volumeFraction", 1, 6)},
             .conservedValues = {NAN, NAN, 562.751433810914, 562.751433810914 * 1264395.3714915595, 0.0, 313.2832080200501, 0.4},
+            .expectedTemperature = {},
             .expectedValue = {600}},
 
         (TPTestParameters){
@@ -343,6 +358,7 @@ INSTANTIATE_TEST_SUITE_P(
                        ablateTesting::domain::MockField::Create("densityvolumeFraction", 1, 5),
                        ablateTesting::domain::MockField::Create("volumeFraction", 1, 6)},
             .conservedValues = {462.2918312607095, 462.2918312607095 * (1389315.828178823 + 700), 462.2918312607095 * 10, 462.2918312607095 * 20, 462.2918312607095 * 30, 1.2531328320802004, 0.4},
+            .expectedTemperature = {},
             .expectedValue = {4631.773805855355}},
         (TPTestParameters){
             .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
@@ -353,6 +369,7 @@ INSTANTIATE_TEST_SUITE_P(
                        ablateTesting::domain::MockField::Create("densityvolumeFraction", 1, 5),
                        ablateTesting::domain::MockField::Create("volumeFraction", 1, 6)},
             .conservedValues = {462.2918312607095, 462.2918312607095 * (1389315.828178823 + 700), 462.2918312607095 * 10, 462.2918312607095 * 20, 462.2918312607095 * 30, 1.2531328320802004, 0.4},
+            .expectedTemperature = {},
             .expectedValue = {4629.971638016732}},
         (TPTestParameters){
             .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
@@ -363,6 +380,7 @@ INSTANTIATE_TEST_SUITE_P(
                        ablateTesting::domain::MockField::Create("densityvolumeFraction", 1, 5),
                        ablateTesting::domain::MockField::Create("volumeFraction", 1, 6)},
             .conservedValues = {562.751433810914, 562.751433810914 * (1264395.3714915595 + 700), 562.751433810914 * 10, 562.751433810914 * 20, 562.751433810914 * 30, 313.2832080200501, 0.4},
+            .expectedTemperature = {},
             .expectedValue = {2255.407575637376}},
         (TPTestParameters){
             .eos1 = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.43"}, {"Rgas", "106.4"}})),
@@ -373,6 +391,7 @@ INSTANTIATE_TEST_SUITE_P(
                        ablateTesting::domain::MockField::Create("densityvolumeFraction", 1, 5),
                        ablateTesting::domain::MockField::Create("volumeFraction", 1, 6)},
             .conservedValues = {562.751433810914, 562.751433810914 * (1264395.3714915595 + 700), 562.751433810914 * 10, 562.751433810914 * 20, 562.751433810914 * 30, 313.2832080200501, 0.4},
+            .expectedTemperature = {},
             .expectedValue = {1923.136104523659}},
 
         (TPTestParameters){
@@ -385,6 +404,7 @@ INSTANTIATE_TEST_SUITE_P(
                        ablateTesting::domain::MockField::Create("densityvolumeFraction", 1, 5),
                        ablateTesting::domain::MockField::Create("volumeFraction", 1, 6)},
             .conservedValues = {998.7, 998.7 * 2.5E6, 998.7 * 10, 998.7 * -20, 998.7 * 30, 998.7, 1.0},
+            .expectedTemperature = {},
             .expectedValue = std::vector<PetscReal>{0.0, 0.0, 0.0, 0.0}}
 
         ),
