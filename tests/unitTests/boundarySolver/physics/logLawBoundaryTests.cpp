@@ -13,7 +13,6 @@ struct LogLawBoundaryTestParameters {
     PetscInt dim;
     ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom fvFaceGeom;
     PetscFVCellGeom boundaryCell;
-    std::vector<PetscScalar> boundaryValues;
     std::vector<PetscScalar> stencilValues; /* the grad is (boundary-stencil)/1.0*/
     std::vector<PetscScalar> expectedResults;
 };
