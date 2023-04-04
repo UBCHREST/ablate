@@ -12,7 +12,9 @@
 
 ablate::eos::TChem::TChem(std::filesystem::path mechanismFileIn, std::filesystem::path thermoFileIn, std::shared_ptr<ablate::monitors::logs::Log> logIn,
                           const std::shared_ptr<ablate::parameters::Parameters> &options)
-    : TChemBase("TChem", mechanismFileIn, thermoFileIn, logIn, options) {}
+    : TChemBase("TChem", mechanismFileIn, thermoFileIn, logIn, options) {
+    View(std::cout);
+}
 
 std::shared_ptr<ablate::eos::TChem::FunctionContext> ablate::eos::TChem::BuildFunctionContext(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields,
                                                                                               bool checkDensityYi) const {
