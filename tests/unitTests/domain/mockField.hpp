@@ -6,7 +6,7 @@
 #include "domain/field.hpp"
 
 namespace ablateTesting::domain::MockField {
-inline ablate::domain::Field Create(std::string name, PetscInt numberComponents = 1, PetscInt offset = 0) {
+inline ablate::domain::Field Create(std::string name, PetscInt numberComponents = 1, PetscInt offset = 0, std::set<std::string> tags = {}) {
     return ablate::domain::Field{.name = std::move(name),
                                  .numberComponents = numberComponents,
                                  .components = {},
@@ -15,9 +15,9 @@ inline ablate::domain::Field Create(std::string name, PetscInt numberComponents 
                                  .offset = offset,
                                  .location = ablate::domain::FieldLocation::SOL,
                                  .type = ablate::domain::FieldType::FVM,
-                                 .tags = {}};
+                                 .tags = tags};
 }
-inline ablate::domain::Field Create(std::string name, const std::vector<std::string>& components, PetscInt offset = 0) {
+inline ablate::domain::Field Create(std::string name, const std::vector<std::string>& components, PetscInt offset = 0, std::set<std::string> tags = {}) {
     return ablate::domain::Field{.name = std::move(name),
                                  .numberComponents = (PetscInt)components.size(),
                                  .components = components,
@@ -26,7 +26,7 @@ inline ablate::domain::Field Create(std::string name, const std::vector<std::str
                                  .offset = offset,
                                  .location = ablate::domain::FieldLocation::SOL,
                                  .type = ablate::domain::FieldType::FVM,
-                                 .tags = {}};
+                                 .tags = tags};
 }
 
 }  // namespace ablateTesting::domain::MockField

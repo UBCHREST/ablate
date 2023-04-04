@@ -1,6 +1,7 @@
 #include <functional>
 #include "PetscTestFixture.hpp"
 #include "boundarySolver/lodi/isothermalWall.hpp"
+#include "domain/mockField.hpp"
 #include "eos/mockEOS.hpp"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -115,7 +116,7 @@ INSTANTIATE_TEST_SUITE_P(
                                        .nEqs = 3,
                                        .nSpecEqs = 0,
                                        .nEvComps = {},
-                                       .fields = {{.name = "euler", .numberComponents = 3, .offset = 0}},
+                                       .fields = {ablateTesting::domain::MockField::Create("euler", 3)},
                                        .computeTemperatureFunction =
                                            [](const PetscReal conserved[], PetscReal* property) {
                                                CHECK_EXPECT("density", 2.9451426166013044, conserved[ff::RHO]);
@@ -174,13 +175,13 @@ INSTANTIATE_TEST_SUITE_P(
                                        .getPgs = nullptr,
                                        .boundaryValues = {2.9451426166013044, -256819.75972598503, 0.0},
                                        .stencilValues = {20, 3000 * 20, -197999.99999999872 * 20},
-                                       .expectedResults = {816226.6340554004, -7.117588359166196E10, 0.0}}/*,
+                                       .expectedResults = {816226.6340554004, -7.117588359166196E10, 0.0}},
         // case 1
         (IsothermalWallTestParameters){.dim = 1,
                                        .nEqs = 3,
                                        .nSpecEqs = 0,
                                        .nEvComps = {},
-                                       .fields = {{.name = "euler", .numberComponents = 3, .offset = 0}},
+                                       .fields = {ablateTesting::domain::MockField::Create("euler", 3)},
                                        .computeTemperatureFunction =
                                            [](const PetscReal conserved[], PetscReal* property) {
                                                CHECK_EXPECT("density", 2.945140275655796, conserved[ff::RHO]);
@@ -246,7 +247,7 @@ INSTANTIATE_TEST_SUITE_P(
             .nEqs = 3,
             .nSpecEqs = 0,
             .nEvComps = {},
-            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0}},
+            .fields = {ablateTesting::domain::MockField::Create("euler", 3)},
             .computeTemperatureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 8.692914985507404, conserved[ff::RHO]);
@@ -312,7 +313,7 @@ INSTANTIATE_TEST_SUITE_P(
             .nEqs = 4,
             .nSpecEqs = 0,
             .nEvComps = {},
-            .fields = {{.name = "euler", .numberComponents = 4, .offset = 0}},
+            .fields = {ablateTesting::domain::MockField::Create("euler", 4)},
             .computeTemperatureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 8.692914985507404, conserved[ff::RHO]);
@@ -385,7 +386,7 @@ INSTANTIATE_TEST_SUITE_P(
             .nEqs = 5,
             .nSpecEqs = 0,
             .nEvComps = {},
-            .fields = {{.name = "euler", .numberComponents = 5, .offset = 0}},
+            .fields = {ablateTesting::domain::MockField::Create("euler", 5)},
             .computeTemperatureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 8.692914985507404, conserved[ff::RHO]);
@@ -465,9 +466,9 @@ INSTANTIATE_TEST_SUITE_P(
             .nEqs = 8,
             .nSpecEqs = 3,
             .nEvComps = {2},
-            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0},
-                       {.name = "densityYi", .numberComponents = 3, .offset = 3},
-                       {.name = "densityEV", .numberComponents = 2, .offset = 6, .tags = {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}}},
+            .fields = {ablateTesting::domain::MockField::Create("euler", 3, 0),
+                       ablateTesting::domain::MockField::Create("densityYi", 3, 3),
+                       ablateTesting::domain::MockField::Create("densityEV", 2, 6, {ablate::finiteVolume::CompressibleFlowFields::EV_TAG})},
             .computeTemperatureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 1.783191515808363, conserved[ff::RHO]);
@@ -591,10 +592,10 @@ INSTANTIATE_TEST_SUITE_P(
             .nEqs = 9,
             .nSpecEqs = 3,
             .nEvComps = {2, 1},
-            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0},
-                       {.name = "densityYi", .numberComponents = 3, .offset = 3},
-                       {.name = "densityEV", .numberComponents = 2, .offset = 6, .tags = {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}},
-                       {.name = "otherEV", .numberComponents = 1, .offset = 8, .tags = {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}}},
+            .fields = {ablateTesting::domain::MockField::Create("euler", 3, 0),
+                       ablateTesting::domain::MockField::Create("densityYi", 3, 3),
+                       ablateTesting::domain::MockField::Create("densityEV", 2, 6, {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}),
+                       ablateTesting::domain::MockField::Create("otherEV", 1, 8, {ablate::finiteVolume::CompressibleFlowFields::EV_TAG})},
             .computeTemperatureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 1.783191515808363, conserved[ff::RHO]);
@@ -726,7 +727,7 @@ INSTANTIATE_TEST_SUITE_P(
                                 -70162.98538957555,
                                 -43851.86586848472,
                                 -87703.73173696944,
-                                -43851.86586848472}}*/),
+                                -43851.86586848472}}),
     [](const testing::TestParamInfo<IsothermalWallTestParameters>& info) {
         return "test" + std::to_string(info.index) + "d" + std::to_string(info.param.dim) + "e" + std::to_string(info.param.nEqs) + "s" + std::to_string(info.param.nSpecEqs) + "ev" +
                ablate::utilities::VectorUtilities::Concatenate(info.param.nEvComps, "ev");
