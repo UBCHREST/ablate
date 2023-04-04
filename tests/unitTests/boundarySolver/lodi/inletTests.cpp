@@ -1,6 +1,7 @@
 #include <functional>
 #include "PetscTestFixture.hpp"
 #include "boundarySolver/lodi/inlet.hpp"
+#include "domain/mockField.hpp"
 #include "eos/mockEOS.hpp"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -112,7 +113,9 @@ INSTANTIATE_TEST_SUITE_P(
         // case 0
         (InletTestParameters){.dim = 1,
                               .nEqs = 3,
-                              .fields = {{.name = "euler", .numberComponents = 3, .offset = 0}},
+                              .nSpecEqs = 0,
+                              .nEvComps = {},
+                              .fields = {ablateTesting::domain::MockField::Create("euler", 3)},
                               .computeTemperatureFunction =
                                   [](const PetscReal conserved[], PetscReal* property) {
                                       CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
@@ -168,13 +171,16 @@ INSTANTIATE_TEST_SUITE_P(
                                       *property = 251619.82076699712 + 199.9999986612238;  // delta p = stencil-boundary ... stencil = boundary+deltap
                                   },
                               .fvFaceGeom = {.normal = {-1.0, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+                              .getPgs = nullptr,
                               .boundaryValues = {8.694650097350083, -883117.7527422206, 4347.32504867504},
                               .stencilValues = {20, 3000 * 20, (500.0 + 39999.99999999889) * 20},
                               .expectedResults = {723193.7481425349, -7.345496719316035E10, 3.615968740712674E8}},
         // case 1
         (InletTestParameters){.dim = 3,
                               .nEqs = 5,
-                              .fields = {{.name = "euler", .numberComponents = 5, .offset = 0}},
+                              .nSpecEqs = 0,
+                              .nEvComps = {},
+                              .fields = {ablateTesting::domain::MockField::Create("euler", 5)},
                               .computeTemperatureFunction =
                                   [](const PetscReal conserved[], PetscReal* property) {
                                       CHECK_EXPECT("density", 2.905934985931918, conserved[ff::RHO]);
@@ -245,6 +251,7 @@ INSTANTIATE_TEST_SUITE_P(
                                       *property = 251619.82076699712 + 199.99999981373549;  // delta p = stencil-boundary ... stencil = boundary+deltap
                                   },
                               .fvFaceGeom = {.normal = {0.0, 0.0, -1.0}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+                              .getPgs = nullptr,
                               .boundaryValues = {2.905934985931918, -244872.459632804, 0.0, 0.0, 29.05934985931918},
                               .stencilValues = {20, 3000 * 20, 0.0, 0.0, (10.0 + 40000.000000000015) * 20},
                               .expectedResults = {-157992.19383660285, 1.3313421427129639E10, 0.0, 0.0, -1579921.9383660285}},
@@ -254,9 +261,9 @@ INSTANTIATE_TEST_SUITE_P(
             .nEqs = 8,
             .nSpecEqs = 3,
             .nEvComps = {2},
-            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0},
-                       {.name = "densityYi", .numberComponents = 3, .offset = 3},
-                       {.name = "densityEV", .numberComponents = 2, .offset = 6, .tags = {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}}},
+            .fields = {ablateTesting::domain::MockField::Create("euler", 3),
+                       ablateTesting::domain::MockField::Create("densityYi", 3, 3),
+                       ablateTesting::domain::MockField::Create("densityEV", 2, 6, {ablate::finiteVolume::CompressibleFlowFields::EV_TAG})},
             .computeTemperatureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 1.783191515808363, conserved[ff::RHO]);
@@ -363,6 +370,7 @@ INSTANTIATE_TEST_SUITE_P(
                     *property = 251619.82076699712 + 199.99999981373549;  // delta p = stencil-boundary ... stencil = boundary+deltap
                 },
             .fvFaceGeom = {.normal = {-1.0, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+            .getPgs = nullptr,
             .boundaryValues = {1.783191515808363,
                                -243778.19371678037,
                                10 * 1.783191515808363,
@@ -379,10 +387,10 @@ INSTANTIATE_TEST_SUITE_P(
             .nEqs = 9,
             .nSpecEqs = 3,
             .nEvComps = {1, 2},
-            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0},
-                       {.name = "densityYi", .numberComponents = 3, .offset = 3},
-                       {.name = "otherEV", .numberComponents = 1, .offset = 6, .tags = {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}},
-                       {.name = "densityEV", .numberComponents = 2, .offset = 7, .tags = {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}}},
+            .fields = {ablateTesting::domain::MockField::Create("euler", 3),
+                       ablateTesting::domain::MockField::Create("densityYi", 3, 3),
+                       ablateTesting::domain::MockField::Create("otherEV", 1, 6, {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}),
+                       ablateTesting::domain::MockField::Create("densityEV", 2, 7, {ablate::finiteVolume::CompressibleFlowFields::EV_TAG})},
             .computeTemperatureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 1.783191515808363, conserved[ff::RHO]);
