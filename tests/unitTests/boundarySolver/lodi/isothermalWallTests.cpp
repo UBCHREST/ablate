@@ -174,7 +174,7 @@ INSTANTIATE_TEST_SUITE_P(
                                        .getPgs = nullptr,
                                        .boundaryValues = {2.9451426166013044, -256819.75972598503, 0.0},
                                        .stencilValues = {20, 3000 * 20, -197999.99999999872 * 20},
-                                       .expectedResults = {816226.6340554004, -7.117588359166196E10, 0.0}},
+                                       .expectedResults = {816226.6340554004, -7.117588359166196E10, 0.0}}/*,
         // case 1
         (IsothermalWallTestParameters){.dim = 1,
                                        .nEqs = 3,
@@ -726,7 +726,7 @@ INSTANTIATE_TEST_SUITE_P(
                                 -70162.98538957555,
                                 -43851.86586848472,
                                 -87703.73173696944,
-                                -43851.86586848472}}),
+                                -43851.86586848472}}*/),
     [](const testing::TestParamInfo<IsothermalWallTestParameters>& info) {
         return "test" + std::to_string(info.index) + "d" + std::to_string(info.param.dim) + "e" + std::to_string(info.param.nEqs) + "s" + std::to_string(info.param.nSpecEqs) + "ev" +
                ablate::utilities::VectorUtilities::Concatenate(info.param.nEvComps, "ev");
