@@ -1,9 +1,11 @@
 #include <functional>
 #include "PetscTestFixture.hpp"
 #include "boundarySolver/lodi/openBoundary.hpp"
+#include "domain/mockField.hpp"
 #include "eos/mockEOS.hpp"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+
 using ff = ablate::finiteVolume::CompressibleFlowFields;
 
 struct OpenBoundaryTestParameters {
@@ -118,10 +120,12 @@ INSTANTIATE_TEST_SUITE_P(
         (OpenBoundaryTestParameters){.name = "1D subsonic into the domain",
                                      .dim = 1,
                                      .nEqs = 3,
+                                     .nSpecEqs = 0,
+                                     .nEvComps = {},
                                      .reflectFactor = 0.0,
                                      .referencePressure = 101325.0,
                                      .maxAcousticsLength = 0.02,
-                                     .fields = {{.name = "euler", .numberComponents = 3, .offset = 0}},
+                                     .fields = {ablateTesting::domain::MockField::Create("euler", 3)},
                                      .computeTemperatureFunction =
                                          [](const PetscReal conserved[], PetscReal* property) {
                                              CHECK_EXPECT("density", 8.692914985507404, conserved[ff::RHO]);
@@ -177,6 +181,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              *property = 251619.72076699708 + 20.000000327128298;  // delta p = stencil-boundary ... stencil = boundary+deltap
                                          },
                                      .fvFaceGeom = {.normal = {-1, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+                                     .getPgs = nullptr,
                                      .boundaryValues = {8.692914985507404, -1968998.208078879, 86.93001914657259},
                                      .stencilValues = {20, 3000 * 20, (10.0001 - 0.03979797979809766) * 20.0},
                                      .expectedResults = {0.2115010865888479, -42211.18508291234, -40.57249122316696}},
@@ -184,10 +189,12 @@ INSTANTIATE_TEST_SUITE_P(
             .name = "1D subsonic out of the domain",
             .dim = 1,
             .nEqs = 3,
+            .nSpecEqs = 0,
+            .nEvComps = {},
             .reflectFactor = 0.15,
             .referencePressure = 202650.0,
             .maxAcousticsLength = 0.02,
-            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0}},
+            .fields = {ablateTesting::domain::MockField::Create("euler", 3)},
             .computeTemperatureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 8.692018326008165, conserved[ff::RHO]);
@@ -243,6 +250,7 @@ INSTANTIATE_TEST_SUITE_P(
                     *property = 251618.820766997 + 200.00000096625962;  // delta p = stencil-boundary ... stencil = boundary+deltap
                 },
             .fvFaceGeom = {.normal = {-1, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+            .getPgs = nullptr,
             .boundaryValues = {8.692018326008165, -1967429.7903072261, -173.8412357219959},
             .stencilValues = {(8.692018326008165 + 1.040246109552421), 3000 * (8.692018326008165 + 1.040246109552421), (-20.0001 + 0.03979797979809766) * (8.692018326008165 + 1.040246109552421)},
             .expectedResults = {-888.7282612652397, 1.770387294967629E8, -165929.9623913537}},
@@ -250,10 +258,12 @@ INSTANTIATE_TEST_SUITE_P(
             .name = "1D supersonic out of the domain",
             .dim = 1,
             .nEqs = 3,
+            .nSpecEqs = 0,
+            .nEvComps = {},
             .reflectFactor = 0.15,
             .referencePressure = 202650.0,
             .maxAcousticsLength = 0.02,
-            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0}},
+            .fields = {ablateTesting::domain::MockField::Create("euler", 3)},
             .computeTemperatureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 8.692018326008165, conserved[ff::RHO]);
@@ -309,6 +319,7 @@ INSTANTIATE_TEST_SUITE_P(
                     *property = 251618.820766997 + 200.00000096625962;  // delta p = stencil-boundary ... stencil = boundary+deltap
                 },
             .fvFaceGeom = {.normal = {-1, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+            .getPgs = nullptr,
             .boundaryValues = {8.692018326008165, -882665.4860045275, -4346.010032205915},
             .stencilValues = {(8.692018326008165 + 1.040246109552421), 3000 * (8.692018326008165 + 1.040246109552421), (-500.0001 + 0.03979797979809766) * (8.692018326008165 + 1.040246109552421)},
             .expectedResults = {519.7772340310783, -8.949767410165516E7, -259915.7065747647}},
@@ -316,10 +327,12 @@ INSTANTIATE_TEST_SUITE_P(
             .name = "1D supersonic into the domain",
             .dim = 1,
             .nEqs = 3,
+            .nSpecEqs = 0,
+            .nEvComps = {},
             .reflectFactor = 0.15,
             .referencePressure = 202650.0,
             .maxAcousticsLength = 0.02,
-            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0}},
+            .fields = {ablateTesting::domain::MockField::Create("euler", 3)},
             .computeTemperatureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 8.692018326008165, conserved[ff::RHO]);
@@ -375,16 +388,19 @@ INSTANTIATE_TEST_SUITE_P(
                     *property = 251618.820766997 + 200.00000096625962;  // delta p = stencil-boundary ... stencil = boundary+deltap
                 },
             .fvFaceGeom = {.normal = {-1, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+            .getPgs = nullptr,
             .boundaryValues = {8.692018326008165, -882665.4860045275, 4346.010032205915},
             .stencilValues = {(8.692018326008165 + 1.040246109552421), 3000 * (8.692018326008165 + 1.040246109552421), (500.0001 + 0.03979797979809766) * (8.692018326008165 + 1.040246109552421)},
             .expectedResults = {0.0, 0.0, 0.0}},
         (OpenBoundaryTestParameters){.name = "3D supersonic out of the domain",
                                      .dim = 3,
                                      .nEqs = 5,
+                                     .nSpecEqs = 0,
+                                     .nEvComps = {},
                                      .reflectFactor = 0.15,
                                      .referencePressure = 202650.0,
                                      .maxAcousticsLength = 0.02,
-                                     .fields = {{.name = "euler", .numberComponents = 5, .offset = 0}},
+                                     .fields = {ablateTesting::domain::MockField::Create("euler", 5)},
                                      .computeTemperatureFunction =
                                          [](const PetscReal conserved[], PetscReal* property) {
                                              CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
@@ -454,6 +470,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              *property = 251619.82076699712 + 199.99999993015075;  // delta p = stencil-boundary ... stencil = boundary+deltap
                                          },
                                      .fvFaceGeom = {.normal = {0.0, 0.0, -1.0}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+                                     .getPgs = nullptr,
                                      .boundaryValues = {8.694650097350083, 2812108.5386315645, -4347.325048675041, -5216.79005841005, -6086.255068145058},
                                      .stencilValues = {(8.694650097350083 - 0.12298691191290341),
                                                        3000 * (8.694650097350083 - 0.12298691191290341),
@@ -464,10 +481,12 @@ INSTANTIATE_TEST_SUITE_P(
         (OpenBoundaryTestParameters){.name = "3D subsonic out of the domain",
                                      .dim = 3,
                                      .nEqs = 5,
+                                     .nSpecEqs = 0,
+                                     .nEvComps = {},
                                      .reflectFactor = 0.15,
                                      .referencePressure = 202650.0,
                                      .maxAcousticsLength = 0.02,
-                                     .fields = {{.name = "euler", .numberComponents = 5, .offset = 0}},
+                                     .fields = {ablateTesting::domain::MockField::Create("euler", 5)},
                                      .computeTemperatureFunction =
                                          [](const PetscReal conserved[], PetscReal* property) {
                                              CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
@@ -537,6 +556,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              *property = 251619.82076699712 + 199.99999993015075;  // delta p = stencil-boundary ... stencil = boundary+deltap
                                          },
                                      .fvFaceGeom = {.normal = {0.0, -1.0, 0.0}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+                                     .getPgs = nullptr,
                                      .boundaryValues = {8.694650097350083, -1969470.8091556267, -43.473250486750416, -52.167900584100494, -60.86255068145058},
                                      .stencilValues = {(8.694650097350083 - 0.12298691191290341),
                                                        3000 * (8.694650097350083 - 0.12298691191290341),
@@ -553,10 +573,10 @@ INSTANTIATE_TEST_SUITE_P(
             .reflectFactor = 0.15,
             .referencePressure = 202650.0,
             .maxAcousticsLength = 0.02,
-            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0},
-                       {.name = "densityYi", .numberComponents = 3, .offset = 3},
-                       {.name = "densityEV", .numberComponents = 2, .offset = 6, .tags = {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}},
-                       {.name = "otherEv", .numberComponents = 1, .offset = 8, .tags = {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}}},
+            .fields = {ablateTesting::domain::MockField::Create("euler", 3),
+                       ablateTesting::domain::MockField::Create("densityYi", 3, 3),
+                       ablateTesting::domain::MockField::Create("densityEV", 2, 6, {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}),
+                       ablateTesting::domain::MockField::Create("otherEv", 1, 8, {ablate::finiteVolume::CompressibleFlowFields::EV_TAG})},
             .computeTemperatureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 1.783192, conserved[ff::RHO]);
@@ -674,6 +694,7 @@ INSTANTIATE_TEST_SUITE_P(
                     *property = 251619.82076699706 + 199.99999981373549;  // delta p = stencil-boundary ... stencil = boundary+deltap
                 },
             .fvFaceGeom = {.normal = {-1, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+            .getPgs = nullptr,
             .boundaryValues = {1.783191515808363,
                                -243778.19371678037,
                                -17.831915158083632,
@@ -703,9 +724,9 @@ INSTANTIATE_TEST_SUITE_P(
             .reflectFactor = 0.15,
             .referencePressure = 202650.0,
             .maxAcousticsLength = 0.02,
-            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0},
-                       {.name = "densityYi", .numberComponents = 3, .offset = 3},
-                       {.name = "densityEV", .numberComponents = 2, .offset = 6, .tags = {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}}},
+            .fields = {ablateTesting::domain::MockField::Create("euler", 3),
+                       ablateTesting::domain::MockField::Create("densityYi", 3, 3),
+                       ablateTesting::domain::MockField::Create("densityEV", 2, 6, {ablate::finiteVolume::CompressibleFlowFields::EV_TAG})},
             .computeTemperatureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 1.783192, conserved[ff::RHO]);
@@ -833,9 +854,9 @@ INSTANTIATE_TEST_SUITE_P(
             .reflectFactor = 0.15,
             .referencePressure = 202650.0,
             .maxAcousticsLength = 0.02,
-            .fields = {{.name = "euler", .numberComponents = 3, .offset = 0},
-                       {.name = "densityYi", .numberComponents = 3, .offset = 3},
-                       {.name = "densityEV", .numberComponents = 2, .offset = 6, .tags = {ablate::finiteVolume::CompressibleFlowFields::EV_TAG}}},
+            .fields = {ablateTesting::domain::MockField::Create("euler", 3, 0),
+                       ablateTesting::domain::MockField::Create("densityYi", 3, 3),
+                       ablateTesting::domain::MockField::Create("densityEV", 2, 6, {ablate::finiteVolume::CompressibleFlowFields::EV_TAG})},
             .computeTemperatureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 1.783191515808363, conserved[ff::RHO]);
