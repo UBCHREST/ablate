@@ -83,7 +83,8 @@ INSTANTIATE_TEST_SUITE_P(
     testing::Values((TChemCreateAndViewParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                    .thermoFile = "inputs/eos/thermo30.dat",
                                                    .expectedViewStart = "EOS: TChem\n\tmechFile: \"inputs/eos/grimech30.dat\"\n\tthermoFile: \"inputs/eos/thermo30.dat\"\n\tnumberSpecies: 53\n"},
-                    (TChemCreateAndViewParameters){.mechFile = "inputs/eos/gri30.yaml", .expectedViewStart = "EOS: TChem\n\tmechFile: \"inputs/eos/gri30.yaml\"\n\tnumberSpecies: 53\n"}),
+                    (TChemCreateAndViewParameters){
+                        .mechFile = "inputs/eos/gri30.yaml", .thermoFile = std::filesystem::path(), .expectedViewStart = "EOS: TChem\n\tmechFile: \"inputs/eos/gri30.yaml\"\n\tnumberSpecies: 53\n"}),
     [](const testing::TestParamInfo<TChemCreateAndViewParameters>& info) {
         return testingResources::PetscTestFixture::SanitizeTestName(info.param.mechFile.string() + "_" + info.param.thermoFile.string());
     });
@@ -120,6 +121,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                     "HCNN",  "HCNO",  "HOCN", "HNCO", "NCO",   "AR",   "C3H7",  "C3H8", "CH2CHO", "CH3CHO", "N2"}},
                     (TChemGetSpeciesParameters){
                         .mechFile = "inputs/eos/gri30.yaml",
+                        .thermoFile = std::filesystem::path(),
                         .expectedSpecies = {"H2",    "H",    "O",     "O2",  "OH",   "H2O",  "HO2",  "H2O2", "C",    "CH",   "CH2",   "CH2(S)", "CH3",  "CH4",  "CO",     "CO2",    "HCO", "CH2O",
                                             "CH2OH", "CH3O", "CH3OH", "C2H", "C2H2", "C2H3", "C2H4", "C2H5", "C2H6", "HCCO", "CH2CO", "HCCOH",  "N",    "NH",   "NH2",    "NH3",    "NNH", "NO",
                                             "NO2",   "N2O",  "HNO",   "CN",  "HCN",  "H2CN", "HCNN", "HCNO", "HOCN", "HNCO", "NCO",   "AR",     "C3H7", "C3H8", "CH2CHO", "CH3CHO", "N2"}}
@@ -423,6 +425,7 @@ INSTANTIATE_TEST_SUITE_P(
                         .errorTolerance = 1E-3},
                     ///////// with yaml input ///////
                     (TCTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                                       .thermoFile = std::filesystem::path(),
                                        .fields = {ablateTesting::domain::MockField::Create("euler", 5), ablateTesting::domain::MockField::Create("densityYi", 53, 5)},
                                        .conservedEulerValues = {1.2, 1.2 * 1.0E+05, 1.2 * 10, -1.2 * 20, 1.2 * 30},
                                        .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
@@ -437,6 +440,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                           {ablate::eos::ThermodynamicProperty::Density, {1.2}}},
                                        .errorTolerance = 1E-5},
                     (TCTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                                       .thermoFile = std::filesystem::path(),
                                        .fields = {ablateTesting::domain::MockField::Create("euler", 5, 2), ablateTesting::domain::MockField::Create("densityYi", 53, 7)},
                                        .conservedEulerValues = {1.2, 1.2 * 1.0E+05, 1.2 * 10, -1.2 * 20, 1.2 * 30},
                                        .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
@@ -451,6 +455,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                           {ablate::eos::ThermodynamicProperty::Density, {1.2}}},
                                        .errorTolerance = 1E-5},
                     (TCTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                                       .thermoFile = std::filesystem::path(),
                                        .fields = {ablateTesting::domain::MockField::Create("euler", 5, 53), ablateTesting::domain::MockField::Create("densityYi", 53, 0)},
                                        .conservedEulerValues = {1.2, 1.2 * 1.0E+05, 1.2 * 10, -1.2 * 20, 1.2 * 30},
                                        .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
@@ -465,6 +470,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                           {ablate::eos::ThermodynamicProperty::Density, {1.2}}},
                                        .errorTolerance = 1E-5},
                     (TCTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                                       .thermoFile = std::filesystem::path(),
                                        .fields = {ablateTesting::domain::MockField::Create("euler", 3, 53), ablateTesting::domain::MockField::Create("densityYi", 53, 0)},
                                        .conservedEulerValues = {0.8, 0.8 * 3.2E5, 0.0, 0.0, 0.0},
                                        .yiMap = {{"O2", .3}, {"N2", .4}, {"CH2", .1}, {"NO", .2}},
@@ -479,6 +485,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                           {ablate::eos::ThermodynamicProperty::Density, {0.8}}},
                                        .errorTolerance = 1E-5},
                     (TCTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                                       .thermoFile = std::filesystem::path(),
                                        .fields = {ablateTesting::domain::MockField::Create("euler", 5, 55), ablateTesting::domain::MockField::Create("densityYi", 53, 2)},
                                        .conservedEulerValues = {3.3, 3.3 * 1000, 0.0, 3.3 * 2, 3.3 * 4},
                                        .yiMap = {{"N2", 1.0}},
@@ -493,6 +500,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                           {ablate::eos::ThermodynamicProperty::Density, {3.3}}},
                                        .errorTolerance = 1E-5},
                     (TCTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                                       .thermoFile = std::filesystem::path(),
                                        .fields = {ablateTesting::domain::MockField::Create("euler", 5, 55), ablateTesting::domain::MockField::Create("densityYi", 53, 2)},
                                        .conservedEulerValues = {0.01, 0.01 * 1E5, .01 * -1, .01 * -2, .01 * -3},
                                        .yiMap = {{"H2", .35}, {"H2O", .35}, {"N2", .3}},
@@ -507,6 +515,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                           {ablate::eos::ThermodynamicProperty::Density, {0.01}}},
                                        .errorTolerance = 1E-5},
                     (TCTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                                       .thermoFile = std::filesystem::path(),
                                        .fields = {ablateTesting::domain::MockField::Create("euler", 5), ablateTesting::domain::MockField::Create("densityYi", 53, 5)},
                                        .conservedEulerValues = {999.9, 999.9 * 1.0E+04, 999.9 * -10, 999.9 * -20, 999.9 * -300},
                                        .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
@@ -521,6 +530,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                           {ablate::eos::ThermodynamicProperty::Density, {999.9}}},
                                        .errorTolerance = 1E-5},
                     (TCTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                                       .thermoFile = std::filesystem::path(),
                                        .fields = {ablateTesting::domain::MockField::Create("euler", 3, 0), ablateTesting::domain::MockField::Create("densityYi", 53, 3)},
                                        .conservedEulerValues = {1.0, 1.0 * -88491.929819300756, 0.0},
                                        .yiMap = {{"N2", 1.0}},
@@ -532,6 +542,7 @@ INSTANTIATE_TEST_SUITE_P(
 
                     (TCTestParameters){
                         .mechFile = "inputs/eos/gri30.yaml",
+                        .thermoFile = std::filesystem::path(),
                         .fields = {ablateTesting::domain::MockField::Create("euler", 3, 0), ablateTesting::domain::MockField::Create("densityYi", 53, 3)},
                         .conservedEulerValues = {1.0, 1.0 * -49959.406703496876, 0.0},
                         .yiMap = {{"N2", 1.0}},
@@ -546,6 +557,7 @@ INSTANTIATE_TEST_SUITE_P(
 
                     (TCTestParameters){
                         .mechFile = "inputs/eos/gri30.yaml",
+                        .thermoFile = std::filesystem::path(),
                         .fields = {ablateTesting::domain::MockField::Create("euler", 3, 0), ablateTesting::domain::MockField::Create("densityYi", 53, 3)},
                         .conservedEulerValues = {1.0, 1.0 * 2419837.7937912419, 0.0},
                         .yiMap = {{"N2", 1.0}},
@@ -813,6 +825,7 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TCElementTestFixture,
                                  .expectedElementInformation = {{"AR", 39.948}, {"C", 12.01115}, {"H", 1.00797}, {"N", 14.0067}, {"O", 15.9994}},
                              },
                              (TCElementTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                                                       .thermoFile = std::filesystem::path(),
                                                        .expectedElementInformation = {{"AR", 39.948}, {"C", 12.01115}, {"H", 1.00797}, {"N", 14.0067}, {"O", 15.9994}}}),
                          [](const testing::TestParamInfo<TCElementTestParameters>& info) { return TCElementTestFixture::SanitizeTestName(info.param.mechFile.string()); });
 
@@ -899,6 +912,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                   {"OH", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 0}, {"O", 1}}}}},
         (TCSpeciesInformationTestParameters){
             .mechFile = "inputs/eos/gri30.yaml",
+            .thermoFile = std::filesystem::path(),
             .expectedSpeciesMolecularMass = {{"AR", 39.948},     {"C", 12.0112},    {"C2H", 25.0303},   {"C2H2", 26.0382},  {"C2H3", 27.0462},   {"C2H4", 28.0542},   {"C2H5", 29.0622},
                                              {"C2H6", 30.0701},  {"C3H7", 43.0892}, {"C3H8", 44.0972},  {"CH", 13.0191},    {"CH2", 14.0271},    {"CH2(S)", 14.0271}, {"CH2CHO", 43.0456},
                                              {"CH2CO", 42.0376}, {"CH2O", 30.0265}, {"CH2OH", 31.0345}, {"CH3", 15.0351},   {"CH3CHO", 44.0536}, {"CH3O", 31.0345},   {"CH3OH", 32.0424},
@@ -1051,6 +1065,7 @@ INSTANTIATE_TEST_SUITE_P(
                                         -1.15818e-24, 1.82192e-24, 4.16812e-24,  -2.70267e-24, 1.40856e-18, 2.57528e-14, 1.14893e-17, 1.55882e-16, -1.0375e-10}},
         (TCComputeSourceTestParameters){
             .mechFile = "inputs/eos/gri30.yaml",
+            .thermoFile = std::filesystem::path(),
             .dt = 0.017418748136926492,
             .inputEulerValues = {0.280629, 214342., 0.},
             .inputDensityYiValues = {2.70155e-06, 2.42588e-10, 1.75298e-09, 0.0615735,    5.91967e-09, 0.00013291,  1.42223e-06, 2.69273e-07, 1.17659e-25, 2.62694e-19, 1.04261e-12,
