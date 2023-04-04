@@ -318,7 +318,6 @@ INSTANTIATE_TEST_SUITE_P(
                                         .velocity = {0.0},
                                         .yi = {},
                                         .expectedValue = {65.51624025, 65.51624025 * 8.4734368941450200E+04, 0.0}},
-
         (SGFieldFunctionTestParameters){.options = {{"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}},
                                         .species = {},
                                         .field = "euler",
@@ -362,6 +361,7 @@ INSTANTIATE_TEST_SUITE_P(
                                         .expectedValue = {65.51624025 * .1, 65.51624025 * .3, 65.51624025 * 0.6}},
 
         (SGFieldFunctionTestParameters){.options = {{"gamma", "3.2"}, {"Cp", "100.2"}, {"p0", "3.5e6"}},
+                                        .species = {},
                                         .field = "euler",
                                         .property1 = ablate::eos::ThermodynamicProperty::Pressure,
                                         .property2 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
@@ -371,6 +371,7 @@ INSTANTIATE_TEST_SUITE_P(
                                         .yi = {},
                                         .expectedValue = {65.51624025, 38309597.396116853, 65516.240246779162}},
         (SGFieldFunctionTestParameters){.options = {{"gamma", "3.2"}, {"Cp", "100.2"}, {"p0", "3.5e6"}},
+                                        .species = {},
                                         .field = "euler",
                                         .property1 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
                                         .property2 = ablate::eos::ThermodynamicProperty::Pressure,
