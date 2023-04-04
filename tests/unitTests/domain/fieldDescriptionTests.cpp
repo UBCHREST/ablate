@@ -28,7 +28,7 @@ TEST(FieldDescriptionTests, ShouldBeCreatedByFactoryFunction) {
     EXPECT_CALL(*mockSubFactory, GetFactory("region")).Times(::testing::Exactly(0));
     EXPECT_CALL(*mockSubFactory, Contains(std::string("options"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(false));
     EXPECT_CALL(*mockSubFactory, GetFactory("options")).Times(::testing::Exactly(0));
-    EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::vector<std::string>>{.inputName = "tags", .optional = true}))
+    EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::vector<std::string>>{.inputName = "tags", .description = "", .optional = true}))
         .Times(::testing::Exactly(1))
         .WillOnce(::testing::Return(std::vector<std::string>{"tagA", "tagB", "tagC"}));
     EXPECT_CALL(*mockFactory, GetFactory(std::string("input123"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(mockSubFactory));
