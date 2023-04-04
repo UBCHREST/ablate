@@ -334,6 +334,7 @@ INSTANTIATE_TEST_SUITE_P(
                                           .particleExactVelocity = settlingVelocity,
                                           .f0_v = f0_quiescent_v,
                                           .f0_w = f0_quiescent_w,
+                                          .f0_q = nullptr,
                                           .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
                                           .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.5, 0.5}, std::vector<double>{.5, .5}, 1)},
         (InertialParticleExactParameters){.mpiTestParameter = testingResources::MpiTestParameter("multi inertial particle settling in quiescent fluid", 1,
@@ -353,6 +354,7 @@ INSTANTIATE_TEST_SUITE_P(
                                           .particleExactVelocity = settlingVelocity,
                                           .f0_v = f0_quiescent_v,
                                           .f0_w = f0_quiescent_w,
+                                          .f0_q = nullptr,
                                           .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
                                           .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.2, 0.3}, std::vector<double>{.4, .6}, 10)},
         (InertialParticleExactParameters){.mpiTestParameter = testingResources::MpiTestParameter("deletion inertial particles settling in quiescent fluid", 1,
@@ -372,6 +374,7 @@ INSTANTIATE_TEST_SUITE_P(
                                           .particleExactVelocity = settlingVelocity,
                                           .f0_v = f0_quiescent_v,
                                           .f0_w = f0_quiescent_w,
+                                          .f0_q = nullptr,
                                           .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
                                           .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.92, 0.3}, std::vector<double>{.98, .6}, 10)}),
     [](const testing::TestParamInfo<InertialParticleExactParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
