@@ -245,7 +245,7 @@ INSTANTIATE_TEST_SUITE_P(TwoPhaseTransportTests, TwoPhaseTransportTemperatureTes
                                                  [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) { *property = temperature * 100; })));
                                      },
                                  .conservedIn = {NAN, NAN, 0.75, NAN},
-                                 .fields = {ablateTesting::domain::MockField::Create("OtherField", 0,  0),
+                                 .fields = {ablateTesting::domain::MockField::Create("OtherField", 0, 0),
                                             ablateTesting::domain::MockField::Create(ablate::finiteVolume::processes::TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD, 1, 2)},
                                  .temperature = 1000,
                                  .expectedConductivity = 1500,

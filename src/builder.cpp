@@ -12,7 +12,7 @@ void ablate::Builder::Run(std::shared_ptr<cppParser::Factory> parser) {
     }
 
     // create a time stepper
-    auto timeStepper = parser->Get(cppParser::ArgumentIdentifier<solver::TimeStepper>{.inputName = "timestepper",  .description = "", .optional = false});
+    auto timeStepper = parser->Get(cppParser::ArgumentIdentifier<solver::TimeStepper>{.inputName = "timestepper", .description = "", .optional = false});
 
     // Check to see if a single or multiple solvers were specified
     if (parser->Contains("solver")) {

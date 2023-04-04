@@ -1,11 +1,11 @@
 #include <Kokkos_Core.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
 #include <functional>
+#include "domain/mockField.hpp"
 #include "eos/tChemSoot/sootSpeciesTransportModel.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
-#include "domain/mockField.hpp"
 
 struct SootSpeciesTransportModelTestParameters {
     //! the name of the test
@@ -93,7 +93,7 @@ INSTANTIATE_TEST_SUITE_P(SootSpeciesTransportTests, SootSpeciesTransportModelTes
                              (SootSpeciesTransportModelTestParameters){
                                  .name = "constant_diff",
                                  .getBaseTransportModel = []() { return std::make_shared<ablate::eos::transport::Constant>(.1, .2, .3); },
-                                 .fields = { ablateTesting::domain::MockField::Create(ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD, 6)},
+                                 .fields = {ablateTesting::domain::MockField::Create(ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD, 6)},
 
                                  // expected values
                                  .expectedK = .1,

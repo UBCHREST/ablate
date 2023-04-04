@@ -12,9 +12,11 @@ TEST(ParsedSeriesTests, ShouldBeCreatedFromRegistar) {
     std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
     const std::string expectedClassType = "ablate::mathFunctions::ParsedSeries";
     EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
-    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<std::string>{.inputName = "formula", .description = "", .optional = false})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("x+y+z+t"));
+    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<std::string>{.inputName = "formula", .description = "", .optional = false}))
+        .Times(::testing::Exactly(1))
+        .WillOnce(::testing::Return("x+y+z+t"));
     EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<int>{.inputName = "lowerBound", .description = "", .optional = false})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(1));
-    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<int>{.inputName = "upperBound",  .description = "", .optional = false})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(10));
+    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<int>{.inputName = "upperBound", .description = "", .optional = false})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(10));
     EXPECT_CALL(*mockFactory, Contains("constants")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(false));
 
     // act
