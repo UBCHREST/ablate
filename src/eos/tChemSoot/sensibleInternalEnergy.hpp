@@ -1,7 +1,7 @@
 #ifndef ABLATELIBRARY_TCHEMSOOT_SENSIBLEINTERNALENERGY_HPP
 #define ABLATELIBRARY_TCHEMSOOT_SENSIBLEINTERNALENERGY_HPP
 
-#include <Kokkos_Core.hpp>
+#include <Kokkos_Macros.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
 
 #include "TChem_KineticModelData.hpp"

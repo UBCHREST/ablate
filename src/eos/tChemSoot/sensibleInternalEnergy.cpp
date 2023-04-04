@@ -1,4 +1,4 @@
-#include <Kokkos_Core.hpp>
+#include <Kokkos_Macros.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
 
 #include "sensibleInternalEnergy.hpp"

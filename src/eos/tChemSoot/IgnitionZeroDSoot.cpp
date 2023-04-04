@@ -19,7 +19,7 @@ Questions? Contact Cosmin Safta at <csafta@sandia.gov>, or
 Sandia National Laboratories, Livermore, CA, USA
 ===================================================================================== */
 // #include "finiteVolume/processes/tchemSoot/IgnitionZeroDSoot.hpp"
-#include <Kokkos_Core.hpp>
+#include <Kokkos_Macros.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
 #include "IgnitionZeroDSoot.hpp"
 #include "IgnitionZeroDSoot_Internal.hpp"

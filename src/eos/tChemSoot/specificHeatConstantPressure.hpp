@@ -4,7 +4,7 @@
 
 #ifndef ABLATE_SPECIFICHEATCONSTANTPRESSURE_HPP
 #define ABLATE_SPECIFICHEATCONSTANTPRESSURE_HPP
-#include <Kokkos_Core.hpp>
+#include <Kokkos_Macros.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
 
 #include "TChem_KineticModelData.hpp"

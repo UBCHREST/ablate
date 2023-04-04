@@ -1,6 +1,6 @@
 #ifndef ABLATELIBRARY_TCHEMSOOT_SENSIBLEENTHALPY_HPP
 #define ABLATELIBRARY_TCHEMSOOT_SENSIBLEENTHALPY_HPP
-#include <Kokkos_Core.hpp>
+#include <Kokkos_Macros.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
 
 #include "TChem_KineticModelData.hpp"

@@ -1,6 +1,6 @@
 #ifndef ABLATELIBRARY_SENSIBLEINTERNALENERGYFCN_HPP
 #define ABLATELIBRARY_SENSIBLEINTERNALENERGYFCN_HPP
-#include <Kokkos_Core.hpp>
+#include <Kokkos_Macros.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
 #include <TChem_Impl_EnthalpySpecMl.hpp>
 #include "TChem_KineticModelData.hpp"

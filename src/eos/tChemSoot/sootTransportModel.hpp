@@ -1,6 +1,6 @@
 #ifndef ABLATELIBRARY_SOOTTRANSPORTMODEL_HPP
 #define ABLATELIBRARY_SOOTTRANSPORTMODEL_HPP
-#include <Kokkos_Core.hpp>
+#include <Kokkos_Macros.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
 
 #include <eos/eos.hpp>

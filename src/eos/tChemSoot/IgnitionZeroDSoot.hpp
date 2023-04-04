@@ -20,7 +20,7 @@ Sandia National Laboratories, Livermore, CA, USA
 ===================================================================================== */
 #ifndef ABLATELIBRARY_TCHEM_IGNITION_ZEROD_SOOT_HPP
 #define ABLATELIBRARY_TCHEM_IGNITION_ZEROD_SOOT_HPP
-#include <Kokkos_Core.hpp>
+#include <Kokkos_Macros.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
 
 #include "TChem_KineticModelData.hpp"

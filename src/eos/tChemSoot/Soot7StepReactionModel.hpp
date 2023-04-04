@@ -1,7 +1,7 @@
 #ifndef ABLATELIBRARY_SOOT7STEPREACTIONMODEL_HPP
 #define ABLATELIBRARY_SOOT7STEPREACTIONMODEL_HPP
 
-#include <Kokkos_Core.hpp>
+#include <Kokkos_Macros.hpp>
 #ifndef KOKKOS_ENABLE_CUDA
 
 #include <cmath>
