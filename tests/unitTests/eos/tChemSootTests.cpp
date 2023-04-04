@@ -752,6 +752,7 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemSootElementTestFixture,
                                  .expectedElementInformation = {{"AR", 39.948}, {"C", 12.01115}, {"H", 1.00797}, {"N", 14.0067}, {"O", 15.9994}},
                              },
                              (TChemSootElementTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                                                              .thermoFile = std::filesystem::path(),
                                                               .expectedElementInformation = {{"AR", 39.948}, {"C", 12.01115}, {"H", 1.00797}, {"N", 14.0067}, {"O", 15.9994}}}),
                          [](const testing::TestParamInfo<TChemSootElementTestParameters>& info) { return TChemSootElementTestFixture::SanitizeTestName(info.param.mechFile.string()); });
 
