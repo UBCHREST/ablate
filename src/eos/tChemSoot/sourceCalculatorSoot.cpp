@@ -1,8 +1,11 @@
-#include "sourceCalculatorSoot.hpp"
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
+
 #include <algorithm>
 #include "eos/tChemSoot.hpp"
 #include "eos/tChemSoot/IgnitionZeroDSoot.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "sourceCalculatorSoot.hpp"
 #include "utilities/mpiUtilities.hpp"
 
 ablate::eos::tChemSoot::SourceCalculatorSoot::SourceCalculatorSoot(const std::vector<domain::Field>& fields, const std::shared_ptr<TChemSoot>& eosIn,
@@ -374,3 +377,4 @@ void ablate::eos::tChemSoot::SourceCalculatorSoot::AddSource(const ablate::domai
     VecRestoreArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
     EndEvent();
 }
+#endif

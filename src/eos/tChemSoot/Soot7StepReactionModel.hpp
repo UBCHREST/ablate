@@ -1,5 +1,9 @@
 #ifndef ABLATELIBRARY_SOOT7STEPREACTIONMODEL_HPP
 #define ABLATELIBRARY_SOOT7STEPREACTIONMODEL_HPP
+
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
+
 #include <cmath>
 #include <iostream>
 #include "TChem_Impl_EnthalpySpecMl.hpp"
@@ -248,4 +252,5 @@ KOKKOS_INLINE_FUNCTION static void UpdateSourceWithSootMechanismRatesTemperature
 //        void UpdateSourceWithSootMechanismRates(){}
 
 }  // namespace ablate::eos::tChemSoot::Soot7StepReactionModel
+#endif
 #endif

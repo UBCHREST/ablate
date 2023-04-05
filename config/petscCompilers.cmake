@@ -32,3 +32,21 @@ if (NOT DEFINED CMAKE_CXX_COMPILER)
 
     message("Using found PETSc c++ Compiler/Flags: ${PETSC_CXX_COMPILER} ${PETSC_FLAGS_OUT}\n")
 endif ()
+
+# Check if a CUDA compiler is explicitly stated
+if (NOT DEFINED CMAKE_CUDA_COMPILER)
+    # Set the compilers based upon the PETSc package
+    pkg_get_variable(CMAKE_CUDA_COMPILER PETSc cudacompiler)
+    set(CMAKE_CUDA_COMPILER ${CMAKE_CUDA_COMPILER})
+
+    pkg_get_variable(CMAKE_CUDA_HOST_COMPILER PETSc cuda_cxx)
+    set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CUDA_HOST_COMPILER})
+
+    pkg_get_variable(PETSC_CUDA_FLAGS PETSc cudaflags_extra)
+    configure_flags("${PETSC_CUDA_FLAGS}" PETSC_FLAGS_OUT)
+    set(PETSC_CUDA_FLAGS_INIT ${PETSC_FLAGS_OUT})
+
+    if (DEFINED CMAKE_CUDA_COMPILER)
+        message("Using found PETSc CUDA Compiler/Flags: ${CMAKE_CUDA_COMPILER} ${PETSC_FLAGS_OUT}\n")
+    endif ()
+endif ()

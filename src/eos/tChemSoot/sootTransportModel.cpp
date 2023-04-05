@@ -1,5 +1,8 @@
-#include "sootTransportModel.hpp"
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
+
 #include <algorithm>
+#include "sootTransportModel.hpp"
 
 ablate::eos::tChemSoot::SootTransportModel::SootTransportModel(const std::shared_ptr<TransportModel>& transport, std::string fieldName) : fieldName(fieldName), transport(transport) {}
 ablate::eos::ThermodynamicFunction ablate::eos::tChemSoot::SootTransportModel::GetTransportFunction(ablate::eos::transport::TransportProperty property,
@@ -121,3 +124,4 @@ PetscErrorCode ablate::eos::tChemSoot::SootTransportModel::AdjustSpeciesDiffusio
 
 #include "registrar.hpp"
 REGISTER_DERIVED(ablate::eos::transport::TransportModel, ablate::eos::tChemSoot::SootTransportModel);
+#endif

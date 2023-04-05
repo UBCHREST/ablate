@@ -20,6 +20,8 @@ Sandia National Laboratories, Livermore, CA, USA
 ===================================================================================== */
 #ifndef ABLATELIBRARY_TCHEM_IGNITION_ZEROD_SOOT_HPP
 #define ABLATELIBRARY_TCHEM_IGNITION_ZEROD_SOOT_HPP
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
 
 #include "TChem_KineticModelData.hpp"
 #include "TChem_Util.hpp"
@@ -74,4 +76,5 @@ struct IgnitionZeroDSoot {
 
 }  // namespace ablate::eos::tChemSoot
 
+#endif
 #endif

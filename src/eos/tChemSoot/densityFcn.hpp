@@ -1,5 +1,7 @@
 #ifndef ABLATE_SOOTDENSITYFCN_HPP
 #define ABLATE_SOOTDENSITYFCN_HPP
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
 
 #include <TChem_Impl_RhoMixMs.hpp>
 #include "TChem_KineticModelData.hpp"
@@ -39,4 +41,5 @@ struct densityFcn {
 };
 
 }  // namespace ablate::eos::tChemSoot::impl
+#endif
 #endif

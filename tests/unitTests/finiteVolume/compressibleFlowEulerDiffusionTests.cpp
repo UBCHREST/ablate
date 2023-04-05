@@ -273,19 +273,17 @@ TEST_P(CompressibleFlowEulerDiffusionTestFixture, ShouldConvergeToExactSolution)
 
 INSTANTIATE_TEST_SUITE_P(
     CompressibleFlow, CompressibleFlowEulerDiffusionTestFixture,
-    testing::Values((CompressibleFlowEulerDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction",
-                                                                                        .nproc = 1,
-                                                                                        .arguments = "-dm_plex_separate_marker -ts_adapt_type none "
-                                                                                                     "-ts_max_steps 600 -ts_dt 0.00000625 "},
+    testing::Values((CompressibleFlowEulerDiffusionTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("conduction", 1,
+                                                                                                                          "-dm_plex_separate_marker -ts_adapt_type none "
+                                                                                                                          "-ts_max_steps 600 -ts_dt 0.00000625 "),
                                                                    .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
                                                                    .initialNx = 3,
                                                                    .levels = 3,
                                                                    .expectedL2Convergence = {NAN, 2.25, NAN},
                                                                    .expectedLInfConvergence = {NAN, 2.25, NAN}},
-                    (CompressibleFlowEulerDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction multi mpi",
-                                                                                        .nproc = 2,
-                                                                                        .arguments = "-dm_plex_separate_marker -ts_adapt_type none "
-                                                                                                     " -ts_max_steps 600 -ts_dt 0.00000625 "},
+                    (CompressibleFlowEulerDiffusionTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("conduction multi mpi", 2,
+                                                                                                                          "-dm_plex_separate_marker -ts_adapt_type none "
+                                                                                                                          " -ts_max_steps 600 -ts_dt 0.00000625 "),
                                                                    .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
                                                                    .initialNx = 9,
                                                                    .levels = 2,

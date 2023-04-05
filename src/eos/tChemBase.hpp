@@ -44,6 +44,11 @@ class TChemBase : public ChemistryModel {
     /**
      * Store the primary kinetics data on the device
      */
+    std::shared_ptr<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<host_exec_space>::type>> kineticsModelDataHost;
+
+    /**
+     * Store the primary kinetics data on the device
+     */
     std::shared_ptr<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<exec_space>::type>> kineticsModelDataDevice;
 
     /**
@@ -54,7 +59,12 @@ class TChemBase : public ChemistryModel {
     /**
      * The reference enthalpy per species
      */
-    real_type_1d_view enthalpyReference;
+    real_type_1d_view enthalpyReferenceDevice;
+
+    /**
+     * The reference enthalpy per species
+     */
+    real_type_1d_view_host enthalpyReferenceHost;
 
    public:
     /**
@@ -97,7 +107,7 @@ class TChemBase : public ChemistryModel {
     /**
      * Get the  reference enthalpy per species
      */
-    real_type_1d_view GetEnthalpyOfFormation() { return enthalpyReference; };
+    real_type_1d_view GetEnthalpyOfFormation() { return enthalpyReferenceDevice; };
 
     /**
      * Species supported by this EOS
@@ -120,27 +130,20 @@ class TChemBase : public ChemistryModel {
         PetscInt densityYiOffset;
 
         //! per species state
-        real_type_2d_view stateDevice;
+        real_type_2d_view_host stateHost;
         //! per species array
-        real_type_2d_view perSpeciesDevice;
+        real_type_2d_view_host perSpeciesHost;
         //! mass weighted mixture
-        real_type_1d_view mixtureDevice;
-
-        //! per species state
-        real_type_2d_view stateHost;
-        //! per species array
-        real_type_2d_view perSpeciesHost;
-        //! mass weighted mixture
-        real_type_1d_view mixtureHost;
+        real_type_1d_view_host mixtureHost;
 
         //! store the enthalpyReferencePerSpecies
-        real_type_1d_view enthalpyReference;
+        real_type_1d_view_host enthalpyReferenceHost;
 
         //! the kokkos team policy for this function
-        tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type policy;
+        tChemLib::UseThisTeamPolicy<tChemLib::host_exec_space>::type policy;
 
         //! the kinetics data
-        std::shared_ptr<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<exec_space>::type>> kineticsModelDataDevice;
+        std::shared_ptr<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<host_exec_space>::type>> kineticsModelDataHost;
     };
 
    public:

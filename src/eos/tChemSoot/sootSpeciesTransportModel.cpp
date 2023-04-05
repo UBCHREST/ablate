@@ -1,5 +1,8 @@
-#include "sootSpeciesTransportModel.hpp"
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
+
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "sootSpeciesTransportModel.hpp"
 
 ablate::eos::tChemSoot::SootSpeciesTransportModel::SootSpeciesTransportModel(const std::shared_ptr<TransportModel>& transportModel)
     : SootTransportModel(transportModel, finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD) {}
@@ -7,3 +10,4 @@ ablate::eos::tChemSoot::SootSpeciesTransportModel::SootSpeciesTransportModel(con
 #include "registrar.hpp"
 REGISTER(ablate::eos::transport::TransportModel, ablate::eos::tChemSoot::SootSpeciesTransportModel, "Modifies the transport species model for soot",
          ARG(ablate::eos::transport::TransportModel, "transport", "The baseline transport model.)"));
+#endif

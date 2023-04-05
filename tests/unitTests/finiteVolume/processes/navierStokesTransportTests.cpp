@@ -1,6 +1,7 @@
 #include <petsc.h>
 #include <PetscTestFixture.hpp>
 #include <vector>
+#include "domain/mockField.hpp"
 #include "eos/perfectGas.hpp"
 #include "finiteVolume/fluxCalculator/ausm.hpp"
 #include "finiteVolume/processes/navierStokesTransport.hpp"
@@ -28,7 +29,7 @@ TEST_P(NavierStokesTransportFluxTestFixture, ShouldComputeCorrectFlux) {
 
     // set a perfect gas for testing
     auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>());
-    auto eulerFieldMock = ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 0};
+    auto eulerFieldMock = ablateTesting::domain::MockField::Create("euler", 3);
     eulerFlowData.computeTemperature = eos->GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, {eulerFieldMock});
     eulerFlowData.computeInternalEnergy = eos->GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty::InternalSensibleEnergy, {eulerFieldMock});
     eulerFlowData.computeSpeedOfSound = eos->GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty::SpeedOfSound, {eulerFieldMock});

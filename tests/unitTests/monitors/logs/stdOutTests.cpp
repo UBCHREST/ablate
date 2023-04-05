@@ -41,6 +41,6 @@ TEST_P(StdOutLogTestFixture, ShouldPrintToStdOut) {
 }
 
 INSTANTIATE_TEST_SUITE_P(LogTests, StdOutLogTestFixture,
-                         testing::Values((MpiTestParameter){.testName = "std out 1 proc", .nproc = 1, .expectedOutputFile = "outputs/monitors/logs/stdOutLogFile", .arguments = ""},
-                                         (MpiTestParameter){.testName = "std out 2 proc", .nproc = 2, .expectedOutputFile = "outputs/monitors/logs/stdOutLogFile", .arguments = ""}),
+                         testing::Values(testingResources::MpiTestParameter("std out 1 proc", 1, "", "outputs/monitors/logs/stdOutLogFile"),
+                                         testingResources::MpiTestParameter("std out 2 proc", 2, "", "outputs/monitors/logs/stdOutLogFile")),
                          [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });

@@ -13,7 +13,8 @@ class StreamLog : public Log {
 
    public:
     explicit StreamLog(std::ostream& stream = std::cout);
-
+    // allow access to all print from base
+    using Log::Print;
     void Print(const char*) override;
     void Printf(const char*, ...) override;
 

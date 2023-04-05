@@ -23,6 +23,9 @@ struct MpiTestParameter {
     // an optional list of other files that may be output (expected, actual)
     std::vector<std::pair<std::string, std::string>> expectedFiles;
 
+    MpiTestParameter(std::string testName = "", int nproc = 1, std::string arguments = "", std::string expectedOutputFile = "", std::vector<std::pair<std::string, std::string>> expectedFiles = {})
+        : testName(std::move(testName)), nproc(nproc), expectedOutputFile(std::move(expectedOutputFile)), arguments(std::move(arguments)), expectedFiles(std::move(expectedFiles)) {}
+
     // A sanitized version of the test name
     std::string getTestName() const {
         std::string s = testName;
