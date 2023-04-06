@@ -122,6 +122,21 @@ class TChemBase : public ChemistryModel {
      */
     [[nodiscard]] virtual const std::vector<std::string>& GetProgressVariables() const override { return ablate::utilities::VectorUtilities::Empty<std::string>; }
 
+    /**
+     * Helper function to get the specific EnthalpyOfFormation
+     * @param species
+     * @return
+     */
+    inline double GetEnthalpyOfFormation(std::string_view speciesName) const {
+        auto it = std::find_if(species.begin(), species.end(), [speciesName](const auto& component) { return component == speciesName; });
+        // If element was found
+        if (it != species.end()) {
+            return enthalpyReferenceHost[std::distance(species.begin(), it)];
+        } else {
+            throw std::invalid_argument(std::string("Cannot locate species ") + std::string(speciesName) + " in EOS " + type);
+        }
+    }
+
    protected:
     struct FunctionContext {
         // memory access locations for fields
@@ -152,4 +167,4 @@ class TChemBase : public ChemistryModel {
 };
 
 }  // namespace ablate::eos
-#endif  // ABLATELIBRARY_TCHEM_HPP
+#endif  // ABLATELIBRARY_TCHEMBASE_HPP
