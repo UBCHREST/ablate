@@ -9,7 +9,7 @@
 ---
 # metadata for the simulation
 environment:
-  title: _slabBurner2D
+  title: _slabBurner2D.old
   tagDirectory: false
 # global arguments that can be used by petsc
 arguments:
@@ -85,8 +85,8 @@ timestepper:
       # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
       - !ablate::finiteVolume::CompressibleFlowFields
         # The soot equation of state is an extension of the tChem eos with support for a simple soot model
-        eos: !ablate::eos::TChem  &eos
-          mechFile: MMAReduced.soot.yml
+        eos: !ablate::eos::TChemSoot  &eos
+          mechFile: MMAReduced.yml
           options:
             # set a minimum temperature for the chemical kinetics ode integration
             thresholdTemperature: 560
@@ -94,11 +94,6 @@ timestepper:
         conservedFieldOptions:
           petscfv_type: leastsquares
           petsclimiter_type: vanleer
-
-      # create a conserved field to track ndd
-      - !ablate::finiteVolume::ConservedField
-        name: "Progress"
-        components: [ "NDD" ]
       # by adding a pressure field the code will compute and output pressure
       - !ablate::domain::FieldDescription
         name: pressure
@@ -220,11 +215,6 @@ solvers:
       - !ablate::finiteVolume::processes::ThermophoreticDiffusion
         transport: !ablate::eos::transport::Sutherland
           eos: *eos
-      # use ablate::finiteVolume::processes::Soot to compute ndd and carbon source terms
-      - !ablate::finiteVolume::processes::Soot
-        eos: *eos
-        # set a minimum temperature for the chemical kinetics ode integration
-        thresholdTemperature: 560
     # a flux calculator must be specified to so solver for advection
     fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
       pgs: *pgs
@@ -331,7 +321,7 @@ solvers:
       # the boundary solver monitor is used to record regression rate and heat flux to the surface
       - !ablate::monitors::BoundarySolverMonitor
 
-  # the volume radiation solver compute the gas/gas energy transfer within the gas phase
+      # the volume radiation solver compute the gas/gas energy transfer within the gas phase
   - !ablate::radiation::VolumeRadiation
     id: radiationSolver
     # this is the region for which the solver operates (no boundary cells)

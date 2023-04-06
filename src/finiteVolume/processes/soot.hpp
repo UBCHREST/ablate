@@ -31,6 +31,9 @@ class Soot : public Process {
     // store the dtInit, this may be different from default if set with petsc options
     PetscReal dtInit = dtInitDefault;
 
+    // store an optional threshold temperature.  Only compute the reactions if the temperature is above thresholdTemperature
+    double thresholdTemperature = 0.0;
+
     // Store the species in order
     enum OdeSpecies { C_s = 0, H, H2, C2H2, O, O2, OH, CO, TOTAL_ODE_SPECIES };
 
@@ -182,7 +185,7 @@ class Soot : public Process {
     }
 
    public:
-    explicit Soot(const std::shared_ptr<eos::EOS> &eos, const std::shared_ptr<parameters::Parameters> &options = {});
+    explicit Soot(const std::shared_ptr<eos::EOS> &eos, const std::shared_ptr<parameters::Parameters> &options = {}, double thresholdTemperature = {});
 
     ~Soot() override;
 

@@ -31,8 +31,7 @@ timestepper:
 
       - !ablate::finiteVolume::ConservedField
         name: "Progress"
-        components: ["NDD"]
-
+        components: [ "NDD" ]
 
   # set the initial conditions of the flow field
   initialization:

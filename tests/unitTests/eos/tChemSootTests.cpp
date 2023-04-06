@@ -116,16 +116,16 @@ INSTANTIATE_TEST_SUITE_P(
     TChemSootTests, TChemSootGetSpeciesFixture,
     testing::Values((TChemSootGetSpeciesParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                     .thermoFile = "inputs/eos/thermo30.dat",
-                                                    .expectedSpecies = {"C_solid", "H2",    "H",     "O",    "O2",   "OH",    "H2O",  "HO2",   "H2O2", "C",      "CH",     "CH2",  "CH2(S)", "CH3",
-                                                                        "CH4",     "CO",    "CO2",   "HCO",  "CH2O", "CH2OH", "CH3O", "CH3OH", "C2H",  "C2H2",   "C2H3",   "C2H4", "C2H5",   "C2H6",
-                                                                        "HCCO",    "CH2CO", "HCCOH", "N",    "NH",   "NH2",   "NH3",  "NNH",   "NO",   "NO2",    "N2O",    "HNO",  "CN",     "HCN",
-                                                                        "H2CN",    "HCNN",  "HCNO",  "HOCN", "HNCO", "NCO",   "AR",   "C3H7",  "C3H8", "CH2CHO", "CH3CHO", "N2"}},
+                                                    .expectedSpecies = {"C(S)", "H2",    "H",     "O",    "O2",   "OH",    "H2O",  "HO2",   "H2O2", "C",      "CH",     "CH2",  "CH2(S)", "CH3",
+                                                                        "CH4",  "CO",    "CO2",   "HCO",  "CH2O", "CH2OH", "CH3O", "CH3OH", "C2H",  "C2H2",   "C2H3",   "C2H4", "C2H5",   "C2H6",
+                                                                        "HCCO", "CH2CO", "HCCOH", "N",    "NH",   "NH2",   "NH3",  "NNH",   "NO",   "NO2",    "N2O",    "HNO",  "CN",     "HCN",
+                                                                        "H2CN", "HCNN",  "HCNO",  "HOCN", "HNCO", "NCO",   "AR",   "C3H7",  "C3H8", "CH2CHO", "CH3CHO", "N2"}},
                     (TChemSootGetSpeciesParameters){
                         .mechFile = "inputs/eos/gri30.yaml",
                         .thermoFile = std::filesystem::path(),
-                        .expectedSpecies = {"C_solid", "H2",    "H",    "O",     "O2",  "OH",   "H2O",  "HO2",  "H2O2", "C",    "CH",   "CH2",   "CH2(S)", "CH3",  "CH4",  "CO",     "CO2",    "HCO",
-                                            "CH2O",    "CH2OH", "CH3O", "CH3OH", "C2H", "C2H2", "C2H3", "C2H4", "C2H5", "C2H6", "HCCO", "CH2CO", "HCCOH",  "N",    "NH",   "NH2",    "NH3",    "NNH",
-                                            "NO",      "NO2",   "N2O",  "HNO",   "CN",  "HCN",  "H2CN", "HCNN", "HCNO", "HOCN", "HNCO", "NCO",   "AR",     "C3H7", "C3H8", "CH2CHO", "CH3CHO", "N2"}}
+                        .expectedSpecies = {"C(S)", "H2",    "H",    "O",     "O2",  "OH",   "H2O",  "HO2",  "H2O2", "C",    "CH",   "CH2",   "CH2(S)", "CH3",  "CH4",  "CO",     "CO2",    "HCO",
+                                            "CH2O", "CH2OH", "CH3O", "CH3OH", "C2H", "C2H2", "C2H3", "C2H4", "C2H5", "C2H6", "HCCO", "CH2CO", "HCCOH",  "N",    "NH",   "NH2",    "NH3",    "NNH",
+                                            "NO",   "NO2",   "N2O",  "HNO",   "CN",  "HCN",  "H2CN", "HCNN", "HCNO", "HOCN", "HNCO", "NCO",   "AR",     "C3H7", "C3H8", "CH2CHO", "CH3CHO", "N2"}}
 
                     ),
     [](const testing::TestParamInfo<TChemSootGetSpeciesParameters>& info) {
@@ -789,7 +789,7 @@ TEST_P(TChemSootSpeciesInformationTestFixture, ShouldDetermineSpeciesElementInfo
 
     // act
     auto speciesElementInformation = eos->GetSpeciesElementalInformation();
-    auto soot = speciesElementInformation["C_solid"];
+    auto soot = speciesElementInformation["C(S)"];
     std::cout << &soot;
     // assert
     ASSERT_EQ(params.expectedSpeciesElementInformation, speciesElementInformation);
@@ -826,7 +826,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              {"H2O", 18.0153},   {"H2O2", 34.0147}, {"HCCO", 41.0297},  {"HCCOH", 42.0376}, {"HCN", 27.0258},    {"HCNN", 41.0325},   {"HCNO", 43.0252},
                                              {"HCO", 29.0185},   {"HNCO", 43.0252}, {"HNO", 31.0141},   {"HO2", 33.0068},   {"HOCN", 43.0252},   {"N", 14.0067},      {"N2", 28.0134},
                                              {"N2O", 44.0128},   {"NCO", 42.0173},  {"NH", 15.0147},    {"NH2", 16.0226},   {"NH3", 17.0306},    {"NNH", 29.0214},    {"NO", 30.0061},
-                                             {"NO2", 46.0055},   {"O", 15.9994},    {"O2", 31.9988},    {"OH", 17.0074},    {"C_solid", 12.0107}},
+                                             {"NO2", 46.0055},   {"O", 15.9994},    {"O2", 31.9988},    {"OH", 17.0074},    {"C(S)", 12.0107}},
             .expectedSpeciesElementInformation = {{"AR", {{"AR", 1}, {"C", 0}, {"H", 0}, {"N", 0}, {"O", 0}}},     {"C", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 0}, {"O", 0}}},
                                                   {"C2H", {{"AR", 0}, {"C", 2}, {"H", 1}, {"N", 0}, {"O", 0}}},    {"C2H2", {{"AR", 0}, {"C", 2}, {"H", 2}, {"N", 0}, {"O", 0}}},
                                                   {"C2H3", {{"AR", 0}, {"C", 2}, {"H", 3}, {"N", 0}, {"O", 0}}},   {"C2H4", {{"AR", 0}, {"C", 2}, {"H", 4}, {"N", 0}, {"O", 0}}},
@@ -853,7 +853,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                   {"NH3", {{"AR", 0}, {"C", 0}, {"H", 3}, {"N", 1}, {"O", 0}}},    {"NNH", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 2}, {"O", 0}}},
                                                   {"NO", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 1}, {"O", 1}}},     {"NO2", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 1}, {"O", 2}}},
                                                   {"O", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 0}, {"O", 1}}},      {"O2", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 0}, {"O", 2}}},
-                                                  {"OH", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 0}, {"O", 1}}},     {"C_solid", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 0}, {"O", 0}}}}},
+                                                  {"OH", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 0}, {"O", 1}}},     {"C(S)", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 0}, {"O", 0}}}}},
         (TChemSootSpeciesInformationTestParameters){
             .mechFile = "inputs/eos/gri30.yaml",
             .thermoFile = std::filesystem::path(),
@@ -864,7 +864,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              {"H2O", 18.0153},   {"H2O2", 34.0147}, {"HCCO", 41.0297},  {"HCCOH", 42.0376}, {"HCN", 27.0258},    {"HCNN", 41.0325},   {"HCNO", 43.0252},
                                              {"HCO", 29.0185},   {"HNCO", 43.0252}, {"HNO", 31.0141},   {"HO2", 33.0068},   {"HOCN", 43.0252},   {"N", 14.0067},      {"N2", 28.0134},
                                              {"N2O", 44.0128},   {"NCO", 42.0173},  {"NH", 15.0147},    {"NH2", 16.0226},   {"NH3", 17.0306},    {"NNH", 29.0214},    {"NO", 30.0061},
-                                             {"NO2", 46.0055},   {"O", 15.9994},    {"O2", 31.9988},    {"OH", 17.0074},    {"C_solid", 12.0107}},
+                                             {"NO2", 46.0055},   {"O", 15.9994},    {"O2", 31.9988},    {"OH", 17.0074},    {"C(S)", 12.0107}},
             .expectedSpeciesElementInformation = {{"AR", {{"AR", 1}, {"C", 0}, {"H", 0}, {"N", 0}, {"O", 0}}},     {"C", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 0}, {"O", 0}}},
                                                   {"C2H", {{"AR", 0}, {"C", 2}, {"H", 1}, {"N", 0}, {"O", 0}}},    {"C2H2", {{"AR", 0}, {"C", 2}, {"H", 2}, {"N", 0}, {"O", 0}}},
                                                   {"C2H3", {{"AR", 0}, {"C", 2}, {"H", 3}, {"N", 0}, {"O", 0}}},   {"C2H4", {{"AR", 0}, {"C", 2}, {"H", 4}, {"N", 0}, {"O", 0}}},
@@ -891,7 +891,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                   {"NH3", {{"AR", 0}, {"C", 0}, {"H", 3}, {"N", 1}, {"O", 0}}},    {"NNH", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 2}, {"O", 0}}},
                                                   {"NO", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 1}, {"O", 1}}},     {"NO2", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 1}, {"O", 2}}},
                                                   {"O", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 0}, {"O", 1}}},      {"O2", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 0}, {"O", 2}}},
-                                                  {"OH", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 0}, {"O", 1}}},     {"C_solid", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 0}, {"O", 0}}}}}),
+                                                  {"OH", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 0}, {"O", 1}}},     {"C(S)", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 0}, {"O", 0}}}}}),
     [](const testing::TestParamInfo<TChemSootSpeciesInformationTestParameters>& info) { return TChemSootSpeciesInformationTestFixture::SanitizeTestName(info.param.mechFile.string()); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

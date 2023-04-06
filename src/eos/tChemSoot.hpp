@@ -31,7 +31,7 @@ class TChemSoot : public TChemBase, public std::enable_shared_from_this<ablate::
     /**
      * The name of the solid species
      */
-    static inline std::string CSolidName = "C_solid";
+    static inline std::string CSolidName = "C(S)";
 
     /**
      * The name of the Soot Number Density progress variable
@@ -269,7 +269,7 @@ class TChemSoot : public TChemBase, public std::enable_shared_from_this<ablate::
     /**
      * The name of the solid species
      */
-    static inline std::string CSolidName = "C_solid";
+    static inline std::string CSolidName = "C(S)";
 
     /**
      * The name of the Soot Number Density progress variable

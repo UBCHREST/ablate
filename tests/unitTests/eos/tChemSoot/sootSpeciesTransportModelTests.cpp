@@ -93,7 +93,7 @@ INSTANTIATE_TEST_SUITE_P(SootSpeciesTransportTests, SootSpeciesTransportModelTes
                              (SootSpeciesTransportModelTestParameters){
                                  .name = "constant_diff",
                                  .getBaseTransportModel = []() { return std::make_shared<ablate::eos::transport::Constant>(.1, .2, .3); },
-                                 .fields = {ablateTesting::domain::MockField::Create(ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD, 6)},
+                                 .fields = {ablateTesting::domain::MockField::Create(ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD, {"C(S)", "a", "b", "c", "d", "e"})},
 
                                  // expected values
                                  .expectedK = .1,
@@ -107,7 +107,7 @@ INSTANTIATE_TEST_SUITE_P(SootSpeciesTransportTests, SootSpeciesTransportModelTes
                                      []() {
                                          return std::make_shared<ablate::eos::transport::Constant>(.1, .2, std::vector<double>{.3, .4, .5, .6});
                                      },
-                                 .fields = {ablateTesting::domain::MockField::Create(ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD, 4)},
+                                 .fields = {ablateTesting::domain::MockField::Create(ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD, {"C(S)", "a", "b", "c"})},
 
                                  // expected values
                                  .expectedK = .1,

@@ -2,7 +2,8 @@
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/petscUtilities.hpp"
 
-ablate::finiteVolume::processes::Soot::Soot(const std::shared_ptr<eos::EOS>& eosIn, const std::shared_ptr<parameters::Parameters>& options) : eos(std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
+ablate::finiteVolume::processes::Soot::Soot(const std::shared_ptr<eos::EOS>& eosIn, const std::shared_ptr<parameters::Parameters>& options, double thresholdTemperature)
+    : eos(std::dynamic_pointer_cast<eos::TChem>(eosIn)), thresholdTemperature(thresholdTemperature) {
     // make sure that the eos is set
     if (!std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
         throw std::invalid_argument("ablate::finiteVolume::processes::Soot only accepts EOS of type eos::TChem");
@@ -182,58 +183,65 @@ PetscErrorCode ablate::finiteVolume::processes::Soot::ComputeSootChemistryPreSte
             PetscReal* temperature;
             PetscCall(DMPlexPointLocalFieldRead(temperatureDm, cell, temperatureField.id, temperatureArray, &temperature));
 
-            // get access to the point ode solver
-            PetscScalar* pointArray;
-            PetscCall(VecGetArray(soot->pointData, &pointArray));
-            PetscReal density = conserved[flowEulerId.offset + ablate::finiteVolume::CompressibleFlowFields::RHO];
-            pointInformation.currentDensity = density;
-            pointArray[ODE_T] = *temperature;
-            pointArray[ODE_NDD] = conserved[flowDensityProgressId.offset] / density / NddScaling;
+            if (*temperature > soot->thresholdTemperature) {
+                // get access to the point ode solver
+                PetscScalar* pointArray;
+                PetscCall(VecGetArray(soot->pointData, &pointArray));
+                PetscReal density = conserved[flowEulerId.offset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+                pointInformation.currentDensity = density;
+                pointArray[ODE_T] = *temperature;
+                pointArray[ODE_NDD] = conserved[flowDensityProgressId.offset] / density / NddScaling;
 
-            // Fill the yi scratch
-            for (PetscInt s = 0; s < flowDensityYiId.numberComponents; s++) {
-                pointInformation.yiScratch[s] = PetscMin(PetscMax(0.0, conserved[flowDensityYiId.offset + s] / density), 1.0);
+                // Fill the yi scratch
+                for (PetscInt s = 0; s < flowDensityYiId.numberComponents; s++) {
+                    pointInformation.yiScratch[s] = PetscMin(PetscMax(0.0, conserved[flowDensityYiId.offset + s] / density), 1.0);
+                }
+
+                for (std::size_t s = 0; s < TOTAL_ODE_SPECIES; s++) {
+                    pointArray[s] = pointInformation.yiScratch[pointInformation.speciesIndex[s]];
+                }
+
+                // Compute the Cv,mix
+                PetscCall(VecRestoreArray(soot->pointData, &pointArray));
+
+                // Do a soft reset on the ode solver
+                PetscCall(TSSetTime(soot->pointTs, time));
+                PetscCall(TSSetMaxTime(soot->pointTs, time + dt));
+                PetscCall(TSSetTimeStep(soot->pointTs, soot->dtInit));
+                PetscCall(TSSetStepNumber(soot->pointTs, 0));
+
+                // solver for this point
+                PetscCall(TSSolve(soot->pointTs, soot->pointData));
+
+                // Use the updated values to compute the source terms for euler and species transport
+                PetscScalar* fieldSource;
+                PetscCall(DMPlexPointLocalRef(soot->sourceDm, cell, sourceArray, &fieldSource));
+
+                // get the array data again
+                PetscCall(VecGetArray(soot->pointData, &pointArray));
+
+                // store the computed source terms
+                fieldSource[ODE_T] = 0.0;
+                for (PetscInt s = 0; s < TOTAL_ODE_SPECIES; ++s) {
+                    fieldSource[ODE_T] += (conserved[pointInformation.speciesOffset[s]] / density - pointArray[s]) * pointInformation.enthalpyOfFormation[s];
+                    fieldSource[s] = pointArray[s] - conserved[pointInformation.speciesOffset[s]] / density;
+                }
+                // Add in the source term for the change in ndd
+                fieldSource[ODE_NDD] = pointArray[ODE_NDD] * NddScaling - conserved[flowDensityProgressId.offset] / density;
+
+                // Now scale everything by density/dt
+                for (PetscInt i = 0; i < TotalEquations; i++) {
+                    // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
+                    fieldSource[i] *= density / dt;
+                }
+
+                PetscCall(VecRestoreArray(soot->pointData, &pointArray));
+            } else {
+                // Use the updated values to compute the source terms for euler and species transport
+                PetscScalar* fieldSource;
+                PetscCall(DMPlexPointLocalRef(soot->sourceDm, cell, sourceArray, &fieldSource));
+                PetscArrayzero(fieldSource, TotalEquations);
             }
-
-            for (std::size_t s = 0; s < TOTAL_ODE_SPECIES; s++) {
-                pointArray[s] = pointInformation.yiScratch[pointInformation.speciesIndex[s]];
-            }
-
-            // Compute the Cv,mix
-            PetscCall(VecRestoreArray(soot->pointData, &pointArray));
-
-            // Do a soft reset on the ode solver
-            PetscCall(TSSetTime(soot->pointTs, time));
-            PetscCall(TSSetMaxTime(soot->pointTs, time + dt));
-            PetscCall(TSSetTimeStep(soot->pointTs, soot->dtInit));
-            PetscCall(TSSetStepNumber(soot->pointTs, 0));
-
-            // solver for this point
-            PetscCall(TSSolve(soot->pointTs, soot->pointData));
-
-            // Use the updated values to compute the source terms for euler and species transport
-            PetscScalar* fieldSource;
-            PetscCall(DMPlexPointLocalRef(soot->sourceDm, cell, sourceArray, &fieldSource));
-
-            // get the array data again
-            PetscCall(VecGetArray(soot->pointData, &pointArray));
-
-            // store the computed source terms
-            fieldSource[ODE_T] = 0.0;
-            for (PetscInt s = 0; s < TOTAL_ODE_SPECIES; ++s) {
-                fieldSource[ODE_T] += (conserved[pointInformation.speciesOffset[s]] / density - pointArray[s]) * pointInformation.enthalpyOfFormation[s];
-                fieldSource[s] = pointArray[s] - conserved[pointInformation.speciesOffset[s]] / density;
-            }
-            // Add in the source term for the change in ndd
-            fieldSource[ODE_NDD] = pointArray[ODE_NDD] * NddScaling - conserved[flowDensityProgressId.offset] / density;
-
-            // Now scale everything by density/dt
-            for (PetscInt i = 0; i < TotalEquations; i++) {
-                // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-                fieldSource[i] *= density / dt;
-            }
-
-            PetscCall(VecRestoreArray(soot->pointData, &pointArray));
         }
     }
 
@@ -287,8 +295,8 @@ PetscErrorCode ablate::finiteVolume::processes::Soot::AddSootChemistrySourceToFl
                 rhs[soot->pointInformation.speciesOffset[s]] += source[s];
             }
             // Add in the energy source, it was stored in the temperature location
-            rhs[flowEulerId.offset + ablate::finiteVolume::CompressibleFlowFields::RHO] = source[ODE_T];
-            rhs[flowDensityProgressId.offset] = source[ODE_NDD];
+            rhs[flowEulerId.offset + ablate::finiteVolume::CompressibleFlowFields::RHOE] += source[ODE_T];
+            rhs[flowDensityProgressId.offset] += source[ODE_NDD];
         }
     }
 
@@ -303,16 +311,19 @@ PetscErrorCode ablate::finiteVolume::processes::Soot::SinglePointSootChemistryRH
     auto pointInfo = (OdePointInformation*)ctx;
 
     // extract the read/write arrays
-    const PetscScalar* xArray;
-    PetscCall(VecGetArrayRead(xVec, &xArray));
+    PetscScalar* xArray;
+    PetscCall(VecGetArray(xVec, &xArray));
     PetscCall(VecZeroEntries(fVec));
     PetscScalar* fArray;
     PetscCall(VecGetArray(fVec, &fArray));
 
     // copy over the updated to the scratch variable for now
     for (std::size_t s = 0; s < TOTAL_ODE_SPECIES; s++) {
+        xArray[s] = PetscMax(PetscMin(xArray[s], 1.0), 0.0);
         pointInfo->yiScratch[pointInfo->speciesIndex[s]] = xArray[s];
     }
+    xArray[ODE_T] = PetscMax(xArray[ODE_T], 0);
+    xArray[ODE_NDD] = PetscMax(xArray[ODE_NDD], 0);
 
     // Add in the Soot Reaction Sources
     real_type SVF = xArray[C_s] * pointInfo->currentDensity / solidCarbonDensity;
@@ -375,11 +386,12 @@ PetscErrorCode ablate::finiteVolume::processes::Soot::SinglePointSootChemistryRH
     }
     fArray[ODE_T] /= -cv;
 
-    PetscCall(VecRestoreArrayRead(xVec, &xArray));
+    PetscCall(VecRestoreArray(xVec, &xArray));
     PetscCall(VecRestoreArray(fVec, &fArray));
     PetscFunctionReturn(0);
 }
 
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::Soot, "Soot only reactions", ARG(ablate::eos::EOS, "eos", "the tChem eos"),
-         OPT(ablate::parameters::Parameters, "options", "any PETSc options for the chemistry ts"));
+         OPT(ablate::parameters::Parameters, "options", "any PETSc options for the chemistry ts"),
+         OPT(double, "thresholdTemperature", "set a minimum temperature for the chemical kinetics ode integration"));
