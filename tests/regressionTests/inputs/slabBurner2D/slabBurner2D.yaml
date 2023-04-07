@@ -331,7 +331,7 @@ solvers:
       # the boundary solver monitor is used to record regression rate and heat flux to the surface
       - !ablate::monitors::BoundarySolverMonitor
 
-  # the volume radiation solver compute the gas/gas energy transfer within the gas phase
+      # the volume radiation solver compute the gas/gas energy transfer within the gas phase
   - !ablate::radiation::VolumeRadiation
     id: radiationSolver
     # this is the region for which the solver operates (no boundary cells)
