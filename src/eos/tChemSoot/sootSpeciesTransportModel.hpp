@@ -19,6 +19,22 @@ class SootSpeciesTransportModel : public SootTransportModel {
      * @param transport the base transport model
      */
     explicit SootSpeciesTransportModel(const std::shared_ptr<TransportModel>& transportModel);
+
+    /**
+     * Single function to produce transport function for any property based upon the available fields
+     * @param property
+     * @param fields
+     * @return
+     */
+    [[nodiscard]] ThermodynamicFunction GetTransportFunction(eos::transport::TransportProperty property, const std::vector<domain::Field>& fields) const override;
+
+    /**
+     * Single function to produce thermodynamic function for any property based upon the available fields and temperature
+     * @param property
+     * @param fields
+     * @return
+     */
+    [[nodiscard]] ThermodynamicTemperatureFunction GetTransportTemperatureFunction(eos::transport::TransportProperty property, const std::vector<domain::Field>& fields) const override;
 };
 }  // namespace ablate::eos::tChemSoot
 

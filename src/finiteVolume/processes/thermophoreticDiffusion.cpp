@@ -24,6 +24,11 @@ void ablate::finiteVolume::processes::ThermophoreticDiffusion::Setup(ablate::fin
                              {CompressibleFlowFields::TEMPERATURE_FIELD});
 
     viscosityTemperatureFunction = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Viscosity, flow.GetSubDomain().GetFields());
+
+    // Make sure that soot is the first species
+    if (flow.GetSubDomain().GetField(CompressibleFlowFields::DENSITY_YI_FIELD).ComponentIndex(eos::TChemSoot::CSolidName) != 0) {
+        throw std::invalid_argument("ablate::finiteVolume::processes::ThermophoreticDiffusion assumes " + eos::TChemSoot::CSolidName + " is the first species.");
+    }
 }
 
 PetscErrorCode ablate::finiteVolume::processes::ThermophoreticDiffusion::ThermophoreticDiffusionEnergyFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[],

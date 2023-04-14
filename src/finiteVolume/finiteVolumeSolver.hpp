@@ -27,7 +27,7 @@ class FiniteVolumeSolver : public solver::CellSolver,
                            public solver::PhysicsTimeStepFunction,
                            private utilities::Loggable<FiniteVolumeSolver> {
    public:
-    using PreRHSFunctionDefinition = PetscErrorCode (*)(const FiniteVolumeSolver&, TS ts, PetscReal time, bool initialStage, Vec locX, void* ctx);
+    using PreRHSFunctionDefinition = PetscErrorCode (*)(FiniteVolumeSolver&, TS ts, PetscReal time, bool initialStage, Vec locX, void* ctx);
     using RHSArbitraryFunction = PetscErrorCode (*)(const FiniteVolumeSolver&, DM dm, PetscReal time, Vec locXVec, Vec locFVec, void* ctx);
     using ComputeTimeStepFunction = double (*)(TS ts, FiniteVolumeSolver&, void* ctx);
 

@@ -47,18 +47,20 @@ INSTANTIATE_TEST_SUITE_P(VolumeOfFluids, IntegrationTestsSpecifier,
                                          MpiTestParameter("inputs/volumeOfFluids/waterGravity.yaml", 1, "", "outputs/volumeOfFluids/waterGravity.txt")),
                          [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
-INSTANTIATE_TEST_SUITE_P(ReactingFlow, IntegrationTestsSpecifier,
-                         testing::Values(
+INSTANTIATE_TEST_SUITE_P(
+    ReactingFlow, IntegrationTestsSpecifier,
+    testing::Values(
 
-                             MpiTestParameter("inputs/reactingFlow/simpleReactingFlow.yaml", 1, "", "outputs/reactingFlow/simpleReactingFlow.txt"),
-                             MpiTestParameter("inputs/reactingFlow/sampleDiffusionFlame.yaml", 1, "", "outputs/reactingFlow/sampleDiffusionFlame.txt"),
-                             MpiTestParameter("inputs/reactingFlow/sampleSootDiffusionFlame.yaml", 1, "", "outputs/reactingFlow/sampleSootDiffusionFlame.txt"),
-                             MpiTestParameter("inputs/reactingFlow/ignitionDelayGriMech.yaml", 1, "", "",
-                                              {{"outputs/reactingFlow/ignitionDelayGriMech.PeakYi.txt", "ignitionDelayPeakYi.txt"},
-                                               {"outputs/reactingFlow/ignitionDelayGriMech.Temperature.txt", "ignitionDelayTemperature.csv"}}),
-                             MpiTestParameter("inputs/reactingFlow/ignitionDelay2S_CH4_CM2.yaml", 1, "", "",
-                                              {{"outputs/reactingFlow/ignitionDelay2S_CH4_CM2.Temperature.txt", "ignitionDelayTemperature.txt"}})),
-                         [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
+        MpiTestParameter("inputs/reactingFlow/simpleReactingFlow.yaml", 1, "", "outputs/reactingFlow/simpleReactingFlow.txt"),
+        MpiTestParameter("inputs/reactingFlow/sampleDiffusionFlame.yaml", 1, "", "outputs/reactingFlow/sampleDiffusionFlame.txt"),
+        MpiTestParameter("inputs/reactingFlow/sampleSootDiffusionFlame.yaml", 1, "", "outputs/reactingFlow/sampleSootDiffusionFlame.txt"),
+        MpiTestParameter("inputs/reactingFlow/ignitionDelayGriMech.yaml", 1, "", "",
+                         {{"outputs/reactingFlow/ignitionDelayGriMech.PeakYi.txt", "ignitionDelayPeakYi.txt"},
+                          {"outputs/reactingFlow/ignitionDelayGriMech.Temperature.txt", "ignitionDelayTemperature.csv"}}),
+        MpiTestParameter("inputs/reactingFlow/ignitionDelay2S_CH4_CM2.yaml", 1, "", "", {{"outputs/reactingFlow/ignitionDelay2S_CH4_CM2.Temperature.txt", "ignitionDelayTemperature.txt"}}),
+        MpiTestParameter("inputs/reactingFlow/ignitionDelayMMASoot.yaml", 1, "", "", {{"outputs/reactingFlow/ignitionDelayMMASoot.Temperature.txt", "ignitionDelayTemperature.csv"}}),
+        MpiTestParameter("inputs/reactingFlow/ignitionDelayMMASootProcess.yaml", 1, "", "", {{"outputs/reactingFlow/ignitionDelayMMASootProcess.Temperature.txt", "ignitionDelayTemperature.csv"}})),
+    [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
 INSTANTIATE_TEST_SUITE_P(Machinery, IntegrationTestsSpecifier,
                          testing::Values(MpiTestParameter("inputs/machinery/dmViewFromOptions.yaml", 1, "", "outputs/machinery/dmViewFromOptions.txt"),
