@@ -2,7 +2,7 @@
 ---
 # metadata for the simulation
 environment:
-  title: subDomainFVM
+  title: _subDomainFVM
   tagDirectory: false
 arguments: 
   dm_plex_separate_marker: ""
