@@ -49,8 +49,9 @@ class PetscUtilities {
      * Support for setting global petsc options with a prefix and options map
      * @param prefix
      * @param options
+     * @param override force override existing options if present (default true)
      */
-    static void Set(const std::string& prefix, const std::map<std::string, std::string>& options);
+    static void Set(const std::string& prefix, const std::map<std::string, std::string>& options, bool override = true);
 
     /**
      * Support for setting global petsc options with a msp
