@@ -69,7 +69,7 @@ INSTANTIATE_TEST_SUITE_P(ParsedSeriesTests, ParsedSeriesTestsScalarFixture,
                                          (ParsedSeriesTestsScalarParameters){.formula = "i*x + y", .lowerBound = 0, .upperBound = 0, .constants = {}, .expectedResult = 2},
                                          (ParsedSeriesTestsScalarParameters){.formula = "t*i*i", .lowerBound = 0, .upperBound = 10, .constants = {}, .expectedResult = 1540},
                                          (ParsedSeriesTestsScalarParameters){
-                                             .formula = "t*i*i*a", .lowerBound = 0, .upperBound = 10, .constants = ablate::parameters::MapParameters::Create({{"a", "0.5"}}), .expectedResult = 770}));
+                                             .formula = "t*i*i*a", .lowerBound = 0, .upperBound = 10, .constants = ablate::parameters::MapParameters::Create({{"a", 0.5}}), .expectedResult = 770}));
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct ParsedSeriesTestsVectorParameters {
@@ -143,7 +143,7 @@ INSTANTIATE_TEST_SUITE_P(ParsedSeriesTests, ParsedSeriesTestsVectorFixture,
                                          (ParsedSeriesTestsVectorParameters){.formula = "b, i*y*a, t*c",
                                                                              .lowerBound = 1,
                                                                              .upperBound = 10,
-                                                                             .constants = ablate::parameters::MapParameters::Create({{"c", "3"}, {"a", "0.5"}, {"b", "1.5"}}),
+                                                                             .constants = ablate::parameters::MapParameters::Create({{"c", 3}, {"a", 0.5}, {"b", 1.5}}),
                                                                              .expectedResult = {15, 55, 120}}));
 
 }  // namespace ablateTesting::mathFunctions

@@ -135,7 +135,7 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
 
             // create a time stepper
             auto timeStepper = ablate::solver::TimeStepper(mesh,
-                                                           ablate::parameters::MapParameters::Create({{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}}),
+                                                           ablate::parameters::MapParameters::Create({{"ts_dt", 5.e-01}, {"ts_type", "rk"}, {"ts_max_time", 15.0}, {"ts_adapt_type", "none"}}),
                                                            {},
                                                            initialization,
                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, evExactField});
