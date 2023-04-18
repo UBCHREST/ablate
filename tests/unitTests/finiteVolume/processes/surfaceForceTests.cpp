@@ -144,4 +144,5 @@ INSTANTIATE_TEST_SUITE_P(SurfaceForce, SurfaceForceTestFixture,
                                                                       .inputVFfield = ablate::mathFunctions::Create(" x<2/3 && y< 2/3  && z< 1? 1:0"),
                                                                       .expectedEulerSource = {0, -0.890954544, -0.445477, -0.445477, 0}}  // should calculate energy also
 
-                                         ));
+                                         ),
+                         [](const testing::TestParamInfo<SurfaceForceTestParameters> &info) { return "SurfaceForceTest" + std::to_string(info.index); });
