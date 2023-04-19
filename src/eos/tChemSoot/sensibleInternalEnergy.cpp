@@ -1,3 +1,6 @@
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
+
 #include "sensibleInternalEnergy.hpp"
 #include "sensibleInternalEnergyFcn.hpp"
 
@@ -65,3 +68,4 @@ void SensibleInternalEnergy_TemplateRun(const std::string& profile_name,
                                                                                    const ablate::eos::tChemSoot::SensibleInternalEnergy::kinetic_model_host_type& kmcd) {
     ablate::eos::tChemSoot::impl::SensibleInternalEnergy_TemplateRun("ablate::eos::tChem::SensibleInternalEnergy::runHostBatch", policy, state, internalEnergyRef, enthalpyMass, enthalpyRef, kmcd);
 }
+#endif

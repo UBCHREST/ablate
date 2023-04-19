@@ -26,6 +26,8 @@ class NullLog : public Log {
     inline static std::ostream nullStream = std::ostream(&nullBuffer);
 
    public:
+    // allow access to all print from base
+    using Log::Print;
     void Print(const char*) override {}
     void Printf(const char*, ...) override {}
     void Initialize(MPI_Comm comm) override {}

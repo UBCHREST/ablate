@@ -1,7 +1,10 @@
-#include "speedOfSound.hpp"
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
+
 #include "TChem_Impl_CpMixMs.hpp"
 #include "TChem_Impl_MolarWeights.hpp"
 #include "eos/tChemSoot.hpp"
+#include "speedOfSound.hpp"
 
 namespace tChemLib = TChem;
 // In a LHF Formulation, Speed of sound is just the gaseous speed of sound
@@ -77,3 +80,4 @@ void SpeedOfSound_TemplateRun(const std::string& profile_name,
                                                                          const ablate::eos::tChemSoot::SpeedOfSound::kinetic_model_host_type& kmcd) {
     ablate::eos::tChemSoot::impl::SpeedOfSound_TemplateRun("ablate::eos::tChemSoot::SpeedOfSound::runHostBatch", policy, state, speedOfSound, kmcd);
 }
+#endif

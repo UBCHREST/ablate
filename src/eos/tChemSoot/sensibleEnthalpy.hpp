@@ -1,5 +1,7 @@
 #ifndef ABLATELIBRARY_TCHEMSOOT_SENSIBLEENTHALPY_HPP
 #define ABLATELIBRARY_TCHEMSOOT_SENSIBLEENTHALPY_HPP
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
 
 #include "TChem_KineticModelData.hpp"
 #include "TChem_Util.hpp"
@@ -17,6 +19,8 @@ struct SensibleEnthalpy {
     using real_type_2d_view_host_type = Tines::value_type_2d_view<real_type, host_device_type>;
 
     using kinetic_model_type = KineticModelConstData<device_type>;
+
+    using kinetic_model_host_type = KineticModelConstData<host_device_type>;
 
     static inline ordinal_type getWorkSpaceSize(ordinal_type numberSpecies) { return numberSpecies; }
 
@@ -58,8 +62,9 @@ struct SensibleEnthalpy {
         /// useful scratch
         const real_type_2d_view_host_type& enthalpyMass,
         /// const data from kinetic model
-        const real_type_1d_view_host_type& enthalpyRef, const kinetic_model_type& kmcd);
+        const real_type_1d_view_host_type& enthalpyRef, const kinetic_model_host_type& kmcd);
 };
 
 }  // namespace ablate::eos::tChemSoot
+#endif
 #endif

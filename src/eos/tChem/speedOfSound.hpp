@@ -18,6 +18,8 @@ struct SpeedOfSound {
 
     using kinetic_model_type = KineticModelConstData<device_type>;
 
+    using kinetic_model_host_type = KineticModelConstData<host_device_type>;
+
     static inline ordinal_type getWorkSpaceSize(ordinal_type numberSpecies) { return numberSpecies; }
 
     /**
@@ -54,7 +56,7 @@ struct SpeedOfSound {
         /// output
         const real_type_1d_view_host_type& speedOfSound,
         /// const data from kinetic model
-        const kinetic_model_type& kmcd);
+        const kinetic_model_host_type& kmcd);
 };
 
 }  // namespace ablate::eos::tChem

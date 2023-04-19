@@ -1,4 +1,7 @@
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
 #include <functional>
+#include "domain/mockField.hpp"
 #include "eos/tChemSoot/sootProgressTransportModel.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
@@ -90,7 +93,7 @@ INSTANTIATE_TEST_SUITE_P(SootSpeciesTransportTests, SootProgressTransportModelTe
                              (SootProgressTransportModelTestParameters){
                                  .name = "constant_diff",
                                  .getBaseTransportModel = []() { return std::make_shared<ablate::eos::transport::Constant>(.1, .2, .3); },
-                                 .fields = {ablate::domain::Field{.name = ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD, .numberComponents = 6}},
+                                 .fields = {ablateTesting::domain::MockField::Create(ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD, 6)},
 
                                  // expected values
                                  .expectedK = .1,
@@ -104,7 +107,7 @@ INSTANTIATE_TEST_SUITE_P(SootSpeciesTransportTests, SootProgressTransportModelTe
                                      []() {
                                          return std::make_shared<ablate::eos::transport::Constant>(.1, .2, std::vector<double>{.3, .4, .5, .6});
                                      },
-                                 .fields = {ablate::domain::Field{.name = ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD, .numberComponents = 4}},
+                                 .fields = {ablateTesting::domain::MockField::Create(ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD, 4)},
 
                                  // expected values
                                  .expectedK = .1,
@@ -114,3 +117,5 @@ INSTANTIATE_TEST_SUITE_P(SootSpeciesTransportTests, SootProgressTransportModelTe
                              }),
 
                          [](const testing::TestParamInfo<SootProgressTransportModelTestParameters>& info) { return std::to_string(info.index) + "_" + info.param.name; });
+
+#endif

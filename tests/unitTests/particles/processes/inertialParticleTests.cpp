@@ -314,68 +314,67 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
     EndWithMPI
 }
 
-INSTANTIATE_TEST_SUITE_P(InertialParticleTests, InertialParticleExactTestFixture,
-                         testing::Values((InertialParticleExactParameters){.mpiTestParameter = {.testName = "single inertial particle settling in quiescent fluid",
-                                                                                                .nproc = 1,
-                                                                                                .expectedOutputFile = "outputs/particles/inertialParticle_settling_in_quiescent_fluid_single",
-                                                                                                .arguments = "-dm_plex_separate_marker -dm_refine 2 "
-                                                                                                             "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                                                                                                             "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
-                                                                                                             "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit  "
-                                                                                                             " -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                                                                                             "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 "},
-                                                                           .uExact = quiescent_u,
-                                                                           .pExact = quiescent_p,
-                                                                           .TExact = quiescent_T,
-                                                                           .u_tExact = quiescent_u_t,
-                                                                           .T_tExact = quiescent_T_t,
-                                                                           .particleExactPosition = settlingPosition,
-                                                                           .particleExactVelocity = settlingVelocity,
-                                                                           .f0_v = f0_quiescent_v,
-                                                                           .f0_w = f0_quiescent_w,
-                                                                           .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
-                                                                           .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.5, 0.5},
-                                                                                                                                                                    std::vector<double>{.5, .5}, 1)},
-                                         (InertialParticleExactParameters){
-                                             .mpiTestParameter = {.testName = "multi inertial particle settling in quiescent fluid",
-                                                                  .nproc = 1,
-                                                                  .expectedOutputFile = "outputs/particles/inertialParticle_settling_in_quiescent_fluid_multi",
-                                                                  .arguments = "-dm_plex_separate_marker -dm_refine 2 "
-                                                                               "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                                                                               "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
-                                                                               "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit  "
-                                                                               " -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                                                               "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 "},
-                                             .uExact = quiescent_u,
-                                             .pExact = quiescent_p,
-                                             .TExact = quiescent_T,
-                                             .u_tExact = quiescent_u_t,
-                                             .T_tExact = quiescent_T_t,
-                                             .particleExactPosition = settlingPosition,
-                                             .particleExactVelocity = settlingVelocity,
-                                             .f0_v = f0_quiescent_v,
-                                             .f0_w = f0_quiescent_w,
-                                             .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
-                                             .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.2, 0.3}, std::vector<double>{.4, .6}, 10)},
-                                         (InertialParticleExactParameters){.mpiTestParameter = {.testName = "deletion inertial particles settling in quiescent fluid",
-                                                                                                .nproc = 1,
-                                                                                                .expectedOutputFile = "outputs/particles/inertialParticles_settling_in_quiescent_fluid_deletion",
-                                                                                                .arguments = "-dm_plex_separate_marker -dm_refine 2 "
-                                                                                                             "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                                                                                                             "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
-                                                                                                             "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit  "
-                                                                                                             " -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                                                                                             "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 "},
-                                                                           .uExact = quiescent_u,
-                                                                           .pExact = quiescent_p,
-                                                                           .TExact = quiescent_T,
-                                                                           .u_tExact = quiescent_u_t,
-                                                                           .T_tExact = quiescent_T_t,
-                                                                           .particleExactPosition = settlingPosition,
-                                                                           .particleExactVelocity = settlingVelocity,
-                                                                           .f0_v = f0_quiescent_v,
-                                                                           .f0_w = f0_quiescent_w,
-                                                                           .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
-                                                                           .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.92, 0.3},
-                                                                                                                                                                    std::vector<double>{.98, .6}, 10)}),
-                         [](const testing::TestParamInfo<InertialParticleExactParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
+INSTANTIATE_TEST_SUITE_P(
+    InertialParticleTests, InertialParticleExactTestFixture,
+    testing::Values(
+        (InertialParticleExactParameters){.mpiTestParameter = testingResources::MpiTestParameter("single inertial particle settling in quiescent fluid", 1,
+                                                                                                 "-dm_plex_separate_marker -dm_refine 2 "
+                                                                                                 "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                                                                                 "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
+                                                                                                 "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit  "
+                                                                                                 " -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                                                                                 "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 ",
+                                                                                                 "outputs/particles/inertialParticle_settling_in_quiescent_fluid_single"),
+                                          .uExact = quiescent_u,
+                                          .pExact = quiescent_p,
+                                          .TExact = quiescent_T,
+                                          .u_tExact = quiescent_u_t,
+                                          .T_tExact = quiescent_T_t,
+                                          .particleExactPosition = settlingPosition,
+                                          .particleExactVelocity = settlingVelocity,
+                                          .f0_v = f0_quiescent_v,
+                                          .f0_w = f0_quiescent_w,
+                                          .f0_q = nullptr,
+                                          .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
+                                          .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.5, 0.5}, std::vector<double>{.5, .5}, 1)},
+        (InertialParticleExactParameters){.mpiTestParameter = testingResources::MpiTestParameter("multi inertial particle settling in quiescent fluid", 1,
+                                                                                                 "-dm_plex_separate_marker -dm_refine 2 "
+                                                                                                 "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                                                                                 "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
+                                                                                                 "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit  "
+                                                                                                 " -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                                                                                 "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 ",
+                                                                                                 "outputs/particles/inertialParticle_settling_in_quiescent_fluid_multi"),
+                                          .uExact = quiescent_u,
+                                          .pExact = quiescent_p,
+                                          .TExact = quiescent_T,
+                                          .u_tExact = quiescent_u_t,
+                                          .T_tExact = quiescent_T_t,
+                                          .particleExactPosition = settlingPosition,
+                                          .particleExactVelocity = settlingVelocity,
+                                          .f0_v = f0_quiescent_v,
+                                          .f0_w = f0_quiescent_w,
+                                          .f0_q = nullptr,
+                                          .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
+                                          .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.2, 0.3}, std::vector<double>{.4, .6}, 10)},
+        (InertialParticleExactParameters){.mpiTestParameter = testingResources::MpiTestParameter("deletion inertial particles settling in quiescent fluid", 1,
+                                                                                                 "-dm_plex_separate_marker -dm_refine 2 "
+                                                                                                 "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                                                                                 "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
+                                                                                                 "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit  "
+                                                                                                 " -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                                                                                 "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 ",
+                                                                                                 "outputs/particles/inertialParticles_settling_in_quiescent_fluid_deletion"),
+                                          .uExact = quiescent_u,
+                                          .pExact = quiescent_p,
+                                          .TExact = quiescent_T,
+                                          .u_tExact = quiescent_u_t,
+                                          .T_tExact = quiescent_T_t,
+                                          .particleExactPosition = settlingPosition,
+                                          .particleExactVelocity = settlingVelocity,
+                                          .f0_v = f0_quiescent_v,
+                                          .f0_w = f0_quiescent_w,
+                                          .f0_q = nullptr,
+                                          .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
+                                          .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.92, 0.3}, std::vector<double>{.98, .6}, 10)}),
+    [](const testing::TestParamInfo<InertialParticleExactParameters> &info) { return info.param.mpiTestParameter.getTestName(); });

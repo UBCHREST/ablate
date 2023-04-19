@@ -44,8 +44,8 @@ struct FieldDescription : public FieldDescriptor, public std::enable_shared_from
     // store any optional tags, there are strings that can be used to describe the field
     const std::vector<std::string> tags;
 
-    FieldDescription(std::string name, std::string prefix, std::vector<std::string> components, FieldLocation location, FieldType type, std::shared_ptr<domain::Region> = {},
-                     std::shared_ptr<parameters::Parameters> = {}, std::vector<std::string> tags = {});
+    FieldDescription(std::string name, const std::string& prefix, const std::vector<std::string>& components, FieldLocation location, FieldType type, std::shared_ptr<domain::Region> = {},
+                     const std::shared_ptr<parameters::Parameters>& = {}, std::vector<std::string> tags = {});
 
     /**
      * Public function that will cause the components to expand or decompress based upon the number of dims
@@ -63,8 +63,11 @@ struct FieldDescription : public FieldDescriptor, public std::enable_shared_from
     virtual PetscObject CreatePetscField(DM dm) const;
 
    private:
+    // keep the original Parameters
+    std::shared_ptr<parameters::Parameters> options;
+
     // Petsc options specific for this field
-    PetscOptions options = nullptr;
+    mutable PetscOptions petscOptions = nullptr;
 };
 
 }  // namespace ablate::domain

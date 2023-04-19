@@ -35,13 +35,13 @@ ablate::eos::tChem::SourceCalculator::SourceCalculator(const std::vector<domain:
     const ordinal_type stateVecDim = Impl::getStateVectorSize(kineticModelGasConstData.nSpec);
 
     // allocate the tChem memory
-    stateHost = real_type_2d_view_host("stateVectorDevices", numberCells, stateVecDim);
-    stateDevice = Kokkos::create_mirror(stateHost);
+    stateDevice = real_type_2d_view("stateVectorDevices", numberCells, stateVecDim);
+    stateHost = Kokkos::create_mirror(stateDevice);
     endStateDevice = real_type_2d_view("stateVectorDevicesEnd", numberCells, stateVecDim);
-    internalEnergyRefHost = real_type_1d_view_host("internalEnergyRefHost", numberCells);
-    internalEnergyRefDevice = Kokkos::create_mirror(internalEnergyRefHost);
-    sourceTermsHost = real_type_2d_view_host("sourceTermsHost", numberCells, kineticModelGasConstData.nSpec + 1);
-    sourceTermsDevice = Kokkos::create_mirror(sourceTermsHost);
+    internalEnergyRefDevice = real_type_1d_view("internalEnergyRefHost", numberCells);
+    internalEnergyRefHost = Kokkos::create_mirror(internalEnergyRefDevice);
+    sourceTermsDevice = real_type_2d_view("sourceTermsHost", numberCells, kineticModelGasConstData.nSpec + 1);
+    sourceTermsHost = Kokkos::create_mirror(sourceTermsDevice);
     perSpeciesScratchDevice = real_type_2d_view("perSpeciesScratchDevice", numberCells, kineticModelGasConstData.nSpec);
     timeViewDevice = real_type_1d_view("time", numberCells);
     dtViewDevice = real_type_1d_view("delta time", numberCells);
@@ -63,7 +63,7 @@ ablate::eos::tChem::SourceCalculator::SourceCalculator(const std::vector<domain:
     Kokkos::deep_copy(dtViewDevice, 1E-4);
 
     // determine the number of equations
-    auto numberOfEquations = ::tChemLib::Impl::IgnitionZeroD_Problem<real_type, Tines::UseThisDevice<exec_space>::type>::getNumberOfTimeODEs(kineticModelGasConstData);
+    auto numberOfEquations = ::tChemLib::Impl::IgnitionZeroD_Problem<real_type, Tines::UseThisDevice<host_exec_space>::type>::getNumberOfTimeODEs(kineticModelGasConstData);
 
     // size up the tolerance constraints
     tolTimeDevice = real_type_2d_view("tolTimeDevice", numberOfEquations, 2);
@@ -126,52 +126,51 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
     DMGetDimension(solutionDm, &dim) >> utilities::PetscUtilities::checkError;
 
     // Use a parallel for loop to load up the tChem state
-    Kokkos::parallel_for(
-        "stateLoadHost", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const auto i) {
-            // get the host data from the petsc field
-            const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
-            const std::size_t chemIndex = i - cellRange.start;
+    Kokkos::parallel_for("stateLoadHost", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(cellRange.start, cellRange.end), [&](const auto i) {
+        // get the host data from the petsc field
+        const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
+        const std::size_t chemIndex = i - cellRange.start;
 
-            // Get the current state variables for this cell
-            const PetscScalar* eulerField = nullptr;
-            DMPlexPointLocalFieldRead(solutionDm, cell, eulerId, flowArray, &eulerField) >> utilities::PetscUtilities::checkError;
-            const PetscScalar* flowDensityField = nullptr;
-            DMPlexPointLocalFieldRead(solutionDm, cell, densityYiId, flowArray, &flowDensityField) >> utilities::PetscUtilities::checkError;
+        // Get the current state variables for this cell
+        const PetscScalar* eulerField = nullptr;
+        DMPlexPointLocalFieldRead(solutionDm, cell, eulerId, flowArray, &eulerField) >> utilities::PetscUtilities::checkError;
+        const PetscScalar* flowDensityField = nullptr;
+        DMPlexPointLocalFieldRead(solutionDm, cell, densityYiId, flowArray, &flowDensityField) >> utilities::PetscUtilities::checkError;
 
-            // cast the state at i to a state vector
-            const auto state_at_i = Kokkos::subview(stateHost, chemIndex, Kokkos::ALL());
-            Impl::StateVector<real_type_1d_view_host> stateVector(kineticModelGasConstDataDevice.nSpec, state_at_i);
+        // cast the state at i to a state vector
+        const auto state_at_i = Kokkos::subview(stateHost, chemIndex, Kokkos::ALL());
+        Impl::StateVector<real_type_1d_view_host> stateVector(kineticModelGasConstDataDevice.nSpec, state_at_i);
 
-            // get the current state at I
-            auto density = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHO];
-            stateVector.Density() = density;
-            stateVector.Temperature() = 300.0;
-            auto ys = stateVector.MassFractions();
-            real_type yiSum = 0.0;
-            for (ordinal_type s = 0; s < stateVector.NumSpecies() - 1; s++) {
-                ys[s] = PetscMax(0.0, flowDensityField[s] / density);
-                ys[s] = PetscMin(1.0, ys[s]);
-                yiSum += ys[s];
+        // get the current state at I
+        auto density = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHO];
+        stateVector.Density() = density;
+        stateVector.Temperature() = 300.0;
+        auto ys = stateVector.MassFractions();
+        real_type yiSum = 0.0;
+        for (ordinal_type s = 0; s < stateVector.NumSpecies() - 1; s++) {
+            ys[s] = PetscMax(0.0, flowDensityField[s] / density);
+            ys[s] = PetscMin(1.0, ys[s]);
+            yiSum += ys[s];
+        }
+        if (yiSum > 1.0) {
+            for (PetscInt s = 0; s < stateVector.NumSpecies() - 1; s++) {
+                // Limit the bounds
+                ys[s] /= yiSum;
             }
-            if (yiSum > 1.0) {
-                for (PetscInt s = 0; s < stateVector.NumSpecies() - 1; s++) {
-                    // Limit the bounds
-                    ys[s] /= yiSum;
-                }
-                ys[stateVector.NumSpecies() - 1] = 0.0;
-            } else {
-                ys[stateVector.NumSpecies() - 1] = 1.0 - yiSum;
-            }
+            ys[stateVector.NumSpecies() - 1] = 0.0;
+        } else {
+            ys[stateVector.NumSpecies() - 1] = 1.0 - yiSum;
+        }
 
-            // Compute the internal energy from total ener
-            PetscReal speedSquare = 0.0;
-            for (PetscInt d = 0; d < dim; d++) {
-                speedSquare += PetscSqr(eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density);
-            }
+        // Compute the internal energy from total ener
+        PetscReal speedSquare = 0.0;
+        for (PetscInt d = 0; d < dim; d++) {
+            speedSquare += PetscSqr(eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density);
+        }
 
-            // compute the internal energy needed to compute temperature
-            internalEnergyRefHost[chemIndex] = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
-        });
+        // compute the internal energy needed to compute temperature
+        internalEnergyRefHost[chemIndex] = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
+    });
 
     // copy from host to device
     Kokkos::deep_copy(internalEnergyRefDevice, internalEnergyRefHost);
@@ -192,17 +191,24 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
     // Compute the pressure into the state field in the device
     ablate::eos::tChem::Pressure::runDeviceBatch(pressureFunctionPolicy, stateDevice, kineticModelGasConstDataDevice);
 
+    auto timeAdvanceDeviceLocal = timeAdvanceDevice;
+    auto dtViewDeviceLocal = dtViewDevice;
+    auto chemistryConstraintsLocal = chemistryConstraints;
+    auto timeViewDeviceLocal = timeViewDevice;
+
     double minimumPressure = 0;
     for (int attempt = 0; (attempt < chemistryConstraints.maxAttempts) && minimumPressure == 0; ++attempt) {
+        auto factor = PetscPowInt(2, attempt);
         // Use a parallel for updating timeAdvanceDevice dt
         Kokkos::parallel_for(
-            "timeAdvanceUpdate", Kokkos::RangePolicy<typename tChemLib::exec_space>(0, numberCells), KOKKOS_LAMBDA(const auto i) {
-                auto& tAdvAtI = timeAdvanceDevice(i);
+            "timeAdvanceUpdate", Kokkos::RangePolicy<tChemLib::exec_space>(0, numberCells), KOKKOS_LAMBDA(const ordinal_type& i) {
+                auto& tAdvAtI = timeAdvanceDeviceLocal(i);
+
                 tAdvAtI._tbeg = time;
                 tAdvAtI._tend = time + dt;
-                tAdvAtI._dt = PetscMax(PetscMin(PetscMin(dtViewDevice(i) * chemistryConstraints.dtEstimateFactor, dt), tAdvAtI._dtmax) / (PetscPowInt(2, attempt)), tAdvAtI._dtmin);
+                tAdvAtI._dt = Kokkos::max(Kokkos::min(Kokkos::min(dtViewDeviceLocal(i) * chemistryConstraintsLocal.dtEstimateFactor, dt), tAdvAtI._dtmax) / factor, tAdvAtI._dtmin);
                 // set the default time information
-                timeViewDevice(i) = time;
+                timeViewDeviceLocal(i) = time;
             });
 
         auto chemistryFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(::tChemLib::exec_space(), numberCells, Kokkos::AUTO());
@@ -228,13 +234,15 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
                 chemistryFunctionPolicy, tolNewtonDevice, tolTimeDevice, facDevice, timeAdvanceDevice, stateDevice, timeViewDevice, dtViewDevice, endStateDevice, kineticModelGasConstDataDevices);
         }
         // check the output pressure, if it is zero the integration failed
+        auto endStateDeviceLocal = endStateDevice;
+        auto nSpecLocal = kineticModelGasConstDataDevice.nSpec;
         Kokkos::parallel_reduce(
             "pressureCheck",
             Kokkos::RangePolicy<typename tChemLib::exec_space>(0, numberCells),
             KOKKOS_LAMBDA(const int& chemIndex, double& pressureMin) {
                 // cast the state at i to a state vector
-                const auto stateAtI = Kokkos::subview(endStateDevice, chemIndex, Kokkos::ALL());
-                Impl::StateVector<real_type_1d_view> stateVector(kineticModelGasConstDataDevice.nSpec, stateAtI);
+                const auto stateAtI = Kokkos::subview(endStateDeviceLocal, chemIndex, Kokkos::ALL());
+                Impl::StateVector<real_type_1d_view> stateVector(nSpecLocal, stateAtI);
                 auto pressureAtI = stateVector.Pressure();
                 if (pressureAtI < pressureMin) {
                     pressureMin = pressureAtI;
@@ -243,32 +251,37 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
             Kokkos::Min<double>(minimumPressure));
     }
 
+    // Get the local copies
+    auto stateDeviceLocal = stateDevice;
+    auto endStateDeviceLocal = endStateDevice;
+    auto nSpecLocal = kineticModelGasConstDataDevice.nSpec;
+    auto sourceTermsDeviceLocal = sourceTermsDevice;
+    auto cellRangeStartLocal = cellRange.start;
     // Use a parallel for computing the source term
-    auto enthalpyOfFormation = eos->GetEnthalpyOfFormation();
+    auto enthalpyOfFormationLocal = eos->GetEnthalpyOfFormation();
     Kokkos::parallel_for(
-        "sourceTermCompute", Kokkos::RangePolicy<typename tChemLib::exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const auto i) {
+        "sourceTermCompute", Kokkos::RangePolicy<typename tChemLib::exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const ordinal_type& i) {
             // get the host data from the petsc field
-            const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
-            const std::size_t chemIndex = i - cellRange.start;
+            const std::size_t chemIndex = i - cellRangeStartLocal;
 
             // cast the state at i to a state vector
-            const auto stateAtI = Kokkos::subview(stateDevice, chemIndex, Kokkos::ALL());
-            Impl::StateVector<real_type_1d_view> stateVector(kineticModelGasConstDataDevice.nSpec, stateAtI);
+            const auto stateAtI = Kokkos::subview(stateDeviceLocal, chemIndex, Kokkos::ALL());
+            Impl::StateVector<real_type_1d_view> stateVector(nSpecLocal, stateAtI);
             const auto ys = stateVector.MassFractions();
 
-            const auto endStateAtI = Kokkos::subview(endStateDevice, chemIndex, Kokkos::ALL());
-            Impl::StateVector<real_type_1d_view> endStateVector(kineticModelGasConstDataDevice.nSpec, endStateAtI);
+            const auto endStateAtI = Kokkos::subview(endStateDeviceLocal, chemIndex, Kokkos::ALL());
+            Impl::StateVector<real_type_1d_view> endStateVector(nSpecLocal, endStateAtI);
             const auto ye = endStateVector.MassFractions();
 
             // get the source term at this chemIndex
-            const auto sourceTermAtI = Kokkos::subview(sourceTermsDevice, chemIndex, Kokkos::ALL());
+            const auto sourceTermAtI = Kokkos::subview(sourceTermsDeviceLocal, chemIndex, Kokkos::ALL());
 
             // the IgnitionZeroD::runDeviceBatch sets the pressure to zero if it does not converge
             if (endStateVector.Pressure() > 0) {
                 // compute the source term from the change in the heat of formation
                 sourceTermAtI(0) = 0.0;
                 for (ordinal_type s = 0; s < stateVector.NumSpecies(); s++) {
-                    sourceTermAtI(0) += (ys(s) - ye(s)) * enthalpyOfFormation(s);
+                    sourceTermAtI(0) += (ys(s) - ye(s)) * enthalpyOfFormationLocal(s);
                 }
 
                 for (ordinal_type s = 0; s < stateVector.NumSpecies(); ++s) {
@@ -288,8 +301,10 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
                     sourceTermAtI(s + 1) = 0.0;
                 }
 
+#ifndef KOKKOS_ENABLE_CUDA
                 // compute the cell centroid
                 PetscReal centroid[3];
+                const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
                 DMPlexComputeCellGeometryFVM(solutionDm, cell, nullptr, centroid, nullptr) >> utilities::PetscUtilities::checkError;
 
                 // Output error information
@@ -303,6 +318,9 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
                 }
 
                 std::cout << warningMessage.str() << std::endl;
+#else
+                        printf("Warning: Could not integrate chemistry at index %d on rank %d\n", (int)i, rank );
+#endif
             }
         });
 
@@ -321,26 +339,25 @@ void ablate::eos::tChem::SourceCalculator::AddSource(const ablate::domain::Range
     VecGetDM(locFVec, &dm) >> utilities::PetscUtilities::checkError;
 
     // Use a parallel for loop to load up the tChem state
-    Kokkos::parallel_for(
-        "stateLoadHost", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const auto i) {
-            // get the host data from the petsc field
-            const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
-            const std::size_t chemIndex = i - cellRange.start;
+    Kokkos::parallel_for("stateLoadHost", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(cellRange.start, cellRange.end), [&](const auto i) {
+        // get the host data from the petsc field
+        const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
+        const std::size_t chemIndex = i - cellRange.start;
 
-            // Get the current state variables for this cell
-            PetscScalar* eulerSource = nullptr;
-            DMPlexPointLocalFieldRef(dm, cell, eulerId, fArray, &eulerSource) >> utilities::PetscUtilities::checkError;
-            PetscScalar* densityYiSource = nullptr;
-            DMPlexPointLocalFieldRef(dm, cell, densityYiId, fArray, &densityYiSource) >> utilities::PetscUtilities::checkError;
+        // Get the current state variables for this cell
+        PetscScalar* eulerSource = nullptr;
+        DMPlexPointLocalFieldRef(dm, cell, eulerId, fArray, &eulerSource) >> utilities::PetscUtilities::checkError;
+        PetscScalar* densityYiSource = nullptr;
+        DMPlexPointLocalFieldRef(dm, cell, densityYiId, fArray, &densityYiSource) >> utilities::PetscUtilities::checkError;
 
-            // cast the state at i to a state vector
-            const auto sourceAtI = Kokkos::subview(sourceTermsHost, chemIndex, Kokkos::ALL());
+        // cast the state at i to a state vector
+        const auto sourceAtI = Kokkos::subview(sourceTermsHost, chemIndex, Kokkos::ALL());
 
-            eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] += sourceAtI[0];
-            for (std::size_t sp = 0; sp < numberSpecies; sp++) {
-                densityYiSource[sp] += sourceAtI(sp + 1);
-            }
-        });
+        eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] += sourceAtI[0];
+        for (std::size_t sp = 0; sp < numberSpecies; sp++) {
+            densityYiSource[sp] += sourceAtI(sp + 1);
+        }
+    });
 
     // cleanup
     VecRestoreArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;

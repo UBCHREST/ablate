@@ -164,6 +164,5 @@ TEST_P(CsvLogTestFixture, ShouldAppendToFileInOutputDirectory) {
     ASSERT_EQ(buffer.str(), "\n0,0,2.2,3.3,4.4,\n0,1,5.5,6.6,7.7,\n0,0,8.8,9.9,10.1,\n0,1,11.11,12.12,13.13,");
 }
 
-INSTANTIATE_TEST_SUITE_P(LogTests, CsvLogTestFixture,
-                         testing::Values((MpiTestParameter){.testName = "csvFile 1 proc", .nproc = 1, .arguments = ""}, (MpiTestParameter){.testName = "csvFile 2 proc", .nproc = 2, .arguments = ""}),
+INSTANTIATE_TEST_SUITE_P(LogTests, CsvLogTestFixture, testing::Values(testingResources::MpiTestParameter("csvFile 1 proc"), testingResources::MpiTestParameter("csvFile 2 proc", 2)),
                          [](const testing::TestParamInfo<MpiTestParameter> &info) { return info.param.getTestName(); });

@@ -1,13 +1,17 @@
 #ifndef ABLATELIBRARY_TCHEMSOOT_HPP
 #define ABLATELIBRARY_TCHEMSOOT_HPP
 
+#include <Kokkos_Core.hpp>
+#include "eos.hpp"
+#include "tChem.hpp"
+#ifndef KOKKOS_ENABLE_CUDA
+
 #include <filesystem>
 #include <map>
 #include <memory>
 #include <set>
 #include "TChem_KineticModelData.hpp"
 #include "chemistryModel.hpp"
-#include "eos.hpp"
 #include "eos/tChemSoot/pressure.hpp"
 #include "eos/tChemSoot/sensibleEnthalpy.hpp"
 #include "eos/tChemSoot/sensibleInternalEnergy.hpp"
@@ -15,7 +19,6 @@
 #include "eos/tChemSoot/stateVectorSoot.hpp"
 #include "eos/tChemSoot/temperature.hpp"
 #include "monitors/logs/log.hpp"
-#include "tChem.hpp"
 #include "tChemSoot/sootConstants.hpp"
 #include "utilities/intErrorChecker.hpp"
 
@@ -28,7 +31,7 @@ class TChemSoot : public TChemBase, public std::enable_shared_from_this<ablate::
     /**
      * The name of the solid species
      */
-    static inline std::string CSolidName = "C_solid";
+    static inline std::string CSolidName = "C(S)";
 
     /**
      * The name of the Soot Number Density progress variable
@@ -255,4 +258,109 @@ class TChemSoot : public TChemBase, public std::enable_shared_from_this<ablate::
 };
 
 }  // namespace ablate::eos
+#else  // KOKKOS_ENABLE_CUDA
+
+namespace ablate::eos {
+
+namespace tChemLib = TChem;
+
+class TChemSoot : public TChemBase, public std::enable_shared_from_this<ablate::eos::TChemSoot> {
+   public:
+    /**
+     * The name of the solid species
+     */
+    static inline std::string CSolidName = "C(S)";
+
+    /**
+     * The name of the Soot Number Density progress variable
+     */
+    static inline std::string SootNumberDensityName = "SootNumberDensity_Mass";
+
+    static inline const std::string errorMessage = "Using the TChemSoot requires serial build of Kokkos.";
+
+    /**
+     * The tChem EOS can utilize either a mechanical & thermo file using the Chemkin file format for a modern yaml file.
+     * @param mechFile
+     * @param optionalThermoFile
+     */
+    explicit TChemSoot(std::filesystem::path mechanismFile, std::filesystem::path thermoFile = {}, std::shared_ptr<ablate::monitors::logs::Log> log = {},
+                       const std::shared_ptr<ablate::parameters::Parameters>& options = {})
+        : TChemBase("TChemSoot", std::move(mechanismFile), std::move(thermoFile), std::move(log), options) {
+        throw std::runtime_error(errorMessage);
+    }
+
+    /**
+     * Single function to produce thermodynamic function for any property based upon the available fields
+     * @param property
+     * @param fields
+     * @return
+     */
+    [[nodiscard]] ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override { throw std::runtime_error(errorMessage); }
+
+    /**
+     * Single function to produce thermodynamic function for any property based upon the available fields and temperature
+     * @param property
+     * @param fields
+     * @return
+     */
+    [[nodiscard]] ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override {
+        throw std::runtime_error(errorMessage);
+    }
+
+    /**
+     * Single function to produce fieldFunction function for any two properties, velocity, and species mass fractions.  These calls can be slower and should be used for init/output only
+     * @param field
+     * @param property1
+     * @param property2
+     */
+    [[nodiscard]] EOSFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2,
+                                                       std::vector<std::string> otherProperties) const override {
+        throw std::runtime_error(errorMessage);
+    }
+
+    /**
+     * TThe tChemSoot also need to track the soot number density
+     * @return
+     */
+    [[nodiscard]] const std::vector<std::string>& GetProgressVariables() const override { throw std::runtime_error(errorMessage); }
+
+    /**
+     * Returns all elements tracked in this mechanism and their molecular mass
+     * @return
+     */
+    [[nodiscard]] std::map<std::string, double> GetElementInformation() const override { throw std::runtime_error(errorMessage); }
+
+    /**
+     * no. of atoms of each element in each species
+     * @return
+     */
+    [[nodiscard]] std::map<std::string, std::map<std::string, int>> GetSpeciesElementalInformation() const override { throw std::runtime_error(errorMessage); }
+
+    /**
+     * the MW of each species
+     * @return
+     */
+    [[nodiscard]] std::map<std::string, double> GetSpeciesMolecularMass() const override { throw std::runtime_error(errorMessage); }
+
+    /**
+     * Print the details of this eos
+     * @param stream
+     */
+    void View(std::ostream& stream) const override { throw std::runtime_error(errorMessage); }
+
+    /**
+     * Function to create the batch source specific to the provided cell range
+     * @param cellRange
+     * @return
+     */
+    std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const ablate::domain::Range& cellRange) override { throw std::runtime_error(errorMessage); }
+
+    /**
+     * static call to compute carbon sensible enthalpy
+     */
+    inline static double ComputeSolidCarbonSensibleEnthalpy(double temperature) { throw std::runtime_error(errorMessage); }
+};
+}  // namespace ablate::eos
+
+#endif  // KOKKOS_ENABLE_CUDA
 #endif  // ABLATELIBRARY_TCHEM_HPP

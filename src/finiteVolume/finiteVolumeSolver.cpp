@@ -4,6 +4,7 @@
 #include "faceInterpolant.hpp"
 #include "processes/process.hpp"
 #include "utilities/constants.hpp"
+#include "utilities/mathUtilities.hpp"
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/petscUtilities.hpp"
 
@@ -14,6 +15,15 @@ ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverI
       processes(std::move(processes)),
       boundaryConditions(std::move(boundaryConditions)),
       solverRegionMinusGhost(std::make_shared<domain::Region>(solverId + "_minusGhost")) {}
+
+ablate::finiteVolume::FiniteVolumeSolver::~FiniteVolumeSolver() {
+    if (meshCharacteristicsLocalVec) {
+        VecDestroy(&meshCharacteristicsLocalVec) >> utilities::PetscUtilities::checkError;
+    }
+    if (meshCharacteristicsDm) {
+        DMDestroy(&meshCharacteristicsDm) >> utilities::PetscUtilities::checkError;
+    }
+}
 
 void ablate::finiteVolume::FiniteVolumeSolver::Setup() {
     ablate::solver::CellSolver::Setup();
@@ -117,6 +127,96 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
     for (const auto& process : processes) {
         process->Initialize(*this);
     }
+
+    // Create the field to hold the max/max
+    DMClone(subDomain->GetDM(), &meshCharacteristicsDm);
+    PetscBool simplex;
+    DMPlexIsSimplex(subDomain->GetDM(), &simplex) >> utilities::PetscUtilities::checkError;
+    {  // Create the minCellRadius field
+        PetscFE field;
+        PetscFECreateLagrange(PETSC_COMM_SELF, subDomain->GetDimensions(), 1, simplex, 0 /**cell center**/, PETSC_DETERMINE, &field) >> utilities::PetscUtilities::checkError;
+        PetscObjectSetName((PetscObject)field, "minCellRadius") >> utilities::PetscUtilities::checkError;
+        DMSetField(meshCharacteristicsDm, MIN_CELL_RADIUS, nullptr, (PetscObject)field) >> utilities::PetscUtilities::checkError;
+        PetscFEDestroy(&field) >> utilities::PetscUtilities::checkError;
+    }
+    {  // Create the maxCellRadius field
+        PetscFE field;
+        PetscFECreateLagrange(PETSC_COMM_SELF, subDomain->GetDimensions(), 1, simplex, 0 /**cell center**/, PETSC_DETERMINE, &field) >> utilities::PetscUtilities::checkError;
+        PetscObjectSetName((PetscObject)field, "maxCellRadius") >> utilities::PetscUtilities::checkError;
+        DMSetField(meshCharacteristicsDm, MAX_CELL_RADIUS, nullptr, (PetscObject)field) >> utilities::PetscUtilities::checkError;
+        PetscFEDestroy(&field) >> utilities::PetscUtilities::checkError;
+    }
+
+    // add the field
+    DMCreateDS(meshCharacteristicsDm) >> utilities::PetscUtilities::checkError;
+
+    // Create a vector to store the result
+    DMCreateLocalVector(meshCharacteristicsDm, &meshCharacteristicsLocalVec) >> utilities::PetscUtilities::checkError;
+    PetscObjectSetName((PetscObject)meshCharacteristicsLocalVec, "meshCharacteristics") >> utilities::PetscUtilities::checkError;
+    VecSet(meshCharacteristicsLocalVec, NAN) >> utilities::PetscUtilities::checkError;
+
+    PetscScalar* meshCharacteristicsLocalArray;
+    VecGetArray(meshCharacteristicsLocalVec, &meshCharacteristicsLocalArray) >> utilities::PetscUtilities::checkError;
+
+    // get the face/cell information
+    DM faceDM, cellDM;
+    VecGetDM(faceGeomVec, &faceDM) >> utilities::PetscUtilities::checkError;
+    VecGetDM(cellGeomVec, &cellDM) >> utilities::PetscUtilities::checkError;
+    const PetscScalar* cellGeomArray;
+    const PetscScalar* faceGeomArray;
+    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
+    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
+
+    DMLabel ghostLabel = nullptr;
+    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
+
+    PetscInt fStart, fEnd;
+    DMPlexGetHeightStratum(subDomain->GetDM(), 1, &fStart, &fEnd) >> utilities::PetscUtilities::checkError;
+
+    for (PetscInt f = fStart; f < fEnd; ++f) {
+        PetscInt face = f;
+
+        // make sure that this is a valid face
+        PetscInt ghost = -1, ncells, nchild;
+        if (ghostLabel) {
+            DMLabelGetValue(ghostLabel, face, &ghost) >> utilities::PetscUtilities::checkError;
+        }
+        DMPlexGetSupportSize(subDomain->GetDM(), face, &ncells) >> utilities::PetscUtilities::checkError;
+        DMPlexGetTreeChildren(subDomain->GetDM(), face, &nchild, nullptr) >> utilities::PetscUtilities::checkError;
+        if (ghost >= 0 || !ncells || nchild > 0) continue;
+
+        // Get the face geometry
+        const PetscInt* faceCells;
+        PetscFVFaceGeom* fg;
+        DMPlexPointLocalRead(faceDM, face, faceGeomArray, &fg) >> utilities::PetscUtilities::checkError;
+        DMPlexGetSupport(subDomain->GetDM(), face, &faceCells) >> utilities::PetscUtilities::checkError;
+
+        // compute first cell
+        for (PetscInt c = 0; c < ncells; ++c) {
+            PetscScalar* meshCharacteristics;
+            PetscFVCellGeom* cg;
+            DMPlexPointLocalRef(meshCharacteristicsDm, faceCells[c], meshCharacteristicsLocalArray, &meshCharacteristics) >> utilities::PetscUtilities::checkError;
+            DMPlexPointLocalRead(cellDM, faceCells[c], cellGeomArray, &cg) >> utilities::PetscUtilities::checkError;
+            if (meshCharacteristics) {
+                // compute max min
+                PetscScalar v[3];
+                utilities::MathUtilities::Subtract(subDomain->GetDimensions(), cg->centroid, fg->centroid, v);
+                PetscReal radius = utilities::MathUtilities::MagVector(subDomain->GetDimensions(), v);
+
+                if (PetscIsNanScalar(meshCharacteristics[MIN_CELL_RADIUS])) {
+                    meshCharacteristics[MIN_CELL_RADIUS] = radius;
+                    meshCharacteristics[MAX_CELL_RADIUS] = radius;
+                } else {
+                    meshCharacteristics[MIN_CELL_RADIUS] = PetscMin(meshCharacteristics[MIN_CELL_RADIUS], radius);
+                    meshCharacteristics[MAX_CELL_RADIUS] = PetscMax(meshCharacteristics[MAX_CELL_RADIUS], radius);
+                }
+            }
+        }
+    }
+
+    VecRestoreArray(meshCharacteristicsLocalVec, &meshCharacteristicsLocalArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
 }
 
 PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) {
@@ -292,6 +392,28 @@ void ablate::finiteVolume::FiniteVolumeSolver::Save(PetscViewer viewer, PetscInt
             }
         }
     }
+
+    // On the mesh output also save the mesh information
+    if (sequenceNumber == 0 && time == 0.0) {
+        // We need to save this as global vector
+        Vec meshCharacteristicsGlobVec;
+        DMGetGlobalVector(meshCharacteristicsDm, &meshCharacteristicsGlobVec) >> utilities::PetscUtilities::checkError;
+
+        // Copy the aux vector name
+        const char* vecName;
+        PetscObjectGetName((PetscObject)meshCharacteristicsLocalVec, &vecName) >> utilities::PetscUtilities::checkError;
+        PetscObjectSetName((PetscObject)meshCharacteristicsGlobVec, vecName) >> utilities::PetscUtilities::checkError;
+
+        // copy from local to global
+        DMLocalToGlobal(meshCharacteristicsDm, meshCharacteristicsLocalVec, INSERT_VALUES, meshCharacteristicsGlobVec) >> utilities::PetscUtilities::checkError;
+        DMSetOutputSequenceNumber(meshCharacteristicsDm, sequenceNumber, time) >> utilities::PetscUtilities::checkError;
+        DMView(meshCharacteristicsDm, viewer) >> ablate::utilities::MpiUtilities::checkError;
+        VecView(meshCharacteristicsGlobVec, viewer) >> ablate::utilities::MpiUtilities::checkError;
+
+        // clean up
+        DMRestoreGlobalVector(meshCharacteristicsDm, &meshCharacteristicsGlobVec) >> utilities::PetscUtilities::checkError;
+    }
+
     PetscFunctionReturnVoid();
 }
 

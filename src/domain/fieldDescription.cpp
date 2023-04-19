@@ -1,24 +1,22 @@
 #include "fieldDescription.hpp"
 #include <map>
 #include <regex>
+#include <utility>
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/petscUtilities.hpp"
 
-ablate::domain::FieldDescription::FieldDescription(std::string nameIn, std::string prefixIn, std::vector<std::string> componentsIn, ablate::domain::FieldLocation location,
-                                                   ablate::domain::FieldType type, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> optionsIn,
+ablate::domain::FieldDescription::FieldDescription(std::string nameIn, const std::string& prefixIn, const std::vector<std::string>& componentsIn, ablate::domain::FieldLocation location,
+                                                   ablate::domain::FieldType type, std::shared_ptr<domain::Region> region, const std::shared_ptr<parameters::Parameters>& optionsIn,
                                                    std::vector<std::string> tags)
-    : name(nameIn),
+    : name(std::move(nameIn)),
       prefix(prefixIn.empty() ? name + "_" : prefixIn + "_"),
       components(componentsIn.empty() ? std::vector<std::string>{"_"} : componentsIn),
       location(location),
       type(type),
-      region(region),
-      tags(tags) {
-    if (optionsIn) {
-        PetscOptionsCreate(&options);
-        optionsIn->Fill(options);
-    }
-}
+      region(std::move(region)),
+      tags(std::move(tags)),
+      options(optionsIn),
+      petscOptions(nullptr) {}
 
 PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
     switch (type) {
@@ -36,12 +34,17 @@ PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
             PetscInt dim;
             DMGetDimension(dm, &dim) >> utilities::PetscUtilities::checkError;
 
+            // PetscFECreateDefault uses the petsc prefix to always search the global options.  If an options object was provided to this field, set it to global with the prefix
+            if (options) {
+                auto argumentMap = options->ToMap<std::string>();
+                ablate::utilities::PetscUtilities::Set(prefix, argumentMap, false);
+            }
+
             // create a petsc fe
             PetscFE petscFE;
-            PetscFECreateDefault(PetscObjectComm((PetscObject)dm), dim, components.size(), simplexGlobal ? PETSC_TRUE : PETSC_FALSE, prefix.c_str(), PETSC_DEFAULT, &petscFE) >>
+            PetscFECreateDefault(PetscObjectComm((PetscObject)dm), dim, (PetscInt)components.size(), simplexGlobal ? PETSC_TRUE : PETSC_FALSE, prefix.c_str(), PETSC_DEFAULT, &petscFE) >>
                 utilities::PetscUtilities::checkError;
             PetscObjectSetName((PetscObject)petscFE, name.c_str()) >> utilities::PetscUtilities::checkError;
-            PetscObjectSetOptions((PetscObject)petscFE, options) >> utilities::PetscUtilities::checkError;
 
             // If this is not the first field, copy the quadrature locations
             // Check to see if there is already a petscFE object defined
@@ -49,7 +52,7 @@ PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
             DMGetNumFields(dm, &numberFields) >> utilities::PetscUtilities::checkError;
             for (PetscInt f = 0; f < numberFields; f++) {
                 PetscObject obj;
-                DMGetField(dm, f, NULL, &obj) >> utilities::PetscUtilities::checkError;
+                DMGetField(dm, f, nullptr, &obj) >> utilities::PetscUtilities::checkError;
                 PetscClassId id;
                 PetscObjectGetClassId(obj, &id);
 
@@ -60,18 +63,24 @@ PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
             return (PetscObject)petscFE;
         }
         case FieldType::FVM: {
+            // If this is a fvm, create the petsc options from the parameters
+            if (options) {
+                PetscOptionsCreate(&petscOptions) >> utilities::PetscUtilities::checkError;
+                options->Fill(petscOptions);
+            }
+
             PetscFV fvm;
             PetscFVCreate(PetscObjectComm((PetscObject)dm), &fvm) >> utilities::PetscUtilities::checkError;
             PetscObjectSetName((PetscObject)fvm, name.c_str()) >> utilities::PetscUtilities::checkError;
-            PetscObjectSetOptions((PetscObject)fvm, options) >> utilities::PetscUtilities::checkError;
+            PetscObjectSetOptions((PetscObject)fvm, petscOptions) >> utilities::PetscUtilities::checkError;
 
             PetscFVSetFromOptions(fvm) >> utilities::PetscUtilities::checkError;
-            PetscFVSetNumComponents(fvm, components.size()) >> utilities::PetscUtilities::checkError;
+            PetscFVSetNumComponents(fvm, (PetscInt)components.size()) >> utilities::PetscUtilities::checkError;
 
             // Get the limiter
             PetscLimiter limiter;
             PetscFVGetLimiter(fvm, &limiter) >> utilities::PetscUtilities::checkError;
-            PetscObjectSetOptions((PetscObject)limiter, options) >> utilities::PetscUtilities::checkError;
+            PetscObjectSetOptions((PetscObject)limiter, petscOptions) >> utilities::PetscUtilities::checkError;
             PetscLimiterSetFromOptions(limiter) >> utilities::PetscUtilities::checkError;
 
             // Determine the number of dims
@@ -81,7 +90,7 @@ PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
 
             // Add the field to the
             return (PetscObject)fvm;
-        } break;
+        }
         default:
             throw std::runtime_error("Can only register SOL fields in Domain::RegisterSolutionField");
     }
@@ -105,8 +114,8 @@ std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::domain::F
     return std::vector<std::shared_ptr<ablate::domain::FieldDescription>>{shared_from_this()};
 }
 ablate::domain::FieldDescription::~FieldDescription() {
-    if (options) {
-        ablate::utilities::PetscUtilities::PetscOptionsDestroyAndCheck("Field " + name, &options);
+    if (petscOptions) {
+        ablate::utilities::PetscUtilities::PetscOptionsDestroyAndCheck("Field " + name, &petscOptions);
     }
 }
 

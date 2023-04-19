@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_SENSIBLEINTERNALENERGYFCN_HPP
 #define ABLATELIBRARY_SENSIBLEINTERNALENERGYFCN_HPP
-
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
 #include <TChem_Impl_EnthalpySpecMl.hpp>
 #include "TChem_KineticModelData.hpp"
 #include "TChem_Util.hpp"
@@ -63,4 +64,5 @@ struct SensibleInternalEnergyFcn {
 };
 
 }  // namespace ablate::eos::tChemSoot::impl
+#endif
 #endif

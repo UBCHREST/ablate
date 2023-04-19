@@ -26,6 +26,9 @@ ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::p
     kineticsModelDataDevice = std::make_shared<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<exec_space>::type>>(
         tChemLib::createGasKineticModelConstData<typename Tines::UseThisDevice<exec_space>::type>(kineticsModel));
 
+    kineticsModelDataHost = std::make_shared<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<host_exec_space>::type>>(
+        tChemLib::createGasKineticModelConstData<typename Tines::UseThisDevice<host_exec_space>::type>(kineticsModel));
+
     // copy the species information
     const auto speciesNamesHost = Kokkos::create_mirror_view(kineticsModelDataDevice->speciesNames);
     Kokkos::deep_copy(speciesNamesHost, kineticsModelDataDevice->speciesNames);
@@ -33,14 +36,13 @@ ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::p
     species.resize(kineticsModelDataDevice->nSpec);
     auto speciesArray = species.data();
 
-    Kokkos::parallel_for(
-        "speciesInit", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(0, kineticsModelDataDevice->nSpec), KOKKOS_LAMBDA(const auto i) {
-            speciesArray[i] = std::string(&speciesNamesHost(i, 0));
-        });
+    Kokkos::parallel_for("speciesInit", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(0, kineticsModelDataDevice->nSpec), [&speciesArray, speciesNamesHost](const auto i) {
+        speciesArray[i] = std::string(&speciesNamesHost(i, 0));
+    });
     Kokkos::fence();
 
     // compute the reference enthalpy
-    enthalpyReference = real_type_1d_view("reference enthalpy", kineticsModelDataDevice->nSpec);
+    enthalpyReferenceDevice = real_type_1d_view("reference enthalpy", kineticsModelDataDevice->nSpec);
 
     {  // manually compute reference enthalpy on the device
         const auto per_team_extent_h = tChemLib::EnthalpyMass::getWorkSpaceSize(*kineticsModelDataDevice);
@@ -64,8 +66,12 @@ ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::p
         tChemLib::EnthalpyMass::runDeviceBatch(policy_enthalpy, stateDevice, perSpeciesDevice, mixtureDevice, *kineticsModelDataDevice);
 
         // copy to enthalpyReference
-        Kokkos::deep_copy(enthalpyReference, Kokkos::subview(perSpeciesDevice, 0, Kokkos::ALL()));
+        Kokkos::deep_copy(enthalpyReferenceDevice, Kokkos::subview(perSpeciesDevice, 0, Kokkos::ALL()));
     }
+
+    // Also create a copy on host
+    enthalpyReferenceHost = Kokkos::create_mirror_view(enthalpyReferenceDevice);
+    Kokkos::deep_copy(enthalpyReferenceHost, enthalpyReferenceDevice);
 
     // set the chemistry constraints
     constraints.Set(options);
