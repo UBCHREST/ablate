@@ -1,5 +1,6 @@
 #include "levelSetSolver.hpp"
 #include "levelSetUtilities.hpp"
+#include "domain/range.hpp"
 
 using namespace ablate::levelSet;
 
@@ -88,7 +89,6 @@ void LevelSetSolver::Normal3D(PetscInt c, PetscReal *n) {
   n[2] = cz/g;
 }
 
-
 PetscReal LevelSetSolver::Curvature1D(PetscInt c) {
   return 0.0;
 }
@@ -162,7 +162,6 @@ void LevelSetSolver::Normal(PetscInt c, PetscReal *n) {
   }
 }
 
-
 void LevelSetSolver::ComputeAllNormal() {
   DM            dm = subDomain->GetDM();
   domain::Range cellRange;
@@ -197,14 +196,7 @@ void LevelSetSolver::ComputeAllCurvature() {
   RestoreRange(cellRange);
 }
 
-
 /*************   End Curvature and Normal Vector functions ******************/
-
-
-
-
-
-
 
 // Returns the VOF for a given cell. Refer to "Quadrature rules for triangular and tetrahedral elements with generalized functions"
 //  by Holdych, Noble, and Secor, Int. J. Numer. Meth. Engng 2008; 73:1310-1327.
@@ -231,8 +223,26 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 }
 
 
+//// Given a VOF field compute the level set field and normal vectors at the cell center
+//void LevelSetSolver::Reinitialize(const ablate::domain::Field *field, Vec f) {
+
+//  DM vertexDM;
+
+//  DMClone(subDomain->GetDM(), &vertexDM);
 
 
+
+//  ablate::domain::Range vertexRange;
+
+//  // This is from the solver
+////  ablate::solver::Solver::GetRange((0, &vertexRange);
+//  GetCellRange(&vertexRange);
+
+
+
+
+
+//}
 
 
 

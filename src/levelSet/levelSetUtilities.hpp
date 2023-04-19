@@ -37,6 +37,16 @@ namespace ablate::levelSet::Utilities {
    */
   void VOF(DM dm, PetscInt p, std::shared_ptr<ablate::mathFunctions::MathFunction> phi, PetscReal *vof, PetscReal *area, PetscReal *vol);
 
+  /**
+   * Return the vertex level set values assuming a straight interface in the cell with a given normal vector.
+   * @param dm - The mesh
+   * @param p - Cell id
+   * @param c0 - Level set value at the cell center
+   * @param nIn - The normal at the cell center
+   * @param c - Level set values at the vertex. If NULL on input memory is allocated.
+   */
+  void VertexLevelSet(DM dm, const PetscInt p, const PetscReal c0, const PetscReal *nIn, PetscReal **c);
+
 
 
 

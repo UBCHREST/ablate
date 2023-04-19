@@ -34,53 +34,23 @@ class LevelSetSolver : public ablate::solver::Solver {
 //    PetscReal Ellipse(PetscReal pos[], PetscReal center[], PetscReal radius);
 //    PetscReal Star(PetscReal pos[], PetscReal center[]);
 
-
-
-
-
-//    // Copied from current ABLATE code. Need to talk to Matt M. about how to integrate
-//    const std::shared_ptr<domain::Region> region = nullptr;
-
     // The RBF to be used for derivatives
     std::shared_ptr<ablate::domain::rbf::RBF> rbf = nullptr;
 
-
-//    // The level set data
-//    Vec phi = nullptr;
-
-//    // The curvature
-//    Vec curv = nullptr;
-
-//    // The unit normal
-//    Vec normal = nullptr;
-
-//    // Underlying mesh
-//    DM dm = nullptr;
-
-//    PetscInt dim;
-
-  // Pointers to the fields for future use.
-  const ablate::domain::Field *lsField = NULL;
-  const ablate::domain::Field *curvField = NULL;
-  const ablate::domain::Field *normalField = NULL;
+    // Pointers to the fields for future use.
+    const ablate::domain::Field *lsField = NULL;
+    const ablate::domain::Field *curvField = NULL;
+    const ablate::domain::Field *normalField = NULL;
 
 
   public:
 
-//    void VOF(const PetscInt p, PetscReal *vof, PetscReal *area, PetscReal *vol);
-//    enum class levelSetShape {SPHERE, ELLIPSE, STAR};
-
-//    void Advect(Vec vel, const PetscReal dt);
-
-//    bool HasInterface(const PetscInt p);
-
-//    void Reinitialize(Vec VOF);
-
-
-//    // Level set function interpolation
-//    PetscReal Interpolate(const PetscReal x, const double y, const double z);
-//    PetscReal Interpolate(PetscReal xyz[3]);
-
+  /**
+   * Determine a level set field at cell centers at gives the same VOF as the input vector
+   * @param field - The VOF field
+   * @param f - The vector containing the VOF data
+   */
+//    void Reinitialize(const ablate::domain::Field *field, Vec f);
 
 
     LevelSetSolver(
@@ -101,12 +71,14 @@ class LevelSetSolver : public ablate::solver::Solver {
     void ComputeAllNormal();
     void ComputeAllCurvature();
 
-    // Returns the volume-of-fluid, face area, and/or volume of a given cell.
+    /**
+    * Returns the volume-of-fluid, face area, and/or volume of a given cell.
+    * @param c - The cell of interest
+    * @param vof - The volume-of-fluid in the cell
+    * @param area - The interface length(2D) or area(3D) in the cell
+    * @param vol - The area(2D) or volume(3D) of the cell
+    */
     void VOF(const PetscInt c, PetscReal *vof, PetscReal *area, PetscReal *vol);
-
-
-////    std::string GetRBFType();
-
 
 };
 

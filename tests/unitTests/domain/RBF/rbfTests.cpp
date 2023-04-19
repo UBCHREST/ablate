@@ -313,7 +313,7 @@ void RBFTestFixture_SetData(ablate::domain::Range cellRange, const ablate::domai
 
     VecGetArray(vec, &array) >> utilities::PetscUtilities::checkError;
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
-        PetscInt cell = cellRange.points ? cellRange.points[c] : c;
+        PetscInt cell = cellRange.GetPoint(c);
         DMPlexComputeCellGeometryFVM(dm, cell, NULL, x, NULL) >> utilities::PetscUtilities::checkError;
         DMPlexPointLocalFieldRef(dm, cell, field->id, array, &val) >> utilities::PetscUtilities::checkError;
         *val = RBFTestFixture_Function(x, 0, 0, 0);
@@ -377,8 +377,8 @@ TEST_P(RBFTestFixture_Derivative, CheckDerivativeFunctions) {
                 for (std::size_t j = 0; j < rbfList.size(); ++j) {  // Check each RBF
                     PetscInt c = testingParam.cell;
 
-                    cell = cellRange.points ? cellRange.points[c] : c;
-                    val = rbfList[j]->EvalDer(field, c, dx[i], dy[i], dz[i]);
+                    cell = cellRange.GetPoint(c);
+                    val = rbfList[j]->EvalDer(field, cell, dx[i], dy[i], dz[i]);
 
                     DMPlexComputeCellGeometryFVM(dm, cell, NULL, x, NULL) >> ablate::utilities::PetscUtilities::checkError;
                     err = PetscAbsReal(val - RBFTestFixture_Function(x, dx[i], dy[i], dz[i]));
@@ -390,8 +390,8 @@ TEST_P(RBFTestFixture_Derivative, CheckDerivativeFunctions) {
                     err = -1.0;
                     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {  // Iterate over the entire subDomain
 
-                        cell = cellRange.points ? cellRange.points[c] : c;
-                        val = rbfList[j]->EvalDer(field, c, dx[i], dy[i], dz[i]);
+                        cell = cellRange.GetPoint(c);
+                        val = rbfList[j]->EvalDer(field, cell, dx[i], dy[i], dz[i]);
 
                         DMPlexComputeCellGeometryFVM(dm, cell, NULL, x, NULL) >> ablate::utilities::PetscUtilities::checkError;
                         err = PetscMax(err, PetscAbsReal(val - RBFTestFixture_Function(x, dx[i], dy[i], dz[i])));
