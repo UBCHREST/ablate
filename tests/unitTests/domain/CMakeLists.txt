@@ -4,6 +4,9 @@ target_sources(unitTests
         fieldDescriptionTests.cpp
         dynamicRangeTests.cpp
         reverseRangeTests.cpp
+
+        PUBLIC
+        mockField.hpp
         )
 
 add_subdirectory(modifiers)

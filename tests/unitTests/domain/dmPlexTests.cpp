@@ -44,6 +44,6 @@ TEST_P(DMPlexTestFixture, ShouldCreateAndViewDMPlex) {
 }
 
 INSTANTIATE_TEST_SUITE_P(MeshTests, DMPlexTestFixture,
-                         testing::Values((DMPlexParameters){.mpiTestParameter = {.testName = "default DMPlex", .nproc = 1, .expectedOutputFile = "outputs/domain/dmPlex_NoArguments", .arguments = ""},
+                         testing::Values((DMPlexParameters){.mpiTestParameter = testingResources::MpiTestParameter("default DMPlex", 1, "", "outputs/domain/dmPlex_NoArguments"),
                                                             .parameters = nullptr}),
                          [](const testing::TestParamInfo<DMPlexParameters> &info) { return info.param.mpiTestParameter.getTestName(); });

@@ -53,3 +53,4 @@ domain.hdf5
 domain.xmf
 restart.rst
 vortexFlowField.hdf5
+vortexFlowField.xmf

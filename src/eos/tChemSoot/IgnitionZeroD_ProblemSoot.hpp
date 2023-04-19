@@ -20,6 +20,8 @@ Sandia National Laboratories, Livermore, CA, USA
 ===================================================================================== */
 #ifndef ABLATELIBRARY_IGNITION_ZEROD_SOOT_PROBLEM_HPP
 #define ABLATELIBRARY_IGNITION_ZEROD_SOOT_PROBLEM_HPP
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
 
 #include "Tines_Internal.hpp"
 
@@ -186,4 +188,5 @@ struct IgnitionZeroD_ProblemSoot {
     //        }
 };
 }  // namespace ablate::eos::tChemSoot
+#endif
 #endif

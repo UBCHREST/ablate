@@ -21,7 +21,7 @@ ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const 
       subAuxDM(nullptr),
       subAuxVec(nullptr) {
     // Get the information for this subDomain
-    DMGetRegionNumDS(domain.GetDM(), dsNumber, &label, &fieldMap, &discreteSystem) >> utilities::PetscUtilities::checkError;
+    DMGetRegionNumDS(domain.GetDM(), dsNumber, &label, &fieldMap, &discreteSystem, nullptr) >> utilities::PetscUtilities::checkError;
 
     // Check for the name in the label
     if (label) {
@@ -148,7 +148,7 @@ void ablate::domain::SubDomain::CreateSubDomainStructures() {
         DMCreateLocalVector(auxDM, &(auxLocalVec)) >> utilities::PetscUtilities::checkError;
         DMCreateGlobalVector(auxDM, &(auxGlobalVec)) >> utilities::PetscUtilities::checkError;
 
-        DMGetRegionDS(auxDM, label, nullptr, &auxDiscreteSystem) >> utilities::PetscUtilities::checkError;
+        DMGetRegionDS(auxDM, label, nullptr, &auxDiscreteSystem, nullptr) >> utilities::PetscUtilities::checkError;
 
         // attach this field as aux vector to the dm
         DMSetAuxiliaryVec(domain.GetDM(), label, labelValue, 0 /*The equation part, or 0 if unused*/, auxLocalVec) >> utilities::PetscUtilities::checkError;
@@ -321,6 +321,8 @@ DM ablate::domain::SubDomain::GetSubAuxDM() {
             }
         }
     }
+    // Create a ds for the subAuxDM to allow outputting
+    DMCreateDS(subAuxDM);
 
     return subAuxDM;
 }

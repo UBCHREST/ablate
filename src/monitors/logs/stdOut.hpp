@@ -9,6 +9,8 @@ class StdOut : public Log {
     bool output = true;
 
    public:
+    // allow access to all print from base
+    using Log::Print;
     void Printf(const char*, ...) final;
 
     void Initialize(MPI_Comm comm) final;

@@ -224,7 +224,7 @@ TEST_P(FaceInterpolantTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
 INSTANTIATE_TEST_SUITE_P(FaceInterpolant, FaceInterpolantTestFixture,
                          testing::Values(
                              (FaceInterpolantTestParameters){
-                                 .mpiTestParameter = {.testName = "1D BoundarySolver", .nproc = 1, .arguments = ""},
+                                 .mpiTestParameter = testingResources::MpiTestParameter("1D BoundarySolver"),
                                  .dim = 1,
                                  .fieldAFunction = "x + y + z",
                                  .fieldBFunction = "10*x + 3*y + z*x +2*z",
@@ -237,7 +237,7 @@ INSTANTIATE_TEST_SUITE_P(FaceInterpolant, FaceInterpolantTestFixture,
 
                              },
                              (FaceInterpolantTestParameters){
-                                 .mpiTestParameter = {.testName = "2D BoundarySolver", .nproc = 1, .arguments = ""},
+                                 .mpiTestParameter = testingResources::MpiTestParameter("2D BoundarySolver"),
                                  .dim = 2,
                                  .fieldAFunction = "x + y + z",
                                  .fieldBFunction = "10*x + 3*y +2*z",
@@ -250,7 +250,7 @@ INSTANTIATE_TEST_SUITE_P(FaceInterpolant, FaceInterpolantTestFixture,
 
                              },
                              (FaceInterpolantTestParameters){
-                                 .mpiTestParameter = {.testName = "3D BoundarySolver", .nproc = 1, .arguments = ""},
+                                 .mpiTestParameter = testingResources::MpiTestParameter("3D BoundarySolver"),
                                  .dim = 3,
                                  .fieldAFunction = "x + y + z",
                                  .fieldBFunction = "10*x + 3*y +2*z",

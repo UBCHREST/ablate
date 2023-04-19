@@ -27,9 +27,12 @@ class FiniteVolumeSolver : public solver::CellSolver,
                            public solver::PhysicsTimeStepFunction,
                            private utilities::Loggable<FiniteVolumeSolver> {
    public:
-    using PreRHSFunctionDefinition = PetscErrorCode (*)(const FiniteVolumeSolver&, TS ts, PetscReal time, bool initialStage, Vec locX, void* ctx);
+    using PreRHSFunctionDefinition = PetscErrorCode (*)(FiniteVolumeSolver&, TS ts, PetscReal time, bool initialStage, Vec locX, void* ctx);
     using RHSArbitraryFunction = PetscErrorCode (*)(const FiniteVolumeSolver&, DM dm, PetscReal time, Vec locXVec, Vec locFVec, void* ctx);
     using ComputeTimeStepFunction = double (*)(TS ts, FiniteVolumeSolver&, void* ctx);
+
+    //! store an enum for the fields in the meshCharacteristicsDm
+    enum MeshCharacteristics { MIN_CELL_RADIUS = 0, MAX_CELL_RADIUS };
 
    private:
     /**
@@ -67,12 +70,21 @@ class FiniteVolumeSolver : public solver::CellSolver,
     //! hold the class responsible for compute cell based values;
     std::unique_ptr<CellInterpolant> cellInterpolant = nullptr;
 
-    //!! Store an region of all cells not in the ghost for faster iteration
+    //! Store an region of all cells not in the ghost for faster iteration
     std::shared_ptr<domain::Region> solverRegionMinusGhost;
+
+    //! Store a dm for mesh characteristics specific to the fvm
+    DM meshCharacteristicsDm = nullptr;
+
+    //! Store a dm, vec and array for mesh characteristics specific to the fvm
+    Vec meshCharacteristicsLocalVec = nullptr;
 
    public:
     FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<processes::Process>> flowProcesses,
                        std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions);
+
+    //! cleanup
+    ~FiniteVolumeSolver() override;
 
     /** SubDomain Register and Setup **/
     void Setup() override;
@@ -219,6 +231,14 @@ class FiniteVolumeSolver : public solver::CellSolver,
      * @return
      */
     PetscErrorCode PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) override;
+
+    /**
+     * returns the dm and localVector for meshCharacteristicsLocalVec
+     */
+    inline void GetMeshCharacteristics(DM& dm, Vec& vec) {
+        dm = meshCharacteristicsDm;
+        vec = meshCharacteristicsLocalVec;
+    }
 };
 }  // namespace ablate::finiteVolume
 

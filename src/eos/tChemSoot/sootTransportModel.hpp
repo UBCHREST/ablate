@@ -1,5 +1,7 @@
 #ifndef ABLATELIBRARY_SOOTTRANSPORTMODEL_HPP
 #define ABLATELIBRARY_SOOTTRANSPORTMODEL_HPP
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
 
 #include <eos/eos.hpp>
 #include <memory>
@@ -88,3 +90,4 @@ class SootTransportModel : public eos::transport::TransportModel {
 }  // namespace ablate::eos::tChemSoot
 
 #endif  // ABLATELIBRARY_SOOTTRANSPORTMODEL_HPP
+#endif

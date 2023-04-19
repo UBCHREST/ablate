@@ -1,4 +1,7 @@
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
 #include "temperature.hpp"
+
 #include "eos/tChemSoot/temperatureFcn.hpp"
 
 namespace ablate::eos::tChemSoot::impl {
@@ -66,3 +69,4 @@ void Temperature_TemplateRun(const std::string& profile_name,
                                                                         const ablate::eos::tChemSoot::Temperature::kinetic_model_host_type& kmcd) {
     ablate::eos::tChemSoot::impl::Temperature_TemplateRun("ablate::eos::tChemSoot::Temperature::runHostBatch", policy, state, internalEnergyRef, enthalpyMass, enthalpyReference, kmcd);
 }
+#endif

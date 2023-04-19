@@ -104,7 +104,7 @@ TEST_P(PressureGradientScalingTestFixture, ShouldUpdatePgsCorrectly) {
 INSTANTIATE_TEST_SUITE_P(
     PressureGradientScalingTests, PressureGradientScalingTestFixture,
     testing::Values(
-        (PressureGradientScalingTestParameters){.mpiTestParameter = {.testName = "pgs test 1", .nproc = 1, .arguments = ""},
+        (PressureGradientScalingTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("pgs test 1"),
                                                 .alphaInit = 5.0,
                                                 .domainLength = 2.0,
                                                 .maxAlphaAllowed = {} /*default value*/,
@@ -120,7 +120,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 /* expected results **/
                                                 .expectedAlpha = 5.5,
                                                 .expectedMaxMach = 0.00288027},
-        (PressureGradientScalingTestParameters){.mpiTestParameter = {.testName = "pgs test 2", .nproc = 1, .arguments = ""},
+        (PressureGradientScalingTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("pgs test 2"),
                                                 .alphaInit = 5.0,
                                                 .domainLength = 2.0,
                                                 .maxAlphaAllowed = {} /*default value*/,
@@ -136,7 +136,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 /* expected results **/
                                                 .expectedAlpha = 2.430320,
                                                 .expectedMaxMach = 0.2880277994805399},
-        (PressureGradientScalingTestParameters){.mpiTestParameter = {.testName = "pgs test 3", .nproc = 1, .arguments = ""},
+        (PressureGradientScalingTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("pgs test 3"),
                                                 .alphaInit = 5.0,
                                                 .domainLength = 2.0,
                                                 .maxAlphaAllowed = 1.5,
@@ -153,7 +153,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .expectedAlpha = 1.5,
                                                 .expectedMaxMach = 0.2880277994805399},
         (PressureGradientScalingTestParameters){
-            .mpiTestParameter = {.testName = "pgs test 4", .nproc = 2, .arguments = ""},
+            .mpiTestParameter = testingResources::MpiTestParameter("pgs test 4", 2),
             .alphaInit = 5.0,
             .domainLength = 2.0,
             .maxAlphaAllowed = {} /*default value*/,
@@ -170,7 +170,7 @@ INSTANTIATE_TEST_SUITE_P(
             .expectedAlpha = 3.7061,
             .expectedMaxMach = 0.040733},
         (PressureGradientScalingTestParameters){
-            .mpiTestParameter = {.testName = "pgs test 5", .nproc = 2, .arguments = ""},
+            .mpiTestParameter = testingResources::MpiTestParameter("pgs test 5", 2),
             .alphaInit = 5.0,
             .domainLength = 2.0,
             .maxAlphaAllowed = {} /*default value*/,
@@ -187,7 +187,7 @@ INSTANTIATE_TEST_SUITE_P(
             .expectedAlpha = 3.7061,
             .expectedMaxMach = 0.0633316},
         (PressureGradientScalingTestParameters){
-            .mpiTestParameter = {.testName = "pgs test 6", .nproc = 2, .arguments = ""},
+            .mpiTestParameter = testingResources::MpiTestParameter("pgs test 6", 2),
             .alphaInit = 5.0,
             .domainLength = 2.0,
             .maxAlphaAllowed = {} /*default value*/,
