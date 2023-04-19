@@ -6,12 +6,6 @@ environment:
   tagDirectory: false
 arguments:
   dm_plex_separate_marker: ""
-  # set the velocity petscspace degree, this is the element order
-  velocity_petscspace_degree: 2
-  # set the pressure petscspace degree, this is the element order
-  pressure_petscspace_degree: 1
-  # set the temperature petscspace degree, this is the element order
-  temperature_petscspace_degree: 1
 
 # set up the time stepper responsible for marching in time
 timestepper:
@@ -50,16 +44,22 @@ timestepper:
         prefix: velocity
         components: ["vel0", "vel1"]
         type: FE
+        options:
+          petscspace_degree: 2
       # define the pressure field using the FE solver
       - !ablate::domain::FieldDescription
         name: pressure
         prefix: pressure
         type: FE
+        options:
+          petscspace_degree: 1
       # define the temperature field using the FE solver
       - !ablate::domain::FieldDescription
         name: temperature
         prefix: temperature
         type: FE
+        options:
+          petscspace_degree: 2
 
   # set the initial conditions of the flow field.  Tag each field function so that they can be reused for the exact solution
   initialization:

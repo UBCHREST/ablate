@@ -1,7 +1,6 @@
 #include "chemistry.hpp"
 
 #include <utility>
-#include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/petscUtilities.hpp"
 #include "utilities/vectorUtilities.hpp"
 

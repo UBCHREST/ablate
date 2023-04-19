@@ -12,7 +12,6 @@
 #include "gtest/gtest.h"
 
 struct SurfaceForceTestParameters {
-    testingResources::MpiTestParameter mpiTestParameter;
     PetscInt dim;
     PetscInt cellNumber;
     std::vector<int> meshFaces;
@@ -21,15 +20,14 @@ struct SurfaceForceTestParameters {
     std::vector<PetscReal> inputEulerValues;
     std::shared_ptr<ablate::mathFunctions::MathFunction> inputVFfield;
     std::vector<PetscReal> expectedEulerSource;
-    PetscReal errorTolerance = 1E-3;
-    PetscReal sigma = 0.07;
 };
 
 class SurfaceForceTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<SurfaceForceTestParameters> {};
 
 TEST_P(SurfaceForceTestFixture, ShouldComputeCorrectSurfaceForce) {
     ablate::utilities::PetscUtilities::Initialize();
-    const auto &params = GetParam();
+    PetscReal errorTolerance = 1E-3;
+    PetscReal sigma = 0.07;
 
     auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}));
 
@@ -84,7 +82,7 @@ TEST_P(SurfaceForceTestFixture, ShouldComputeCorrectSurfaceForce) {
 
     VecRestoreArray(domain->GetSolutionVector(), &solution);
 
-    auto process = ablate::finiteVolume::processes::SurfaceForce(GetParam().sigma);
+    auto process = ablate::finiteVolume::processes::SurfaceForce(sigma);
     process.Setup(*fvSolver);
     DMGetLocalVector(domain->GetDM(), &computedF);
     VecZeroEntries(computedF);
@@ -96,7 +94,7 @@ TEST_P(SurfaceForceTestFixture, ShouldComputeCorrectSurfaceForce) {
 
     DMPlexPointLocalFieldRef(domain->GetDM(), GetParam().cellNumber, domain->GetField("euler").id, sourceArray, &eulerSource);
     for (std::size_t c = 0; c < GetParam().expectedEulerSource.size(); c++) {
-        ASSERT_LT(PetscAbs((GetParam().expectedEulerSource[c] - eulerSource[c]) / (GetParam().expectedEulerSource[c] + 1E-30)), params.errorTolerance)
+        ASSERT_LT(PetscAbs((GetParam().expectedEulerSource[c] - eulerSource[c]) / (GetParam().expectedEulerSource[c] + 1E-30)), errorTolerance)
             << "The percent difference for the expected and actual source (" << GetParam().expectedEulerSource[c] << " vs " << eulerSource[c] << ") should be small for index " << c;
     }
     VecRestoreArray(computedF, &sourceArray) >> ablate::utilities::PetscUtilities::checkError;
@@ -146,4 +144,5 @@ INSTANTIATE_TEST_SUITE_P(SurfaceForce, SurfaceForceTestFixture,
                                                                       .inputVFfield = ablate::mathFunctions::Create(" x<2/3 && y< 2/3  && z< 1? 1:0"),
                                                                       .expectedEulerSource = {0, -0.890954544, -0.445477, -0.445477, 0}}  // should calculate energy also
 
-                                         ));
+                                         ),
+                         [](const testing::TestParamInfo<SurfaceForceTestParameters> &info) { return "SurfaceForceTest" + std::to_string(info.index); });

@@ -1,5 +1,6 @@
 #include <functional>
 #include "PetscTestFixture.hpp"
+#include "domain/mockField.hpp"
 #include "eos/transport/constant.hpp"
 #include "eos/transport/twoPhaseTransport.hpp"
 #include "finiteVolume/processes/twoPhaseEulerAdvection.hpp"
@@ -84,7 +85,7 @@ INSTANTIATE_TEST_SUITE_P(
                             ablateTesting::eos::transport::MockTransportModel::CreateMockThermodynamicFunction([](const PetscReal conserved[], PetscReal* property) { *property = 100; })));
                 },
             .conservedIn = {0.75},
-            .fields = {ablate::domain::Field{.name = ablate::finiteVolume::processes::TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD, .numberComponents = 1, .offset = 0}},
+            .fields = {ablateTesting::domain::MockField::Create(ablate::finiteVolume::processes::TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD)},
             .expectedConductivity = 1.5,
             .expectedViscosity = 2.5,
             .expectedDiffusivity = 175.0},
@@ -121,8 +122,8 @@ INSTANTIATE_TEST_SUITE_P(
                             ablateTesting::eos::transport::MockTransportModel::CreateMockThermodynamicFunction([](const PetscReal conserved[], PetscReal* property) { *property = 100; })));
                 },
             .conservedIn = {NAN, NAN, 0.75, NAN},
-            .fields = {ablate::domain::Field{.name = "OtherField", .numberComponents = 0, .offset = 0},
-                       ablate::domain::Field{.name = ablate::finiteVolume::processes::TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD, .numberComponents = 1, .offset = 2}},
+            .fields = {ablateTesting::domain::MockField::Create("OtherField", 0, 0),
+                       ablateTesting::domain::MockField::Create(ablate::finiteVolume::processes::TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD, 1, 2)},
             .expectedConductivity = 1.5,
             .expectedViscosity = 2.5,
             .expectedDiffusivity = 175.0}),
@@ -206,7 +207,7 @@ INSTANTIATE_TEST_SUITE_P(TwoPhaseTransportTests, TwoPhaseTransportTemperatureTes
                                                  [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) { *property = temperature * 100; })));
                                      },
                                  .conservedIn = {0.75},
-                                 .fields = {ablate::domain::Field{.name = ablate::finiteVolume::processes::TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD, .numberComponents = 1, .offset = 0}},
+                                 .fields = {ablateTesting::domain::MockField::Create(ablate::finiteVolume::processes::TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD)},
                                  .temperature = 300,
                                  .expectedConductivity = 450,
                                  .expectedViscosity = 750,
@@ -244,8 +245,8 @@ INSTANTIATE_TEST_SUITE_P(TwoPhaseTransportTests, TwoPhaseTransportTemperatureTes
                                                  [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) { *property = temperature * 100; })));
                                      },
                                  .conservedIn = {NAN, NAN, 0.75, NAN},
-                                 .fields = {ablate::domain::Field{.name = "OtherField", .numberComponents = 0, .offset = 0},
-                                            ablate::domain::Field{.name = ablate::finiteVolume::processes::TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD, .numberComponents = 1, .offset = 2}},
+                                 .fields = {ablateTesting::domain::MockField::Create("OtherField", 0, 0),
+                                            ablateTesting::domain::MockField::Create(ablate::finiteVolume::processes::TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD, 1, 2)},
                                  .temperature = 1000,
                                  .expectedConductivity = 1500,
                                  .expectedViscosity = 2500,

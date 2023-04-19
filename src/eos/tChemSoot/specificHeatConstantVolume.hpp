@@ -4,6 +4,8 @@
 
 #ifndef ABLATE_SPECIFICHEATCONSTANTVOLUME_HPP
 #define ABLATE_SPECIFICHEATCONSTANTVOLUME_HPP
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
 
 #include "TChem_KineticModelData.hpp"
 #include "TChem_Util.hpp"
@@ -65,3 +67,4 @@ const real_type_2d_view_host_type& state,
 
 }  // namespace ablate::eos::tChemSoot
 #endif  // ABLATE_SPECIFICHEATCONSTANTVOLUME_HPP
+#endif

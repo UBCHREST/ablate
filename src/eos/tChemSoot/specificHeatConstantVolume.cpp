@@ -1,7 +1,10 @@
-#include "specificHeatConstantVolume.hpp"
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
+
 #include "TChem_Impl_CpMixMs.hpp"
 #include "TChem_Impl_MolarWeights.hpp"
 #include "eos/tChemSoot.hpp"
+#include "specificHeatConstantVolume.hpp"
 
 namespace tChemLib = TChem;
 namespace ablate::eos::tChemSoot::impl {
@@ -69,3 +72,4 @@ void SpecificHeatConstantVolume_TemplateRun(const std::string& profile_name,
                                                                                        const ablate::eos::tChemSoot::SpecificHeatConstantVolume::kinetic_model_host_type& kmcd) {
     ablate::eos::tChemSoot::impl::SpecificHeatConstantVolume_TemplateRun("ablate::eos::tChemSoot::SpecificHeatConstantVolume::runHostBatch", policy, state, CvMix, kmcd);
 }
+#endif

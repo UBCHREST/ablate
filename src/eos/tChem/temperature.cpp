@@ -42,7 +42,7 @@ void Temperature_TemplateRun(const std::string& profile_name,
                 // compute the first error
                 double e2 = ablate::eos::tChem::impl::SensibleInternalEnergyFcn<real_type, device_type>::team_invoke(member, t, ys, hi_at_i, cpks, enthalpyReference, kmcd);
                 double f2 = internalEnergyRef_at_i() - e2;
-                if (Tines::ats<real_type>::abs(f2) > EPS_T_RHO_E) {
+                if (Kokkos::abs(f2) > EPS_T_RHO_E) {
                     double t0 = t2;
                     double f0 = f2;
                     double t1 = t0 + 1;
@@ -53,7 +53,7 @@ void Temperature_TemplateRun(const std::string& profile_name,
 
                     for (int it = 0; it < ITERMAX_T; it++) {
                         t2 = t1 - f1 * (t1 - t0) / (f1 - f0 + 1E-30);
-                        t2 = std::max(1.0, t2);
+                        t2 = Kokkos::max(1.0, t2);
                         t = t2;
                         e2 = ablate::eos::tChem::impl::SensibleInternalEnergyFcn<real_type, device_type>::team_invoke(member, t, ys, hi_at_i, cpks, enthalpyReference, kmcd);
                         f2 = internalEnergyRef_at_i() - e2;

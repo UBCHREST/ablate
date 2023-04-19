@@ -1,5 +1,7 @@
 #ifndef ABLATE_SOOTTEMPERATUREFCN_HPP
 #define ABLATE_SOOTTEMPERATUREFCN_HPP
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
 
 #include <TChem_Impl_RhoMixMs.hpp>
 #include "TChem_KineticModelData.hpp"
@@ -75,4 +77,5 @@ struct TemperatureFcn {
 };
 
 }  // namespace ablate::eos::tChemSoot::impl
+#endif
 #endif
