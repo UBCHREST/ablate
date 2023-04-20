@@ -140,17 +140,6 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      */
     void ComputeProgressVariables(const PetscReal* massFractions, PetscReal* progressVariables) const;
 
-    /**
-     * helper function to compute the mass fractions = from the mass fractions progress variables
-     * @param massFractions
-     * @param massFractionsSize
-     * @param progressVariables
-     * @param progressVariablesSize
-     * @param density allows for this function to be used with density*progress variables
-     *
-     */
-    void ComputeMassFractions(const PetscReal* progressVariables, PetscReal* massFractions, PetscReal density = 1.0) const;
-
    public:
     explicit ChemTab(const std::filesystem::path& path);
     ~ChemTab() override;
@@ -160,6 +149,12 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @return
      */
     [[nodiscard]] const std::vector<std::string>& GetSpeciesVariables() const override { return ablate::utilities::VectorUtilities::Empty<std::string>; }
+
+    /**
+     * Function used to get the species used in the chem tab model
+     * @return
+     */
+    [[nodiscard]] const std::vector<std::string>& GetSpeciesNames() const { return speciesNames; }
 
     /**
      * List of species used for the field function initialization.
@@ -242,6 +237,14 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
     void ComputeMassFractions(const std::vector<PetscReal>& progressVariables, std::vector<PetscReal>& massFractions, PetscReal density = 1.0) const;
 
     /**
+     * helper function to compute the mass fractions = from the mass fractions progress variables
+     * @param progressVariables is density*progress
+     * @param massFractions
+     * @param density allows for this function to be used with density*progress variables
+     */
+    void ComputeMassFractions(const PetscReal* progressVariables, PetscReal* massFractions, PetscReal density = 1.0) const;
+
+    /**
      * Computes the progress variables for a given initializer
      * @param name
      * @param progressVariables
@@ -256,6 +259,8 @@ class ChemTab : public ChemistryModel {
     ChemTab(std::filesystem::path path) : ChemistryModel("ablate::chemistry::ChemTabModel") { throw std::runtime_error(errorMessage); }
 
     [[nodiscard]] const std::vector<std::string>& GetSpeciesVariables() const override { throw std::runtime_error(errorMessage); }
+
+    [[nodiscard]] const std::vector<std::string>& GetSpeciesNames() const { throw std::runtime_error(errorMessage); }
 
     [[nodiscard]] const std::vector<std::string>& GetFieldFunctionProperties() const override { throw std::runtime_error(errorMessage); }
 
@@ -285,6 +290,8 @@ class ChemTab : public ChemistryModel {
     void ComputeProgressVariables(const std::vector<PetscReal>& massFractions, std::vector<PetscReal>& progressVariables) const { throw std::runtime_error(errorMessage); }
 
     void ComputeMassFractions(const std::vector<PetscReal>& progressVariables, std::vector<PetscReal>& massFractions, PetscReal density = 1.0) const { throw std::runtime_error(errorMessage); }
+
+    void ComputeMassFractions(const PetscReal* progressVariables, PetscReal* massFractions, PetscReal density = 1.0) const { throw std::runtime_error(errorMessage); }
 
     void GetInitializerProgressVariables(const std::string& name, std::vector<PetscReal>& progressVariables) const { throw std::runtime_error(errorMessage); }
 };

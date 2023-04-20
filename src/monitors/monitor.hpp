@@ -2,6 +2,7 @@
 #define ABLATELIBRARY_MONITOR_HPP
 #include <petsc.h>
 #include <memory>
+#include <utility>
 #include "solver/solver.hpp"
 
 namespace ablate::monitors {
@@ -18,13 +19,15 @@ class Monitor {
      * Override this function to setup the monitor
      * @param solverIn
      */
-    virtual void Register(std::shared_ptr<solver::Solver> solverIn) { solver = solverIn; }
+    virtual void Register(std::shared_ptr<solver::Solver> solverIn) { solver = std::move(solverIn); }
 
     /**
      * Return a function to be called after every time step.  By default null is returned so this is never called
      * @return
      */
-    virtual PetscMonitorFunction GetPetscFunction() { return nullptr; }
+    virtual PetscMonitorFunction GetPetscFunction() {
+        return nullptr;
+    }
 
     /**
      * return context to be returned to the PetscMonitorFunction.  By default this is a pointer to this instance
