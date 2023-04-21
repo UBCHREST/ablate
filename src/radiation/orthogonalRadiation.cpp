@@ -136,7 +136,8 @@ void ablate::radiation::OrthogonalRadiation::Setup(const ablate::domain::Range& 
     if (log) {
         log->Printf("Particles Setup: %i\n", ipart);
         DMSwarmGetSize(radSearch, &ipart) >> utilities::PetscUtilities::checkError;
-        log->Printf("After First Migrate: %i\n", ipart);    }
+        log->Printf("After First Migrate: %i\n", ipart);
+    }
     EndEvent();
 }
 

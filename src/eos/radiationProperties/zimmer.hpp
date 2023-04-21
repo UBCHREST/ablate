@@ -4,10 +4,10 @@
 #include <array>
 #include "eos/radiationProperties/radiationProperties.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "radiation/radiation.hpp"
 #include "radiationProperties.hpp"
 #include "solver/cellSolver.hpp"
 #include "utilities/mathUtilities.hpp"
-#include "radiation/radiation.hpp"
 
 namespace ablate::eos::radiationProperties {
 /** A radiation gas absorption model which computes the absorptivity based on the presence of certain species. */
@@ -68,7 +68,6 @@ class Zimmer : public RadiationModel {
      * @return
      */
     static PetscErrorCode ZimmerEmissionTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* epsilon, void* ctx);
-
 
     /**
      * private static function for evaluating constant properties without temperature

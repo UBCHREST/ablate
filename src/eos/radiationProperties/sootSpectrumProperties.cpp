@@ -17,7 +17,7 @@ ablate::eos::radiationProperties::SootSpectrumProperties::SootSpectrumProperties
         double widths = (max - min) / num;
         for (int i = 0; i < num; i++) {
             wavelengthsIn[i] = min + ((double)i / (double)num) * max;
-            bandwidthsIn[i] = widths; //! Default the bandwidths to cover the whole range.
+            bandwidthsIn[i] = widths;  //! Default the bandwidths to cover the whole range.
         }
     }
 }

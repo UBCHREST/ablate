@@ -1,9 +1,15 @@
 #ifndef ABLATELIBRARY_RADIATION_HPP
 #define ABLATELIBRARY_RADIATION_HPP
 
+#include <petsc/private/dmimpl.h>
+#include <petscdm.h>
+#include <petscdmswarm.h>
+#include <petscsf.h>
 #include <memory>
 #include <set>
+#include <utility>
 #include "eos/radiationProperties/radiationProperties.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
 #include "io/interval/interval.hpp"
 #include "monitors/logs/log.hpp"
@@ -11,13 +17,6 @@
 #include "solver/timeStepper.hpp"
 #include "utilities/constants.hpp"
 #include "utilities/loggable.hpp"
-#include <petsc/private/dmimpl.h>
-#include <petscdm.h>
-#include <petscdmswarm.h>
-#include <petscsf.h>
-#include <utility>
-#include "finiteVolume/compressibleFlowFields.hpp"
-#include "finiteVolume/finiteVolumeSolver.hpp"
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/petscUtilities.hpp"
 
@@ -106,8 +105,8 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * @return
      */
     inline void GetIntensity(PetscReal* intensity, PetscInt index, const domain::Range& cellRange, PetscReal temperature, PetscReal kappa) {
-        for (int i = 0; i < (int)absorptivityFunction.propertySize; ++i) {  // Compute the losses
-            PetscReal netIntensity = -4.0 * ablate::utilities::Constants::pi * GetBlackBodyTotalIntensity(temperature, 1); //TODO: This should take the emission as an input
+        for (int i = 0; i < (int)absorptivityFunction.propertySize; ++i) {                                                  // Compute the losses
+            PetscReal netIntensity = -4.0 * ablate::utilities::Constants::pi * GetBlackBodyTotalIntensity(temperature, 1);  //! This should take the emission as an input (if non-grey)
 
             // add in precomputed gains
             netIntensity += evaluatedGains[absorptivityFunction.propertySize * (index - cellRange.start) + i];

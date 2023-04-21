@@ -6,7 +6,7 @@ ablate::radiation::SurfaceRadiation::SurfaceRadiation(const std::string& solverI
 
 ablate::radiation::SurfaceRadiation::~SurfaceRadiation() {}
 
-void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) { /** Declare some information associated with the field declarations */
+void ablate::radiation::SurfaceRadiation::Initialize(const domain::Range& cellRange, ablate::domain::SubDomain& subDomain) { /** Declare some information associated with the field declarations */
     StartEvent("SurfaceRadiation::Initialize");
 
     DeleteOutOfBounds(subDomain);

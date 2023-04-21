@@ -150,7 +150,6 @@ void ablate::radiation::Radiation::Setup(const ablate::domain::Range& cellRange,
         log->Printf("Particles Setup: %i\n", ipart);
         DMSwarmGetSize(radSearch, &ipart) >> utilities::PetscUtilities::checkError;
         log->Printf("After First Migrate: %i\n", ipart);
-
     }
     EndEvent();
 }

@@ -100,7 +100,6 @@ ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Sum::GetRad
         default:
             throw std::invalid_argument("Unknown radiationProperties property in ablate::eos::radiationProperties::Constant");
     }
-
 }
 ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::Sum::GetRadiationPropertiesTemperatureFunction(ablate::eos::radiationProperties::RadiationProperty property,
                                                                                                                                const std::vector<domain::Field> &fields) const {

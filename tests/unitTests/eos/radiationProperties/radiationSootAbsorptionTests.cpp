@@ -1,5 +1,6 @@
 #include <eos/mockEOS.hpp>
 #include "domain/mockField.hpp"
+#include "eos/radiationProperties/sootMeanProperties.hpp"
 #include "gtest/gtest.h"
 
 struct SootTestParameters {
