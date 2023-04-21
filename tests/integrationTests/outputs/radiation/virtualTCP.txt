@@ -1,0 +1,21 @@
+MinMaxAvg euler for timestep 0000:
+min: \[(.*), (.*), (.*), (.*)\]<expects> ~ ~ ~ ~
+max: \[(.*), (.*), (.*), (.*)\]<expects> ~ ~ ~ ~
+avg: \[(.*), (.*), (.*), (.*)\]<expects> ~ ~ ~ ~
+MinMaxAvg euler for timestep 0001:
+min: \[(.*), (.*), (.*), (.*)\]<expects> ~ ~ ~ ~
+max: \[(.*), (.*), (.*), (.*)\]<expects> ~ ~ ~ ~
+avg: \[(.*), (.*), (.*), (.*)\]<expects> ~ ~ ~ ~
+MinMaxAvg euler for timestep 0002:
+min: \[(.*), (.*), (.*), (.*)\]<expects> ~ ~ ~ ~
+max: \[(.*), (.*), (.*), (.*)\]<expects> ~ ~ ~ ~
+avg: \[(.*), (.*), (.*), (.*)\]<expects> ~ ~ ~ ~
+MinMaxAvg euler for timestep 0003:
+min: \[(.*), (.*), (.*), (.*)\]<expects> ~ ~ ~ ~
+max: \[(.*), (.*), (.*), (.*)\]<expects> ~ ~ ~ ~
+avg: \[(.*), (.*), (.*), (.*)\]<expects> ~ ~ ~ ~
+MinMaxAvg euler for timestep 0004:
+min: \[(.*), (.*), (.*), (.*)\]<expects> ~ ~ ~ ~
+max: \[(.*), (.*), (.*), (.*)\]<expects> ~ ~ ~ ~
+avg: \[(.*), (.*), (.*), (.*)\]<expects> ~ ~ ~ ~
+ResultFiles:

@@ -60,7 +60,7 @@ void ablate::radiation::Radiation::Setup(const ablate::domain::Range& cellRange,
 
     /** Register fields within the DMSwarm */
     DMSwarmRegisterUserStructField(radSearch, IdentifierField, sizeof(Identifier)) >>
-        utilities::PetscUtilities::checkError;  //!< A field to store the ray identifier [origin][iCell][ntheta][nphi][ndomain]
+        utilities::PetscUtilities::checkError;                                         //!< A field to store the ray identifier [origin][iCell][ntheta][nphi][ndomain]
     DMSwarmRegisterUserStructField(radSearch, VirtualCoordField, sizeof(Virtualcoord)) >>
         utilities::PetscUtilities::checkError;                                         //!< A field representing the three dimensional coordinates of the particle. Three "virtual" dims are required.
     DMSwarmFinalizeFieldRegister(radSearch) >> utilities::PetscUtilities::checkError;  //!< Initialize the fields that have been defined
@@ -178,7 +178,7 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
     VecGetArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
 
     /** Exact some information associated with the field declarations from the swarm*/
-    PetscReal* coord;  //!< Pointer to the coordinate field information
+    PetscReal* coord;                   //!< Pointer to the coordinate field information
     PetscInt* index;
     struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifier;      //!< Pointer to the ray identifier information
@@ -192,8 +192,8 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
     PetscInt npoints = 0;
     DMSwarmGetLocalSize(radSearch, &npoints) >> utilities::PetscUtilities::checkError;  //!< Recalculate the number of particles that are in the domain
     DMSwarmGetSize(radSearch, &nglobalpoints) >> utilities::PetscUtilities::checkError;
-    PetscInt stepcount = 0;       //!< Count the number of steps that the particles have taken
-    while (nglobalpoints != 0) {  //!< WHILE THERE ARE PARTICLES IN ANY DOMAIN
+    PetscInt stepcount = 0;                                                             //!< Count the number of steps that the particles have taken
+    while (nglobalpoints != 0) {                                                        //!< WHILE THERE ARE PARTICLES IN ANY DOMAIN
         // If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory and record its index
         IdentifyNewRaysOnRank(subDomain, radReturn);
 
@@ -273,7 +273,7 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
         if (log) log->Printf("Migrate ...");
 
         /** DMSwarm Migrate to move the ray search particle into the next domain if it has crossed. If it no longer appears in this domain then end the ray segment. */
-        DMSwarmMigrate(radSearch, PETSC_TRUE) >> utilities::PetscUtilities::checkError;  //!< Migrate the search particles and remove the particles that have left the domain space.
+        DMSwarmMigrate(radSearch, PETSC_TRUE) >> utilities::PetscUtilities::checkError;      //!< Migrate the search particles and remove the particles that have left the domain space.
 
         DMSwarmGetSize(radSearch, &nglobalpoints) >> utilities::PetscUtilities::checkError;  //!< Update the loop condition. Recalculate the number of particles that are in the domain.
         DMSwarmGetLocalSize(radSearch, &npoints) >> utilities::PetscUtilities::checkError;   //!< Update the loop condition. Recalculate the number of particles that are in the domain.
@@ -299,7 +299,7 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
     // March over each returned segment and add to the numberOriginRays
     PetscInt numberOfReturnedSegments;
     DMSwarmGetLocalSize(radReturn, &numberOfReturnedSegments);
-    struct Identifier* returnIdentifiers;  //!< Pointer to the ray identifier information
+    struct Identifier* returnIdentifiers;       //!< Pointer to the ray identifier information
     DMSwarmGetField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >>
         utilities::PetscUtilities::checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
     for (PetscInt p = 0; p < numberOfReturnedSegments; ++p) {
@@ -440,7 +440,7 @@ void ablate::radiation::Radiation::IdentifyNewRaysOnRank(ablate::domain::SubDoma
                 struct Identifier* returnIdentifiers;                                 //!< Pointer to the ray identifier information
                 PetscInt* returnRank;                                                 //! while we are here, set the return rank.  This won't change anything until migrate is called
                 DMSwarmGetField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >>
-                    utilities::PetscUtilities::checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
+                    utilities::PetscUtilities::checkError;                            //!< Get the fields from the radsolve swarm so the new point can be written to them
                 DMSwarmGetField(radReturn, DMSwarmField_rank, nullptr, nullptr, (void**)&returnRank) >> utilities::PetscUtilities::checkError;
 
                 // these are only created as remote rays are identified, so we can remoteRayId for the rank
@@ -565,14 +565,15 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     // Start by marching over all rays in this rank
     for (std::size_t raySegmentIndex = 0; raySegmentIndex < raySegments.size(); ++raySegmentIndex) {
         //! Zero this ray segment for all wavelengths
-        for (unsigned short int wavelengthIndex = 0; wavelengthIndex < static_cast<unsigned short int>(absorptivityFunction.propertySize); wavelengthIndex++) {  //! Iterate through every wavelength entry in this ray segment
+        for (unsigned short int wavelengthIndex = 0; wavelengthIndex < static_cast<unsigned short int>(absorptivityFunction.propertySize);
+             wavelengthIndex++) {  //! Iterate through every wavelength entry in this ray segment
             raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Ij = 0.0;
             raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad = 1.0;
         }
 
         // compute the Ij and Krad for this segment starting at the point closest to the ray origin
         const auto& raySegment =
-            raySegments[raySegmentIndex];  //! This is allowed to be cast to auto and indexed raySegmentIndex because there is only one physical ray segment that we are reading from.
+            raySegments[raySegmentIndex];            //! This is allowed to be cast to auto and indexed raySegmentIndex because there is only one physical ray segment that we are reading from.
         for (const auto& cellSegment : raySegment) {
             const PetscReal* sol = nullptr;          //!< The solution value at any given location
             const PetscReal* temperature = nullptr;  //!< The temperature at any given location
@@ -628,11 +629,13 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
         for (PetscInt rayIndex = 0; rayIndex < raysPerCell; ++rayIndex) {
             // Add the black body radiation transmitted through the domain to the source term
             PetscReal iSource[absorptivityFunction.propertySize];
-            for (unsigned short int i = 0; i < static_cast<unsigned short int>(absorptivityFunction.propertySize); ++i) iSource[i] = 0.0;  //! Initialize the wavelength dependent arrays to be of size zero.
+            for (unsigned short int i = 0; i < static_cast<unsigned short int>(absorptivityFunction.propertySize); ++i)
+                iSource[i] = 0.0;  //! Initialize the wavelength dependent arrays to be of size zero.
 
             // Add the absorption for this domain to the total absorption of the ray
             PetscReal kRadd[absorptivityFunction.propertySize];
-            for (unsigned short int i = 0; i < static_cast<unsigned short int>(absorptivityFunction.propertySize); ++i) kRadd[i] = 1.0;  //! Initialize the wavelength dependent arrays to be of size zero.
+            for (unsigned short int i = 0; i < static_cast<unsigned short int>(absorptivityFunction.propertySize); ++i)
+                kRadd[i] = 1.0;  //! Initialize the wavelength dependent arrays to be of size zero.
 
             /** for each segment in this ray
              * Integrate the wavelength dependent intensity calculation for each segment for each wavelength

@@ -32,8 +32,8 @@ timestepper:
       - !ablate::domain::modifiers::GhostBoundaryCells
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
-        eos: &eos !ablate::eos::TChemSoot # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked
-          mechFile: ../mechanisms/MMAReduced.yaml
+        eos: !ablate::eos::TChem  &eos
+          mechFile: ../mechanisms/MMAReduced.soot.yml
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       state:
@@ -57,9 +57,9 @@ timestepper:
     - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
       state: *initState
 
-    # Set the number density to zero
-    - fieldName: densityProgress
-      field: "0.0"
+#    # Set the number density to zero
+#    - fieldName: densityProgress
+#      field: "0.0"
 solvers:
   - !ablate::finiteVolume::CompressibleFlowSolver
     id: vortexFlowField
@@ -91,5 +91,5 @@ solvers:
       # Spectrum properties model with two wavelengths
       properties: !ablate::eos::radiationProperties::SootSpectrumProperties
         eos: *eos
-        wavelengths: [ 650.E-9, 532.E-9 ]
-        bandwidths: [ 10.E-9, 10E-9 ]
+        wavelengths: [ 650.E-9 ]
+        bandwidths: [ 10.E-9 ]

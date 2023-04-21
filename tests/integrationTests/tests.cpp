@@ -141,5 +141,8 @@ INSTANTIATE_TEST_SUITE_P(Monitors, IntegrationTestsSpecifier,
                                                            {"outputs/monitors/radiationFlux/domain.xmf", "domain.xmf"}})),
                          [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
-INSTANTIATE_TEST_SUITE_P(Radiation, IntegrationTestsSpecifier, testing::Values(MpiTestParameter("inputs/radiation/parallelPlatesRadiation.yaml", 1, "", "outputs/radiation/parallelPlatesOutput.txt")),
+INSTANTIATE_TEST_SUITE_P(Radiation, IntegrationTestsSpecifier,
+                         testing::Values(MpiTestParameter("inputs/radiation/parallelPlatesRadiation.yaml", 1, "", "outputs/radiation/parallelPlatesOutput.txt"),
+                                         MpiTestParameter("inputs/radiation/virtualTCP.yaml", 1, "", "outputs/radiation/virtualTCP.txt"),
+                                         MpiTestParameter("inputs/radiation/spectrumRadiation.yaml", 1, "", "outputs/radiation/spectrumRadiation.txt")),
                          [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });

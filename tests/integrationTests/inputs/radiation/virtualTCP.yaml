@@ -40,8 +40,8 @@ timestepper:
       - !ablate::domain::modifiers::GhostBoundaryCells
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
-        eos: &eos !ablate::eos::TChemSoot # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked.
-          mechFile: ../mechanisms/MMAReduced.yaml
+        eos: !ablate::eos::TChem  &eos
+          mechFile: ../mechanisms/MMAReduced.soot.yml
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       state:
@@ -58,17 +58,11 @@ timestepper:
         other: !ablate::finiteVolume::fieldFunctions::MassFractions
           # the mass fraction class allows for a subset of mass fractions to be specified. The rest are assumed zero.
           eos: *eos
-          values: !ablate::mathFunctions::geom::Sphere
-            center: [ 0, 0, 0 ]
-            radius: 0.125
-            insideValues:
-              - fieldName: N2
-                field: 0.724672103
-              - fieldName: C_solid
-                field: "1 - 0.724672103"
-            outsideValues:
-              - fieldName: N2
-                field: 1
+          values:
+            - fieldName: N2
+              field: 0.724672103
+            - fieldName: C(S)
+              field: "1 - 0.724672103"
 
     # the DensityMassFractions reuses the initState to set the densityMassFractions for all species.
     - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
@@ -77,6 +71,7 @@ timestepper:
     # Set the number density to zero
     - fieldName: densityProgress
       field: "0.0"
+
 solvers:
   - !ablate::finiteVolume::CompressibleFlowSolver
     id: vortexFlowField
@@ -95,7 +90,7 @@ solvers:
               name: interiorCells
             properties: !ablate::eos::radiationProperties::SootSpectrumProperties
               eos: *eos
-              wavelengths: [ 650.0E-9, 532.0E-9, 470.0E-9 ] # Red wavelength, # Green wavelength, # Blue wavelength
+              wavelengths: [ 650.0E-9, 532.0E-9, 470.0E-9 ] # Red wavelength, Green wavelength, Blue wavelength
               bandwidths: [ 10E-9, 10E-9 , 10E-9 ]
             log: !ablate::monitors::logs::StdOut
     eos: *eos
