@@ -48,21 +48,21 @@ TEST_P(SootSpectrumTestFixture, ShouldProduceExpectedValuesForField) {
 INSTANTIATE_TEST_SUITE_P(RadationSootTests, SootSpectrumTestFixture,
                          testing::Values(/** A test with all valid species for the Soot model */
                                          (SootSpectrumTestParameters){.fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
-                                                                                 ablate::domain::Field{.name = "densityYi", .numberComponents = 1, .components = {"C_solid"}, .offset = 5}},
+                                                                                 ablate::domain::Field{.name = "densityYi", .numberComponents = 1, .components = {"C(S)"}, .offset = 5}},
                                                                       .conservedValues = {0.01, NAN, NAN, NAN, NAN, 0.00125},  //!< The Density Yi values live here
                                                                       .temperatureIn = 300.0,
                                                                       .densityIn = 0.01,  //!< The density is read through the equation of state above, not here
                                                                       .expectedAbsorptivity = {4.0993572965501253, 5.3441624099083773, 6.3949150672039838}},
                                          /** A test with three valid species for the Soot model. */
                                          (SootSpectrumTestParameters){.fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
-                                                                                 ablate::domain::Field{.name = "densityYi", .numberComponents = 1, .components = {"C_solid"}, .offset = 5}},
+                                                                                 ablate::domain::Field{.name = "densityYi", .numberComponents = 1, .components = {"C(S)"}, .offset = 5}},
                                                                       .conservedValues = {0.01, NAN, NAN, NAN, NAN, 0.0025},  //!< The Density Yi values live here
                                                                       .temperatureIn = 800.0,
                                                                       .densityIn = 1.1,
                                                                       .expectedAbsorptivity = {8.1987145931002505, 10.688324819816755, 12.789830134407968}},
                                          /** A test with one valid species for the Soot model. */
                                          (SootSpectrumTestParameters){.fields = {ablate::domain::Field{.name = "euler", .numberComponents = 1, .offset = 0},
-                                                                                 ablate::domain::Field{.name = "densityYi", .numberComponents = 4, .components = {"C_solid"}, .offset = 5}},
+                                                                                 ablate::domain::Field{.name = "densityYi", .numberComponents = 4, .components = {"C(S)"}, .offset = 5}},
                                                                       .conservedValues = {0.01, NAN, NAN, NAN, NAN, 0.05},  //!< The Density Yi values live here
                                                                       .temperatureIn = 1200.0,
                                                                       .densityIn = 1.1,
