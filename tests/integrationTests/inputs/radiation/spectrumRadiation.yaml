@@ -34,6 +34,12 @@ timestepper:
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: !ablate::eos::TChem  &eos
           mechFile: ../mechanisms/MMAReduced.soot.yml
+
+      # create a conserved field to track ndd
+      - !ablate::finiteVolume::ConservedField
+        name: "Progress"
+        components: [ "NDD" ]
+
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       state:
