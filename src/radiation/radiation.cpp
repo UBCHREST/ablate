@@ -565,7 +565,7 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     // Start by marching over all rays in this rank
     for (std::size_t raySegmentIndex = 0; raySegmentIndex < raySegments.size(); ++raySegmentIndex) {
         //! Zero this ray segment for all wavelengths
-        for (unsigned short int wavelengthIndex = 0; wavelengthIndex < absorptivityFunction.propertySize; wavelengthIndex++) {  //! Iterate through every wavelength entry in this ray segment
+        for (unsigned short int wavelengthIndex = 0; wavelengthIndex < static_cast<unsigned short int>(absorptivityFunction.propertySize); wavelengthIndex++) {  //! Iterate through every wavelength entry in this ray segment
             raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Ij = 0.0;
             raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad = 1.0;
         }
@@ -587,14 +587,14 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                     //! Get the pointer to the returned array of absorption values. Iterate through every wavelength for the evaluation.
                     if (cellSegment.pathLength < 0) {
                         // This is a boundary cell
-                        for (int wavelengthIndex = 0; wavelengthIndex < absorptivityFunction.propertySize; ++wavelengthIndex) {
+                        for (int wavelengthIndex = 0; wavelengthIndex < static_cast<unsigned short int>(absorptivityFunction.propertySize); ++wavelengthIndex) {
                             raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Ij +=
                                 emission[wavelengthIndex] * raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad;
                             //! In the future we may want to set this intensity with a boundary condition class.
                         }
                     } else {
                         // This is not a boundary cell
-                        for (int wavelengthIndex = 0; wavelengthIndex < absorptivityFunction.propertySize; ++wavelengthIndex) {
+                        for (int wavelengthIndex = 0; wavelengthIndex < static_cast<unsigned short int>(absorptivityFunction.propertySize); ++wavelengthIndex) {
                             raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Ij +=
                                 emission[wavelengthIndex] * (1 - exp(-kappa[wavelengthIndex] * cellSegment.pathLength)) *
                                 raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad;
@@ -623,16 +623,16 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     std::size_t segmentOffset = 0;
     std::size_t rayOffset = 0;
     for (PetscInt cellIndex = 0; cellIndex < numberOriginCells; ++cellIndex) {
-        for (unsigned short int wavelengthIndex = 0; wavelengthIndex < absorptivityFunction.propertySize; ++wavelengthIndex)
+        for (unsigned short int wavelengthIndex = 0; wavelengthIndex < static_cast<unsigned short int>(absorptivityFunction.propertySize); ++wavelengthIndex)
             evaluatedGains[absorptivityFunction.propertySize * cellIndex + wavelengthIndex] = 0.0;  //! Zero the evaluated gains for this ray specifically. Do this for all wavelengths.
         for (PetscInt rayIndex = 0; rayIndex < raysPerCell; ++rayIndex) {
             // Add the black body radiation transmitted through the domain to the source term
             PetscReal iSource[absorptivityFunction.propertySize];
-            for (unsigned short int i = 0; i < absorptivityFunction.propertySize; ++i) iSource[i] = 0.0;  //! Initialize the wavelength dependent arrays to be of size zero.
+            for (unsigned short int i = 0; i < static_cast<unsigned short int>(absorptivityFunction.propertySize); ++i) iSource[i] = 0.0;  //! Initialize the wavelength dependent arrays to be of size zero.
 
             // Add the absorption for this domain to the total absorption of the ray
             PetscReal kRadd[absorptivityFunction.propertySize];
-            for (unsigned short int i = 0; i < absorptivityFunction.propertySize; ++i) kRadd[i] = 1.0;  //! Initialize the wavelength dependent arrays to be of size zero.
+            for (unsigned short int i = 0; i < static_cast<unsigned short int>(absorptivityFunction.propertySize); ++i) kRadd[i] = 1.0;  //! Initialize the wavelength dependent arrays to be of size zero.
 
             /** for each segment in this ray
              * Integrate the wavelength dependent intensity calculation for each segment for each wavelength
@@ -640,14 +640,14 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
              * Therefore, we should first iterate through the wavelengths first and sum the effects of every wavelength on every cell.
              */
             for (unsigned short int s = 0; s < raySegmentsPerOriginRay[rayOffset]; ++s) {
-                for (unsigned short int wavelengthIndex = 0; wavelengthIndex < absorptivityFunction.propertySize; wavelengthIndex++) {
+                for (unsigned short int wavelengthIndex = 0; wavelengthIndex < static_cast<unsigned short int>(absorptivityFunction.propertySize); wavelengthIndex++) {
                     iSource[wavelengthIndex] += raySegmentSummary[absorptivityFunction.propertySize * segmentOffset + wavelengthIndex].Ij * kRadd[wavelengthIndex];
                     kRadd[wavelengthIndex] *= raySegmentSummary[absorptivityFunction.propertySize * segmentOffset + wavelengthIndex].Krad;
                 }
                 segmentOffset++;
             }
 
-            for (unsigned short int wavelengthIndex = 0; wavelengthIndex < absorptivityFunction.propertySize; wavelengthIndex++)
+            for (unsigned short int wavelengthIndex = 0; wavelengthIndex < static_cast<unsigned short int>(absorptivityFunction.propertySize); wavelengthIndex++)
                 evaluatedGains[absorptivityFunction.propertySize * cellIndex + wavelengthIndex] += iSource[wavelengthIndex] * gainsFactor[rayOffset];
             rayOffset++;
         }

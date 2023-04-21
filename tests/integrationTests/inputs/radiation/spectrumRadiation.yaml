@@ -1,5 +1,11 @@
-#
-#
+#### Description
+#This test shows the use of a wavelength dependent radiation model.
+#The wavelength dependent model is used in the virtual two-color pyrometry formulation to determine the temperature.
+#The model is based on the black body spectrum and Rayleigh scattering approximation.
+#The model requires the soot mechanism to be specified in the eos.
+#The model also requires the soot mass fraction to be specified in the initialization.
+#The model requires the wavelengths to be specified in the properties.
+#The model requires the radiation solver to be specified in the solver list.
 ---
 
 environment:
@@ -82,8 +88,8 @@ solvers:
       region:
         name: interiorCells
       rays: 5
-      # this is only an example of how to combine multiple models.  A simple fixed constant would be ideal for a real simulation
+      # Spectrum properties model with two wavelengths
       properties: !ablate::eos::radiationProperties::SootSpectrumProperties
         eos: *eos
-        wavelengths: [ 650.E-9 ]
-        bandwidths: [ 10E-9 ]
+        wavelengths: [ 650.E-9, 532.E-9 ]
+        bandwidths: [ 10.E-9, 10E-9 ]

@@ -1,5 +1,11 @@
-#
-#
+#### Description
+#This test shows the full use of the simulated two-color pyrometry code.
+#Two color pyrometry is employed as a monitor and is attached to a boundary which serves as a viewing window.
+#The model is based on the black body spectrum and Rayleigh scattering approximation.
+#The model requires the soot mechanism to be specified in the eos.
+#Using the TCP monitor requires that Orthogonal radiation is used. This is specified in the solver list.
+#Orthogonal radiation detects radiation through the domain as the camera would, assuming the camera is
+# relatively far from the domain.
 ---
 environment:
   title: _tcp
