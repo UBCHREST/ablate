@@ -22,7 +22,7 @@ class Constant : public RadiationModel {
      * Get the refractive index for the material.
      * @return
      */
-    static inline PetscReal GetRefractiveIndex() { return 1; }
+    static inline constexpr PetscReal GetRefractiveIndex() { return 1; }
 
     /**
      * private static function for evaluating constant properties without temperature
