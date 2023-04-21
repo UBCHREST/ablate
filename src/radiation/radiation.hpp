@@ -4,7 +4,6 @@
 #include <memory>
 #include <set>
 #include "eos/radiationProperties/radiationProperties.hpp"
-//#include "eos/radiationProperties/sootSpectrumProperties.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
 #include "io/interval/interval.hpp"
 #include "monitors/logs/log.hpp"
