@@ -35,10 +35,21 @@ timestepper:
         eos: !ablate::eos::TChem  &eos
           mechFile: ../mechanisms/MMAReduced.soot.yml
 
+        # use a higher order field for the conserved field transport options
+        conservedFieldOptions:
+          petscfv_type: leastsquares
+          petsclimiter_type: vanleer
+
       # create a conserved field to track ndd
       - !ablate::finiteVolume::ConservedField
         name: "Progress"
         components: [ "NDD" ]
+
+      # by adding a pressure field the code will compute and output pressure
+      - !ablate::domain::FieldDescription
+        name: pressure
+        type: FV
+        location: aux
 
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
@@ -63,9 +74,9 @@ timestepper:
     - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
       state: *initState
 
-#    # Set the number density to zero
-#    - fieldName: densityProgress
-#      field: "0.0"
+    # Set the number density to zero
+    - fieldName: densityProgress
+      field: "0.0"
 solvers:
   - !ablate::finiteVolume::CompressibleFlowSolver
     id: vortexFlowField

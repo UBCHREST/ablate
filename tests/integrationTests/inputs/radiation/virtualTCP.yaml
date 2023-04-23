@@ -16,11 +16,9 @@ timestepper:
   arguments:
     ts_type: rk
     ts_max_steps: 4
-  io: !ablate::io::Hdf5MultiFileSerializer
-    interval: 0
   domain: !ablate::domain::BoxMeshBoundaryCells
     name: simpleBoxField
-    faces: [ 10, 10, 10 ]
+    faces: [ 5, 5, 5 ]
     lower: [ -0.25 , -0.25, -0.25 ]
     upper: [ 0.25, 0.25, 0.25 ]
     simplex: false
@@ -30,32 +28,34 @@ timestepper:
     preModifiers:
       - !ablate::domain::modifiers::DistributeWithGhostCells
     postModifiers:
-      - !ablate::domain::modifiers::TagLabelInterface
-        leftRegion:
-          name: interiorCells
-        rightRegion:
-          name: boundaryCellsFront
-        boundaryFaceRegion:
-          name: boundaryFacesFront
       - !ablate::domain::modifiers::GhostBoundaryCells
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: !ablate::eos::TChem  &eos
           mechFile: ../mechanisms/MMAReduced.soot.yml
+
+        # use a higher order field for the conserved field transport options
+        conservedFieldOptions:
+          petscfv_type: leastsquares
+          petsclimiter_type: vanleer
+
       # create a conserved field to track ndd
       - !ablate::finiteVolume::ConservedField
         name: "Progress"
         components: [ "NDD" ]
+
+      # by adding a pressure field the code will compute and output pressure
+      - !ablate::domain::FieldDescription
+        name: pressure
+        type: FV
+        location: aux
+
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       state:
         &initState
         eos: *eos
-        temperature: !ablate::mathFunctions::geom::Sphere
-          center: [ 0, 0, 0 ]
-          radius: 0.125
-          insideValues: 2000
-          outsideValues: 800
+        temperature: 1200.0
         pressure: 101325.0
         velocity: [ 0.0 ]
         # the mass fractions must be specified to compute rho, e, etc.
@@ -65,28 +65,30 @@ timestepper:
           values:
             - fieldName: N2
               field: 0.724672103
-            - fieldName: C(S)
-              field: "1 - 0.724672103"
-
-    # the DensityMassFractions reuses the initState to set the densityMassFractions for all species.
+            - fieldName: MMETHAC_C5H8O2
+              field: 0.055186656
+            - fieldName: O2
+              field: 0.220141239
+    # the DensityMassFractions reuses the initState to set the densityMassFractions for all species
     - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
       state: *initState
 
     # Set the number density to zero
     - fieldName: densityProgress
       field: "0.0"
-
 solvers:
   - !ablate::finiteVolume::CompressibleFlowSolver
-    id: vortexFlowField
+    id: flowField
     region:
       name: interiorCells
+    eos: *eos
     monitors:
-      - !<!ablate::monitors::MaxMinAverage>
+      - !ablate::monitors::MaxMinAverage
         field: euler
-      - !<!ablate::monitors::RadiationFlux>
+      - !ablate::monitors::RadiationFlux
+        id: vTCPMonitor
         region:
-          name: boundaryFacesFront
+          name: boundaryFaces
         radiation:
           - !ablate::radiation::OrthogonalRadiation
             id: tcp
@@ -96,9 +98,8 @@ solvers:
               eos: *eos
               wavelengths: [ 650.0E-9, 532.0E-9, 470.0E-9 ] # Red wavelength, Green wavelength, Blue wavelength
               bandwidths: [ 10E-9, 10E-9 , 10E-9 ]
-    eos: *eos
   - !ablate::boundarySolver::BoundarySolver
-    id: openBoundary
+    id: boundary
     region:
       name: boundaryCells
     fieldBoundary:
