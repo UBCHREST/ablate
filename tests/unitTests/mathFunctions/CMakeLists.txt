@@ -10,6 +10,7 @@ target_sources(unitTests
         formulaTests.cpp
         linearTests.cpp
         peakTests.cpp
+        linearFunctionTests.cpp
         )
 
 add_subdirectory(geom)

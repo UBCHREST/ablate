@@ -7,7 +7,6 @@ target_sources(ablateLibrary
         densityExtraVariables.cpp
         densityProgressVariables.cpp
         densityVolumeFraction.cpp
-        chemTabField.cpp
 
         PUBLIC
         compressibleFlowState.hpp
@@ -17,5 +16,4 @@ target_sources(ablateLibrary
         densityExtraVariables.hpp
         densityProgressVariables.hpp
         densityVolumeFraction.hpp
-        chemTabField.hpp
         )

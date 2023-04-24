@@ -37,6 +37,8 @@ PetscErrorCode ablate::finiteVolume::processes::Chemistry::ChemistryPreStage(TS 
         PetscFunctionReturn(0);
     }
 
+    StartEvent("ChemistryPreStage");
+
     // Get the valid cell range over this region
     auto& fvSolver = dynamic_cast<ablate::finiteVolume::FiniteVolumeSolver&>(solver);
     ablate::domain::Range cellRange;
@@ -59,13 +61,14 @@ PetscErrorCode ablate::finiteVolume::processes::Chemistry::ChemistryPreStage(TS 
 
     // clean up
     solver.RestoreRange(cellRange);
+    EndEvent();
     PetscFunctionReturn(0);
 }
 
 PetscErrorCode ablate::finiteVolume::processes::Chemistry::AddChemistrySourceToFlow(const FiniteVolumeSolver& solver, DM dm, PetscReal time, Vec locX, Vec locFVec, void* ctx) {
     PetscFunctionBegin;
     auto process = (ablate::finiteVolume::processes::Chemistry*)ctx;
-
+    process->StartEvent("AddChemistrySourceToFlow");
     // get the cell range
     ablate::domain::Range cellRange;
     solver.GetCellRangeWithoutGhost(cellRange);
@@ -80,6 +83,7 @@ PetscErrorCode ablate::finiteVolume::processes::Chemistry::AddChemistrySourceToF
     // cleanup
     solver.RestoreRange(cellRange);
 
+    process->EndEvent();
     PetscFunctionReturn(0);
 }
 

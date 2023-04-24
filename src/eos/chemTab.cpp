@@ -233,7 +233,9 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
 
 void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal *progressVariables, PetscReal *massFractions, PetscReal density) const {
     // call model using generalized invocation method (usable for inversion & source computation)
+    StartEvent("ChemTab::ComputeMassFractions");
     ChemTabModelComputeFunction(density, progressVariables, nullptr, nullptr, massFractions);
+    EndEvent();
 }
 
 void ablate::eos::ChemTab::ComputeMassFractions(const std::vector<PetscReal> &progressVariables, std::vector<PetscReal> &massFractions, PetscReal density) const {
@@ -257,6 +259,7 @@ void ablate::eos::ChemTab::ComputeProgressVariables(const std::vector<PetscReal>
 }
 
 void ablate::eos::ChemTab::ComputeProgressVariables(const PetscReal *massFractions, PetscReal *progressVariables) const {
+    StartEvent("ChemTab::ComputeProgressVariables");
     // c = W'y
     for (size_t i = 0; i < progressVariablesNames.size(); i++) {
         PetscReal v = 0;
@@ -265,11 +268,15 @@ void ablate::eos::ChemTab::ComputeProgressVariables(const PetscReal *massFractio
         }
         progressVariables[i] = v;
     }
+    EndEvent();
 }
 
 void ablate::eos::ChemTab::ChemistrySource(PetscReal density, const PetscReal densityProgressVariable[], PetscReal *densityEnergySource, PetscReal *progressVariableSource) const {
     // call model using generalized invocation method (usable for inversion & source computation)
+    StartEvent("ChemTab::ChemistrySource");
     ChemTabModelComputeFunction(density, densityProgressVariable, densityEnergySource, progressVariableSource, nullptr);
+    EndEvent();
+
 }
 
 void ablate::eos::ChemTab::View(std::ostream &stream) const { stream << "EOS: " << type << std::endl; }

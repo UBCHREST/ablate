@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_LINEAR_FUNCTION_HPP
-#define ABLATELIBRARY_LINEAR_FUNCTION_HPP
+#ifndef ABLATELIBRARY_LINEARFUNCTION_FUNCTION_HPP
+#define ABLATELIBRARY_LINEARFUNCTION_FUNCTION_HPP
 #include <muParser.h>
 #include "formulaBase.hpp"
 
@@ -8,15 +8,15 @@ namespace ablate::mathFunctions {
  * Linear functions in x, y, or z
  */
 
-class Linear : public MathFunction {
+class LinearFunction : public MathFunction {
    private:
-    const std::vector<double> startValue;
-    const std::vector<double> endValue;
+    std::shared_ptr<MathFunction> startFunction;
+    std::shared_ptr<MathFunction> endFunction;
     const double start;
     const double end;
     const int dir;
 
-    static PetscErrorCode LinearPetscFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
+    static PetscErrorCode LinearFunctionPetscFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
 
     /**
      * Helper function to do the interpolation
@@ -60,8 +60,8 @@ class Linear : public MathFunction {
     }
 
    public:
-    Linear(const Linear&) = delete;
-    void operator=(const Linear&) = delete;
+    LinearFunction(const LinearFunction&) = delete;
+    void operator=(const LinearFunction&) = delete;
 
     /**
      * Linear function from start to end with the specified start and end values
@@ -71,7 +71,7 @@ class Linear : public MathFunction {
      * @param end
      * @param dir 0, 1, 2
      */
-    explicit Linear(std::vector<double> startValue, std::vector<double> endValue, double start, double end, int dir);
+    explicit LinearFunction(std::shared_ptr<MathFunction> startFunction, std::shared_ptr<MathFunction> endFunction, double start, double end, int dir);
 
     double Eval(const double& x, const double& y, const double& z, const double& t) const override;
 
@@ -83,7 +83,7 @@ class Linear : public MathFunction {
 
     void* GetContext() override { return this; }
 
-    PetscFunction GetPetscFunction() override { return LinearPetscFunction; }
+    PetscFunction GetPetscFunction() override { return LinearFunctionPetscFunction; }
 };
 }  // namespace ablate::mathFunctions
 

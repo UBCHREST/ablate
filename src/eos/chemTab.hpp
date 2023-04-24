@@ -14,7 +14,7 @@
 namespace ablate::eos {
 
 #ifdef WITH_TENSORFLOW
-class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemTab> {
+class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemTab>, public utilities::Loggable<ChemTab> {
    private:
     //! use the reference eos to compute properties from the decoded progressVariables to yi
     std::shared_ptr<ablate::eos::TChem> referenceEOS;

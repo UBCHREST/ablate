@@ -11,7 +11,7 @@ class Loggable {
     inline static PetscClassId petscClassId = 0;
 
     // Store a single depth active event
-    PetscLogEvent activeEvent = PETSC_DECIDE;
+    mutable PetscLogEvent activeEvent = PETSC_DECIDE;
 
    protected:
     Loggable() {
@@ -29,7 +29,7 @@ class Loggable {
         return eventId;
     }
 
-    inline void StartEvent(const char* eventName) {
+    inline void StartEvent(const char* eventName) const {
         if (activeEvent == PETSC_DECIDE) {
             PetscLogEventRegister(eventName, petscClassId, &activeEvent) >> utilities::PetscUtilities::checkError;
             PetscLogEventBegin(activeEvent, 0, 0, 0, 0) >> utilities::PetscUtilities::checkError;
@@ -38,7 +38,7 @@ class Loggable {
         }
     }
 
-    inline void EndEvent() {
+    inline void EndEvent() const {
         if (activeEvent > 0) {
             PetscLogEventEnd(activeEvent, 0, 0, 0, 0);
             activeEvent = PETSC_DECIDE;
