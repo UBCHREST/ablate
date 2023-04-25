@@ -102,6 +102,7 @@ void ablate::levelSet::Utilities::VertexLevelSet_VOF(DM dm, const PetscInt p, co
   DMPlexGetNumCellVertices(dm, p, &nv) >> ablate::utilities::PetscUtilities::checkError;
 
   // Get an initial guess at the vertex level set values assuming that the interface passes through the cell-center.
+  // Also allocates c if c==NULL on entry
   ablate::levelSet::Utilities::VertexLevelSet_LS(dm, p, 0.0, n, c);
 
   // Get the resulting VOF from the initial guess

@@ -39,7 +39,7 @@ PetscErrorCode DMPlexGetNumCellVertices(DM dm, const PetscInt p, PetscInt *nv) {
       SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "Cannot determine number of vertices for cell type %s", DMPolytopeTypes[ct]);
   }
 
-  PetscFunctionReturn(0);
+  PetscFunctionReturn(PETSC_SUCCESS);
 
 }
 
@@ -49,10 +49,12 @@ PetscErrorCode DMPlexGetCellVertices(DM dm, const PetscInt p, PetscInt *nVerts, 
   PetscInt  cl, nClosure, *closure = NULL;
   PetscInt  nv, *verts;
 
+  PetscFunctionBegin;
+
   PetscCall(DMPlexGetNumCellVertices(dm, p, &nv));
   *nVerts = nv;
 
-  PetscCall(PetscMalloc1(nv, vertOut));
+  PetscCall(DMGetWorkArray(dm, nv, MPIU_INT, vertOut));
   verts = *vertOut;
 
   PetscCall(DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd));  // Range of vertices
@@ -69,8 +71,57 @@ PetscErrorCode DMPlexGetCellVertices(DM dm, const PetscInt p, PetscInt *nVerts, 
 
   PetscCall(DMPlexRestoreTransitiveClosure(dm, p, PETSC_TRUE, &nClosure, &closure));  // Restore the points
 
-  PetscFunctionReturn(0);
+  PetscFunctionReturn(PETSC_SUCCESS);
 
 }
 
+
+PetscErrorCode DMPlexRestoreCellVertices(DM dm, const PetscInt p, PetscInt *nVerts, PetscInt *vertOut[]) {
+
+  PetscFunctionBegin;
+  if (nVerts) *nVerts = 0;
+  PetscCall(DMRestoreWorkArray(dm, 0, MPIU_INT, vertOut));
+  PetscFunctionReturn(PETSC_SUCCESS);
+
+}
+
+// Return the coordinates of a list of vertices
+PetscErrorCode DMPlexGetVertexCoordinates(DM dm, const PetscInt np, const PetscInt pArray[], PetscScalar *coords[]) {
+
+  PetscInt    dim;
+  DM          cdm;
+  Vec         localCoordsVector;
+  PetscScalar *coordsArray, *vcoords;
+  PetscSection coordsSection;
+
+  PetscFunctionBegin;
+
+  PetscCall(DMGetDimension(dm, &dim));
+
+  PetscCall(DMGetCoordinateDM(dm, &cdm));
+
+  PetscCall(DMGetWorkArray(dm, np*dim, MPIU_SCALAR, coords));
+
+  PetscCall(DMGetCoordinatesLocal(dm, &localCoordsVector));
+  PetscCall(VecGetArray(localCoordsVector, &coordsArray));
+  PetscCall(DMGetCoordinateSection(dm, &coordsSection));
+
+  for (PetscInt i = 0; i < np; ++i) {
+    PetscCall(DMPlexPointLocalRef(cdm, pArray[i], coordsArray, &vcoords));
+    for (PetscInt d = 0; d < dim; ++d ) {
+      (*coords)[i*dim + d] = vcoords[d];
+    }
+  }
+
+  PetscCall(VecRestoreArray(localCoordsVector, &coordsArray));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+
+}
+
+PetscErrorCode DMPlexRestoreVertexCoordinates(DM dm, const PetscInt np, const PetscInt pArray[], PetscReal *coords[]) {
+  PetscFunctionBegin;
+  PetscCall(DMRestoreWorkArray(dm, 0, MPIU_SCALAR, coords));
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
 
