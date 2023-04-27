@@ -274,21 +274,6 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
         }
         // calculate curvature -->  kappa = 1/n [(n/|n|. Delta) |n| - (Delta.n)]
         curvature = (totalGradMagNormal - totalDivNormal) / (magCellNormal + utilities::Constants::tiny);
-        if (PetscAbs(curvature) > 0.001){
-            PetscScalar* alpha=nullptr;
-            DMPlexPointLocalFieldRead(dm, c, VFfield.id, solArray, &alpha) >>utilities::PetscUtilities::checkError;
-            if (*alpha < 10E-8 || *alpha > 1-10E-8){
-                curvature = 0.0;
-            } else{
-                curvature = -50.0;
-                PetscReal new_mag = PetscSqrtReal( PetscSqr(fcg->centroid[0]) + PetscSqr(fcg->centroid[1]) );
-                PetscReal new_norm_x = fcg->centroid[0]/new_mag;
-                PetscReal new_norm_y = fcg->centroid[1]/new_mag;
-                cellCenterNormal[0] = -new_norm_x;
-                cellCenterNormal[1] = -new_norm_y;
-            }
-
-        }
 
         for (PetscInt d = 0; d < dim; ++d) {
             // calculate surface force and energy
