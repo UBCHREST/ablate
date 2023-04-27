@@ -157,9 +157,6 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
         for (PetscInt p = 0; p < info.stencilSize; p++) {
             PetscFVCellGeom *cg = nullptr;
             DMPlexPointLocalRead(dmCell, info.stencil[p], cellGeomArray, &cg) >> utilities::PetscUtilities::checkError;
-            if ( cg->centroid[0] > -2 && cg->centroid[0] < -1.8 && cg->centroid[1] > 0 && cg->centroid[1] < 0.2){
-                cg->centroid[2] = 0;
-            }
 
             const PetscScalar *alpha = nullptr;
             DMPlexPointLocalFieldRead(dm, info.stencil[p], VFfield.id, solArray, &alpha) >> utilities::PetscUtilities::checkError;
