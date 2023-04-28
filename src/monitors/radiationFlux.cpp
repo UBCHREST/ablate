@@ -95,6 +95,7 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
 
 PetscErrorCode ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
     PetscFunctionBeginUser;
+
     // If this is the first output, store a copy of the fluxDm
     if (sequenceNumber == 0) {
         PetscCall(DMView(fluxDm, viewer));

@@ -202,6 +202,7 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
          * */
         ParticleStep(subDomain, faceDM, faceGeomArray, radReturn);
 
+        StartEvent("Radiation:ParticlePush");
         /** Get all of the ray information from the particle
          * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
         DMSwarmGetField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
@@ -264,6 +265,7 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
                 virtualcoord[ipart].hhere = 0;                       //!< Reset the path length to zero
             }
         }
+        EndEvent();
         /** Restore the fields associated with the particles after all of the particles have been stepped */
         DMSwarmRestoreField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
         DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
@@ -272,11 +274,13 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
 
         if (log) log->Printf("Migrate ...");
 
+        StartEvent("Radiation:Migrate");
         /** DMSwarm Migrate to move the ray search particle into the next domain if it has crossed. If it no longer appears in this domain then end the ray segment. */
         DMSwarmMigrate(radSearch, PETSC_TRUE) >> utilities::PetscUtilities::checkError;      //!< Migrate the search particles and remove the particles that have left the domain space.
 
         DMSwarmGetSize(radSearch, &nglobalpoints) >> utilities::PetscUtilities::checkError;  //!< Update the loop condition. Recalculate the number of particles that are in the domain.
         DMSwarmGetLocalSize(radSearch, &npoints) >> utilities::PetscUtilities::checkError;   //!< Update the loop condition. Recalculate the number of particles that are in the domain.
+        EndEvent();
 
         if (log) log->Printf(" Global Steps: %" PetscInt_FMT "    Global Points: %" PetscInt_FMT "\n", stepcount, nglobalpoints);
         stepcount++;
@@ -458,6 +462,7 @@ void ablate::radiation::Radiation::IdentifyNewRaysOnRank(ablate::domain::SubDoma
 }
 
 void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray, DM radReturn) { /** Check that the particle is in a valid region */
+    StartEvent("Radiation::ParticleStep");
     PetscInt npoints = 0;
     PetscInt nglobalpoints = 0;
     DMSwarmGetLocalSize(radSearch, &npoints) >> utilities::PetscUtilities::checkError;
@@ -541,10 +546,12 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
     DMSwarmRestoreField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifiers) >> utilities::PetscUtilities::checkError;
     DMSwarmRestoreField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoords) >> utilities::PetscUtilities::checkError;
     DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+    EndEvent();
 }
 
 void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Field temperatureField, Vec auxVec) {
     StartEvent("Radiation::EvaluateGains");
+    StartEvent("Radiation::LocalSegments");
 
     /** Get the array of the solution vector. */
     const PetscScalar* solArray;
@@ -583,8 +590,10 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                 if (temperature) {                                       /** Input absorptivity (kappa) values from model here. */
                     PetscReal kappa[absorptivityFunction.propertySize];  //!< Absorptivity coefficient, property of each cell. This is an array that we will iterate through for every evaluation
                     PetscReal emission[absorptivityFunction.propertySize];
+                    StartEvent("Radiation:PropertiesEvaluation");
                     absorptivityFunction.function(sol, *temperature, kappa, absorptivityFunctionContext);  //! Get the absorption and emission information from the provided properties models.
                     emissivityFunction.function(sol, *temperature, emission, emissivityFunctionContext);
+                    EndEvent();
                     //! Get the pointer to the returned array of absorption values. Iterate through every wavelength for the evaluation.
                     if (cellSegment.pathLength < 0) {
                         // This is a boundary cell
@@ -608,11 +617,15 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
             }
         }
     }
+    EndEvent();
 
+    StartEvent("Radiation::Communication");
     // Now that all the ray information is computed, transfer it back to rank that originated each ray using a pull
     PetscSFBcastBegin(remoteAccess, carrierMpiType, (const void*)raySegmentsCalculations.data(), (void*)raySegmentSummary.data(), MPI_REPLACE) >> utilities::PetscUtilities::checkError;
     PetscSFBcastEnd(remoteAccess, carrierMpiType, (const void*)raySegmentsCalculations.data(), (void*)raySegmentSummary.data(), MPI_REPLACE) >> utilities::PetscUtilities::checkError;
+    EndEvent();
 
+    StartEvent("Radiation::Recombination");
     /** March over each
      * INDEXING ANNOTATIONS:
      * evaluatedGains: There is a gain evaluation for every cell * wavelength
@@ -659,6 +672,7 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     /** Cleanup */
     VecRestoreArrayRead(solVec, &solArray);
     VecRestoreArrayRead(auxVec, &auxArray);
+    EndEvent();
     EndEvent();
 }
 

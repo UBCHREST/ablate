@@ -4,7 +4,11 @@ ablate::radiation::OrthogonalRadiation::OrthogonalRadiation(const std::string& s
                                                             std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
     : SurfaceRadiation(solverId, region, 0, radiationModelIn, log) {}  //! The ray number should never be used because there is only one ray emanating from every boundary face
 
-ablate::radiation::OrthogonalRadiation::~OrthogonalRadiation() {}
+ablate::radiation::OrthogonalRadiation::~OrthogonalRadiation() {
+    if (faceGeomVec) VecDestroy(&faceGeomVec) >> utilities::PetscUtilities::checkError;
+    if (cellGeomVec) VecDestroy(&cellGeomVec) >> utilities::PetscUtilities::checkError;
+    if (remoteAccess) PetscSFDestroy(&remoteAccess) >> utilities::PetscUtilities::checkError;
+}
 
 void ablate::radiation::OrthogonalRadiation::Setup(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain) {
     dim = subDomain.GetDimensions();   //!< Number of dimensions already defined in the setup
@@ -54,7 +58,7 @@ void ablate::radiation::OrthogonalRadiation::Setup(const ablate::domain::Range& 
 
     /** Register fields within the DMSwarm */
     DMSwarmRegisterUserStructField(radSearch, IdentifierField, sizeof(Identifier)) >>
-        utilities::PetscUtilities::checkError;  //!< A field to store the ray identifier [origin][iCell][ntheta][nphi][ndomain]
+        utilities::PetscUtilities::checkError;                                         //!< A field to store the ray identifier [origin][iCell][ntheta][nphi][ndomain]
     DMSwarmRegisterUserStructField(radSearch, VirtualCoordField, sizeof(Virtualcoord)) >>
         utilities::PetscUtilities::checkError;                                         //!< A field representing the three dimensional coordinates of the particle. Three "virtual" dims are required.
     DMSwarmFinalizeFieldRegister(radSearch) >> utilities::PetscUtilities::checkError;  //!< Initialize the fields that have been defined

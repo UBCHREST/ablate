@@ -86,7 +86,6 @@ solvers:
       - !ablate::monitors::MaxMinAverage
         field: euler
       - !ablate::monitors::RadiationFlux
-        id: vTCPMonitor
         region:
           name: boundaryFaces
         radiation:
