@@ -137,10 +137,10 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
 
     /** Determines the next location of the search particles during the initialization
      * */
-    virtual void ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray, DM radReturn);  //!< Routine to move the particle one step
+    virtual void ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray, DM radReturn, PetscInt nlocalpoints, PetscInt nglobalpoints);  //!< Routine to move the particle one step
 
     //! If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory and record its index
-    void IdentifyNewRaysOnRank(domain::SubDomain& subDomain, DM radReturn);
+    void IdentifyNewRaysOnRank(domain::SubDomain& subDomain, DM radReturn, PetscInt nlocalpoints);
 
     /** Determines what component of the incoming radiation should be accounted for when evaluating the irradiation for each ray.
      * Dummy function that doesn't do anything unless it is overridden by the surface implementation
