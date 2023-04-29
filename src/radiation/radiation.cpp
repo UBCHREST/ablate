@@ -156,7 +156,7 @@ void ablate::radiation::Radiation::Setup(const ablate::domain::Range& cellRange,
 
 void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain) {
     if (log) log->Printf("Migration Start: %s \n", solverId.c_str());
-    StartEvent("Radiation:Initialize:LoadArrays");
+    StartEvent("Radiation::Initialize::LoadArrays");
     DM faceDM;
     const PetscScalar* faceGeomArray;
 
