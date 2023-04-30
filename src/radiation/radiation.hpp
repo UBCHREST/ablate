@@ -88,6 +88,12 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
         return E_lambda;
     }
 
+    /**
+     * Represents the name of the class for logging and other utilities
+     * @return
+     */
+    static inline std::string GetClassType() { return "Radiation"; }
+
     /** SubDomain Register and Setup **/
     virtual void Setup(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain);
 

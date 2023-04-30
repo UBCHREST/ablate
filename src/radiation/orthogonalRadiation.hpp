@@ -15,6 +15,12 @@ class OrthogonalRadiation : public ablate::radiation::SurfaceRadiation {
 
     void Setup(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain) override;
 
+    /**
+     * Represents the name of the class for logging and other utilities
+     * @return
+     */
+    static inline std::string GetClassType() { return "OrthogonalRadiation"; }
+
     inline void GetSurfaceIntensity(PetscReal* intensityReturn, PetscInt faceId, PetscReal temperature, PetscReal emissivity = 1.0) override {
         for (int i = 0; i < (int)absorptivityFunction.propertySize; ++i) {  // Compute the losses
             PetscReal netIntensity = evaluatedGains[absorptivityFunction.propertySize * indexLookup.GetAbsoluteIndex(faceId) + i];

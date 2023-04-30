@@ -33,7 +33,6 @@ void ablate::radiation::OrthogonalRadiation::Setup(const ablate::domain::Range& 
      * Obtain the geometric information about the cells in the DM
      * */
 
-    StartEvent("OrthogonalRadiation::Setup");
     if (log) log->Printf("Starting Initialize\n");
 
     DMPlexGetMinRadius(subDomain.GetDM(), &minCellRadius) >> utilities::PetscUtilities::checkError;
@@ -142,7 +141,6 @@ void ablate::radiation::OrthogonalRadiation::Setup(const ablate::domain::Range& 
         DMSwarmGetSize(radSearch, &ipart) >> utilities::PetscUtilities::checkError;
         log->Printf("After First Migrate: %i\n", ipart);
     }
-    EndEvent();
 }
 
 #include "registrar.hpp"

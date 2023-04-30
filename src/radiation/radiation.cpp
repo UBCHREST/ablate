@@ -35,7 +35,7 @@ void ablate::radiation::Radiation::Setup(const ablate::domain::Range& cellRange,
      * Obtain the geometric information about the cells in the DM
      * */
 
-    StartEvent("Radiation::Setup");
+    StartEvent((GetClassType() + "::Setup").c_str());
     if (log) log->Printf("Starting Setup\n");
 
     DMPlexGetMinRadius(subDomain.GetDM(), &minCellRadius) >> utilities::PetscUtilities::checkError;
@@ -156,7 +156,7 @@ void ablate::radiation::Radiation::Setup(const ablate::domain::Range& cellRange,
 
 void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain) {
     if (log) log->Printf("Migration Start: %s \n", solverId.c_str());
-    StartEvent("Radiation::Initialize::LoadArrays");
+    StartEvent((GetClassType() + ":Initialize:LoadArrays").c_str());
     DM faceDM;
     const PetscScalar* faceGeomArray;
 
@@ -203,7 +203,6 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
          * */
         ParticleStep(subDomain, faceDM, faceGeomArray, radReturn, npoints, nglobalpoints);
 
-
         /** Get all of the ray information from the particle
          * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
         DMSwarmGetField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
@@ -227,7 +226,7 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
              * If the domain is 1D and the x-direction of the particle is zero then delete the particle here
              * */
             if ((!(domain::Region::InRegion(region, subDomain.GetDM(), index[ipart]))) || ((dim == 1) && (abs(virtualcoord[ipart].xdir) < 0.0000001))) {
-                StartEvent("Radiation::Initialize::SetBoundaryCondition");
+                StartEvent((GetClassType() + "::Initialize::SetBoundaryCondition").c_str());
                 //! If the boundary has been reached by this ray, then add a boundary condition segment to the ray.
                 auto& ray = raySegments[identifier[ipart].remoteRayId];
                 auto& raySegment = ray.emplace_back();
@@ -250,7 +249,7 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
                 ipart--;  //!< Check the point replacing the one that was deleted
                 EndEvent();
             } else {
-                StartEvent("Radiation::Initialize::UpdateCoordinates");
+                StartEvent((GetClassType() + "::Initialize::UpdateCoordinates").c_str());
                 /** Step 4: Push the particle virtual coordinates to the intersection that was found in the previous step.
                  * This ensures that the next calculated path length will start from the boundary of the adjacent cell.
                  * */
@@ -278,7 +277,7 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
 
         if (log) log->Printf("Migrate ...");
 
-        StartEvent("Radiation::Initialize::Migrate");
+        StartEvent((GetClassType() + "::Initialize::Migrate").c_str());
         /** DMSwarm Migrate to move the ray search particle into the next domain if it has crossed. If it no longer appears in this domain then end the ray segment. */
         DMSwarmMigrate(radSearch, PETSC_TRUE) >> utilities::PetscUtilities::checkError;      //!< Migrate the search particles and remove the particles that have left the domain space.
 
@@ -294,11 +293,11 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
     VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
 
     // Move the identifiers in radReturn back to origin
-    StartEvent("Radiation::Initialize::RadReturn");
+    StartEvent((GetClassType() + "::Initialize::RadReturn").c_str());
     DMSwarmMigrate(radReturn, PETSC_TRUE) >> utilities::PetscUtilities::checkError;
     EndEvent();
 
-    StartEvent("Radiation::Initialize::BuildStarForest");
+    StartEvent((GetClassType() + "::Initialize::BuildStarForest").c_str());
     /* radReturn contains a list of all ranks (including this one) that contain segments for each ray.
      * Count the number of ray segments per ray
      */
@@ -413,7 +412,7 @@ PetscReal ablate::radiation::Radiation::FaceIntersect(PetscInt ip, Virtualcoord*
 PetscReal ablate::radiation::Radiation::SurfaceComponent(const PetscReal normal[], PetscInt iCell, PetscInt nphi, PetscInt ntheta) { return 1.0; }
 
 void ablate::radiation::Radiation::IdentifyNewRaysOnRank(ablate::domain::SubDomain& subDomain, DM radReturn, PetscInt npoints) { /** Check that the particle is in a valid region */
-    StartEvent("Radiation::Initialize::IdentifyNewRaysOnRank");
+    StartEvent((GetClassType() + "::Initialize::IdentifyNewRaysOnRank").c_str());
     PetscMPIInt rank = 0;
     MPI_Comm_rank(subDomain.GetComm(), &rank);
 
@@ -465,7 +464,8 @@ void ablate::radiation::Radiation::IdentifyNewRaysOnRank(ablate::domain::SubDoma
     EndEvent();
 }
 
-void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray, DM radReturn, PetscInt npoints, PetscInt nglobalpoints) { /** Check that the particle is in a valid region */
+void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray, DM radReturn, PetscInt npoints,
+                                                PetscInt nglobalpoints) { /** Check that the particle is in a valid region */
 
     PetscFVFaceGeom* faceGeom;
 
@@ -486,7 +486,7 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         /** Check that the particle is in a valid region */
         if (index[ipart] >= 0 && subDomain.InRegion(index[ipart])) {
-            StartEvent("Radiation::Initialize::GetConnectivity");
+            StartEvent((GetClassType() + "::Initialize::GetConnectivity").c_str());
             auto& identifier = identifiers[ipart];
             // Exact the ray to reduce lookup
             auto& ray = raySegments[identifier.remoteRayId];
@@ -515,7 +515,7 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
             DMPlexGetCone(subDomain.GetDM(), index[ipart], &cellFaces) >> utilities::PetscUtilities::checkError;  //!< Get the face geometry associated with the current cell
             EndEvent();
 
-            StartEvent("Radiation::Initialize::CalculatePathLength");
+            StartEvent((GetClassType() + "::Initialize::CalculatePathLength").c_str());
             /** Check every face for intersection with the segment.
              * The segment with the shortest path length for intersection will be the one that physically intercepts with the cell face and not with the nonphysical plane beyond the face.
              * */
@@ -552,7 +552,7 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
 }
 
 void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Field temperatureField, Vec auxVec) {
-    StartEvent("Radiation::EvaluateGains::LoadArrays");
+    StartEvent((GetClassType() + "::EvaluateGains::LoadArrays").c_str());
 
     unsigned short int propertySize = static_cast<unsigned short int>(absorptivityFunction.propertySize);
 
@@ -575,7 +575,7 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
 
     // Start by marching over all rays in this rank
     for (std::size_t raySegmentIndex = 0; raySegmentIndex < raySegments.size(); ++raySegmentIndex) {
-        StartEvent("Radiation::EvaluateGains::ZeroSegments");
+        StartEvent((GetClassType() + "::EvaluateGains::ZeroSegments").c_str());
         //! Zero this ray segment for all wavelengths
         for (unsigned short int wavelengthIndex = 0; wavelengthIndex < static_cast<unsigned short int>(absorptivityFunction.propertySize);
              wavelengthIndex++) {  //! Iterate through every wavelength entry in this ray segment
@@ -585,28 +585,28 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
 
         // compute the Ij and Krad for this segment starting at the point closest to the ray origin
         const auto& raySegment =
-            raySegments[raySegmentIndex];            //! This is allowed to be cast to auto and indexed raySegmentIndex because there is only one physical ray segment that we are reading from.
+            raySegments[raySegmentIndex];  //! This is allowed to be cast to auto and indexed raySegmentIndex because there is only one physical ray segment that we are reading from.
         EndEvent();
 
         for (const auto& cellSegment : raySegment) {
             const PetscReal* sol = nullptr;          //!< The solution value at any given location
             const PetscReal* temperature = nullptr;  //!< The temperature at any given location
-            StartEvent("Radiation::EvaluateGains::ReadSolutionArray");
+            StartEvent((GetClassType() + "::EvaluateGains::ReadSolutionArray").c_str());
             DMPlexPointLocalRead(solDm, cellSegment.cell, solArray, &sol);
             EndEvent();
             if (sol) {
-                StartEvent("Radiation::EvaluateGains::ReadTemperatureArray");
+                StartEvent((GetClassType() + "::EvaluateGains::ReadTemperatureArray").c_str());
                 DMPlexPointLocalFieldRead(auxDm, cellSegment.cell, temperatureField.id, auxArray, &temperature);
                 EndEvent();
                 if (temperature) {                                       /** Input absorptivity (kappa) values from model here. */
                     PetscReal kappa[absorptivityFunction.propertySize];  //!< Absorptivity coefficient, property of each cell. This is an array that we will iterate through for every evaluation
                     PetscReal emission[absorptivityFunction.propertySize];
-                    StartEvent("Radiation::EvaluateGains::PropertiesEvaluation");
+                    StartEvent((GetClassType() + "::EvaluateGains::PropertiesEvaluation").c_str());
                     absorptivityFunction.function(sol, *temperature, kappa, absorptivityFunctionContext);  //! Get the absorption and emission information from the provided properties models.
                     emissivityFunction.function(sol, *temperature, emission, emissivityFunctionContext);
                     EndEvent();
                     //! Get the pointer to the returned array of absorption values. Iterate through every wavelength for the evaluation.
-                    StartEvent("Radiation::EvaluateGains::LocalSegmentIntegration");
+                    StartEvent((GetClassType() + "::EvaluateGains::LocalSegmentIntegration").c_str());
                     if (cellSegment.pathLength < 0) {
                         // This is a boundary cell
                         for (int wavelengthIndex = 0; wavelengthIndex < propertySize; ++wavelengthIndex) {
@@ -631,13 +631,13 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
         }
     }
 
-    StartEvent("Radiation::EvaluateGains::Communication");
+    StartEvent((GetClassType() + "::EvaluateGains::Communication").c_str());
     // Now that all the ray information is computed, transfer it back to rank that originated each ray using a pull
     PetscSFBcastBegin(remoteAccess, carrierMpiType, (const void*)raySegmentsCalculations.data(), (void*)raySegmentSummary.data(), MPI_REPLACE) >> utilities::PetscUtilities::checkError;
     PetscSFBcastEnd(remoteAccess, carrierMpiType, (const void*)raySegmentsCalculations.data(), (void*)raySegmentSummary.data(), MPI_REPLACE) >> utilities::PetscUtilities::checkError;
     EndEvent();
 
-    StartEvent("Radiation::EvaluateGains::Recombination");
+    StartEvent((GetClassType() + "::EvaluateGains::Recombination").c_str());
     /** March over each
      * INDEXING ANNOTATIONS:
      * evaluatedGains: There is a gain evaluation for every cell * wavelength
@@ -654,13 +654,11 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
         for (PetscInt rayIndex = 0; rayIndex < raysPerCell; ++rayIndex) {
             // Add the black body radiation transmitted through the domain to the source term
             PetscReal iSource[absorptivityFunction.propertySize];
-            for (unsigned short int i = 0; i < propertySize; ++i)
-                iSource[i] = 0.0;  //! Initialize the wavelength dependent arrays to be of size zero.
+            for (unsigned short int i = 0; i < propertySize; ++i) iSource[i] = 0.0;  //! Initialize the wavelength dependent arrays to be of size zero.
 
             // Add the absorption for this domain to the total absorption of the ray
             PetscReal kRadd[absorptivityFunction.propertySize];
-            for (unsigned short int i = 0; i < propertySize; ++i)
-                kRadd[i] = 1.0;  //! Initialize the wavelength dependent arrays to be of size zero.
+            for (unsigned short int i = 0; i < propertySize; ++i) kRadd[i] = 1.0;  //! Initialize the wavelength dependent arrays to be of size zero.
 
             /** for each segment in this ray
              * Integrate the wavelength dependent intensity calculation for each segment for each wavelength
@@ -682,7 +680,7 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     }
     EndEvent();
 
-    StartEvent("Radiation::EvaluateGains::RestoreArrays");
+    StartEvent((GetClassType() + "::EvaluateGains::RestoreArrays").c_str());
     /** Cleanup */
     VecRestoreArrayRead(solVec, &solArray);
     VecRestoreArrayRead(auxVec, &auxArray);

@@ -30,6 +30,12 @@ class SurfaceRadiation : public ablate::radiation::Radiation {
     PetscReal SurfaceComponent(const PetscReal normal[], PetscInt iCell, PetscInt nphi, PetscInt ntheta) override;
 
     /**
+     * Represents the name of the class for logging and other utilities
+     * @return
+     */
+    static inline std::string GetClassType() { return "SurfaceRadiation"; }
+
+    /**
      * Compute total intensity (pre computed gains + current loss) with
      * @param faceId the current face id
      * @param temperature the temperature of the face
