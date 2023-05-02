@@ -19,10 +19,6 @@ TEST_P(ZimmerTestFixture, ShouldProduceExpectedValuesForField) {
     // ARRANGE
     std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();  //!< Create a mock eos with parameters to feed to the Zimmer model.
     /** Input values for the mock eos to carry into the Zimer model. This will require values for each of the fields. */
-    EXPECT_CALL(*eos, GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, testing::_))
-        .Times(::testing::Exactly(1))
-        .WillOnce(::testing::Return(
-            ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction([](const PetscReal conserved[], PetscReal* property) { *property = ZimmerTestFixture::GetParam().temperatureIn; })));
     EXPECT_CALL(*eos, GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty::Density, testing::_))
         .Times(::testing::Exactly(1))
         .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicTemperatureFunction(
