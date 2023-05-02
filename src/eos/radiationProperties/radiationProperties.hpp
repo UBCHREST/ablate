@@ -13,14 +13,6 @@ class RadiationModel {
     virtual ~RadiationModel() = default;
 
     /**
-     * Function to produce radiation absorption properties based upon the available fields
-     * @param property
-     * @param fields
-     * @return
-     */
-    [[nodiscard]] virtual ThermodynamicFunction GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const = 0;
-
-    /**
      * Function to produce radiation absorption properties based upon the available fields and temperature
      * @param property
      * @param fields

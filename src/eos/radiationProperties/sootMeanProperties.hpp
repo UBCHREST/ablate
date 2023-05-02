@@ -25,10 +25,8 @@ class SootMeanProperties : public RadiationModel {
     ThermodynamicFunction GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
     ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
 
-    static PetscErrorCode SootAbsorptionFunction(const PetscReal* conserved, PetscReal* kappa, void* ctx);
     static PetscErrorCode SootAbsorptionTemperatureFunction(const PetscReal* conserved, PetscReal temperature, PetscReal* kappa, void* ctx);
 
-    static PetscErrorCode SootEmissionFunction(const PetscReal* conserved, PetscReal* epsilon, void* ctx);
     static PetscErrorCode SootEmissionTemperatureFunction(const PetscReal* conserved, PetscReal temperature, PetscReal* epsilon, void* ctx);
 
     static inline PetscReal GetRefractiveIndex() { return 1; }

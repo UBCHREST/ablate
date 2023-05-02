@@ -19,10 +19,10 @@ TEST_P(RadiationSumTestFixture, ShouldComputeCorrectValueForGetRadiationProperti
 
     for (const auto& [property, expectedValue] : GetParam().expectedParameters) {
         // act
-        auto testFunction = sumModel->GetRadiationPropertiesFunction(property, {});
+        auto testFunction = sumModel->GetRadiationPropertiesTemperatureFunction(property, {});
 
         PetscReal computeValue = NAN;
-        testFunction.function(nullptr, &computeValue, testFunction.context.get());
+        testFunction.function(nullptr, 1000.0, &computeValue, testFunction.context.get());
 
         // assert
         ASSERT_DOUBLE_EQ(expectedValue, computeValue) << "should be correct for " << property;

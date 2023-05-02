@@ -65,14 +65,6 @@ class Constant : public RadiationModel {
     void operator=(const Constant&) = delete;
 
     /**
-     * Single function to produce radiation properties function for any property based upon the available fields
-     * @param property
-     * @param fields
-     * @return
-     */
-    [[nodiscard]] ThermodynamicFunction GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const override;
-
-    /**
      * Single function to produce thermodynamic function for any property based upon the available fields and temperature
      * @param property
      * @param fields

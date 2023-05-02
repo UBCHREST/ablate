@@ -11,12 +11,12 @@ TEST(RadiationConstantTests, ShouldRecordConstantValuesForDirectRadiationFunctio
 
     auto constantModel = std::make_shared<ablate::eos::radiationProperties::Constant>(eos, expectedAbsorptivity, 1);
 
-    auto absorptivityFunction = constantModel->GetRadiationPropertiesFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, {});
+    auto absorptivityFunction = constantModel->GetRadiationPropertiesTemperatureFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, {});
 
     // ACT
     PetscReal computedAbsorptivity = NAN;
 
-    absorptivityFunction.function(nullptr, &computedAbsorptivity, absorptivityFunction.context.get());
+    absorptivityFunction.function(nullptr, 1000.0, &computedAbsorptivity, absorptivityFunction.context.get());
 
     // ASSERT
     ASSERT_DOUBLE_EQ(expectedAbsorptivity, computedAbsorptivity);

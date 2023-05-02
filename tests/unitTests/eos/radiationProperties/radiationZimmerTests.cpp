@@ -30,13 +30,14 @@ TEST_P(ZimmerTestFixture, ShouldProduceExpectedValuesForField) {
 
     auto zimmerModel = std::make_shared<ablate::eos::radiationProperties::Zimmer>(
         eos, ZimmerTestFixture::GetParam().upperLimitTest, ZimmerTestFixture::GetParam().lowerLimitTest);  //!< An instantiation of the Zimmer model (with options set to nullptr)
-    auto absorptivityFunction = zimmerModel->GetRadiationPropertiesFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, ZimmerTestFixture::GetParam().fields);
+    auto absorptivityFunction = zimmerModel->GetRadiationPropertiesTemperatureFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, ZimmerTestFixture::GetParam().fields);
 
     /** This section should set the fields with a certain distribution of material such that the absorptivity of that field produces a specific result */
 
     // ACT
     PetscReal computedAbsorptivity = NAN;  //!< Declaration of the computed absorptivity
     absorptivityFunction.function(ZimmerTestFixture::GetParam().conservedValues.data(),
+                                  ZimmerTestFixture::GetParam().temperatureIn,
                                   &computedAbsorptivity,
                                   absorptivityFunction.context.get());  //!< Getting the absorptivity from the density, temperature, and mass fraction fields
 

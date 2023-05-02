@@ -53,15 +53,6 @@ class Zimmer : public RadiationModel {
     /**
      * Returns black body emissivity for the gas
      * @param conserved
-     * @param epsilon
-     * @param ctx
-     * @return
-     */
-    static PetscErrorCode ZimmerEmissionFunction(const PetscReal conserved[], PetscReal* epsilon, void* ctx);
-
-    /**
-     * Returns black body emissivity for the gas
-     * @param conserved
      * @param temperature
      * @param epsilon
      * @param ctx
@@ -75,28 +66,12 @@ class Zimmer : public RadiationModel {
      * @param kappa
      * @param ctx
      */
-    static PetscErrorCode ZimmerAbsorptionFunction(const PetscReal conserved[], PetscReal* kappa, void* ctx);
-
-    /**
-     * private static function for evaluating constant properties without temperature
-     * @param conserved
-     * @param kappa
-     * @param ctx
-     */
     static PetscErrorCode ZimmerAbsorptionTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* kappa, void* ctx);
 
    public:
     explicit Zimmer(std::shared_ptr<eos::EOS> eosIn, PetscReal upperLimitIn = 0, PetscReal lowerLimitIn = 0);
     explicit Zimmer(const Zimmer&) = delete;
     void operator=(const Zimmer&) = delete;
-
-    /**
-     * Single function to produce radiation properties function for any property based upon the available fields
-     * @param property
-     * @param fields
-     * @return
-     */
-    [[nodiscard]] ThermodynamicFunction GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const override;
 
     /**
      * Single function to produce thermodynamic function for any property based upon the available fields and temperature

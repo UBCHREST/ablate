@@ -18,28 +18,12 @@ class Sum : public RadiationModel {
     const std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>> models;
 
     /**
-     * private static function for evaluating constant properties without temperature
-     * @param conserved
-     * @param property
-     * @param ctx
-     */
-    static PetscErrorCode EmissionFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
-
-    /**
      * private static function for evaluating constant properties with temperature
      * @param conserved
      * @param property
      * @param ctx
      */
     static PetscErrorCode EmissionTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
-
-    /**
-     * private static function for evaluating constant properties without temperature
-     * @param conserved
-     * @param property
-     * @param ctx
-     */
-    static PetscErrorCode SumFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
 
     /**
      * private static function for evaluating constant properties with temperature
@@ -53,14 +37,6 @@ class Sum : public RadiationModel {
     explicit Sum(std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>> models);
     explicit Sum(const Sum&) = delete;
     void operator=(const Sum&) = delete;
-
-    /**
-     * Single function to produce radiation properties function for any property based upon the available fields
-     * @param property
-     * @param fields
-     * @return
-     */
-    [[nodiscard]] ThermodynamicFunction GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const override;
 
     /**
      * Single function to produce thermodynamic function for any property based upon the available fields and temperature
