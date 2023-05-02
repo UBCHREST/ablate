@@ -57,7 +57,7 @@ void ablate::radiation::OrthogonalRadiation::Setup(const ablate::domain::Range& 
 
     /** Register fields within the DMSwarm */
     DMSwarmRegisterUserStructField(radSearch, IdentifierField, sizeof(Identifier)) >>
-        utilities::PetscUtilities::checkError;                                         //!< A field to store the ray identifier [origin][iCell][ntheta][nphi][ndomain]
+        utilities::PetscUtilities::checkError;  //!< A field to store the ray identifier [origin][iCell][ntheta][nphi][ndomain]
     DMSwarmRegisterUserStructField(radSearch, VirtualCoordField, sizeof(Virtualcoord)) >>
         utilities::PetscUtilities::checkError;                                         //!< A field representing the three dimensional coordinates of the particle. Three "virtual" dims are required.
     DMSwarmFinalizeFieldRegister(radSearch) >> utilities::PetscUtilities::checkError;  //!< Initialize the fields that have been defined

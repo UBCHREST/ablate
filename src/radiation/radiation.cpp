@@ -60,7 +60,7 @@ void ablate::radiation::Radiation::Setup(const ablate::domain::Range& cellRange,
 
     /** Register fields within the DMSwarm */
     DMSwarmRegisterUserStructField(radSearch, IdentifierField, sizeof(Identifier)) >>
-        utilities::PetscUtilities::checkError;                                         //!< A field to store the ray identifier [origin][iCell][ntheta][nphi][ndomain]
+        utilities::PetscUtilities::checkError;  //!< A field to store the ray identifier [origin][iCell][ntheta][nphi][ndomain]
     DMSwarmRegisterUserStructField(radSearch, VirtualCoordField, sizeof(Virtualcoord)) >>
         utilities::PetscUtilities::checkError;                                         //!< A field representing the three dimensional coordinates of the particle. Three "virtual" dims are required.
     DMSwarmFinalizeFieldRegister(radSearch) >> utilities::PetscUtilities::checkError;  //!< Initialize the fields that have been defined
@@ -178,7 +178,7 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
     VecGetArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
 
     /** Exact some information associated with the field declarations from the swarm*/
-    PetscReal* coord;                   //!< Pointer to the coordinate field information
+    PetscReal* coord;  //!< Pointer to the coordinate field information
     PetscInt* index;
     struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifier;      //!< Pointer to the ray identifier information
@@ -192,9 +192,9 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
     PetscInt npoints = 0;
     DMSwarmGetLocalSize(radSearch, &npoints) >> utilities::PetscUtilities::checkError;  //!< Recalculate the number of particles that are in the domain
     DMSwarmGetSize(radSearch, &nglobalpoints) >> utilities::PetscUtilities::checkError;
-    PetscInt stepcount = 0;                                                             //!< Count the number of steps that the particles have taken
+    PetscInt stepcount = 0;  //!< Count the number of steps that the particles have taken
     EndEvent();
-    while (nglobalpoints != 0) {                                                        //!< WHILE THERE ARE PARTICLES IN ANY DOMAIN
+    while (nglobalpoints != 0) {  //!< WHILE THERE ARE PARTICLES IN ANY DOMAIN
         // If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory and record its index
         IdentifyNewRaysOnRank(subDomain, radReturn, npoints);
 
@@ -279,7 +279,7 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
 
         StartEvent((GetClassType() + "::Initialize::Migrate").c_str());
         /** DMSwarm Migrate to move the ray search particle into the next domain if it has crossed. If it no longer appears in this domain then end the ray segment. */
-        DMSwarmMigrate(radSearch, PETSC_TRUE) >> utilities::PetscUtilities::checkError;      //!< Migrate the search particles and remove the particles that have left the domain space.
+        DMSwarmMigrate(radSearch, PETSC_TRUE) >> utilities::PetscUtilities::checkError;  //!< Migrate the search particles and remove the particles that have left the domain space.
 
         DMSwarmGetSize(radSearch, &nglobalpoints) >> utilities::PetscUtilities::checkError;  //!< Update the loop condition. Recalculate the number of particles that are in the domain.
         DMSwarmGetLocalSize(radSearch, &npoints) >> utilities::PetscUtilities::checkError;   //!< Update the loop condition. Recalculate the number of particles that are in the domain.
@@ -306,7 +306,7 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
     // March over each returned segment and add to the numberOriginRays
     PetscInt numberOfReturnedSegments;
     DMSwarmGetLocalSize(radReturn, &numberOfReturnedSegments);
-    struct Identifier* returnIdentifiers;       //!< Pointer to the ray identifier information
+    struct Identifier* returnIdentifiers;  //!< Pointer to the ray identifier information
     DMSwarmGetField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >>
         utilities::PetscUtilities::checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
     for (PetscInt p = 0; p < numberOfReturnedSegments; ++p) {
@@ -446,7 +446,7 @@ void ablate::radiation::Radiation::IdentifyNewRaysOnRank(ablate::domain::SubDoma
                 struct Identifier* returnIdentifiers;                                 //!< Pointer to the ray identifier information
                 PetscInt* returnRank;                                                 //! while we are here, set the return rank.  This won't change anything until migrate is called
                 DMSwarmGetField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >>
-                    utilities::PetscUtilities::checkError;                            //!< Get the fields from the radsolve swarm so the new point can be written to them
+                    utilities::PetscUtilities::checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
                 DMSwarmGetField(radReturn, DMSwarmField_rank, nullptr, nullptr, (void**)&returnRank) >> utilities::PetscUtilities::checkError;
 
                 // these are only created as remote rays are identified, so we can remoteRayId for the rank
