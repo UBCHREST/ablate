@@ -10,11 +10,11 @@ FetchContent_MakeAvailable(run-clang-format)
 # Add a target to allow linting check
 find_program(CLANG_FORMAT "clang-format")
 find_package(Python)
-#
-## determine the version
-#EXECUTE_PROCESS(COMMAND ${CLANG_FORMAT} --version OUTPUT_VARIABLE CLANG_FORMAT_INFO)
-#STRING(REGEX MATCH "([0-9]+).([0-9]+).([0-9]+)" CLANG_FORMAT_VERSION ${CLANG_FORMAT_INFO})
-#
+
+# determine the version
+EXECUTE_PROCESS(COMMAND ${CLANG_FORMAT} --version OUTPUT_VARIABLE CLANG_FORMAT_INFO)
+STRING(REGEX MATCH "([0-9]+).([0-9]+).([0-9]+)" CLANG_FORMAT_VERSION ${CLANG_FORMAT_INFO})
+
 ## Set the style file based upon the file, first the default
 #SET(CLANG_FORMAT_STYLE "--style=file")
 #
