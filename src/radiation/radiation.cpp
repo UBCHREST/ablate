@@ -617,12 +617,13 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                     } else {
                         // This is not a boundary cell
                         for (int wavelengthIndex = 0; wavelengthIndex < propertySize; ++wavelengthIndex) {
+                            PetscReal absorbed_portion = exp(-kappa[wavelengthIndex] * cellSegment.pathLength);
                             raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Ij +=
-                                emission[wavelengthIndex] * (1 - exp(-kappa[wavelengthIndex] * cellSegment.pathLength)) *
+                                emission[wavelengthIndex] * (1 - absorbed_portion) *
                                 raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad;
 
                             // Compute the total absorption for this domain
-                            raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad *= exp(-kappa[wavelengthIndex] * cellSegment.pathLength);
+                            raySegmentsCalculations[absorptivityFunction.propertySize * raySegmentIndex + wavelengthIndex].Krad *= absorbed_portion;
                         }
                     }
                     EndEvent();
