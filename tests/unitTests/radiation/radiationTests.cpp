@@ -16,6 +16,7 @@
 #include "monitors/timeStepMonitor.hpp"
 #include "parameters/mapParameters.hpp"
 #include "radiation/radiation.hpp"
+#include "radiation/raySharingRadiation.hpp"
 #include "radiation/volumeRadiation.hpp"
 #include "utilities/petscUtilities.hpp"
 
@@ -352,5 +353,30 @@ INSTANTIATE_TEST_SUITE_P(RadiationTests, RadiationTestFixture,
                                                                        [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
                                                                            auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
                                                                            return std::make_shared<ablate::radiation::Radiation>("radiationBase", interiorLabel, 15, radiationModelIn, nullptr);
+                                                                       }},
+                                         (RadiationTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("ray sharing test", 2),
+                                                                   .meshFaces = {3, 20},
+                                                                   .meshStart = {-0.5, -0.0105},
+                                                                   .meshEnd = {0.5, 0.0105},
+                                                                   .initialization =
+                                                                       []() {
+                                                                           return std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>>{
+                                                                               std::make_shared<ablate::mathFunctions::FieldFunction>(
+                                                                                   ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD,
+                                                                                   ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)")),
+                                                                               std::make_shared<ablate::mathFunctions::FieldFunction>(ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD,
+                                                                                                                                      ablate::mathFunctions::Create("1300"),
+                                                                                                                                      nullptr,
+                                                                                                                                      std::make_shared<ablate::domain::Region>("boundaryCellsBottom")),
+                                                                               std::make_shared<ablate::mathFunctions::FieldFunction>(ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD,
+                                                                                                                                      ablate::mathFunctions::Create("700"),
+                                                                                                                                      nullptr,
+                                                                                                                                      std::make_shared<ablate::domain::Region>("boundaryCellsTop"))};
+                                                                       },
+                                                                   .expectedResult = ablate::mathFunctions::Create("x + y"),
+                                                                   .radiationFactory =
+                                                                       [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
+                                                                           auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
+                                                                           return std::make_shared<ablate::radiation::RaySharingRadiation>("radiationBase", interiorLabel, 15, radiationModelIn, nullptr);
                                                                        }}),
                          [](const testing::TestParamInfo<RadiationTestParameters>& info) { return info.param.mpiTestParameter.getTestName(); });
