@@ -110,6 +110,81 @@ PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscReal x0[3], PetscInt 
 }
 
 /**
+ * Return all vertices which share a cell or an edge/face with a desired vertex
+ * Inputs:
+ *    dm - The mesh
+ *    x0 - The location of the true desired vertex
+ *    p - The vertex to get the neighboors of
+ *    maxDist - Maximum distance from p to consider adding
+ *    useCells - Should we include vertices which share a cell (TRUE) or an edge/face (FALSE)
+ *
+ * Outputs:
+ *    nVertices - Number of vertices found
+ *    vertices- The IDs of the vertices found.
+ */
+PetscErrorCode DMPlexGetNeighborVertices_Internal(DM dm, PetscReal x0[3], PetscInt p, PetscReal maxDist, PetscBool useCells, PetscInt *nVertices, PetscInt *vertices[]) {
+    PetscInt cStart, cEnd, vStart, vEnd;
+    PetscInt cl, nClosure, *closure = NULL;
+    PetscInt st, nStar, *star = NULL;
+    PetscInt n, list[10000];  // To avoid memory reallocation just make the list bigger than it would ever need to be. Will look at doing something else in the future.
+    PetscInt i, dim, i_x, i_y;
+    PetscReal x[3], dist;
+    Vec coords;
+    PetscReal *coordsArray;
+
+    PetscFunctionBegin;
+
+    PetscCall(DMGetDimension(dm, &dim));  // The dimension of the grid
+
+    PetscCall(DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd));  // Range of vertices
+
+    if (useCells) {
+        PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));  // Range of cells
+    } else {
+        PetscCall(DMPlexGetHeightStratum(dm, 1, &cStart, &cEnd));  // Range of edges (2D) or faces (3D)
+    }
+
+    n = 0;
+    PetscCall(DMPlexGetTransitiveClosure(dm, v, PETSC_FALSE, &nStar, &star));  // All points associated with the vertex 
+
+    maxDist = PetscSqr(maxDist) + PETSC_MACHINE_EPSILON;  // So we don't need PetscSqrtReal in the check
+    
+    PetscCall(DMGetCoordinatesLocal(dm, &coords));   // Get all the vertices coordinates
+	PetscCall(VecGetArray(coords, &coordsArray));    // Copy the quantities in coords vector and paste them to the coordsArray vector
+
+    for (st = 0; st < nStar * 2; st += 2) {
+		if (star[st] >= cStart && star[st] < cEnd) {  // Only use the points corresponding to either a vertex or edge/face.
+			PetscCall(DMPlexGetTransitiveClosure(dm, star[st], PETSC_TRUE, &nClosure, &closure));  // Get all points using this vertex or edge/face.
+
+            for (cl = 0; cl < nClosure * 2; cl += 2) { 
+                if (closure[cl] >= vStart && closure[cl] < vEnd) {  // If the point is a vertex add it.
+                    dist = 0.0;
+                    i_x = (closure[cl]-vstart)*2;  
+                    for (i = 0; i < dim; ++i) {  // Compute the distance so that we can check if it's within the required distance.
+						dist += PetscSqr(x0[i] - coordsArray[i_x+i]);
+	                }
+
+                if (dist <= maxDist && closure[cl] != p) {  // Only add if the distance is within maxDist and it's not the main vertex
+                    list[n++] = closure[cl];
+                }
+		        }
+	        }
+
+        PetscCall(DMPlexRestoreTransitiveClosure(dm, star[cl], PETSC_TRUE, &nClosure, &closure));  // Restore the points
+	    }
+	}
+
+	PetscCall(VecRestoreArray(coords, &coordsArray)); 	                          // Restore the coordsArray
+	PetscCall(DMPlexRestoreTransitiveClosure(dm, v, PETSC_TRUE, &nStar, &star));  // Restore the points
+	PetscCall(PetscSortRemoveDupsInt(&n, list));                                  // Cleanup the list
+	if (!(*vertices)) PetscCall(PetscMalloc1(n, vertices));                       // Allocate the output
+	PetscCall(PetscArraycpy(*vertices, list, n));                                 // Copy the vertex list
+	nVertices = n;                                                                // Set the number of vertices for output
+
+	PetscFunctionReturn(0);
+}
+
+/**
  * Return all values in sorted array a that are NOT in sorted array b. This is done in-place on array a.
  * Inputs:
  *    nb - Size of sorted array b[]
