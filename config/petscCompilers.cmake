@@ -3,6 +3,12 @@ find_package(PkgConfig REQUIRED)
 function(configure_flags PETSC_FLAGS PETSC_FLAGS_OUT)
     # remove any flag that will not work with ablate
     list(FILTER PETSC_FLAGS EXCLUDE REGEX "-fvisibility")
+
+    # check for the fsanitize and add to overall link
+    if ("-fsanitize=address" IN_LIST PETSC_FLAGS)
+        add_link_options(-fsanitize=address)
+    endif ()
+
     string(REPLACE ";" " " PETSC_FLAGS_STR "${PETSC_FLAGS}")
     set(${PETSC_FLAGS_OUT} "${PETSC_FLAGS_STR}" PARENT_SCOPE)
 endfunction()
