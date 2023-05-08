@@ -22,7 +22,7 @@ timestepper:
   # the domain/mesh must be specified at the start of a simulation
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
-    faces: [ 12, 12 ]
+    faces: [ 13, 13 ]
     lower: [ 0, 0 ]
     upper: [ 1, 1 ]
     boundary: [ "NONE", "NONE" ]
@@ -32,8 +32,10 @@ timestepper:
     modifiers:
       # if using mpi, this modifier distributes cells
       - !ablate::domain::modifiers::GhostBoundaryCells
+
       # if using a FVM ghost boundary cells must be added
       - !ablate::domain::modifiers::DistributeWithGhostCells
+
     fields:
       # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
       # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
@@ -43,7 +45,7 @@ timestepper:
             gamma: 1.4
             Rgas: 287
         # the CompressibleFlowFields class can take extraVariable arguments.  This defines the conserved and non-conserved field for each component
-        extraVariables: ["ev1", "ev2"]
+        extraVariables: [ "ev1", "ev2" ]
   initialization:
     # the ablate::finiteVolume::fieldFunctions::Euler helper can define the "euler" field (rho, rhoE, rhoU, rhoV) from more common inputs
     - !ablate::finiteVolume::fieldFunctions::Euler
@@ -64,7 +66,7 @@ timestepper:
           # the sphere methFunction can be used to specify ev2 with a different number inside (1.5) and outside (0, by default)
           center: [ .25, .25 ]
           radius: .25
-          insideValues:  1.5
+          insideValues: 1.5
 
 # this problem uses a single solver (!ablate::finiteVolume::CompressibleFlowSolver)
 solver: !ablate::finiteVolume::CompressibleFlowSolver
@@ -90,14 +92,14 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
       densityEV:
         !ablate::mathFunctions::geom::Sphere
         radius: .1
-        center: [0.75, 0.75]
+        center: [ 0.75, 0.75 ]
         insideValues: "0.0, 100" # inside the sphere the ev1 gets no extra source while ev2 gets 100
 
   # using constant boundary condition values on all sides with the specified values for euler and densityFlow based upon the previous boundary values
   boundaryConditions:
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "walls"
-      labelIds: [1, 2, 3, 4]
+      labelIds: [ 1, 2, 3, 4 ]
       boundaryValue: *eulerFlowFieldState
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "walls"
@@ -112,20 +114,20 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
     - !ablate::monitors::Probes
       probes:
         - name: a
-          location: [.25, .25]
+          location: [ .25, .25 ]
         - name: b
-          location: [.75, .25]
+          location: [ .75, .25 ]
         - name: c
           location: [ .25, .75 ]
       bufferSize: 10
-      variables:  [velocity, densityEV, EV, euler ] # these fields will be saved to a text file at the specified locations
+      variables: [ velocity, densityEV, EV, euler ] # these fields will be saved to a text file at the specified locations
 
     # define a probe using a rake, which uses a start/end location and a number of probes to compute initial probe locations
     - !ablate::monitors::Probes
       probes: !ablate::monitors::probes::Rake
         name: rakeProbe
-        start: [.75, .5]
-        end: [.25, 0.5]
+        start: [ .75, .5 ]
+        end: [ .25, 0.5 ]
         number: 3
       bufferSize: 10
       variables: [ velocity, densityEV, EV, euler ]  # these fields will be saved to a text file at the specified locations
