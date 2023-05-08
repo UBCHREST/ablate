@@ -50,7 +50,7 @@ class TChemSoot : public TChemBase, public std::enable_shared_from_this<ablate::
      * @param mechFile
      * @param optionalThermoFile
      */
-    explicit TChemSoot(std::filesystem::path mechanismFile, std::filesystem::path thermoFile = {}, std::shared_ptr<ablate::monitors::logs::Log> = {},
+    explicit TChemSoot(std::filesystem::path mechanismFile, std::shared_ptr<ablate::monitors::logs::Log> = {},
                        const std::shared_ptr<ablate::parameters::Parameters>& options = {});
 
     /**
