@@ -313,7 +313,7 @@ class SubDomain : public io::Serializable {
      * The number of aux and solution fields in this subdomain
      * @return
      */
-    inline PetscInt GetNumberFields() const { return fieldsByName.size(); }
+    [[nodiscard]] inline PetscInt GetNumberFields() const { return (PetscInt)fieldsByName.size(); }
 
     /**
      * project the list of field function into the provided local vector.  Allows solution and aux vectors

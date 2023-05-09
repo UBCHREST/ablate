@@ -29,7 +29,9 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
     DMClone(dm, &dmData) >> utilities::PetscUtilities::checkError;
     PetscFECreateLagrange(PETSC_COMM_SELF, dim, dim, PETSC_TRUE, k, PETSC_DETERMINE, &fe_coords) >> utilities::PetscUtilities::checkError;
     DMSetField(dmData, 0, NULL, (PetscObject)fe_coords) >> utilities::PetscUtilities::checkError;
+    PetscFEDestroy(&fe_coords) >> utilities::PetscUtilities::checkError;
     DMCreateDS(dmData) >> utilities::PetscUtilities::checkError;
+
     // extract the local coordinates array
     Vec localCoordsVector;
     PetscSection coordsSection;

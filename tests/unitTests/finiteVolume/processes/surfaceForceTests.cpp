@@ -75,7 +75,10 @@ TEST_P(SurfaceForceTestFixture, ShouldComputeCorrectSurfaceForce) {
             Vec computedF;
             PetscScalar *sourceArray;
             PetscScalar *solution;
-            VecGetArray(domain->GetSolutionVector(), &solution);
+            Vec locSolution;
+            DMGetLocalVector(domain->GetDM(), &locSolution);
+            DMGlobalToLocal(domain->GetDM(), domain->GetSolutionVector(), INSERT_VALUES, locSolution);
+            VecGetArray(locSolution, &solution);
 
             // copy over euler
             PetscScalar *eulerField = nullptr;
@@ -85,14 +88,14 @@ TEST_P(SurfaceForceTestFixture, ShouldComputeCorrectSurfaceForce) {
                 eulerField[i] = GetParam().inputEulerValues[i];
             }
 
-            VecRestoreArray(domain->GetSolutionVector(), &solution);
+            VecRestoreArray(locSolution, &solution);
 
             auto process = ablate::finiteVolume::processes::SurfaceForce(sigma);
             process.Setup(*fvSolver);
             DMGetLocalVector(domain->GetDM(), &computedF);
             VecZeroEntries(computedF);
 
-            ablate::finiteVolume::processes::SurfaceForce::ComputeSource(*fvSolver, domain->GetDM(), 0.0, domain->GetSolutionVector(), computedF, &process);
+            ablate::finiteVolume::processes::SurfaceForce::ComputeSource(*fvSolver, domain->GetDM(), 0.0, locSolution, computedF, &process);
 
             // ASSERT
             VecGetArray(computedF, &sourceArray);
@@ -103,7 +106,7 @@ TEST_P(SurfaceForceTestFixture, ShouldComputeCorrectSurfaceForce) {
                     << "The percent difference for the expected and actual source (" << GetParam().expectedEulerSource[c] << " vs " << eulerSource[c] << ") should be small for index " << c;
             }
             VecRestoreArray(computedF, &sourceArray) >> ablate::utilities::PetscUtilities::checkError;
-
+            DMRestoreLocalVector(domain->GetDM(), &locSolution) >> ablate::utilities::PetscUtilities::checkError;
             DMRestoreLocalVector(domain->GetDM(), &computedF) >> ablate::utilities::PetscUtilities::checkError;
         }
         ablate::environment::RunEnvironment::Finalize();
