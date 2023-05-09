@@ -155,7 +155,7 @@ static PetscReal ReallySolveParallelPlates(PetscReal z) {
     PetscReal losses = 4 * sbc * temperature * temperature * temperature * temperature;
     PetscReal radTotal = -kappa * (losses - G);
 
-    return radTotal;
+    return G;
 }
 
 TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
@@ -251,6 +251,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
                     // extract the result from the rhs
                     PetscScalar* rhsValues;
                     DMPlexPointLocalFieldRead(domain->GetDM(), cell, eulerFieldInfo.id, rhsArray, &rhsValues) >> testErrorChecker;
+                    PetscReal losses = 4 * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
                     PetscScalar actualResult = rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE];
                     PetscScalar analyticalResult = ReallySolveParallelPlates(cellGeom->centroid[1]);  // Compute the analytical solution at this z height.
 
@@ -354,7 +355,7 @@ INSTANTIATE_TEST_SUITE_P(RadiationTests, RadiationTestFixture,
                                                                            auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
                                                                            return std::make_shared<ablate::radiation::Radiation>("radiationBase", interiorLabel, 15, radiationModelIn, nullptr);
                                                                        }},
-                                         (RadiationTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("ray sharing test", 2),
+                                         (RadiationTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("ray sharing test", 5),
                                                                    .meshFaces = {3, 20},
                                                                    .meshStart = {-0.5, -0.0105},
                                                                    .meshEnd = {0.5, 0.0105},
