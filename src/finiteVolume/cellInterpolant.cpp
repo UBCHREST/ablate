@@ -223,8 +223,7 @@ void ablate::finiteVolume::CellInterpolant::ComputeRHS(PetscReal time, Vec locXV
     PetscInt dim = subDomain->GetDimensions();
 
     // Size up a scratch variable
-    PetscScalar* fScratch;
-    PetscCalloc1(totDim, &fScratch);
+    PetscScalar fScratch[totDim];
 
     // March over each cell
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
