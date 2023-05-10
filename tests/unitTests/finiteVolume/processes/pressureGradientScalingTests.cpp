@@ -49,53 +49,54 @@ TEST_P(PressureGradientScalingTestFixture, ShouldUpdatePgsCorrectly) {
         // initialize petsc and mpi
         ablate::environment::RunEnvironment::Initialize(argc, argv);
         ablate::utilities::PetscUtilities::Initialize();
+        {
+            const auto& parameters = GetParam();
 
-        const auto& parameters = GetParam();
+            auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287"}}));
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
 
-        auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287"}}));
-        std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
+            auto domain =
+                std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
+                                                          fieldDescriptors,
+                                                          std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<ablate::domain::modifiers::DistributeWithGhostCells>(),
+                                                                                                                            std::make_shared<ablate::domain::modifiers::GhostBoundaryCells>()},
+                                                          std::vector<int>{(int)30, (int)30},
+                                                          std::vector<double>{0.0, 0.0},
+                                                          std::vector<double>{1.0, 1.0},
+                                                          std::vector<std::string>{} /*boundary*/,
+                                                          false /*simplex*/
+                );
 
-        auto domain =
-            std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
-                                                      fieldDescriptors,
-                                                      std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<ablate::domain::modifiers::DistributeWithGhostCells>(),
-                                                                                                                        std::make_shared<ablate::domain::modifiers::GhostBoundaryCells>()},
-                                                      std::vector<int>{(int)30, (int)30},
-                                                      std::vector<double>{0.0, 0.0},
-                                                      std::vector<double>{1.0, 1.0},
-                                                      std::vector<std::string>{} /*boundary*/,
-                                                      false /*simplex*/
-            );
+            // Create the pgs
+            auto pgs = std::make_shared<ablate::finiteVolume::processes::PressureGradientScaling>(
+                eos, parameters.alphaInit, parameters.domainLength, parameters.maxAlphaAllowed, parameters.maxDeltaPressureFac);
 
-        // Create the pgs
-        auto pgs =
-            std::make_shared<ablate::finiteVolume::processes::PressureGradientScaling>(eos, parameters.alphaInit, parameters.domainLength, parameters.maxAlphaAllowed, parameters.maxDeltaPressureFac);
+            // Create a fV for testing
+            // Make a finite volume with only a gravity
+            auto fvObject = std::make_shared<ablate::finiteVolume::FiniteVolumeSolver>("testFV",
+                                                                                       ablate::domain::Region::ENTIREDOMAIN,
+                                                                                       nullptr /*options*/,
+                                                                                       std::vector<std::shared_ptr<ablate::finiteVolume::processes::Process>>{},
+                                                                                       std::vector<std::shared_ptr<ablate::finiteVolume::boundaryConditions::BoundaryCondition>>{});
 
-        // Create a fV for testing
-        // Make a finite volume with only a gravity
-        auto fvObject = std::make_shared<ablate::finiteVolume::FiniteVolumeSolver>("testFV",
-                                                                                   ablate::domain::Region::ENTIREDOMAIN,
-                                                                                   nullptr /*options*/,
-                                                                                   std::vector<std::shared_ptr<ablate::finiteVolume::processes::Process>>{},
-                                                                                   std::vector<std::shared_ptr<ablate::finiteVolume::boundaryConditions::BoundaryCondition>>{});
+            // Create a ts for testing
+            TS testTs;
+            TSCreate(PETSC_COMM_WORLD, &testTs) >> testErrorChecker;
 
-        // Create a ts for testing
-        TS testTs;
-        TSCreate(PETSC_COMM_WORLD, &testTs) >> testErrorChecker;
+            // initialize the domain/fields with the specified inputs
+            domain->InitializeSubDomains(std::vector<std::shared_ptr<ablate::solver::Solver>>{fvObject},
+                                         std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>>{parameters.getFieldFunction(eos)});
 
-        // initialize the domain/fields with the specified inputs
-        domain->InitializeSubDomains(std::vector<std::shared_ptr<ablate::solver::Solver>>{fvObject},
-                                     std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>>{parameters.getFieldFunction(eos)});
+            // act
+            pgs->UpdatePreconditioner(testTs, *fvObject);
 
-        // act
-        pgs->UpdatePreconditioner(testTs, *fvObject);
+            // assert
+            ASSERT_LT(Difference(parameters.expectedAlpha, pgs->GetAlpha()), 1E-4);
+            ASSERT_LT(Difference(parameters.expectedMaxMach, pgs->GetMaxMach()), 1E-4);
 
-        // assert
-        ASSERT_LT(Difference(parameters.expectedAlpha, pgs->GetAlpha()), 1E-4);
-        ASSERT_LT(Difference(parameters.expectedMaxMach, pgs->GetMaxMach()), 1E-4);
-
-        // cleanup
-        TSDestroy(&testTs) >> testErrorChecker;
+            // cleanup
+            TSDestroy(&testTs) >> testErrorChecker;
+        }
         ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI

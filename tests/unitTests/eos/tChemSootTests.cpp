@@ -131,64 +131,66 @@ class TChemSootThermodynamicPropertyTestFixture : public testingResources::Petsc
 TEST_P(TChemSootThermodynamicPropertyTestFixture, ShouldComputeProperty) {
     ONLY_WITH_CUDA_CHECK
     // arrange
-    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChemSoot>(GetParam().mechFile);
+    {
+        std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChemSoot>(GetParam().mechFile);
 
-    // get the test params
-    const auto& params = GetParam();
+        // get the test params
+        const auto& params = GetParam();
 
-    // combine and build the total conserved values
-    auto conservedValuesSize = std::accumulate(params.fields.begin(), params.fields.end(), 0, [](int a, const ablate::domain::Field& field) { return a + field.numberComponents; });
-    std::vector<PetscReal> conservedValues(conservedValuesSize + 10, 0.0); /* 10 provides some extra buffer for placement testing*/
-    std::copy(params.conservedEulerValues.begin(), params.conservedEulerValues.end(), conservedValues.begin() + std::find_if(params.fields.begin(), params.fields.end(), [](const auto& field) {
-                                                                                                                    return field.name == "euler";
-                                                                                                                })->offset);
-    FillDensityMassFraction(*std::find_if(params.fields.begin(), params.fields.end(), [](const auto& field) { return field.name == "densityYi"; }),
-                            eos->GetSpeciesVariables(),
-                            params.yiMap,
-                            params.conservedEulerValues[0],
-                            conservedValues);
+        // combine and build the total conserved values
+        auto conservedValuesSize = std::accumulate(params.fields.begin(), params.fields.end(), 0, [](int a, const ablate::domain::Field& field) { return a + field.numberComponents; });
+        std::vector<PetscReal> conservedValues(conservedValuesSize + 10, 0.0); /* 10 provides some extra buffer for placement testing*/
+        std::copy(params.conservedEulerValues.begin(), params.conservedEulerValues.end(), conservedValues.begin() + std::find_if(params.fields.begin(), params.fields.end(), [](const auto& field) {
+                                                                                                                        return field.name == "euler";
+                                                                                                                    })->offset);
+        FillDensityMassFraction(*std::find_if(params.fields.begin(), params.fields.end(), [](const auto& field) { return field.name == "densityYi"; }),
+                                eos->GetSpeciesVariables(),
+                                params.yiMap,
+                                params.conservedEulerValues[0],
+                                conservedValues);
 
-    // compute the reference temperature for other calculations
-    auto temperatureFunction = eos->GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, params.fields);
-    PetscReal computedTemperature;
-    ASSERT_EQ(0, temperatureFunction.function(conservedValues.data(), &computedTemperature, temperatureFunction.context.get()));
-    ASSERT_EQ(1, temperatureFunction.propertySize) << "The temperature property size should be 1";
+        // compute the reference temperature for other calculations
+        auto temperatureFunction = eos->GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, params.fields);
+        PetscReal computedTemperature;
+        ASSERT_EQ(0, temperatureFunction.function(conservedValues.data(), &computedTemperature, temperatureFunction.context.get()));
+        ASSERT_EQ(1, temperatureFunction.propertySize) << "The temperature property size should be 1";
 
-    if (params.expectedTemperature) {
-        ASSERT_LT(PetscAbs(computedTemperature - params.expectedTemperature.value()) / params.expectedTemperature.value(), 1E-5)
-            << "The percent difference for computed temperature (" << params.expectedTemperature.value() << " vs " << computedTemperature << ") should be small";
-    }
-
-    // Check each of the provided property
-    for (const auto& [thermodynamicProperty, expectedValue] : params.testProperties) {
-        // act/assert check for compute without temperature
-        auto thermodynamicFunction = eos->GetThermodynamicFunction(thermodynamicProperty, params.fields);
-        std::vector<PetscReal> computedProperty(expectedValue.size(), NAN);
-        ASSERT_EQ(0, thermodynamicFunction.function(conservedValues.data(), computedProperty.data(), thermodynamicFunction.context.get()));
-        ASSERT_EQ(expectedValue.size(), thermodynamicFunction.propertySize) << "The " << thermodynamicProperty << " property size should be " << expectedValue.size();
-
-        for (std::size_t c = 0; c < expectedValue.size(); c++) {
-            // perform a difference check is the expectedValue is zero
-            if (expectedValue[c] == 0) {
-                ASSERT_LT(expectedValue[c], params.errorTolerance) << "The value for the direct function of " << to_string(thermodynamicProperty) << " (" << expectedValue[c] << " vs "
-                                                                   << computedProperty[c] << ") should be near zero";
-            } else {
-                ASSERT_LT(PetscAbs((expectedValue[c] - computedProperty[c]) / (expectedValue[c] + 1E-30)), params.errorTolerance)
-                    << "The percent difference for the direct function of " << to_string(thermodynamicProperty) << " (" << expectedValue[c] << " vs " << computedProperty[c] << ") should be small";
-            }
+        if (params.expectedTemperature) {
+            ASSERT_LT(PetscAbs(computedTemperature - params.expectedTemperature.value()) / params.expectedTemperature.value(), 1E-5)
+                << "The percent difference for computed temperature (" << params.expectedTemperature.value() << " vs " << computedTemperature << ") should be small";
         }
 
-        auto thermodynamicTemperatureFunction = eos->GetThermodynamicTemperatureFunction(thermodynamicProperty, params.fields);
-        computedProperty = std::vector<PetscReal>(expectedValue.size(), NAN);
-        ASSERT_EQ(0, thermodynamicTemperatureFunction.function(conservedValues.data(), computedTemperature, computedProperty.data(), thermodynamicTemperatureFunction.context.get()));
-        for (std::size_t c = 0; c < expectedValue.size(); c++) {
-            if (expectedValue[c] == 0) {
-                ASSERT_LT(expectedValue[c], params.errorTolerance) << "The value for the temperature function of " << to_string(thermodynamicProperty) << " (" << expectedValue[c] << " vs "
-                                                                   << computedProperty[c] << ") should be near zero";
-            } else {
-                ASSERT_LT(PetscAbs((expectedValue[c] - computedProperty[c]) / (expectedValue[c] + 1E-30)), params.errorTolerance)
-                    << "The percent difference for the temperature function of " << to_string(thermodynamicProperty) << " (" << expectedValue[c] << " vs " << computedProperty[c]
-                    << ") should be small";
+        // Check each of the provided property
+        for (const auto& [thermodynamicProperty, expectedValue] : params.testProperties) {
+            // act/assert check for compute without temperature
+            auto thermodynamicFunction = eos->GetThermodynamicFunction(thermodynamicProperty, params.fields);
+            std::vector<PetscReal> computedProperty(expectedValue.size(), NAN);
+            ASSERT_EQ(0, thermodynamicFunction.function(conservedValues.data(), computedProperty.data(), thermodynamicFunction.context.get()));
+            ASSERT_EQ(expectedValue.size(), thermodynamicFunction.propertySize) << "The " << thermodynamicProperty << " property size should be " << expectedValue.size();
+
+            for (std::size_t c = 0; c < expectedValue.size(); c++) {
+                // perform a difference check is the expectedValue is zero
+                if (expectedValue[c] == 0) {
+                    ASSERT_LT(expectedValue[c], params.errorTolerance)
+                        << "The value for the direct function of " << to_string(thermodynamicProperty) << " (" << expectedValue[c] << " vs " << computedProperty[c] << ") should be near zero";
+                } else {
+                    ASSERT_LT(PetscAbs((expectedValue[c] - computedProperty[c]) / (expectedValue[c] + 1E-30)), params.errorTolerance)
+                        << "The percent difference for the direct function of " << to_string(thermodynamicProperty) << " (" << expectedValue[c] << " vs " << computedProperty[c] << ") should be small";
+                }
+            }
+
+            auto thermodynamicTemperatureFunction = eos->GetThermodynamicTemperatureFunction(thermodynamicProperty, params.fields);
+            computedProperty = std::vector<PetscReal>(expectedValue.size(), NAN);
+            ASSERT_EQ(0, thermodynamicTemperatureFunction.function(conservedValues.data(), computedTemperature, computedProperty.data(), thermodynamicTemperatureFunction.context.get()));
+            for (std::size_t c = 0; c < expectedValue.size(); c++) {
+                if (expectedValue[c] == 0) {
+                    ASSERT_LT(expectedValue[c], params.errorTolerance)
+                        << "The value for the temperature function of " << to_string(thermodynamicProperty) << " (" << expectedValue[c] << " vs " << computedProperty[c] << ") should be near zero";
+                } else {
+                    ASSERT_LT(PetscAbs((expectedValue[c] - computedProperty[c]) / (expectedValue[c] + 1E-30)), params.errorTolerance)
+                        << "The percent difference for the temperature function of " << to_string(thermodynamicProperty) << " (" << expectedValue[c] << " vs " << computedProperty[c]
+                        << ") should be small";
+                }
             }
         }
     }
