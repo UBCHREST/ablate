@@ -655,11 +655,11 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
         for (PetscInt rayIndex = 0; rayIndex < raysPerCell; ++rayIndex) {
             // Add the black body radiation transmitted through the domain to the source term
             PetscReal iSource[absorptivityFunction.propertySize];
-            for (unsigned short int i = 0; i < propertySize; ++i) iSource[i] = 0.0;  //! Initialize the wavelength dependent arrays to be of size zero.
+            for (unsigned short int i = 0; i < propertySize; ++i) iSource[i] = 0.0;
 
             // Add the absorption for this domain to the total absorption of the ray
             PetscReal kRadd[absorptivityFunction.propertySize];
-            for (unsigned short int i = 0; i < propertySize; ++i) kRadd[i] = 1.0;  //! Initialize the wavelength dependent arrays to be of size zero.
+            for (unsigned short int i = 0; i < propertySize; ++i) kRadd[i] = 1.0;
 
             /** for each segment in this ray
              * Integrate the wavelength dependent intensity calculation for each segment for each wavelength
