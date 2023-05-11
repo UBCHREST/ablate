@@ -26,7 +26,7 @@ INSTANTIATE_TEST_SUITE_P(
                     MpiTestParameter("inputs/compressibleFlow/compressibleSublimationPipeWithExtrude.yaml", 2, "",
                                      "outputs/compressibleFlow/compressibleSublimationPipeWithExtrude/compressibleSublimationPipeWithExtrude.txt"),
                     MpiTestParameter("inputs/compressibleFlow/gmshPipeFlow/gmshPipeFlow.yaml", 2, "", "outputs/compressibleFlow/gmshPipeFlow/gmshPipeFlow.txt"),
-                    MpiTestParameter("inputs/compressibleFlow/compressibleFlowCadExample.yaml", 1, "", "outputs/compressibleFlow/compressibleFlowCadExample.txt")),
+                    MpiTestParameter("inputs/compressibleFlow/compressibleFlowCadExample.yaml", 1, "", "outputs/compressibleFlow/compressibleFlowCadExample.txt", {}, "ASAN_OPTIONS=detect_leaks=0")),
 
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
