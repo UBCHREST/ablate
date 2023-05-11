@@ -3,7 +3,11 @@
 ablate::monitors::RadiationFlux::RadiationFlux(std::vector<std::shared_ptr<radiation::SurfaceRadiation>> radiationIn, std::shared_ptr<domain::Region> radiationFluxRegionIn)
     : radiation(std::move(radiationIn)), radiationFluxRegion(std::move(radiationFluxRegionIn)) {}
 
-ablate::monitors::RadiationFlux::~RadiationFlux() {}
+ablate::monitors::RadiationFlux::~RadiationFlux() {
+    if (fluxDm) {
+        DMDestroy(&fluxDm) >> utilities::PetscUtilities::checkError;
+    }
+}
 
 void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> solverIn) {
     Monitor::Register(solverIn);
@@ -72,7 +76,7 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
             throw std::invalid_argument(
                 "The radiation flux monitor must be given a region of faces. The cell region given to the ray tracers must not include the cells adjacent to the back of these faces.");
         if (ghostLabel) DMLabelGetValue(ghostLabel, iCell, &ghost) >> utilities::PetscUtilities::checkError;
-        if (!(ghost >= 0)) monitorRange.Add(iCell);  //!< Add each ID to the range that the radiation solverIn will use
+        if (ghost < 0) monitorRange.Add(iCell);  //!< Add each ID to the range that the radiation solverIn will use
     }
     // restore
     ISRestoreIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
@@ -85,7 +89,6 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
 
 void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
     PetscFunctionBeginUser;
-
     // If this is the first output, store a copy of the fluxDm
     if (sequenceNumber == 0) {
         DMView(fluxDm, viewer) >> utilities::PetscUtilities::checkError;
@@ -179,8 +182,10 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
 
     // write to the output file
     VecView(globalFaceVec, viewer) >> utilities::PetscUtilities::checkError;
-    DMRestoreGlobalVector(fluxDm, &globalFaceVec) >> utilities::PetscUtilities::checkError;
 
+    // cleanup
+    DMRestoreGlobalVector(fluxDm, &globalFaceVec) >> utilities::PetscUtilities::checkError;
+    DMRestoreLocalVector(fluxDm, &localFaceVec) >> utilities::PetscUtilities::checkError;
     PetscFunctionReturnVoid();
 }
 
