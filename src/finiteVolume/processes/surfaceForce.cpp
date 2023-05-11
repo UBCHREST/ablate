@@ -163,7 +163,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
 
             // add up the contribution of the cell. Front cells have positive and back cells have negative contribution to the vertex normal
             PetscReal alphaVal[3];
-            if(alpha) {
+            if (alpha) {
                 for (PetscInt d = 0; d < dim; ++d) {
                     if (cg->centroid[d] > info.stencilCoord[d]) {
                         alphaVal[d] = alpha[0];

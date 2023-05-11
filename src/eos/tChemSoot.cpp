@@ -397,8 +397,8 @@ void ablate::eos::TChemSoot::FillWorkingVectorFromDensityMassFractions(double de
             // Limit the bounds
             ys[s] /= yiSum;
         }
-        stateVector.MassFractionCarbon() /= yiSum;          // have to do carbon out of the loop since it jumps the dilute last species in statevector
-        ys[stateVector.NumGasSpecies() - 1] = 0.0;          // Set dilute species to 0
+        stateVector.MassFractionCarbon() /= yiSum;  // have to do carbon out of the loop since it jumps the dilute last species in statevector
+        ys[stateVector.NumGasSpecies() - 1] = 0.0;  // Set dilute species to 0
     } else {
         ys[stateVector.NumGasSpecies() - 1] = 1.0 - yiSum;  // Set dilute species to 1-YiSum
     }

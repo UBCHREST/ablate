@@ -174,8 +174,8 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
     std::array<TF_Output, numOutputs> output = {t_sourceenergy, t_sourceterms};
 
     //********* Allocate data for inputs & outputs
-    std::array<TF_Tensor*, numInputs> inputValues = {nullptr};
-    std::array<TF_Tensor*, numOutputs> outputValues= {nullptr, nullptr};
+    std::array<TF_Tensor *, numInputs> inputValues = {nullptr};
+    std::array<TF_Tensor *, numOutputs> outputValues = {nullptr, nullptr};
 
     std::size_t ndims = 2;
 
@@ -223,10 +223,10 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
     }
 
     // free allocated vectors
-    for (auto& t : outputValues) {
+    for (auto &t : outputValues) {
         TF_DeleteTensor(t);
     }
-    for (auto& t : inputValues) {
+    for (auto &t : inputValues) {
         TF_DeleteTensor(t);
     }
 }
