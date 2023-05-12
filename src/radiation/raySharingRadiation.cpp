@@ -13,7 +13,6 @@ void ablate::radiation::RaySharingRadiation::Setup(const ablate::domain::Range& 
 }
 
 void ablate::radiation::RaySharingRadiation::IdentifyNewRaysOnRank(ablate::domain::SubDomain& subDomain, DM radReturn, PetscInt npoints) {
-    StartEvent((GetClassType() + "::Initialize::IdentifyNewRaysOnRank").c_str());
     PetscMPIInt rank = 0;
     MPI_Comm_rank(subDomain.GetComm(), &rank);
 
@@ -72,7 +71,6 @@ void ablate::radiation::RaySharingRadiation::IdentifyNewRaysOnRank(ablate::domai
     DMSwarmRestoreField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifiers) >> utilities::PetscUtilities::checkError;
     DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
     DMSwarmRestoreField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> utilities::PetscUtilities::checkError;
-    EndEvent();
 }
 
 void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray, DM radReturn, PetscInt npoints,
@@ -97,7 +95,6 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         /** Check that the particle is in a valid region */
         if (index[ipart] >= 0 && subDomain.InRegion(index[ipart])) {
-            StartEvent((GetClassType() + "::Initialize::GetConnectivity").c_str());
             auto& identifier = identifiers[ipart];
             // Exact the ray to reduce lookup
             auto& ray = raySegments[identifier.remoteRayId];
@@ -118,9 +115,7 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
             const PetscInt* cellFaces;
             DMPlexGetConeSize(subDomain.GetDM(), index[ipart], &numberFaces) >> utilities::PetscUtilities::checkError;
             DMPlexGetCone(subDomain.GetDM(), index[ipart], &cellFaces) >> utilities::PetscUtilities::checkError;  //!< Get the face geometry associated with the current cell
-            EndEvent();
 
-            StartEvent((GetClassType() + "::Initialize::CalculatePathLength").c_str());
             /** Check every face for intersection with the segment.
              * The segment with the shortest path length for intersection will be the one that physically intercepts with the cell face and not with the nonphysical plane beyond the face.
              * */
@@ -157,7 +152,6 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
                 raySegment.cell = index[ipart];
                 raySegment.pathLength = virtualcoords[ipart].hhere;
             }
-            EndEvent();
         } else {
             virtualcoords[ipart].hhere = (virtualcoords[ipart].hhere == 0) ? minCellRadius : virtualcoords[ipart].hhere;
         }

@@ -7,11 +7,9 @@ ablate::radiation::SurfaceRadiation::SurfaceRadiation(const std::string& solverI
 ablate::radiation::SurfaceRadiation::~SurfaceRadiation() {}
 
 void ablate::radiation::SurfaceRadiation::Initialize(const domain::Range& cellRange, ablate::domain::SubDomain& subDomain) { /** Declare some information associated with the field declarations */
-    StartEvent("SurfaceRadiation::Initialize");
 
     DeleteOutOfBounds(subDomain);
 
-    EndEvent();
     ablate::radiation::Radiation::Initialize(cellRange, subDomain);
 
     // set up the reverse lookup for faces
