@@ -193,7 +193,6 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
     DMSwarmGetLocalSize(radSearch, &npoints) >> utilities::PetscUtilities::checkError;  //!< Recalculate the number of particles that are in the domain
     DMSwarmGetSize(radSearch, &nglobalpoints) >> utilities::PetscUtilities::checkError;
     PetscInt stepcount = 0;  //!< Count the number of steps that the particles have taken
-    EndEvent();
     while (nglobalpoints != 0) {  //!< WHILE THERE ARE PARTICLES IN ANY DOMAIN
         // If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory and record its index
         IdentifyNewRaysOnRank(subDomain, radReturn, npoints);
@@ -576,7 +575,6 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
             DMPlexPointLocalRead(solDm, cellSegment.cell, solArray, &sol);
             if (sol) {
                 DMPlexPointLocalFieldRead(auxDm, cellSegment.cell, temperatureField.id, auxArray, &temperature);
-                EndEvent();
                 if (temperature) {                                       /** Input absorptivity (kappa) values from model here. */
                     PetscReal kappa[absorptivityFunction.propertySize];  //!< Absorptivity coefficient, property of each cell. This is an array that we will iterate through for every evaluation
                     PetscReal emission[absorptivityFunction.propertySize];
