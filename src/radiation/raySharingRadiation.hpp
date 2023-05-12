@@ -8,8 +8,8 @@ namespace ablate::radiation {
 
 class RaySharingRadiation : public ablate::radiation::Radiation {
    public:
-    RaySharingRadiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
-                        std::shared_ptr<ablate::monitors::logs::Log> = {});
+    RaySharingRadiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber,
+                        std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> = {});
     ~RaySharingRadiation();
 
     void Setup(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain) override;
@@ -17,7 +17,7 @@ class RaySharingRadiation : public ablate::radiation::Radiation {
     void IdentifyNewRaysOnRank(ablate::domain::SubDomain& subDomain, DM radReturn, PetscInt npoints);
 
     void ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray, DM radReturn, PetscInt nlocalpoints,
-                              PetscInt nglobalpoints) override;  //!< Routine to move the particle one step
+                      PetscInt nglobalpoints) override;  //!< Routine to move the particle one step
 
     static inline std::string GetClassType() { return "RaySharingRadiation"; }
 

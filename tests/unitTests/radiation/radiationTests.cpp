@@ -47,17 +47,17 @@ static PetscReal CSimp(PetscReal a, PetscReal b, std::vector<double>& f) {
     PetscReal I;
     int n = (int)f.size();  //!< The number of elements in the vector that is being integrated over
     int margin = 0;
-    PetscReal f_sum = 0;    //!< Initialize the sum of all middle elements
+    PetscReal f_sum = 0;  //!< Initialize the sum of all middle elements
 
     if (a != b) {
         /** Loop through every point except the first and last*/
         for (int i = margin; i < (n - margin); i++) {
             if (i % 2 == 0) {
-                f[i] = 2 * f[i];                              //!< Weight lightly on the borders
+                f[i] = 2 * f[i];  //!< Weight lightly on the borders
             } else {
-                f[i] = 4 * f[i];                              //!< Weight heavily in the center
+                f[i] = 4 * f[i];  //!< Weight heavily in the center
             }
-            f_sum += f[i];                                    //!< Add this value to the total every time
+            f_sum += f[i];  //!< Add this value to the total every time
         }
         I = ((b - a) / (3 * n)) * (f[0] + f_sum + f[n - 1]);  //!< Compute the total final integral
     } else {

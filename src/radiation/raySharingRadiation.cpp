@@ -56,7 +56,7 @@ void ablate::radiation::RaySharingRadiation::IdentifyNewRaysOnRank(ablate::domai
                 struct Identifier* returnIdentifiers;                                 //!< Pointer to the ray identifier information
                 PetscInt* returnRank;                                                 //! while we are here, set the return rank.  This won't change anything until migrate is called
                 DMSwarmGetField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >>
-                    utilities::PetscUtilities::checkError;                            //!< Get the fields from the radsolve swarm so the new point can be written to them
+                    utilities::PetscUtilities::checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
                 DMSwarmGetField(radReturn, DMSwarmField_rank, nullptr, nullptr, (void**)&returnRank) >> utilities::PetscUtilities::checkError;
 
                 // these are only created as remote rays are identified, so we can remoteRayId for the rank
@@ -76,7 +76,7 @@ void ablate::radiation::RaySharingRadiation::IdentifyNewRaysOnRank(ablate::domai
 }
 
 void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray, DM radReturn, PetscInt npoints,
-                                                PetscInt nglobalpoints) { /** Check that the particle is in a valid region */
+                                                          PetscInt nglobalpoints) { /** Check that the particle is in a valid region */
 
     PetscFVFaceGeom* faceGeom;
 
