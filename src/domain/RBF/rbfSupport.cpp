@@ -127,8 +127,8 @@ PetscErrorCode DMPlexGetNeighborVertices_Internal(DM dm, PetscReal x0[3], PetscI
     PetscInt cl, nClosure, *closure = NULL;
     PetscInt st, nStar, *star = NULL;
     PetscInt n, list[10000];  // To avoid memory reallocation just make the list bigger than it would ever need to be. Will look at doing something else in the future.
-    PetscInt i, dim, i_x, i_y;
-    PetscReal x[3], dist;
+    PetscInt i, dim, i_x;
+    PetscReal dist;
     Vec coords;
     PetscReal *coordsArray;
 
@@ -145,7 +145,7 @@ PetscErrorCode DMPlexGetNeighborVertices_Internal(DM dm, PetscReal x0[3], PetscI
     }
 
     n = 0;
-    PetscCall(DMPlexGetTransitiveClosure(dm, v, PETSC_FALSE, &nStar, &star));  // All points associated with the vertex 
+    PetscCall(DMPlexGetTransitiveClosure(dm, p, PETSC_FALSE, &nStar, &star));  // All points associated with the vertex 
 
     maxDist = PetscSqr(maxDist) + PETSC_MACHINE_EPSILON;  // So we don't need PetscSqrtReal in the check
     
@@ -159,7 +159,7 @@ PetscErrorCode DMPlexGetNeighborVertices_Internal(DM dm, PetscReal x0[3], PetscI
             for (cl = 0; cl < nClosure * 2; cl += 2) { 
                 if (closure[cl] >= vStart && closure[cl] < vEnd) {  // If the point is a vertex add it.
                     dist = 0.0;
-                    i_x = (closure[cl]-vstart)*2;  
+                    i_x = (closure[cl]-vStart)*2;  
                     for (i = 0; i < dim; ++i) {  // Compute the distance so that we can check if it's within the required distance.
 						dist += PetscSqr(x0[i] - coordsArray[i_x+i]);
 	                }
@@ -175,11 +175,11 @@ PetscErrorCode DMPlexGetNeighborVertices_Internal(DM dm, PetscReal x0[3], PetscI
 	}
 
 	PetscCall(VecRestoreArray(coords, &coordsArray)); 	                          // Restore the coordsArray
-	PetscCall(DMPlexRestoreTransitiveClosure(dm, v, PETSC_TRUE, &nStar, &star));  // Restore the points
+	PetscCall(DMPlexRestoreTransitiveClosure(dm, p, PETSC_TRUE, &nStar, &star));  // Restore the points
 	PetscCall(PetscSortRemoveDupsInt(&n, list));                                  // Cleanup the list
 	if (!(*vertices)) PetscCall(PetscMalloc1(n, vertices));                       // Allocate the output
 	PetscCall(PetscArraycpy(*vertices, list, n));                                 // Copy the vertex list
-	nVertices = n;                                                                // Set the number of vertices for output
+	*nVertices = n;                                                                // Set the number of vertices for output
 
 	PetscFunctionReturn(0);
 }
