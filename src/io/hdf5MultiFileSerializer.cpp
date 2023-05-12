@@ -92,7 +92,7 @@ void ablate::io::Hdf5MultiFileSerializer::Register(std::weak_ptr<Serializable> s
             // Restore the simulation
             StartEvent("Restore");
             // NOTE: as far as the output file the sequence number is always zero because it is a new file
-            serializableObject->Restore(petscViewer, 0, time);
+            serializableObject->Restore(petscViewer, 0, time) >> utilities::PetscUtilities::checkError;
             EndEvent();
 
             StartEvent("PetscViewerHDF5Destroy");
@@ -132,35 +132,31 @@ PetscErrorCode ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializerSaveS
         // Save this to a file
         hdf5Serializer->SaveMetadata(ts);
 
-        try {
-            // save each serializer
-            for (auto& serializablePtr : hdf5Serializer->serializables) {
-                if (auto serializableObject = serializablePtr.lock()) {
-                    // Create an output path
-                    auto filePath = hdf5Serializer->GetOutputFilePath(serializableObject->GetId());
+        // save each serializer
+        for (auto& serializablePtr : hdf5Serializer->serializables) {
+            if (auto serializableObject = serializablePtr.lock()) {
+                // Create an output path
+                auto filePath = hdf5Serializer->GetOutputFilePath(serializableObject->GetId());
 
-                    PetscViewer petscViewer = nullptr;
-                    hdf5Serializer->StartEvent("PetscViewerHDF5Open");
-                    PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_WRITE, &petscViewer) >> utilities::PetscUtilities::checkError;
-                    hdf5Serializer->EndEvent();
+                PetscViewer petscViewer = nullptr;
+                hdf5Serializer->StartEvent("PetscViewerHDF5Open");
+                PetscCall(PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_WRITE, &petscViewer));
+                hdf5Serializer->EndEvent();
 
-                    // set the petsc options if provided
-                    PetscObjectSetOptions((PetscObject)petscViewer, hdf5Serializer->petscOptions) >> utilities::PetscUtilities::checkError;
-                    PetscViewerSetFromOptions(petscViewer) >> utilities::PetscUtilities::checkError;
-                    PetscViewerViewFromOptions(petscViewer, nullptr, "-hdf5ViewerView") >> utilities::PetscUtilities::checkError;
+                // set the petsc options if provided
+                PetscCall(PetscObjectSetOptions((PetscObject)petscViewer, hdf5Serializer->petscOptions));
+                PetscCall(PetscViewerSetFromOptions(petscViewer));
+                PetscCall(PetscViewerViewFromOptions(petscViewer, nullptr, "-hdf5ViewerView"));
 
-                    hdf5Serializer->StartEvent("Save");
-                    // NOTE: as far as the output file the sequence number is always zero because it is a new file
-                    serializableObject->Save(petscViewer, 0, time);
-                    hdf5Serializer->EndEvent();
+                hdf5Serializer->StartEvent("Save");
+                // NOTE: as far as the output file the sequence number is always zero because it is a new file
+                PetscCall(serializableObject->Save(petscViewer, 0, time));
+                hdf5Serializer->EndEvent();
 
-                    hdf5Serializer->StartEvent("PetscViewerHDF5Destroy");
-                    PetscViewerDestroy(&petscViewer) >> utilities::PetscUtilities::checkError;
-                    hdf5Serializer->EndEvent();
-                }
+                hdf5Serializer->StartEvent("PetscViewerHDF5Destroy");
+                PetscCall(PetscViewerDestroy(&petscViewer));
+                hdf5Serializer->EndEvent();
             }
-        } catch (std::exception& exception) {
-            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exception.what());
         }
     }
     PetscFunctionReturn(0);

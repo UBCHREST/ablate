@@ -92,6 +92,10 @@ PetscErrorCode ablate::monitors::MixtureFractionMonitor::Save(PetscViewer viewer
         // Get the solutionField and monitorField
         const PetscScalar* solutionField = nullptr;
         PetscCall(DMPlexPointGlobalRead(GetSolver()->GetSubDomain().GetDM(), solutionPt, solutionFieldArray, &solutionField));
+        if (!solutionField) {
+            continue;
+        }
+
         PetscScalar* monitorField = nullptr;
         PetscCall(DMPlexPointGlobalRead(monitorSubDomain->GetDM(), monitorPt, monitorFieldArray, &monitorField));
 
@@ -100,7 +104,7 @@ PetscErrorCode ablate::monitors::MixtureFractionMonitor::Save(PetscViewer viewer
             PetscCall(DMPlexPointGlobalRead(GetSolver()->GetSubDomain().GetDM(), solutionPt, sourceTermArray, &sourceTermField));
         }
         // Do not bother in ghost cells
-        if (solutionField && monitorField) {
+        if (monitorField) {
             // compute the density from the solutionPt
             PetscReal density;
             PetscCall(densityFunction.function(solutionField, &density, densityFunctionContext));
