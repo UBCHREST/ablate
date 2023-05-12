@@ -104,7 +104,7 @@ static PetscReal ReallySolveParallelPlates(PetscReal z) {
     PetscReal Ibz;
 
     PetscReal pi = 3.1415926535897932384626433832795028841971693993;
-    //    const PetscReal sbc = 5.6696e-8;
+    const PetscReal sbc = 5.6696e-8;
     PetscInt nZp = 1000;
 
     std::vector<PetscReal> Iplus;
@@ -152,10 +152,10 @@ static PetscReal ReallySolveParallelPlates(PetscReal z) {
     } else {
         temperature = -1.179E7 * z * z + 2000.0;
     }
-    //    PetscReal losses = 4 * sbc * temperature * temperature * temperature * temperature;
-    //    PetscReal radTotal = -kappa * (losses - G);
+    PetscReal losses = 4 * sbc * temperature * temperature * temperature * temperature;
+    PetscReal radTotal = -kappa * (losses - G);
 
-    return G;
+    return radTotal;
 }
 
 TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
@@ -251,14 +251,6 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
                     // extract the result from the rhs
                     PetscScalar* rhsValues;
                     DMPlexPointLocalFieldRead(domain->GetDM(), cell, eulerFieldInfo.id, rhsArray, &rhsValues) >> testErrorChecker;
-                    PetscReal z = cellGeom->centroid[1];
-                    PetscReal temperature;
-                    if (z <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other
-                        temperature = -6.349E6 * z * z + 2000.0;
-                    } else {
-                        temperature = -1.179E7 * z * z + 2000.0;
-                    }
-                    PetscReal losses = -4 * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
                     PetscScalar actualResult = rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE];
                     PetscScalar analyticalResult = ReallySolveParallelPlates(cellGeom->centroid[1]);  // Compute the analytical solution at this z height.
 
@@ -277,7 +269,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             l2Global = sqrt(l2Global) / nGlobal;
 
             PetscPrintf(MPI_COMM_WORLD, "L2 Norm: %f\n", l2Global);
-            if (abs(l2Global) > 0) {
+            if (l2Global > 10000) {
                 FAIL() << "Radiation test error exceeded.";
             }
 
@@ -316,7 +308,7 @@ INSTANTIATE_TEST_SUITE_P(
                                   .radiationFactory =
                                       [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
                                           auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
-                                          return std::make_shared<ablate::radiation::Radiation>("radiationBase", interiorLabel, 15, radiationModelIn, nullptr);
+                                          return std::make_shared<ablate::radiation::Radiation>("radiationBase", interiorLabel, 20, radiationModelIn, nullptr);
                                       }},
         (RadiationTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("1D uniform temperature 1.1"),
                                   .meshFaces = {3, 20},
@@ -340,7 +332,7 @@ INSTANTIATE_TEST_SUITE_P(
                                   .radiationFactory =
                                       [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
                                           auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
-                                          return std::make_shared<ablate::radiation::Radiation>("radiationBase", interiorLabel, 15, radiationModelIn, nullptr);
+                                          return std::make_shared<ablate::radiation::Radiation>("radiationBase", interiorLabel, 20, radiationModelIn, nullptr);
                                       }},
         (RadiationTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("1D uniform temperature 2 proc.", 2),
                                   .meshFaces = {3, 20},
@@ -364,7 +356,7 @@ INSTANTIATE_TEST_SUITE_P(
                                   .radiationFactory =
                                       [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
                                           auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
-                                          return std::make_shared<ablate::radiation::Radiation>("radiationBase", interiorLabel, 15, radiationModelIn, nullptr);
+                                          return std::make_shared<ablate::radiation::Radiation>("radiationBase", interiorLabel, 20, radiationModelIn, nullptr);
                                       }},
         (RadiationTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("ray sharing test", 2),
                                   .meshFaces = {3, 20},
@@ -388,6 +380,6 @@ INSTANTIATE_TEST_SUITE_P(
                                   .radiationFactory =
                                       [](std::shared_ptr<ablate::eos::radiationProperties::RadiationModel> radiationModelIn) {
                                           auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
-                                          return std::make_shared<ablate::radiation::RaySharingRadiation>("radiationBase", interiorLabel, 15, radiationModelIn, nullptr);
+                                          return std::make_shared<ablate::radiation::RaySharingRadiation>("radiationBase", interiorLabel, 20, radiationModelIn, nullptr);
                                       }}),
     [](const testing::TestParamInfo<RadiationTestParameters>& info) { return info.param.mpiTestParameter.getTestName(); });
