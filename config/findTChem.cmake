@@ -59,8 +59,8 @@ if (NOT (DEFINED TChem_DIR|CACHE{TChem_DIR}|ENV{TChem_DIR}))
     set(TCHEM_ENABLE_PYTHON OFF CACHE BOOL "" FORCE)
 
     FetchContent_Declare(tchem
-            GIT_REPOSITORY https://github.com/sandialabs/TChem.git
-            GIT_TAG 6b4a97f
+            GIT_REPOSITORY https://github.com/UBCHREST/TChem.git
+            GIT_TAG mcgurn/free-periodic-table
             SOURCE_SUBDIR src
             )
     FetchContent_MakeAvailable(tchem)

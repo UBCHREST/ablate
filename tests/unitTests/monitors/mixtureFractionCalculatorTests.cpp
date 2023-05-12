@@ -75,8 +75,7 @@ TEST_P(MixtureFractionCalculatorFixture, ShouldComputeMixtureFractionUsingFieldF
 }
 
 INSTANTIATE_TEST_SUITE_P(MixtureFractionCalculatorTests, MixtureFractionCalculatorFixture,
-                         testing::Values((MixtureFractionCalculatorParameters){.createEOS =
-                                                                                   []() { return std::make_shared<ablate::eos::TChem>("inputs/eos/grimech30.dat", "inputs/eos/thermo30.dat"); },
+                         testing::Values((MixtureFractionCalculatorParameters){.createEOS = []() { return std::make_shared<ablate::eos::TChem>("inputs/eos/gri30.yaml"); },
                                                                                .massFractionsFuel = {{"CH4", 1.0}},
                                                                                .massFractionsOxidizer = {{"O2", 1.0}},
                                                                                .trackingElements = {},

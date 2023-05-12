@@ -30,9 +30,6 @@ class TChemBase : public ChemistryModel {
     //! the mechanismFile may be chemkin or yaml based
     const std::filesystem::path mechanismFile;
 
-    //! the thermoFile may be empty when using yaml input file
-    const std::filesystem::path thermoFile;
-
     //! an optional log file for tchem echo redirection
     std::shared_ptr<ablate::monitors::logs::Log> log;
 
@@ -72,7 +69,7 @@ class TChemBase : public ChemistryModel {
      * @param mechFile
      * @param optionalThermoFile
      */
-    explicit TChemBase(const std::string& eosName, std::filesystem::path mechanismFile, std::filesystem::path thermoFile = {}, std::shared_ptr<ablate::monitors::logs::Log> = {},
+    explicit TChemBase(const std::string& eosName, std::filesystem::path mechanismFile, const std::shared_ptr<ablate::monitors::logs::Log>& = {},
                        const std::shared_ptr<ablate::parameters::Parameters>& options = {});
 
     /**
@@ -138,6 +135,11 @@ class TChemBase : public ChemistryModel {
     }
 
    protected:
+    /**
+     * only allow modern input files
+     */
+    static const inline std::array<std::string, 2> validFileExtensions = {".yaml", ".yml"};
+
     struct FunctionContext {
         // memory access locations for fields
         PetscInt dim;

@@ -1,7 +1,7 @@
 #include <petsc.h>
 #include <vector>
 #include "MpiTestFixture.hpp"
-#include "domain/dmWrapper.hpp"
+#include "domain/dmTransfer.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
 #include "environment/runEnvironment.hpp"
@@ -569,10 +569,10 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {
                 std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos, std::vector<std::string>{}, domain::Region::ENTIREDOMAIN, conservedFieldParametersPtr)};
 
-            auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate,
-                                                                    fieldDescriptors,
-                                                                    std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
-                                                                                                                                      std::make_shared<domain::modifiers::GhostBoundaryCells>()});
+            auto mesh = std::make_shared<ablate::domain::DMTransfer>(dmCreate,
+                                                                     fieldDescriptors,
+                                                                     std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
+                                                                                                                                       std::make_shared<domain::modifiers::GhostBoundaryCells>()});
 
             // create a time stepper
             auto exactSolution = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(EulerExact, &constants));

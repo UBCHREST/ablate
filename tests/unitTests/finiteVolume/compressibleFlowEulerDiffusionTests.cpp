@@ -1,17 +1,17 @@
 #include <petsc.h>
 #include <cmath>
-#include <domain/dmWrapper.hpp>
-#include <domain/modifiers/distributeWithGhostCells.hpp>
-#include <domain/modifiers/ghostBoundaryCells.hpp>
-#include <finiteVolume/compressibleFlowFields.hpp>
 #include <memory>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
+#include "domain/dmTransfer.hpp"
+#include "domain/modifiers/distributeWithGhostCells.hpp"
+#include "domain/modifiers/ghostBoundaryCells.hpp"
 #include "environment/runEnvironment.hpp"
 #include "eos/perfectGas.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/compressibleFlowSolver.hpp"
 #include "finiteVolume/fluxCalculator/offFlux.hpp"
 #include "gtest/gtest.h"
@@ -186,10 +186,10 @@ TEST_P(CompressibleFlowEulerDiffusionTestFixture, ShouldConvergeToExactSolution)
                 std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(parameters.gamma)}, {"Rgas", std::to_string(parameters.Rgas)}}));
 
             std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
-            auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate,
-                                                                    fieldDescriptors,
-                                                                    std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
-                                                                                                                                      std::make_shared<domain::modifiers::GhostBoundaryCells>()});
+            auto mesh = std::make_shared<ablate::domain::DMTransfer>(dmCreate,
+                                                                     fieldDescriptors,
+                                                                     std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
+                                                                                                                                       std::make_shared<domain::modifiers::GhostBoundaryCells>()});
 
             auto exactSolution = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(EulerExact, &parameters));
 

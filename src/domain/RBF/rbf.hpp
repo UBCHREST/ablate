@@ -55,7 +55,7 @@ class RBF {
     void Loc3D(PetscInt dim, PetscReal xIn[], PetscReal x[3]);
 
    public:
-    RBF(int polyOrder = 4, bool hasDerivatives = true, bool hasInterpolation = true);
+    explicit RBF(int polyOrder = 4, bool hasDerivatives = true, bool hasInterpolation = true);
 
     virtual ~RBF();
 
@@ -68,9 +68,9 @@ class RBF {
      * Set the derivatives to use
      * @param numDer - Number of derivatives to set
      * @param dx, dy, dz - Lists of length numDer indicating the derivatives
-     * @param useVertices - Use common vertices when determining neighbors. If false then use common edges.
+     * @param useVerticesLocal - Use common vertices when determining neighbors. If false then use common edges.
      */
-    void SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVertices);
+    void SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVerticesLocal);
 
     /**
      * Set the derivatives to use, defaulting to useVertices=TRUE

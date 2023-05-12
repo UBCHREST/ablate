@@ -12,7 +12,7 @@ namespace testingResources {
 struct MpiTestParameter {
     // A general test name
     std::string testName;
-    // The number of mpi processes to test agains
+    // The number of mpi processes to test against
     int nproc;
     // An optional expected output file to compare against standard out
     std::string expectedOutputFile;
@@ -23,11 +23,29 @@ struct MpiTestParameter {
     // an optional list of other files that may be output (expected, actual)
     std::vector<std::pair<std::string, std::string>> expectedFiles;
 
-    MpiTestParameter(std::string testName = "", int nproc = 1, std::string arguments = "", std::string expectedOutputFile = "", std::vector<std::pair<std::string, std::string>> expectedFiles = {})
-        : testName(std::move(testName)), nproc(nproc), expectedOutputFile(std::move(expectedOutputFile)), arguments(std::move(arguments)), expectedFiles(std::move(expectedFiles)) {}
+    // Add options for ASAN flags
+    std::string environment;
+
+    /**
+     * Constructor for the mpi test parameters
+     * @param testName
+     * @param nproc
+     * @param arguments
+     * @param expectedOutputFile
+     * @param expectedFiles
+     * @param environment, optional enviorment flags
+     */
+    MpiTestParameter(std::string testName = "", int nproc = 1, std::string arguments = "", std::string expectedOutputFile = "", std::vector<std::pair<std::string, std::string>> expectedFiles = {},
+                     std::string environment = {})
+        : testName(std::move(testName)),
+          nproc(nproc),
+          expectedOutputFile(std::move(expectedOutputFile)),
+          arguments(std::move(arguments)),
+          expectedFiles(std::move(expectedFiles)),
+          environment(std::move(environment)) {}
 
     // A sanitized version of the test name
-    std::string getTestName() const {
+    [[nodiscard]] std::string getTestName() const {
         std::string s = testName;
         std::replace(s.begin(), s.end(), ' ', '_');
         std::replace(s.begin(), s.end(), '/', '_');
@@ -143,4 +161,5 @@ class MpiTestFixture : public ::testing::Test {
     }
 
 }  // namespace testingResources
+
 #endif  // mpitestfixture_h

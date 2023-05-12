@@ -7,20 +7,19 @@
 #include "utilities/kokkosUtilities.hpp"
 #include "utilities/mpiUtilities.hpp"
 
-ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::path mechanismFileIn, std::filesystem::path thermoFileIn, std::shared_ptr<ablate::monitors::logs::Log> logIn,
+ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::path mechanismFileIn, const std::shared_ptr<ablate::monitors::logs::Log> &logIn,
                                   const std::shared_ptr<ablate::parameters::Parameters> &options)
-    : ChemistryModel(eosName), mechanismFile(std::move(mechanismFileIn)), thermoFile(std::move(thermoFileIn)), log(logIn ? logIn : std::make_shared<ablate::monitors::logs::NullLog>()) {
+    : ChemistryModel(eosName), mechanismFile(std::move(mechanismFileIn)), log(logIn ? logIn : std::make_shared<ablate::monitors::logs::NullLog>()) {
     // setup/use Kokkos
     ablate::utilities::KokkosUtilities::Initialize();
 
-    // create/parse the kinetic data
-    if (thermoFile.empty()) {
-        // Create a file to record the output
-        kineticsModel = tChemLib::KineticModelData(mechanismFile.string(), log->GetStream(), log->GetStream());
-    } else {
-        // TChem init reads/writes file it can only be done one at a time
-        ablate::utilities::MpiUtilities::RoundRobin(PETSC_COMM_WORLD, [&](int rank) { kineticsModel = tChemLib::KineticModelData(mechanismFile.string(), thermoFile.string()); });
+    // check the extension, only accept modern yaml input files
+    if (std::find(validFileExtensions.begin(), validFileExtensions.end(), mechanismFile.extension()) == validFileExtensions.end()) {
+        throw std::invalid_argument("ablate::eos::TChem only accepts yaml type mechanism files.");
     }
+
+    // create/parse the kinetic data, create a file to record the output
+    kineticsModel = tChemLib::KineticModelData(mechanismFile.string(), log->GetStream(), log->GetStream());
 
     // get the device KineticsModelData
     kineticsModelDataDevice = std::make_shared<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<exec_space>::type>>(
@@ -80,9 +79,6 @@ ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::p
 void ablate::eos::TChemBase::View(std::ostream &stream) const {
     stream << "EOS: " << type << std::endl;
     stream << "\tmechFile: " << mechanismFile << std::endl;
-    if (!thermoFile.empty()) {
-        stream << "\tthermoFile: " << thermoFile << std::endl;
-    }
     stream << "\tnumberSpecies: " << species.size() << std::endl;
     tChemLib::exec_space().print_configuration(stream, true);
     tChemLib::host_exec_space().print_configuration(stream, true);

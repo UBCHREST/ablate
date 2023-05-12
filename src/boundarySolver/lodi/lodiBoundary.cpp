@@ -80,8 +80,8 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(const PetscInt sOff[],
     }
     KE = 0.5e+0 * KE;
     mdFdn[sOff[eulerId] + RHOE] = -(d[0] * (KE + Enth - Cp * T) + d[1] / (Cp / Cv - 1.e+0 + 1.0E-30) + rho * dvelterm);
-    const PetscReal *rhoYi = conserved + uOff[speciesId];
     for (int ns = 0; ns < nSpecEqs; ns++) {
+        const PetscReal *rhoYi = conserved + uOff[speciesId];
         mdFdn[sOff[speciesId] + ns] = -(rhoYi[ns] / rho * d[0] + rho * d[2 + dims + ns]);  // species
     }
 

@@ -156,26 +156,26 @@ void ablate::eos::ChemTab::LoadBasisVectors(std::istream &inputStream, std::size
 void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariable[], PetscReal *predictedSourceEnergy, PetscReal *progressVariableSource,
                                                        PetscReal *massFractions) const {
     //********* Get Input tensor
-    std::size_t numInputs = 1;
-    auto *input = (TF_Output *)malloc(sizeof(TF_Output) * numInputs);
+    const std::size_t numInputs = 1;
+
     TF_Output t0 = {TF_GraphOperationByName(graph, "serving_default_input_1"), 0};
 
     if (t0.oper == nullptr) throw std::runtime_error("ERROR: Failed TF_GraphOperationByName serving_default_input_1");
-    input[0] = t0;
+    std::array<TF_Output, numInputs> input = {t0};
+
     //********* Get Output tensor
-    std::size_t numOutputs = 2;
-    auto *output = (TF_Output *)malloc(sizeof(TF_Output) * numOutputs);
+    const std::size_t numOutputs = 2;
 
     TF_Output t_sourceenergy = {TF_GraphOperationByName(graph, "StatefulPartitionedCall"), 0};
     TF_Output t_sourceterms = {TF_GraphOperationByName(graph, "StatefulPartitionedCall"), 1};
 
     if (t_sourceenergy.oper == nullptr) throw std::runtime_error("ERROR: Failed TF_GraphOperationByName StatefulPartitionedCall:0");
     if (t_sourceterms.oper == nullptr) throw std::runtime_error("ERROR: Failed TF_GraphOperationByName StatefulPartitionedCall:1");
-    output[0] = t_sourceenergy;
-    output[1] = t_sourceterms;
+    std::array<TF_Output, numOutputs> output = {t_sourceenergy, t_sourceterms};
+
     //********* Allocate data for inputs & outputs
-    auto **inputValues = (TF_Tensor **)malloc(sizeof(TF_Tensor *) * numInputs);
-    auto **outputValues = (TF_Tensor **)malloc(sizeof(TF_Tensor *) * numOutputs);
+    std::array<TF_Tensor *, numInputs> inputValues = {nullptr};
+    std::array<TF_Tensor *, numOutputs> outputValues = {nullptr, nullptr};
 
     std::size_t ndims = 2;
 
@@ -194,7 +194,7 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
 
     inputValues[0] = input_tensor;
 
-    TF_SessionRun(session, nullptr, input, inputValues, (int)numInputs, output, outputValues, (int)numOutputs, nullptr, 0, nullptr, status);
+    TF_SessionRun(session, nullptr, input.data(), inputValues.data(), (int)numInputs, output.data(), outputValues.data(), (int)numOutputs, nullptr, 0, nullptr, status);
     if (TF_GetCode(status) != TF_OK) throw std::runtime_error(TF_Message(status));
     //********** Extract source predictions
 
@@ -223,10 +223,12 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
     }
 
     // free allocated vectors
-    safe_free(inputValues);
-    safe_free(outputValues);
-    safe_free(input);
-    safe_free(output);
+    for (auto &t : outputValues) {
+        TF_DeleteTensor(t);
+    }
+    for (auto &t : inputValues) {
+        TF_DeleteTensor(t);
+    }
 }
 
 void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal *progressVariables, PetscReal *massFractions, PetscReal density) const {
