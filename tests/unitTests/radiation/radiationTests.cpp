@@ -234,7 +234,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             VecGetArrayRead(rhs, &rhsArray) >> testErrorChecker;
 
             /// Declare L2 norm variables
-            PetscReal l2sum = 0.0;
+            PetscReal l2sumLocal = 0.0;
             double error;  // Number of cells in the domain
 
             ablate::domain::Range cellRange;
@@ -260,19 +260,24 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
                     }
                     PetscReal losses = -4 * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
                     PetscScalar actualResult = rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE];
-                    PetscScalar analyticalResult = ReallySolveParallelPlates(z);  // Compute the analytical solution at this z height.
+                    PetscScalar analyticalResult = ReallySolveParallelPlates(cellGeom->centroid[1]);  // Compute the analytical solution at this z height.
 
                     /// Summing of the L2 norm values
-                    error = (analyticalResult - actualResult + losses);
-                    l2sum += error * error;
+                    error = (analyticalResult - actualResult);
+                    l2sumLocal += error * error;
                 }
             }
             /// Compute the L2 Norm error
-            double N = (cellRange.end - cellRange.start);
-            double l2 = sqrt(l2sum) / N;
+            double nLocal = (cellRange.end - cellRange.start);
+            double l2Global;
+            double nGlobal;
+            MPI_Allreduce(&l2sumLocal, &l2Global, 1, MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);
+            MPI_Allreduce(&nLocal, &nGlobal, 1, MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);
 
-            PetscPrintf(MPI_COMM_WORLD, "L2 Norm: %f\n", sqrt(l2sum) / N);
-            if (l2 > 15000) {
+            l2Global = sqrt(l2Global) / nGlobal;
+
+            PetscPrintf(MPI_COMM_WORLD, "L2 Norm: %f\n", l2Global);
+            if (abs(l2Global) > 0) {
                 FAIL() << "Radiation test error exceeded.";
             }
 
