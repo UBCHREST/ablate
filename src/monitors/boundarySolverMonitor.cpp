@@ -85,56 +85,56 @@ void ablate::monitors::BoundarySolverMonitor::Register(std::shared_ptr<solver::S
     DMCreateDS(faceDm) >> utilities::PetscUtilities::checkError;
 }
 
-void ablate::monitors::BoundarySolverMonitor::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+PetscErrorCode ablate::monitors::BoundarySolverMonitor::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
     PetscFunctionBeginUser;
     // If this is the first output, store a copy of the faceDm
     if (sequenceNumber == 0) {
-        DMView(faceDm, viewer) >> utilities::PetscUtilities::checkError;
+        PetscCall(DMView(faceDm, viewer));
     }
 
     // Set the output sequence number to the face dm
-    DMSetOutputSequenceNumber(faceDm, sequenceNumber, time) >> utilities::PetscUtilities::checkError;
+    PetscCall(DMSetOutputSequenceNumber(faceDm, sequenceNumber, time));
 
     // Create a local version of the solution (X) vector
     Vec locXVec;
-    DMGetLocalVector(GetSolver()->GetSubDomain().GetDM(), &locXVec) >> utilities::PetscUtilities::checkError;
-    DMGlobalToLocalBegin(GetSolver()->GetSubDomain().GetDM(), GetSolver()->GetSubDomain().GetSolutionVector(), INSERT_VALUES, locXVec) >> utilities::PetscUtilities::checkError;
+    PetscCall(DMGetLocalVector(GetSolver()->GetSubDomain().GetDM(), &locXVec));
+    PetscCall(DMGlobalToLocalBegin(GetSolver()->GetSubDomain().GetDM(), GetSolver()->GetSubDomain().GetSolutionVector(), INSERT_VALUES, locXVec));
 
     // create a local vector on the boundary solver
     Vec localBoundaryVec;
-    DMGetLocalVector(boundaryDm, &localBoundaryVec) >> utilities::PetscUtilities::checkError;
-    VecZeroEntries(localBoundaryVec) >> utilities::PetscUtilities::checkError;
+    PetscCall(DMGetLocalVector(boundaryDm, &localBoundaryVec));
+    PetscCall(VecZeroEntries(localBoundaryVec));
 
     // finish with the locXVec
-    DMGlobalToLocalEnd(GetSolver()->GetSubDomain().GetDM(), GetSolver()->GetSubDomain().GetSolutionVector(), INSERT_VALUES, locXVec) >> utilities::PetscUtilities::checkError;
+    PetscCall(DMGlobalToLocalEnd(GetSolver()->GetSubDomain().GetDM(), GetSolver()->GetSubDomain().GetSolutionVector(), INSERT_VALUES, locXVec));
 
     // compute the rhs
-    boundarySolver->ComputeRHSFunction(time, locXVec, localBoundaryVec, boundarySolver->GetOutputFunctions()) >> utilities::PetscUtilities::checkError;
+    PetscCall(boundarySolver->ComputeRHSFunction(time, locXVec, localBoundaryVec, boundarySolver->GetOutputFunctions()));
 
     // Create a local vector for just the monitor
     Vec localFaceVec;
-    DMGetLocalVector(faceDm, &localFaceVec) >> utilities::PetscUtilities::checkError;
-    VecZeroEntries(localFaceVec) >> utilities::PetscUtilities::checkError;
+    PetscCall(DMGetLocalVector(faceDm, &localFaceVec));
+    PetscCall(VecZeroEntries(localFaceVec));
 
     // Get the raw data for the global vectors
     const PetscScalar* localBoundaryArray;
-    VecGetArrayRead(localBoundaryVec, &localBoundaryArray) >> utilities::PetscUtilities::checkError;
+    PetscCall(VecGetArrayRead(localBoundaryVec, &localBoundaryArray));
     PetscScalar* localFaceArray;
-    VecGetArray(localFaceVec, &localFaceArray) >> utilities::PetscUtilities::checkError;
+    PetscCall(VecGetArray(localFaceVec, &localFaceArray));
 
     // Determine the size of data
     PetscInt dataSize;
-    VecGetBlockSize(localFaceVec, &dataSize) >> utilities::PetscUtilities::checkError;
+    PetscCall(VecGetBlockSize(localFaceVec, &dataSize));
 
     // March over each cell in the face dm
     PetscInt cStart, cEnd;
-    DMPlexGetHeightStratum(faceDm, 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
+    PetscCall(DMPlexGetHeightStratum(faceDm, 0, &cStart, &cEnd));
 
     // get the mapping information
     IS faceIs;
     const PetscInt* faceToBoundary = nullptr;
-    DMPlexGetSubpointIS(faceDm, &faceIs) >> utilities::PetscUtilities::checkError;
-    ISGetIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
+    PetscCall(DMPlexGetSubpointIS(faceDm, &faceIs));
+    PetscCall(ISGetIndices(faceIs, &faceToBoundary));
 
     // Copy over the values that are in the globalFaceVec.  We may skip some local ghost values
     if (localBoundaryArray && localFaceArray) {
@@ -144,36 +144,36 @@ void ablate::monitors::BoundarySolverMonitor::Save(PetscViewer viewer, PetscInt 
             const PetscScalar* localBoundaryData = nullptr;
             PetscScalar* globalFaceData = nullptr;
 
-            DMPlexPointLocalRead(boundaryDm, boundaryPt, localBoundaryArray, &localBoundaryData) >> utilities::PetscUtilities::checkError;
-            DMPlexPointLocalRef(faceDm, facePt, localFaceArray, &globalFaceData) >> utilities::PetscUtilities::checkError;
+            PetscCall(DMPlexPointLocalRead(boundaryDm, boundaryPt, localBoundaryArray, &localBoundaryData));
+            PetscCall(DMPlexPointLocalRef(faceDm, facePt, localFaceArray, &globalFaceData));
             if (globalFaceData && localBoundaryData) {
-                PetscArraycpy(globalFaceData, localBoundaryData, dataSize) >> utilities::PetscUtilities::checkError;
+                PetscCall(PetscArraycpy(globalFaceData, localBoundaryData, dataSize));
             }
         }
     }
 
     // restore
-    ISRestoreIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
+    PetscCall(ISRestoreIndices(faceIs, &faceToBoundary));
 
-    VecRestoreArrayRead(localBoundaryVec, &localBoundaryArray) >> utilities::PetscUtilities::checkError;
-    VecRestoreArray(localFaceVec, &localFaceArray) >> utilities::PetscUtilities::checkError;
+    PetscCall(VecRestoreArrayRead(localBoundaryVec, &localBoundaryArray));
+    PetscCall(VecRestoreArray(localFaceVec, &localFaceArray));
 
     // Map to a global array with add values
     Vec globalFaceVec;
-    DMGetGlobalVector(faceDm, &globalFaceVec) >> utilities::PetscUtilities::checkError;
-    PetscObjectSetName((PetscObject)globalFaceVec, GetId().c_str()) >> utilities::PetscUtilities::checkError;
-    VecZeroEntries(globalFaceVec);
-    DMLocalToGlobal(faceDm, localFaceVec, ADD_VALUES, globalFaceVec) >> utilities::PetscUtilities::checkError;
+    PetscCall(DMGetGlobalVector(faceDm, &globalFaceVec));
+    PetscCall(PetscObjectSetName((PetscObject)globalFaceVec, GetId().c_str()));
+    PetscCall(VecZeroEntries(globalFaceVec));
+    PetscCall(DMLocalToGlobal(faceDm, localFaceVec, ADD_VALUES, globalFaceVec));
 
     // write to the output file
-    VecView(globalFaceVec, viewer) >> utilities::PetscUtilities::checkError;
-    DMRestoreGlobalVector(faceDm, &globalFaceVec) >> utilities::PetscUtilities::checkError;
+    PetscCall(VecView(globalFaceVec, viewer));
+    PetscCall(DMRestoreGlobalVector(faceDm, &globalFaceVec));
 
     // cleanup
-    DMRestoreLocalVector(faceDm, &localFaceVec) >> utilities::PetscUtilities::checkError;
-    DMRestoreLocalVector(GetSolver()->GetSubDomain().GetDM(), &locXVec) >> utilities::PetscUtilities::checkError;
-    DMRestoreLocalVector(boundaryDm, &localBoundaryVec) >> utilities::PetscUtilities::checkError;
-    PetscFunctionReturnVoid();
+    PetscCall(DMRestoreLocalVector(faceDm, &localFaceVec));
+    PetscCall(DMRestoreLocalVector(GetSolver()->GetSubDomain().GetDM(), &locXVec));
+    PetscCall(DMRestoreLocalVector(boundaryDm, &localBoundaryVec));
+    PetscFunctionReturn(0);
 }
 
 #include "registrar.hpp"

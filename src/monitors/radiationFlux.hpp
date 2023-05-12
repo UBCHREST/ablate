@@ -66,7 +66,7 @@ class RadiationFlux : public Monitor, public io::Serializable {
      * @param sequenceNumber
      * @param time
      */
-    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 
     /**
      * return context to be returned to the PetscMonitorFunction.  By default this is a pointer to this instance
@@ -75,7 +75,7 @@ class RadiationFlux : public Monitor, public io::Serializable {
 
     [[nodiscard]] const std::string& GetId() const override { return name; };
 
-    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override{};
+    PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override { return 0; };
 
     [[nodiscard]] bool Serialize() const override { return true; }
 

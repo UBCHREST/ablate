@@ -20,7 +20,7 @@ class RadiationFieldMonitor : public FieldMonitor {
                           std::shared_ptr<io::interval::Interval> intervalIn);
 
     void Register(std::shared_ptr<ablate::solver::Solver> solverIn) override;
-    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
     static PetscErrorCode MonitorRadiation(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx);
     PetscMonitorFunction GetPetscFunction() override { return MonitorRadiation; }
 
