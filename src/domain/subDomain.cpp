@@ -169,6 +169,7 @@ PetscErrorCode ablate::domain::SubDomain::ProjectFieldFunctionsToSubDM(const std
     if (subDM == nullptr) {
         try {
             domain.ProjectFieldFunctions(initialization, globVec, time);
+            PetscFunctionReturn(0);
         } catch (std::exception& exception) {
             SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exception.what());
         }
