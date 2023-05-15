@@ -55,10 +55,16 @@ class EVTransport : public FlowProcess {
     explicit EVTransport(std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {}, std::shared_ptr<eos::transport::TransportModel> transportModel = {});
 
     /**
-     * Normalize and cleanup limit the extra variables
+     * Enforce extra variables to be between zero and one
      * @param ts
      */
     static void BoundExtraVariables(TS ts, ablate::solver::Solver& solver, const std::string& field);
+
+    /**
+     * Enforce extra variables to be zero or greater
+     * @param ts
+     */
+    static void PositiveExtraVariables(TS ts, ablate::solver::Solver& solver, const std::string& field);
 
     /**
      * public function to link this process with the flow

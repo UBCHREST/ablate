@@ -31,7 +31,8 @@ class CompressibleFlowFields : public domain::FieldDescriptor {
 
     //! the conserved tag used to tag all fields that should act like extra variables (transported with the flow)
     inline const static std::string EV_TAG = "EV";
-    inline const static std::string EV_BOUND = "BOUND";
+    inline const static std::string EV_BOUND = "BOUND";// Bound between zero and one
+    inline const static std::string EV_POSITIVE = "POSITIVE";// Limit to zero and positive numbers
 
     //! these are arbitrary ev fields
     inline const static std::string EV_FIELD = "EV";
