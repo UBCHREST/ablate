@@ -192,7 +192,7 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
     PetscInt npoints = 0;
     DMSwarmGetLocalSize(radSearch, &npoints) >> utilities::PetscUtilities::checkError;  //!< Recalculate the number of particles that are in the domain
     DMSwarmGetSize(radSearch, &nglobalpoints) >> utilities::PetscUtilities::checkError;
-    PetscInt stepcount = 0;  //!< Count the number of steps that the particles have taken
+    PetscInt stepcount = 0;       //!< Count the number of steps that the particles have taken
     while (nglobalpoints != 0) {  //!< WHILE THERE ARE PARTICLES IN ANY DOMAIN
         // If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory and record its index
         IdentifyNewRaysOnRank(subDomain, radReturn, npoints);
