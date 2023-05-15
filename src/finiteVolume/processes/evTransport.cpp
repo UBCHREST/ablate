@@ -63,10 +63,10 @@ void ablate::finiteVolume::processes::EVTransport::Setup(ablate::finiteVolume::F
         flow.RegisterAuxFieldUpdate(UpdateEVField, &numberEV, std::vector<std::string>{nonConserved}, {CompressibleFlowFields::EULER_FIELD, evConservedField.name});
 
         // add a post evaluate to limit each ev
-        if (evConservedField.Tagged(CompressibleFlowFields::EV_POSITIVE)) {
+        if (evConservedField.Tagged(CompressibleFlowFields::PositiveRange)) {
             const auto &conservedFieldName = evConservedField.name;
             flow.RegisterPostEvaluate([conservedFieldName](TS ts, ablate::solver::Solver &solver) { EVTransport::PositiveExtraVariables(ts, solver, conservedFieldName); });
-        }else if (evConservedField.Tagged(CompressibleFlowFields::EV_BOUND)) {
+        } else if (evConservedField.Tagged(CompressibleFlowFields::BoundRange)) {
             const auto &conservedFieldName = evConservedField.name;
             flow.RegisterPostEvaluate([conservedFieldName](TS ts, ablate::solver::Solver &solver) { EVTransport::BoundExtraVariables(ts, solver, conservedFieldName); });
         }
@@ -278,7 +278,6 @@ void ablate::finiteVolume::processes::EVTransport::BoundExtraVariables(TS ts, ab
     VecRestoreArray(solVec, &solutionArray) >> utilities::PetscUtilities::checkError;
     solver.RestoreRange(cellRange);
 }
-
 
 void ablate::finiteVolume::processes::EVTransport::PositiveExtraVariables(TS ts, ablate::solver::Solver &solver, const std::string &field) {
     // Get the density and densityYi field info

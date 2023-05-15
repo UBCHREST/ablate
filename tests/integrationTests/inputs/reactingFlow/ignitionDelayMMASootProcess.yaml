@@ -29,7 +29,7 @@ timestepper:
         eos: &eos !ablate::eos::TChem # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked
           mechFile: ../mechanisms/MMAReduced.soot.yml
 
-      - !ablate::finiteVolume::ConservedField
+      - !ablate::finiteVolume::ExtraVariable
         name: "Progress"
         components: [ "NDD" ]
 

@@ -44,8 +44,11 @@ timestepper:
           parameters:
             gamma: 1.4
             Rgas: 287
-        # the CompressibleFlowFields class can take extraVariable arguments.  This defines the conserved and non-conserved field for each component
-        extraVariables: [ "ev1", "ev2" ]
+
+      # the solver class can take extraVariable arguments.  This defines the conserved and non-conserved field for each component
+      - !ablate::finiteVolume::ExtraVariable
+        components: [ "ev1", "ev2" ]
+
   initialization:
     # the ablate::finiteVolume::fieldFunctions::Euler helper can define the "euler" field (rho, rhoE, rhoU, rhoV) from more common inputs
     - !ablate::finiteVolume::fieldFunctions::Euler

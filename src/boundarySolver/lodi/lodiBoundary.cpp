@@ -158,12 +158,14 @@ void ablate::boundarySolver::lodi::LODIBoundary::Setup(ablate::boundarySolver::B
             ablate::finiteVolume::processes::EVTransport::UpdateEVField, &nEvComp, std::vector<std::string>{evNonConserved}, {finiteVolume::CompressibleFlowFields::EULER_FIELD, evField.name});
 
         // add a post evaluate to limit each ev
-        if (evField.Tagged(finiteVolume::CompressibleFlowFields::EV_POSITIVE)) {
+        if (evField.Tagged(finiteVolume::CompressibleFlowFields::PositiveRange)) {
             const auto &conservedFieldName = evField.name;
-            bSolver.RegisterPostEvaluate([conservedFieldName](TS ts, ablate::solver::Solver &solver) { ablate::finiteVolume::processes::EVTransport::EVTransport::PositiveExtraVariables(ts, solver, conservedFieldName); });
-        }else if (evField.Tagged(finiteVolume::CompressibleFlowFields::EV_BOUND)) {
+            bSolver.RegisterPostEvaluate(
+                [conservedFieldName](TS ts, ablate::solver::Solver &solver) { ablate::finiteVolume::processes::EVTransport::EVTransport::PositiveExtraVariables(ts, solver, conservedFieldName); });
+        } else if (evField.Tagged(finiteVolume::CompressibleFlowFields::BoundRange)) {
             const auto &conservedFieldName = evField.name;
-            bSolver.RegisterPostEvaluate([conservedFieldName](TS ts, ablate::solver::Solver &solver) { ablate::finiteVolume::processes::EVTransport::EVTransport::BoundExtraVariables(ts, solver, conservedFieldName); });
+            bSolver.RegisterPostEvaluate(
+                [conservedFieldName](TS ts, ablate::solver::Solver &solver) { ablate::finiteVolume::processes::EVTransport::EVTransport::BoundExtraVariables(ts, solver, conservedFieldName); });
         }
     }
 
