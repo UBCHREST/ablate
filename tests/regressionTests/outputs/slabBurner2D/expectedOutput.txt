@@ -62,6 +62,7 @@ flowField_turbulenceFlowStats.00008.hdf5
 flowField_turbulenceFlowStats.00009.hdf5
 flowField_turbulenceFlowStats.00010.hdf5
 flowField_turbulenceFlowStats.xmf
+restart.bak
 restart.rst
 slab boundary_monitor
 slab boundary_monitor.00000.hdf5
