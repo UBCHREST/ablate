@@ -186,6 +186,11 @@ void ablate::io::Hdf5MultiFileSerializer::SaveMetadata(TS ts) const {
     MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank) >> utilities::PetscUtilities::checkError;
     if (rank == 0) {
         auto restartFilePath = environment::RunEnvironment::Get().GetOutputDirectory() / "restart.rst";
+        // keep a back of the restart file incase writing fails
+        if (exists(restartFilePath)) {
+            auto backupRestartFilePath = environment::RunEnvironment::Get().GetOutputDirectory() / "restart.bak";
+            std::filesystem::copy(restartFilePath, backupRestartFilePath, std::filesystem::copy_options::overwrite_existing);
+        }
         std::ofstream restartFile;
         restartFile.open(restartFilePath);
         restartFile << out.c_str();
