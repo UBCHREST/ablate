@@ -273,7 +273,6 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::AdvectionFlux(
     PetscReal densityL;
     PetscReal normalVelocityL;
     PetscReal velocityL[3];
-    PetscReal internalEnergyL;
     PetscReal aL;
     PetscReal pL;
     // decode the left side
@@ -290,7 +289,6 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::AdvectionFlux(
             normalVelocityL += velocityL[d] * norm[d];
         }
 
-        PetscCall(eulerAdvectionData->computeInternalEnergy.function(fieldL, temperatureL, &internalEnergyL, eulerAdvectionData->computeInternalEnergy.context.get()));
         PetscCall(eulerAdvectionData->computeSpeedOfSound.function(fieldL, temperatureL, &aL, eulerAdvectionData->computeSpeedOfSound.context.get()));
         PetscCall(eulerAdvectionData->computePressure.function(fieldL, temperatureL, &pL, eulerAdvectionData->computePressure.context.get()));
     }
@@ -298,7 +296,6 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::AdvectionFlux(
     PetscReal densityR;
     PetscReal normalVelocityR;
     PetscReal velocityR[3];
-    PetscReal internalEnergyR;
     PetscReal aR;
     PetscReal pR;
     {  // decode right state
@@ -314,7 +311,6 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::AdvectionFlux(
             normalVelocityR += velocityR[d] * norm[d];
         }
 
-        PetscCall(eulerAdvectionData->computeInternalEnergy.function(fieldR, temperatureR, &internalEnergyR, eulerAdvectionData->computeInternalEnergy.context.get()));
         PetscCall(eulerAdvectionData->computeSpeedOfSound.function(fieldR, temperatureR, &aR, eulerAdvectionData->computeSpeedOfSound.context.get()));
         PetscCall(eulerAdvectionData->computePressure.function(fieldR, temperatureR, &pR, eulerAdvectionData->computePressure.context.get()));
     }
