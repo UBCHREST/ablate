@@ -92,9 +92,6 @@ PetscErrorCode ablate::solver::AdaptPhysicsConstrained::TSAdaptChoose(TSAdapt ad
         PetscReal physicsDt;
         PetscCall(timeStepper->ComputePhysicsTimeStep(&physicsDt));
 
-        // Scale the physics dt by the safety factor
-        physicsDt *= adapt->safety;
-
         if (physicsDt < *next_h) {
             PetscCall(PetscInfo(adapt, "Limiting adaptive time step %g, to physics maximum dt %g\n", (double)*next_h, (double)physicsDt));
             *next_h = physicsDt;
