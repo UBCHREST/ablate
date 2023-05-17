@@ -60,15 +60,18 @@ void ablate::finiteVolume::processes::EVTransport::Setup(ablate::finiteVolume::F
             diffusionData.diffFunction.function = nullptr;
         }
 
-        flow.RegisterAuxFieldUpdate(UpdateEVField, &numberEV, std::vector<std::string>{nonConserved}, {CompressibleFlowFields::EULER_FIELD, evConservedField.name});
-
         // add a post evaluate to limit each ev
         if (evConservedField.Tagged(CompressibleFlowFields::PositiveRange)) {
             const auto &conservedFieldName = evConservedField.name;
             flow.RegisterPostEvaluate([conservedFieldName](TS ts, ablate::solver::Solver &solver) { EVTransport::PositiveExtraVariables(ts, solver, conservedFieldName); });
+            flow.RegisterAuxFieldUpdate(UpdatePositiveEVField, &numberEV, std::vector<std::string>{nonConserved}, {CompressibleFlowFields::EULER_FIELD, evConservedField.name});
         } else if (evConservedField.Tagged(CompressibleFlowFields::BoundRange)) {
             const auto &conservedFieldName = evConservedField.name;
             flow.RegisterPostEvaluate([conservedFieldName](TS ts, ablate::solver::Solver &solver) { EVTransport::BoundExtraVariables(ts, solver, conservedFieldName); });
+            flow.RegisterAuxFieldUpdate(UpdateBoundEVField, &numberEV, std::vector<std::string>{nonConserved}, {CompressibleFlowFields::EULER_FIELD, evConservedField.name});
+        } else {
+            // Allow for the entire range
+            flow.RegisterAuxFieldUpdate(UpdateEVField, &numberEV, std::vector<std::string>{nonConserved}, {CompressibleFlowFields::EULER_FIELD, evConservedField.name});
         }
     }
 }
@@ -82,6 +85,34 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::UpdateEVField(Petsc
 
     for (PetscInt e = 0; e < *numberEV; e++) {
         auxField[aOff[0] + e] = conservedValues[uOff[1] + e] / density;
+    }
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::finiteVolume::processes::EVTransport::UpdateBoundEVField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt *uOff, const PetscScalar *conservedValues,
+                                                                                const PetscInt *aOff, PetscScalar *auxField, void *ctx) {
+    PetscFunctionBeginUser;
+    PetscReal density = conservedValues[uOff[0] + CompressibleFlowFields::RHO];
+
+    auto numberEV = (PetscInt *)ctx;
+
+    for (PetscInt e = 0; e < *numberEV; e++) {
+        auxField[aOff[0] + e] = PetscMin(PetscMax(0.0, conservedValues[uOff[1] + e] / density), 1.0);
+    }
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::finiteVolume::processes::EVTransport::UpdatePositiveEVField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt *uOff,
+                                                                                   const PetscScalar *conservedValues, const PetscInt *aOff, PetscScalar *auxField, void *ctx) {
+    PetscFunctionBeginUser;
+    PetscReal density = conservedValues[uOff[0] + CompressibleFlowFields::RHO];
+
+    auto numberEV = (PetscInt *)ctx;
+
+    for (PetscInt e = 0; e < *numberEV; e++) {
+        auxField[aOff[0] + e] = PetscMax(0.0, conservedValues[uOff[1] + e] / density);
     }
 
     PetscFunctionReturn(0);

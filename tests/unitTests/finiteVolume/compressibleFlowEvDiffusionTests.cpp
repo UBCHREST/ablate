@@ -108,8 +108,9 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
                     ::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicTemperatureFunction([](const PetscReal conserved[], PetscReal TOld, PetscReal* T) { *T = 300; })));
 
             // determine required fields for finite volume compressible flow
-            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos),
-                                                                                              std::make_shared<ablate::finiteVolume::ExtraVariable>("", std::vector<std::string>{"ev1", "ev2"})};
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {
+                std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos),
+                std::make_shared<ablate::finiteVolume::ExtraVariable>("", std::vector<std::string>{"ev1", "ev2"}, nullptr, ablate::finiteVolume::CompressibleFlowFields::ValidRange::FULL)};
 
             auto mesh = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
                                                                   fieldDescriptors,

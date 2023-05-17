@@ -78,6 +78,18 @@ class EVTransport : public FlowProcess {
     static PetscErrorCode UpdateEVField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, const PetscInt* aOff,
                                         PetscScalar* auxField, void* ctx);
 
+    /**
+     * Function to compute the EV fraction. This function assumes that the input values will be {"euler", "densityYi"} with values between zero and one
+     */
+    static PetscErrorCode UpdateBoundEVField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, const PetscInt* aOff,
+                                             PetscScalar* auxField, void* ctx);
+
+    /**
+     * Function to compute the EV fraction. This function assumes that the input values will be {"euler", "densityYi"} with values zero or greater
+     */
+    static PetscErrorCode UpdatePositiveEVField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, const PetscInt* aOff,
+                                                PetscScalar* auxField, void* ctx);
+
    private:
     /**
      * This computes the species transfer for species diffusion flux
