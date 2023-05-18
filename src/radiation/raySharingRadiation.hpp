@@ -14,7 +14,7 @@ class RaySharingRadiation : public ablate::radiation::Radiation {
 
     void Setup(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain) override;
 
-    void IdentifyNewRaysOnRank(ablate::domain::SubDomain& subDomain, DM radReturn, PetscInt npoints);
+    void IdentifyNewRaysOnRank(ablate::domain::SubDomain& subDomain, DM radReturn, PetscInt npoints) override;
 
     void ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray, DM radReturn, PetscInt nlocalpoints,
                       PetscInt nglobalpoints) override;  //!< Routine to move the particle one step

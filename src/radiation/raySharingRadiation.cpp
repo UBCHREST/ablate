@@ -10,6 +10,8 @@ void ablate::radiation::RaySharingRadiation::Setup(const ablate::domain::Range& 
     indexLookup = ablate::domain::ReverseRange(cellRange);
 
     ablate::radiation::Radiation::Setup(cellRange, subDomain);
+
+    raySegments.resize((cellRange.end - cellRange.start) * raysPerCell);
 }
 
 void ablate::radiation::RaySharingRadiation::IdentifyNewRaysOnRank(ablate::domain::SubDomain& subDomain, DM radReturn, PetscInt npoints) {
@@ -36,31 +38,31 @@ void ablate::radiation::RaySharingRadiation::IdentifyNewRaysOnRank(ablate::domai
                 //! Get nTheta
                 double theta = acos(virtualcoord[ipart].zdir);
                 double phi = atan2(virtualcoord[ipart].ydir, virtualcoord[ipart].xdir);
-                PetscInt ntheta = (PetscInt)(((theta / ablate::utilities::Constants::pi) * (double)nTheta) - 0.5);
-                PetscInt nphi = (PetscInt)((phi / (2.0 * ablate::utilities::Constants::pi)) * (double)nPhi);
+                if (phi < 0) phi += 2 * ablate::utilities::Constants::pi;
+                PetscInt ntheta = (PetscInt)round((((theta / ablate::utilities::Constants::pi) * (double)nTheta) - 0.5));
+                PetscInt nphi = (PetscInt)round(((phi / (2.0 * ablate::utilities::Constants::pi)) * (double)nPhi));
 
                 // Update the identifier for this rank.  When it gets sent to another rank a copy will be made
                 identifier.remoteRank = rank;
                 // set the remoteRayId to be the next one in the way
                 identifier.remoteRayId =
-                    (PetscInt)indexLookup.GetAbsoluteIndex(index[ipart]) * raysPerCell + ntheta * nPhi + nphi;  //! Should be set to (absoluteCellIndex * raysPerCell + angleNumber)
+                    ((PetscInt)indexLookup.GetAbsoluteIndex(index[ipart]) * raysPerCell) + (ntheta * nPhi) + nphi;  //! Should be set to (absoluteCellIndex * raysPerCell + angleNumber)
                 // bump the nSegment
                 identifier.nSegment++;
-
-                // Create an empty struct in the ray
-                raySegments.emplace_back();
 
                 // store this ray and information in the return data
                 DMSwarmAddPoint(radReturn) >> utilities::PetscUtilities::checkError;  //!< Another solve particle is added here because the search particle has entered a new domain
                 struct Identifier* returnIdentifiers;                                 //!< Pointer to the ray identifier information
                 PetscInt* returnRank;                                                 //! while we are here, set the return rank.  This won't change anything until migrate is called
+                PetscInt nSegments;
+                DMSwarmGetLocalSize(radReturn, &nSegments) >> utilities::PetscUtilities::checkError;
                 DMSwarmGetField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >>
                     utilities::PetscUtilities::checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
                 DMSwarmGetField(radReturn, DMSwarmField_rank, nullptr, nullptr, (void**)&returnRank) >> utilities::PetscUtilities::checkError;
 
                 // these are only created as remote rays are identified, so we can remoteRayId for the rank
-                returnIdentifiers[identifier.remoteRayId] = identifier;
-                returnRank[identifier.remoteRayId] = identifier.originRank;
+                returnIdentifiers[nSegments - 1] = identifier;
+                returnRank[nSegments - 1] = identifier.originRank;
 
                 DMSwarmRestoreField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >>
                     utilities::PetscUtilities::checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
@@ -162,7 +164,8 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
 }
 
 #include "registrar.hpp"
-REGISTER_DEFAULT(ablate::radiation::RaySharingRadiation, ablate::radiation::RaySharingRadiation, "A solver for radiative heat transfer in participating media",
+REGISTER_DERIVED(ablate::radiation::Radiation, ablate::radiation::RaySharingRadiation);
+REGISTER(ablate::radiation::RaySharingRadiation, ablate::radiation::RaySharingRadiation, "A solver for radiative heat transfer in participating media",
                  ARG(std::string, "id", "the name of the flow field"), ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(int, "rays", "number of rays used by the solver"),
                  ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"),
                  OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

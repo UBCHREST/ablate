@@ -118,7 +118,6 @@ void ablate::radiation::Radiation::Setup(const ablate::domain::Range& cellRange,
                 virtualcoord[ipart].hhere = 0.0;
 
                 /** Update the physical coordinate field so that the real particle location can be updated. */
-                /** Update the physical coordinate field so that the real particle location can be updated. */
                 UpdateCoordinates(ipart, virtualcoord, coord, 0.0);  //! adv value of 0.0 places the particle exactly where the virtual coordinates are.
 
                 /** Label the particle with the ray identifier. With what is known at this point**/
