@@ -70,7 +70,7 @@ TEST_P(SurfaceForceTestFixture, ShouldComputeCorrectSurfaceForce) {
                                                                                        std::vector<std::shared_ptr<ablate::finiteVolume::processes::Process>>(),
                                                                                        std::vector<std::shared_ptr<ablate::finiteVolume::boundaryConditions::BoundaryCondition>>{});
             // initialize it
-            domain->InitializeSubDomains({fvSolver}, {initialConditionFV, initialConditionEuler});
+            domain->InitializeSubDomains({fvSolver}, std::make_shared<ablate::domain::Initializer>(initialConditionFV, initialConditionEuler));
             PetscScalar *eulerSource = nullptr;
             Vec computedF;
             PetscScalar *sourceArray;

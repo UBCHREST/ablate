@@ -10,6 +10,7 @@
 #include "domain/fieldDescriptor.hpp"
 #include "domain/modifiers/modifier.hpp"
 #include "fieldDescription.hpp"
+#include "initializer.hpp"
 #include "io/serializable.hpp"
 #include "mathFunctions/fieldFunction.hpp"
 #include "region.hpp"
@@ -84,7 +85,7 @@ class Domain : private utilities::Loggable<Domain> {
      * @param solvers
      * @param initializations
      */
-    void InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers = {}, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations = {},
+    void InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers = {}, std::shared_ptr<ablate::domain::Initializer> initializations = {},
                               const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& = {});
 
     /**

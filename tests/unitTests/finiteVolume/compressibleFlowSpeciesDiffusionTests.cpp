@@ -134,6 +134,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             // Create the yi field solutions
             auto yiExact = ablate::mathFunctions::Create(ComputeDensityYiExact, &parameters);
             auto yiExactField = std::make_shared<mathFunctions::FieldFunction>("densityYi", yiExact);
+            auto initSolutions = std::make_shared<ablate::domain::Initializer>(eulerExactField, yiExactField);
             std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions{eulerExactField, yiExactField};
 
             PetscInt initialNx = GetParam().initialNx;
@@ -156,7 +157,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                                                            mesh,
                                                            ablate::parameters::MapParameters::Create({{"ts_dt", 5.e-01}, {"ts_type", "rk"}, {"ts_max_time", 15.0}, {"ts_adapt_type", "none"}}),
                                                            nullptr,
-                                                           exactSolutions,
+                                                           initSolutions,
                                                            exactSolutions);
 
             // setup a flow parameters

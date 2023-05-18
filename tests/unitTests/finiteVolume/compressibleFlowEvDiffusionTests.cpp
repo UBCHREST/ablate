@@ -133,7 +133,7 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
             // Create the yi field solutions
             auto evExact = ablate::mathFunctions::Create(ComputeDensityEVExact, &parameters);
             auto evExactField = std::make_shared<mathFunctions::FieldFunction>(finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD, evExact);
-            std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization{eulerExactField, evExactField};
+            auto initialization = std::make_shared<ablate::domain::Initializer>(eulerExactField, evExactField);
 
             // create a time stepper
             auto timeStepper = ablate::solver::TimeStepper(mesh,

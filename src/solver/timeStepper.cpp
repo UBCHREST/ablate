@@ -1,17 +1,22 @@
 #include "timeStepper.hpp"
 #include <petscdm.h>
+
+#include <utility>
+
+#include <utility>
 #include "adaptPhysics.hpp"
 #include "adaptPhysicsConstrained.hpp"
 #include "utilities/petscUtilities.hpp"
 
-ablate::solver::TimeStepper::TimeStepper(std::shared_ptr<ablate::domain::Domain> domain, std::shared_ptr<ablate::parameters::Parameters> arguments, std::shared_ptr<io::Serializer> serializer,
-                                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions,
+ablate::solver::TimeStepper::TimeStepper(std::shared_ptr<ablate::domain::Domain> domain, const std::shared_ptr<ablate::parameters::Parameters>& arguments, std::shared_ptr<io::Serializer> serializer,
+                                         std::shared_ptr<ablate::domain::Initializer> initializations, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions,
                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances,
                                          bool verboseSourceCheck)
-    : ablate::solver::TimeStepper::TimeStepper("", domain, arguments, serializer, initialization, exactSolutions, absoluteTolerances, relativeTolerances, verboseSourceCheck) {}
+    : ablate::solver::TimeStepper::TimeStepper("", std::move(domain), arguments, std::move(serializer), std::move(initializations), std::move(exactSolutions), std::move(absoluteTolerances),
+                                               std::move(relativeTolerances), verboseSourceCheck) {}
 
-ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<ablate::domain::Domain> domain, std::shared_ptr<ablate::parameters::Parameters> arguments,
-                                         std::shared_ptr<ablate::io::Serializer> serializerIn, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations,
+ablate::solver::TimeStepper::TimeStepper(const std::string& nameIn, std::shared_ptr<ablate::domain::Domain> domain, const std::shared_ptr<ablate::parameters::Parameters>& arguments,
+                                         std::shared_ptr<ablate::io::Serializer> serializerIn, std::shared_ptr<ablate::domain::Initializer> initializations,
                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances,
                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances, bool verboseSourceCheck)
     : utilities::StaticInitializer([] {
@@ -19,13 +24,13 @@ ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<abl
           AdaptPhysicsConstrained::Register();
       }),
       name(nameIn.empty() ? "timeStepper" : nameIn),
-      domain(domain),
-      serializer(serializerIn),
+      domain(std::move(domain)),
+      serializer(std::move(serializerIn)),
       verboseSourceCheck(verboseSourceCheck),
-      initializations(initializations),
-      exactSolutions(exactSolutions),
-      absoluteTolerances(absoluteTolerances),
-      relativeTolerances(relativeTolerances)
+      initializations(std::move(initializations)),
+      exactSolutions(std::move(exactSolutions)),
+      absoluteTolerances(std::move(absoluteTolerances)),
+      relativeTolerances(std::move(relativeTolerances))
 
 {
     // create an instance of the ts
@@ -50,7 +55,7 @@ ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<abl
 
     // register the serializer with the ts
     if (serializer) {
-        TSMonitorSet(ts, serializer->GetSerializeFunction(), serializer->GetContext(), NULL) >> utilities::PetscUtilities::checkError;
+        TSMonitorSet(ts, serializer->GetSerializeFunction(), serializer->GetContext(), nullptr) >> utilities::PetscUtilities::checkError;
     }
 
     // Set the pre/post stage functions
@@ -179,7 +184,7 @@ void ablate::solver::TimeStepper::Solve() {
         VecDestroy(&vrtol);
     }
 
-    TSViewFromOptions(ts, NULL, "-ts_view") >> utilities::PetscUtilities::checkError;
+    TSViewFromOptions(ts, nullptr, "-ts_view") >> utilities::PetscUtilities::checkError;
 
     // Register the dof for the event
     PetscInt dof;
@@ -199,7 +204,7 @@ double ablate::solver::TimeStepper::GetTime() const {
     return (double)time;
 }
 
-void ablate::solver::TimeStepper::Register(std::shared_ptr<ablate::solver::Solver> solver, std::vector<std::shared_ptr<monitors::Monitor>> solverMonitors) {
+void ablate::solver::TimeStepper::Register(const std::shared_ptr<ablate::solver::Solver>& solver, const std::vector<std::shared_ptr<monitors::Monitor>>& solverMonitors) {
     // Save the solver and setup the domain
     solvers.push_back(solver);
 
@@ -210,7 +215,7 @@ void ablate::solver::TimeStepper::Register(std::shared_ptr<ablate::solver::Solve
 
         // register the monitor with the ts
         if (auto monitorFunction = monitor->GetPetscFunction()) {
-            TSMonitorSet(ts, monitorFunction, monitor->GetContext(), NULL) >> utilities::PetscUtilities::checkError;
+            TSMonitorSet(ts, monitorFunction, monitor->GetContext(), nullptr) >> utilities::PetscUtilities::checkError;
         }
     }
 
@@ -412,8 +417,7 @@ PetscErrorCode ablate::solver::TimeStepper::ComputePhysicsTimeStep(PetscReal* dt
 #include "registrar.hpp"
 REGISTER_DEFAULT(ablate::solver::TimeStepper, ablate::solver::TimeStepper, "the basic stepper", OPT(std::string, "name", "the optional time stepper name"),
                  ARG(ablate::domain::Domain, "domain", "the mesh used for the simulation"), OPT(ablate::parameters::Parameters, "arguments", "arguments to be passed to petsc"),
-                 OPT(ablate::io::Serializer, "io", "the serializer used with this timestepper"),
-                 OPT(std::vector<ablate::mathFunctions::FieldFunction>, "initialization", "initialization field functions"),
+                 OPT(ablate::io::Serializer, "io", "the serializer used with this timestepper"), OPT(ablate::domain::Initializer, "initialization", "initialization field functions"),
                  OPT(std::vector<ablate::mathFunctions::FieldFunction>, "exactSolution", "optional exact solutions that can be used for error calculations"),
                  OPT(std::vector<ablate::mathFunctions::FieldFunction>, "absoluteTolerances", "optional absolute tolerances for a field"),
                  OPT(std::vector<ablate::mathFunctions::FieldFunction>, "relativeTolerances", "optional relative tolerances for a field"),

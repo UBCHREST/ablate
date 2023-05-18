@@ -84,8 +84,7 @@ TEST_P(PressureGradientScalingTestFixture, ShouldUpdatePgsCorrectly) {
             TSCreate(PETSC_COMM_WORLD, &testTs) >> testErrorChecker;
 
             // initialize the domain/fields with the specified inputs
-            domain->InitializeSubDomains(std::vector<std::shared_ptr<ablate::solver::Solver>>{fvObject},
-                                         std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>>{parameters.getFieldFunction(eos)});
+            domain->InitializeSubDomains(std::vector<std::shared_ptr<ablate::solver::Solver>>{fvObject}, std::make_shared<ablate::domain::Initializer>(parameters.getFieldFunction(eos)));
 
             // act
             pgs->UpdatePreconditioner(testTs, *fvObject);

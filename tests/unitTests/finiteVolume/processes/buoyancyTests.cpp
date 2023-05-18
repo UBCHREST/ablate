@@ -41,7 +41,7 @@ TEST_P(BuoyancyTestFixture, ShouldComputeCorrectFlux) {
         std::vector<std::shared_ptr<ablate::finiteVolume::boundaryConditions::BoundaryCondition>>{});
 
     // init
-    domain->InitializeSubDomains({fvObject}, std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>>{GetParam().initialEuler});
+    domain->InitializeSubDomains({fvObject}, std::make_shared<ablate::domain::Initializer>(GetParam().initialEuler));
     fvObject->PreStep(nullptr);
 
     // get the solution vector local

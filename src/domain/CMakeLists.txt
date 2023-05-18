@@ -14,6 +14,7 @@ target_sources(ablateLibrary
         cadFile.cpp
         dmTransfer.cpp
         range.cpp
+        initializer.cpp
 
         PUBLIC
         domain.hpp
@@ -33,6 +34,7 @@ target_sources(ablateLibrary
         range.hpp
         dynamicRange.hpp
         reverseRange.hpp
+        initializer.hpp
         )
 
 add_subdirectory(modifiers)
