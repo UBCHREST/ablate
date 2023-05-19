@@ -133,10 +133,6 @@ void ablate::solver::TimeStepper::Initialize() {
     EndEvent();
 }
 void ablate::solver::TimeStepper::Solve() {
-    if (solvers.empty()) {
-        return;
-    }
-
     // Call initialize, this will only initialize if it has not been called
     Initialize();
 
@@ -156,6 +152,22 @@ void ablate::solver::TimeStepper::Solve() {
     // If there was a serializer, restore the ts
     if (serializer) {
         serializer->RestoreTS(ts);
+    }
+
+    // If there are no solvers
+    if (solvers.empty()) {
+        // write at least one output
+        if (serializer) {
+            PetscInt step;
+            TSGetStepNumber(ts, &step) >> utilities::PetscUtilities::checkError;
+            PetscReal time;
+            TSGetTime(ts, &time) >> utilities::PetscUtilities::checkError;
+
+            serializer->Serialize(ts, step, time, domain->GetSolutionVector()) >> utilities::PetscUtilities::checkError;
+            serializer->Serialize(ts, step+1, time, domain->GetSolutionVector()) >> utilities::PetscUtilities::checkError;
+        }
+        // exit before ts solver
+        return;
     }
 
     // set time stepper individual tolerances if specified

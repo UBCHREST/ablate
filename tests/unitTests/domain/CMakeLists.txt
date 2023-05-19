@@ -4,6 +4,7 @@ target_sources(unitTests
         fieldDescriptionTests.cpp
         dynamicRangeTests.cpp
         reverseRangeTests.cpp
+        hdf5InitializerTests.cpp
 
         PUBLIC
         mockField.hpp

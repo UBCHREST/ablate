@@ -13,11 +13,42 @@ typedef PetscErrorCode (*PetscSerializeFunction)(TS ts, PetscInt steps, PetscRea
  */
 class Serializer {
    public:
+    /**
+     * Allow Serializer to cleanup
+     */
     virtual ~Serializer() = default;
+
+    /**
+     * Register any solver, process, or class to serialize
+     */
     virtual void Register(std::weak_ptr<Serializable>) = 0;
+
+    /**
+     * Provide petsc style context to the TS
+     * @return
+     */
     virtual void* GetContext() { return this; }
+
+    /**
+     * Provide petsc style function to the TS
+     * @return
+     */
     virtual PetscSerializeFunction GetSerializeFunction() = 0;
+
+    /**
+     * Restore ts to last saved state
+     * @param ts
+     */
     virtual void RestoreTS(TS ts) = 0;
+
+    /**
+     * Manually call the save for this seralizer
+     */
+    PetscErrorCode Serialize(TS ts, PetscInt steps, PetscReal time, Vec u) {
+        PetscFunctionBeginUser;
+        PetscCall(GetSerializeFunction()(ts, steps, time, u, GetContext()));
+        PetscFunctionReturn(0);
+    }
 };
 }  // namespace ablate::io
 

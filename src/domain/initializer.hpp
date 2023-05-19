@@ -40,7 +40,7 @@ class Initializer {
     /**
      * Interface to produce the field functions from fields
      */
-    virtual std::vector<std::shared_ptr<mathFunctions::FieldFunction>> GetFieldFunctions(const std::vector<domain::Field>& fields) const { return fieldFunctions; }
+    [[nodiscard]] virtual std::vector<std::shared_ptr<mathFunctions::FieldFunction>> GetFieldFunctions(const std::vector<domain::Field>& fields) const { return fieldFunctions; }
 };
 
 }  // namespace ablate::domain
