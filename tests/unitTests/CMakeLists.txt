@@ -25,6 +25,7 @@ gtest_discover_tests(unitTests
         # set a working directory so your project root so that you can find test data via paths relative to the project root
         WORKING_DIRECTORY ${PROJECT_DIR}
         PROPERTIES "VS_DEBUGGER_WORKING_DIRECTORY;\"${PROJECT_DIR}\";LABELS;unitTests"
+        DISCOVERY_TIMEOUT 360
         )
 
 # Allow public access to the header files in the directory

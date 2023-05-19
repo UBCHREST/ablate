@@ -13,6 +13,7 @@ gtest_discover_tests(regressionTests
         WORKING_DIRECTORY ${PROJECT_DIR}
         # add a custom default timeout of three hours for the regression tests
         PROPERTIES "VS_DEBUGGER_WORKING_DIRECTORY;\"${PROJECT_DIR}\";TIMEOUT;10800;LABELS;regressionTests;"
+        DISCOVERY_TIMEOUT 360
         )
 
 copy_to_test_directory(${CMAKE_CURRENT_SOURCE_DIR}/outputs/)

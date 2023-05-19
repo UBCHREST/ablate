@@ -33,7 +33,7 @@ ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const 
         test.push_back(i);
     }
 
-    double sum = test[14];
+    double sum = test[200];
     setenv("blue", std::to_string(sum).c_str(), true);
 
     // Get a reference to local fields
