@@ -2,7 +2,7 @@
 #include <petscviewerhdf5.h>
 #include "utilities/petscUtilities.hpp"
 
-ablate::domain::Hdf5Initializer::Hdf5Initializer(std::filesystem::path hdf5Path) : hdf5Path(std::move(hdf5Path)) {}
+ablate::domain::Hdf5Initializer::Hdf5Initializer(std::filesystem::path hdf5Path, std::shared_ptr<ablate::domain::Region> region) : hdf5Path(std::move(hdf5Path)), region(std::move(region)) {}
 
 std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>> ablate::domain::Hdf5Initializer::GetFieldFunctions(const std::vector<domain::Field>& fields) const {
     // Create a mesh that the field functions will share
@@ -16,7 +16,7 @@ std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>> ablate::domai
         auto mathFunction = std::make_shared<Hdf5MathFunction>(baseMesh, field.name);
 
         // Create a fieldFunction wrapper
-        auto fieldFunction = std::make_shared<ablate::mathFunctions::FieldFunction>(field.name, mathFunction);
+        auto fieldFunction = std::make_shared<ablate::mathFunctions::FieldFunction>(field.name, mathFunction, nullptr, region);
 
         functions.push_back(fieldFunction);
     }
@@ -26,13 +26,14 @@ std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>> ablate::domai
 ablate::domain::Hdf5Initializer::Hdf5Mesh::Hdf5Mesh(const std::filesystem::path& hdf5Path) {
     // Create a viewer for the hdf5 file
     PetscViewerHDF5Open(PETSC_COMM_SELF, hdf5Path.c_str(), FILE_MODE_READ, &petscViewer) >> utilities::PetscUtilities::checkError;
-    // set the time stepping, so it is able to load time based history
-    PetscViewerHDF5PushTimestepping(petscViewer) >> utilities::PetscUtilities::checkError;
 
     // create an dm that lives only on this rank
     DMCreate(PETSC_COMM_SELF, &dm) >> utilities::PetscUtilities::checkError;
     DMSetType(dm, DMPLEX) >> utilities::PetscUtilities::checkError;
     DMLoad(dm, petscViewer) >> utilities::PetscUtilities::checkError;
+
+    // set the time stepping, so it is able to load time based history
+    PetscViewerHDF5PushTimestepping(petscViewer) >> utilities::PetscUtilities::checkError;
 
     // extract the connected cell count and store them
     PetscInt cStart, cEnd;
@@ -102,7 +103,7 @@ PetscErrorCode ablate::domain::Hdf5Initializer::Hdf5MathFunction::Eval(PetscInt 
     PetscCall(DMInterpolationAddPoints(interpolant, 1, pt));
 
     // Setup the interpolant
-    PetscCall(DMInterpolationSetUp(interpolant, fieldDm, PETSC_FALSE, PETSC_TRUE));
+    PetscCall(DMInterpolationSetUp(interpolant, fieldDm, PETSC_FALSE, PETSC_FALSE));
 
     // Create a vec to hold the information
     Vec fieldAtPoint;

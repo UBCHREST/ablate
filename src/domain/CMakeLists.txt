@@ -16,6 +16,7 @@ target_sources(ablateLibrary
         range.cpp
         initializer.cpp
         hdf5Initializer.cpp
+        initializerList.cpp
 
         PUBLIC
         domain.hpp
@@ -37,6 +38,7 @@ target_sources(ablateLibrary
         reverseRange.hpp
         initializer.hpp
         hdf5Initializer.hpp
+        initializerList.hpp
         )
 
 add_subdirectory(modifiers)

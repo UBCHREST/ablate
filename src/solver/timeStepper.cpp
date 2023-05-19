@@ -164,7 +164,7 @@ void ablate::solver::TimeStepper::Solve() {
             TSGetTime(ts, &time) >> utilities::PetscUtilities::checkError;
 
             serializer->Serialize(ts, step, time, domain->GetSolutionVector()) >> utilities::PetscUtilities::checkError;
-            serializer->Serialize(ts, step+1, time, domain->GetSolutionVector()) >> utilities::PetscUtilities::checkError;
+            serializer->Serialize(ts, step + 1, time, domain->GetSolutionVector()) >> utilities::PetscUtilities::checkError;
         }
         // exit before ts solver
         return;

@@ -15,13 +15,17 @@ namespace ablate::domain {
  */
 class Hdf5Initializer : public Initializer {
    private:
+    //! the path to the hdf5 that contains the stored data
     std::filesystem::path hdf5Path;
+
+    //! the region to apply this initializer
+    const std::shared_ptr<ablate::domain::Region> region;
 
    public:
     /**
      * Create an empty list
      */
-    explicit Hdf5Initializer(std::filesystem::path hdf5Path);
+    explicit Hdf5Initializer(std::filesystem::path hdf5Path, std::shared_ptr<ablate::domain::Region> region = {});
 
     /**
      * Interface to produce the field functions from fields
@@ -164,7 +168,6 @@ class Hdf5Initializer : public Initializer {
          * @return
          */
         void* GetContext() override { return this; }
-
     };
 };
 
