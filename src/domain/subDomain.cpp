@@ -28,13 +28,6 @@ ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const 
         name = std::string(labelName);
         labelValue = 1;  // assume that the region value is one for now until a different value is returned from DMGetRegionNumDS
     }
-    std::vector<double> test;
-    for (int i = 0; i < 10; ++i) {
-        test.push_back(i);
-    }
-
-    double sum = test[200];
-    setenv("blue", std::to_string(sum).c_str(), true);
 
     // Get a reference to local fields
     if (fieldMap) {
