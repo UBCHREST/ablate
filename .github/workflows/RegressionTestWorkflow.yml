@@ -8,9 +8,6 @@ on:
   # Allow this event to be triggered in the GitHub ui
   workflow_dispatch:
 
-  pull_request:
-    branches:
-      - main
 jobs:
   test-matrix:
     strategy:
