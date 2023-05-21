@@ -1,9 +1,9 @@
-name: Automated Regression Test Workflow
+name: Automated ASAN Test Workflow
 
 on:
-  # Run the tests at 00:15 UTC on Mondays and Thursdays
+  # Run the tests at 00:15 UTC on Sunday, Tuesday, and Fridays
   schedule:
-    - cron: '15 0 * * 1,4'
+    - cron: '15 0 * * 0,2,5'
 
   # Allow this event to be triggered in the GitHub ui
   workflow_dispatch:
@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [ { runson: ARM64, id: -arm64 }, { runson: ubuntu-latest, id: -amd64 } ]
-        compiler: [ { id: -gcc }, { id: -clang } ]
+        compiler: [ { id: -gcc-asan } ]
         indices: [ { index64bit: 0, id: "" },  { index64bit: 1, id: "-index64" } ]
         petscConfig: [ arch-ablate-opt ]
         tensorFlowConfig: [ "", "enabled_tf" ]
@@ -43,7 +43,7 @@ jobs:
             --load 
 
       - name: Run all tests
-        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ctest
+        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}
 
   test:
     runs-on: ubuntu-latest
