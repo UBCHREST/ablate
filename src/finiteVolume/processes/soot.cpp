@@ -311,42 +311,43 @@ PetscErrorCode ablate::finiteVolume::processes::Soot::SinglePointSootChemistryRH
     auto pointInfo = (OdePointInformation*)ctx;
 
     // extract the read/write arrays
-    PetscScalar* xArray;
-    PetscCall(VecGetArray(xVec, &xArray));
+    const PetscScalar* xArray;
+    PetscCall(VecGetArrayRead(xVec, &xArray));
     PetscCall(VecZeroEntries(fVec));
     PetscScalar* fArray;
     PetscCall(VecGetArray(fVec, &fArray));
 
     // copy over the updated to the scratch variable for now
+    PetscReal localOdeValues[TotalEquations];
     for (std::size_t s = 0; s < TOTAL_ODE_SPECIES; s++) {
-        xArray[s] = PetscMax(PetscMin(xArray[s], 1.0), 0.0);
-        pointInfo->yiScratch[pointInfo->speciesIndex[s]] = xArray[s];
+        localOdeValues[s] = PetscMax(PetscMin(xArray[s], 1.0), 0.0);
+        pointInfo->yiScratch[pointInfo->speciesIndex[s]] = localOdeValues[s];
     }
-    xArray[ODE_T] = PetscMax(xArray[ODE_T], 0);
-    xArray[ODE_NDD] = PetscMax(xArray[ODE_NDD], 0);
+    localOdeValues[ODE_T] = PetscMax(xArray[ODE_T], 0);
+    localOdeValues[ODE_NDD] = PetscMax(xArray[ODE_NDD], 0);
 
     // Add in the Soot Reaction Sources
-    real_type SVF = xArray[C_s] * pointInfo->currentDensity / solidCarbonDensity;
+    real_type SVF = localOdeValues[C_s] * pointInfo->currentDensity / solidCarbonDensity;
 
     // Total S.A. of soot / unit volume
-    PetscReal SA_V = calculateSurfaceArea_V(xArray[C_s], xArray[ODE_NDD], pointInfo->currentDensity);
+    PetscReal SA_V = calculateSurfaceArea_V(localOdeValues[C_s], localOdeValues[ODE_NDD], pointInfo->currentDensity);
 
     // Need the Concentrations of C2H2, O2, O, and OH
     // It is unclear in the formulations of the Reaction Rates whether to use to concentration in regards to the total mixture or just the gas phace, There is a difference due to the density relation
     //-> For now we will use the concentration to be the concentration in the gas phase as it makes more physical sense
-    PetscReal C2H2Conc = pointInfo->currentDensity * PetscMax(0, xArray[C2H2]) / pointInfo->mw[C2H2];
-    PetscReal O2Conc = pointInfo->currentDensity * PetscMax(0, xArray[O2]) / pointInfo->mw[O2];
-    PetscReal OConc = pointInfo->currentDensity * PetscMax(0, xArray[O]) / pointInfo->mw[O];
-    PetscReal OHConc = pointInfo->currentDensity * PetscMax(0, xArray[OH]) / pointInfo->mw[OH];
+    PetscReal C2H2Conc = pointInfo->currentDensity * PetscMax(0, localOdeValues[C2H2]) / pointInfo->mw[C2H2];
+    PetscReal O2Conc = pointInfo->currentDensity * PetscMax(0, localOdeValues[O2]) / pointInfo->mw[O2];
+    PetscReal OConc = pointInfo->currentDensity * PetscMax(0, localOdeValues[O]) / pointInfo->mw[O];
+    PetscReal OHConc = pointInfo->currentDensity * PetscMax(0, localOdeValues[OH]) / pointInfo->mw[OH];
 
     // Now plug in and solve the Nucleation, Surface Growth, Agglomeration, and Oxidation sources
-    PetscReal NucRate = calculateNucleationReactionRate(xArray[ODE_T], C2H2Conc, SVF);
-    PetscReal SGRate = calculateSurfaceGrowthReactionRate(xArray[ODE_T], C2H2Conc, SA_V);
+    PetscReal NucRate = calculateNucleationReactionRate(localOdeValues[ODE_T], C2H2Conc, SVF);
+    PetscReal SGRate = calculateSurfaceGrowthReactionRate(localOdeValues[ODE_T], C2H2Conc, SA_V);
 
-    PetscReal AggRate = calculateAgglomerationRate(xArray[C_s], xArray[ODE_NDD], xArray[ODE_T], pointInfo->currentDensity);
-    PetscReal O2OxRate = calculateO2OxidationRate(xArray[C_s], xArray[ODE_NDD], O2Conc, pointInfo->currentDensity, xArray[ODE_T], SA_V);
-    PetscReal OOxRate = calculateOOxidationRate(OConc, xArray[ODE_T], SA_V, SVF);
-    PetscReal OHOxRate = calculateOHOxidationRate(OHConc, xArray[ODE_T], SA_V, SVF);
+    PetscReal AggRate = calculateAgglomerationRate(localOdeValues[C_s], localOdeValues[ODE_NDD], localOdeValues[ODE_T], pointInfo->currentDensity);
+    PetscReal O2OxRate = calculateO2OxidationRate(localOdeValues[C_s], localOdeValues[ODE_NDD], O2Conc, pointInfo->currentDensity, localOdeValues[ODE_T], SA_V);
+    PetscReal OOxRate = calculateOOxidationRate(OConc, localOdeValues[ODE_T], SA_V, SVF);
+    PetscReal OHOxRate = calculateOHOxidationRate(OHConc, localOdeValues[ODE_T], SA_V, SVF);
 
     // Now Add these rates correctly to the appropriate species sources (solving Yidot, i.e. also have to divide by the total density.
     // Keep in mind all these rates are kmol/m^3, need to convert to kg/m^3 for each appropriate species as well!
@@ -374,11 +375,12 @@ PetscErrorCode ablate::finiteVolume::processes::Soot::SinglePointSootChemistryRH
 
     // compute the specific heat at constant volume.  We set this up to allow density to be the only conserved
     PetscReal cv;
-    pointInfo->specificHeatConstantVolumeFunction.function(&(pointInfo->currentDensity), pointInfo->yiScratch.data(), xArray[ODE_T], &cv, pointInfo->specificHeatConstantVolumeFunction.context.get());
+    pointInfo->specificHeatConstantVolumeFunction.function(
+        &(pointInfo->currentDensity), pointInfo->yiScratch.data(), localOdeValues[ODE_T], &cv, pointInfo->specificHeatConstantVolumeFunction.context.get());
 
     // compute the speciesSensibleEnthalpy and turn into internal energy
     pointInfo->speciesSensibleEnthalpyFunction.function(
-        &(pointInfo->currentDensity), pointInfo->yiScratch.data(), xArray[ODE_T], pointInfo->speciesSensibleEnthalpyScratch.data(), pointInfo->speciesSensibleEnthalpyFunction.context.get());
+        &(pointInfo->currentDensity), pointInfo->yiScratch.data(), localOdeValues[ODE_T], pointInfo->speciesSensibleEnthalpyScratch.data(), pointInfo->speciesSensibleEnthalpyFunction.context.get());
 
     // compute the temperature source term
     for (std::size_t s = 0; s < TOTAL_ODE_SPECIES; s++) {
@@ -386,7 +388,7 @@ PetscErrorCode ablate::finiteVolume::processes::Soot::SinglePointSootChemistryRH
     }
     fArray[ODE_T] /= -cv;
 
-    PetscCall(VecRestoreArray(xVec, &xArray));
+    PetscCall(VecRestoreArrayRead(xVec, &xArray));
     PetscCall(VecRestoreArray(fVec, &fArray));
     PetscFunctionReturn(0);
 }

@@ -567,7 +567,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
 
             auto conservedFieldParametersPtr = ablate::parameters::MapParameters::Create(GetParam().conservedFieldParameters);
             std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {
-                std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos, std::vector<std::string>{}, domain::Region::ENTIREDOMAIN, conservedFieldParametersPtr)};
+                std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos, domain::Region::ENTIREDOMAIN, conservedFieldParametersPtr)};
 
             auto mesh = std::make_shared<ablate::domain::DMTransfer>(dmCreate,
                                                                      fieldDescriptors,

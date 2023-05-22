@@ -195,7 +195,7 @@ class FiniteVolumeSolver : public solver::CellSolver,
      * @param sequenceNumber
      * @param time
      */
-    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 
     /**
      * Restore the state from the PetscViewer
@@ -203,7 +203,7 @@ class FiniteVolumeSolver : public solver::CellSolver,
      * @param sequenceNumber
      * @param time
      */
-    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 
     /**
      * Get the cellIS and range over valid cells in this region without ghost cells (boundary or mpi)

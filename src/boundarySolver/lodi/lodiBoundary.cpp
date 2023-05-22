@@ -156,6 +156,17 @@ void ablate::boundarySolver::lodi::LODIBoundary::Setup(ablate::boundarySolver::B
         auto evNonConserved = evField.name.substr(finiteVolume::CompressibleFlowFields::CONSERVED.length());
         bSolver.RegisterAuxFieldUpdate(
             ablate::finiteVolume::processes::EVTransport::UpdateEVField, &nEvComp, std::vector<std::string>{evNonConserved}, {finiteVolume::CompressibleFlowFields::EULER_FIELD, evField.name});
+
+        // add a post evaluate to limit each ev
+        if (evField.Tagged(finiteVolume::CompressibleFlowFields::PositiveRange)) {
+            const auto &conservedFieldName = evField.name;
+            bSolver.RegisterPostEvaluate(
+                [conservedFieldName](TS ts, ablate::solver::Solver &solver) { ablate::finiteVolume::processes::EVTransport::EVTransport::PositiveExtraVariables(ts, solver, conservedFieldName); });
+        } else if (evField.Tagged(finiteVolume::CompressibleFlowFields::BoundRange)) {
+            const auto &conservedFieldName = evField.name;
+            bSolver.RegisterPostEvaluate(
+                [conservedFieldName](TS ts, ablate::solver::Solver &solver) { ablate::finiteVolume::processes::EVTransport::EVTransport::BoundExtraVariables(ts, solver, conservedFieldName); });
+        }
     }
 
     // Call Initialize to setup the other needed vars

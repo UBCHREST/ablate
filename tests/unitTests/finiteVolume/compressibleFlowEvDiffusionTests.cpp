@@ -15,6 +15,7 @@
 #include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/compressibleFlowSolver.hpp"
+#include "finiteVolume/extraVariable.hpp"
 #include "finiteVolume/processes/speciesTransport.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
@@ -108,7 +109,8 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
 
             // determine required fields for finite volume compressible flow
             std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {
-                std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos, std::vector<std::string>{"ev1", "ev2"})};
+                std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos),
+                std::make_shared<ablate::finiteVolume::ExtraVariable>("", std::vector<std::string>{"ev1", "ev2"}, nullptr, ablate::finiteVolume::CompressibleFlowFields::ValidRange::FULL)};
 
             auto mesh = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
                                                                   fieldDescriptors,
