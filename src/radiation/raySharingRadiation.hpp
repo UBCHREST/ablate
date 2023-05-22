@@ -21,6 +21,15 @@ class RaySharingRadiation : public ablate::radiation::Radiation {
 
     static inline std::string GetClassType() { return "RaySharingRadiation"; }
 
+    void SetBoundary(CellSegment& raySegment, PetscInt index, Identifier identifier) override {
+        PetscMPIInt rank;
+        MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+        if (identifier.originRank == rank) {
+            raySegment.cell = index;
+            raySegment.pathLength = -1;
+        }
+    }
+
    protected:
     //! used to look up from the cell id to range index
     ablate::domain::ReverseRange indexLookup;

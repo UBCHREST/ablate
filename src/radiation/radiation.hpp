@@ -213,6 +213,11 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      */
     void DeleteOutOfBounds(ablate::domain::SubDomain& subDomain);
 
+    virtual void SetBoundary(CellSegment& raySegment, PetscInt index, Identifier identifier) {
+        raySegment.cell = index;
+        raySegment.pathLength = -1;
+    }
+
     /// Class inputs and Variables
     PetscInt dim = 0;  //!< Number of dimensions that the domain exists within
     PetscInt nTheta;   //!< The number of angles to solve with, given by user input

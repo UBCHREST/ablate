@@ -83,11 +83,11 @@ solvers:
     region:
       name: interiorCells
     interval: 1
-    radiation: !ablate::radiation::Radiation
+    radiation: !ablate::radiation::RaySharingRadiation
       id: radiation
       region:
         name: interiorCells
-      rays: 5
+      rays: 2
       # this is only an example of how to combine multiple models.  A simple fixed constant would be ideal for a real simulation
       properties: !ablate::eos::radiationProperties::Sum
         - !ablate::eos::radiationProperties::Constant

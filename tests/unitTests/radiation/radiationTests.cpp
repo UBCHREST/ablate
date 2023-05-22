@@ -382,7 +382,7 @@ INSTANTIATE_TEST_SUITE_P(
                                           auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
                                           return std::make_shared<ablate::radiation::RaySharingRadiation>("radiationBase", interiorLabel, 20, radiationModelIn, nullptr);
                                       }},
-        (RadiationTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("ray sharing test 2 proc.", 10),
+        (RadiationTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("ray sharing test 2 proc.", 2),
                                   .meshFaces = {3, 20},
                                   .meshStart = {-0.5, -0.0105},
                                   .meshEnd = {0.5, 0.0105},

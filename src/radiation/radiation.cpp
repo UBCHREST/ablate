@@ -227,8 +227,7 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
                 //! If the boundary has been reached by this ray, then add a boundary condition segment to the ray.
                 auto& ray = raySegments[identifier[ipart].remoteRayId];
                 auto& raySegment = ray.emplace_back();
-                raySegment.cell = index[ipart];
-                raySegment.pathLength = -1;
+                SetBoundary(raySegment, index[ipart], identifier[ipart]);
 
                 //! Delete the search particle associated with the ray
                 DMSwarmRestoreField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
