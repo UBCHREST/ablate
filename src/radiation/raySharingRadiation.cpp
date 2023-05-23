@@ -166,6 +166,5 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
 #include "registrar.hpp"
 REGISTER_DERIVED(ablate::radiation::Radiation, ablate::radiation::RaySharingRadiation);
 REGISTER(ablate::radiation::RaySharingRadiation, ablate::radiation::RaySharingRadiation, "A solver for radiative heat transfer in participating media",
-                 ARG(std::string, "id", "the name of the flow field"), ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(int, "rays", "number of rays used by the solver"),
-                 ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"),
-                 OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
+         ARG(std::string, "id", "the name of the flow field"), ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(int, "rays", "number of rays used by the solver"),
+         ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
