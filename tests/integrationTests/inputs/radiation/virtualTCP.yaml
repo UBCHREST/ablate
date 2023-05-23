@@ -40,7 +40,7 @@ timestepper:
           petsclimiter_type: vanleer
 
       # create a conserved field to track ndd
-      - !ablate::finiteVolume::ConservedField
+      - !ablate::finiteVolume::ExtraVariable
         name: "Progress"
         components: [ "NDD" ]
 
