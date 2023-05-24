@@ -1,0 +1,83 @@
+Timestep: 0000 time = 0        dt = 1e-10
+MinMaxAvg euler for timestep 0000:
+	min: \[(.*), (.*), (.*), (.*)\]<expects> n1.18 n2.53e+05 z n-1.31
+	max: \[(.*), (.*), (.*), (.*)\]<expects> n1.49 n3.23e+05 n94.2 n1.31
+	avg: \[(.*), (.*), (.*), (.*)\]<expects> n1.23 n2.69e+05 n16.8 n9.85e-17
+MinMaxAvg Yi for timestep 0000:
+	min: [ 0,  0,  0]
+	max: [ 0,  0,  0]
+	avg: [ 0,  0,  0]
+Timestep: 0001 time = 1e-10    dt = 1e-09
+MinMaxAvg euler for timestep 0001:
+	min: \[(.*), (.*), (.*), (.*)\]<expects> n1.18 n2.53e+05 z n-1.31
+	max: \[(.*), (.*), (.*), (.*)\]<expects> n1.49 n3.23e+05 n94.2 n1.31
+	avg: \[(.*), (.*), (.*), (.*)\]<expects> n1.23 n2.69e+05 n16.8 n1.65e-16
+MinMaxAvg Yi for timestep 0001:
+	min: [0.2,  0,  0]
+	max: [ 1, 0.3, 0.5]
+	avg: \[(.*), (.*), (.*)\]<expects> n0.255 n0.279 n0.466
+Timestep: 0002 time = 1.1e-09  dt = 1e-08
+MinMaxAvg euler for timestep 0002:
+	min: \[(.*), (.*), (.*), (.*)\]<expects> n1.18 n2.53e+05 z n-1.31
+	max: \[(.*), (.*), (.*), (.*)\]<expects> n1.49 n3.23e+05 n94.2 n1.31
+	avg: \[(.*), (.*), (.*), (.*)\]<expects> n1.23 n2.69e+05 n16.8 n1.67e-16
+MinMaxAvg Yi for timestep 0002:
+	min: [0.2,  0,  0]
+	max: [ 1, 0.3, 0.5]
+	avg: \[(.*), (.*), (.*)\]<expects> n0.255 n0.279 n0.466
+ResultFiles:
+domain
+domain.00000.hdf5
+domain.00001.hdf5
+domain.00002.hdf5
+domain.00003.hdf5
+domain.00004.hdf5
+domain.00005.hdf5
+domain.00006.hdf5
+domain.00007.hdf5
+domain.00008.hdf5
+domain.00009.hdf5
+domain.00010.hdf5
+domain.00011.hdf5
+domain.00012.hdf5
+domain.00013.hdf5
+domain.00014.hdf5
+domain.00015.hdf5
+domain.00016.hdf5
+domain.00017.hdf5
+domain.00018.hdf5
+domain.00019.hdf5
+domain.00020.hdf5
+domain.00021.hdf5
+domain.00022.hdf5
+domain.00023.hdf5
+domain.00024.hdf5
+domain.00025.hdf5
+domain.00026.hdf5
+domain.00027.hdf5
+domain.00028.hdf5
+domain.00029.hdf5
+domain.00030.hdf5
+domain.00031.hdf5
+domain.00032.hdf5
+domain.00033.hdf5
+domain.00034.hdf5
+domain.00035.hdf5
+domain.00036.hdf5
+domain.00037.hdf5
+domain.00038.hdf5
+domain.00039.hdf5
+domain.00040.hdf5
+domain.00041.hdf5
+domain.00042.hdf5
+domain.00043.hdf5
+domain.00044.hdf5
+domain.00045.hdf5
+domain.00046.hdf5
+domain.00047.hdf5
+domain.00048.hdf5
+domain.00049.hdf5
+domain.00050.hdf5
+domain.xmf
+restart.bak
+restart.rst

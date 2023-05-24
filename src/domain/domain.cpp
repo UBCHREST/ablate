@@ -106,7 +106,7 @@ void ablate::domain::Domain::CreateStructures() {
     // Setup the solve with the ts
     DMPlexCreateClosureIndex(dm, nullptr) >> utilities::PetscUtilities::checkError;
     DMCreateGlobalVector(dm, &(solGlobalField)) >> utilities::PetscUtilities::checkError;
-    PetscObjectSetName((PetscObject)solGlobalField, "solution") >> utilities::PetscUtilities::checkError;
+    PetscObjectSetName((PetscObject)solGlobalField, solution_vector_name.c_str()) >> utilities::PetscUtilities::checkError;
 
     // add the names to each of the components in the dm section
     PetscSection section;

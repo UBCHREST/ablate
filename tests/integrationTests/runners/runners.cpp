@@ -86,7 +86,7 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
         // Restart the simulation
         {
             // get the input path from the parser
-            std::filesystem::path inputPath = GetParam().mpiTestParameter.testName;
+            std::filesystem::path inputPath = GetParam().restartInputFile.empty() ? GetParam().mpiTestParameter.testName : GetParam().restartInputFile;
 
             // Setup the run environment
             ablate::parameters::MapParameters runEnvironmentParameters(std::map<std::string, std::string>{{"directory", resultDirectory}, {"tagDirectory", "false"}, {"title", testName}});

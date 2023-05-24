@@ -1,5 +1,6 @@
 #include "hdf5Initializer.hpp"
 #include <petscviewerhdf5.h>
+#include "domain/domain.hpp"
 #include "utilities/petscUtilities.hpp"
 
 ablate::domain::Hdf5Initializer::Hdf5Initializer(std::filesystem::path hdf5Path, std::shared_ptr<ablate::domain::Region> region) : hdf5Path(std::move(hdf5Path)), region(std::move(region)) {}
@@ -13,7 +14,7 @@ std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>> ablate::domai
     // March over each requested field
     for (const auto& field : fields) {
         // Create the math function
-        auto mathFunction = std::make_shared<Hdf5MathFunction>(baseMesh, field.name);
+        auto mathFunction = std::make_shared<Hdf5MathFunction>(baseMesh, ablate::domain::Domain::solution_vector_name + "_" + field.name);
 
         // Create a fieldFunction wrapper
         auto fieldFunction = std::make_shared<ablate::mathFunctions::FieldFunction>(field.name, mathFunction, nullptr, region);
@@ -172,5 +173,5 @@ PetscErrorCode ablate::domain::Hdf5Initializer::Hdf5MathFunction::Hdf5PetscFunct
 }
 
 #include "registrar.hpp"
-REGISTER_PASS_THROUGH(ablate::domain::Initializer, ablate::domain::Hdf5Initializer, "Initialization a simulation based upon a previous result.  It does not need to be the same mesh.",
-                      std::filesystem::path);
+REGISTER(ablate::domain::Initializer, ablate::domain::Hdf5Initializer, "Initialization a simulation based upon a previous result.  It does not need to be the same mesh.",
+         ARG(std::filesystem::path, "path", "path to hdf5 file"));

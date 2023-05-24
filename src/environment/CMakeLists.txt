@@ -3,8 +3,10 @@ target_sources(ablateLibrary
         runEnvironment.cpp
         download.cpp
         gitHub.cpp
+        outputDirectory.cpp
         PUBLIC
         runEnvironment.hpp
         download.hpp
         gitHub.hpp
+        outputDirectory.hpp
         )

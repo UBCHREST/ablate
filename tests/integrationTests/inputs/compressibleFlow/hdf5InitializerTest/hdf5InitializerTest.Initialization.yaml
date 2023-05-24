@@ -1,0 +1,161 @@
+# This problem tests the subsequent use of a hdf5 file for initialization for compressible flow. It is expected to follow the hdf5InitializerTest
+#
+---
+# metadata for the simulation
+environment:
+  title: _hdf5InitializationCompressibleFlow
+  tagDirectory: false
+arguments:
+  # ask petsc to label the boundary values
+  dm_plex_separate_marker: ""
+# set up the time stepper responsible for marching in time
+timestepper:
+  arguments:
+    ts_type: rk
+    ts_max_time: 100000
+    ts_max_steps: 2
+    ts_dt: 1.0E-10
+    ts_adapt_safety: 0.9
+
+  # Create a simple box mesh to start
+  domain: !ablate::domain::BoxMesh
+    name: simpleBoxField
+    faces: [ 50, 10 ]
+    lower: [ 0.0, 0.0 ]
+    upper: [ .5, .1 ]
+    simplex: false
+    # pass in these options to petsc when setting up the domain.  Using an option list here prevents command line arguments from being seen.
+    options:
+      dm_distribute: true # turn off default dm_distribute so that we can extrude label first
+      dm_distribute_overlap: 0
+    modifiers:
+      # extrude all boundaries
+      - !ablate::domain::modifiers::ExtrudeLabel
+        # use the labels defined by the dm_plex_separate_marker option
+        regions:
+          - name: marker
+            value: 1 # this is the bottom boundary value
+          - name: marker
+            value: 2 # this is the right boundary value
+          - name: marker
+            value: 3 # this is the top boundary value
+          - name: marker
+            value: 4 # this is the left boundary value
+        # define a region for the new interface between the originalRegion and extrudedRegion
+        boundaryRegion:
+          name: boundaryFaces
+        # for all cells/faces/points that were in the original mesh before extrusion
+        originalRegion:
+          name: interiorCells
+        # for all cells/faces/points that were extruded.  This does include overlap faces that are in the boundaryRegion, originalRegion, and extrudedRegion regions
+        extrudedRegion:
+          name: boundaryCells
+      # if using mpi, this modifier distributes cells
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+        ghostCellDepth: 2
+    fields:
+      # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
+      # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas: 287.0
+          # species are added to the flow through the eos.  This allows testing of the species transport equations
+          species: [ N2, H2O, O2 ]
+      # by adding a pressure field the code will compute and output pressure
+      - name: pressure
+        location: AUX
+        type: FVM
+  # set the initial conditions of the flow field
+  initialization:
+    !ablate::domain::Hdf5Initializer
+    # Load in the last written hdf5 file from the previous tests
+    path: !ablate::environment::OutputDirectory domain/domain.00050.hdf5
+
+solvers:
+  # The compressible flow solver will solve the compressible flow equations over the interiorCells
+  - !ablate::finiteVolume::CompressibleFlowSolver
+    id: vortexFlowField
+    # only apply this solver to the flowRegion, area without faces
+    region:
+      name: interiorCells
+
+    # a flux calculator must be specified to so solver for advection
+    fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
+
+    # cfl is used to compute the physics time step
+    parameters:
+      cfl: 0.5
+
+    # the default transport object assumes constant values for k, mu, diff
+    transport:
+      &transportModel
+      k: .2
+      mu: .1
+      diff: 1E-4
+
+    # share the existing eos with the compressible flow solver
+    eos: *eos
+
+    monitors:
+      # output the timestep and dt at each time step
+      - !ablate::monitors::TimeStepMonitor
+      - !ablate::monitors::MaxMinAverage
+        field: euler
+      - !ablate::monitors::MaxMinAverage
+        field: Yi
+      # use a boundary solver to update the cells in the boundaryCellsLeft region to represent an inlet
+  - !ablate::boundarySolver::BoundarySolver
+    id: inlet
+    region:
+      name: marker
+      value: 4
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: false
+    processes:
+      - !ablate::boundarySolver::lodi::Inlet
+        eos: *eos
+
+  # use a boundary solver to update the cells in the boundaryCellsRight region to represent an open pipe
+  - !ablate::boundarySolver::BoundarySolver
+    id: openBoundary
+    region:
+      name: marker
+      value: 2
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::OpenBoundary
+        eos: *eos
+        reflectFactor: 0.0
+        referencePressure: 101325.0
+        maxAcousticsLength: 1
+
+  # use a boundary solver to update the cells in the boundaryCellsTop region to represent standard wall
+  - !ablate::boundarySolver::BoundarySolver
+    id: topBoundary
+    region:
+      name: marker
+      value: 3
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::IsothermalWall
+        eos: *eos
+
+  # use a boundary solver to update the cells in the boundaryCellsTop region to represent standard wall
+  - !ablate::boundarySolver::BoundarySolver
+    id: topBoundary
+    region:
+      name: marker
+      value: 1
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::IsothermalWall
+        eos: *eos

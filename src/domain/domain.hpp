@@ -26,6 +26,13 @@ namespace ablate::domain {
 class SubDomain;
 
 class Domain : private utilities::Loggable<Domain> {
+   public:
+    //! The name of the solution field vector
+    const static inline std::string solution_vector_name = "solution";
+
+    //! The name of the aux field vector
+    const static inline std::string aux_vector_name = "aux";
+
    protected:
     Domain(DM dm, std::string name, std::vector<std::shared_ptr<FieldDescriptor>>, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers,
            const std::shared_ptr<parameters::Parameters>& options = {}, bool setFromOptions = true);
