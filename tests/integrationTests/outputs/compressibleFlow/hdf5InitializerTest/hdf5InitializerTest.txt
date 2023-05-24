@@ -2,7 +2,7 @@ Timestep: 0000 time = 0        dt = 1e-10
 MinMaxAvg euler for timestep 0000:
 	min: \[(.*), (.*), (.*), (.*)\]<expects> n1.18 n2.53e+05 z n-1.31
 	max: \[(.*), (.*), (.*), (.*)\]<expects> n1.49 n3.23e+05 n94.2 n1.31
-	avg: \[(.*), (.*), (.*), (.*)\]<expects> n1.23 n2.69e+05 n16.8 n9.85e-17
+	avg: \[(.*), (.*), (.*), (.*)\]<expects> n1.23 n2.69e+05 n17.5 n0.00634
 MinMaxAvg Yi for timestep 0000:
 	min: [ 0,  0,  0]
 	max: [ 0,  0,  0]
@@ -11,20 +11,20 @@ Timestep: 0001 time = 1e-10    dt = 1e-09
 MinMaxAvg euler for timestep 0001:
 	min: \[(.*), (.*), (.*), (.*)\]<expects> n1.18 n2.53e+05 z n-1.31
 	max: \[(.*), (.*), (.*), (.*)\]<expects> n1.49 n3.23e+05 n94.2 n1.31
-	avg: \[(.*), (.*), (.*), (.*)\]<expects> n1.23 n2.69e+05 n16.8 n1.65e-16
+	avg: \[(.*), (.*), (.*), (.*)\]<expects> n1.23 n2.69e+05 n17.5 n0.00634
 MinMaxAvg Yi for timestep 0001:
 	min: [0.2,  0,  0]
 	max: [ 1, 0.3, 0.5]
-	avg: \[(.*), (.*), (.*)\]<expects> n0.255 n0.279 n0.466
+	avg: \[(.*), (.*), (.*)\]<expects> n0.252 n0.281 n0.468
 Timestep: 0002 time = 1.1e-09  dt = 1e-08
 MinMaxAvg euler for timestep 0002:
 	min: \[(.*), (.*), (.*), (.*)\]<expects> n1.18 n2.53e+05 z n-1.31
 	max: \[(.*), (.*), (.*), (.*)\]<expects> n1.49 n3.23e+05 n94.2 n1.31
-	avg: \[(.*), (.*), (.*), (.*)\]<expects> n1.23 n2.69e+05 n16.8 n1.67e-16
+	avg: \[(.*), (.*), (.*), (.*)\]<expects> n1.23 n2.69e+05 n17.5 n0.00634
 MinMaxAvg Yi for timestep 0002:
 	min: [0.2,  0,  0]
 	max: [ 1, 0.3, 0.5]
-	avg: \[(.*), (.*), (.*)\]<expects> n0.255 n0.279 n0.466
+	avg: \[(.*), (.*), (.*)\]<expects> n0.252 n0.281 n0.468
 ResultFiles:
 domain
 domain.00000.hdf5

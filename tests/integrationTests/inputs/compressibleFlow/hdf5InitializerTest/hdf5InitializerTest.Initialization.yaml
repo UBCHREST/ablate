@@ -3,7 +3,7 @@
 ---
 # metadata for the simulation
 environment:
-  title: _hdf5InitializationCompressibleFlow
+  title: _hdf5InitializationCompressibleFlowInitialization
   tagDirectory: false
 arguments:
   # ask petsc to label the boundary values
@@ -20,7 +20,7 @@ timestepper:
   # Create a simple box mesh to start
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
-    faces: [ 50, 10 ]
+    faces: [ 75, 15 ]
     lower: [ 0.0, 0.0 ]
     upper: [ .5, .1 ]
     simplex: false

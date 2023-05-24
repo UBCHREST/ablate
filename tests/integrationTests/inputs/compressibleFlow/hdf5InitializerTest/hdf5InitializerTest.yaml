@@ -120,8 +120,7 @@ solvers:
     # share the existing eos with the compressible flow solver
     eos: *eos
 
-    monitors:
-      # use a boundary solver to update the cells in the boundaryCellsLeft region to represent an inlet
+  # use a boundary solver to update the cells in the boundaryCellsLeft region to represent an inlet
   - !ablate::boundarySolver::BoundarySolver
     id: inlet
     region:
