@@ -164,7 +164,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
                 ablate::parameters::MapParameters::Create(
                     {{"ts_max_time", std::to_string(testingParam.maxTime)}, {"ts_adapt_type", "physics"}, {"ts_adapt_safety", "1.0"}, {"ts_exact_final_time", "matchstep"}}),
                 {},
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{initialCondition});
+                std::make_shared<ablate::domain::Initializer>(initialCondition));
 
             // Setup the flow data
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", std::to_string(testingParam.cfl)}});

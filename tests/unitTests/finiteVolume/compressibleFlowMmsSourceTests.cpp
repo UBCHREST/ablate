@@ -579,7 +579,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             auto timeStepper = ablate::solver::TimeStepper(mesh,
                                                            ablate::parameters::MapParameters::Create({{"ts_max_steps", "1"}}),
                                                            {},
-                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution},
+                                                           std::make_shared<ablate::domain::Initializer>(exactSolution),
                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
 
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}});

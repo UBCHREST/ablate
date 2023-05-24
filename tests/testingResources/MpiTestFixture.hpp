@@ -120,7 +120,7 @@ class MpiTestFixture : public ::testing::Test {
         return result;
     }
 
-    std::filesystem::path MakeTemporaryPath(std::string name, MPI_Comm comm = MPI_COMM_SELF) const {
+    [[nodiscard]] std::filesystem::path MakeTemporaryPath(std::string name, MPI_Comm comm = MPI_COMM_SELF) const {
         PetscMPIInt rank = 0;
         MPI_Comm_rank(comm, &rank);
 
@@ -135,7 +135,7 @@ class MpiTestFixture : public ::testing::Test {
         return path;
     }
 
-    std::filesystem::path MakeTemporaryPath(std::string dir, std::string name, MPI_Comm comm = MPI_COMM_SELF) const {
+    [[nodiscard]] std::filesystem::path MakeTemporaryPath(std::string dir, std::string name, MPI_Comm comm = MPI_COMM_SELF) const {
         PetscMPIInt rank = 0;
         MPI_Comm_rank(comm, &rank);
 

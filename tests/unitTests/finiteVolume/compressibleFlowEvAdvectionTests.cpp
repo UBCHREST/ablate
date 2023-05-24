@@ -84,7 +84,7 @@ TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
             auto timeStepper = ablate::solver::TimeStepper(mesh,
                                                            nullptr,
                                                            {},
-                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution},
+                                                           std::make_shared<ablate::domain::Initializer>(exactEulerSolution, evExactSolution),
                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution});
 
             // setup a flow parameters

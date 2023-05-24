@@ -3,4 +3,5 @@ target_sources(unitTests
         runEnvironmentTests.cpp
         downloadTests.cpp
         gitHubTests.cpp
+        outputDirectoryTests.cpp
         )

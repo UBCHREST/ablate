@@ -148,8 +148,8 @@ void ablate::domain::SubDomain::CreateSubDomainStructures() {
 
         // attach this field as aux vector to the dm
         DMSetAuxiliaryVec(domain.GetDM(), label, labelValue, 0 /*The equation part, or 0 if unused*/, auxLocalVec) >> utilities::PetscUtilities::checkError;
-        PetscObjectSetName((PetscObject)auxLocalVec, "aux") >> utilities::PetscUtilities::checkError;
-        PetscObjectSetName((PetscObject)auxGlobalVec, "aux") >> utilities::PetscUtilities::checkError;
+        PetscObjectSetName((PetscObject)auxLocalVec, ablate::domain::Domain::aux_vector_name.c_str()) >> utilities::PetscUtilities::checkError;
+        PetscObjectSetName((PetscObject)auxGlobalVec, ablate::domain::Domain::aux_vector_name.c_str()) >> utilities::PetscUtilities::checkError;
 
         // add the names to each of the components in the dm section
         PetscSection section;
