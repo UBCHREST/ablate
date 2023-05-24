@@ -17,11 +17,6 @@ class Initializer {
 
    public:
     /**
-     * Create an empty list
-     */
-    Initializer() = default;
-
-    /**
      * Create a simple Initializer with a fixed set of fieldFunctions
      */
     explicit Initializer(std::vector<std::shared_ptr<mathFunctions::FieldFunction>>);
