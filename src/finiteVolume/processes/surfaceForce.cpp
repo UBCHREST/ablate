@@ -273,12 +273,12 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
         // calculate curvature -->  kappa = 1/n [(n/|n|. Delta) |n| - (Delta.n)]
         curvature = (totalGradMagNormal - totalDivNormal) / (magCellNormal + utilities::Constants::tiny);
 
-        PetscReal grad_rho[3];
+//        PetscReal grad_rho[3];
         //boundarySolver::BoundarySolver::ComputeGradient(dim, boundaryValues[uOff[density]], stencilSize, &pointValues[0], stencilWeights, source + sOff[sourceField] + (0 * dim));
 
         for (PetscInt d = 0; d < dim; ++d) {
             // calculate surface force and energy
-            surfaceForce[d] = process->sigma * curvature * grad_rho[d]/(994.0897506154375-1.1614401858304297) * density/(0.5*(994.0897506154375+1.1614401858304297));//process->sigma * curvature * cellCenterNormal[d];
+            surfaceForce[d] = process->sigma * curvature * cellCenterNormal[d]/(magCellNormal+utilities::Constants::tiny)/1.5; //grad_rho[d]/(994.0897506154375-1.1614401858304297) * density/(0.5*(994.0897506154375+1.1614401858304297));//process->sigma * curvature * cellCenterNormal[d];
             surfaceEnergy += surfaceForce[d] * vel[d];
             // add in the contributions
             eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = surfaceForce[d];
