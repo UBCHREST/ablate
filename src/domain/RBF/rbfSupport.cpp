@@ -396,6 +396,29 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode DMGetFieldVec(DM dm, Vec v, PetscInt field, PetscInt height, IS *is, Vec *subv) {
+    PetscSection sectionLocal, sectionGlobal;
+    PetscInt cStart, cEnd;
+
+    PetscFunctionBegin;
+
+    PetscCall(DMPlexGetHeightStratum(dm, height, &cStart, &cEnd));
+    PetscCall(DMGetGlobalSection(dm, &sectionGlobal));
+    PetscCall(DMGetLocalSection(dm, &sectionLocal));
+    PetscCall(PetscSectionGetField_Internal(sectionLocal, sectionGlobal, v, field, cStart, cEnd, is, subv));
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode DMRestoreFieldVec(DM dm, Vec v, PetscInt field, PetscInt height, IS *is, Vec *subv) {
+    PetscFunctionBegin;
+
+    PetscCall(VecRestoreSubVector(v, *is, subv));
+    PetscCall(ISDestroy(is));
+
+    PetscFunctionReturn(0);
+}
+
 // Given a point in space and normal vector determine the vector of the plane with a given offset in the unit normal direction.
 static PetscErrorCode DMPlaneVectors_2D_Internal(const PetscReal x0[], const PetscReal n[], const PetscReal offset, PetscReal segment[]) {
     // Get the base crossing assuming that the plane passes through the origin
