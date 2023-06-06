@@ -135,7 +135,8 @@ struct RBFSupportParameters_NeighborCells {
     PetscInt numLevels;
     PetscReal maxDistance;
     PetscInt minNumberCells;
-    PetscBool useVertices;
+    PetscBool useCells;
+    PetscBool getNeighborVertices;
     std::vector<PetscInt> expectedNumberOfCells;
     std::vector<std::vector<PetscInt>> expectedCellList;
 };
@@ -170,7 +171,7 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
             MPI_Comm_rank(PetscObjectComm((PetscObject)mesh->GetDM()), &rank);
 
             DMPlexGetNeighborCells(
-                mesh->GetDM(), testingParam.centerCell[rank], testingParam.numLevels, testingParam.maxDistance, testingParam.minNumberCells, testingParam.useVertices, &nCells, &cells) >>
+                mesh->GetDM(), testingParam.centerCell[rank], testingParam.numLevels, testingParam.maxDistance, testingParam.minNumberCells, testingParam.useCells, testingParam.getNeighborVertices, &nCells, &cells) >>
                 utilities::PetscUtilities::checkError;
 
             PetscSortInt(nCells, cells);
@@ -202,6 +203,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = -1.0,
                                              .minNumberCells = 25,
                                              .useCells = PETSC_FALSE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {25},
                                              .expectedCellList = {{25, 24, 35, 15, 26, 14, 34, 36, 16, 23, 45, 5, 27, 13, 33, 44, 46, 4, 37, 6, 17, 43, 3, 47, 7}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DQuadVertCorner", .nproc = 1},
@@ -215,6 +217,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = -1.0,
                                              .minNumberCells = 25,
                                              .useCells = PETSC_FALSE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {25},
                                              .expectedCellList = {{0, 10, 1, 11, 2, 20, 12, 21, 22, 30, 3, 31, 13, 23, 32, 4, 40, 14, 41, 33, 42, 24, 43, 34, 44}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DTriVert", .nproc = 1},
@@ -228,6 +231,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = -1.0,
                                              .minNumberCells = 25,
                                              .useCells = PETSC_FALSE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {25},
                                              .expectedCellList = {{199, 76, 159, 79, 150, 80, 149, 98, 111, 73, 40, 78, 158, 112, 75, 109, 45, 81, 154, 95, 151, 82, 156, 152, 72}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DTriVertCorner", .nproc = 1},
@@ -241,6 +245,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = -1.0,
                                              .minNumberCells = 25,
                                              .useCells = PETSC_FALSE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {25},
                                              .expectedCellList = {{0, 6, 1, 4, 2, 3, 7, 19, 5, 9, 21, 12, 22, 8, 18, 25, 14, 11, 23, 13, 24, 47, 10, 30, 27}}},
         (RBFSupportParameters_NeighborCells){
@@ -255,6 +260,7 @@ INSTANTIATE_TEST_SUITE_P(
             .maxDistance = -1.0,
             .minNumberCells = 10,
             .useCells = PETSC_FALSE,
+	    .getNeighborVertices = PETSC_FALSE,
             .expectedNumberOfCells = {10, 10},
             .expectedCellList = {{56, 60, 57, 40, 55, 45, 58, 71, 41, 54}, {19, 21, 17, 22, 16, 23, 35, 18, 20, 102}}},
         (RBFSupportParameters_NeighborCells){
@@ -269,6 +275,7 @@ INSTANTIATE_TEST_SUITE_P(
             .maxDistance = -1.0,
             .minNumberCells = 9,
             .useCells = PETSC_FALSE,
+	    .getNeighborVertices = PETSC_FALSE,
             .expectedNumberOfCells = {9, 9, 9, 9},
             .expectedCellList = {{24, 23, 19, 29, 35, 18, 28, 34, 30}, {4, 9, 31, 3, 29, 8, 28, 30, 32}, {20, 21, 31, 15, 29, 16, 28, 30, 32}, {0, 31, 26, 5, 1, 6, 27, 32, 25}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DQuadEdge", .nproc = 1},
@@ -282,6 +289,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = -1.0,
                                              .minNumberCells = 9,
                                              .useCells = PETSC_TRUE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {9},
                                              .expectedCellList = {{54, 64, 53, 55, 44, 63, 43, 45, 65}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DTriEdge", .nproc = 1},
@@ -295,6 +303,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = -1.0,
                                              .minNumberCells = 9,
                                              .useCells = PETSC_TRUE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {9},
                                              .expectedCellList = {{199, 76, 159, 79, 150, 149, 80, 98, 111}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DQuadEdgeOverlap", .nproc = 2},
@@ -308,6 +317,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = -1.0,
                                              .minNumberCells = 9,
                                              .useCells = PETSC_TRUE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {9, 9},
                                              .expectedCellList = {{11, 12, 6, 16, 10, 17, 7, 15, 5}, {34, 33, 29, 39, 56, 38, 28, 57, 55}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "3DQuadFace", .nproc = 1},
@@ -321,6 +331,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = -1.0,
                                              .minNumberCells = 20,
                                              .useCells = PETSC_TRUE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {20},
                                              .expectedCellList = {{25, 24, 9, 26, 21, 29, 41, 8, 13, 28, 10, 5, 20, 40, 22, 45, 30, 37, 42, 27}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "3DTriFace", .nproc = 1},
@@ -334,6 +345,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = -1.0,
                                              .minNumberCells = 20,
                                              .useCells = PETSC_TRUE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {20},
                                              .expectedCellList = {{25, 41, 38, 33, 28, 51, 39, 46, 56, 17, 15, 4, 32, 198, 95, 57, 201, 123, 40, 74}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DQuadDistanceEdge", .nproc = 1},
@@ -347,6 +359,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = 0.28,
                                              .minNumberCells = -1,
                                              .useCells = PETSC_TRUE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {21},
                                              .expectedCellList = {{34, 35, 36, 43, 44, 45, 46, 47, 53, 54, 55, 56, 57, 63, 64, 65, 66, 67, 74, 75, 76}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DQuadDistanceVert", .nproc = 1},
@@ -360,6 +373,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = 0.28,
                                              .minNumberCells = -1,
                                              .useCells = PETSC_FALSE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {21},
                                              .expectedCellList = {{34, 35, 36, 43, 44, 45, 46, 47, 53, 54, 55, 56, 57, 63, 64, 65, 66, 67, 74, 75, 76}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DQuadDistanceEdgeMPI", .nproc = 2},
@@ -372,7 +386,8 @@ INSTANTIATE_TEST_SUITE_P(
                                              .numLevels = -1,
                                              .maxDistance = 0.28,
                                              .minNumberCells = -1,
-                                             .useCells = PETSC_TRUE
+                                             .useCells = PETSC_TRUE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {21, 21},
                                              .expectedCellList = {{15, 16, 20, 21, 22, 25, 26, 27, 30, 31, 32, 35, 36, 61, 63, 64, 66, 67, 69, 70, 73},
                                                                   {18, 19, 22, 23, 24, 27, 28, 29, 32, 33, 34, 38, 39, 59, 62, 63, 65, 66, 68, 69, 71}}},
@@ -387,6 +402,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = 0.28,
                                              .minNumberCells = -1,
                                              .useCells = PETSC_FALSE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {21, 21},
                                              .expectedCellList = {{15, 16, 20, 21, 22, 25, 26, 27, 30, 31, 32, 35, 36, 61, 63, 64, 66, 67, 69, 70, 73},
                                                                   {18, 19, 22, 23, 24, 27, 28, 29, 32, 33, 34, 38, 39, 59, 62, 63, 65, 66, 68, 69, 71}}},
@@ -414,6 +430,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = 0.14,
                                              .minNumberCells = -1,
                                              .useCells = PETSC_FALSE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {11},
                                              .expectedCellList = {{40, 73, 76, 79, 80, 98, 111, 149, 150, 159, 199}}},
 
@@ -428,6 +445,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = 0.14,
                                              .minNumberCells = -1,
                                              .useCells = PETSC_TRUE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {12, 11},
                                              .expectedCellList = {{38, 40, 41, 45, 56, 58, 60, 71, 113, 114, 132, 141}, {82, 83, 84, 86, 95, 96, 97, 99, 102, 138, 141}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DTriDistanceVertMPI", .nproc = 2},
@@ -441,6 +459,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = 0.14,
                                              .minNumberCells = -1,
                                              .useCells = PETSC_FALSE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {12, 11},
                                              .expectedCellList = {{38, 40, 41, 45, 56, 58, 60, 71, 113, 114, 132, 141}, {82, 83, 84, 86, 95, 96, 97, 99, 102, 138, 141}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DQuadLevelVert", .nproc = 1},
@@ -454,6 +473,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = -1.0,
                                              .minNumberCells = -1,
                                              .useCells = PETSC_FALSE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {25},
                                              .expectedCellList = {{33, 34, 35, 36, 37, 43, 44, 45, 46, 47, 53, 54, 55, 56, 57, 63, 64, 65, 66, 67, 73, 74, 75, 76, 77}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DQuadLevelEdge", .nproc = 1},
@@ -467,9 +487,10 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = -1.0,
                                              .minNumberCells = -1,
                                              .useCells = PETSC_TRUE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {13},
                                              .expectedCellList = {{35, 44, 45, 46, 53, 54, 55, 56, 57, 64, 65, 66, 75}}}),
-		(RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DQuadVert,getvertices", .nproc = 1},
+	(RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DQuadVert,getvertices", .nproc = 1},
                                              .meshFaces = {5, 5},
                                              .meshStart = {0.0, 0.0},
                                              .meshEnd = {1.0, 1.0},
@@ -480,6 +501,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = -1.0,
                                              .minNumberCells = -1,
                                              .useCells = PETSC_TRUE,
+				             .getNeighborVertices = PETSC_TRUE,
                                              .expectedNumberOfCells = {25},
                                              .expectedCellList = {{25, 24, 35, 15, 26, 14, 34, 36, 16, 23, 45, 5, 27, 13, 33, 44, 46, 4, 37, 6, 17, 43, 3, 47, 7}}},
     [](const testing::TestParamInfo<RBFSupportParameters_NeighborCells>& info) { return info.param.mpiTestParameter.getTestName(); });
