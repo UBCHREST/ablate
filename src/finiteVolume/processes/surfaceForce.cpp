@@ -275,7 +275,11 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
 
 //        PetscReal grad_rho[3];
         //boundarySolver::BoundarySolver::ComputeGradient(dim, boundaryValues[uOff[density]], stencilSize, &pointValues[0], stencilWeights, source + sOff[sourceField] + (0 * dim));
-
+        PetscScalar* alpha=nullptr;
+        DMPlexPointLocalFieldRead(dm, c, VFfield.id, solArray, &alpha) >> utilities::PetscUtilities::checkError;
+        if (*alpha < 0.3 || *alpha > 0.7){
+            curvature = 0.0;
+        }
         for (PetscInt d = 0; d < dim; ++d) {
             // calculate surface force and energy
             surfaceForce[d] = process->sigma * curvature * cellCenterNormal[d]/(magCellNormal+utilities::Constants::tiny)/1.2; //grad_rho[d]/(994.0897506154375-1.1614401858304297) * density/(0.5*(994.0897506154375+1.1614401858304297));//process->sigma * curvature * cellCenterNormal[d];
