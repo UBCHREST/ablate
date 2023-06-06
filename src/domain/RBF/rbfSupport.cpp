@@ -226,28 +226,28 @@ PetscErrorCode PetscSortedArrayComplement(const PetscInt nb, const PetscInt b[],
 }
 
 /**
- * Return the list of neighboring cells to cell p using a combination of number of levels and maximum distance
+ * Return the list of neighboring cells/vertices to cell p using a combination of number of levels and maximum distance
  * dm - The mesh
- * maxLevels - Number of neighboring cells to check
+ * maxLevels - Number of neighboring cells/vertices to check
  * maxDist - Maximum distance to include
- * numberCells - The number of cells to return.
- * nCells - Number of neighboring cells
- * cells - The list of neighboring cell IDs
+ * numberCells - The number of cells/vertices to return.
+ * nCells - Number of neighboring cells/vertices
+ * cells - The list of neighboring cell/vertices IDs
  *
  * Note: The intended use is to use either maxLevels OR maxDist OR minNumberCells. Right now a check isn't done on only selecting one, but that might be added in the future.
  */
-PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useVertices, PetscInt *nCells, PetscInt *cells[]) {
+PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useCells, PetscBool getNeighborVertices, PetscInt *nCells, PetscInt *cells[]) {
     const PetscInt maxLevelListSize = 10000;
     const PetscInt maxListSize = 100000;
     PetscInt numNew, nLevelList[2];
     PetscInt *addList = NULL, levelList[2][maxLevelListSize], currentLevelLoc, prevLevelLoc;
     PetscInt n = 0, list[maxListSize];
-    PetscInt l, i;
+    PetscInt l, i, cte;
     PetscScalar x0[3];
     PetscInt type = 0;  // 0: numberCells, 1: maxLevels, 2: maxDist
 
     PetscFunctionBegin;
-
+    
     PetscCheck(
         ((maxLevels > 0) + (maxDist > 0) + (numberCells > 0)) == 1, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "Only one of maxLevels, maxDist, and minNumberCells can be set. The others whould be <0.");
 
@@ -265,16 +265,49 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
         numberCells = PETSC_MAX_INT;
         type = 2;
     }
-
+    
     PetscCall(DMPlexComputeCellGeometryFVM(dm, p, NULL, x0, NULL));  // Center of the cell-of-interest
+    
+    // Declare the internal function pointer
+    PetscErrorCode (*neighborFunc)(DM, PetscReal[3], PetscInt, PetscReal, PetscBool, PetscInt*, PetscInt**);
 
-    // Start with only the center cell
-    l = 0;
-    list[0] = p;
-    n = nLevelList[0] = 1;
-    levelList[0][0] = p;
-    currentLevelLoc = 0;
-
+    // Determine which internal function to call in while loop; if getNeighborVertices is false, the function returns the neighboring cells, and for true value, it returns vertices.
+    if (getNeighborVertices == PETSC_FALSE) {
+		cte = 0;
+        neighborFunc = &DMPlexGetNeighborCells_Internal;
+        // Start with only the center cell
+		l = 0;
+		list[0] = p;
+		n = nLevelList[0] = 1;
+		levelList[0][0] = p;
+		currentLevelLoc = 0;
+    } 
+    else {
+		cte = 1;
+        neighborFunc = &DMPlexGetNeighborVertices_Internal;
+        // get first level vertices for p and start the while loop from those vertices
+        PetscInt *closure = NULL;
+		PetscInt closureSize;		
+		DMPlexGetTransitiveClosure(dm, p, PETSC_TRUE, &closureSize, &closure);		
+		PetscInt start, end;
+		DMPlexGetDepthStratum(dm, 0, &start, &end);  // Get the range of vertex indices
+		for (PetscInt i = 0; i < closureSize*2; i += 2) {
+		    PetscInt point = closure[i];
+		    if (point >= start && point <= end) {
+		        // point is a vertex of the cell
+		        l = 0;
+		        list[n] = point;
+		        levelList[0][n] = point;
+		        n++;
+		    }
+		}
+		nLevelList[0] = n;
+		currentLevelLoc = 0;
+		DMPlexRestoreTransitiveClosure(dm, p, PETSC_TRUE, &closureSize, &closure);
+		PetscCall(PetscIntSortSemiOrdered(nLevelList[0], levelList[0]));
+		PetscCall(PetscIntSortSemiOrdered(nLevelList[0], list));
+    }
+    
     // When the number of cells added at a particular level is zero then terminate the loop. This is for the case where
     // maxLevels is set very large but all cells within the maximum distance have already been found.
     PetscCall(PetscMalloc1(maxLevelListSize, &addList));
@@ -287,7 +320,7 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
 
         nLevelList[currentLevelLoc] = 0;
         for (i = 0; i < nLevelList[prevLevelLoc]; ++i) {  // Iterate over each of the locations on the prior level
-            PetscCall(DMPlexGetNeighborCells_Internal(dm, x0, levelList[prevLevelLoc][i], maxDist, useVertices, &numNew, &addList));
+			PetscCall((*neighborFunc)(dm, x0, levelList[prevLevelLoc][i], maxDist, useCells, &numNew, &addList));
 
             PetscCheck((nLevelList[currentLevelLoc] + numNew) < maxLevelListSize,
                        PETSC_COMM_SELF,
@@ -312,7 +345,7 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
 
     PetscCall(PetscFree(addList));
 
-    if (type == 0) {
+    if (type == 0 && cte == 0) {
         // Now only include the the numberCells closest cells
         PetscScalar x[3];
         PetscReal *dist;
@@ -328,36 +361,37 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
         }
         PetscCall(PetscSortRealWithArrayInt(n, dist, list));
         PetscCall(PetscFree(dist));
+    } else if (type == 0 && cte == 1) {
+        // Now only include the the numberCells closest cells
+        PetscScalar x[3];
+        PetscReal *dist;
+        PetscInt j, dim, i_x, vStart;
+        Vec coords;
+		PetscReal *coordsArray;
+        PetscCall(DMGetDimension(dm, &dim));  // The dimension of the grid
+        PetscCall(PetscMalloc1(n, &dist));
+        PetscCall(DMGetCoordinatesLocal(dm, &coords));   // Get all the vertices coordinates
+		PetscCall(VecGetArray(coords, &coordsArray));    // Copy the quantities in coords vector and paste them to the coordsArray vector
+		PetscCall(DMPlexGetDepthStratum(dm, 0, &vStart, NULL));  // Range of vertices
+        for (i = 0; i < n; ++i) {
+            dist[i] = 0.0;
+            i_x = (list[i]-vStart)*2;  
+            for (j = 0; j < dim; ++j) {  // Compute the distance so that we can check if it's within the required distance.
+                dist[i] += PetscSqr(x0[j] - coordsArray[i_x+j]);
+            }
+        }
+        PetscCall(PetscSortRealWithArrayInt(n, dist, list));
+        PetscCall(PetscFree(dist));
+        //for (int j = 0; j < n; ++j) {
+	        //printf("Vertex %d: %d\n", j, list[j]);
+	    //}
     } else {
         numberCells = n;
     }
-
     PetscCall(PetscMalloc1(numberCells, cells));
     PetscCall(PetscArraycpy(*cells, list, numberCells));
+    PetscCall(PetscIntSortSemiOrdered(numberCells, *cells));
     *nCells = numberCells;
-
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode DMGetFieldVec(DM dm, Vec v, PetscInt field, PetscInt height, IS *is, Vec *subv) {
-    PetscSection sectionLocal, sectionGlobal;
-    PetscInt cStart, cEnd;
-
-    PetscFunctionBegin;
-
-    PetscCall(DMPlexGetHeightStratum(dm, height, &cStart, &cEnd));
-    PetscCall(DMGetGlobalSection(dm, &sectionGlobal));
-    PetscCall(DMGetLocalSection(dm, &sectionLocal));
-    PetscCall(PetscSectionGetField_Internal(sectionLocal, sectionGlobal, v, field, cStart, cEnd, is, subv));
-
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode DMRestoreFieldVec(DM dm, Vec v, PetscInt field, PetscInt height, IS *is, Vec *subv) {
-    PetscFunctionBegin;
-
-    PetscCall(VecRestoreSubVector(v, *is, subv));
-    PetscCall(ISDestroy(is));
 
     PetscFunctionReturn(0);
 }
