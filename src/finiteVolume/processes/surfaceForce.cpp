@@ -278,7 +278,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
 
         for (PetscInt d = 0; d < dim; ++d) {
             // calculate surface force and energy
-            surfaceForce[d] = process->sigma * curvature * cellCenterNormal[d]/(magCellNormal+utilities::Constants::tiny)/1.5; //grad_rho[d]/(994.0897506154375-1.1614401858304297) * density/(0.5*(994.0897506154375+1.1614401858304297));//process->sigma * curvature * cellCenterNormal[d];
+            surfaceForce[d] = process->sigma * curvature * cellCenterNormal[d]/(magCellNormal+utilities::Constants::tiny)/1.2; //grad_rho[d]/(994.0897506154375-1.1614401858304297) * density/(0.5*(994.0897506154375+1.1614401858304297));//process->sigma * curvature * cellCenterNormal[d];
             surfaceEnergy += surfaceForce[d] * vel[d];
             // add in the contributions
             eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = surfaceForce[d];
