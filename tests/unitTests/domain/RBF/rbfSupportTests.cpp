@@ -417,6 +417,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = 0.14,
                                              .minNumberCells = -1,
                                              .useCells = PETSC_TRUE,
+					     .getNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {11},
                                              .expectedCellList = {{40, 73, 76, 79, 80, 98, 111, 149, 150, 159, 199}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = {.testName = "2DTriDistanceVert", .nproc = 1},
