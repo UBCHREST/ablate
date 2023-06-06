@@ -142,7 +142,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     DMGetLocalVector(process->dmData, &localVec) >> utilities::PetscUtilities::checkError;
     PetscScalar *normalArray = NULL;
     VecGetArray(localVec, &normalArray);
-    PetscScalar *vertexNormal;
+    PetscScalar *vertexNormal, *gradRho;
     // extract the local coordinates array
     Vec localCoordsVector;
     PetscSection coordsSection;
@@ -153,7 +153,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
 
     // march over the stored vortices
     for (const auto &info : process->vertexStencils) {
-        PetscReal totalAlpha[3] = {0, 0, 0};
+        PetscReal totalAlpha[3] = {0, 0, 0}, totalRho[3] = {0, 0, 0};
         // march over the connected cells to each vertex and get the cell info and filed value
         for (PetscInt p = 0; p < info.stencilSize; p++) {
             PetscFVCellGeom *cg = nullptr;
@@ -162,24 +162,33 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
             const PetscScalar *alpha = nullptr;
             DMPlexPointLocalFieldRead(dm, info.stencil[p], VFfield.id, solArray, &alpha) >> utilities::PetscUtilities::checkError;
 
+            // get densities of connected cells too
+            const PetscScalar *rho = nullptr;
+            DMPlexPointLocalFieldRead(dm, info.stencil[p], eulerField.id, solArray, &rho) >> utilities::PetscUtilities::checkError;
+
             // add up the contribution of the cell. Front cells have positive and back cells have negative contribution to the vertex normal
-            PetscReal alphaVal[3];
+            PetscReal alphaVal[3], rhoVal[3];
             if (alpha) {
                 for (PetscInt d = 0; d < dim; ++d) {
                     if (cg->centroid[d] > info.stencilCoord[d]) {
                         alphaVal[d] = alpha[0];
+                        rhoVal[d] = rho[0];
 
                     } else if (cg->centroid[d] < info.stencilCoord[d]) {
                         alphaVal[d] = -alpha[0];
+                        rhoVal[d] = rho[1];
                     }
                     totalAlpha[d] += alphaVal[d];
+                    totalRho[d] += rhoVal[d];
                 }
             }
         }
         // calculate and save the normal of the vertex
         DMPlexPointLocalRef(cdm, info.vertexId, normalArray, &vertexNormal) >> utilities::PetscUtilities::checkError;
+        DMPlexPointLocalRef(cdm, info.vertexId, normalArray, &gradRho) >> utilities::PetscUtilities::checkError;
         for (PetscInt d = 0; d < dim; ++d) {
             vertexNormal[d] = totalAlpha[d] / info.gradientWeights[d];
+            gradRho[d] = totalRho[d] / info.gradientWeights[d];
         }
     }
     // march over cells
@@ -274,15 +283,27 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
         curvature = (totalGradMagNormal - totalDivNormal) / (magCellNormal + utilities::Constants::tiny);
 
 //        PetscReal grad_rho[3];
-        //boundarySolver::BoundarySolver::ComputeGradient(dim, boundaryValues[uOff[density]], stencilSize, &pointValues[0], stencilWeights, source + sOff[sourceField] + (0 * dim));
+        // for quick and dirty makes more sense to calc by hand, get density n connected cells and do central difference
+        // CreateGradientStencil, PetscFVcomputegradient, face stuff cells with common face
+//        boundarySolver::BoundarySolver::ComputeGradient(dim, boundaryValues[uOff[density]], stencilSize, &pointValues[0], stencilWeights, source + sOff[sourceField] + (0 * dim));
+
         PetscScalar* alpha=nullptr;
         DMPlexPointLocalFieldRead(dm, c, VFfield.id, solArray, &alpha) >> utilities::PetscUtilities::checkError;
-        if (*alpha < 0.3 || *alpha > 0.7){
+        if (*alpha < 0.01 || *alpha > 0.99){
             curvature = 0.0;
+        } else{
+            curvature = -0.5;
+            PetscReal new_mag = PetscSqrtReal( PetscSqr(fcg->centroid[0]) + PetscSqr(fcg->centroid[1]) );
+            PetscReal new_normal_x = fcg->centroid[0]/new_mag;
+            PetscReal new_normal_y = fcg->centroid[1]/new_mag;
+            cellCenterNormal[0] = new_normal_x;
+            cellCenterNormal[1] = new_normal_y;
         }
         for (PetscInt d = 0; d < dim; ++d) {
             // calculate surface force and energy
-            surfaceForce[d] = process->sigma * curvature * cellCenterNormal[d]/(magCellNormal+utilities::Constants::tiny)/1.2; //grad_rho[d]/(994.0897506154375-1.1614401858304297) * density/(0.5*(994.0897506154375+1.1614401858304297));//process->sigma * curvature * cellCenterNormal[d];
+            surfaceForce[d] = process->sigma * curvature * cellCenterNormal[d];
+//            surfaceForce[d] = process->sigma * curvature * cellCenterNormal[d]/(magCellNormal+utilities::Constants::tiny)/1.0;
+//            surfaceForce[d] = process->sigma * curvature * gradRho[d]/(994.0897506154375-1.1614401858304297) * density/(0.5*(994.0897506154375+1.1614401858304297));//process->sigma * curvature * cellCenterNormal[d];
             surfaceEnergy += surfaceForce[d] * vel[d];
             // add in the contributions
             eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = surfaceForce[d];
