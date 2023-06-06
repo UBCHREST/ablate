@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [ { runson: ARM64, id: -arm64 }, { runson: ubuntu-latest, id: -amd64 } ]
-        compiler: [ { cc: gcc, cxx: g++, id: -gcc }, { cc: clang, cxx: clang++, id: -clang } ]
+        compiler: [ { id: -gcc }, { id: -clang } ]
         indices: [ { index64bit: 0, id: "" },  { index64bit: 1, id: "-index64" } ]
         petscConfig: [ arch-ablate-opt ]
         tensorFlowConfig: [ "", "enabled_tf" ]

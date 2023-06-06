@@ -61,13 +61,9 @@ PetscErrorCode ablate::io::Hdf5Serializer::Hdf5SerializerSaveStateFunction(TS ts
         // Save this to a file
         hdf5Serializer->SaveMetadata(ts);
 
-        try {
-            // save each serializer
-            for (auto& serializer : hdf5Serializer->serializers) {
-                serializer->Save(hdf5Serializer->sequenceNumber, time);
-            }
-        } catch (std::exception& exception) {
-            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exception.what());
+        // save each serializer
+        for (auto& serializer : hdf5Serializer->serializers) {
+            PetscCall(serializer->Save(hdf5Serializer->sequenceNumber, time));
         }
     }
     PetscFunctionReturn(0);
@@ -111,7 +107,7 @@ void ablate::io::Hdf5Serializer::RestoreTS(TS ts) {
 
 ////////////// Hdf5ObjectSerializer Implementation //////////////
 ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::Hdf5ObjectSerializer(std::weak_ptr<Serializable> serializableIn, PetscInt sequenceNumber, PetscReal time, bool resume)
-    : serializable(serializableIn) {
+    : serializable(std::move(serializableIn)) {
     if (auto serializableObject = serializable.lock()) {
         filePath = environment::RunEnvironment::Get().GetOutputDirectory() / (serializableObject->GetId() + extension);
 
@@ -124,7 +120,7 @@ ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::Hdf5ObjectSerializer(std::weak
 
                 // Restore the simulation
                 StartEvent("Restore");
-                serializableObject->Restore(petscViewer, sequenceNumber, time);
+                serializableObject->Restore(petscViewer, sequenceNumber, time) >> utilities::PetscUtilities::checkError;
                 EndEvent();
             } else {
                 throw std::runtime_error("Cannot resume simulation.  Unable to locate file: " + filePath.string());
@@ -148,12 +144,12 @@ ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::~Hdf5ObjectSerializer() {
     }
 }
 
-void ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::Save(PetscInt sn, PetscReal t) {
+PetscErrorCode ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::Save(PetscInt sn, PetscReal t) {
     PetscFunctionBeginUser;
     if (auto serializableObject = serializable.lock()) {
-        serializableObject->Save(petscViewer, sn, t);
+        PetscCall(serializableObject->Save(petscViewer, sn, t));
     }
-    PetscFunctionReturnVoid();
+    PetscFunctionReturn(0);
 }
 
 #include "registrar.hpp"

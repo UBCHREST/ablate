@@ -14,6 +14,8 @@
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/essentialGhost.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
+#include "finiteVolume/processes/navierStokesTransport.hpp"
 #include "finiteVolume/processes/speciesTransport.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
@@ -109,9 +111,6 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             // create a mock eos
             std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
             EXPECT_CALL(*eos, GetSpeciesVariables()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(species));
-            EXPECT_CALL(*eos, GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature, testing::_))
-                .Times(::testing::Exactly(1))
-                .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction([](const PetscReal conserved[], PetscReal* T) { *T = NAN; })));
             EXPECT_CALL(*eos, GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SpeciesSensibleEnthalpy, testing::_))
                 .Times(::testing::Exactly(1))
                 .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicTemperatureFunction([](const PetscReal conserved[], PetscReal T, PetscReal* hi) {
@@ -125,7 +124,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                     "euler", "euler", std::vector<std::string>{"rho", "rhoE", "rhoVel" + domain::FieldDescription::DIMENSION}, domain::FieldLocation::SOL, domain::FieldType::FVM),
                 std::make_shared<ablate::domain::FieldDescription>("densityYi", "densityYi", eos->GetSpeciesVariables(), domain::FieldLocation::SOL, domain::FieldType::FVM),
                 std::make_shared<ablate::domain::FieldDescription>("Yi", "Yi", eos->GetSpeciesVariables(), domain::FieldLocation::AUX, domain::FieldType::FVM),
-
+                std::make_shared<ablate::domain::FieldDescription>("temperature", "temperature", std::vector<std::string>{}, domain::FieldLocation::AUX, domain::FieldType::FVM),
             };
 
             // create a constant density field
@@ -135,6 +134,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             // Create the yi field solutions
             auto yiExact = ablate::mathFunctions::Create(ComputeDensityYiExact, &parameters);
             auto yiExactField = std::make_shared<mathFunctions::FieldFunction>("densityYi", yiExact);
+            auto initSolutions = std::make_shared<ablate::domain::Initializer>(eulerExactField, yiExactField);
             std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions{eulerExactField, yiExactField};
 
             PetscInt initialNx = GetParam().initialNx;
@@ -157,7 +157,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                                                            mesh,
                                                            ablate::parameters::MapParameters::Create({{"ts_dt", 5.e-01}, {"ts_type", "rk"}, {"ts_max_time", 15.0}, {"ts_adapt_type", "none"}}),
                                                            nullptr,
-                                                           exactSolutions,
+                                                           initSolutions,
                                                            exactSolutions);
 
             // setup a flow parameters

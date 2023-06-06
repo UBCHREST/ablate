@@ -106,7 +106,7 @@ void ablate::domain::Domain::CreateStructures() {
     // Setup the solve with the ts
     DMPlexCreateClosureIndex(dm, nullptr) >> utilities::PetscUtilities::checkError;
     DMCreateGlobalVector(dm, &(solGlobalField)) >> utilities::PetscUtilities::checkError;
-    PetscObjectSetName((PetscObject)solGlobalField, "solution") >> utilities::PetscUtilities::checkError;
+    PetscObjectSetName((PetscObject)solGlobalField, solution_vector_name.c_str()) >> utilities::PetscUtilities::checkError;
 
     // add the names to each of the components in the dm section
     PetscSection section;
@@ -140,7 +140,7 @@ std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(
     }
 }
 
-void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations,
+void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers, std::shared_ptr<ablate::domain::Initializer> initializations,
                                                   const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& exactSolutions) {
     // determine the number of fields
     for (auto& solver : solvers) {
@@ -161,15 +161,16 @@ void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_
     }
 
     // set all values to nan to allow for a output check
-    if (!initializations.empty()) {
+    if (initializations) {
         VecSet(solGlobalField, NAN) >> utilities::PetscUtilities::checkError;
+
+        // Set the initial conditions for each field specified
+        auto initializationsFieldFunctions = initializations->GetFieldFunctions(GetFields());
+        ProjectFieldFunctions(initializationsFieldFunctions, solGlobalField);
     }
 
-    // Set the initial conditions for each field specified
-    ProjectFieldFunctions(initializations, solGlobalField);
-
     // do a sanity check to make sure that all points were initialized
-    if (!initializations.empty() && CheckFieldValues()) {
+    if (initializations && CheckFieldValues()) {
         throw std::runtime_error("Field values at points in the domain were not initialized.");
     }
 

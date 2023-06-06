@@ -98,7 +98,7 @@ class PressureGradientScaling : public FlowProcess, public io::Serializable {
      * @param sequenceNumber
      * @param time
      */
-    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 
     /**
      * Restore the state from the PetscViewer
@@ -106,7 +106,7 @@ class PressureGradientScaling : public FlowProcess, public io::Serializable {
      * @param sequenceNumber
      * @param time
      */
-    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 };
 }  // namespace ablate::finiteVolume::processes
 #endif  // ABLATELIBRARY_PRESSUREGRADIENTSCALING_HPP

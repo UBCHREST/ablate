@@ -110,4 +110,5 @@ domain.00018.hdf5
 domain.00019.hdf5
 domain.00020.hdf5
 domain.xmf
+restart.bak
 restart.rst

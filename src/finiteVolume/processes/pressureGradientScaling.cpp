@@ -151,13 +151,17 @@ void ablate::finiteVolume::processes::PressureGradientScaling::Setup(ablate::fin
     }
 }
 
-void ablate::finiteVolume::processes::PressureGradientScaling::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
     PetscFunctionBeginUser;
-    SaveKeyValue(viewer, "pressureGradientScalingAlpha", alpha);
-    PetscFunctionReturnVoid();
+    PetscCall(SaveKeyValue(viewer, "pressureGradientScalingAlpha", alpha));
+    PetscFunctionReturn(0);
 }
 
-void ablate::finiteVolume::processes::PressureGradientScaling::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) { RestoreKeyValue(viewer, "pressureGradientScalingAlpha", alpha); }
+PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBeginUser;
+    PetscCall(RestoreKeyValue(viewer, "pressureGradientScalingAlpha", alpha));
+    PetscFunctionReturn(0);
+}
 
 #include "registrar.hpp"
 REGISTER_DERIVED(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::PressureGradientScaling);

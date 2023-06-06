@@ -15,9 +15,8 @@
 #include "monitors/logs/nullLog.hpp"
 #include "utilities/mpiUtilities.hpp"
 
-ablate::eos::TChemSoot::TChemSoot(std::filesystem::path mechanismFile, std::filesystem::path thermoFile, std::shared_ptr<ablate::monitors::logs::Log> log,
-                                  const std::shared_ptr<ablate::parameters::Parameters> &options)
-    : TChemBase("TChemSoot", std::move(mechanismFile), std::move(thermoFile), std::move(log), options) {
+ablate::eos::TChemSoot::TChemSoot(std::filesystem::path mechanismFile, std::shared_ptr<ablate::monitors::logs::Log> log, const std::shared_ptr<ablate::parameters::Parameters> &options)
+    : TChemBase("TChemSoot", std::move(mechanismFile), std::move(log), options) {
     // Insert carbon as the first species
     species.insert(species.begin(), CSolidName);
 
@@ -98,9 +97,6 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::TChemSoot::GetThermod
 void ablate::eos::TChemSoot::View(std::ostream &stream) const {
     stream << "EOS: " << type << std::endl;
     stream << "\tmechFile: " << mechanismFile << std::endl;
-    if (!thermoFile.empty()) {
-        stream << "\tthermoFile: " << thermoFile << std::endl;
-    }
     stream << "\tnumberSpecies: " << species.size() << std::endl;
     tChemLib::exec_space().print_configuration(stream, true);
     tChemLib::host_exec_space().print_configuration(stream, true);
@@ -723,8 +719,7 @@ std::shared_ptr<ablate::eos::ChemistryModel::SourceCalculator> ablate::eos::TChe
 
 #include "registrar.hpp"
 REGISTER(ablate::eos::EOS, ablate::eos::TChemSoot, "[TChemV2](https://github.com/sandialabs/TChem) ideal gas eos augmented with a soot formation mechanism",
-         ARG(std::filesystem::path, "mechFile", "the mech file (CHEMKIN Format or Cantera Yaml)"), OPT(std::filesystem::path, "thermoFile", "the thermo file (CHEMKIN Format if mech file is CHEMKIN)"),
-         OPT(ablate::monitors::logs::Log, "log", "An optional log for TChem echo output (only used with yaml input)"),
+         ARG(std::filesystem::path, "mechFile", "the mech file (Cantera Yaml)"), OPT(ablate::monitors::logs::Log, "log", "An optional log for TChem echo output (only used with yaml input)"),
          OPT(ablate::parameters::Parameters, "options",
              "time stepping options (dtMin, dtMax, dtDefault, dtEstimateFactor, relToleranceTime, relToleranceTime, absToleranceTime, relToleranceNewton, absToleranceNewton, maxNumNewtonIterations, "
              "numTimeIterationsPerInterval, jacobianInterval, maxAttempts, thresholdTemperature)"));

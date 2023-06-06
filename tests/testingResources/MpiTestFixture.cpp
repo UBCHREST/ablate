@@ -53,7 +53,7 @@ bool testingResources::MpiTestFixture::InitializeTestingEnvironment(int* argcIn,
     MpiTestFixture::keepOutputFile = !MpiTestFixture::ParseCommandLineArgument(MpiTestFixture::argc, MpiTestFixture::argv, MpiTestFixture::Keep_Output_File).empty();
 
     char* commandName = std::getenv(MpiTestFixture::Test_Mpi_Command_Name.c_str());
-    if (commandName != NULL) {
+    if (commandName != nullptr) {
         MpiTestFixture::mpiCommand = std::string(commandName);
     }
 
@@ -75,6 +75,10 @@ void testingResources::MpiTestFixture::TearDown() {
 void testingResources::MpiTestFixture::RunWithMPI() const {
     // build the mpi command
     std::stringstream mpiCommandBuild;
+    // Build the asan or other environment flags if needed
+    if (!mpiTestParameter.environment.empty()) {
+        mpiCommandBuild << mpiTestParameter.environment << " ";
+    }
     mpiCommandBuild << MpiTestFixture::mpiCommand << " ";
     mpiCommandBuild << "-n " << mpiTestParameter.nproc << " ";
     mpiCommandBuild << "\"" << ExecutablePath() << "\" ";

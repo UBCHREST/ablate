@@ -17,7 +17,13 @@
 class IntegrationTestsSpecifier : public testingResources::MpiTestParamFixture {};
 
 struct IntegrationRestartTestsParameters {
+    //! baseline mpiTest parameters
     testingResources::MpiTestParameter mpiTestParameter;
+
+    //! relative path to the restart input file.  Empty file defaults the original input file
+    std::string restartInputFile;
+
+    //! optional yaml overrides to be passed to the restart input file
     std::map<std::string, std::string> restartOverrides;
 };
 

@@ -383,12 +383,12 @@ bool ablate::finiteVolume::FiniteVolumeSolver::Serialize() const {
     });
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
     PetscFunctionBeginUser;
     for (auto& process : processes) {
         if (auto serializablePtr = std::dynamic_pointer_cast<ablate::io::Serializable>(process)) {
             if (serializablePtr->Serialize()) {
-                serializablePtr->Save(viewer, sequenceNumber, time);
+                PetscCall(serializablePtr->Save(viewer, sequenceNumber, time));
             }
         }
     }
@@ -397,34 +397,36 @@ void ablate::finiteVolume::FiniteVolumeSolver::Save(PetscViewer viewer, PetscInt
     if (sequenceNumber == 0 && time == 0.0) {
         // We need to save this as global vector
         Vec meshCharacteristicsGlobVec;
-        DMGetGlobalVector(meshCharacteristicsDm, &meshCharacteristicsGlobVec) >> utilities::PetscUtilities::checkError;
+        PetscCall(DMGetGlobalVector(meshCharacteristicsDm, &meshCharacteristicsGlobVec));
 
         // Copy the aux vector name
         const char* vecName;
-        PetscObjectGetName((PetscObject)meshCharacteristicsLocalVec, &vecName) >> utilities::PetscUtilities::checkError;
-        PetscObjectSetName((PetscObject)meshCharacteristicsGlobVec, vecName) >> utilities::PetscUtilities::checkError;
+        PetscCall(PetscObjectGetName((PetscObject)meshCharacteristicsLocalVec, &vecName));
+        PetscCall(PetscObjectSetName((PetscObject)meshCharacteristicsGlobVec, vecName));
 
         // copy from local to global
-        DMLocalToGlobal(meshCharacteristicsDm, meshCharacteristicsLocalVec, INSERT_VALUES, meshCharacteristicsGlobVec) >> utilities::PetscUtilities::checkError;
-        DMSetOutputSequenceNumber(meshCharacteristicsDm, sequenceNumber, time) >> utilities::PetscUtilities::checkError;
-        DMView(meshCharacteristicsDm, viewer) >> ablate::utilities::MpiUtilities::checkError;
-        VecView(meshCharacteristicsGlobVec, viewer) >> ablate::utilities::MpiUtilities::checkError;
+        PetscCall(DMLocalToGlobal(meshCharacteristicsDm, meshCharacteristicsLocalVec, INSERT_VALUES, meshCharacteristicsGlobVec));
+        PetscCall(DMSetOutputSequenceNumber(meshCharacteristicsDm, sequenceNumber, time));
+        PetscCall(DMView(meshCharacteristicsDm, viewer));
+        PetscCall(VecView(meshCharacteristicsGlobVec, viewer));
 
         // clean up
-        DMRestoreGlobalVector(meshCharacteristicsDm, &meshCharacteristicsGlobVec) >> utilities::PetscUtilities::checkError;
+        PetscCall(DMRestoreGlobalVector(meshCharacteristicsDm, &meshCharacteristicsGlobVec));
     }
 
-    PetscFunctionReturnVoid();
+    PetscFunctionReturn(0);
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBeginUser;
     for (auto& process : processes) {
         if (auto serializablePtr = std::dynamic_pointer_cast<ablate::io::Serializable>(process)) {
             if (serializablePtr->Serialize()) {
-                serializablePtr->Restore(viewer, sequenceNumber, time);
+                PetscCall(serializablePtr->Restore(viewer, sequenceNumber, time));
             }
         }
     }
+    PetscFunctionReturn(0);
 }
 
 void ablate::finiteVolume::FiniteVolumeSolver::GetCellRangeWithoutGhost(ablate::domain::Range& faceRange) const {

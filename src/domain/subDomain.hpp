@@ -313,7 +313,7 @@ class SubDomain : public io::Serializable {
      * The number of aux and solution fields in this subdomain
      * @return
      */
-    inline PetscInt GetNumberFields() const { return fieldsByName.size(); }
+    [[nodiscard]] inline PetscInt GetNumberFields() const { return (PetscInt)fieldsByName.size(); }
 
     /**
      * project the list of field function into the provided local vector.  Allows solution and aux vectors
@@ -328,7 +328,7 @@ class SubDomain : public io::Serializable {
      * @param globVec
      * @param time
      */
-    void ProjectFieldFunctionsToSubDM(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec, PetscReal time = 0.0);
+    PetscErrorCode ProjectFieldFunctionsToSubDM(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec, PetscReal time = 0.0);
 
     /**
      * set exactSolutions if the fields live in the ds
@@ -379,7 +379,7 @@ class SubDomain : public io::Serializable {
      * @param sequenceNumber
      * @param time
      */
-    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 
     /**
      * Serialization restore
@@ -387,7 +387,7 @@ class SubDomain : public io::Serializable {
      * @param sequenceNumber
      * @param time
      */
-    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 
     /**
      * This checks for whether the label describing the subdomain exists. If it does, use DMPlexFilter. If not, use DMClone to return new DM.
