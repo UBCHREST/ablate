@@ -29,7 +29,9 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
     DMClone(dm, &dmData) >> utilities::PetscUtilities::checkError;
     PetscFECreateLagrange(PETSC_COMM_SELF, dim, dim, PETSC_TRUE, k, PETSC_DETERMINE, &fe_coords) >> utilities::PetscUtilities::checkError;
     DMSetField(dmData, 0, NULL, (PetscObject)fe_coords) >> utilities::PetscUtilities::checkError;
+    PetscFEDestroy(&fe_coords) >> utilities::PetscUtilities::checkError;
     DMCreateDS(dmData) >> utilities::PetscUtilities::checkError;
+
     // extract the local coordinates array
     Vec localCoordsVector;
     PetscSection coordsSection;
@@ -156,19 +158,21 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
             PetscFVCellGeom *cg = nullptr;
             DMPlexPointLocalRead(dmCell, info.stencil[p], cellGeomArray, &cg) >> utilities::PetscUtilities::checkError;
 
-            PetscScalar *alpha = nullptr;
+            const PetscScalar *alpha = nullptr;
             DMPlexPointLocalFieldRead(dm, info.stencil[p], VFfield.id, solArray, &alpha) >> utilities::PetscUtilities::checkError;
 
             // add up the contribution of the cell. Front cells have positive and back cells have negative contribution to the vertex normal
-            PetscReal alphaVal[dim];
-            for (PetscInt d = 0; d < dim; ++d) {
-                if (cg->centroid[d] > info.stencilCoord[d]) {
-                    alphaVal[d] = *alpha;
+            PetscReal alphaVal[3];
+            if (alpha) {
+                for (PetscInt d = 0; d < dim; ++d) {
+                    if (cg->centroid[d] > info.stencilCoord[d]) {
+                        alphaVal[d] = alpha[0];
 
-                } else if (cg->centroid[d] < info.stencilCoord[d]) {
-                    alphaVal[d] = -*alpha;
+                    } else if (cg->centroid[d] < info.stencilCoord[d]) {
+                        alphaVal[d] = -alpha[0];
+                    }
+                    totalAlpha[d] += alphaVal[d];
                 }
-                totalAlpha[d] += alphaVal[d];
             }
         }
         // calculate and save the normal of the vertex

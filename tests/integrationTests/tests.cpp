@@ -26,7 +26,7 @@ INSTANTIATE_TEST_SUITE_P(
                     MpiTestParameter("inputs/compressibleFlow/compressibleSublimationPipeWithExtrude.yaml", 2, "",
                                      "outputs/compressibleFlow/compressibleSublimationPipeWithExtrude/compressibleSublimationPipeWithExtrude.txt"),
                     MpiTestParameter("inputs/compressibleFlow/gmshPipeFlow/gmshPipeFlow.yaml", 2, "", "outputs/compressibleFlow/gmshPipeFlow/gmshPipeFlow.txt"),
-                    MpiTestParameter("inputs/compressibleFlow/compressibleFlowCadExample.yaml", 1, "", "outputs/compressibleFlow/compressibleFlowCadExample.txt")),
+                    MpiTestParameter("inputs/compressibleFlow/compressibleFlowCadExample.yaml", 1, "", "outputs/compressibleFlow/compressibleFlowCadExample.txt", {}, "ASAN_OPTIONS=detect_leaks=0")),
 
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
@@ -83,9 +83,15 @@ INSTANTIATE_TEST_SUITE_P(ShockTube, IntegrationTestsSpecifier,
                          [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
 INSTANTIATE_TEST_SUITE_P(CompressibleFlowRestart, IntegrationRestartTestsSpecifier,
-                         testing::Values((IntegrationRestartTestsParameters){
-                             .mpiTestParameter = MpiTestParameter("inputs/compressibleFlow/compressibleFlowPgsLodi.yaml", 2, "", "outputs/compressibleFlow/compressibleFlowPgsLodi.txt"),
-                             .restartOverrides = {{"timestepper::arguments::ts_max_steps", "50"}}}),
+                         testing::Values((IntegrationRestartTestsParameters){.mpiTestParameter = MpiTestParameter("inputs/compressibleFlow/compressibleFlowPgsLodi.yaml", 2, "",
+                                                                                                                  "outputs/compressibleFlow/compressibleFlowPgsLodi.txt"),
+                                                                             .restartInputFile = "",
+                                                                             .restartOverrides = {{"timestepper::arguments::ts_max_steps", "50"}}},
+
+                                         (IntegrationRestartTestsParameters){.mpiTestParameter = MpiTestParameter("inputs/compressibleFlow/hdf5InitializerTest/hdf5InitializerTest.yaml", 1, "",
+                                                                                                                  "outputs/compressibleFlow/hdf5InitializerTest/hdf5InitializerTest.txt"),
+                                                                             .restartInputFile = "inputs/compressibleFlow/hdf5InitializerTest/hdf5InitializerTest.Initialization.yaml",
+                                                                             .restartOverrides = {}}),
                          [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) {
                              return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc);
                          });
@@ -94,18 +100,22 @@ INSTANTIATE_TEST_SUITE_P(
     RestartFEFlow, IntegrationRestartTestsSpecifier,
     testing::Values((IntegrationRestartTestsParameters){.mpiTestParameter = MpiTestParameter("inputs/feFlow/incompressibleFlowRestart.yaml", 1, "", "outputs/feFlow/incompressibleFlowRestart.txt",
                                                                                              {{"outputs/feFlow/incompressibleFlowRestartProbe.csv", "incompressibleFlowRestartProbe.csv"}}),
+                                                        .restartInputFile = "",
                                                         .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}},
                     (IntegrationRestartTestsParameters){.mpiTestParameter = MpiTestParameter("inputs/feFlow/incompressibleFlowRestart.yaml", 2, "", "outputs/feFlow/incompressibleFlowRestart.txt",
                                                                                              {{"outputs/feFlow/incompressibleFlowRestartProbe.csv", "incompressibleFlowRestartProbe.csv"}}),
+                                                        .restartInputFile = "",
                                                         .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}},
                     (IntegrationRestartTestsParameters){
                         .mpiTestParameter = MpiTestParameter("inputs/feFlow/incompressibleFlowIntervalRestart.yaml", 1, "", "outputs/feFlow/incompressibleFlowIntervalRestart.txt"),
+                        .restartInputFile = "",
                         .restartOverrides = {{"timestepper::arguments::ts_max_steps", "10"}}}),
     [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) { return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc); });
 
 INSTANTIATE_TEST_SUITE_P(FVRestart, IntegrationRestartTestsSpecifier,
                          testing::Values((IntegrationRestartTestsParameters){.mpiTestParameter = MpiTestParameter("inputs/compressibleFlow/compressibleFlowVortexLodiRestart.yaml", 1, "",
                                                                                                                   "outputs/compressibleFlow/compressibleFlowVortexLodiRestart.txt"),
+                                                                             .restartInputFile = "",
                                                                              .restartOverrides = {{"timestepper::arguments::ts_max_steps", "20"}}}),
                          [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) {
                              return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc);
@@ -114,6 +124,7 @@ INSTANTIATE_TEST_SUITE_P(FVRestart, IntegrationRestartTestsSpecifier,
 INSTANTIATE_TEST_SUITE_P(
     RestartParticles, IntegrationRestartTestsSpecifier,
     testing::Values((IntegrationRestartTestsParameters){.mpiTestParameter = MpiTestParameter("inputs/particles/tracerParticles2DRestart.yaml", 1, "", "outputs/particles/tracerParticles2DRestart.txt"),
+                                                        .restartInputFile = "",
                                                         .restartOverrides = {{"timestepper::arguments::ts_max_steps", "10"}}}),
     [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) { return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc); });
 

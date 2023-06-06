@@ -38,7 +38,7 @@ struct Field {
 
     static Field FromFieldDescription(const FieldDescription& fieldDescription, PetscInt id, PetscInt subId = PETSC_DEFAULT, PetscInt offset = PETSC_DEFAULT);
 
-    Field CreateSubField(PetscInt subId, PetscInt offset) const;
+    [[nodiscard]] Field CreateSubField(PetscInt subId, PetscInt offset) const;
 
     // helper function to check if the field contains a certain tag
     inline bool Tagged(std::string_view tag) const {

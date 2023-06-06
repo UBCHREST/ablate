@@ -9,6 +9,7 @@
 #include <vector>
 #include "boundaryFunction.hpp"
 #include "domain/domain.hpp"
+#include "domain/initializer.hpp"
 #include "iFunction.hpp"
 #include "monitors/monitor.hpp"
 #include "physicsTimeStepFunction.hpp"
@@ -26,7 +27,7 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
     using AdaptInitializer = std::function<void(TS ts, TSAdapt adapt)>;
 
    private:
-    TS ts;                                                                           /** The PETSC time stepper**/
+    TS ts{};                                                                         /** The PETSC time stepper**/
     std::string name;                                                                /** the name for this time stepper **/
     std::map<std::string, std::vector<std::shared_ptr<monitors::Monitor>>> monitors; /** the monitors **/
 
@@ -79,7 +80,7 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
     static PetscErrorCode SolverComputeRHSFunction(TS ts, PetscReal time, Vec X, Vec F, void *ctx);
 
     // store the list of field initializations
-    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations;
+    const std::shared_ptr<ablate::domain::Initializer> initializations;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances;
@@ -100,10 +101,10 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
      * @param relativeTolerances
      * @param verboseSourceCheck
      */
-    TimeStepper(std::string name, std::shared_ptr<ablate::domain::Domain> domain, std::shared_ptr<ablate::parameters::Parameters> arguments = {}, std::shared_ptr<io::Serializer> serializer = {},
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {},
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances = {},
-                bool verboseSourceCheck = {});
+    TimeStepper(const std::string &name, std::shared_ptr<ablate::domain::Domain> domain, const std::shared_ptr<ablate::parameters::Parameters> &arguments = {},
+                std::shared_ptr<io::Serializer> serializer = {}, std::shared_ptr<ablate::domain::Initializer> initialization = {},
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances = {},
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances = {}, bool verboseSourceCheck = {});
 
     /**
      * primary constructor for timestepper without an unqiue name
@@ -117,8 +118,8 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
      * @param relativeTolerances
      * @param verboseSourceCheck
      */
-    TimeStepper(std::shared_ptr<ablate::domain::Domain> domain, std::shared_ptr<ablate::parameters::Parameters> arguments = {}, std::shared_ptr<io::Serializer> serializer = {},
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {},
+    TimeStepper(std::shared_ptr<ablate::domain::Domain> domain, const std::shared_ptr<ablate::parameters::Parameters> &arguments = {}, std::shared_ptr<io::Serializer> serializer = {},
+                std::shared_ptr<ablate::domain::Initializer> initialization = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {},
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances = {},
                 bool verboseSourceCheck = {});
 
@@ -142,7 +143,7 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
      */
     PetscErrorCode ComputePhysicsTimeStep(PetscReal *dt);
 
-    void Register(std::shared_ptr<ablate::solver::Solver> solver, std::vector<std::shared_ptr<monitors::Monitor>> = {});
+    void Register(const std::shared_ptr<ablate::solver::Solver> &solver, const std::vector<std::shared_ptr<monitors::Monitor>> & = {});
 
     double GetTime() const;
 

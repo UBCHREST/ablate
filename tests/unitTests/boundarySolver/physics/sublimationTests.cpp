@@ -385,7 +385,7 @@ INSTANTIATE_TEST_SUITE_P(
                                     .numberSpecies = 3,
                                     .speciesMassFractions = std::make_shared<ablate::mathFunctions::FieldFunction>("massFractions", ablate::mathFunctions::Create(std::vector<double>{.5, .3, .2})),
                                     // geometry
-                                    .dim = 3,
+                                    .dim = 2,
                                     .fvFaceGeom = {.normal =
                                                        {
                                                            0.70710678118655,

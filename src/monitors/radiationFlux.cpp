@@ -3,7 +3,11 @@
 ablate::monitors::RadiationFlux::RadiationFlux(std::vector<std::shared_ptr<radiation::SurfaceRadiation>> radiationIn, std::shared_ptr<domain::Region> radiationFluxRegionIn)
     : radiation(std::move(radiationIn)), radiationFluxRegion(std::move(radiationFluxRegionIn)) {}
 
-ablate::monitors::RadiationFlux::~RadiationFlux() {}
+ablate::monitors::RadiationFlux::~RadiationFlux() {
+    if (fluxDm) {
+        DMDestroy(&fluxDm) >> utilities::PetscUtilities::checkError;
+    }
+}
 
 void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> solverIn) {
     Monitor::Register(solverIn);
@@ -72,7 +76,7 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
             throw std::invalid_argument(
                 "The radiation flux monitor must be given a region of faces. The cell region given to the ray tracers must not include the cells adjacent to the back of these faces.");
         if (ghostLabel) DMLabelGetValue(ghostLabel, iCell, &ghost) >> utilities::PetscUtilities::checkError;
-        if (!(ghost >= 0)) monitorRange.Add(iCell);  //!< Add each ID to the range that the radiation solverIn will use
+        if (ghost < 0) monitorRange.Add(iCell);  //!< Add each ID to the range that the radiation solverIn will use
     }
     // restore
     ISRestoreIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
@@ -83,34 +87,33 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
     }
 }
 
-void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+PetscErrorCode ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
     PetscFunctionBeginUser;
-
     // If this is the first output, store a copy of the fluxDm
     if (sequenceNumber == 0) {
-        DMView(fluxDm, viewer) >> utilities::PetscUtilities::checkError;
+        PetscCall(DMView(fluxDm, viewer));
     }
 
     // Set the output sequence number to the face dm
-    DMSetOutputSequenceNumber(fluxDm, sequenceNumber, time) >> utilities::PetscUtilities::checkError;
+    PetscCall(DMSetOutputSequenceNumber(fluxDm, sequenceNumber, time));
 
     /** Get read access to the local solution information
      */
     const PetscScalar* locXArray;
-    VecGetArrayRead(GetSolver()->GetSubDomain().GetSolutionVector(), &locXArray) >> utilities::PetscUtilities::checkError;
+    PetscCall(VecGetArrayRead(GetSolver()->GetSubDomain().GetSolutionVector(), &locXArray));
 
     // Create a local vector for just the monitor
     Vec localFaceVec;
-    DMGetLocalVector(fluxDm, &localFaceVec) >> utilities::PetscUtilities::checkError;
-    VecZeroEntries(localFaceVec) >> utilities::PetscUtilities::checkError;
+    PetscCall(DMGetLocalVector(fluxDm, &localFaceVec));
+    PetscCall(VecZeroEntries(localFaceVec));
 
     // Get the raw data for the global vectors
     PetscScalar* localFaceArray;
-    VecGetArray(localFaceVec, &localFaceArray) >> utilities::PetscUtilities::checkError;
+    PetscCall(VecGetArray(localFaceVec, &localFaceArray));
 
     // Determine the size of data
     PetscInt dataSize;
-    VecGetBlockSize(localFaceVec, &dataSize) >> utilities::PetscUtilities::checkError;
+    PetscCall(VecGetBlockSize(localFaceVec, &dataSize));
 
     /** The TCP monitor must store one output for each of the radiation models that are in the vector of ray tracing solvers.
      * The ratio of red to green intensities must be computed and output as well.
@@ -129,24 +132,26 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
     if (locXArray && localFaceArray) {
         // March over each cell in the face dm
         PetscInt cStart, cEnd;
-        DMPlexGetHeightStratum(fluxDm, 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
+        PetscCall(DMPlexGetHeightStratum(fluxDm, 0, &cStart, &cEnd));
 
         // get the mapping information
         IS faceIs;
         const PetscInt* faceToBoundary = nullptr;
-        DMPlexGetSubpointIS(fluxDm, &faceIs) >> utilities::PetscUtilities::checkError;
-        ISGetIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
+        PetscCall(DMPlexGetSubpointIS(fluxDm, &faceIs));
+        PetscCall(ISGetIndices(faceIs, &faceToBoundary));
 
         DMLabel ghostLabel;
-        DMGetLabel(GetSolver()->GetSubDomain().GetDM(), "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
+        PetscCall(DMGetLabel(GetSolver()->GetSubDomain().GetDM(), "ghost", &ghostLabel));
         DMLabel radiationRegionLabel;
-        DMGetLabel(GetSolver()->GetSubDomain().GetDM(), radiationFluxRegion->GetName().c_str(), &radiationRegionLabel) >> utilities::PetscUtilities::checkError;
+        PetscCall(DMGetLabel(GetSolver()->GetSubDomain().GetDM(), radiationFluxRegion->GetName().c_str(), &radiationRegionLabel));
 
         for (PetscInt c = cStart; c < cEnd; ++c) {
             PetscInt boundaryPt = faceToBoundary[c];
             PetscInt ghost = -1;
-            if (ghostLabel) DMLabelGetValue(ghostLabel, boundaryPt, &ghost) >> utilities::PetscUtilities::checkError;
-            if (!(ghost >= 0)) {
+            if (ghostLabel) {
+                PetscCall(DMLabelGetValue(ghostLabel, boundaryPt, &ghost));
+            }
+            if (ghost < 0) {
                 for (std::size_t i = 0; i < radiation.size(); i++) {
                     /**
                      * Write the intensity into the fluxDm for outputting.
@@ -154,7 +159,7 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
                      * This is where the computed information should be written to the dm that was created for the radiation flux monitor.
                      */
                     PetscScalar* globalFaceData = nullptr;  //! The size of the pointer is equal to the number of fields that are in the DM.
-                    DMPlexPointLocalRef(fluxDm, c, localFaceArray, &globalFaceData) >> utilities::PetscUtilities::checkError;
+                    PetscCall(DMPlexPointLocalRef(fluxDm, c, localFaceArray, &globalFaceData));
                     /**
                      * Get the intensity calculated out of the ray tracer. Write it to the appropriate location in the face DM.
                      */
@@ -164,24 +169,26 @@ void ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscInt sequence
             }
         }
         // restore
-        ISRestoreIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
+        PetscCall(ISRestoreIndices(faceIs, &faceToBoundary));
     }
 
-    VecRestoreArray(localFaceVec, &localFaceArray) >> utilities::PetscUtilities::checkError;
-    VecRestoreArrayRead(GetSolver()->GetSubDomain().GetSolutionVector(), &locXArray) >> utilities::PetscUtilities::checkError;
+    PetscCall(VecRestoreArray(localFaceVec, &localFaceArray));
+    PetscCall(VecRestoreArrayRead(GetSolver()->GetSubDomain().GetSolutionVector(), &locXArray));
 
     // Map to a global array with add values
     Vec globalFaceVec;
-    DMGetGlobalVector(fluxDm, &globalFaceVec) >> utilities::PetscUtilities::checkError;
-    PetscObjectSetName((PetscObject)globalFaceVec, GetId().c_str()) >> utilities::PetscUtilities::checkError;
-    VecZeroEntries(globalFaceVec);
-    DMLocalToGlobal(fluxDm, localFaceVec, ADD_VALUES, globalFaceVec) >> utilities::PetscUtilities::checkError;
+    PetscCall(DMGetGlobalVector(fluxDm, &globalFaceVec));
+    PetscCall(PetscObjectSetName((PetscObject)globalFaceVec, GetId().c_str()));
+    PetscCall(VecZeroEntries(globalFaceVec));
+    PetscCall(DMLocalToGlobal(fluxDm, localFaceVec, ADD_VALUES, globalFaceVec));
 
     // write to the output file
-    VecView(globalFaceVec, viewer) >> utilities::PetscUtilities::checkError;
-    DMRestoreGlobalVector(fluxDm, &globalFaceVec) >> utilities::PetscUtilities::checkError;
+    PetscCall(VecView(globalFaceVec, viewer));
 
-    PetscFunctionReturnVoid();
+    // cleanup
+    PetscCall(DMRestoreGlobalVector(fluxDm, &globalFaceVec));
+    PetscCall(DMRestoreLocalVector(fluxDm, &localFaceVec));
+    PetscFunctionReturn(0);
 }
 
 #include "registrar.hpp"

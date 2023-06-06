@@ -32,6 +32,12 @@ class CompressibleFlowFields : public domain::FieldDescriptor {
     //! the conserved tag used to tag all fields that should act like extra variables (transported with the flow)
     inline const static std::string EV_TAG = "EV";
 
+    //! store extra variable founds
+    enum class ValidRange { POSITIVE, FULL, BOUND };
+    inline const static std::string PositiveRange = "positive";
+    inline const static std::string FullRange = "full";
+    inline const static std::string BoundRange = "bound";
+
     //! these are arbitrary ev fields
     inline const static std::string EV_FIELD = "EV";
     inline const static std::string DENSITY_EV_FIELD = CONSERVED + EV_FIELD;
@@ -43,16 +49,17 @@ class CompressibleFlowFields : public domain::FieldDescriptor {
 
    protected:
     const std::shared_ptr<eos::EOS> eos;
-    const std::vector<std::string> extraVariables;
     const std::shared_ptr<domain::Region> region;
     const std::shared_ptr<parameters::Parameters> conservedFieldOptions;
     const std::shared_ptr<parameters::Parameters> auxFieldOptions = ablate::parameters::MapParameters::Create({{"petscfv_type", "leastsquares"}, {"petsclimiter_type", "none"}});
 
    public:
-    CompressibleFlowFields(std::shared_ptr<eos::EOS>, std::vector<std::string> = {}, std::shared_ptr<domain::Region> = {}, std::shared_ptr<parameters::Parameters> conservedFieldParameters = {});
+    explicit CompressibleFlowFields(std::shared_ptr<eos::EOS>, std::shared_ptr<domain::Region> = {}, std::shared_ptr<parameters::Parameters> conservedFieldParameters = {});
 
     std::vector<std::shared_ptr<domain::FieldDescription>> GetFields() override;
 };
+
+std::istream& operator>>(std::istream& is, CompressibleFlowFields::ValidRange& v);
 
 }  // namespace ablate::finiteVolume
 

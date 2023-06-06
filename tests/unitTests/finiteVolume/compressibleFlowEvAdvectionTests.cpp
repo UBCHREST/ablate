@@ -14,6 +14,7 @@
 #include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/compressibleFlowSolver.hpp"
+#include "finiteVolume/extraVariable.hpp"
 #include "finiteVolume/fluxCalculator/ausm.hpp"
 #include "finiteVolume/processes/flowProcess.hpp"
 #include "gtest/gtest.h"
@@ -62,7 +63,8 @@ TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
             auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287"}}));
 
             std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {
-                std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos, std::vector<std::string>{"ev1", "ev2"})};
+                std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos),
+                std::make_shared<ablate::finiteVolume::ExtraVariable>(CompressibleFlowFields::EV_FIELD, std::vector<std::string>{"ev1", "ev2"})};
 
             auto mesh = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
                                                                   fieldDescriptors,
@@ -82,7 +84,7 @@ TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
             auto timeStepper = ablate::solver::TimeStepper(mesh,
                                                            nullptr,
                                                            {},
-                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution},
+                                                           std::make_shared<ablate::domain::Initializer>(exactEulerSolution, evExactSolution),
                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution});
 
             // setup a flow parameters

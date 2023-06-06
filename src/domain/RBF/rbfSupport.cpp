@@ -37,6 +37,10 @@ PetscErrorCode DMPlexGetContainingCell(DM dm, PetscScalar *xyz, PetscInt *cell) 
         *cell = foundCells[0].index;
     }
 
+    PetscCall(PetscSFDestroy(&cellSF));
+
+    PetscCall(VecDestroy(&pointVec));
+
     PetscFunctionReturn(0);
 }
 

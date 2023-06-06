@@ -7,7 +7,6 @@
 #include <vector>
 #include "PetscTestFixture.hpp"
 #include "eos/perfectGas.hpp"
-#include "functional"
 #include "gtest/gtest.h"
 #include "parameters/mapParameters.hpp"
 
@@ -100,7 +99,7 @@ INSTANTIATE_TEST_SUITE_P(
                         .expectedEuler = {.9, .9 * 1.56E5, 0},
                         .expectedDensityYi = {}},
                     (CompressibleFlowStateTestParameters){.location = {0.0, 0.0, 0.0},
-                                                          .eosFunction = []() { return std::make_shared<eos::TChem>(std::filesystem::path("inputs/eos/grimech30.dat"), "inputs/eos/thermo30.dat"); },
+                                                          .eosFunction = []() { return std::make_shared<eos::TChem>(std::filesystem::path("inputs/eos/gri30.yaml")); },
                                                           .temperature = mathFunctions::Create(499.25),
                                                           .pressure = mathFunctions::Create(197710.5),
                                                           .velocity = mathFunctions::Create(std::vector<double>{10, -20, 30}),
@@ -114,7 +113,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                           .expectedDensityYi = {0, 0, 0, 1.2 * 0.3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.2 * 0.2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,        0,
                                                                                 0, 0, 0, 0,         0, 0, 0, 0, 0, 0, 0, 0, 0, 0,         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.2 * 0.5}},
                     (CompressibleFlowStateTestParameters){.location = {0.0, 0.0, 0.0},
-                                                          .eosFunction = []() { return std::make_shared<eos::TChem>("inputs/eos/grimech30.dat", "inputs/eos/thermo30.dat"); },
+                                                          .eosFunction = []() { return std::make_shared<eos::TChem>("inputs/eos/gri30.yaml"); },
                                                           .temperature = mathFunctions::Create(762.664),
                                                           .pressure = mathFunctions::Create(189973.54),
                                                           .velocity = mathFunctions::Create(std::vector<double>{0.0, 0.0, 0.0}),

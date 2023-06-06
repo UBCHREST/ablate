@@ -184,6 +184,7 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
             for (int i = 0; i < nCells; ++i) {
                 ASSERT_EQ(cells[i], testingParam.expectedCellList[rank][i]);
             }
+            PetscFree(cells);
         }
         ablate::environment::RunEnvironment::Finalize();
     EndWithMPI

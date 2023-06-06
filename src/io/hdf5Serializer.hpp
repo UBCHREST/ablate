@@ -29,7 +29,7 @@ class Hdf5Serializer : public Serializer {
         explicit Hdf5ObjectSerializer(std::weak_ptr<Serializable> serializable, PetscInt sequenceNumber, PetscReal time, bool resumed);
         ~Hdf5ObjectSerializer();
 
-        void Save(PetscInt sequenceNumber, PetscReal time);
+        PetscErrorCode Save(PetscInt sequenceNumber, PetscReal time);
     };
 
     // Use the interval class to determine when to write to file

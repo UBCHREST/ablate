@@ -102,7 +102,7 @@ int main(int argc, char** args) {
         auto unusedValues = parser->GetUnusedValues();
         if (!unusedValues.empty()) {
             std::cout << "WARNING: The following input parameters were not used:" << std::endl;
-            for (auto unusedValue : unusedValues) {
+            for (const auto& unusedValue : unusedValues) {
                 std::cout << unusedValue << std::endl;
             }
         }

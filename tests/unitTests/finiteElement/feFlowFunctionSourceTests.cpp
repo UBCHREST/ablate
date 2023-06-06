@@ -560,7 +560,7 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             auto timeStepper = ablate::solver::TimeStepper(mesh,
                                                            nullptr,
                                                            {},
-                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
+                                                           std::make_shared<ablate::domain::Initializer>(velocityExact, pressureExact, temperatureExact),
                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
 
             // Create the flow object

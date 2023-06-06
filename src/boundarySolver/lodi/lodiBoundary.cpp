@@ -80,8 +80,8 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(const PetscInt sOff[],
     }
     KE = 0.5e+0 * KE;
     mdFdn[sOff[eulerId] + RHOE] = -(d[0] * (KE + Enth - Cp * T) + d[1] / (Cp / Cv - 1.e+0 + 1.0E-30) + rho * dvelterm);
-    const PetscReal *rhoYi = conserved + uOff[speciesId];
     for (int ns = 0; ns < nSpecEqs; ns++) {
+        const PetscReal *rhoYi = conserved + uOff[speciesId];
         mdFdn[sOff[speciesId] + ns] = -(rhoYi[ns] / rho * d[0] + rho * d[2 + dims + ns]);  // species
     }
 
@@ -156,6 +156,17 @@ void ablate::boundarySolver::lodi::LODIBoundary::Setup(ablate::boundarySolver::B
         auto evNonConserved = evField.name.substr(finiteVolume::CompressibleFlowFields::CONSERVED.length());
         bSolver.RegisterAuxFieldUpdate(
             ablate::finiteVolume::processes::EVTransport::UpdateEVField, &nEvComp, std::vector<std::string>{evNonConserved}, {finiteVolume::CompressibleFlowFields::EULER_FIELD, evField.name});
+
+        // add a post evaluate to limit each ev
+        if (evField.Tagged(finiteVolume::CompressibleFlowFields::PositiveRange)) {
+            const auto &conservedFieldName = evField.name;
+            bSolver.RegisterPostEvaluate(
+                [conservedFieldName](TS ts, ablate::solver::Solver &solver) { ablate::finiteVolume::processes::EVTransport::EVTransport::PositiveExtraVariables(ts, solver, conservedFieldName); });
+        } else if (evField.Tagged(finiteVolume::CompressibleFlowFields::BoundRange)) {
+            const auto &conservedFieldName = evField.name;
+            bSolver.RegisterPostEvaluate(
+                [conservedFieldName](TS ts, ablate::solver::Solver &solver) { ablate::finiteVolume::processes::EVTransport::EVTransport::BoundExtraVariables(ts, solver, conservedFieldName); });
+        }
     }
 
     // Call Initialize to setup the other needed vars

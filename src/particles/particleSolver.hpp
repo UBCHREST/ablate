@@ -135,7 +135,7 @@ class ParticleSolver : public solver::Solver, public io::Serializable {
      * @param time
      * @param u
      */
-    void Save(PetscViewer viewer, PetscInt steps, PetscReal time) override;
+    PetscErrorCode Save(PetscViewer viewer, PetscInt steps, PetscReal time) override;
 
     /**
      * shared function to view all particles;
@@ -144,7 +144,7 @@ class ParticleSolver : public solver::Solver, public io::Serializable {
      * @param time
      * @param u
      */
-    void Restore(PetscViewer viewer, PetscInt steps, PetscReal time) override;
+    PetscErrorCode Restore(PetscViewer viewer, PetscInt steps, PetscReal time) override;
 
    private:
     /**

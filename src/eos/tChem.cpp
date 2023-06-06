@@ -10,9 +10,8 @@
 #include "monitors/logs/nullLog.hpp"
 #include "utilities/mpiUtilities.hpp"
 
-ablate::eos::TChem::TChem(std::filesystem::path mechanismFileIn, std::filesystem::path thermoFileIn, std::shared_ptr<ablate::monitors::logs::Log> logIn,
-                          const std::shared_ptr<ablate::parameters::Parameters> &options)
-    : TChemBase("TChem", mechanismFileIn, thermoFileIn, logIn, options) {}
+ablate::eos::TChem::TChem(std::filesystem::path mechanismFileIn, std::shared_ptr<ablate::monitors::logs::Log> logIn, const std::shared_ptr<ablate::parameters::Parameters> &options)
+    : TChemBase("TChem", mechanismFileIn, logIn, options) {}
 
 std::shared_ptr<ablate::eos::TChem::FunctionContext> ablate::eos::TChem::BuildFunctionContext(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields,
                                                                                               bool checkDensityYi) const {
@@ -937,8 +936,7 @@ std::shared_ptr<ablate::eos::ChemistryModel::SourceCalculator> ablate::eos::TChe
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::eos::ChemistryModel, ablate::eos::TChem, "[TChemV2](https://github.com/sandialabs/TChem) ideal gas eos",
-         ARG(std::filesystem::path, "mechFile", "the mech file (CHEMKIN Format or Cantera Yaml)"), OPT(std::filesystem::path, "thermoFile", "the thermo file (CHEMKIN Format if mech file is CHEMKIN)"),
+REGISTER(ablate::eos::ChemistryModel, ablate::eos::TChem, "[TChemV2](https://github.com/sandialabs/TChem) ideal gas eos", ARG(std::filesystem::path, "mechFile", "the mech file (Cantera Yaml)"),
          OPT(ablate::monitors::logs::Log, "log", "An optional log for TChem echo output (only used with yaml input)"),
          OPT(ablate::parameters::Parameters, "options",
              "time stepping options (dtMin, dtMax, dtDefault, dtEstimateFactor, relToleranceTime, relToleranceTime, absToleranceTime, relToleranceNewton, absToleranceNewton, maxNumNewtonIterations, "

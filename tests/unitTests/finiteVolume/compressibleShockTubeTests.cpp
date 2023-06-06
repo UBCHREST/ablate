@@ -8,7 +8,7 @@ static char help[] = "Compressible ShockTube 1D Tests";
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
-#include "domain/dmWrapper.hpp"
+#include "domain/dmTransfer.hpp"
 #include "environment/runEnvironment.hpp"
 #include "eos/perfectGas.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
@@ -153,7 +153,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
 
             // define the fields based upon a compressible flow
             std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
-            auto mesh = std::make_shared<ablate::domain::DMWrapper>(
+            auto mesh = std::make_shared<ablate::domain::DMTransfer>(
                 dmCreate, fieldDescriptors, std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::GhostBoundaryCells>()});
 
             auto initialCondition = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(SetInitialCondition, (void *)&testingParam.initialConditions));
@@ -164,7 +164,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
                 ablate::parameters::MapParameters::Create(
                     {{"ts_max_time", std::to_string(testingParam.maxTime)}, {"ts_adapt_type", "physics"}, {"ts_adapt_safety", "1.0"}, {"ts_exact_final_time", "matchstep"}}),
                 {},
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{initialCondition});
+                std::make_shared<ablate::domain::Initializer>(initialCondition));
 
             // Setup the flow data
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", std::to_string(testingParam.cfl)}});
