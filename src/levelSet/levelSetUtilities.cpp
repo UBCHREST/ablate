@@ -5,10 +5,9 @@
 #include "levelSetUtilities.hpp"
 #include "LS-VOF.hpp"
 #include "lsSupport.hpp"
+#include "cellGrad.hpp"
 
-
-
-void ablate::levelSet::Utilities::CellCenterValGrad(DM dm, const PetscInt p, PetscReal *c, PetscReal *c0, PetscReal *g) {
+void ablate::levelSet::Utilities::CellValGrad(DM dm, const PetscInt p, PetscReal *c, PetscReal *c0, PetscReal *g) {
   DMPolytopeType    ct;
   PetscInt          Nc;
   PetscReal         *coords = NULL;
@@ -46,6 +45,54 @@ void ablate::levelSet::Utilities::CellCenterValGrad(DM dm, const PetscInt p, Pet
 
   DMPlexRestoreCellCoordinates(dm, p, &isDG, &Nc, &array, &coords) >> ablate::utilities::PetscUtilities::checkError;
 }
+
+void ablate::levelSet::Utilities::CellValGrad(DM dm, const PetscInt fid, const PetscInt p, Vec f, PetscReal *c0, PetscReal *g) {
+
+  PetscInt          nv, *verts;
+  const PetscScalar *fvals, *v;
+  PetscScalar       *c;
+
+  DMPlexGetCellVertices(dm, p, &nv, &verts) >> ablate::utilities::PetscUtilities::checkError;
+
+  DMGetWorkArray(dm, nv, MPIU_SCALAR, &c) >> ablate::utilities::PetscUtilities::checkError;
+
+  VecGetArrayRead(f, &fvals) >> utilities::PetscUtilities::checkError;
+
+  for (PetscInt i = 0; i < nv; ++i) {
+      // DMPlexPointLocalFieldRead isn't behaving like I would expect. If I don't make f a pointer then it just returns zero.
+      //    Additionally, it looks like it allows for the editing of the value.
+      if (fid >= 0) {
+          DMPlexPointLocalFieldRead(dm, verts[i], fid, fvals, &v) >> utilities::PetscUtilities::checkError;
+      } else {
+          DMPlexPointLocalRead(dm, verts[i], fvals, &v) >> utilities::PetscUtilities::checkError;
+      }
+
+      c[i] = *v;
+
+  }
+
+  DMPlexRestoreCellVertices(dm, p, &nv, &verts) >> ablate::utilities::PetscUtilities::checkError;
+
+  ablate::levelSet::Utilities::CellValGrad(dm, p, c, c0, g);
+
+  DMRestoreWorkArray(dm, nv, MPIU_SCALAR, &c) >> ablate::utilities::PetscUtilities::checkError;
+
+
+}
+
+
+
+
+void ablate::levelSet::Utilities::CellValGrad(std::shared_ptr<ablate::domain::SubDomain> subDomain, const ablate::domain::Field *field, const PetscInt p, PetscReal *c0, PetscReal *g) {
+
+  DM dm = subDomain->GetFieldDM(*field);
+  Vec f = subDomain->GetVec(*field);
+  ablate::levelSet::Utilities::CellValGrad(dm, field->id, p, f, c0, g);
+
+
+}
+
+
 
 // Given a level set and normal at the cell center compute the level set values at the vertices assuming a straight interface
 void ablate::levelSet::Utilities::VertexLevelSet_LS(DM dm, const PetscInt p, const PetscReal c0, const PetscReal *n, PetscReal **c) {

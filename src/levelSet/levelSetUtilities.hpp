@@ -1,6 +1,8 @@
 #ifndef ABLATELIBRARY_LEVELSETUTILITIES_HPP
 #define ABLATELIBRARY_LEVELSETUTILITIES_HPP
 
+#include "domain/subDomain.hpp"
+
 namespace ablate::levelSet::Utilities {
 
   /**
@@ -59,17 +61,35 @@ namespace ablate::levelSet::Utilities {
 
 
   /**
- * Cell-wise function value and gradient at a given location
- * @param dm - The mesh
- * @param p - Cell id
- * @param c - Function to find gradient of at cell center. Order of values must match that returned by DMPlexGetCellCoordinates.
- * @param c0 - The function value at the cell center
- * @param g - The gradient at the cell center
- */
-  void CellCenterValGrad(DM dm, const PetscInt p, PetscReal *c, PetscReal *c0, PetscReal *g);
+    * Cell-wise function value and gradient at a given location
+    * @param dm - The mesh
+    * @param p - Cell id
+    * @param c - Function to find gradient of at cell center. Order of values must match that returned by DMPlexGetCellCoordinates.
+    * @param c0 - The function value at x0
+    * @param g - The gradient at x0
+    */
+  void CellValGrad(DM dm, const PetscInt p, PetscReal *c, PetscReal *c0, PetscReal *g);
 
+  /**
+    * Cell-wise function value and gradient at a given location
+    * @param dm - The mesh
+    * @param fid - Field ID of the data
+    * @param p - Cell id
+    * @param f - The vector containing the data
+    * @param c0 - The function value at x0
+    * @param g - The gradient at x0
+    */
+  void CellValGrad(DM dm, const PetscInt fid, const PetscInt p, Vec f, PetscReal *c0, PetscReal *g);
 
-
+  /**
+    * Cell-wise function value and gradient at a given location
+    * @param subDomain - Domain of the data
+    * @param field - Field containing the vertex data
+    * @param p - Cell id
+    * @param c0 - The function value at x0
+    * @param g - The gradient at x0
+    */
+  void CellValGrad(std::shared_ptr<ablate::domain::SubDomain> subDomain, const ablate::domain::Field *field, const PetscInt p, PetscReal *c0, PetscReal *g);
 
 
 }  // namespace ablate::levelSet::Utilities
