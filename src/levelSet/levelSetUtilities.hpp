@@ -111,6 +111,17 @@ namespace ablate::levelSet::Utilities {
     */
   void VertexGrad(DM dm, Vec vec, const PetscInt fid, const PetscInt p, PetscReal *g);
 
+  /**
+    * Compute the upwind derivative
+    * @param dm - Domain of the data
+    * @param vec - Vector containing the cell-centered gradient information
+    * @param fid - The field ID of the cell-centered gradient information
+    * @param p - Vertex id
+    * @param u - The vector to use when determining upwind directions
+    * @param g - The gradient at p
+    */
+  void VertexUpwindGrad(DM dm, Vec vec, const PetscInt fid, const PetscInt p, const PetscReal *u, PetscReal *g);
+
 
 
 }  // namespace ablate::levelSet::Utilities

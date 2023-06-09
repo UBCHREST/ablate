@@ -184,6 +184,74 @@ void ablate::levelSet::Utilities::VertexGrad(DM dm, Vec vec, const PetscInt fid,
   }
 }
 
+void ablate::levelSet::Utilities::VertexUpwindGrad(DM dm, Vec vec, const PetscInt fid, const PetscInt p, const PetscReal *u, PetscReal *g) {
+  // Given a field determine the gradient at a vertex by doing a weighted average of the surrounding cell-centered gradients.
+  // The upwind direction is determined using the dot product between the vector u and the vector connecting the cell-center
+  //    and the vertex
+
+  PetscInt          dim;
+  PetscReal         x0[3], vol, totalVol = 0.0;
+  PetscScalar       *f;
+  const PetscScalar *array;
+  PetscScalar       *coords, dot;
+
+
+  DMGetDimension(dm, &dim) >> ablate::utilities::PetscUtilities::checkError;
+
+  // Obtain all cells which use this vertex
+  PetscInt nCells, *cells;
+  DMPlexGetVertexCells(dm, p, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
+
+  for (PetscInt d = 0; d < dim; ++d) {
+    g[d] = 0.0;
+  }
+
+  DMPlexGetVertexCoordinates(dm, 1, &p, &coords);
+
+  VecGetArrayRead(vec, &array) >> utilities::PetscUtilities::checkError;
+
+  for (PetscInt c = 0; c < nCells; ++c) {
+
+    DMPlexComputeCellGeometryFVM(dm, cells[c], NULL, x0, NULL) >> ablate::utilities::PetscUtilities::checkError;
+
+
+    dot = 0.0;
+    for (PetscInt d = 0; d < dim; ++d) {
+      dot += u[d]*(coords[d] - x0[d]);
+    }
+    printf("%d: %+f\n", cells[c], dot);
+    if (dot>=0.0) {
+      printf("%d\n", cells[c]);
+      if (fid >= 0) {
+          DMPlexPointLocalFieldRead(dm, cells[c], fid, array, &f) >> utilities::PetscUtilities::checkError;
+      } else {
+          DMPlexPointLocalRead(dm, cells[c], array, &f) >> utilities::PetscUtilities::checkError;
+      }
+
+      DMPlexComputeCellGeometryFVM(dm, cells[c], &vol, NULL, NULL) >> ablate::utilities::PetscUtilities::checkError;
+
+      totalVol += vol;
+
+      // Weighted average of the surrounding cell-center gradients.
+      //  Note that technically this is (in 2D) the area of the quadrilateral that is formed by connecting
+      //  the vertex, center of the neighboring edges, and the center of the triangle. As the three quadrilaterals
+      //  that are formed this way all have the same area, there is no need to take into account the 1/3. Something
+      //  similar should hold in 3D and for other cell types that ABLATE uses.
+      for (PetscInt d = 0; d < dim; ++d) {
+        g[d] += vol*f[d];
+      }
+    }
+
+  }
+  DMPlexRestoreVertexCoordinates(dm, 1, &p, &coords);
+  DMPlexRestoreVertexCells(dm, p, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
+  VecRestoreArrayRead(vec, &array) >> utilities::PetscUtilities::checkError;
+
+  for (PetscInt d = 0; d < dim; ++d) {
+    g[d] /= totalVol;
+  }
+}
+
 // Given a level set and normal at the cell center compute the level set values at the vertices assuming a straight interface
 void ablate::levelSet::Utilities::VertexLevelSet_LS(DM dm, const PetscInt p, const PetscReal c0, const PetscReal *n, PetscReal **c) {
   PetscInt          dim, Nc, nVerts, i, j;
