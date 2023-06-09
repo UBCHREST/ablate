@@ -89,10 +89,100 @@ void ablate::levelSet::Utilities::CellValGrad(std::shared_ptr<ablate::domain::Su
   Vec f = subDomain->GetVec(*field);
   ablate::levelSet::Utilities::CellValGrad(dm, field->id, p, f, c0, g);
 
-
 }
 
 
+void ablate::levelSet::Utilities::VertexGrad(std::shared_ptr<ablate::domain::SubDomain> subDomain, const ablate::domain::Field *field, const PetscInt p, PetscReal *g) {
+  // Given a field determine the gradient at a vertex by doing a weighted average of the surrounding cell-centered gradients.
+
+  DM          dm = subDomain->GetFieldDM(*field);
+  PetscInt    dim = subDomain->GetDimensions();
+  PetscReal   cellGrad[3], vol, totalVol = 0.0;
+
+  // Obtain all cells which use this vertex
+  PetscInt nCells, *cells;
+  DMPlexGetVertexCells(dm, p, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
+
+  for (PetscInt d = 0; d < dim; ++d) {
+    g[d] = 0.0;
+  }
+
+  for (PetscInt c = 0; c < nCells; ++c) {
+    ablate::levelSet::Utilities::CellValGrad(subDomain, field, cells[c], NULL, cellGrad);
+
+    DMPlexComputeCellGeometryFVM(dm, cells[c], &vol, NULL, NULL) >> ablate::utilities::PetscUtilities::checkError;
+
+    totalVol += vol;
+
+    // Weighted average of the surrounding cell-center gradients.
+    //  Note that technically this is (in 2D) the area of the quadrilateral that is formed by connecting
+    //  the vertex, center of the neighboring edges, and the center of the triangle. As the three quadrilaterals
+    //  that are formed this way all have the same area, there is no need to take into account the 1/3. Something
+    //  similar should hold in 3D and for other cell types that ABLATE uses.
+    for (PetscInt d = 0; d < dim; ++d) {
+      g[d] += vol*cellGrad[d];
+    }
+
+  }
+
+  DMPlexRestoreVertexCells(dm, p, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
+
+  for (PetscInt d = 0; d < dim; ++d) {
+    g[d] /= totalVol;
+  }
+}
+
+void ablate::levelSet::Utilities::VertexGrad(DM dm, Vec vec, const PetscInt fid, const PetscInt p, PetscReal *g) {
+  // Given a field determine the gradient at a vertex by doing a weighted average of the surrounding cell-centered gradients.
+
+  PetscInt          dim;
+  PetscReal         vol, totalVol = 0.0;
+  PetscScalar       *f;
+  const PetscScalar *array;
+
+
+  DMGetDimension(dm, &dim) >> ablate::utilities::PetscUtilities::checkError;
+
+  // Obtain all cells which use this vertex
+  PetscInt nCells, *cells;
+  DMPlexGetVertexCells(dm, p, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
+
+  for (PetscInt d = 0; d < dim; ++d) {
+    g[d] = 0.0;
+  }
+
+  VecGetArrayRead(vec, &array) >> utilities::PetscUtilities::checkError;
+
+  for (PetscInt c = 0; c < nCells; ++c) {
+
+    if (fid >= 0) {
+        DMPlexPointLocalFieldRead(dm, cells[c], fid, array, &f) >> utilities::PetscUtilities::checkError;
+    } else {
+        DMPlexPointLocalRead(dm, cells[c], array, &f) >> utilities::PetscUtilities::checkError;
+    }
+
+    DMPlexComputeCellGeometryFVM(dm, cells[c], &vol, NULL, NULL) >> ablate::utilities::PetscUtilities::checkError;
+
+    totalVol += vol;
+
+    // Weighted average of the surrounding cell-center gradients.
+    //  Note that technically this is (in 2D) the area of the quadrilateral that is formed by connecting
+    //  the vertex, center of the neighboring edges, and the center of the triangle. As the three quadrilaterals
+    //  that are formed this way all have the same area, there is no need to take into account the 1/3. Something
+    //  similar should hold in 3D and for other cell types that ABLATE uses.
+    for (PetscInt d = 0; d < dim; ++d) {
+      g[d] += vol*f[d];
+    }
+
+  }
+
+  DMPlexRestoreVertexCells(dm, p, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
+  VecRestoreArrayRead(vec, &array) >> utilities::PetscUtilities::checkError;
+
+  for (PetscInt d = 0; d < dim; ++d) {
+    g[d] /= totalVol;
+  }
+}
 
 // Given a level set and normal at the cell center compute the level set values at the vertices assuming a straight interface
 void ablate::levelSet::Utilities::VertexLevelSet_LS(DM dm, const PetscInt p, const PetscReal c0, const PetscReal *n, PetscReal **c) {

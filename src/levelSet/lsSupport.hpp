@@ -5,3 +5,6 @@ PetscErrorCode DMPlexRestoreCellVertices(DM dm, const PetscInt p, PetscInt *nVer
 
 PetscErrorCode DMPlexGetVertexCoordinates(DM dm, const PetscInt np, const PetscInt pArray[], PetscScalar *coords[]);
 PetscErrorCode DMPlexRestoreVertexCoordinates(DM dm, const PetscInt np, const PetscInt pArray[], PetscScalar *coords[]);
+
+PetscErrorCode DMPlexRestoreVertexCells(DM dm, const PetscInt p, PetscInt *nCells, PetscInt *cellsOut[]);
+PetscErrorCode DMPlexGetVertexCells(DM dm, const PetscInt p, PetscInt *nCells, PetscInt *cellsOut[]);

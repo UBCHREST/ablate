@@ -85,6 +85,66 @@ PetscErrorCode DMPlexRestoreCellVertices(DM dm, const PetscInt p, PetscInt *nVer
 
 }
 
+
+
+
+PetscErrorCode DMPlexGetVertexCells(DM dm, const PetscInt p, PetscInt *nCells, PetscInt *cellsOut[]) {
+  PetscInt  cStart, cEnd;
+  PetscInt  n;
+  PetscInt  cl, nClosure, *closure = NULL;
+  PetscInt  nc, *cells;
+
+  PetscFunctionBegin;
+
+
+  PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));  // Range of cells
+
+  // Everything using this vertex
+  PetscCall(DMPlexGetTransitiveClosure(dm, p, PETSC_FALSE, &nClosure, &closure));
+
+  // Now get the number of cells
+  nc = 0;
+  for (cl = 0; cl < nClosure * 2; cl += 2) {
+    if (closure[cl] >= cStart && closure[cl] < cEnd) {  // Only use the points corresponding to a vertex
+      ++nc;
+    }
+  }
+  *nCells = nc;
+
+  // Get the work array to store the cell IDs
+  PetscCall(DMGetWorkArray(dm, nc, MPIU_INT, cellsOut));
+  cells = *cellsOut;
+
+  // Now assign the cells
+  n = 0;
+  for (cl = 0; cl < nClosure * 2; cl += 2) {
+    if (closure[cl] >= cStart && closure[cl] < cEnd) {  // Only use the points corresponding to a vertex
+      cells[n++] = closure[cl];
+    }
+  }
+
+  PetscCall(DMPlexRestoreTransitiveClosure(dm, p, PETSC_FALSE, &nClosure, &closure));  // Restore the points
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+
+}
+
+
+PetscErrorCode DMPlexRestoreVertexCells(DM dm, const PetscInt p, PetscInt *nCells, PetscInt *cellsOut[]) {
+
+  PetscFunctionBegin;
+  if (nCells) *nCells = 0;
+  PetscCall(DMRestoreWorkArray(dm, 0, MPIU_INT, cellsOut));
+  PetscFunctionReturn(PETSC_SUCCESS);
+
+}
+
+
+
+
+
+
+
 // Return the coordinates of a list of vertices
 PetscErrorCode DMPlexGetVertexCoordinates(DM dm, const PetscInt np, const PetscInt pArray[], PetscScalar *coords[]) {
 
@@ -119,7 +179,7 @@ PetscErrorCode DMPlexGetVertexCoordinates(DM dm, const PetscInt np, const PetscI
 
 }
 
-PetscErrorCode DMPlexRestoreVertexCoordinates(DM dm, const PetscInt np, const PetscInt pArray[], PetscReal *coords[]) {
+PetscErrorCode DMPlexRestoreVertexCoordinates(DM dm, const PetscInt np, const PetscInt pArray[], PetscScalar *coords[]) {
   PetscFunctionBegin;
   PetscCall(DMRestoreWorkArray(dm, 0, MPIU_SCALAR, coords));
   PetscFunctionReturn(PETSC_SUCCESS);
