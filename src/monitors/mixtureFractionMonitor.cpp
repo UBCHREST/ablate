@@ -18,9 +18,8 @@ void ablate::monitors::MixtureFractionMonitor::Register(std::shared_ptr<solver::
                                                    mixtureFractionCalculator->GetEos()->GetSpeciesVariables(),
                                                    domain::FieldLocation::SOL,
                                                    domain::FieldType::FVM),
-        std::make_shared<domain::FieldDescription>("densityEnergySource", "energySource", domain::FieldDescription::ONECOMPONENT, domain::FieldLocation::SOL, domain::FieldType::FVM),
-        std::make_shared<domain::FieldDescription>(
-            "densityYiSource", "densityYiSource", mixtureFractionCalculator->GetEos()->GetSpeciesVariables(), domain::FieldLocation::SOL, domain::FieldType::FVM)};
+        std::make_shared<domain::FieldDescription>("energySource", "energySource", domain::FieldDescription::ONECOMPONENT, domain::FieldLocation::SOL, domain::FieldType::FVM),
+        std::make_shared<domain::FieldDescription>("yiSource", "yiSource", mixtureFractionCalculator->GetEos()->GetSpeciesVariables(), domain::FieldLocation::SOL, domain::FieldType::FVM)};
 
     // get the required function to compute density
     densityFunction = mixtureFractionCalculator->GetEos()->GetThermodynamicFunction(eos::ThermodynamicProperty::Density, solverIn->GetSubDomain().GetFields());
@@ -118,8 +117,10 @@ PetscErrorCode ablate::monitors::MixtureFractionMonitor::Save(PetscViewer viewer
             monitorField[zMixMonitorField.offset] = mixtureFractionCalculator->Calculate(monitorField + yiMonitorField.offset);
 
             if (sourceTermField) {
-                monitorField[energySourceField.offset] = sourceTermField[eulerField.offset + ablate::finiteVolume::CompressibleFlowFields::RHOE];
-                PetscCall(PetscArraycpy(monitorField + densityYiSourceField.offset, sourceTermField + densityYiField.offset, densityYiField.numberComponents));
+                monitorField[energySourceField.offset] = sourceTermField[eulerField.offset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density;
+                for (PetscInt s = 0; s < densityYiField.numberComponents; ++s) {
+                    monitorField[densityYiSourceField.offset + s] = sourceTermField[densityYiField.offset + s] / density;
+                }
             }
         }
     }
