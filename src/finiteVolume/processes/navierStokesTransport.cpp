@@ -543,7 +543,7 @@ PetscErrorCode ablate::finiteVolume::processes::NavierStokesTransport::UpdateAux
     PetscFunctionBeginUser;
     auto computeTemperatureFunction = (eos::ThermodynamicTemperatureFunction*)ctx;
     PetscCall(computeTemperatureFunction->function(conservedValues, *(auxField + aOff[0]), auxField + aOff[0], computeTemperatureFunction->context.get()));
-    *(auxField + aOff[0]) = 300;
+
     PetscFunctionReturn(0);
 }
 
