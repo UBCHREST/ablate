@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 #include "domain/field.hpp"
+#include "utilities/mapUtilities.hpp"
 
 namespace ablate::eos {
 
@@ -113,6 +114,12 @@ class EOS {
      * @return
      */
     [[nodiscard]] virtual const std::vector<std::string>& GetProgressVariables() const = 0;
+
+    /**
+     * Returns a map of field/components for auxiliary variables needed by this eos.  These are variables that are not needed to be transport, but can be decoded to.  These will not be treated as EV
+     * @return
+     */
+    [[nodiscard]] virtual const std::map<std::string, std::vector<std::string>>& GetAuxiliaryVariables() const { return ablate::utilities::MapUtilities::Empty<std::string, std::vector<std::string>>; }
 
     /**
      * Properties known by this equation of state used for the FieldFunction calculations. This can be the same as the GetSpeciesVariables.

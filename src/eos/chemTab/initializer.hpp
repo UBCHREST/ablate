@@ -4,7 +4,7 @@
 #include "eos/chemTab.hpp"
 #include "mathFunctions/constantValue.hpp"
 
-namespace ablate::eos::chemTab{
+namespace ablate::eos::chemTab {
 
 /**
  * Class that species progress function from a chemTab model
@@ -19,5 +19,5 @@ class Initializer : public ablate::mathFunctions::ConstantValue {
     explicit Initializer(const std::string& initializer, std::shared_ptr<ablate::eos::EOS> eos);
 };
 
-}  // ablate::eos::chemTab
+}  // namespace ablate::eos::chemTab
 #endif  // ABLATELIBRARY_EOS_CHEMTAB_INITIALIZER_HPP

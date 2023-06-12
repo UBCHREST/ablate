@@ -25,9 +25,7 @@ class Monitor {
      * Return a function to be called after every time step.  By default null is returned so this is never called
      * @return
      */
-    virtual PetscMonitorFunction GetPetscFunction() {
-        return nullptr;
-    }
+    virtual PetscMonitorFunction GetPetscFunction() { return nullptr; }
 
     /**
      * return context to be returned to the PetscMonitorFunction.  By default this is a pointer to this instance

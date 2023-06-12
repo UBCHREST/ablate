@@ -276,7 +276,6 @@ void ablate::eos::ChemTab::ChemistrySource(PetscReal density, const PetscReal de
     StartEvent("ChemTab::ChemistrySource");
     ChemTabModelComputeFunction(density, densityProgressVariable, densityEnergySource, progressVariableSource, nullptr);
     EndEvent();
-
 }
 
 void ablate::eos::ChemTab::View(std::ostream &stream) const { stream << "EOS: " << type << std::endl; }

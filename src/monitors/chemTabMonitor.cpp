@@ -3,8 +3,7 @@
 #include "finiteVolume/finiteVolumeSolver.hpp"
 
 #include <utility>
-ablate::monitors::ChemTabMonitor::ChemTabMonitor(const std::shared_ptr<ablate::eos::EOS>& eos)
-    : chemTabModel(std::dynamic_pointer_cast<ablate::eos::ChemTab>(eos)) {
+ablate::monitors::ChemTabMonitor::ChemTabMonitor(const std::shared_ptr<ablate::eos::EOS>& eos) : chemTabModel(std::dynamic_pointer_cast<ablate::eos::ChemTab>(eos)) {
     if (!chemTabModel) {
         throw std::invalid_argument("The ablate::monitors::ChemTabMonitor::ChemTabMonitor requires a ablate::eos::ChemTab model");
     }
@@ -61,7 +60,7 @@ PetscErrorCode ablate::monitors::ChemTabMonitor::DecodeMassFractions(ablate::fin
         PetscReal* yiValues;
         DMPlexPointLocalFieldRef(dmAux, cell, yiField.id, locAuxArray, &yiValues) >> utilities::PetscUtilities::checkError;
 
-        if(solutionValues && yiValues){
+        if (solutionValues && yiValues) {
             // compute density
             PetscReal density;
             densityFunction(solutionValues, &density, densityContext) >> utilities::PetscUtilities::checkError;
@@ -85,16 +84,12 @@ ablate::monitors::ChemTabMonitor::Fields::Fields(const std::shared_ptr<ablate::e
     }
 }
 
-
 std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::monitors::ChemTabMonitor::Fields::GetFields() {
     return {std::make_shared<domain::FieldDescription>(eos::EOS::YI, eos::EOS::YI, chemTabModel->GetSpeciesNames(), domain::FieldLocation::AUX, domain::FieldType::FVM, region)};
 }
 
-
 #include "registrar.hpp"
 REGISTER(ablate::domain::FieldDescriptor, ablate::monitors::ChemTabMonitor::Fields, "Sets up the monitor field(s) needed by the ChemTabMonitor",
-         ARG(ablate::eos::EOS, "eos", "must be a ablate::eos::ChemTab model"),
-         OPT(ablate::domain::Region, "region", "the region for the compressible flow (defaults to entire domain)"));
+         ARG(ablate::eos::EOS, "eos", "must be a ablate::eos::ChemTab model"), OPT(ablate::domain::Region, "region", "the region for the compressible flow (defaults to entire domain)"));
 
-REGISTER(ablate::monitors::Monitor, ablate::monitors::ChemTabMonitor, "Update the yi aux field using the ChemTab model",
-         ARG(ablate::eos::EOS, "eos", "must be a ablate::eos::ChemTab model"));
+REGISTER(ablate::monitors::Monitor, ablate::monitors::ChemTabMonitor, "Update the yi aux field using the ChemTab model", ARG(ablate::eos::EOS, "eos", "must be a ablate::eos::ChemTab model"));

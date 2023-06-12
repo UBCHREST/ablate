@@ -1,10 +1,12 @@
 #include "compressibleFlowFields.hpp"
+
+#include <utility>
 #include "domain/fieldDescription.hpp"
 #include "utilities/vectorUtilities.hpp"
 
 ablate::finiteVolume::CompressibleFlowFields::CompressibleFlowFields(std::shared_ptr<eos::EOS> eos, std::shared_ptr<domain::Region> region,
                                                                      std::shared_ptr<parameters::Parameters> conservedFieldParameters)
-    : eos(eos), region(region), conservedFieldOptions(conservedFieldParameters) {}
+    : eos(std::move(eos)), region(std::move(region)), conservedFieldOptions(std::move(conservedFieldParameters)) {}
 
 std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::finiteVolume::CompressibleFlowFields::GetFields() {
     std::vector<std::shared_ptr<ablate::domain::FieldDescription>> flowFields{
@@ -38,6 +40,10 @@ std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::finiteVol
                                                                            std::vector<std::string>{EV_TAG}));
         flowFields.emplace_back(
             std::make_shared<domain::FieldDescription>(PROGRESS_FIELD, PROGRESS_FIELD, eos->GetProgressVariables(), domain::FieldLocation::AUX, domain::FieldType::FVM, region, auxFieldOptions));
+    }
+
+    for (const auto& aux : eos->GetAuxiliaryVariables()) {
+        flowFields.emplace_back(std::make_shared<domain::FieldDescription>(aux.first, aux.first, aux.second, domain::FieldLocation::AUX, domain::FieldType::FVM, region));
     }
 
     return flowFields;
