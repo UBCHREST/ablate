@@ -15,7 +15,9 @@ timestepper:
   name: theMainTimeStepper
   arguments:
     ts_type: rk
-    ts_max_steps: 4
+    ts_max_steps: 2
+  io: !ablate::io::Hdf5MultiFileSerializer
+    interval: 0
   domain: !ablate::domain::BoxMeshBoundaryCells
     name: simpleBoxField
     faces: [ 5, 5, 5 ]
@@ -83,8 +85,6 @@ solvers:
       name: interiorCells
     eos: *eos
     monitors:
-      - !ablate::monitors::MaxMinAverage
-        field: euler
       - !ablate::monitors::RadiationFlux
         region:
           name: boundaryFaces
@@ -97,6 +97,7 @@ solvers:
               eos: *eos
               wavelengths: [ 650.0E-9, 532.0E-9, 470.0E-9 ] # Red wavelength, Green wavelength, Blue wavelength
               bandwidths: [ 10E-9, 10E-9 , 10E-9 ]
+        log: !<!ablate::monitors::logs::StdOut> ""
   - !ablate::boundarySolver::BoundarySolver
     id: boundary
     region:

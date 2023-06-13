@@ -226,13 +226,7 @@ void testingResources::MpiTestFixture::CompareOutputFile(const std::string& expe
                         auto percentDifference = PetscAbs((std::stod(actualValueString) - expectedValue) / expectedValue);
                         ASSERT_LT(percentDifference, 1.1E-3) << " the percent difference of (" << expectedValue << ", " << std::stod(actualValueString) << ") should be less than 1E-3 on line "
                                                              << expectedLine << " of file " << expectedFileName;
-                    }
-                    case 'N': {
-                        // the value is near percent difference < 5E-3
-                        auto percentDifference = PetscAbs((std::stod(actualValueString) - expectedValue) / expectedValue);
-                        ASSERT_LT(percentDifference, 5.1E-3) << " the percent difference of (" << expectedValue << ", " << std::stod(actualValueString) << ") should be less than 1E-3 on line "
-                                                             << expectedLine << " of file " << expectedFileName;
-                    }break;
+                    } break;
                     default:
                         FAIL() << "Unknown compare char " << compareChar << " on line (" << lineNumber << ") " << expectedLine << " of file " << expectedFileName;
                 }

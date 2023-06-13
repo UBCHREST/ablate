@@ -47,7 +47,8 @@ class RadiationFlux : public Monitor, public io::Serializable {
     std::shared_ptr<ablate::domain::Region> radiationFluxRegion;
 
    public:
-    RadiationFlux(std::vector<std::shared_ptr<radiation::SurfaceRadiation>> radiationIn, std::shared_ptr<domain::Region> radiationFluxRegionIn);
+    RadiationFlux(std::vector<std::shared_ptr<radiation::SurfaceRadiation>> radiationIn, std::shared_ptr<domain::Region> radiationFluxRegionIn,
+                  std::shared_ptr<ablate::monitors::logs::Log> = {});
 
     /**
      * Clean up the petsc objects
@@ -84,6 +85,10 @@ class RadiationFlux : public Monitor, public io::Serializable {
      * @return
      */
     PetscMonitorFunction GetPetscFunction() override { return nullptr; }
+
+   protected:
+    const std::shared_ptr<ablate::monitors::logs::Log> log = nullptr; //! Monitor output, primarily for testing purposes.
+
 };
 }  // namespace ablate::monitors
 

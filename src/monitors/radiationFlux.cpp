@@ -1,7 +1,8 @@
 #include "radiationFlux.hpp"
 
-ablate::monitors::RadiationFlux::RadiationFlux(std::vector<std::shared_ptr<radiation::SurfaceRadiation>> radiationIn, std::shared_ptr<domain::Region> radiationFluxRegionIn)
-    : radiation(std::move(radiationIn)), radiationFluxRegion(std::move(radiationFluxRegionIn)) {}
+ablate::monitors::RadiationFlux::RadiationFlux(std::vector<std::shared_ptr<radiation::SurfaceRadiation>> radiationIn, std::shared_ptr<domain::Region> radiationFluxRegionIn,
+                                               std::shared_ptr<ablate::monitors::logs::Log> log)
+    : radiation(std::move(radiationIn)), radiationFluxRegion(std::move(radiationFluxRegionIn)), log(std::move(log))  {}
 
 ablate::monitors::RadiationFlux::~RadiationFlux() {
     if (fluxDm) {
@@ -14,6 +15,11 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
 
     // update the name
     name = radiationFluxRegion->GetName() + name;
+
+    if (log) {
+        log->Initialize(solverIn->GetSubDomain().GetComm());
+        log->Printf(("Register: " + name + "\n").c_str());
+    }
 
     DMLabel radiationFluxRegionLabel = nullptr;
     PetscInt regionValue = 0;
@@ -71,8 +77,7 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
     /** Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solverIn.
      * The purpose of using a dynamic range is to avoid including the boundary cells within the stored range of faces that belongs to the radiation solvers in the monitor.
      * */
-    //    ablate::solver::Range solverRange;
-    //    solverIn->GetFaceRange(solverRange);
+    PetscInt faceCount = 0;
     for (PetscInt c = cStart; c < cEnd; ++c) {
         const PetscInt iCell = faceToBoundary[c];  //!< Isolates the valid cells
         PetscInt ghost = -1;
@@ -82,8 +87,12 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
             throw std::invalid_argument(
                 "The radiation flux monitor must be given a region of faces. The cell region given to the ray tracers must not include the cells adjacent to the back of these faces.");
         if (ghostLabel) DMLabelGetValue(ghostLabel, iCell, &ghost) >> utilities::PetscUtilities::checkError;
-        if (ghost < 0) monitorRange.Add(iCell);  //!< Add each ID to the range that the radiation solverIn will use
+        if (ghost < 0) {
+            monitorRange.Add(iCell);
+            faceCount++;
+        }  //!< Add each ID to the range that the radiation solverIn will use
     }
+    if (log) log->Printf("%d faces\n\n", faceCount);
     // restore
     ISRestoreIndices(faceIs, &faceToBoundary) >> utilities::PetscUtilities::checkError;
 
@@ -152,6 +161,8 @@ PetscErrorCode ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscIn
         DMLabel radiationRegionLabel;
         PetscCall(DMGetLabel(GetSolver()->GetSubDomain().GetDM(), radiationFluxRegion->GetName().c_str(), &radiationRegionLabel));
 
+        if (log) log->Printf("\nEvaluated Faces:\n");
+
         for (PetscInt c = cStart; c < cEnd; ++c) {
             PetscInt boundaryPt = faceToBoundary[c];
             PetscInt ghost = -1;
@@ -170,9 +181,12 @@ PetscErrorCode ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscIn
                      */
                     PetscReal wavelengths[radiation[rayTracerIndex]->GetAbsorptionFunction().propertySize];
                     radiation[rayTracerIndex]->GetSurfaceIntensity(wavelengths, boundaryPt, 0, 1);
+                    if (log) log->Printf("%i:", c);
                     for (int wavelengthIndex = 0; wavelengthIndex < radiation[rayTracerIndex]->GetAbsorptionFunction().propertySize; ++wavelengthIndex) {
                         globalFaceData[radiation[rayTracerIndex]->GetAbsorptionFunction().propertySize * rayTracerIndex + wavelengthIndex] = wavelengths[wavelengthIndex];
+                        if (log) log->Printf(" %f", wavelengths[wavelengthIndex]);
                     }
+                    if (log) log->Printf("\n");
                 }
             }
         }
@@ -202,4 +216,5 @@ PetscErrorCode ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscIn
 #include "registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::RadiationFlux, "outputs radiation flux information about a region.",
          ARG(std::vector<ablate::radiation::SurfaceRadiation>, "radiation", "ray tracing solvers which write information to the boundary faces. Use orthogonal for a window or surface for a plate."),
-         ARG(ablate::domain::Region, "region", "face region where the radiation is detected. The region given to the ray tracers must not include the cells adjacent to the back of these faces."));
+         ARG(ablate::domain::Region, "region", "face region where the radiation is detected. The region given to the ray tracers must not include the cells adjacent to the back of these faces."),
+         OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
