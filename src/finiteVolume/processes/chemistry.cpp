@@ -7,6 +7,11 @@
 ablate::finiteVolume::processes::Chemistry::Chemistry(std::shared_ptr<ablate::eos::ChemistryModel> chemistryModel) : chemistryModel(std::move(chemistryModel)) {}
 
 void ablate::finiteVolume::processes::Chemistry::Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) {
+    // Check if there is another preStage call to make
+    for(auto& updateFunction : chemistryModel->GetSolutionFieldUpdates()){
+        flow.RegisterSolutionFieldUpdate(std::get<0>(updateFunction), std::get<1>(updateFunction), std::get<2>(updateFunction));
+    }
+
     // Before each step, compute the source term over the entire dt
     auto chemistryPreStage = std::bind(&ablate::finiteVolume::processes::Chemistry::ChemistryPreStage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
     flow.RegisterPreStage(chemistryPreStage);

@@ -6,7 +6,7 @@
 
 namespace ablateTesting::mathFunctions {
 
-TEST(PeakTests, ShouldBeCreatedFromRegistar) {
+TEST(PeakTests, ShouldBeCreatedFromRegistrar) {
     // arrange
     std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
     const std::string expectedClassType = "ablate::mathFunctions::Peak";

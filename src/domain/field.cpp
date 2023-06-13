@@ -1,5 +1,6 @@
 #include "field.hpp"
 #include <map>
+#include <utility>
 #include "fieldDescription.hpp"
 
 static const std::map<std::string, ablate::domain::FieldLocation> stringToFieldLocation = {{"", ablate::domain::FieldLocation::SOL},
@@ -47,4 +48,9 @@ ablate::domain::Field ablate::domain::Field::FromFieldDescription(const ablate::
 ablate::domain::Field ablate::domain::Field::CreateSubField(PetscInt newSubId, PetscInt newOffset) const {
     return ablate::domain::Field{
         .name = name, .numberComponents = numberComponents, .components = components, .id = id, .subId = newSubId, .offset = newOffset, .location = location, .type = type, .tags = tags};
+}
+
+ablate::domain::Field ablate::domain::Field::Rename(std::string newName) const {
+    return ablate::domain::Field{
+        .name = std::move(newName), .numberComponents = numberComponents, .components = components, .id = id, .subId = subId, .offset = offset, .location = location, .type = type, .tags = tags};
 }

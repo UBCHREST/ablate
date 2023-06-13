@@ -292,7 +292,11 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
     VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
     VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
 }
+
 void ablate::boundarySolver::BoundarySolver::Initialize() {
+    // call the base class Initialize
+    ablate::solver::CellSolver::Initialize();
+
     if (!boundaryUpdateFunctions.empty()) {
         RegisterPreStep([this](auto ts, auto& solver) { UpdateVariablesPreStep(ts, solver); });
     }
@@ -302,6 +306,7 @@ void ablate::boundarySolver::BoundarySolver::Initialize() {
         process->Initialize(*this);
     }
 }
+
 void ablate::boundarySolver::BoundarySolver::RegisterFunction(ablate::boundarySolver::BoundarySolver::BoundarySourceFunction function, void* context, const std::vector<std::string>& sourceFields,
                                                               const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields, BoundarySourceType type) {
     // Create the FVMRHS Function
@@ -711,6 +716,7 @@ void ablate::boundarySolver::BoundarySolver::CreateGradientStencil(PetscInt cell
     // Store the stencil
     gradientStencils.push_back(std::move(newStencil));
 }
+
 void ablate::boundarySolver::BoundarySolver::UpdateVariablesPreStep(TS, ablate::solver::Solver&) {
     // Extract the cell geometry, and the dm that holds the information
     auto dm = subDomain->GetDM();

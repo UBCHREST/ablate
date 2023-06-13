@@ -6,7 +6,7 @@
 
 namespace ablateTesting::mathFunctions {
 
-TEST(SimpleFormulaTests, ShouldBeCreatedFromRegistar) {
+TEST(SimpleFormulaTests, ShouldBeCreatedFromRegistrar) {
     // arrange
     std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
     const std::string expectedClassType = "";  // should be default class

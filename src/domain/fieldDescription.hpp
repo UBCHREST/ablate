@@ -6,6 +6,7 @@
 #include <memory>
 #include <parameters/parameters.hpp>
 #include <string>
+#include <utility>
 #include <vector>
 #include "domain/field.hpp"
 #include "domain/region.hpp"
@@ -17,7 +18,7 @@ namespace ablate::domain {
  * Describes the necessary information to produce a field in the domain/dm
  */
 struct FieldDescription : public FieldDescriptor, public std::enable_shared_from_this<FieldDescription> {
-    virtual ~FieldDescription();
+    ~FieldDescription() override;
 
     // Helper variable, replaces any components with this value with one for each dimension
     inline const static std::string DIMENSION = "_DIMENSION_";
@@ -61,6 +62,15 @@ struct FieldDescription : public FieldDescriptor, public std::enable_shared_from
      * @return
      */
     virtual PetscObject CreatePetscField(DM dm) const;
+
+    /**
+     * public configure to set the options after creation
+     * @param optionsIn
+     */
+    inline std::shared_ptr<FieldDescription> Specialize(FieldType typeIn, std::shared_ptr<domain::Region> regionIn, std::shared_ptr<parameters::Parameters> optionsIn = {},
+                                                        std::vector<std::string> tagsIn = {}) {
+        return std::make_shared<FieldDescription>(name, prefix, components, location, typeIn, regionIn, optionsIn, tagsIn);
+    }
 
    private:
     // keep the original Parameters

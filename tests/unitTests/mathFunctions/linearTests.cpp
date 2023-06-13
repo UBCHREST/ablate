@@ -6,7 +6,7 @@
 
 namespace ablateTesting::mathFunctions {
 
-TEST(LinearTests, ShouldBeCreatedFromRegistar) {
+TEST(LinearTests, ShouldBeCreatedFromRegistrar) {
     // arrange
     std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
     const std::string expectedClassType = "ablate::mathFunctions::Linear";

@@ -2,6 +2,7 @@
 #include <finiteVolume/processes/evTransport.hpp>
 #include <finiteVolume/processes/speciesTransport.hpp>
 #include <utility>
+#include "eos/chemistryModel.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/mathUtilities.hpp"
 
@@ -115,6 +116,15 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(const PetscInt sOff[],
 void ablate::boundarySolver::lodi::LODIBoundary::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
     // Compute the number of equations that need to be solved
     dims = bSolver.GetSubDomain().GetDimensions();
+
+    // check if the eos need to do any updates
+    auto chemModel = std::dynamic_pointer_cast<eos::ChemistryModel>(eos);
+    if(chemModel) {
+        for (auto &updateFunction : chemModel->GetSolutionFieldUpdates()) {
+            bSolver.RegisterSolutionFieldUpdate(std::get<0>(updateFunction), std::get<1>(updateFunction), std::get<2>(updateFunction));
+        }
+    }
+
     if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::EULER_FIELD)) {
         nEqs += bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD).numberComponents;
 

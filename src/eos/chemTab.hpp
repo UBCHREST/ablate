@@ -15,6 +15,9 @@ namespace ablate::eos {
 
 #ifdef WITH_TENSORFLOW
 class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemTab>, public utilities::Loggable<ChemTab> {
+   public:
+    inline const static std::string DENSITY_YI_DECODE_FIELD = "DENSITY_YI_DECODE";
+
    private:
     //! use the reference eos to compute properties from the decoded progressVariables to yi
     std::shared_ptr<ablate::eos::TChem> referenceEOS;
@@ -42,13 +45,14 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
 
     /**
      * Private function to compute predictedSourceEnergy, progressVariableSource, and massFractions
-     * @param density
+     * @param density, the density is used to scale both the progress variable and resulting densityMassFractions
      * @param densityProgressVariable
      * @param predictedSourceEnergy , if null, wont' be set
      * @param progressVariableSource , if null, won't be set
-     * @param massFractions , if null, won't be set
+     * @param densityMassFractions , if null, won't be set
      */
-    void ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariable[], PetscReal* predictedSourceEnergy, PetscReal* progressVariableSource, PetscReal* massFractions) const;
+    void ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariable[], PetscReal* predictedSourceEnergy, PetscReal* progressVariableSource,
+                                     PetscReal* densityMassFractions) const;
 
     /**
      * The source calculator is used to do batch processing for chemistry model.  This is a bad implementation
@@ -78,60 +82,6 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
     };
 
     /**
-     * Struct for the thermodynamic function context
-     */
-    struct ThermodynamicFunctionContext {
-        // memory access locations for fields
-        std::size_t densityOffset;
-        std::size_t progressOffset;
-
-        // store a scratch variable to compute yi
-        std::vector<PetscReal> yiScratch;
-
-        // Hold the context for the baseline tChem function
-        ablate::eos::TChem::ThermodynamicMassFractionFunction tChemFunction;
-
-        // Hold a reference to chemTab
-        std::shared_ptr<const ChemTab> chemTab;
-    };
-
-    /**
-     * Struct for the thermodynamic function context
-     */
-    struct ThermodynamicTemperatureFunctionContext {
-        // memory access locations for fields
-        std::size_t densityOffset;
-        std::size_t progressOffset;
-
-        // store a scratch variable to compute yi
-        std::vector<PetscReal> yiScratch;
-
-        // Hold the context for the baseline tChem function
-        ablate::eos::TChem::ThermodynamicTemperatureMassFractionFunction tChemFunction;
-
-        // Hold a reference to chemTab
-        std::shared_ptr<const ChemTab> chemTab;
-    };
-
-    /**
-     * static call to compute yi and call baseline tChem function
-     * @param conserved
-     * @param property
-     * @param ctx
-     * @return
-     */
-    static PetscErrorCode ChemTabThermodynamicFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
-
-    /**
-     * static call to compute yi and call baseline tChem function
-     * @param conserved
-     * @param property
-     * @param ctx
-     * @return
-     */
-    static PetscErrorCode ChemTabThermodynamicTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
-
-    /**
      * helper function to compute the progress variables from the mass fractions
      * @param massFractions
      * @param massFractionsSize
@@ -139,6 +89,18 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @param progressVariablesSize
      */
     void ComputeProgressVariables(const PetscReal* massFractions, PetscReal* progressVariables) const;
+
+    /**
+     * private function to compute the mass fractions assuming euler[0] and densityProgressVariable[1] and densityYi[2] is provided
+     * @param time
+     * @param dim
+     * @param cellGeom
+     * @param uOff
+     * @param u
+     * @param ctx
+     * @return
+     */
+    static PetscErrorCode ComputeMassFractions(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], PetscScalar* u, void* ctx);
 
    public:
     explicit ChemTab(const std::filesystem::path& path);
@@ -167,6 +129,12 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @return
      */
     [[nodiscard]] const std::vector<std::string>& GetProgressVariables() const override { return progressVariablesNames; }
+
+    /**
+     * As far as other parts of the code is concerned the chemTabEos does not expect species
+     * @return
+     */
+    std::vector<std::shared_ptr<domain::FieldDescriptor>> GetAdditionalFields()  const override;
 
     /**
      * Single function to compute the source terms for a single point
@@ -250,6 +218,12 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @param progressVariables
      */
     void GetInitializerProgressVariables(const std::string& name, std::vector<PetscReal>& progressVariables) const;
+
+    /**
+     * Return a function to update the densityYi based upon the current progress variable
+     * @return
+     */
+    [[nodiscard]] std::vector<std::tuple<ablate::solver::CellSolver::SolutionFieldUpdateFunction, void*, std::vector<std::string>>> GetSolutionFieldUpdates() override;
 };
 
 #else
@@ -294,6 +268,10 @@ class ChemTab : public ChemistryModel {
     void ComputeMassFractions(const PetscReal* progressVariables, PetscReal* massFractions, PetscReal density = 1.0) const { throw std::runtime_error(errorMessage); }
 
     void GetInitializerProgressVariables(const std::string& name, std::vector<PetscReal>& progressVariables) const { throw std::runtime_error(errorMessage); }
+
+    [[nodiscard]] std::vector<std::tuple<ablate::solver::CellSolver::SolutionFieldUpdateFunction, void*, std::vector<std::string>>> GetSolutionFieldUpdates() override {
+        throw std::runtime_error(errorMessage);
+    }
 };
 #endif
 }  // namespace ablate::eos
