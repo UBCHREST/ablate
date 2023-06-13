@@ -189,9 +189,9 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         // Set the initial conditions for euler (not used, so set all to zero)
         auto initialConditionEuler = std::make_shared<ablate::mathFunctions::FieldFunction>("euler", std::make_shared<ablate::mathFunctions::ConstantValue>(0.0));
 
-            // create a time stepper
-            auto timeStepper = ablate::solver::TimeStepper(
-                "timeStepper", domain, ablate::parameters::MapParameters::Create({{"ts_max_steps", 0}}), {}, std::make_shared<ablate::domain::Initializer>(initialConditionEuler));
+        // create a time stepper
+        auto timeStepper = ablate::solver::TimeStepper(
+            "timeStepper", domain, ablate::parameters::MapParameters::Create({{"ts_max_steps", 0}}), {}, std::make_shared<ablate::domain::Initializer>(initialConditionEuler));
 
         // Create an instance of radiation
         auto radiationPropertiesModel = std::make_shared<ablate::eos::radiationProperties::Constant>(eos, 1.0, 1.0);

@@ -2,7 +2,7 @@
 
 ablate::monitors::RadiationFlux::RadiationFlux(std::vector<std::shared_ptr<radiation::SurfaceRadiation>> radiationIn, std::shared_ptr<domain::Region> radiationFluxRegionIn,
                                                std::shared_ptr<ablate::monitors::logs::Log> log)
-    : radiation(std::move(radiationIn)), radiationFluxRegion(std::move(radiationFluxRegionIn)), log(std::move(log))  {}
+    : radiation(std::move(radiationIn)), radiationFluxRegion(std::move(radiationFluxRegionIn)), log(std::move(log)) {}
 
 ablate::monitors::RadiationFlux::~RadiationFlux() {
     if (fluxDm) {
