@@ -26,6 +26,20 @@
       "description": "Default build for ABLATE in CLion",
       "binaryDir": "${sourceDir}/cmake-build-opt-ablate",
       "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "COMPILE_MPI_COMMAND": "$env{PETSC_DIR}/arch-ablate-opt/bin/mpirun"
+      },
+      "environment": {
+        "PETSC_ARCH": "arch-ablate-opt",
+        "PKG_CONFIG_PATH": "$env{PETSC_DIR}/arch-ablate-opt/lib/pkgconfig:$penv{PKG_CONFIG_PATH}"
+      }
+    },
+    {
+      "name": "local-ablate-opt-info",
+      "displayName": "CLion RelWithDebugInfo Config",
+      "description": "Default build for ABLATE in CLion",
+      "binaryDir": "${sourceDir}/cmake-build-opt-info-ablate",
+      "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebugInfo",
         "COMPILE_MPI_COMMAND": "$env{PETSC_DIR}/arch-ablate-opt/bin/mpirun"
       },
