@@ -30,7 +30,7 @@ class ConstantPressureFix : public FlowProcess {
     ablate::eos::EOSFunction eulerFromEnergyAndPressure = nullptr;
 
     //! function to compute densityYi from energy and pressure
-    ablate::eos::EOSFunction densityYiFromEnergyAndPressure = nullptr;
+    ablate::eos::EOSFunction densityOtherPropFromEnergyAndPressure = nullptr;
 
    public:
     explicit ConstantPressureFix(std::shared_ptr<eos::EOS> eos, double pressure);

@@ -12,32 +12,40 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
     internalSensibleEnergyFunction = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::InternalSensibleEnergy, fv.GetSubDomain().GetFields());
 
     // determine which field exists depending upon the os
-    std::string conservedOtherProperties = "";
-    std::string otherProperties = "";
+    std::string conservedOtherProperties;
+    std::string densityYiField;
+    std::string sourceField;
     if (!eos->GetSpeciesVariables().empty()) {
+        densityYiField = finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD;
         conservedOtherProperties = finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD;
-        otherProperties = finiteVolume::CompressibleFlowFields::YI_FIELD;
     } else if (!eos->GetProgressVariables().empty()) {
+        densityYiField = ablate::eos::ChemTab::DENSITY_YI_DECODE_FIELD;
         conservedOtherProperties = finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD;
-        otherProperties = finiteVolume::CompressibleFlowFields::PROGRESS_FIELD;
     }
 
     eulerFromEnergyAndPressure =
-        eos->GetFieldFunctionFunction(finiteVolume::CompressibleFlowFields::EULER_FIELD, eos::ThermodynamicProperty::InternalSensibleEnergy, eos::ThermodynamicProperty::Pressure, {otherProperties});
+        eos->GetFieldFunctionFunction(finiteVolume::CompressibleFlowFields::EULER_FIELD, eos::ThermodynamicProperty::InternalSensibleEnergy, eos::ThermodynamicProperty::Pressure, {eos::EOS::YI});
 
-    densityYiFromEnergyAndPressure =
-        eos->GetFieldFunctionFunction(conservedOtherProperties, eos::ThermodynamicProperty::InternalSensibleEnergy, eos::ThermodynamicProperty::Pressure, {otherProperties});
+    densityOtherPropFromEnergyAndPressure =
+        eos->GetFieldFunctionFunction(conservedOtherProperties, eos::ThermodynamicProperty::InternalSensibleEnergy, eos::ThermodynamicProperty::Pressure, {eos::EOS::YI});
 
-    fv.RegisterPostEvaluate([this, conservedOtherProperties](TS ts, ablate::solver::Solver& fvSolver) {
+    fv.RegisterPostEvaluate([this, conservedOtherProperties, densityYiField](TS ts, ablate::solver::Solver& fvSolver) {
         // get access to the underlying data for the flow
         const auto& eulerId = fvSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD);
         PetscInt densityYiOffset = PETSC_DECIDE;
         PetscInt numberSpecies = 0;
-        if (fvSolver.GetSubDomain().ContainsField(conservedOtherProperties)) {
-            const auto& densityYiId = fvSolver.GetSubDomain().GetField(conservedOtherProperties);
+        if (fvSolver.GetSubDomain().ContainsField(densityYiField)) {
+            const auto& densityYiId = fvSolver.GetSubDomain().GetField(densityYiField);
             numberSpecies = densityYiId.numberComponents;
             densityYiOffset = densityYiId.offset;
         }
+
+        PetscInt conservedOtherPropertiesOffset = PETSC_DECIDE;
+        if (fvSolver.GetSubDomain().ContainsField(conservedOtherProperties)) {
+            const auto& conservedOtherPropertiesOffsetId = fvSolver.GetSubDomain().GetField(conservedOtherProperties);
+            conservedOtherPropertiesOffset = conservedOtherPropertiesOffsetId.offset;
+        }
+
         PetscInt dim = fvSolver.GetSubDomain().GetDimensions();
 
         // Size up an array for yi and velocity
@@ -83,7 +91,7 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
 
                 // use the eos to compute the new conserved forms based upon the current internal energy, velocity, yi and a constant pressure
                 eulerFromEnergyAndPressure(internalSensibleEnergy, pressure, dim, velocityScratch, yiScratch.data(), conservedValues + eulerId.offset);
-                densityYiFromEnergyAndPressure(internalSensibleEnergy, pressure, dim, velocityScratch, yiScratch.data(), conservedValues + densityYiOffset);
+                densityOtherPropFromEnergyAndPressure(internalSensibleEnergy, pressure, dim, velocityScratch, yiScratch.data(), conservedValues + conservedOtherPropertiesOffset);
             }
         }
 
