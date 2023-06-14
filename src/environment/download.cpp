@@ -22,7 +22,12 @@ std::filesystem::path ablate::environment::Download::Locate(const std::vector<st
             PetscBool found;
             PetscFileRetrieve(PETSC_COMM_WORLD, url.c_str(), localPath, PETSC_MAX_PATH_LEN, &found) >> utilities::PetscUtilities::checkError;
             if (!found) {
-                throw std::runtime_error("unable to locate file at" + url);
+                throw std::runtime_error("Unable to locate file at" + url);
+            }
+
+            // check if the file is empty
+            if (std::filesystem::file_size(localPath) == 0) {
+                throw std::runtime_error("Resulting file is empty. Unable to locate file at" + url);
             }
 
             // If we should relocate the file

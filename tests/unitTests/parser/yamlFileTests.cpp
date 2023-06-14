@@ -9,7 +9,7 @@
 
 namespace ablateTesting::parser {
 
-#define REMOTE_URL "https://raw.githubusercontent.com/UBCHREST/ablate/main/tests/unitTests/inputs/eos/thermo30.dat"
+#define REMOTE_URL "https://raw.githubusercontent.com/UBCHREST/ablate/main/tests/unitTests/inputs/eos/gri30.yaml"
 
 namespace fs = std::filesystem;
 
