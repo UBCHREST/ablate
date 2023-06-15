@@ -10,11 +10,6 @@ void ablate::monitors::MixtureFractionMonitor::Register(std::shared_ptr<solver::
     // Name this monitor
     auto monitorName = solverIn->GetSolverId() + "_mixtureFraction";
 
-    // Determine the transport name
-
-    // Determine the transport
-
-
     // Define the required fields
     std::vector<std::shared_ptr<domain::FieldDescriptor>> fields{
         std::make_shared<domain::FieldDescription>("zMix", "zMix", domain::FieldDescription::ONECOMPONENT, domain::FieldLocation::SOL, domain::FieldType::FVM),

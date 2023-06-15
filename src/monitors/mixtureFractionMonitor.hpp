@@ -22,12 +22,6 @@ class MixtureFractionMonitor : public FieldMonitor {
     //! store an optional pointer to the TChemReactions to output chemistry source terms
     std::shared_ptr<ablate::finiteVolume::processes::Chemistry> chemistry;
 
-    // store the name of the main field that holds densityYi
-    std::string densityYiField;
-
-    // store the name of the
-    std::string transportFieldName;
-
    public:
     /**
      * Create the mixture fraction monitor using a mixture fraction calculator
