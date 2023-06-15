@@ -1,7 +1,7 @@
 #include <petsc.h>
 
 // Return the number of vertices associated with a given cell using the polytope.
-PetscErrorCode DMPlexGetNumCellVertices(DM dm, const PetscInt p, PetscInt *nv) {
+PetscErrorCode DMPlexCellGetNumVertices(DM dm, const PetscInt p, PetscInt *nv) {
   DMPolytopeType ct;
 
   PetscFunctionBegin;
@@ -43,7 +43,7 @@ PetscErrorCode DMPlexGetNumCellVertices(DM dm, const PetscInt p, PetscInt *nv) {
 
 }
 
-PetscErrorCode DMPlexGetCellVertices(DM dm, const PetscInt p, PetscInt *nVerts, PetscInt *vertOut[]) {
+PetscErrorCode DMPlexCellGetVertices(DM dm, const PetscInt p, PetscInt *nVerts, PetscInt *vertOut[]) {
   PetscInt  vStart, vEnd;
   PetscInt  n;
   PetscInt  cl, nClosure, *closure = NULL;
@@ -51,7 +51,7 @@ PetscErrorCode DMPlexGetCellVertices(DM dm, const PetscInt p, PetscInt *nVerts, 
 
   PetscFunctionBegin;
 
-  PetscCall(DMPlexGetNumCellVertices(dm, p, &nv));
+  PetscCall(DMPlexCellGetNumVertices(dm, p, &nv));
   *nVerts = nv;
 
   PetscCall(DMGetWorkArray(dm, nv, MPIU_INT, vertOut));
@@ -76,7 +76,7 @@ PetscErrorCode DMPlexGetCellVertices(DM dm, const PetscInt p, PetscInt *nVerts, 
 }
 
 
-PetscErrorCode DMPlexRestoreCellVertices(DM dm, const PetscInt p, PetscInt *nVerts, PetscInt *vertOut[]) {
+PetscErrorCode DMPlexCellRestoreVertices(DM dm, const PetscInt p, PetscInt *nVerts, PetscInt *vertOut[]) {
 
   PetscFunctionBegin;
   if (nVerts) *nVerts = 0;
@@ -88,7 +88,7 @@ PetscErrorCode DMPlexRestoreCellVertices(DM dm, const PetscInt p, PetscInt *nVer
 
 
 
-PetscErrorCode DMPlexGetVertexCells(DM dm, const PetscInt p, PetscInt *nCells, PetscInt *cellsOut[]) {
+PetscErrorCode DMPlexVertexGetCells(DM dm, const PetscInt p, PetscInt *nCells, PetscInt *cellsOut[]) {
   PetscInt  cStart, cEnd;
   PetscInt  n;
   PetscInt  cl, nClosure, *closure = NULL;
@@ -130,7 +130,7 @@ PetscErrorCode DMPlexGetVertexCells(DM dm, const PetscInt p, PetscInt *nCells, P
 }
 
 
-PetscErrorCode DMPlexRestoreVertexCells(DM dm, const PetscInt p, PetscInt *nCells, PetscInt *cellsOut[]) {
+PetscErrorCode DMPlexVertexRestoreCells(DM dm, const PetscInt p, PetscInt *nCells, PetscInt *cellsOut[]) {
 
   PetscFunctionBegin;
   if (nCells) *nCells = 0;
@@ -138,12 +138,6 @@ PetscErrorCode DMPlexRestoreVertexCells(DM dm, const PetscInt p, PetscInt *nCell
   PetscFunctionReturn(PETSC_SUCCESS);
 
 }
-
-
-
-
-
-
 
 // Return the coordinates of a list of vertices
 PetscErrorCode DMPlexGetVertexCoordinates(DM dm, const PetscInt np, const PetscInt pArray[], PetscScalar *coords[]) {
@@ -182,6 +176,21 @@ PetscErrorCode DMPlexGetVertexCoordinates(DM dm, const PetscInt np, const PetscI
 PetscErrorCode DMPlexRestoreVertexCoordinates(DM dm, const PetscInt np, const PetscInt pArray[], PetscScalar *coords[]) {
   PetscFunctionBegin;
   PetscCall(DMRestoreWorkArray(dm, 0, MPIU_SCALAR, coords));
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+// Wrapper for the field and non-field calls
+PetscErrorCode xDMPlexPointLocalRef(DM dm, PetscInt p, PetscInt fID, PetscScalar *array, void *ptr) {
+  PetscFunctionBegin;
+  if (fID >= 0) PetscCall(DMPlexPointLocalFieldRef(dm, p, fID, array, ptr));
+  else PetscCall(DMPlexPointLocalRef(dm, p, array, ptr));
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+PetscErrorCode xDMPlexPointLocalRead(DM dm, PetscInt p, PetscInt fID, const PetscScalar *array, void *ptr) {
+  PetscFunctionBegin;
+  if (fID >= 0) PetscCall(DMPlexPointLocalFieldRead(dm, p, fID, array, ptr));
+  else PetscCall(DMPlexPointLocalRead(dm, p, array, ptr));
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 

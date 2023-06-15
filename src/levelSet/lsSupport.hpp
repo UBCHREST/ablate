@@ -1,10 +1,13 @@
-PetscErrorCode DMPlexGetNumCellVertices(DM dm, const PetscInt p, PetscInt *nv);
+PetscErrorCode DMPlexCellGetNumVertices(DM dm, const PetscInt p, PetscInt *nv);
 
-PetscErrorCode DMPlexGetCellVertices(DM dm, const PetscInt p, PetscInt *nVerts, PetscInt *verts[]);
-PetscErrorCode DMPlexRestoreCellVertices(DM dm, const PetscInt p, PetscInt *nVerts, PetscInt *vertOut[]);
+PetscErrorCode DMPlexCellGetVertices(DM dm, const PetscInt p, PetscInt *nVerts, PetscInt *verts[]);
+PetscErrorCode DMPlexCellRestoreVertices(DM dm, const PetscInt p, PetscInt *nVerts, PetscInt *vertOut[]);
 
 PetscErrorCode DMPlexGetVertexCoordinates(DM dm, const PetscInt np, const PetscInt pArray[], PetscScalar *coords[]);
 PetscErrorCode DMPlexRestoreVertexCoordinates(DM dm, const PetscInt np, const PetscInt pArray[], PetscScalar *coords[]);
 
-PetscErrorCode DMPlexRestoreVertexCells(DM dm, const PetscInt p, PetscInt *nCells, PetscInt *cellsOut[]);
-PetscErrorCode DMPlexGetVertexCells(DM dm, const PetscInt p, PetscInt *nCells, PetscInt *cellsOut[]);
+PetscErrorCode DMPlexVertexRestoreCells(DM dm, const PetscInt p, PetscInt *nCells, PetscInt *cellsOut[]);
+PetscErrorCode DMPlexVertexGetCells(DM dm, const PetscInt p, PetscInt *nCells, PetscInt *cellsOut[]);
+
+PetscErrorCode xDMPlexPointLocalRef(DM dm, PetscInt p, PetscInt fID, PetscScalar *array, void *ptr);
+PetscErrorCode xDMPlexPointLocalRead(DM dm, PetscInt p, PetscInt fID, const PetscScalar *array, void *ptr);

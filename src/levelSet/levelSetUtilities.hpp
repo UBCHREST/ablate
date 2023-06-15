@@ -2,6 +2,7 @@
 #define ABLATELIBRARY_LEVELSETUTILITIES_HPP
 
 #include "domain/subDomain.hpp"
+#include "domain/RBF/rbf.hpp"
 
 namespace ablate::levelSet::Utilities {
 
@@ -117,10 +118,32 @@ namespace ablate::levelSet::Utilities {
     * @param vec - Vector containing the cell-centered gradient information
     * @param fid - The field ID of the cell-centered gradient information
     * @param p - Vertex id
-    * @param u - The vector to use when determining upwind directions
+    * @param direction - The direction to be considered upwind. +1 for standard upwind, -1 of downwind
     * @param g - The gradient at p
     */
-  void VertexUpwindGrad(DM dm, Vec vec, const PetscInt fid, const PetscInt p, const PetscReal *u, PetscReal *g);
+  void VertexUpwindGrad(DM dm, Vec vec, const PetscInt fid, const PetscInt p, const PetscReal direction, PetscReal *g);
+
+  /**
+    * Compute the upwind derivative
+    * @param dm - Domain of the data
+    * @param gradArray - Array storing the cell-center gradients
+    * @param cellToIndex - Petsc AO that convertes from DMPlex ordering to the index location in gradArray
+    * @param p - Vertex id
+    * @param direction - The direction to be considered upwind. +1 for standard upwind, -1 of downwind
+    * @param g - The gradient at p
+    */
+  void VertexUpwindGrad(DM dm, PetscReal *gradArray, AO cellToIndex, const PetscInt p, const PetscReal direction, PetscReal *g);
+
+  /**
+    * Compute the leve-set field that corresponds to a volume-of-fluid field
+    * @param rbf - The cell-centered RBF used to estimate the unit normal
+    * @param vofSubDomain - The domain containing the VOF data
+    * @param vofField - Location of cell-centered VOF data
+    * @param nLevels - The number of layers/levels to use surrounding each interface cell
+    * @param lsSubDomain - The domain containing the LS data
+    * @param lsField - Location of vertex-based LS data
+    */
+  void Reinitialize(std::shared_ptr<ablate::domain::rbf::RBF> rbf, std::shared_ptr<ablate::domain::SubDomain> subDomain, const ablate::domain::Field *vofField, const PetscInt nLevels, const ablate::domain::Field *lsField);
 
 
 

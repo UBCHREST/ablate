@@ -346,24 +346,6 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 //}
 
 
-////std::string LevelSetSolver::GetRBFType() {
-
-////  switch (LevelSetSolver::rbfType) {
-////    case ablate::RBF::RBFType::PHS:
-////      return("phs");
-////    case ablate::RBF::RBFType::MQ:
-////      return("mq");
-////    case ablate::RBF::RBFType::IMQ:
-////      return("imq");
-////    case ablate::RBF::RBFType::GA:
-////      return("ga");
-////    default:
-////      return("unknown");
-////  }
-////}
-
-
-
 ////bool LevelSetField::HasInterface(const PetscInt p) {
 ////  bool              hasInterface = false;
 ////  PetscInt          nCells = 0, *cells = NULL;
@@ -495,41 +477,41 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 
 
 
-////// Reinitialize a level set field to make it a signed distance function and to match a target VOF for each cell
-////void LevelSetField::Reinitialize(Vec VOF) {
-////  PetscInt          c, cStart, cEnd;
-////  DM                dm = LevelSetField::dm;
-////  const PetscScalar *vofVal;
-////  PetscScalar       *phiVal;
-////  PetscReal         vof, faceArea, cellVolume;
-////  Vec               newPhi;
+//// Reinitialize a level set field to make it a signed distance function and to match a target VOF for each cell
+//void LevelSetField::Reinitialize(Vec VOF) {
+//  PetscInt          c, cStart, cEnd;
+//  DM                dm = LevelSetField::dm;
+//  const PetscScalar *vofVal;
+//  PetscScalar       *phiVal;
+//  PetscReal         vof, faceArea, cellVolume;
+//  Vec               newPhi;
 
-////  VecDuplicate(LevelSetField::phi, &newPhi);
+//  VecDuplicate(LevelSetField::phi, &newPhi);
 
-////  VecDuplicate(newPhi, &newPhi);
+//  VecDuplicate(newPhi, &newPhi);
 
-////  VecGetArrayRead(VOF, &vofVal) >> utilities::PetscUtilities::checkError;
-////  VecGetArray(newPhi, &phiVal) >> utilities::PetscUtilities::checkError;
+//  VecGetArrayRead(VOF, &vofVal) >> utilities::PetscUtilities::checkError;
+//  VecGetArray(newPhi, &phiVal) >> utilities::PetscUtilities::checkError;
 
-//////Take a look at boundarySolver/physics/sublimation.cpp lines 233-246 + 276
+////Take a look at boundarySolver/physics/sublimation.cpp lines 233-246 + 276
 
-//////Use DMPlexPointGlobalFieldRead to get field values
-//////Stuff like const auto &eulerFieldInfo = solver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD); will return the field info in the DM.
-//////Make the level set a solution variable in the ablate solver
-
-
-////  DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
-////  for (c = cStart; c < cEnd; ++c) {
-////    LevelSetField::VOF(c, &vof, &faceArea, &cellVolume);
-
-////  }
-
-////  VecRestoreArray(newPhi, &phiVal);
-////  VecRestoreArrayRead(VOF, &vofVal) >> utilities::PetscUtilities::checkError;
-////  VecDestroy(&newPhi);
+////Use DMPlexPointGlobalFieldRead to get field values
+////Stuff like const auto &eulerFieldInfo = solver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD); will return the field info in the DM.
+////Make the level set a solution variable in the ablate solver
 
 
-////}
+//  DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
+//  for (c = cStart; c < cEnd; ++c) {
+//    LevelSetField::VOF(c, &vof, &faceArea, &cellVolume);
+
+//  }
+
+//  VecRestoreArray(newPhi, &phiVal);
+//  VecRestoreArrayRead(VOF, &vofVal) >> utilities::PetscUtilities::checkError;
+//  VecDestroy(&newPhi);
+
+
+//}
 
 
 #include "registrar.hpp"
