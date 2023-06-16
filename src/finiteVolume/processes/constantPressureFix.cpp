@@ -26,9 +26,6 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
     eulerFromEnergyAndPressure =
         eos->GetFieldFunctionFunction(finiteVolume::CompressibleFlowFields::EULER_FIELD, eos::ThermodynamicProperty::InternalSensibleEnergy, eos::ThermodynamicProperty::Pressure, {eos::EOS::YI});
 
-    densityOtherPropFromEnergyAndPressure =
-        eos->GetFieldFunctionFunction(conservedOtherProperties, eos::ThermodynamicProperty::InternalSensibleEnergy, eos::ThermodynamicProperty::Pressure, {eos::EOS::YI});
-
     fv.RegisterPostEvaluate([this, conservedOtherProperties, densityYiField](TS ts, ablate::solver::Solver& fvSolver) {
         // get access to the underlying data for the flow
         const auto& eulerId = fvSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD);
@@ -41,9 +38,11 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
         }
 
         PetscInt conservedOtherPropertiesOffset = PETSC_DECIDE;
+        PetscInt conservedOtherPropertiesSize = PETSC_DECIDE;
         if (fvSolver.GetSubDomain().ContainsField(conservedOtherProperties)) {
             const auto& conservedOtherPropertiesOffsetId = fvSolver.GetSubDomain().GetField(conservedOtherProperties);
             conservedOtherPropertiesOffset = conservedOtherPropertiesOffsetId.offset;
+            conservedOtherPropertiesSize = conservedOtherPropertiesOffsetId.numberComponents;
         }
 
         PetscInt dim = fvSolver.GetSubDomain().GetDimensions();
@@ -71,6 +70,9 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
             PetscScalar* conservedValues = nullptr;
             DMPlexPointGlobalRead(dm, cell, solutionArray, &conservedValues);
 
+            PetscScalar test[69];
+            PetscArraycpy(test, conservedValues, 69);
+
             // Get the original density
             if (conservedValues) {
                 PetscReal originalDensity;
@@ -91,7 +93,22 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
 
                 // use the eos to compute the new conserved forms based upon the current internal energy, velocity, yi and a constant pressure
                 eulerFromEnergyAndPressure(internalSensibleEnergy, pressure, dim, velocityScratch, yiScratch.data(), conservedValues + eulerId.offset);
-                densityOtherPropFromEnergyAndPressure(internalSensibleEnergy, pressure, dim, velocityScratch, yiScratch.data(), conservedValues + conservedOtherPropertiesOffset);
+
+                // Now we have the updated density
+                double updatedDensity = conservedValues[eulerId.offset + finiteVolume::CompressibleFlowFields::RHO];
+
+                PetscReal densityRatio = updatedDensity / originalDensity;
+                // Scale the density
+                for (PetscInt s = 0; s < numberSpecies; s++) {
+                    conservedValues[densityYiOffset + s] *= densityRatio;
+                }
+
+                // Scale the other conserved values
+                if (conservedOtherPropertiesOffset >= 0) {
+                    for (PetscInt i = 0; i < conservedOtherPropertiesSize; ++i) {
+                        conservedValues[conservedOtherPropertiesOffset + i] *= densityRatio;
+                    }
+                }
             }
         }
 

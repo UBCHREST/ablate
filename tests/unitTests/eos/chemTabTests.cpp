@@ -21,8 +21,7 @@
     return;
 #endif
 
-
-class ChemTabModelRegistrarFixture : public testingResources::PetscTestFixture{};
+class ChemTabModelRegistrarFixture : public testingResources::PetscTestFixture {};
 
 /*******************************************************************************************************
  * This test ensure that the chemTabModel can be created using the input file
@@ -147,12 +146,13 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectSource) {
         PetscReal actualSourceEnergy = 0.0;
         chemTabModel.ChemistrySource(density, conservedProgressVariable.data(), &actualSourceEnergy, actualSourceProgress.data());
 
-        assert_float_close(expectedSourceEnergy, actualSourceEnergy) << "The sourceEnergy is incorrect for model " << testTarget["testName"].as<std::string>();
+        assert_float_close(expectedSourceEnergy * density, actualSourceEnergy) << "The sourceEnergy is incorrect for model " << testTarget["testName"].as<std::string>();
 
         for (std::size_t r = 0; r < expectedSourceProgress.size(); r++) {
             std::cerr << "expected source: " << expectedSourceProgress[r] << " actual source: " << actualSourceProgress[r] << std::endl << std::flush;
-            assert_float_close(expectedSourceProgress[r], actualSourceProgress[r]) << " the percent difference of (" << expectedSourceProgress[r] << ", " << actualSourceProgress[r]
-                                                                                   << ") should be less than 5.0E-6 for index [" << r << "] for model " << testTarget["testName"].as<std::string>();
+            assert_float_close(expectedSourceProgress[r] * density, actualSourceProgress[r])
+                << " the percent difference of (" << expectedSourceProgress[r] << ", " << actualSourceProgress[r] << ") should be less than 5.0E-6 for index [" << r << "] for model "
+                << testTarget["testName"].as<std::string>();
         }
     }
 }
@@ -248,8 +248,9 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectThermalProperties) {
 
             // test the function where temperature is an input
             auto tChemFunctionTemperature = tchem->GetThermodynamicTemperatureMassFractionFunction(testProperty, tChemFields);
-            ASSERT_EQ(tChemFunctionTemperature.function(tChemFieldsConserved.data(), expectedMassFractions.data(), tChemComputedTemperature, &tChemComputedProperty, tChemFunctionTemperature.context.get()),
-                      0);
+            ASSERT_EQ(
+                tChemFunctionTemperature.function(tChemFieldsConserved.data(), expectedMassFractions.data(), tChemComputedTemperature, &tChemComputedProperty, tChemFunctionTemperature.context.get()),
+                0);
 
             auto chemTabFunctionTemperature = chemTab->GetThermodynamicTemperatureFunction(testProperty, chemTabFields);
             ASSERT_EQ(chemTabFunctionTemperature.function(chemTabFieldsConserved.data(), chemTabComputedTemperature, &chemTabComputedProperty, chemTabFunctionTemperature.context.get()), 0);

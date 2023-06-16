@@ -134,7 +134,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * As far as other parts of the code is concerned the chemTabEos does not expect species
      * @return
      */
-    std::vector<std::shared_ptr<domain::FieldDescriptor>> GetAdditionalFields()  const override;
+    std::vector<std::shared_ptr<domain::FieldDescriptor>> GetAdditionalFields() const override;
 
     /**
      * Single function to compute the source terms for a single point

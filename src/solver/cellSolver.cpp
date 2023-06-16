@@ -197,12 +197,12 @@ void ablate::solver::CellSolver::Setup() {
 
 void ablate::solver::CellSolver::Initialize() {
     // If there are any solution updates
-    if(!solutionFieldUpdateFunctionDescriptions.empty()) {
+    if (!solutionFieldUpdateFunctionDescriptions.empty()) {
         // Update any solutions fields
         UpdateSolutionFields(0.0, subDomain->GetSolutionVector());
 
         // register a prestep
-        this->RegisterPreStage([this](TS ts, Solver&, PetscReal stageTime){
+        this->RegisterPreStage([this](TS ts, Solver&, PetscReal stageTime) {
             Vec globFlowVec;
             TSGetSolution(ts, &globFlowVec) >> utilities::PetscUtilities::checkError;
 

@@ -119,7 +119,7 @@ void ablate::boundarySolver::lodi::LODIBoundary::Setup(ablate::boundarySolver::B
 
     // check if the eos need to do any updates
     auto chemModel = std::dynamic_pointer_cast<eos::ChemistryModel>(eos);
-    if(chemModel) {
+    if (chemModel) {
         for (auto &updateFunction : chemModel->GetSolutionFieldUpdates()) {
             bSolver.RegisterSolutionFieldUpdate(std::get<0>(updateFunction), std::get<1>(updateFunction), std::get<2>(updateFunction));
         }

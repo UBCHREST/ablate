@@ -58,7 +58,7 @@ class Chemistry : public Process, public ablate::utilities::Loggable<Chemistry> 
      * @param solver
      * @param fVec
      */
-    void AddChemistrySourceToFlow(const FiniteVolumeSolver &solver, Vec locFVec);
+    void AddChemistrySourceToFlow(const FiniteVolumeSolver &solver, Vec locX, Vec locFVec);
 };
 }  // namespace ablate::finiteVolume::processes
 #endif

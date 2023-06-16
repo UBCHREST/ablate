@@ -119,7 +119,7 @@ class EOS {
      * Helper function that would allow setting up of any additional required fields needed by the eos
      * @return
      */
-    [[nodiscard]] virtual std::vector<std::shared_ptr<domain::FieldDescriptor>> GetAdditionalFields() const {return {};}
+    [[nodiscard]] virtual std::vector<std::shared_ptr<domain::FieldDescriptor>> GetAdditionalFields() const { return {}; }
 
     /**
      * Properties known by this equation of state used for the FieldFunction calculations. This can be the same as the GetSpeciesVariables.

@@ -8,7 +8,7 @@ ablate::finiteVolume::processes::Chemistry::Chemistry(std::shared_ptr<ablate::eo
 
 void ablate::finiteVolume::processes::Chemistry::Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) {
     // Check if there is another preStage call to make
-    for(auto& updateFunction : chemistryModel->GetSolutionFieldUpdates()){
+    for (auto& updateFunction : chemistryModel->GetSolutionFieldUpdates()) {
         flow.RegisterSolutionFieldUpdate(std::get<0>(updateFunction), std::get<1>(updateFunction), std::get<2>(updateFunction));
     }
 
@@ -92,8 +92,8 @@ PetscErrorCode ablate::finiteVolume::processes::Chemistry::AddChemistrySourceToF
     PetscFunctionReturn(0);
 }
 
-void ablate::finiteVolume::processes::Chemistry::AddChemistrySourceToFlow(const FiniteVolumeSolver& solver, Vec locFVec) {
-    AddChemistrySourceToFlow(solver, solver.GetSubDomain().GetDM(), NAN, nullptr, locFVec, this) >> utilities::PetscUtilities::checkError;
+void ablate::finiteVolume::processes::Chemistry::AddChemistrySourceToFlow(const FiniteVolumeSolver& solver, Vec locX, Vec locFVec) {
+    AddChemistrySourceToFlow(solver, solver.GetSubDomain().GetDM(), NAN, locX, locFVec, this) >> utilities::PetscUtilities::checkError;
 }
 
 #include "registrar.hpp"
