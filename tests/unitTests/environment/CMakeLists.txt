@@ -1,4 +1,4 @@
-target_sources(unitTests
+target_sources(ablateUnitTestLibrary
         PRIVATE
         runEnvironmentTests.cpp
         downloadTests.cpp

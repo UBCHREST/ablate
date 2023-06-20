@@ -1,16 +1,13 @@
-target_sources(unitTests
+target_sources(ablateUnitTestLibrary
         PRIVATE
+        mockEOS.hpp
         perfectGasTests.cpp
         stiffenedGasTests.cpp
         tChemTests.cpp
         chemTabTests.cpp
         twoPhaseTests.cpp
         tChemSootTests.cpp
-
-        PUBLIC
-        mockEOS.hpp
-        chemTabTestFixture.hpp
-)
+        )
 
 add_subdirectory(transport)
 add_subdirectory(radiationProperties)
