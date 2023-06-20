@@ -26,4 +26,4 @@ class TestRunEnvironment {
 
 }  // namespace testingResources
 
-#endif  // ABLATELIBRARY_TEMPORARYPATH_HPP
+#endif  // ABLATELIBRARY_TESTRUNENVIRONMENT_HPP

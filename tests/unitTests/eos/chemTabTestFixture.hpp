@@ -2,6 +2,7 @@
 #define ABLATELIBRARY_CHEMTABTESTFIXTURE_HPP
 
 #include <yaml-cpp/yaml.h>
+#include <filesystem>
 #include <functional>
 #include <map>
 #include <ostream>
@@ -14,7 +15,7 @@
  * Tests for expected input/outputs
  */
 struct ChemTabTestParameters {
-    std::string modelPath;
+    std::filesystem::path modelPath;
     std::string testTargetFile;
 };
 class ChemTabTestFixture : public testingResources::PetscTestFixture, public testing::WithParamInterface<ChemTabTestParameters> {
