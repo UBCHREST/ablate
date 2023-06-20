@@ -70,9 +70,6 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Setup(ablate::finiteV
             PetscScalar* conservedValues = nullptr;
             DMPlexPointGlobalRead(dm, cell, solutionArray, &conservedValues);
 
-            PetscScalar test[69];
-            PetscArraycpy(test, conservedValues, 69);
-
             // Get the original density
             if (conservedValues) {
                 PetscReal originalDensity;
