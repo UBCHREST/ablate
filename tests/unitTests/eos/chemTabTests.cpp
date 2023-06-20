@@ -1,5 +1,5 @@
-#include <yaml-cpp/yaml.h>
 #include "PetscTestFixture.hpp"
+#include "chemTabTestFixture.hpp"
 #include "domain/mockField.hpp"
 #include "eos/chemTab.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
@@ -49,29 +49,7 @@ TEST_F(ChemTabModelRegistrarFixture, ShouldCreateFromRegistrar) {
     ASSERT_TRUE(std::dynamic_pointer_cast<ablate::eos::ChemTab>(instance) != nullptr) << " should be an instance of ablate::chemistry::ChemTabModel";
 }
 
-/*******************************************************************************************************
- * Tests for expected input/outputs
- */
-struct ChemTabModelTestParameters {
-    std::string modelPath;
-    std::string testTargetFile;
-};
-class ChemTabModelTestFixture : public testingResources::PetscTestFixture, public testing::WithParamInterface<ChemTabModelTestParameters> {
-   protected:
-    YAML::Node testTargets;
-
-    void SetUp() override {
-        testingResources::PetscTestFixture::SetUp();
-        testTargets = YAML::LoadFile(GetParam().testTargetFile);
-
-        // this should be an array
-        if (!testTargets.IsSequence()) {
-            FAIL() << "The provided test targets " + GetParam().testTargetFile + " must be an sequence.";
-        }
-    }
-};
-
-TEST_P(ChemTabModelTestFixture, ShouldReturnCorrectSpeciesAndVariables) {
+TEST_P(ChemTabTestFixture, ShouldReturnCorrectSpeciesAndVariables) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
     // iterate over each test
@@ -96,7 +74,7 @@ TEST_P(ChemTabModelTestFixture, ShouldReturnCorrectSpeciesAndVariables) {
 /*******************************************************************************************************
  * Tests for getting the Compute Mass Fractions Functions
  */
-TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectMassFractions) {
+TEST_P(ChemTabTestFixture, ShouldComputeCorrectMassFractions) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
     // iterate over each test
@@ -120,7 +98,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectMassFractions) {
 /*******************************************************************************************************
  * Tests for getting the Source and Source Energy Predictions
  */
-TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectSource) {
+TEST_P(ChemTabTestFixture, ShouldComputeCorrectSource) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
     // iterate over each test
@@ -157,7 +135,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectSource) {
     }
 }
 
-TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectThermalProperties) {
+TEST_P(ChemTabTestFixture, ShouldComputeCorrectThermalProperties) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
     // iterate over each test
@@ -263,7 +241,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectThermalProperties) {
 /*******************************************************************************************************
  * Tests for getting the Progress Variables
  */
-TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectProgressVariables) {
+TEST_P(ChemTabTestFixture, ShouldComputeCorrectProgressVariables) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
     for (const auto& testTarget : testTargets) {
@@ -284,10 +262,10 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectProgressVariables) {
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(ChemTabTests, ChemTabModelTestFixture,
-                         testing::Values((ChemTabModelTestParameters){.modelPath = "inputs/eos/chemTabTestModel_1", .testTargetFile = "inputs/eos/chemTabTestModel_1/testTargets.yaml"}));
+INSTANTIATE_TEST_SUITE_P(ChemTabTests, ChemTabTestFixture,
+                         testing::Values((ChemTabTestParameters){.modelPath = "inputs/eos/chemTabTestModel_1", .testTargetFile = "inputs/eos/chemTabTestModel_1/testTargets.yaml"}));
 
-TEST_P(ChemTabModelTestFixture, ShouldComputeFieldFromProgressVariable) {
+TEST_P(ChemTabTestFixture, ShouldComputeFieldFromProgressVariable) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
     // arrange
