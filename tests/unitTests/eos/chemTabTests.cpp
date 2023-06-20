@@ -262,9 +262,6 @@ TEST_P(ChemTabTestFixture, ShouldComputeCorrectProgressVariables) {
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(ChemTabTests, ChemTabTestFixture,
-                         testing::Values((ChemTabTestParameters){.modelPath = "inputs/eos/chemTabTestModel_1", .testTargetFile = "inputs/eos/chemTabTestModel_1/testTargets.yaml"}));
-
 TEST_P(ChemTabTestFixture, ShouldComputeFieldFromProgressVariable) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
@@ -308,6 +305,9 @@ TEST_P(ChemTabTestFixture, ShouldComputeFieldFromProgressVariable) {
         }
     }
 }
+
+INSTANTIATE_TEST_SUITE_P(ChemTabTests, ChemTabTestFixture,
+                         testing::Values((ChemTabTestParameters){.modelPath = "inputs/eos/chemTabTestModel_1", .testTargetFile = "inputs/eos/chemTabTestModel_1/testTargets.yaml"}));
 
 /*********************************************************************************************************
  * Test for when tensorflow is not available
