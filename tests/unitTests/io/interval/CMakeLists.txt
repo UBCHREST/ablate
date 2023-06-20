@@ -1,4 +1,4 @@
-target_sources(unitTests
+target_sources(ablateUnitTestLibrary
         PRIVATE
         fixedIntervalTests.cpp
         simulationTimeIntervalTests.cpp

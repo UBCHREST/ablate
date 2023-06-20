@@ -20,7 +20,7 @@ TEST(FactoryParameterTests, ShouldCreateFactoryParameters) {
     ASSERT_TRUE(factoryParameters != nullptr);
 }
 
-TEST(FactoryParameterTests, ShouldCreateFromRegistar) {
+TEST(FactoryParameterTests, ShouldCreateFromRegistrar) {
     // arrange
     std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
     const std::string expectedClassType = "";

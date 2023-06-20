@@ -1,7 +1,9 @@
-target_sources(unitTests
+target_sources(ablateUnitTestLibrary
         PRIVATE
         parameterTests.cpp
         factoryParameterTests.cpp
-        mockParameters.hpp
         mapParameterTests.cpp
+
+        PUBLIC
+        mockParameters.hpp
         )

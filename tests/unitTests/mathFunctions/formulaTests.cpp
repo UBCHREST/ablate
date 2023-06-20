@@ -10,7 +10,7 @@
 
 namespace ablateTesting::mathFunctions {
 
-TEST(FormulaTests, ShouldBeCreatedFromRegistar) {
+TEST(FormulaTests, ShouldBeCreatedFromRegistrar) {
     // arrange
     std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
     const std::string expectedClassType = "ablate::mathFunctions::Formula";

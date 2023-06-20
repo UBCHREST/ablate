@@ -169,16 +169,17 @@ void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_
         ProjectFieldFunctions(initializationsFieldFunctions, solGlobalField);
     }
 
-    // do a sanity check to make sure that all points were initialized
-    if (initializations && CheckFieldValues()) {
-        throw std::runtime_error("Field values at points in the domain were not initialized.");
-    }
-
     // Initialize each solver
     StartEvent("Domain::Initialize");
     for (auto& solver : solvers) {
         solver->Initialize();
     }
+
+    // do a sanity check to make sure that all points were initialized
+    if (initializations && CheckFieldValues()) {
+        throw std::runtime_error("Field values at points in the domain were not initialized.");
+    }
+
     EndEvent();
 
     // Set the exact solutions if the field in lives in each subDomain
