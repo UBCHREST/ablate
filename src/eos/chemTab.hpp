@@ -229,6 +229,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
 #else
 class ChemTab : public ChemistryModel {
    public:
+    inline const static std::string DENSITY_YI_DECODE_FIELD = "DENSITY_YI_DECODE";
     static inline const std::string errorMessage = "Using the ChemTab requires Tensorflow to be compile with ABLATE.";
     ChemTab(std::filesystem::path path) : ChemistryModel("ablate::chemistry::ChemTabModel") { throw std::runtime_error(errorMessage); }
 
