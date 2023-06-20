@@ -40,8 +40,8 @@ PetscErrorCode ablate::monitors::MixtureFractionMonitor::Save(PetscViewer viewer
     // get the required fields from the fieldDm and main dm
     const auto& zMixMonitorField = monitorSubDomain->GetField("zMix");
     const auto& yiMonitorField = monitorSubDomain->GetField(ablate::finiteVolume::CompressibleFlowFields::YI_FIELD);
-    const auto& energySourceField = monitorSubDomain->GetField("densityEnergySource");
-    const auto& densityYiSourceField = monitorSubDomain->GetField("densityYiSource");
+    const auto& energySourceField = monitorSubDomain->GetField("energySource");
+    const auto& densityYiSourceField = monitorSubDomain->GetField("yiSource");
     const auto& eulerField = GetSolver()->GetSubDomain().GetField(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD);
     const auto& densityYiField = GetSolver()->GetSubDomain().GetField(ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD);
 

@@ -99,6 +99,7 @@ timestepper:
       - !ablate::finiteVolume::ExtraVariable
         name: "Progress"
         components: [ "NDD" ]
+
       # by adding a pressure field the code will compute and output pressure
       - !ablate::domain::FieldDescription
         name: pressure
