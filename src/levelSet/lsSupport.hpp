@@ -11,3 +11,5 @@ PetscErrorCode DMPlexVertexGetCells(DM dm, const PetscInt p, PetscInt *nCells, P
 
 PetscErrorCode xDMPlexPointLocalRef(DM dm, PetscInt p, PetscInt fID, PetscScalar *array, void *ptr);
 PetscErrorCode xDMPlexPointLocalRead(DM dm, PetscInt p, PetscInt fID, const PetscScalar *array, void *ptr);
+
+PetscErrorCode DMPlexFaceCentroidOutwardNormal(DM dm, PetscInt cell, PetscInt face, PetscReal *centroid, PetscReal *n);

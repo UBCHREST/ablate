@@ -180,7 +180,7 @@ PetscErrorCode DMPlexRestoreVertexCoordinates(DM dm, const PetscInt np, const Pe
 }
 
 
-// Wrapper for the field and non-field calls
+// Wrapper for the field and non-field calls. Got annoyed having this all over the place.
 PetscErrorCode xDMPlexPointLocalRef(DM dm, PetscInt p, PetscInt fID, PetscScalar *array, void *ptr) {
   PetscFunctionBegin;
   if (fID >= 0) PetscCall(DMPlexPointLocalFieldRef(dm, p, fID, array, ptr));
@@ -193,4 +193,39 @@ PetscErrorCode xDMPlexPointLocalRead(DM dm, PetscInt p, PetscInt fID, const Pets
   else PetscCall(DMPlexPointLocalRead(dm, p, array, ptr));
   PetscFunctionReturn(PETSC_SUCCESS);
 }
+
+PetscErrorCode DMPlexFaceCentroidOutwardNormal(DM dm, PetscInt cell, PetscInt face, PetscReal *centroid, PetscReal *n) {
+  PetscFunctionBegin;
+
+  // Get the cell center
+  PetscReal x0[3];
+  PetscCall(DMPlexComputeCellGeometryFVM(dm, cell, NULL, x0, NULL));
+
+  // Centroid and normal for face
+  PetscReal faceCenter[3], normal[3];
+  PetscCall(DMPlexComputeCellGeometryFVM(dm, face, NULL, faceCenter, normal));
+
+  PetscInt dim;
+  PetscCall(DMGetDimension(dm, &dim));
+
+  if (centroid) {
+    for( PetscInt d = 0; d < dim; ++d) centroid[d] = faceCenter[d];
+  }
+
+  if (n) {
+    // Make sure the normal is aligned with the vector connecting the cell center and the face center
+    PetscReal sgn = 0.0;
+    for( PetscInt d = 0; d < dim; ++d) {
+      sgn += normal[d]*(centroid[d] - x0[d]);
+    }
+    sgn = PetscSignReal(sgn);
+
+    for( PetscInt d = 0; d < dim; ++d) {
+      n[d] = sgn*normal[d];
+    }
+  }
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 

@@ -226,11 +226,13 @@ void ablate::levelSet::Utilities::VertexUpwindGrad(DM dm, Vec vec, const PetscIn
       dot += f[d]*(coords[d] - x0[d]);
     }
 
-    if (direction*dot>=0.0) {
+    dot *= direction;
 
-      PetscReal vol;
-      DMPlexComputeCellGeometryFVM(dm, cells[c], &vol, NULL, NULL) >> ablate::utilities::PetscUtilities::checkError;
-      totalVol += vol;
+    if (dot>=0.0) {
+
+//      PetscReal vol;
+//      DMPlexComputeCellGeometryFVM(dm, cells[c], &vol, NULL, NULL) >> ablate::utilities::PetscUtilities::checkError;
+      totalVol += dot;
 
       // Weighted average of the surrounding cell-center gradients.
       //  Note that technically this is (in 2D) the area of the quadrilateral that is formed by connecting
@@ -238,7 +240,7 @@ void ablate::levelSet::Utilities::VertexUpwindGrad(DM dm, Vec vec, const PetscIn
       //  that are formed this way all have the same area, there is no need to take into account the 1/3. Something
       //  similar should hold in 3D and for other cell types that ABLATE uses.
       for (PetscInt d = 0; d < dim; ++d) {
-        g[d] += vol*f[d];
+        g[d] += dot*f[d];
       }
     }
 
@@ -295,12 +297,14 @@ void ablate::levelSet::Utilities::VertexUpwindGrad(DM dm, PetscReal *gradArray, 
 
 //  printf("%d;quiver(%f,%f,%f,%f,0.1,'r');\n", id, x0[0], x0[1], gradArray[id*dim+0], gradArray[id*dim+1]);
 
-      if (direction*dot>=0.0) {
+      dot *= direction;
 
-        PetscReal vol;
-        DMPlexComputeCellGeometryFVM(dm, cells[c], &vol, NULL, NULL) >> ablate::utilities::PetscUtilities::checkError;
+      if (dot>=0.0) {
 
-        totalVol += vol;
+//        PetscReal vol;
+//        DMPlexComputeCellGeometryFVM(dm, cells[c], &vol, NULL, NULL) >> ablate::utilities::PetscUtilities::checkError;
+
+        totalVol += dot;
 
         // Weighted average of the surrounding cell-center gradients.
         //  Note that technically this is (in 2D) the area of the quadrilateral that is formed by connecting
@@ -308,7 +312,7 @@ void ablate::levelSet::Utilities::VertexUpwindGrad(DM dm, PetscReal *gradArray, 
         //  that are formed this way all have the same area, there is no need to take into account the 1/3. Something
         //  similar should hold in 3D and for other cell types that ABLATE uses.
         for (PetscInt d = 0; d < dim; ++d) {
-          g[d] += vol*gradArray[id*dim + d];
+          g[d] += dot*gradArray[id*dim + d];
         }
       }
     }
@@ -587,6 +591,18 @@ void ablate::levelSet::Utilities::Reinitialize(std::shared_ptr<ablate::domain::r
     *val = PETSC_MAX_REAL;
   }
 
+//PetscReal centroid[3], normal[3];
+//DMPlexFaceCentroidOutwardNormal(vofDM, 0, 841, centroid, normal);
+//printf("quiver(%f,%f,%f,%f);\n", centroid[0], centroid[1], normal[0], normal[1]);
+//DMPlexFaceCentroidOutwardNormal(vofDM, 0, 1281,centroid, normal);
+//printf("quiver(%f,%f,%f,%f);\n", centroid[0], centroid[1], normal[0], normal[1]);
+//DMPlexFaceCentroidOutwardNormal(vofDM, 0, 861, centroid, normal);
+//printf("quiver(%f,%f,%f,%f);\n", centroid[0], centroid[1], normal[0], normal[1]);
+//DMPlexFaceCentroidOutwardNormal(vofDM, 0, 1261, centroid, normal);
+//printf("quiver(%f,%f,%f,%f);\n", centroid[0], centroid[1], normal[0], normal[1]);
+
+//exit(0);
+
 
   VecGetArrayRead(vofVec, &vofArray);
   for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
@@ -741,7 +757,7 @@ SaveVertexData("ls1.txt", lsField, subDomain);
 
   PetscReal diff = 1.0;
   PetscInt it = 0;
-  while (diff>1e-2 && it<1000) {
+  while (diff>1e-6 && it<1e10) {
     ++it;
     for (PetscInt i = 0; i < numCells; ++i) {
       PetscInt cell = cellArray[i];
@@ -769,20 +785,18 @@ SaveVertexData("ls1.txt", lsField, subDomain);
         }
         mag -= 1.0;
 
-//        PetscReal s = (*phi)/PetscSqrtReal(PetscSqr(*phi) + h*h);
+//          PetscReal s = (*phi)/PetscSqrtReal(PetscSqr(*phi) + h*h);
         PetscReal s = PetscSignReal(*phi);
 
-        *phi -= 0.1*h*s*mag;
+        *phi -= h*s*mag;
 
         mag = PetscAbsReal(mag);
         diff = PetscMax(diff, mag);
 
-        if (mag<1e-2) vertMask[v] = 0;
-
       }
     }
 
-    printf("%+e\n", diff);
+    printf("%d: %+e\n", it, diff);
 
   }
 SaveVertexData("ls2.txt", lsField, subDomain);
