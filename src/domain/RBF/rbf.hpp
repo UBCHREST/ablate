@@ -18,8 +18,11 @@ class RBF {
     const int polyOrder = 4;
 
     PetscInt nPoly = -1;                 // The number of polynomial components to include
-    PetscInt minNumberCells = -1;        // Minimum number of cells needed to compute the RBF
-    PetscBool useVertices = PETSC_TRUE;  // Use vertices or edges/faces when computing neighbor cells
+    PetscInt minNumberCells = -1;        // Minimum number of cells-vertices needed to compute the RBF
+    PetscBool useCells = PETSC_TRUE;  // Use vertices or edges/faces when computing neighbor cells/vertices
+    PetscBool returnNeighborVertices = PETSC_TRUE;  // If it is true, it returns neighbor vertices, else it returns neighbor cells
+
+    
 
     // Information from the subDomain cell range
     PetscInt cStart = 0, cEnd = 0;  // The cell range

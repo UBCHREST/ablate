@@ -139,7 +139,7 @@ void RBF::Matrix(const PetscInt c) {
     const DM dm = RBF::subDomain->GetSubDM();
 
     // Get the list of neighbor cells
-    DMPlexGetNeighborCells(dm, c, -1, -1.0, RBF::minNumberCells, RBF::useVertices, &nCells, &list);
+    DMPlexGetNeighborCells(dm, c, -1, -1.0, RBF::minNumberCells, RBF::useCells, RBF::returnNeighborVertices, &nCells, &list);
     RBF::nStencil[c] = nCells;
     RBF::stencilList[c] = list;
 
@@ -241,9 +241,9 @@ void RBF::Matrix(const PetscInt c) {
 
 /************ Begin Derivative Code **********************/
 
-void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVerticesLocal) {
+void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useCells) {
     if (numDer > 0) {
-        RBF::useVertices = useVerticesLocal;
+        RBF::useCells = useCells;
         RBF::nDer = numDer;
 
         PetscMalloc1(3 * numDer, &(RBF::dxyz)) >> utilities::PetscUtilities::checkError;
@@ -377,6 +377,8 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
  * Setup all derivative stencils for the entire subDomain
  */
 void RBF::SetupDerivativeStencils() {
+    const PetscInt cStart = RBF::cStart, cEnd = RBF::cEnd;
+
     for (PetscInt c = cStart; c < cEnd; ++c) {
         RBF::SetupDerivativeStencils(RBF::cellList[c]);
     }
@@ -559,23 +561,7 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, Vec f, PetscReal 
 /************ Constructor, Setup, and Initialization Code **********************/
 RBF::RBF(int polyOrder, bool hasDerivatives, bool hasInterpolation) : polyOrder(polyOrder), hasDerivatives(hasDerivatives), hasInterpolation(hasInterpolation) {}
 
-RBF::~RBF() {
-    if ((RBF::cEnd - RBF::cStart) > 0) {
-        for (PetscInt c = RBF::cStart; c < RBF::cEnd; ++c) {
-            PetscFree(RBF::stencilList[c]);
-            if (RBF::RBFMatrix[c]) MatDestroy(&(RBF::RBFMatrix[c]));
-            PetscFree(RBF::stencilWeights[c]);
-            PetscFree(RBF::stencilXLocs[c]);
-        }
-        PetscFree6(RBF::cellList, RBF::nStencil, RBF::stencilList, RBF::RBFMatrix, RBF::stencilXLocs, RBF::stencilWeights) >> utilities::PetscUtilities::checkError;
-    }
-    if (dxyz) {
-        PetscFree(dxyz);
-    }
-    if (hash) {
-        PetscHMapIDestroy(&hash);
-    }
-}
+RBF::~RBF() {}
 
 void RBF::CheckField(const ablate::domain::Field *field) {  // Checks whether the field is SOL or AUX
     PetscMPIInt size;
@@ -677,7 +663,7 @@ void RBF::Initialize(ablate::domain::Range cellRange) {
         for (PetscInt c = RBF::cStart; c < RBF::cEnd; ++c) {
             PetscFree(RBF::stencilList[c]);
             if (RBF::RBFMatrix[c]) MatDestroy(&(RBF::RBFMatrix[c]));
-            PetscFree(RBF::stencilWeights[c]);
+            PetscFree(RBF::stencilWeights);
             PetscFree(RBF::stencilXLocs[c]);
         }
         PetscFree6(RBF::cellList, RBF::nStencil, RBF::stencilList, RBF::RBFMatrix, RBF::stencilXLocs, RBF::stencilWeights) >> utilities::PetscUtilities::checkError;
