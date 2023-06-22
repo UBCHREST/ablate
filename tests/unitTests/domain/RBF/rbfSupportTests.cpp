@@ -171,8 +171,15 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
             PetscMPIInt rank;
             MPI_Comm_rank(PetscObjectComm((PetscObject)mesh->GetDM()), &rank);
 
-            DMPlexGetNeighborCells(
-                mesh->GetDM(), testingParam.centerCell[rank], testingParam.numLevels, testingParam.maxDistance, testingParam.minNumberCells, testingParam.useCells, testingParam.returnNeighborVertices, &nCells, &cells) >>
+            DMPlexGetNeighborCells(mesh->GetDM(),
+                                   testingParam.centerCell[rank],
+                                   testingParam.numLevels,
+                                   testingParam.maxDistance,
+                                   testingParam.minNumberCells,
+                                   testingParam.useCells,
+                                   testingParam.returnNeighborVertices,
+                                   &nCells,
+                                   &cells) >>
                 utilities::PetscUtilities::checkError;
 
             PetscSortInt(nCells, cells);
@@ -317,7 +324,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .numLevels = -1,
                                              .maxDistance = -1.0,
                                              .minNumberCells = 9,
-                                             .useCells= PETSC_TRUE,
+                                             .useCells = PETSC_TRUE,
                                              .returnNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {9, 9},
                                              .expectedCellList = {{11, 12, 6, 16, 10, 17, 7, 15, 5}, {34, 33, 29, 39, 56, 38, 28, 57, 55}}},
@@ -492,7 +499,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .returnNeighborVertices = PETSC_FALSE,
                                              .expectedNumberOfCells = {13},
                                              .expectedCellList = {{35, 44, 45, 46, 53, 54, 55, 56, 57, 64, 65, 66, 75}}},
-		(RBFSupportParameters_NeighborCells){.mpiTestParameter = testingResources::MpiTestParameter("2DQuadCenterLevelCellRV"),
+        (RBFSupportParameters_NeighborCells){.mpiTestParameter = testingResources::MpiTestParameter("2DQuadCenterLevelCellRV"),
                                              .meshFaces = {5, 5},
                                              .meshStart = {0.0, 0.0},
                                              .meshEnd = {1.0, 1.0},
@@ -506,7 +513,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .returnNeighborVertices = PETSC_TRUE,
                                              .expectedNumberOfCells = {16},
                                              .expectedCellList = {{32, 33, 34, 35, 38, 39, 40, 41, 44, 45, 46, 47, 50, 51, 52, 53}}},
-        (RBFSupportParameters_NeighborCells){.mpiTestParameter = testingResources::MpiTestParameter("2DQuadCenterLevelRV"), 
+        (RBFSupportParameters_NeighborCells){.mpiTestParameter = testingResources::MpiTestParameter("2DQuadCenterLevelRV"),
                                              .meshFaces = {5, 5},
                                              .meshStart = {0.0, 0.0},
                                              .meshEnd = {1.0, 1.0},
@@ -517,7 +524,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .maxDistance = -1.0,
                                              .minNumberCells = -1,
                                              .useCells = PETSC_FALSE,
-                                             .returnNeighborVertices= PETSC_TRUE,
+                                             .returnNeighborVertices = PETSC_TRUE,
                                              .expectedNumberOfCells = {12},
                                              .expectedCellList = {{33, 34, 38, 39, 40, 41, 44, 45, 46, 47, 51, 52}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = testingResources::MpiTestParameter("2DQuadLevelCellRV"),
