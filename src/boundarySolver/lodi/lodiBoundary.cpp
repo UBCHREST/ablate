@@ -2,6 +2,7 @@
 #include <finiteVolume/processes/evTransport.hpp>
 #include <finiteVolume/processes/speciesTransport.hpp>
 #include <utility>
+#include "eos/chemistryModel.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/mathUtilities.hpp"
 
@@ -80,8 +81,8 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(const PetscInt sOff[],
     }
     KE = 0.5e+0 * KE;
     mdFdn[sOff[eulerId] + RHOE] = -(d[0] * (KE + Enth - Cp * T) + d[1] / (Cp / Cv - 1.e+0 + 1.0E-30) + rho * dvelterm);
-    const PetscReal *rhoYi = conserved + uOff[speciesId];
     for (int ns = 0; ns < nSpecEqs; ns++) {
+        const PetscReal *rhoYi = conserved + uOff[speciesId];
         mdFdn[sOff[speciesId] + ns] = -(rhoYi[ns] / rho * d[0] + rho * d[2 + dims + ns]);  // species
     }
 
@@ -115,6 +116,15 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(const PetscInt sOff[],
 void ablate::boundarySolver::lodi::LODIBoundary::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
     // Compute the number of equations that need to be solved
     dims = bSolver.GetSubDomain().GetDimensions();
+
+    // check if the eos need to do any updates
+    auto chemModel = std::dynamic_pointer_cast<eos::ChemistryModel>(eos);
+    if (chemModel) {
+        for (auto &updateFunction : chemModel->GetSolutionFieldUpdates()) {
+            bSolver.RegisterSolutionFieldUpdate(std::get<0>(updateFunction), std::get<1>(updateFunction), std::get<2>(updateFunction));
+        }
+    }
+
     if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::EULER_FIELD)) {
         nEqs += bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD).numberComponents;
 
@@ -156,6 +166,17 @@ void ablate::boundarySolver::lodi::LODIBoundary::Setup(ablate::boundarySolver::B
         auto evNonConserved = evField.name.substr(finiteVolume::CompressibleFlowFields::CONSERVED.length());
         bSolver.RegisterAuxFieldUpdate(
             ablate::finiteVolume::processes::EVTransport::UpdateEVField, &nEvComp, std::vector<std::string>{evNonConserved}, {finiteVolume::CompressibleFlowFields::EULER_FIELD, evField.name});
+
+        // add a post evaluate to limit each ev
+        if (evField.Tagged(finiteVolume::CompressibleFlowFields::PositiveRange)) {
+            const auto &conservedFieldName = evField.name;
+            bSolver.RegisterPostEvaluate(
+                [conservedFieldName](TS ts, ablate::solver::Solver &solver) { ablate::finiteVolume::processes::EVTransport::EVTransport::PositiveExtraVariables(ts, solver, conservedFieldName); });
+        } else if (evField.Tagged(finiteVolume::CompressibleFlowFields::BoundRange)) {
+            const auto &conservedFieldName = evField.name;
+            bSolver.RegisterPostEvaluate(
+                [conservedFieldName](TS ts, ablate::solver::Solver &solver) { ablate::finiteVolume::processes::EVTransport::EVTransport::BoundExtraVariables(ts, solver, conservedFieldName); });
+        }
     }
 
     // Call Initialize to setup the other needed vars

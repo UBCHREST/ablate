@@ -1,17 +1,17 @@
 #include <petsc.h>
 #include <cmath>
-#include <domain/dmWrapper.hpp>
-#include <domain/modifiers/distributeWithGhostCells.hpp>
-#include <domain/modifiers/ghostBoundaryCells.hpp>
-#include <finiteVolume/compressibleFlowFields.hpp>
 #include <memory>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
+#include "domain/dmTransfer.hpp"
+#include "domain/modifiers/distributeWithGhostCells.hpp"
+#include "domain/modifiers/ghostBoundaryCells.hpp"
 #include "environment/runEnvironment.hpp"
 #include "eos/perfectGas.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/compressibleFlowSolver.hpp"
 #include "finiteVolume/fluxCalculator/offFlux.hpp"
 #include "gtest/gtest.h"
@@ -186,16 +186,16 @@ TEST_P(CompressibleFlowEulerDiffusionTestFixture, ShouldConvergeToExactSolution)
                 std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(parameters.gamma)}, {"Rgas", std::to_string(parameters.Rgas)}}));
 
             std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
-            auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate,
-                                                                    fieldDescriptors,
-                                                                    std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
-                                                                                                                                      std::make_shared<domain::modifiers::GhostBoundaryCells>()});
+            auto mesh = std::make_shared<ablate::domain::DMTransfer>(dmCreate,
+                                                                     fieldDescriptors,
+                                                                     std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
+                                                                                                                                       std::make_shared<domain::modifiers::GhostBoundaryCells>()});
 
             auto exactSolution = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(EulerExact, &parameters));
 
             // create a time stepper
-            auto timeStepper = ablate::solver::TimeStepper(
-                mesh, nullptr, {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
+            auto timeStepper =
+                ablate::solver::TimeStepper(mesh, nullptr, {}, std::make_shared<ablate::domain::Initializer>(exactSolution), std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
 
             // Setup the flow data
             auto flowParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}});
@@ -273,19 +273,17 @@ TEST_P(CompressibleFlowEulerDiffusionTestFixture, ShouldConvergeToExactSolution)
 
 INSTANTIATE_TEST_SUITE_P(
     CompressibleFlow, CompressibleFlowEulerDiffusionTestFixture,
-    testing::Values((CompressibleFlowEulerDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction",
-                                                                                        .nproc = 1,
-                                                                                        .arguments = "-dm_plex_separate_marker -ts_adapt_type none "
-                                                                                                     "-ts_max_steps 600 -ts_dt 0.00000625 "},
+    testing::Values((CompressibleFlowEulerDiffusionTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("conduction", 1,
+                                                                                                                          "-dm_plex_separate_marker -ts_adapt_type none "
+                                                                                                                          "-ts_max_steps 600 -ts_dt 0.00000625 "),
                                                                    .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
                                                                    .initialNx = 3,
                                                                    .levels = 3,
                                                                    .expectedL2Convergence = {NAN, 2.25, NAN},
                                                                    .expectedLInfConvergence = {NAN, 2.25, NAN}},
-                    (CompressibleFlowEulerDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction multi mpi",
-                                                                                        .nproc = 2,
-                                                                                        .arguments = "-dm_plex_separate_marker -ts_adapt_type none "
-                                                                                                     " -ts_max_steps 600 -ts_dt 0.00000625 "},
+                    (CompressibleFlowEulerDiffusionTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("conduction multi mpi", 2,
+                                                                                                                          "-dm_plex_separate_marker -ts_adapt_type none "
+                                                                                                                          " -ts_max_steps 600 -ts_dt 0.00000625 "),
                                                                    .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
                                                                    .initialNx = 9,
                                                                    .levels = 2,

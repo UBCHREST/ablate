@@ -103,6 +103,9 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryViscosity = 2.5,
                                     .sensibleEnthalpy = 5.0E3,
                                     .boundaryPressure = 0.0,
+                                    .additionalHeatTransfer = nullptr,
+                                    .numberSpecies = 0,
+                                    .speciesMassFractions = {},
                                     // geometry
                                     .dim = 1,
                                     .fvFaceGeom = {.normal = {-1.0, NAN, NAN}, .areas = {-.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
@@ -119,6 +122,9 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryViscosity = 2.5,
                                     .sensibleEnthalpy = 5.0E3,
                                     .boundaryPressure = 0.0,
+                                    .additionalHeatTransfer = nullptr,
+                                    .numberSpecies = 0,
+                                    .speciesMassFractions = {},
                                     // geometry
                                     .dim = 1,
                                     .fvFaceGeom = {.normal = {-1.0, NAN, NAN}, .areas = {-.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
@@ -136,6 +142,8 @@ INSTANTIATE_TEST_SUITE_P(
                                     .sensibleEnthalpy = 5.0E3,
                                     .boundaryPressure = 101325.0,
                                     .additionalHeatTransfer = ablate::mathFunctions::Create(25.0 * 2.5),
+                                    .numberSpecies = 0,
+                                    .speciesMassFractions = {},
                                     // geometry
                                     .dim = 1,
                                     .fvFaceGeom = {.normal = {-1.0, NAN, NAN}, .areas = {-.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
@@ -152,6 +160,9 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryViscosity = 0.5,
                                     .sensibleEnthalpy = 5.0E3,
                                     .boundaryPressure = 101325.0,
+                                    .additionalHeatTransfer = nullptr,
+                                    .numberSpecies = 0,
+                                    .speciesMassFractions = {},
                                     // geometry
                                     .dim = 1,
                                     .fvFaceGeom = {.normal = {1.0, NAN, NAN}, .areas = {.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
@@ -168,6 +179,9 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryViscosity = 0.0,
                                     .sensibleEnthalpy = 5.0E3,
                                     .boundaryPressure = 0.0,
+                                    .additionalHeatTransfer = nullptr,
+                                    .numberSpecies = 0,
+                                    .speciesMassFractions = {},
                                     // geometry
                                     .dim = 1,
                                     .fvFaceGeom = {.normal = {1.0, NAN, NAN}, .areas = {.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
@@ -184,6 +198,9 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryViscosity = 0.0,
                                     .sensibleEnthalpy = 5.0E3,
                                     .boundaryPressure = 0.0,
+                                    .additionalHeatTransfer = nullptr,
+                                    .numberSpecies = 0,
+                                    .speciesMassFractions = {},
                                     // geometry
                                     .dim = 3,
                                     .fvFaceGeom = {.normal = {0.0, 0.0, -1.0}, .areas = {0.0, 0.0, -0.5}, .centroid = {NAN, NAN, NAN}},
@@ -200,6 +217,9 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryViscosity = 0.0,
                                     .sensibleEnthalpy = 5.0E3,
                                     .boundaryPressure = 0.0,
+                                    .additionalHeatTransfer = nullptr,
+                                    .numberSpecies = 0,
+                                    .speciesMassFractions = {},
                                     // geometry
                                     .dim = 3,
                                     .fvFaceGeom = {.normal = {0.0, 0.0, -1.0}, .areas = {0.0, 0.0, -0.5}, .centroid = {NAN, NAN, NAN}},
@@ -216,6 +236,9 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryViscosity = 0.0,
                                     .sensibleEnthalpy = 5.0E3,
                                     .boundaryPressure = 0.0,
+                                    .additionalHeatTransfer = nullptr,
+                                    .numberSpecies = 0,
+                                    .speciesMassFractions = {},
                                     // geometry
                                     .dim = 3,
                                     .fvFaceGeom = {.normal = {0.0, 0.0, 1.0}, .areas = {0.0, 0.0, 0.5}, .centroid = {NAN, NAN, NAN}},
@@ -232,6 +255,9 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryViscosity = 0.0,
                                     .sensibleEnthalpy = 5.0E3,
                                     .boundaryPressure = 0.0,
+                                    .additionalHeatTransfer = nullptr,
+                                    .numberSpecies = 0,
+                                    .speciesMassFractions = {},
                                     // geometry
                                     .dim = 3,
                                     .fvFaceGeom = {.normal = {0.0, 0.0, 1.0}, .areas = {0.0, 0.0, 0.5}, .centroid = {NAN, NAN, NAN}},
@@ -248,6 +274,9 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryViscosity = 0.0,
                                     .sensibleEnthalpy = 5.0E3,
                                     .boundaryPressure = 0.0,
+                                    .additionalHeatTransfer = nullptr,
+                                    .numberSpecies = 0,
+                                    .speciesMassFractions = {},
                                     // geometry
                                     .dim = 2,
                                     .fvFaceGeom = {.normal = {-0.70710678118655, -0.70710678118655}, .areas = {-0.3535533906, -0.3535533906}, .centroid = {NAN, NAN, NAN}},
@@ -264,6 +293,9 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryViscosity = 0.0,
                                     .sensibleEnthalpy = 5.0E3,
                                     .boundaryPressure = 0.0,
+                                    .additionalHeatTransfer = nullptr,
+                                    .numberSpecies = 0,
+                                    .speciesMassFractions = {},
                                     // geometry
                                     .dim = 2,
                                     .fvFaceGeom = {.normal =
@@ -286,6 +318,9 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryViscosity = 0.0,
                                     .sensibleEnthalpy = 5.0E3,
                                     .boundaryPressure = 0.0,
+                                    .additionalHeatTransfer = nullptr,
+                                    .numberSpecies = 0,
+                                    .speciesMassFractions = {},
                                     // geometry
                                     .dim = 2,
                                     .fvFaceGeom = {.normal = {0.70710678118655, 0.70710678118655}, .areas = {0.3535533906, 0.3535533906}, .centroid = {NAN, NAN, NAN}},
@@ -302,6 +337,9 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryViscosity = 0.0,
                                     .sensibleEnthalpy = 5.0E3,
                                     .boundaryPressure = 0.0,
+                                    .additionalHeatTransfer = nullptr,
+                                    .numberSpecies = 0,
+                                    .speciesMassFractions = {},
                                     // geometry
                                     .dim = 2,
                                     .fvFaceGeom = {.normal =
@@ -324,6 +362,7 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryViscosity = 0.0,
                                     .sensibleEnthalpy = 5.0E3,
                                     .boundaryPressure = 0.0,
+                                    .additionalHeatTransfer = nullptr,
                                     .numberSpecies = 3,
                                     .speciesMassFractions = std::make_shared<ablate::mathFunctions::FieldFunction>("massFractions", ablate::mathFunctions::Create(std::vector<double>{.5, .3, .2})),
                                     // geometry
@@ -342,10 +381,11 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryViscosity = 0.0,
                                     .sensibleEnthalpy = 5.0E3,
                                     .boundaryPressure = 0.0,
+                                    .additionalHeatTransfer = nullptr,
                                     .numberSpecies = 3,
                                     .speciesMassFractions = std::make_shared<ablate::mathFunctions::FieldFunction>("massFractions", ablate::mathFunctions::Create(std::vector<double>{.5, .3, .2})),
                                     // geometry
-                                    .dim = 3,
+                                    .dim = 2,
                                     .fvFaceGeom = {.normal =
                                                        {
                                                            0.70710678118655,
@@ -366,7 +406,9 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryViscosity = 0.0,
                                     .sensibleEnthalpy = 5.0E3,
                                     .boundaryPressure = 0.0,
+                                    .additionalHeatTransfer = nullptr,
                                     .numberSpecies = 0,
+                                    .speciesMassFractions = {},
                                     // geometry
                                     .dim = 2,
                                     .fvFaceGeom = {.normal = {0.70710678118655, -0.70710678118655}, .areas = {-0.3535533906, -0.3535533906}, .centroid = {NAN, NAN, NAN}},

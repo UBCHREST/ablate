@@ -1,7 +1,7 @@
 #include <petsc.h>
 #include <vector>
 #include "MpiTestFixture.hpp"
-#include "domain/dmWrapper.hpp"
+#include "domain/dmTransfer.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
 #include "environment/runEnvironment.hpp"
@@ -567,19 +567,19 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
 
             auto conservedFieldParametersPtr = ablate::parameters::MapParameters::Create(GetParam().conservedFieldParameters);
             std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {
-                std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos, std::vector<std::string>{}, domain::Region::ENTIREDOMAIN, conservedFieldParametersPtr)};
+                std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos, domain::Region::ENTIREDOMAIN, conservedFieldParametersPtr)};
 
-            auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate,
-                                                                    fieldDescriptors,
-                                                                    std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
-                                                                                                                                      std::make_shared<domain::modifiers::GhostBoundaryCells>()});
+            auto mesh = std::make_shared<ablate::domain::DMTransfer>(dmCreate,
+                                                                     fieldDescriptors,
+                                                                     std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
+                                                                                                                                       std::make_shared<domain::modifiers::GhostBoundaryCells>()});
 
             // create a time stepper
             auto exactSolution = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(EulerExact, &constants));
             auto timeStepper = ablate::solver::TimeStepper(mesh,
                                                            ablate::parameters::MapParameters::Create({{"ts_max_steps", "1"}}),
                                                            {},
-                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution},
+                                                           std::make_shared<ablate::domain::Initializer>(exactSolution),
                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
 
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}});
@@ -657,7 +657,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
 
 INSTANTIATE_TEST_SUITE_P(
     CompressibleFlowSolver, CompressibleFlowMmsTestFixture,
-    testing::Values((CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed average", .nproc = 1, .arguments = "-dm_plex_separate_marker"},
+    testing::Values((CompressibleFlowMmsTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("low speed average", 1, "-dm_plex_separate_marker"),
                                                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
                                                         .constants = {.dim = 2,
                                                                       .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
@@ -674,7 +674,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .levels = 4,
                                                         .expectedL2Convergence = {2, 2, 2, 2},
                                                         .expectedLInfConvergence = {1.9, 1.8, 1.8, 1.8}},
-                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "high speed average", .nproc = 1, .arguments = "-dm_plex_separate_marker"},
+                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("high speed average", 1, "-dm_plex_separate_marker"),
                                                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
 
                                                         .constants = {.dim = 2,
@@ -692,7 +692,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .levels = 4,
                                                         .expectedL2Convergence = {2, 2, 2, 2},
                                                         .expectedLInfConvergence = {1.9, 1.8, 1.8, 1.8}},
-                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed ausm", .nproc = 1, .arguments = "-dm_plex_separate_marker"},
+                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("low speed ausm", 1, "-dm_plex_separate_marker"),
                                                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
 
                                                         .constants = {.dim = 2,
@@ -710,7 +710,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .levels = 4,
                                                         .expectedL2Convergence = {1.0, 1.0, 1.4, 1.0},
                                                         .expectedLInfConvergence = {1.0, 1.0, 1.4, 1.0}},
-                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "high speed ausm", .nproc = 1, .arguments = "-dm_plex_separate_marker "},
+                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("high speed ausm", 1, "-dm_plex_separate_marker "),
                                                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
 
                                                         .constants = {.dim = 2,
@@ -728,7 +728,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .levels = 4,
                                                         .expectedL2Convergence = {1.0, 1.0, 1.0, 1.0},
                                                         .expectedLInfConvergence = {1.0, 1.0, 1.0, 1.0}},
-                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed ausmpup", .nproc = 1, .arguments = "-dm_plex_separate_marker"},
+                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("low speed ausmpup", 1, "-dm_plex_separate_marker"),
                                                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AusmpUp>(.3),
 
                                                         .constants = {.dim = 2,
@@ -746,7 +746,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .levels = 4,
                                                         .expectedL2Convergence = {1.0, 1.0, 1.2, 1.0},
                                                         .expectedLInfConvergence = {1.0, 1.0, 1.2, 1.0}},
-                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "high speed ausmpup", .nproc = 1, .arguments = "-dm_plex_separate_marker "},
+                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("high speed ausmpup", 1, "-dm_plex_separate_marker "),
                                                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AusmpUp>(.3),
 
                                                         .constants = {.dim = 2,
@@ -764,7 +764,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .levels = 4,
                                                         .expectedL2Convergence = {1.0, 1.0, 1.0, 1.0},
                                                         .expectedLInfConvergence = {1.0, 1.0, 1.0, 1.0}},
-                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed ausm leastsquares", .nproc = 1, .arguments = "-dm_plex_separate_marker"},
+                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("low speed ausm leastsquares", 1, "-dm_plex_separate_marker"),
                                                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
 
                                                         .constants = {.dim = 2,
@@ -783,7 +783,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .expectedL2Convergence = {1.5, 1.5, 1.5, 1.5},
                                                         .expectedLInfConvergence = {1.0, 1.0, 1.0, 1.0},
                                                         .conservedFieldParameters = {{"petscfv_type", "leastsquares"}}},
-                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "high speed ausm leastsquares", .nproc = 1, .arguments = "-dm_plex_separate_marker"},
+                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("high speed ausm leastsquares", 1, "-dm_plex_separate_marker"),
                                                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
 
                                                         .constants = {.dim = 2,
@@ -802,7 +802,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .expectedL2Convergence = {1.5, 1.5, 1.5, 1.5},
                                                         .expectedLInfConvergence = {1.0, 0.5, 1.0, 1.0},
                                                         .conservedFieldParameters = {{"petscfv_type", "leastsquares"}}},
-                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed average with conduction", .nproc = 1, .arguments = "-dm_plex_separate_marker "},
+                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("low speed average with conduction", 1, "-dm_plex_separate_marker "),
                                                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
 
                                                         .constants = {.dim = 2,
@@ -820,7 +820,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .levels = 4,
                                                         .expectedL2Convergence = {2, 2, 2, 2},
                                                         .expectedLInfConvergence = {1.9, 1.8, 1.8, 1.8}},
-                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "high speed average with conduction", .nproc = 1, .arguments = "-dm_plex_separate_marker  "},
+                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("high speed average with conduction", 1, "-dm_plex_separate_marker  "),
                                                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
 
                                                         .constants = {.dim = 2,
@@ -838,7 +838,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .levels = 4,
                                                         .expectedL2Convergence = {2, 2, 2, 2},
                                                         .expectedLInfConvergence = {1.9, 1.8, 1.8, 1.8}},
-                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed average with conduction and diffusion", .nproc = 1, .arguments = "-dm_plex_separate_marker "},
+                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("low speed average with conduction and diffusion", 1, "-dm_plex_separate_marker "),
                                                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
 
                                                         .constants = {.dim = 2,
@@ -856,7 +856,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .levels = 4,
                                                         .expectedL2Convergence = {2, 2, 2, 2.2},
                                                         .expectedLInfConvergence = {1.9, 1.8, 1.8, 2.0}},
-                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "high speed average with conduction and diffusion", .nproc = 1, .arguments = "-dm_plex_separate_marker "},
+                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("high speed average with conduction and diffusion", 1, "-dm_plex_separate_marker "),
                                                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
 
                                                         .constants = {.dim = 2,
@@ -874,7 +874,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .levels = 4,
                                                         .expectedL2Convergence = {2, 2, 2, 2.0},
                                                         .expectedLInfConvergence = {1.9, 2.0, 1.8, 1.8}},
-                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed average with conduction and diffusion 3D", .nproc = 1, .arguments = "-dm_plex_separate_marker "},
+                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("low speed average with conduction and diffusion 3D", 1, "-dm_plex_separate_marker "),
                                                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
 
                                                         .constants = {.dim = 3,

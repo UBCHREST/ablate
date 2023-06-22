@@ -29,8 +29,8 @@ class TurbFlowStats : public FieldMonitor {
     PetscMonitorFunction GetPetscFunction() override { return MonitorTurbFlowStats; }
     void Register(std::shared_ptr<ablate::solver::Solver> solverIn) override;
 
-    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
-    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 };
 
 }  // namespace ablate::monitors

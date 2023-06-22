@@ -59,13 +59,13 @@ TEST_F(GitHubTestsFixture, ShouldDownloadFile) {
     // check for test
     if (const char* gitHubToken = std::getenv("GITHUB_TOKEN")) {
         // arrange
-        ablate::environment::GitHub fileLocator("ubchrest/ablate", "tests/unitTests/inputs/eos/grimech30.dat", gitHubToken);
+        ablate::environment::GitHub fileLocator("ubchrest/ablate", "tests/unitTests/inputs/eos/gri30.yaml", gitHubToken);
 
         // act
         auto computedFilePath = fileLocator.Locate();
 
         // assert
-        ASSERT_EQ(std::string("grimech30.dat"), computedFilePath.filename());
+        ASSERT_EQ(std::string("gri30.yaml"), computedFilePath.filename());
         ASSERT_TRUE(std::filesystem::exists(computedFilePath));
         ASSERT_FALSE(std::filesystem::is_empty(computedFilePath));
 
@@ -86,13 +86,13 @@ TEST_F(GitHubTestsFixture, ShouldDownloadAndRelocateFile) {
         // setup the run env
         testingResources::TestRunEnvironment testRunEnvironment(outputDir);
 
-        ablate::environment::GitHub fileLocator("ubchrest/ablate", "tests/unitTests/inputs/eos/grimech30.dat", gitHubToken);
+        ablate::environment::GitHub fileLocator("ubchrest/ablate", "tests/unitTests/inputs/eos/gri30.yaml", gitHubToken);
 
         // act
         auto computedFilePath = fileLocator.Locate();
 
         // assert
-        ASSERT_EQ(std::string("grimech30.dat"), computedFilePath.filename());
+        ASSERT_EQ(std::string("gri30.yaml"), computedFilePath.filename());
         ASSERT_TRUE(std::filesystem::exists(computedFilePath));
         ASSERT_EQ(outputDir, computedFilePath.parent_path());
         ASSERT_FALSE(std::filesystem::is_empty(computedFilePath));

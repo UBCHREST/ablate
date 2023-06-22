@@ -20,6 +20,9 @@ class CsvLog : public Log {
 
     void Initialize(MPI_Comm comm) final;
 
+    // allow access to all print from base
+    using Log::Print;
+
     /**
      * print all arguments as a new line in a csv
      * @param ...

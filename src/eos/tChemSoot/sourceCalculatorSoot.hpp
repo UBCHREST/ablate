@@ -1,5 +1,7 @@
 #ifndef ABLATELIBRARY_TCHEM_SOURCECALCULATORSOOT_HPP
 #define ABLATELIBRARY_TCHEM_SOURCECALCULATORSOOT_HPP
+#include <Kokkos_Macros.hpp>
+#ifndef KOKKOS_ENABLE_CUDA
 
 #include <TChem_KineticModelGasConstData.hpp>
 #include "eos/chemistryModel.hpp"
@@ -98,3 +100,4 @@ class SourceCalculatorSoot : public ChemistryModel::SourceCalculator, private ut
 }  // namespace ablate::eos::tChemSoot
 
 #endif  // ABLATELIBRARY_BATCHSOURCE_HPP
+#endif

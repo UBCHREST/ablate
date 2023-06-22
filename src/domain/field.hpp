@@ -38,19 +38,26 @@ struct Field {
 
     static Field FromFieldDescription(const FieldDescription& fieldDescription, PetscInt id, PetscInt subId = PETSC_DEFAULT, PetscInt offset = PETSC_DEFAULT);
 
-    Field CreateSubField(PetscInt subId, PetscInt offset) const;
+    [[nodiscard]] Field CreateSubField(PetscInt subId, PetscInt offset) const;
 
     // helper function to check if the field contains a certain tag
-    inline bool Tagged(std::string_view tag) const {
+    [[nodiscard]] inline bool Tagged(std::string_view tag) const {
         return std::any_of(tags.begin(), tags.end(), [tag](const auto& tagItem) { return tagItem == tag; });
     }
+
+    /**
+     * Create a copy and rename the field
+     * @param newName
+     * @return
+     */
+    [[nodiscard]] Field Rename(std::string newName) const;
 
     /**
      * return the component index in the current field
      * @param search
      * @return
      */
-    inline std::size_t ComponentIndex(std::string_view search) const {
+    [[nodiscard]] inline std::size_t ComponentIndex(std::string_view search) const {
         auto it = std::find_if(components.begin(), components.end(), [search](const auto& component) { return component == search; });
 
         // If element was found
@@ -66,7 +73,7 @@ struct Field {
      * @param search
      * @return
      */
-    inline std::size_t ComponentOffset(std::string_view search) const { return ComponentIndex(search) + offset; }
+    [[nodiscard]] inline std::size_t ComponentOffset(std::string_view search) const { return ComponentIndex(search) + offset; }
 };
 
 std::istream& operator>>(std::istream& is, FieldLocation& v);

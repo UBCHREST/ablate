@@ -10,8 +10,6 @@ arguments:
   dm_plex_separate_marker: ""
 # set up the time stepper responsible for marching in time
 timestepper:
-  io:
-    interval: 0
   # for this example there are no time stepper arguments (empty simulation)
   arguments: { }
   # create a simple box mesh for simulation

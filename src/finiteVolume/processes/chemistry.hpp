@@ -7,7 +7,7 @@
 
 namespace ablate::finiteVolume::processes {
 
-class Chemistry : public Process {
+class Chemistry : public Process, public ablate::utilities::Loggable<Chemistry> {
    private:
     //! store the eos that will be used to create the calculator
     const std::shared_ptr<ablate::eos::ChemistryModel> chemistryModel;
@@ -58,7 +58,7 @@ class Chemistry : public Process {
      * @param solver
      * @param fVec
      */
-    void AddChemistrySourceToFlow(const FiniteVolumeSolver &solver, Vec locFVec);
+    void AddChemistrySourceToFlow(const FiniteVolumeSolver &solver, Vec locX, Vec locFVec);
 };
 }  // namespace ablate::finiteVolume::processes
 #endif

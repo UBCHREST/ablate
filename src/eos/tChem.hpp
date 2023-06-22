@@ -55,8 +55,7 @@ class TChem : public TChemBase, public std::enable_shared_from_this<ablate::eos:
      * @param mechFile
      * @param optionalThermoFile
      */
-    explicit TChem(std::filesystem::path mechanismFile, std::filesystem::path thermoFile = {}, std::shared_ptr<ablate::monitors::logs::Log> = {},
-                   const std::shared_ptr<ablate::parameters::Parameters>& options = {});
+    explicit TChem(std::filesystem::path mechanismFile, std::shared_ptr<ablate::monitors::logs::Log> = {}, const std::shared_ptr<ablate::parameters::Parameters>& options = {});
 
     /**
      * Single function to produce thermodynamic function for any property based upon the available fields

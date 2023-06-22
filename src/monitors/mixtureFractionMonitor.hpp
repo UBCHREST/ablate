@@ -34,7 +34,7 @@ class MixtureFractionMonitor : public FieldMonitor {
      * @param sequenceNumber
      * @param time
      */
-    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 
     /**
      * this call setups the monitor and defines the mixture fraction fields

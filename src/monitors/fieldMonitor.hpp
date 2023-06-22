@@ -25,14 +25,14 @@ class FieldMonitor : public Monitor, public io::Serializable {
      * only required function, returns the id of the object.  Should be unique for the simulation
      * @return
      */
-    const std::string& GetId() const override { return monitorDomain->GetName(); }
+    [[nodiscard]] const std::string& GetId() const override { return monitorDomain->GetName(); }
 
     /**
      * In order to use the base class, the Register call must be overridden and Register(std::shared_ptr<solver::Solver> solverIn, std::vector<domain::FieldDescription> fields) must be called from the
      * method
      * @param solverIn
      */
-    void Register(std::shared_ptr<solver::Solver> solverIn) override = 0;
+    void Register(std::shared_ptr<solver::Solver> solverIn) override { Monitor::Register(solverIn); }
 
     /**
      * In order to use the base class, the Register call must be overridden and
@@ -46,7 +46,7 @@ class FieldMonitor : public Monitor, public io::Serializable {
      * @param sequenceNumber
      * @param time
      */
-    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 
     /**
      * Restore the state from the PetscViewer
@@ -54,7 +54,7 @@ class FieldMonitor : public Monitor, public io::Serializable {
      * @param sequenceNumber
      * @param time
      */
-    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 };
 
 }  // namespace ablate::monitors

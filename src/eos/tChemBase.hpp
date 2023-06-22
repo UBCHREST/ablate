@@ -30,9 +30,6 @@ class TChemBase : public ChemistryModel {
     //! the mechanismFile may be chemkin or yaml based
     const std::filesystem::path mechanismFile;
 
-    //! the thermoFile may be empty when using yaml input file
-    const std::filesystem::path thermoFile;
-
     //! an optional log file for tchem echo redirection
     std::shared_ptr<ablate::monitors::logs::Log> log;
 
@@ -40,6 +37,11 @@ class TChemBase : public ChemistryModel {
      * The kinetic model data
      */
     tChemLib::KineticModelData kineticsModel;
+
+    /**
+     * Store the primary kinetics data on the device
+     */
+    std::shared_ptr<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<host_exec_space>::type>> kineticsModelDataHost;
 
     /**
      * Store the primary kinetics data on the device
@@ -54,7 +56,12 @@ class TChemBase : public ChemistryModel {
     /**
      * The reference enthalpy per species
      */
-    real_type_1d_view enthalpyReference;
+    real_type_1d_view enthalpyReferenceDevice;
+
+    /**
+     * The reference enthalpy per species
+     */
+    real_type_1d_view_host enthalpyReferenceHost;
 
    public:
     /**
@@ -62,7 +69,7 @@ class TChemBase : public ChemistryModel {
      * @param mechFile
      * @param optionalThermoFile
      */
-    explicit TChemBase(const std::string& eosName, std::filesystem::path mechanismFile, std::filesystem::path thermoFile = {}, std::shared_ptr<ablate::monitors::logs::Log> = {},
+    explicit TChemBase(const std::string& eosName, std::filesystem::path mechanismFile, const std::shared_ptr<ablate::monitors::logs::Log>& = {},
                        const std::shared_ptr<ablate::parameters::Parameters>& options = {});
 
     /**
@@ -97,7 +104,7 @@ class TChemBase : public ChemistryModel {
     /**
      * Get the  reference enthalpy per species
      */
-    real_type_1d_view GetEnthalpyOfFormation() { return enthalpyReference; };
+    real_type_1d_view GetEnthalpyOfFormation() { return enthalpyReferenceDevice; };
 
     /**
      * Species supported by this EOS
@@ -112,7 +119,27 @@ class TChemBase : public ChemistryModel {
      */
     [[nodiscard]] virtual const std::vector<std::string>& GetProgressVariables() const override { return ablate::utilities::VectorUtilities::Empty<std::string>; }
 
+    /**
+     * Helper function to get the specific EnthalpyOfFormation
+     * @param species
+     * @return
+     */
+    inline double GetEnthalpyOfFormation(std::string_view speciesName) const {
+        auto it = std::find_if(species.begin(), species.end(), [speciesName](const auto& component) { return component == speciesName; });
+        // If element was found
+        if (it != species.end()) {
+            return enthalpyReferenceHost[std::distance(species.begin(), it)];
+        } else {
+            throw std::invalid_argument(std::string("Cannot locate species ") + std::string(speciesName) + " in EOS " + type);
+        }
+    }
+
    protected:
+    /**
+     * only allow modern input files
+     */
+    static const inline std::array<std::string, 2> validFileExtensions = {".yaml", ".yml"};
+
     struct FunctionContext {
         // memory access locations for fields
         PetscInt dim;
@@ -120,27 +147,20 @@ class TChemBase : public ChemistryModel {
         PetscInt densityYiOffset;
 
         //! per species state
-        real_type_2d_view stateDevice;
+        real_type_2d_view_host stateHost;
         //! per species array
-        real_type_2d_view perSpeciesDevice;
+        real_type_2d_view_host perSpeciesHost;
         //! mass weighted mixture
-        real_type_1d_view mixtureDevice;
-
-        //! per species state
-        real_type_2d_view stateHost;
-        //! per species array
-        real_type_2d_view perSpeciesHost;
-        //! mass weighted mixture
-        real_type_1d_view mixtureHost;
+        real_type_1d_view_host mixtureHost;
 
         //! store the enthalpyReferencePerSpecies
-        real_type_1d_view enthalpyReference;
+        real_type_1d_view_host enthalpyReferenceHost;
 
         //! the kokkos team policy for this function
-        tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type policy;
+        tChemLib::UseThisTeamPolicy<tChemLib::host_exec_space>::type policy;
 
         //! the kinetics data
-        std::shared_ptr<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<exec_space>::type>> kineticsModelDataDevice;
+        std::shared_ptr<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<host_exec_space>::type>> kineticsModelDataHost;
     };
 
    public:
@@ -149,4 +169,4 @@ class TChemBase : public ChemistryModel {
 };
 
 }  // namespace ablate::eos
-#endif  // ABLATELIBRARY_TCHEM_HPP
+#endif  // ABLATELIBRARY_TCHEMBASE_HPP

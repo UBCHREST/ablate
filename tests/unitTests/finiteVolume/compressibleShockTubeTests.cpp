@@ -8,7 +8,7 @@ static char help[] = "Compressible ShockTube 1D Tests";
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
-#include "domain/dmWrapper.hpp"
+#include "domain/dmTransfer.hpp"
 #include "environment/runEnvironment.hpp"
 #include "eos/perfectGas.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
@@ -153,7 +153,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
 
             // define the fields based upon a compressible flow
             std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
-            auto mesh = std::make_shared<ablate::domain::DMWrapper>(
+            auto mesh = std::make_shared<ablate::domain::DMTransfer>(
                 dmCreate, fieldDescriptors, std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::GhostBoundaryCells>()});
 
             auto initialCondition = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(SetInitialCondition, (void *)&testingParam.initialConditions));
@@ -164,7 +164,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
                 ablate::parameters::MapParameters::Create(
                     {{"ts_max_time", std::to_string(testingParam.maxTime)}, {"ts_adapt_type", "physics"}, {"ts_adapt_safety", "1.0"}, {"ts_exact_final_time", "matchstep"}}),
                 {},
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{initialCondition});
+                std::make_shared<ablate::domain::Initializer>(initialCondition));
 
             // Setup the flow data
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", std::to_string(testingParam.cfl)}});
@@ -211,7 +211,7 @@ INSTANTIATE_TEST_SUITE_P(
     CompressibleFlow, CompressibleShockTubeTestFixture,
     testing::Values(
         (CompressibleShockTubeParameters){
-            .mpiTestParameter = {.testName = "ausm case 1 sod problem", .nproc = 1, .arguments = ""},
+            .mpiTestParameter = testingResources::MpiTestParameter("ausm case 1 sod problem"),
             .initialConditions = {.gamma = 1.4, .length = 1.0, .rhoL = 1.0, .uL = 0.0, .pL = 1.0, .rhoR = 0.125, .uR = 0.0, .pR = .1},
             .fluxCalculator = std::make_shared<finiteVolume::fluxCalculator::Ausm>(),
             .nx = 100,
@@ -243,7 +243,7 @@ INSTANTIATE_TEST_SUITE_P(
                         1.927208, 1.979682, 2.044387, 2.120816, 2.207195, 2.300413, 2.396201, 2.489628, 2.575862, 2.651007, 2.712735, 2.760506, 2.795328, 2.819226, 2.834640, 2.843934, 2.849089,
                         2.851582, 2.852354, 2.851798, 2.849633, 2.844476, 2.832727, 2.805981, 2.745427, 2.613658, 2.378205, 2.132874, 2.026528, 2.004348, 2.000687, 2.000110}}}},
         (CompressibleShockTubeParameters){
-            .mpiTestParameter = {.testName = "case 2 expansion left and expansion right", .nproc = 1, .arguments = ""},
+            .mpiTestParameter = testingResources::MpiTestParameter("case 2 expansion left and expansion right"),
             .initialConditions = {.gamma = 1.4, .length = 1.0, .rhoL = 1.0, .uL = -2.0, .pL = 0.4, .rhoR = 1.0, .uR = 2.0, .pR = 0.4},
             .fluxCalculator = std::make_shared<finiteVolume::fluxCalculator::Ausm>(),
             .nx = 100,
@@ -276,7 +276,7 @@ INSTANTIATE_TEST_SUITE_P(
                         0.663928, 0.672950, 0.682397, 0.692288, 0.702640, 0.713467, 0.724774, 0.736562, 0.748822, 0.761538, 0.774683, 0.788218, 0.802094, 0.816248, 0.830604, 0.845074, 0.859554,
                         0.873930, 0.888074, 0.901849, 0.915110, 0.927710, 0.939503, 0.950352, 0.960138, 0.968769, 0.976188, 0.982383, 0.987389, 0.991291, 0.994214, 0.996311}}}},
         (CompressibleShockTubeParameters){
-            .mpiTestParameter = {.testName = "case 5 shock collision shock left and shock right", .nproc = 1, .arguments = ""},
+            .mpiTestParameter = testingResources::MpiTestParameter("case 5 shock collision shock left and shock right"),
             .initialConditions = {.gamma = 1.4, .length = 1.0, .rhoL = 5.99924, .uL = 19.5975, .pL = 460.894, .rhoR = 5.99242, .uR = -6.19633, .pR = 46.0950},
             .fluxCalculator = std::make_shared<finiteVolume::fluxCalculator::Ausm>(),
             .nx = 100,

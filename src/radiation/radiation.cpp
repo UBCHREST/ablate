@@ -17,6 +17,7 @@ ablate::radiation::Radiation::~Radiation() {
     if (faceGeomVec) VecDestroy(&faceGeomVec) >> utilities::PetscUtilities::checkError;
     if (cellGeomVec) VecDestroy(&cellGeomVec) >> utilities::PetscUtilities::checkError;
     if (remoteAccess) PetscSFDestroy(&remoteAccess) >> utilities::PetscUtilities::checkError;
+    MPI_Type_free(&carrierMpiType) >> utilities::MpiUtilities::checkError;
 }
 
 /** allows initialization after the subdomain and dm is established */

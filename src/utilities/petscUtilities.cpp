@@ -8,23 +8,33 @@ void ablate::utilities::PetscUtilities::Initialize(const char help[]) {
     ablate::environment::RunEnvironment::RegisterCleanUpFunction("ablate::utilities::PetscUtilities::Initialize", []() { PetscFinalize() >> utilities::PetscUtilities::checkError; });
 }
 
-void ablate::utilities::PetscUtilities::Set(const std::string& prefix, const std::map<std::string, std::string>& options) {
+void ablate::utilities::PetscUtilities::Set(const std::string& prefix, const std::map<std::string, std::string>& options, bool override) {
     // March over and set each option in the global petsc database
-    for (auto optionPair : options) {
+    for (const auto& optionPair : options) {
         std::string optionName = "-" + prefix + "" + optionPair.first;
-        PetscOptionsSetValue(NULL, optionName.c_str(), optionPair.second.empty() ? NULL : optionPair.second.c_str()) >> utilities::PetscUtilities::checkError;
+
+        // If not override, check for use first
+        if (!override) {
+            PetscBool exists;
+            PetscOptionsHasName(nullptr, nullptr, optionName.c_str(), &exists) >> utilities::PetscUtilities::checkError;
+            if (exists) {
+                continue;
+            }
+        }
+
+        PetscOptionsSetValue(nullptr, optionName.c_str(), optionPair.second.empty() ? nullptr : optionPair.second.c_str()) >> utilities::PetscUtilities::checkError;
     }
 }
 
 void ablate::utilities::PetscUtilities::Set(const std::map<std::string, std::string>& options) {
-    const std::string noPrefix = "";
+    const std::string noPrefix;
     Set(noPrefix, options);
 }
 
 void ablate::utilities::PetscUtilities::Set(PetscOptions petscOptions, const std::map<std::string, std::string>& options) {
-    for (auto optionPair : options) {
+    for (const auto& optionPair : options) {
         std::string optionName = "-" + optionPair.first;
-        PetscOptionsSetValue(petscOptions, optionName.c_str(), optionPair.second.empty() ? NULL : optionPair.second.c_str()) >> utilities::PetscUtilities::checkError;
+        PetscOptionsSetValue(petscOptions, optionName.c_str(), optionPair.second.empty() ? nullptr : optionPair.second.c_str()) >> utilities::PetscUtilities::checkError;
     }
 }
 

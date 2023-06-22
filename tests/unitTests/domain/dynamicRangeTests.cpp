@@ -1,4 +1,3 @@
-#include <petsc.h>
 #include <fstream>
 #include "domain/dynamicRange.hpp"
 #include "gtest/gtest.h"

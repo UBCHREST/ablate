@@ -6,6 +6,7 @@
 #include <memory>
 #include <parameters/parameters.hpp>
 #include <string>
+#include <utility>
 #include <vector>
 #include "domain/field.hpp"
 #include "domain/region.hpp"
@@ -17,7 +18,7 @@ namespace ablate::domain {
  * Describes the necessary information to produce a field in the domain/dm
  */
 struct FieldDescription : public FieldDescriptor, public std::enable_shared_from_this<FieldDescription> {
-    virtual ~FieldDescription();
+    ~FieldDescription() override;
 
     // Helper variable, replaces any components with this value with one for each dimension
     inline const static std::string DIMENSION = "_DIMENSION_";
@@ -44,8 +45,8 @@ struct FieldDescription : public FieldDescriptor, public std::enable_shared_from
     // store any optional tags, there are strings that can be used to describe the field
     const std::vector<std::string> tags;
 
-    FieldDescription(std::string name, std::string prefix, std::vector<std::string> components, FieldLocation location, FieldType type, std::shared_ptr<domain::Region> = {},
-                     std::shared_ptr<parameters::Parameters> = {}, std::vector<std::string> tags = {});
+    FieldDescription(std::string name, const std::string& prefix, const std::vector<std::string>& components, FieldLocation location, FieldType type, std::shared_ptr<domain::Region> = {},
+                     const std::shared_ptr<parameters::Parameters>& = {}, std::vector<std::string> tags = {});
 
     /**
      * Public function that will cause the components to expand or decompress based upon the number of dims
@@ -62,9 +63,21 @@ struct FieldDescription : public FieldDescriptor, public std::enable_shared_from
      */
     virtual PetscObject CreatePetscField(DM dm) const;
 
+    /**
+     * public configure to set the options after creation
+     * @param optionsIn
+     */
+    inline std::shared_ptr<FieldDescription> Specialize(FieldType typeIn, std::shared_ptr<domain::Region> regionIn, std::shared_ptr<parameters::Parameters> optionsIn = {},
+                                                        std::vector<std::string> tagsIn = {}) {
+        return std::make_shared<FieldDescription>(name, prefix, components, location, typeIn, regionIn, optionsIn, tagsIn);
+    }
+
    private:
+    // keep the original Parameters
+    std::shared_ptr<parameters::Parameters> options;
+
     // Petsc options specific for this field
-    PetscOptions options = nullptr;
+    mutable PetscOptions petscOptions = nullptr;
 };
 
 }  // namespace ablate::domain

@@ -10,7 +10,7 @@
 
 namespace ablateTesting::mathFunctions {
 
-TEST(FormulaTests, ShouldBeCreatedFromRegistar) {
+TEST(FormulaTests, ShouldBeCreatedFromRegistrar) {
     // arrange
     std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
     const std::string expectedClassType = "ablate::mathFunctions::Formula";
@@ -78,14 +78,15 @@ TEST_P(FormulaScalarFixture, ShouldComputeCorrectAnswerFromCoord) {
 }
 
 INSTANTIATE_TEST_SUITE_P(FormulaTests, FormulaScalarFixture,
-                         testing::Values((FormulaScalarParameters){.formula = "v*x", .nested = {{"v", "2.0"}}, .expectedResult = 2.0},
-                                         (FormulaScalarParameters){.formula = "v*x + z", .nested = {{"v", "3.0*y"}}, .expectedResult = 9.0},
-                                         (FormulaScalarParameters){.formula = "t*vel + test", .nested = {{"vel", "3.0*y"}, {"test", "z"}}, .expectedResult = 27},
+                         testing::Values((FormulaScalarParameters){.formula = "v*x", .nested = {{"v", "2.0"}}, .constants = {}, .expectedResult = 2.0},
+                                         (FormulaScalarParameters){.formula = "v*x + z", .nested = {{"v", "3.0*y"}}, .constants = {}, .expectedResult = 9.0},
+                                         (FormulaScalarParameters){.formula = "t*vel + test", .nested = {{"vel", "3.0*y"}, {"test", "z"}}, .constants = {}, .expectedResult = 27},
                                          (FormulaScalarParameters){.formula = "t*vel + test + CC/AA",
                                                                    .nested = {{"vel", "3.0*y"}, {"test", "z"}},
-                                                                   .constants = ablate::parameters::MapParameters::Create({{"CC", "3"}, {"AA", "1.5"}}),
+                                                                   .constants = ablate::parameters::MapParameters::Create({{"CC", 3}, {"AA", 1.5}}),
                                                                    .expectedResult = 29},
-                                         (FormulaScalarParameters){.formula = "t*CC/AA", .constants = ablate::parameters::MapParameters::Create({{"CC", "3"}, {"AA", "1.5"}}), .expectedResult = 8}));
+                                         (FormulaScalarParameters){
+                                             .formula = "t*CC/AA", .nested = {}, .constants = ablate::parameters::MapParameters::Create({{"CC", 3}, {"AA", 1.5}}), .expectedResult = 8}));
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct FormulaTestsVectorParameters {
@@ -149,18 +150,17 @@ TEST_P(FormulaTestsVectorFixture, ShouldComputeCorrectAnswerPetscFunction) {
         ASSERT_DOUBLE_EQ(param.expectedResult[i], result[i]);
     }
 }
-INSTANTIATE_TEST_SUITE_P(FormulaTests, FormulaTestsVectorFixture,
-                         testing::Values((FormulaTestsVectorParameters){.formula = "v*x", .nested = {{"v", "2.0"}}, .expectedResult = {2.0}},
-                                         (FormulaTestsVectorParameters){.formula = "v*x + z", .nested = {{"v", "3.0*y"}}, .expectedResult = {9.0}},
-                                         (FormulaTestsVectorParameters){.formula = "t*vel + test", .nested = {{"vel", "3.0*y"}, {"test", "z"}}, .expectedResult = {27}},
-                                         (FormulaTestsVectorParameters){.formula = "v*x, v*z + y", .nested = {{"v", "3.0*y"}}, .expectedResult = {6, 20}},
-                                         (FormulaTestsVectorParameters){.formula = "0, i*y, t/i", .nested = {{"i", "10.0"}}, .expectedResult = {0, 20, 0.4}},
-                                         (FormulaTestsVectorParameters){.formula = "0+CC, i*y+CC, t/i+AA",
-                                                                        .nested = {{"i", "10.0"}},
-                                                                        .constants = ablate::parameters::MapParameters::Create({{"CC", "3"}, {"AA", "1.5"}}),
-                                                                        .expectedResult = {3, 23, 1.9}},
-                                         (FormulaTestsVectorParameters){
-                                             .formula = "0+CC, y+CC, t+AA", .constants = ablate::parameters::MapParameters::Create({{"CC", "3"}, {"AA", "1.5"}}), .expectedResult = {3, 5, 5.5}}));
+INSTANTIATE_TEST_SUITE_P(
+    FormulaTests, FormulaTestsVectorFixture,
+    testing::Values((FormulaTestsVectorParameters){.formula = "v*x", .nested = {{"v", "2.0"}}, .constants = {}, .expectedResult = {2.0}},
+                    (FormulaTestsVectorParameters){.formula = "v*x + z", .nested = {{"v", "3.0*y"}}, .constants = {}, .expectedResult = {9.0}},
+                    (FormulaTestsVectorParameters){.formula = "t*vel + test", .nested = {{"vel", "3.0*y"}, {"test", "z"}}, .constants = {}, .expectedResult = {27}},
+                    (FormulaTestsVectorParameters){.formula = "v*x, v*z + y", .nested = {{"v", "3.0*y"}}, .constants = {}, .expectedResult = {6, 20}},
+                    (FormulaTestsVectorParameters){.formula = "0, i*y, t/i", .nested = {{"i", "10.0"}}, .constants = {}, .expectedResult = {0, 20, 0.4}},
+                    (FormulaTestsVectorParameters){
+                        .formula = "0+CC, i*y+CC, t/i+AA", .nested = {{"i", "10.0"}}, .constants = ablate::parameters::MapParameters::Create({{"CC", 3}, {"AA", 1.5}}), .expectedResult = {3, 23, 1.9}},
+                    (FormulaTestsVectorParameters){
+                        .formula = "0+CC, y+CC, t+AA", .nested = {}, .constants = ablate::parameters::MapParameters::Create({{"CC", 3}, {"AA", 1.5}}), .expectedResult = {3, 5, 5.5}}));
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 TEST(FormulaTests, ShouldProduceDeterministicPsueduRandomNumber) {

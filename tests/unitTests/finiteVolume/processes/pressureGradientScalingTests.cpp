@@ -49,53 +49,53 @@ TEST_P(PressureGradientScalingTestFixture, ShouldUpdatePgsCorrectly) {
         // initialize petsc and mpi
         ablate::environment::RunEnvironment::Initialize(argc, argv);
         ablate::utilities::PetscUtilities::Initialize();
+        {
+            const auto& parameters = GetParam();
 
-        const auto& parameters = GetParam();
+            auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287"}}));
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
 
-        auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287"}}));
-        std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
+            auto domain =
+                std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
+                                                          fieldDescriptors,
+                                                          std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<ablate::domain::modifiers::DistributeWithGhostCells>(),
+                                                                                                                            std::make_shared<ablate::domain::modifiers::GhostBoundaryCells>()},
+                                                          std::vector<int>{(int)30, (int)30},
+                                                          std::vector<double>{0.0, 0.0},
+                                                          std::vector<double>{1.0, 1.0},
+                                                          std::vector<std::string>{} /*boundary*/,
+                                                          false /*simplex*/
+                );
 
-        auto domain =
-            std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
-                                                      fieldDescriptors,
-                                                      std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<ablate::domain::modifiers::DistributeWithGhostCells>(),
-                                                                                                                        std::make_shared<ablate::domain::modifiers::GhostBoundaryCells>()},
-                                                      std::vector<int>{(int)30, (int)30},
-                                                      std::vector<double>{0.0, 0.0},
-                                                      std::vector<double>{1.0, 1.0},
-                                                      std::vector<std::string>{} /*boundary*/,
-                                                      false /*simplex*/
-            );
+            // Create the pgs
+            auto pgs = std::make_shared<ablate::finiteVolume::processes::PressureGradientScaling>(
+                eos, parameters.alphaInit, parameters.domainLength, parameters.maxAlphaAllowed, parameters.maxDeltaPressureFac);
 
-        // Create the pgs
-        auto pgs =
-            std::make_shared<ablate::finiteVolume::processes::PressureGradientScaling>(eos, parameters.alphaInit, parameters.domainLength, parameters.maxAlphaAllowed, parameters.maxDeltaPressureFac);
+            // Create a fV for testing
+            // Make a finite volume with only a gravity
+            auto fvObject = std::make_shared<ablate::finiteVolume::FiniteVolumeSolver>("testFV",
+                                                                                       ablate::domain::Region::ENTIREDOMAIN,
+                                                                                       nullptr /*options*/,
+                                                                                       std::vector<std::shared_ptr<ablate::finiteVolume::processes::Process>>{},
+                                                                                       std::vector<std::shared_ptr<ablate::finiteVolume::boundaryConditions::BoundaryCondition>>{});
 
-        // Create a fV for testing
-        // Make a finite volume with only a gravity
-        auto fvObject = std::make_shared<ablate::finiteVolume::FiniteVolumeSolver>("testFV",
-                                                                                   ablate::domain::Region::ENTIREDOMAIN,
-                                                                                   nullptr /*options*/,
-                                                                                   std::vector<std::shared_ptr<ablate::finiteVolume::processes::Process>>{},
-                                                                                   std::vector<std::shared_ptr<ablate::finiteVolume::boundaryConditions::BoundaryCondition>>{});
+            // Create a ts for testing
+            TS testTs;
+            TSCreate(PETSC_COMM_WORLD, &testTs) >> testErrorChecker;
 
-        // Create a ts for testing
-        TS testTs;
-        TSCreate(PETSC_COMM_WORLD, &testTs) >> testErrorChecker;
+            // initialize the domain/fields with the specified inputs
+            domain->InitializeSubDomains(std::vector<std::shared_ptr<ablate::solver::Solver>>{fvObject}, std::make_shared<ablate::domain::Initializer>(parameters.getFieldFunction(eos)));
 
-        // initialize the domain/fields with the specified inputs
-        domain->InitializeSubDomains(std::vector<std::shared_ptr<ablate::solver::Solver>>{fvObject},
-                                     std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>>{parameters.getFieldFunction(eos)});
+            // act
+            pgs->UpdatePreconditioner(testTs, *fvObject);
 
-        // act
-        pgs->UpdatePreconditioner(testTs, *fvObject);
+            // assert
+            ASSERT_LT(Difference(parameters.expectedAlpha, pgs->GetAlpha()), 1E-4);
+            ASSERT_LT(Difference(parameters.expectedMaxMach, pgs->GetMaxMach()), 1E-4);
 
-        // assert
-        ASSERT_LT(Difference(parameters.expectedAlpha, pgs->GetAlpha()), 1E-4);
-        ASSERT_LT(Difference(parameters.expectedMaxMach, pgs->GetMaxMach()), 1E-4);
-
-        // cleanup
-        TSDestroy(&testTs) >> testErrorChecker;
+            // cleanup
+            TSDestroy(&testTs) >> testErrorChecker;
+        }
         ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
@@ -104,7 +104,7 @@ TEST_P(PressureGradientScalingTestFixture, ShouldUpdatePgsCorrectly) {
 INSTANTIATE_TEST_SUITE_P(
     PressureGradientScalingTests, PressureGradientScalingTestFixture,
     testing::Values(
-        (PressureGradientScalingTestParameters){.mpiTestParameter = {.testName = "pgs test 1", .nproc = 1, .arguments = ""},
+        (PressureGradientScalingTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("pgs test 1"),
                                                 .alphaInit = 5.0,
                                                 .domainLength = 2.0,
                                                 .maxAlphaAllowed = {} /*default value*/,
@@ -120,7 +120,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 /* expected results **/
                                                 .expectedAlpha = 5.5,
                                                 .expectedMaxMach = 0.00288027},
-        (PressureGradientScalingTestParameters){.mpiTestParameter = {.testName = "pgs test 2", .nproc = 1, .arguments = ""},
+        (PressureGradientScalingTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("pgs test 2"),
                                                 .alphaInit = 5.0,
                                                 .domainLength = 2.0,
                                                 .maxAlphaAllowed = {} /*default value*/,
@@ -136,7 +136,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 /* expected results **/
                                                 .expectedAlpha = 2.430320,
                                                 .expectedMaxMach = 0.2880277994805399},
-        (PressureGradientScalingTestParameters){.mpiTestParameter = {.testName = "pgs test 3", .nproc = 1, .arguments = ""},
+        (PressureGradientScalingTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("pgs test 3"),
                                                 .alphaInit = 5.0,
                                                 .domainLength = 2.0,
                                                 .maxAlphaAllowed = 1.5,
@@ -153,7 +153,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .expectedAlpha = 1.5,
                                                 .expectedMaxMach = 0.2880277994805399},
         (PressureGradientScalingTestParameters){
-            .mpiTestParameter = {.testName = "pgs test 4", .nproc = 2, .arguments = ""},
+            .mpiTestParameter = testingResources::MpiTestParameter("pgs test 4", 2),
             .alphaInit = 5.0,
             .domainLength = 2.0,
             .maxAlphaAllowed = {} /*default value*/,
@@ -170,7 +170,7 @@ INSTANTIATE_TEST_SUITE_P(
             .expectedAlpha = 3.7061,
             .expectedMaxMach = 0.040733},
         (PressureGradientScalingTestParameters){
-            .mpiTestParameter = {.testName = "pgs test 5", .nproc = 2, .arguments = ""},
+            .mpiTestParameter = testingResources::MpiTestParameter("pgs test 5", 2),
             .alphaInit = 5.0,
             .domainLength = 2.0,
             .maxAlphaAllowed = {} /*default value*/,
@@ -187,7 +187,7 @@ INSTANTIATE_TEST_SUITE_P(
             .expectedAlpha = 3.7061,
             .expectedMaxMach = 0.0633316},
         (PressureGradientScalingTestParameters){
-            .mpiTestParameter = {.testName = "pgs test 6", .nproc = 2, .arguments = ""},
+            .mpiTestParameter = testingResources::MpiTestParameter("pgs test 6", 2),
             .alphaInit = 5.0,
             .domainLength = 2.0,
             .maxAlphaAllowed = {} /*default value*/,

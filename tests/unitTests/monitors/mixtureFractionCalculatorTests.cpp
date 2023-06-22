@@ -75,10 +75,10 @@ TEST_P(MixtureFractionCalculatorFixture, ShouldComputeMixtureFractionUsingFieldF
 }
 
 INSTANTIATE_TEST_SUITE_P(MixtureFractionCalculatorTests, MixtureFractionCalculatorFixture,
-                         testing::Values((MixtureFractionCalculatorParameters){.createEOS =
-                                                                                   []() { return std::make_shared<ablate::eos::TChem>("inputs/eos/grimech30.dat", "inputs/eos/thermo30.dat"); },
+                         testing::Values((MixtureFractionCalculatorParameters){.createEOS = []() { return std::make_shared<ablate::eos::TChem>("inputs/eos/gri30.yaml"); },
                                                                                .massFractionsFuel = {{"CH4", 1.0}},
                                                                                .massFractionsOxidizer = {{"O2", 1.0}},
+                                                                               .trackingElements = {},
                                                                                .parameters =
                                                                                    {
                                                                                        {{{"CH4", 1}}, 1.0},
@@ -91,6 +91,7 @@ INSTANTIATE_TEST_SUITE_P(MixtureFractionCalculatorTests, MixtureFractionCalculat
                                          (MixtureFractionCalculatorParameters){.createEOS = []() { return std::make_shared<ablate::eos::TChem>("inputs/eos/gri30.yaml"); },
                                                                                .massFractionsFuel = {{"CH4", 0.7}, {"CH", 0.3}},
                                                                                .massFractionsOxidizer = {{"N2", 0.75511}, {"O2", 0.2314}, {"AR", 0.0129}, {"CO2", 0.00059}},
+                                                                               .trackingElements = {},
                                                                                .parameters = {
                                                                                    {{{"CH4", 0.7}, {"CH", 0.3}}, 1.0},
                                                                                    {{{"N2", 0.75511}, {"O2", 0.2314}, {"AR", 0.0129}, {"CO2", 0.00059}}, 0},

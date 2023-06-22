@@ -10,6 +10,7 @@
 #include "domain/fieldDescriptor.hpp"
 #include "domain/modifiers/modifier.hpp"
 #include "fieldDescription.hpp"
+#include "initializer.hpp"
 #include "io/serializable.hpp"
 #include "mathFunctions/fieldFunction.hpp"
 #include "region.hpp"
@@ -25,6 +26,13 @@ namespace ablate::domain {
 class SubDomain;
 
 class Domain : private utilities::Loggable<Domain> {
+   public:
+    //! The name of the solution field vector
+    const static inline std::string solution_vector_name = "solution";
+
+    //! The name of the aux field vector
+    const static inline std::string aux_vector_name = "aux";
+
    protected:
     Domain(DM dm, std::string name, std::vector<std::shared_ptr<FieldDescriptor>>, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers,
            const std::shared_ptr<parameters::Parameters>& options = {}, bool setFromOptions = true);
@@ -84,7 +92,7 @@ class Domain : private utilities::Loggable<Domain> {
      * @param solvers
      * @param initializations
      */
-    void InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers = {}, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations = {},
+    void InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers = {}, std::shared_ptr<ablate::domain::Initializer> initializations = {},
                               const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& = {});
 
     /**
@@ -100,13 +108,6 @@ class Domain : private utilities::Loggable<Domain> {
      * Provide a list of serialize subDomains
      */
     std::vector<std::weak_ptr<io::Serializable>> GetSerializableSubDomains();
-
-    /**
-     * Get the petscField object from the dm or auxDm for this region
-     * @param fieldName
-     * @return
-     */
-    PetscObject GetPetscFieldObject(const Field& field);
 
     /**
      *  returns the field  by global id

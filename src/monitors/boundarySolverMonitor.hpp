@@ -62,7 +62,7 @@ class BoundarySolverMonitor : public Monitor, public io::Serializable {
      *  Should be unique for the monitor
      * @return
      */
-    const std::string& GetId() const override { return name; }
+    [[nodiscard]] const std::string& GetId() const override { return name; }
 
     /**
      * Compute and store the current boundary output values
@@ -70,7 +70,7 @@ class BoundarySolverMonitor : public Monitor, public io::Serializable {
      * @param sequenceNumber
      * @param time
      */
-    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 
     /**
      * This is not needed for ghe boundary solver monitor
@@ -78,7 +78,7 @@ class BoundarySolverMonitor : public Monitor, public io::Serializable {
      * @param sequenceNumber
      * @param time
      */
-    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override {}
+    PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override { return 0; }
 };
 
 }  // namespace ablate::monitors

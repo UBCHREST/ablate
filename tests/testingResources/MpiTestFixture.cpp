@@ -23,37 +23,37 @@ std::string testingResources::MpiTestFixture::mpiCommand = STR(COMPILE_MPI_COMMA
 std::string testingResources::MpiTestFixture::mpiCommand = "mpirun";
 #endif
 
-std::string testingResources::MpiTestFixture::ParseCommandLineArgument(int* argc, char*** argv, const std::string flag) {
+std::string testingResources::MpiTestFixture::ParseCommandLineArgument(int* argcIn, char*** argvIn, const std::string flag) {
     int commandLineArgumentLocation = -1;
     std::string argument;
-    for (auto i = 0; i < *argc; i++) {
-        if (strncmp(flag.c_str(), (*argv)[i], flag.length()) == 0) {
+    for (auto i = 0; i < *argcIn; i++) {
+        if (strncmp(flag.c_str(), (*argvIn)[i], flag.length()) == 0) {
             commandLineArgumentLocation = i;
 
-            argument = std::string((*argv)[i]);
+            argument = std::string((*argvIn)[i]);
             argument = argument.substr(argument.find("=") + 1);
         }
     }
 
     if (commandLineArgumentLocation >= 0) {
-        *argc = (*argc) - 1;
-        for (auto i = commandLineArgumentLocation; i < *argc; i++) {
-            (*argv)[i] = (*argv)[i + 1];
+        *argcIn = (*argcIn) - 1;
+        for (auto i = commandLineArgumentLocation; i < *argcIn; i++) {
+            (*argvIn)[i] = (*argvIn)[i + 1];
         }
     }
 
     return argument;
 }
 
-bool testingResources::MpiTestFixture::InitializeTestingEnvironment(int* argc, char*** argv) {
-    MpiTestFixture::argc = argc;
-    MpiTestFixture::argv = argv;
+bool testingResources::MpiTestFixture::InitializeTestingEnvironment(int* argcIn, char*** argvIn) {
+    MpiTestFixture::argc = argcIn;
+    MpiTestFixture::argv = argvIn;
 
     MpiTestFixture::inMpiTestRun = !MpiTestFixture::ParseCommandLineArgument(MpiTestFixture::argc, MpiTestFixture::argv, MpiTestFixture::InTestRunFlag).empty();
     MpiTestFixture::keepOutputFile = !MpiTestFixture::ParseCommandLineArgument(MpiTestFixture::argc, MpiTestFixture::argv, MpiTestFixture::Keep_Output_File).empty();
 
     char* commandName = std::getenv(MpiTestFixture::Test_Mpi_Command_Name.c_str());
-    if (commandName != NULL) {
+    if (commandName != nullptr) {
         MpiTestFixture::mpiCommand = std::string(commandName);
     }
 
@@ -74,16 +74,20 @@ void testingResources::MpiTestFixture::TearDown() {
 
 void testingResources::MpiTestFixture::RunWithMPI() const {
     // build the mpi command
-    std::stringstream mpiCommand;
-    mpiCommand << MpiTestFixture::mpiCommand << " ";
-    mpiCommand << "-n " << mpiTestParameter.nproc << " ";
-    mpiCommand << "\"" << ExecutablePath() << "\" ";
-    mpiCommand << InTestRunFlag << " ";
-    mpiCommand << "--gtest_filter=" << TestName() << " ";
-    mpiCommand << mpiTestParameter.arguments << " ";
-    mpiCommand << " > " << OutputFile() << " 2>&1";
+    std::stringstream mpiCommandBuild;
+    // Build the asan or other environment flags if needed
+    if (!mpiTestParameter.environment.empty()) {
+        mpiCommandBuild << mpiTestParameter.environment << " ";
+    }
+    mpiCommandBuild << MpiTestFixture::mpiCommand << " ";
+    mpiCommandBuild << "-n " << mpiTestParameter.nproc << " ";
+    mpiCommandBuild << "\"" << ExecutablePath() << "\" ";
+    mpiCommandBuild << InTestRunFlag << " ";
+    mpiCommandBuild << "--gtest_filter=" << TestName() << " ";
+    mpiCommandBuild << mpiTestParameter.arguments << " ";
+    mpiCommandBuild << " > " << OutputFile() << " 2>&1";
 
-    auto exitCode = std::system(mpiCommand.str().c_str());
+    auto exitCode = std::system(mpiCommandBuild.str().c_str());
     if (exitCode != 0) {
         std::ifstream outputStream(OutputFile());
         std::string output((std::istreambuf_iterator<char>(outputStream)), std::istreambuf_iterator<char>());

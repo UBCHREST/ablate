@@ -9,7 +9,7 @@
 
 namespace ablateTesting::parser {
 
-#define REMOTE_URL "https://raw.githubusercontent.com/UBCHREST/ablate/main/tests/unitTests/inputs/eos/thermo30.dat"
+#define REMOTE_URL "https://raw.githubusercontent.com/UBCHREST/ablate/main/tests/unitTests/inputs/eos/gri30.yaml"
 
 namespace fs = std::filesystem;
 
@@ -34,7 +34,7 @@ TEST(YamlParserTests, ShouldLocateLocalFile) {
     std::shared_ptr<cppParser::Factory> yamlParser = std::make_shared<cppParser::YamlParser>(tempYaml);
 
     // act
-    auto computedFilePath = yamlParser->Get(cppParser::ArgumentIdentifier<std::filesystem::path>{"fileName"});
+    auto computedFilePath = yamlParser->Get(cppParser::ArgumentIdentifier<std::filesystem::path>{.inputName = "fileName", .description = "", .optional = false});
 
     // assert
     ASSERT_TRUE(std::filesystem::exists(computedFilePath));
@@ -68,7 +68,7 @@ TEST(YamlParserTests, ShouldLocateFileNextToInputFile) {
     auto yamlMeshFactory = yamlParser->GetFactory("mesh");
 
     // act
-    auto computedFilePath = yamlMeshFactory->Get(cppParser::ArgumentIdentifier<std::filesystem::path>{"fileName"});
+    auto computedFilePath = yamlMeshFactory->Get(cppParser::ArgumentIdentifier<std::filesystem::path>{.inputName = "fileName", .description = "", .optional = false});
 
     // assert
     ASSERT_TRUE(std::filesystem::exists(computedFilePath));
@@ -101,7 +101,7 @@ TEST_F(YamlParserTestsPetscTestFixture, ShouldDownloadAndRelocateFile) {
     testingResources::TestRunEnvironment testRunEnvironment(*params);
 
     // act
-    auto computedFilePath = yamlParser->Get(cppParser::ArgumentIdentifier<std::filesystem::path>{"fileName"});
+    auto computedFilePath = yamlParser->Get(cppParser::ArgumentIdentifier<std::filesystem::path>{.inputName = "fileName", .description = "", .optional = false});
 
     // assert
     ASSERT_TRUE(std::filesystem::exists(computedFilePath));

@@ -67,7 +67,11 @@ class RunEnvironment {
         return *runEnvironment;
     }
 
-    inline const std::filesystem::path& GetOutputDirectory() const { return outputDirectory; }
+    /**
+     * Return the path to the root of the current output directory
+     * @return
+     */
+    [[nodiscard]] inline const std::filesystem::path& GetOutputDirectory() const { return outputDirectory; }
 
     /**
      * replaces any known runtime variables with known values

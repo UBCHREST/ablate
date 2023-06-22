@@ -15,6 +15,7 @@
 #include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/compressibleFlowSolver.hpp"
+#include "finiteVolume/extraVariable.hpp"
 #include "finiteVolume/processes/speciesTransport.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
@@ -108,7 +109,8 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
 
             // determine required fields for finite volume compressible flow
             std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {
-                std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos, std::vector<std::string>{"ev1", "ev2"})};
+                std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos),
+                std::make_shared<ablate::finiteVolume::ExtraVariable>("", std::vector<std::string>{"ev1", "ev2"}, nullptr, ablate::finiteVolume::CompressibleFlowFields::ValidRange::FULL)};
 
             auto mesh = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
                                                                   fieldDescriptors,
@@ -131,11 +133,11 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
             // Create the yi field solutions
             auto evExact = ablate::mathFunctions::Create(ComputeDensityEVExact, &parameters);
             auto evExactField = std::make_shared<mathFunctions::FieldFunction>(finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD, evExact);
-            std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization{eulerExactField, evExactField};
+            auto initialization = std::make_shared<ablate::domain::Initializer>(eulerExactField, evExactField);
 
             // create a time stepper
             auto timeStepper = ablate::solver::TimeStepper(mesh,
-                                                           ablate::parameters::MapParameters::Create({{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}}),
+                                                           ablate::parameters::MapParameters::Create({{"ts_dt", 5.e-01}, {"ts_type", "rk"}, {"ts_max_time", 15.0}, {"ts_adapt_type", "none"}}),
                                                            {},
                                                            initialization,
                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, evExactField});
@@ -195,38 +197,38 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
 }
 
 INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowEvDiffusionTestFixture,
-                         testing::Values((CompressibleEvDiffusionTestParameters){.mpiTestParameter = {.testName = "ev diffusion mpi 1", .nproc = 1, .arguments = ""},
+                         testing::Values((CompressibleEvDiffusionTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("ev diffusion mpi 1"),
                                                                                  .parameters = {.L = 0.1, .diff = {1.0E-5}, .rho = 1.0},
                                                                                  .initialNx = 3,
                                                                                  .levels = 3,
                                                                                  .expectedL2Convergence = {NAN, NAN, NAN, 2.2, 2.2},
                                                                                  .expectedLInfConvergence = {NAN, NAN, NAN, 2.2, 2.2}},
-                                         (CompressibleEvDiffusionTestParameters){.mpiTestParameter = {.testName = "ev diffusion mpi 1 density 2.0", .nproc = 1, .arguments = ""},
+                                         (CompressibleEvDiffusionTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("ev diffusion mpi 1 density 2.0"),
                                                                                  .parameters = {.L = 0.1, .diff = {1.0E-5}, .rho = 2.0},
                                                                                  .initialNx = 3,
                                                                                  .levels = 3,
                                                                                  .expectedL2Convergence = {NAN, NAN, NAN, 2.2, 2.2},
                                                                                  .expectedLInfConvergence = {NAN, NAN, NAN, 2.2, 2.2}},
-                                         (CompressibleEvDiffusionTestParameters){.mpiTestParameter = {.testName = "ev diffusion mpi 2 density 2.0", .nproc = 2, .arguments = ""},
+                                         (CompressibleEvDiffusionTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("ev diffusion mpi 2 density 2.0", 2),
                                                                                  .parameters = {.L = 0.1, .diff = {1.0E-5}, .rho = 2.0},
                                                                                  .initialNx = 3,
                                                                                  .levels = 3,
                                                                                  .expectedL2Convergence = {NAN, NAN, NAN, 2.2, 2.2},
                                                                                  .expectedLInfConvergence = {NAN, NAN, NAN, 2.2, 2.2}},
 
-                                         (CompressibleEvDiffusionTestParameters){.mpiTestParameter = {.testName = "ev var diffusion mpi 1", .nproc = 1, .arguments = ""},
+                                         (CompressibleEvDiffusionTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("ev var diffusion mpi 1"),
                                                                                  .parameters = {.L = 0.1, .diff = {1.0E-5, 1.0E-5}, .rho = 1.0},
                                                                                  .initialNx = 3,
                                                                                  .levels = 3,
                                                                                  .expectedL2Convergence = {NAN, NAN, NAN, 2.2, 2.2},
                                                                                  .expectedLInfConvergence = {NAN, NAN, NAN, 2.2, 2.2}},
-                                         (CompressibleEvDiffusionTestParameters){.mpiTestParameter = {.testName = "ev var diffusion mpi 1 density 2.0", .nproc = 1, .arguments = ""},
+                                         (CompressibleEvDiffusionTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("ev var diffusion mpi 1 density 2.0"),
                                                                                  .parameters = {.L = 0.1, .diff = {1.0E-5, 1.0E-5}, .rho = 2.0},
                                                                                  .initialNx = 3,
                                                                                  .levels = 3,
                                                                                  .expectedL2Convergence = {NAN, NAN, NAN, 2.2, 2.2},
                                                                                  .expectedLInfConvergence = {NAN, NAN, NAN, 2.2, 2.2}},
-                                         (CompressibleEvDiffusionTestParameters){.mpiTestParameter = {.testName = "ev var diffusion mpi 2 density 2.0", .nproc = 2, .arguments = ""},
+                                         (CompressibleEvDiffusionTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("ev var diffusion mpi 2 density 2.0", 2),
                                                                                  .parameters = {.L = 0.1, .diff = {1.0E-5, 1.0E-5}, .rho = 2.0},
                                                                                  .initialNx = 3,
                                                                                  .levels = 3,

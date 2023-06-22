@@ -7,14 +7,16 @@
 
 namespace ablateTesting::mathFunctions {
 
-TEST(ParsedSeriesTests, ShouldBeCreatedFromRegistar) {
+TEST(ParsedSeriesTests, ShouldBeCreatedFromRegistrar) {
     // arrange
     std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
     const std::string expectedClassType = "ablate::mathFunctions::ParsedSeries";
     EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
-    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<std::string>{.inputName = "formula"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("x+y+z+t"));
-    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<int>{.inputName = "lowerBound"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(1));
-    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<int>{.inputName = "upperBound"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(10));
+    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<std::string>{.inputName = "formula", .description = "", .optional = false}))
+        .Times(::testing::Exactly(1))
+        .WillOnce(::testing::Return("x+y+z+t"));
+    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<int>{.inputName = "lowerBound", .description = "", .optional = false})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(1));
+    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<int>{.inputName = "upperBound", .description = "", .optional = false})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(10));
     EXPECT_CALL(*mockFactory, Contains("constants")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(false));
 
     // act
@@ -36,7 +38,7 @@ struct ParsedSeriesTestsScalarParameters {
     std::string formula;
     int lowerBound;
     int upperBound;
-    std::shared_ptr<ablate::parameters::Parameters> constants = nullptr;
+    std::shared_ptr<ablate::parameters::Parameters> constants;
     double expectedResult;
 };
 
@@ -63,11 +65,11 @@ TEST_P(ParsedSeriesTestsScalarFixture, ShouldComputeCorrectAnswerFromCoord) {
 }
 
 INSTANTIATE_TEST_SUITE_P(ParsedSeriesTests, ParsedSeriesTestsScalarFixture,
-                         testing::Values((ParsedSeriesTestsScalarParameters){.formula = "i*x", .lowerBound = 1, .upperBound = 100, .expectedResult = 5050},
-                                         (ParsedSeriesTestsScalarParameters){.formula = "i*x + y", .lowerBound = 0, .upperBound = 0, .expectedResult = 2},
-                                         (ParsedSeriesTestsScalarParameters){.formula = "t*i*i", .lowerBound = 0, .upperBound = 10, .expectedResult = 1540},
+                         testing::Values((ParsedSeriesTestsScalarParameters){.formula = "i*x", .lowerBound = 1, .upperBound = 100, .constants = {}, .expectedResult = 5050},
+                                         (ParsedSeriesTestsScalarParameters){.formula = "i*x + y", .lowerBound = 0, .upperBound = 0, .constants = {}, .expectedResult = 2},
+                                         (ParsedSeriesTestsScalarParameters){.formula = "t*i*i", .lowerBound = 0, .upperBound = 10, .constants = {}, .expectedResult = 1540},
                                          (ParsedSeriesTestsScalarParameters){
-                                             .formula = "t*i*i*a", .lowerBound = 0, .upperBound = 10, .constants = ablate::parameters::MapParameters::Create({{"a", "0.5"}}), .expectedResult = 770}));
+                                             .formula = "t*i*i*a", .lowerBound = 0, .upperBound = 10, .constants = ablate::parameters::MapParameters::Create({{"a", 0.5}}), .expectedResult = 770}));
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct ParsedSeriesTestsVectorParameters {
@@ -133,15 +135,15 @@ TEST_P(ParsedSeriesTestsVectorFixture, ShouldComputeCorrectAnswerPetscFunction) 
     }
 }
 INSTANTIATE_TEST_SUITE_P(ParsedSeriesTests, ParsedSeriesTestsVectorFixture,
-                         testing::Values((ParsedSeriesTestsVectorParameters){.formula = "i*x", .lowerBound = 1, .upperBound = 100, .expectedResult = {5050}},
-                                         (ParsedSeriesTestsVectorParameters){.formula = "i*x + y", .lowerBound = 0, .upperBound = 0, .expectedResult = {2}},
-                                         (ParsedSeriesTestsVectorParameters){.formula = "t*i*i", .lowerBound = 0, .upperBound = 10, .expectedResult = {1540}},
-                                         (ParsedSeriesTestsVectorParameters){.formula = "i*x, i*x + y", .lowerBound = 1, .upperBound = 100, .expectedResult = {5050, 5250}},
-                                         (ParsedSeriesTestsVectorParameters){.formula = "0, i*y, t", .lowerBound = 1, .upperBound = 10, .expectedResult = {0, 110, 40}},
+                         testing::Values((ParsedSeriesTestsVectorParameters){.formula = "i*x", .lowerBound = 1, .upperBound = 100, .constants = {}, .expectedResult = {5050}},
+                                         (ParsedSeriesTestsVectorParameters){.formula = "i*x + y", .lowerBound = 0, .upperBound = 0, .constants = {}, .expectedResult = {2}},
+                                         (ParsedSeriesTestsVectorParameters){.formula = "t*i*i", .lowerBound = 0, .upperBound = 10, .constants = {}, .expectedResult = {1540}},
+                                         (ParsedSeriesTestsVectorParameters){.formula = "i*x, i*x + y", .lowerBound = 1, .upperBound = 100, .constants = {}, .expectedResult = {5050, 5250}},
+                                         (ParsedSeriesTestsVectorParameters){.formula = "0, i*y, t", .lowerBound = 1, .upperBound = 10, .constants = {}, .expectedResult = {0, 110, 40}},
                                          (ParsedSeriesTestsVectorParameters){.formula = "b, i*y*a, t*c",
                                                                              .lowerBound = 1,
                                                                              .upperBound = 10,
-                                                                             .constants = ablate::parameters::MapParameters::Create({{"c", "3"}, {"a", "0.5"}, {"b", "1.5"}}),
+                                                                             .constants = ablate::parameters::MapParameters::Create({{"c", 3}, {"a", 0.5}, {"b", 1.5}}),
                                                                              .expectedResult = {15, 55, 120}}));
 
 }  // namespace ablateTesting::mathFunctions

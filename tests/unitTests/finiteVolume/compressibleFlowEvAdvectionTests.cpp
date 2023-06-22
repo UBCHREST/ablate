@@ -14,6 +14,7 @@
 #include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/compressibleFlowSolver.hpp"
+#include "finiteVolume/extraVariable.hpp"
 #include "finiteVolume/fluxCalculator/ausm.hpp"
 #include "finiteVolume/processes/flowProcess.hpp"
 #include "gtest/gtest.h"
@@ -62,7 +63,8 @@ TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
             auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287"}}));
 
             std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {
-                std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos, std::vector<std::string>{"ev1", "ev2"})};
+                std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos),
+                std::make_shared<ablate::finiteVolume::ExtraVariable>(CompressibleFlowFields::EV_FIELD, std::vector<std::string>{"ev1", "ev2"})};
 
             auto mesh = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
                                                                   fieldDescriptors,
@@ -82,7 +84,7 @@ TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
             auto timeStepper = ablate::solver::TimeStepper(mesh,
                                                            nullptr,
                                                            {},
-                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution},
+                                                           std::make_shared<ablate::domain::Initializer>(exactEulerSolution, evExactSolution),
                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution});
 
             // setup a flow parameters
@@ -135,20 +137,18 @@ TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
 
 INSTANTIATE_TEST_SUITE_P(
     CompressibleFlow, CompressibleFlowEvAdvectionFixture,
-    testing::Values((CompressibleFlowEvAdvectionTestParameters){.mpiTestParameter = {.testName = "ev advection",
-                                                                                     .nproc = 1,
-                                                                                     .arguments = "-dm_plex_separate_marker -ts_adapt_type none "
-                                                                                                  "-ts_max_steps 50 -ts_dt 5e-05  "},
+    testing::Values((CompressibleFlowEvAdvectionTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("ev advection", 1,
+                                                                                                                       "-dm_plex_separate_marker -ts_adapt_type none "
+                                                                                                                       "-ts_max_steps 50 -ts_dt 5e-05  "),
                                                                 .initialNx = 5,
                                                                 .levels = 4,
                                                                 .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),
                                                                 .densityEvExact = ablate::mathFunctions::Create("2*.2*(1 + sin(2*_pi*(x-4*t)/.01))/2, 2*.3*(1 + sin(2*_pi*(x-4*t)/.01))/2"),
                                                                 .expectedL2Convergence = {NAN, NAN, NAN, NAN, 1, 1},
                                                                 .expectedLInfConvergence = {NAN, NAN, NAN, NAN, 1, 1}},
-                    (CompressibleFlowEvAdvectionTestParameters){.mpiTestParameter = {.testName = "mpi ev advection",
-                                                                                     .nproc = 2,
-                                                                                     .arguments = "-dm_plex_separate_marker -dm_distribute -ts_adapt_type none "
-                                                                                                  "-ts_max_steps 50 -ts_dt 5e-05  "},
+                    (CompressibleFlowEvAdvectionTestParameters){.mpiTestParameter = testingResources::MpiTestParameter("mpi ev advection", 2,
+                                                                                                                       "-dm_plex_separate_marker -dm_distribute -ts_adapt_type none "
+                                                                                                                       "-ts_max_steps 50 -ts_dt 5e-05  "),
                                                                 .initialNx = 5,
                                                                 .levels = 4,
                                                                 .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),

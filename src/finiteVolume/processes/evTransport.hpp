@@ -55,6 +55,18 @@ class EVTransport : public FlowProcess {
     explicit EVTransport(std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {}, std::shared_ptr<eos::transport::TransportModel> transportModel = {});
 
     /**
+     * Enforce extra variables to be between zero and one
+     * @param ts
+     */
+    static void BoundExtraVariables(TS ts, ablate::solver::Solver& solver, const std::string& field);
+
+    /**
+     * Enforce extra variables to be zero or greater
+     * @param ts
+     */
+    static void PositiveExtraVariables(TS ts, ablate::solver::Solver& solver, const std::string& field);
+
+    /**
      * public function to link this process with the flow
      * @param flow
      */
@@ -65,6 +77,18 @@ class EVTransport : public FlowProcess {
      */
     static PetscErrorCode UpdateEVField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, const PetscInt* aOff,
                                         PetscScalar* auxField, void* ctx);
+
+    /**
+     * Function to compute the EV fraction. This function assumes that the input values will be {"euler", "densityYi"} with values between zero and one
+     */
+    static PetscErrorCode UpdateBoundEVField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, const PetscInt* aOff,
+                                             PetscScalar* auxField, void* ctx);
+
+    /**
+     * Function to compute the EV fraction. This function assumes that the input values will be {"euler", "densityYi"} with values zero or greater
+     */
+    static PetscErrorCode UpdatePositiveEVField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, const PetscInt* aOff,
+                                                PetscScalar* auxField, void* ctx);
 
    private:
     /**

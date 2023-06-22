@@ -183,7 +183,7 @@ void ablate::particles::ParticleSolver::RegisterParticleField(const FieldDescrip
         .dataType = fieldDescription.dataType,
 
         //! The offset in the local array, 0 for aux, computed for sol
-        .offset = field.location == domain::FieldLocation::SOL
+        .offset = fieldDescription.location == domain::FieldLocation::SOL
                       ? std::accumulate(
                             fields.begin(), fields.end(), 0, [&](PetscInt count, const Field &field) { return count + (field.location == domain::FieldLocation::SOL ? field.numberComponents : 0); })
                       : 0,
@@ -599,140 +599,140 @@ static PetscErrorCode DMSequenceViewTimeHDF5(DM dm, PetscViewer viewer) {
     PetscFunctionReturn(0);
 }
 
-void ablate::particles::ParticleSolver::Save(PetscViewer viewer, PetscInt steps, PetscReal time) {
+PetscErrorCode ablate::particles::ParticleSolver::Save(PetscViewer viewer, PetscInt steps, PetscReal time) {
     PetscFunctionBeginUser;
-    DMSetOutputSequenceNumber(GetParticleDM(), steps, time) >> utilities::PetscUtilities::checkError;
+    PetscCall(DMSetOutputSequenceNumber(GetParticleDM(), steps, time));
     Vec particleVector;
 
     // if this is an hdf5Viewer
     PetscBool ishdf5;
-    PetscObjectTypeCompare((PetscObject)viewer, PETSCVIEWERHDF5, &ishdf5) >> utilities::PetscUtilities::checkError;
+    PetscCall(PetscObjectTypeCompare((PetscObject)viewer, PETSCVIEWERHDF5, &ishdf5));
     if (ishdf5) {
         PetscBool isInTimestepping;
-        PetscViewerHDF5IsTimestepping(viewer, &isInTimestepping) >> utilities::PetscUtilities::checkError;
+        PetscCall(PetscViewerHDF5IsTimestepping(viewer, &isInTimestepping));
         if (!isInTimestepping) {
-            PetscViewerHDF5PushTimestepping(viewer) >> utilities::PetscUtilities::checkError;
+            PetscCall(PetscViewerHDF5PushTimestepping(viewer));
         }
     }
 
     // output the default coordinate field
-    DMSwarmCreateGlobalVectorFromField(GetParticleDM(), DMSwarmPICField_coor, &particleVector) >> utilities::PetscUtilities::checkError;
-    PetscObjectSetName((PetscObject)particleVector, DMSwarmPICField_coor) >> utilities::PetscUtilities::checkError;
-    VecView(particleVector, viewer) >> utilities::PetscUtilities::checkError;
-    DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), DMSwarmPICField_coor, &particleVector) >> utilities::PetscUtilities::checkError;
+    PetscCall(DMSwarmCreateGlobalVectorFromField(GetParticleDM(), DMSwarmPICField_coor, &particleVector));
+    PetscCall(PetscObjectSetName((PetscObject)particleVector, DMSwarmPICField_coor));
+    PetscCall(VecView(particleVector, viewer));
+    PetscCall(DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), DMSwarmPICField_coor, &particleVector));
 
     // output all the fields
     for (auto const &field : fields) {
         if (field.dataType == PETSC_REAL && field.location == domain::FieldLocation::AUX) {
-            DMSwarmCreateGlobalVectorFromField(GetParticleDM(), field.name.c_str(), &particleVector) >> utilities::PetscUtilities::checkError;
-            PetscObjectSetName((PetscObject)particleVector, field.name.c_str()) >> utilities::PetscUtilities::checkError;
-            VecView(particleVector, viewer) >> utilities::PetscUtilities::checkError;
+            PetscCall(DMSwarmCreateGlobalVectorFromField(GetParticleDM(), field.name.c_str(), &particleVector));
+            PetscCall(PetscObjectSetName((PetscObject)particleVector, field.name.c_str()));
+            PetscCall(VecView(particleVector, viewer));
 
             // write the field components to the file if hdf5
             if (ishdf5 && field.numberComponents > 1) {
-                PetscViewerHDF5PushGroup(viewer, "/particle_fields") >> utilities::PetscUtilities::checkError;
+                PetscCall(PetscViewerHDF5PushGroup(viewer, "/particle_fields"));
 
                 for (std::size_t c = 0; c < field.components.size(); c++) {
                     std::string componentNameLabel = "componentName" + std::to_string(c);
-                    PetscViewerHDF5WriteObjectAttribute(viewer, (PetscObject)particleVector, componentNameLabel.c_str(), PETSC_STRING, field.components[c].c_str()) >>
-                        utilities::PetscUtilities::checkError;
+                    PetscCall(PetscViewerHDF5WriteObjectAttribute(viewer, (PetscObject)particleVector, componentNameLabel.c_str(), PETSC_STRING, field.components[c].c_str()));
                 }
 
-                PetscViewerHDF5PopGroup(viewer) >> utilities::PetscUtilities::checkError;
+                PetscCall(PetscViewerHDF5PopGroup(viewer));
             }
 
-            DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), field.name.c_str(), &particleVector) >> utilities::PetscUtilities::checkError;
+            PetscCall(DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), field.name.c_str(), &particleVector));
         }
     }
 
     // Get the particle info
     int rank;
-    MPI_Comm_rank(PetscObjectComm((PetscObject)GetParticleDM()), &rank) >> ablate::utilities::MpiUtilities::checkError;
+    PetscCallMPI(MPI_Comm_rank(PetscObjectComm((PetscObject)GetParticleDM()), &rank));
 
     // get the local number of particles
     PetscInt globalSize;
-    DMSwarmGetSize(GetParticleDM(), &globalSize) >> ablate::utilities::MpiUtilities::checkError;
+    PetscCall(DMSwarmGetSize(GetParticleDM(), &globalSize));
 
     // record the number of particles per rank
     Vec particleCountVec;
-    VecCreateMPI(PetscObjectComm((PetscObject)GetParticleDM()), PETSC_DECIDE, 1, &particleCountVec) >> utilities::PetscUtilities::checkError;
-    PetscObjectSetName((PetscObject)particleCountVec, "particleCount") >> utilities::PetscUtilities::checkError;
-    VecSetValue(particleCountVec, 0, globalSize, INSERT_VALUES) >> utilities::PetscUtilities::checkError;
-    VecAssemblyBegin(particleCountVec) >> utilities::PetscUtilities::checkError;
-    VecAssemblyEnd(particleCountVec) >> utilities::PetscUtilities::checkError;
-    VecView(particleCountVec, viewer);
-    VecDestroy(&particleCountVec) >> utilities::PetscUtilities::checkError;
+    PetscCall(VecCreateMPI(PetscObjectComm((PetscObject)GetParticleDM()), PETSC_DECIDE, 1, &particleCountVec));
+    PetscCall(PetscObjectSetName((PetscObject)particleCountVec, "particleCount"));
+    PetscCall(VecSetValue(particleCountVec, 0, globalSize, INSERT_VALUES));
+    PetscCall(VecAssemblyBegin(particleCountVec));
+    PetscCall(VecAssemblyEnd(particleCountVec));
+    PetscCall(VecView(particleCountVec, viewer));
+    PetscCall(VecDestroy(&particleCountVec));
 
     if (ishdf5) {
-        DMSequenceViewTimeHDF5(GetParticleDM(), viewer) >> utilities::PetscUtilities::checkError;
+        PetscCall(DMSequenceViewTimeHDF5(GetParticleDM(), viewer));
     }
-    PetscFunctionReturnVoid();
+    PetscFunctionReturn(0);
 }
-void ablate::particles::ParticleSolver::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
-    DMSetOutputSequenceNumber(GetParticleDM(), sequenceNumber, time) >> utilities::PetscUtilities::checkError;
+PetscErrorCode ablate::particles::ParticleSolver::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBegin;
+    PetscCall(DMSetOutputSequenceNumber(GetParticleDM(), sequenceNumber, time));
 
     // Update the ts with the current values
-    TSSetTime(particleTs, time) >> utilities::PetscUtilities::checkError;
+    PetscCall(TSSetTime(particleTs, time));
     timeInitial = time;
 
     // There is not a hdf5 specific swarm vec load, so that needs to be in this code
     PetscBool ishdf5;
-    PetscObjectTypeCompare((PetscObject)viewer, PETSCVIEWERHDF5, &ishdf5) >> utilities::PetscUtilities::checkError;
+    PetscCall(PetscObjectTypeCompare((PetscObject)viewer, PETSCVIEWERHDF5, &ishdf5));
     if (ishdf5) {
-        PetscViewerHDF5PushTimestepping(viewer) >> utilities::PetscUtilities::checkError;
-        PetscViewerHDF5SetTimestep(viewer, sequenceNumber) >> utilities::PetscUtilities::checkError;
+        PetscCall(PetscViewerHDF5PushTimestepping(viewer));
+        PetscCall(PetscViewerHDF5SetTimestep(viewer, sequenceNumber));
     }
 
     // load in the global particle size
     Vec particleCountVec;
-    VecCreateSeq(PETSC_COMM_SELF, 1, &particleCountVec) >> utilities::PetscUtilities::checkError;
-    PetscObjectSetName((PetscObject)particleCountVec, "particleCount") >> utilities::PetscUtilities::checkError;
-    VecLoad(particleCountVec, viewer) >> utilities::PetscUtilities::checkError;
+    PetscCall(VecCreateSeq(PETSC_COMM_SELF, 1, &particleCountVec));
+    PetscCall(PetscObjectSetName((PetscObject)particleCountVec, "particleCount"));
+    PetscCall(VecLoad(particleCountVec, viewer));
 
     PetscReal globalSize;
     PetscInt index[1] = {0};
-    VecGetValues(particleCountVec, 1, index, &globalSize) >> utilities::PetscUtilities::checkError;
-    VecDestroy(&particleCountVec) >> utilities::PetscUtilities::checkError;
+    PetscCall(VecGetValues(particleCountVec, 1, index, &globalSize));
+    PetscCall(VecDestroy(&particleCountVec));
 
     // Get the particle mpi, info
     int rank, size;
-    MPI_Comm_rank(PetscObjectComm((PetscObject)GetParticleDM()), &rank) >> ablate::utilities::MpiUtilities::checkError;
-    MPI_Comm_size(PetscObjectComm((PetscObject)GetParticleDM()), &size) >> ablate::utilities::MpiUtilities::checkError;
+    PetscCallMPI(MPI_Comm_rank(PetscObjectComm((PetscObject)GetParticleDM()), &rank));
+    PetscCallMPI(MPI_Comm_size(PetscObjectComm((PetscObject)GetParticleDM()), &size));
 
     // distribute the number of particles across all ranks
     PetscInt localSize = ((PetscInt)globalSize) / size;
 
     // Use the first rank to hold any left over
     if (rank == 0) {
-        localSize = globalSize - (localSize * (size - 1));
+        localSize = ((PetscInt)globalSize) - (localSize * (size - 1));
     }
 
     // Set the local swarm size
-    DMSwarmSetLocalSizes(GetParticleDM(), localSize, 0) >> utilities::PetscUtilities::checkError;
+    PetscCall(DMSwarmSetLocalSizes(GetParticleDM(), localSize, 0));
 
     // Move in the hdf5 to the right group
     if (ishdf5) {
-        PetscViewerHDF5PushGroup(viewer, "/particle_fields") >> utilities::PetscUtilities::checkError;
-        PetscViewerHDF5SetTimestep(viewer, sequenceNumber) >> utilities::PetscUtilities::checkError;
+        PetscCall(PetscViewerHDF5PushGroup(viewer, "/particle_fields"));
+        PetscCall(PetscViewerHDF5SetTimestep(viewer, sequenceNumber));
     }
 
     {  // restore the default coordinate field
         Vec particleVector;
         Vec particleVectorLoad;
-        DMSwarmCreateGlobalVectorFromField(swarmDm, DMSwarmPICField_coor, &particleVector) >> utilities::PetscUtilities::checkError;
+        PetscCall(DMSwarmCreateGlobalVectorFromField(swarmDm, DMSwarmPICField_coor, &particleVector));
 
         // A copy of this vector is needed, because vec load breaks the memory linkage between the swarm and vec
-        VecDuplicate(particleVector, &particleVectorLoad) >> utilities::PetscUtilities::checkError;
+        PetscCall(VecDuplicate(particleVector, &particleVectorLoad));
 
         // Load the vector
-        PetscObjectSetName((PetscObject)particleVectorLoad, DMSwarmPICField_coor) >> utilities::PetscUtilities::checkError;
-        VecLoad(particleVectorLoad, viewer) >> utilities::PetscUtilities::checkError;
+        PetscCall(PetscObjectSetName((PetscObject)particleVectorLoad, DMSwarmPICField_coor));
+        PetscCall(VecLoad(particleVectorLoad, viewer));
 
         // Copy the data over
-        VecCopy(particleVectorLoad, particleVector) >> utilities::PetscUtilities::checkError;
+        PetscCall(VecCopy(particleVectorLoad, particleVector));
 
-        DMSwarmDestroyGlobalVectorFromField(swarmDm, DMSwarmPICField_coor, &particleVector) >> utilities::PetscUtilities::checkError;
-        VecDestroy(&particleVectorLoad) >> utilities::PetscUtilities::checkError;
+        PetscCall(DMSwarmDestroyGlobalVectorFromField(swarmDm, DMSwarmPICField_coor, &particleVector));
+        PetscCall(VecDestroy(&particleVectorLoad));
     }
 
     // restore the aux vectors
@@ -740,31 +740,32 @@ void ablate::particles::ParticleSolver::Restore(PetscViewer viewer, PetscInt seq
         if (field.dataType == PETSC_REAL && field.location == domain::FieldLocation::AUX) {
             Vec particleVector;
             Vec particleVectorLoad;
-            DMSwarmCreateGlobalVectorFromField(swarmDm, field.name.c_str(), &particleVector) >> utilities::PetscUtilities::checkError;
+            PetscCall(DMSwarmCreateGlobalVectorFromField(swarmDm, field.name.c_str(), &particleVector));
 
             // A copy of this vector is needed, because vec load breaks the memory linkage between the swarm and vec
-            VecDuplicate(particleVector, &particleVectorLoad) >> utilities::PetscUtilities::checkError;
+            PetscCall(VecDuplicate(particleVector, &particleVectorLoad));
 
             // Load the vector
-            PetscObjectSetName((PetscObject)particleVectorLoad, field.name.c_str()) >> utilities::PetscUtilities::checkError;
-            VecLoad(particleVectorLoad, viewer) >> utilities::PetscUtilities::checkError;
+            PetscCall(PetscObjectSetName((PetscObject)particleVectorLoad, field.name.c_str()));
+            PetscCall(VecLoad(particleVectorLoad, viewer));
 
             // Copy the data over
-            VecCopy(particleVectorLoad, particleVector) >> utilities::PetscUtilities::checkError;
+            PetscCall(VecCopy(particleVectorLoad, particleVector));
 
-            DMSwarmDestroyGlobalVectorFromField(swarmDm, field.name.c_str(), &particleVector) >> utilities::PetscUtilities::checkError;
-            VecDestroy(&particleVectorLoad) >> utilities::PetscUtilities::checkError;
+            PetscCall(DMSwarmDestroyGlobalVectorFromField(swarmDm, field.name.c_str(), &particleVector));
+            PetscCall(VecDestroy(&particleVectorLoad));
         }
     }
 
     if (ishdf5) {
-        PetscViewerHDF5PopGroup(viewer) >> utilities::PetscUtilities::checkError;
-        PetscViewerHDF5PopTimestepping(viewer) >> utilities::PetscUtilities::checkError;
+        PetscCall(PetscViewerHDF5PopGroup(viewer));
+        PetscCall(PetscViewerHDF5PopTimestepping(viewer));
     }
 
     // Migrate the particle to the correct rank for the dmPlex
-    DMSwarmMigrate(swarmDm, PETSC_TRUE) >> utilities::PetscUtilities::checkError;
+    PetscCall(DMSwarmMigrate(swarmDm, PETSC_TRUE));
     dmChanged = true;
+    PetscFunctionReturn(0);
 }
 
 #include "registrar.hpp"

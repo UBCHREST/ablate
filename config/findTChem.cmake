@@ -60,7 +60,7 @@ if (NOT (DEFINED TChem_DIR|CACHE{TChem_DIR}|ENV{TChem_DIR}))
 
     FetchContent_Declare(tchem
             GIT_REPOSITORY https://github.com/sandialabs/TChem.git
-            GIT_TAG 6b4a97f
+            GIT_TAG bc7e9d7aafb75bc48439c683861703750b695c58
             SOURCE_SUBDIR src
             )
     FetchContent_MakeAvailable(tchem)

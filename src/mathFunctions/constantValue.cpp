@@ -1,5 +1,7 @@
 #include "constantValue.hpp"
 
+#include <utility>
+
 PetscErrorCode ablate::mathFunctions::ConstantValue::ConstantValuePetscFunction(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt nf, PetscScalar *u, void *ctx) {
     PetscFunctionBeginUser;
     auto value = (const double *)ctx;
@@ -22,7 +24,9 @@ PetscErrorCode ablate::mathFunctions::ConstantValue::ConstantValueUniformPetscFu
 
 ablate::mathFunctions::ConstantValue::ConstantValue(double value) : value(std::vector<double>{value}), uniformValue(true) {}
 
-ablate::mathFunctions::ConstantValue::ConstantValue(std::vector<double> values) : value(values), uniformValue(false) {}
+ablate::mathFunctions::ConstantValue::ConstantValue(std::vector<double> values) : value(std::move(values)), uniformValue(false) {}
+
+ablate::mathFunctions::ConstantValue::ConstantValue(std::initializer_list<double> values) : value(values), uniformValue(false) {}
 
 double ablate::mathFunctions::ConstantValue::Eval(const double &x, const double &y, const double &z, const double &t) const { return value[0]; }
 double ablate::mathFunctions::ConstantValue::Eval(const double *xyz, const int &ndims, const double &t) const { return value[0]; }

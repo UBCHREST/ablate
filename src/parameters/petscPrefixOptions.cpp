@@ -5,10 +5,6 @@
 #define PETSC_MAX_VALUE_SIZE 2048
 
 ablate::parameters::PetscPrefixOptions::PetscPrefixOptions(std::string prefix) : MapParameters() {
-    // Create a new petsc options
-    PetscOptions filteredOptions;
-    PetscOptionsCreate(&filteredOptions) >> utilities::PetscUtilities::checkError;
-
     // March over each key
     // Get all of the values as a string
     char* keyString;

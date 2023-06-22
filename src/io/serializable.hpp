@@ -29,7 +29,7 @@ class Serializable {
      * @param sequenceNumber
      * @param time
      */
-    virtual void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) = 0;
+    virtual PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) = 0;
 
     /**
      * Restore the state from the PetscViewer
@@ -37,7 +37,7 @@ class Serializable {
      * @param sequenceNumber
      * @param time
      */
-    virtual void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) = 0;
+    virtual PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) = 0;
 
    protected:
     /**
@@ -46,7 +46,7 @@ class Serializable {
      * @param name
      * @param value
      */
-    static void SaveKeyValue(PetscViewer viewer, const char* name, PetscScalar value);
+    static PetscErrorCode SaveKeyValue(PetscViewer viewer, const char* name, PetscScalar value);
 
     /**
      * helper function to restore PetscScalar to a PetscViewer. The same value is returned on all mpi ranks
@@ -54,7 +54,7 @@ class Serializable {
      * @param name
      * @param value
      */
-    static void RestoreKeyValue(PetscViewer viewer, const char* name, PetscScalar& value);
+    static PetscErrorCode RestoreKeyValue(PetscViewer viewer, const char* name, PetscScalar& value);
 
     /**
      * Helper function to save a single key/value pair to the PetscViewer.  It is assumed to be the same value across all mpi ranks
@@ -64,9 +64,11 @@ class Serializable {
      * @param value
      */
     template <class T>
-    static inline void SaveKeyValue(PetscViewer viewer, const char* name, T value) {
+    static inline PetscErrorCode SaveKeyValue(PetscViewer viewer, const char* name, T value) {
+        PetscFunctionBeginUser;
         auto tempValue = (PetscScalar)value;
-        SaveKeyValue(viewer, name, tempValue);
+        PetscCall(SaveKeyValue(viewer, name, tempValue));
+        PetscFunctionReturn(0);
     }
 
     /**
@@ -77,10 +79,12 @@ class Serializable {
      * @param value
      */
     template <class T>
-    static inline void RestoreKeyValue(PetscViewer viewer, const char* name, T& value) {
+    static inline PetscErrorCode RestoreKeyValue(PetscViewer viewer, const char* name, T& value) {
+        PetscFunctionBeginUser;
         PetscScalar tempValue = {};
-        RestoreKeyValue(viewer, name, tempValue);
+        PetscCall(RestoreKeyValue(viewer, name, tempValue));
         value = (T)tempValue;
+        PetscFunctionReturn(0);
     }
 };
 }  // namespace ablate::io

@@ -16,7 +16,8 @@ class FileLog : public Log {
    public:
     explicit FileLog(std::string fileName);
     ~FileLog() override;
-
+    // allow access to all print from base
+    using Log::Print;
     void Printf(const char *, ...) final;
     void Initialize(MPI_Comm comm) final;
 };

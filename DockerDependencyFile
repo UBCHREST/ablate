@@ -13,11 +13,6 @@ FROM $PETSC_BASE_IMAGE
 RUN apt-get update
 RUN apt-get install -y clang-format gdb
 
-# Setup the petsc env
-ENV PETSC_ARCH=arch-ablate-debug
-ENV PKG_CONFIG_PATH="${PETSC_DIR}/${PETSC_ARCH}/lib/pkgconfig:$PKG_CONFIG_PATH"
-ENV PATH="${PETSC_DIR}/${PETSC_ARCH}/bin:$PATH"
-
 # copy the tensorflow image
 COPY --from=tensor_flow_image /tensorflow /tensorflow
 ENV TENSORFLOW_DIR=/tensorflow

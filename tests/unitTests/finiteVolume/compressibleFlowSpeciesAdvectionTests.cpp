@@ -82,7 +82,7 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
             auto timeStepper = ablate::solver::TimeStepper(mesh,
                                                            nullptr,
                                                            {},
-                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution},
+                                                           std::make_shared<ablate::domain::Initializer>(exactEulerSolution, yiExactSolution),
                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution});
 
             // setup a flow parameters
@@ -138,10 +138,9 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
 INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowAdvectionFixture,
                          testing::Values(
                              (CompressibleFlowAdvectionTestParameters){
-                                 .mpiTestParameter = {.testName = "yi advection",
-                                                      .nproc = 1,
-                                                      .arguments = "-dm_plex_separate_marker -ts_adapt_type none "
-                                                                   " -ts_max_steps 50 -ts_dt 5e-05  "},
+                                 .mpiTestParameter = testingResources::MpiTestParameter("yi advection", 1,
+                                                                                        "-dm_plex_separate_marker -ts_adapt_type none "
+                                                                                        " -ts_max_steps 50 -ts_dt 5e-05  "),
                                  .initialNx = 5,
                                  .levels = 4,
                                  .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),
@@ -149,10 +148,9 @@ INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowAdvectionFixture,
                                  .expectedL2Convergence = {NAN, NAN, NAN, NAN, 1, 1, 1},
                                  .expectedLInfConvergence = {NAN, NAN, NAN, NAN, 1, 1, 1}},
                              (CompressibleFlowAdvectionTestParameters){
-                                 .mpiTestParameter = {.testName = "mpi yi advection",
-                                                      .nproc = 2,
-                                                      .arguments = "-dm_plex_separate_marker -dm_distribute -ts_adapt_type none "
-                                                                   "-ts_max_steps 50 -ts_dt 5e-05  "},
+                                 .mpiTestParameter = testingResources::MpiTestParameter("mpi yi advection", 2,
+                                                                                        "-dm_plex_separate_marker -dm_distribute -ts_adapt_type none "
+                                                                                        "-ts_max_steps 50 -ts_dt 5e-05  "),
                                  .initialNx = 5,
                                  .levels = 4,
                                  .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),

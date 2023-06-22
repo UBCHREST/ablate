@@ -560,7 +560,7 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             auto timeStepper = ablate::solver::TimeStepper(mesh,
                                                            nullptr,
                                                            {},
-                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
+                                                           std::make_shared<ablate::domain::Initializer>(velocityExact, pressureExact, temperatureExact),
                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
 
             // Create the flow object
@@ -622,17 +622,17 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
 INSTANTIATE_TEST_SUITE_P(
     FEFlow, FEFlowMMSTestFixture,
     testing::Values(
-        (FEFlowMMSParameters){.mpiTestParameter = {.testName = "lowMach 2d quadratic tri_p3_p2_p2",
-                                                   .nproc = 1,
-                                                   .expectedOutputFile = "outputs/finiteElement/lowMach_2d_tri_p3_p2_p2",
-                                                   .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
-                                                                "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
-                                                                "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
-                                                                "-ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
-                                                                "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                                                "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
-                                                                "-dmts_check -1 -snes_linesearch_type basic "
-                                                                "-gravityDirection 1"},
+        (FEFlowMMSParameters){.mpiTestParameter = testingResources::MpiTestParameter(
+                                  "lowMach 2d quadratic tri_p3_p2_p2", 1,
+                                  "-dm_plex_separate_marker  -dm_refine 0 "
+                                  "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
+                                  "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
+                                  "-ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
+                                  "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                  "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
+                                  "-dmts_check -1 -snes_linesearch_type basic "
+                                  "-gravityDirection 1",
+                                  "outputs/finiteElement/lowMach_2d_tri_p3_p2_p2"),
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                                       return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
@@ -645,19 +645,19 @@ INSTANTIATE_TEST_SUITE_P(
                               .f0_v = f0_lowMach_quadratic_v,
                               .f0_w = f0_lowMach_quadratic_w,
                               .f0_q = f0_lowMach_quadratic_q},
-        (FEFlowMMSParameters){.mpiTestParameter = {.testName = "lowMach 2d quadratic tri_p3_p2_p2 with real coefficients",
-                                                   .nproc = 1,
-                                                   .expectedOutputFile = "outputs/finiteElement/lowMach_2d_tri_p3_p2_p2_real_coefficients",
-                                                   .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
-                                                                "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
-                                                                "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
-                                                                "-ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
-                                                                "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                                                "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10  -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
-                                                                "-dmts_check -1 -snes_linesearch_type basic "
-                                                                "-gravityDirection 1 "
-                                                                "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
-                                                                "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 "},
+        (FEFlowMMSParameters){.mpiTestParameter = testingResources::MpiTestParameter(
+                                  "lowMach 2d quadratic tri_p3_p2_p2 with real coefficients", 1,
+                                  "-dm_plex_separate_marker  -dm_refine 0 "
+                                  "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
+                                  "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
+                                  "-ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
+                                  "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                  "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10  -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
+                                  "-dmts_check -1 -snes_linesearch_type basic "
+                                  "-gravityDirection 1 "
+                                  "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
+                                  "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 ",
+                                  "outputs/finiteElement/lowMach_2d_tri_p3_p2_p2_real_coefficients"),
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                                       return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
@@ -670,17 +670,17 @@ INSTANTIATE_TEST_SUITE_P(
                               .f0_v = f0_lowMach_quadratic_v,
                               .f0_w = f0_lowMach_quadratic_w,
                               .f0_q = f0_lowMach_quadratic_q},
-        (FEFlowMMSParameters){.mpiTestParameter = {.testName = "lowMach 2d cubic tri_p3_p2_p2",
-                                                   .nproc = 1,
-                                                   .expectedOutputFile = "outputs/finiteElement/lowMach_2d_cubic_tri_p3_p2_p2",
-                                                   .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
-                                                                "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
-                                                                "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
-                                                                "-ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
-                                                                "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                                                "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
-                                                                "-dmts_check -1 -snes_linesearch_type basic "
-                                                                "-gravityDirection 1 "},
+        (FEFlowMMSParameters){.mpiTestParameter = testingResources::MpiTestParameter(
+                                  "lowMach 2d cubic tri_p3_p2_p2", 1,
+                                  "-dm_plex_separate_marker  -dm_refine 0 "
+                                  "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
+                                  "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
+                                  "-ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
+                                  "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                  "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
+                                  "-dmts_check -1 -snes_linesearch_type basic "
+                                  "-gravityDirection 1 ",
+                                  "outputs/finiteElement/lowMach_2d_cubic_tri_p3_p2_p2"),
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                                       return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
@@ -693,19 +693,19 @@ INSTANTIATE_TEST_SUITE_P(
                               .f0_v = f0_lowMach_cubic_v,
                               .f0_w = f0_lowMach_cubic_w,
                               .f0_q = f0_lowMach_cubic_q},
-        (FEFlowMMSParameters){.mpiTestParameter = {.testName = "lowMach 2d cubic tri_p3_p2_p2 with real coefficients",
-                                                   .nproc = 1,
-                                                   .expectedOutputFile = "outputs/finiteElement/lowMach_2d_cubic_tri_p3_p2_p2_real_coefficients",
-                                                   .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
-                                                                "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
-                                                                "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
-                                                                "-ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
-                                                                "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                                                "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
-                                                                "-dmts_check -1 -snes_linesearch_type basic "
-                                                                "-gravityDirection 1 "
-                                                                "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
-                                                                "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 "},
+        (FEFlowMMSParameters){.mpiTestParameter = testingResources::MpiTestParameter(
+                                  "lowMach 2d cubic tri_p3_p2_p2 with real coefficients", 1,
+                                  "-dm_plex_separate_marker  -dm_refine 0 "
+                                  "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
+                                  "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
+                                  "-ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
+                                  "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                  "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
+                                  "-dmts_check -1 -snes_linesearch_type basic "
+                                  "-gravityDirection 1 "
+                                  "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
+                                  "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 ",
+                                  "outputs/finiteElement/lowMach_2d_cubic_tri_p3_p2_p2_real_coefficients"),
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                                       return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
@@ -718,17 +718,40 @@ INSTANTIATE_TEST_SUITE_P(
                               .f0_v = f0_lowMach_cubic_v,
                               .f0_w = f0_lowMach_cubic_w,
                               .f0_q = f0_lowMach_cubic_q},
+        (FEFlowMMSParameters){.mpiTestParameter = testingResources::MpiTestParameter(
+                                  "incompressible 2d quadratic tri_p2_p1_p1", 1,
+                                  "-dm_plex_separate_marker -dm_refine 0 "
+                                  "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                  "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                  "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                  "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                  "-fieldsplit_0_pc_type lu "
+                                  "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi",
+                                  "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1"),
+                              .createMethod =
+                                  [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
+                                      return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
+                                          name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
+                                  },
+                              .uExact = incompressible_quadratic_u,
+                              .pExact = incompressible_quadratic_p,
+                              .TExact = incompressible_quadratic_T,
+                              .u_tExact = incompressible_quadratic_u_t,
+                              .T_tExact = incompressible_quadratic_T_t,
+                              .f0_v = f0_incompressible_quadratic_v,
+                              .f0_w = f0_incompressible_quadratic_w,
+                              .f0_q = NULL},
         (FEFlowMMSParameters){
-            .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1",
-                                 .nproc = 1,
-                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1",
-                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
-                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                              "-fieldsplit_0_pc_type lu "
-                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
+            .mpiTestParameter =
+                testingResources::MpiTestParameter("incompressible 2d quadratic tri_p2_p1_p1 4 proc", 4,
+                                                   "-dm_plex_separate_marker -dm_refine 1 -dm_distribute "
+                                                   "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                                   "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                                   "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                                   "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                                   "-fieldsplit_0_pc_type lu "
+                                                   "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi",
+                                                   "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1_nproc4"),
             .createMethod =
                 [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
@@ -742,40 +765,17 @@ INSTANTIATE_TEST_SUITE_P(
             .f0_w = f0_incompressible_quadratic_w,
             .f0_q = NULL},
         (FEFlowMMSParameters){
-            .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1 4 proc",
-                                 .nproc = 4,
-                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1_nproc4",
-                                 .arguments = "-dm_plex_separate_marker -dm_refine 1 -dm_distribute "
-                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
-                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                              "-fieldsplit_0_pc_type lu "
-                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
-            .createMethod =
-                [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
-                },
-            .uExact = incompressible_quadratic_u,
-            .pExact = incompressible_quadratic_p,
-            .TExact = incompressible_quadratic_T,
-            .u_tExact = incompressible_quadratic_u_t,
-            .T_tExact = incompressible_quadratic_T_t,
-            .f0_v = f0_incompressible_quadratic_v,
-            .f0_w = f0_incompressible_quadratic_w,
-            .f0_q = NULL},
-        (FEFlowMMSParameters){
-            .mpiTestParameter = {.testName = "incompressible 2d cubic trig tri_p2_p1_p1_tconv",
-                                 .nproc = 1,
-                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_cubic_trig_tri_p2_p1_p1_tconv",
-                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                                              "-ts_max_steps 4 -ts_dt 0.1 -ts_convergence_estimate -convest_num_refine 1 "
-                                              "-snes_error_if_not_converged -snes_convergence_test correct_pressure "
-                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                              "-fieldsplit_0_pc_type lu "
-                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
+            .mpiTestParameter =
+                testingResources::MpiTestParameter("incompressible 2d cubic trig tri_p2_p1_p1_tconv", 1,
+                                                   "-dm_plex_separate_marker -dm_refine 0 "
+                                                   "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                                   "-ts_max_steps 4 -ts_dt 0.1 -ts_convergence_estimate -convest_num_refine 1 "
+                                                   "-snes_error_if_not_converged -snes_convergence_test correct_pressure "
+                                                   "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                                   "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                                   "-fieldsplit_0_pc_type lu "
+                                                   "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi",
+                                                   "outputs/finiteElement/incompressible_2d_cubic_trig_tri_p2_p1_p1_tconv"),
             .createMethod =
                 [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
@@ -788,79 +788,79 @@ INSTANTIATE_TEST_SUITE_P(
             .f0_v = f0_incompressible_cubic_trig_v,
             .f0_w = f0_incompressible_cubic_trig_w,
             .f0_q = NULL},
-        (FEFlowMMSParameters){
-            .mpiTestParameter = {.testName = "incompressible 2d cubic tri_p3_p2_p2",
-                                 .nproc = 1,
-                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p3_p2_p2",
-                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                                              "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
-                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
-                                              "-snes_convergence_test correct_pressure "
-                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                              "-fieldsplit_0_pc_type lu "
-                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
-            .createMethod =
-                [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
-                },
-            .uExact = incompressible_cubic_u,
-            .pExact = incompressible_cubic_p,
-            .TExact = incompressible_cubic_T,
-            .u_tExact = incompressible_cubic_u_t,
-            .T_tExact = incompressible_cubic_T_t,
-            .f0_v = f0_incompressible_cubic_v,
-            .f0_w = f0_incompressible_cubic_w,
-            .f0_q = NULL},
-        (FEFlowMMSParameters){
-            .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1 with real coefficients",
-                                 .nproc = 1,
-                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1_real_coefficients",
-                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
-                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                              "-fieldsplit_0_pc_type lu "
-                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                                              "-strouhal 0.00242007695844728 -reynolds 23126.2780617827  -peclet 16373.1785965753 "
-                                              "-mu 1.1 -k 1.2 -cp 1.3 "},
-            .createMethod =
-                [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
-                },
-            .uExact = incompressible_quadratic_u,
-            .pExact = incompressible_quadratic_p,
-            .TExact = incompressible_quadratic_T,
-            .u_tExact = incompressible_quadratic_u_t,
-            .T_tExact = incompressible_quadratic_T_t,
-            .f0_v = f0_incompressible_quadratic_v,
-            .f0_w = f0_incompressible_quadratic_w,
-            .f0_q = NULL},
-        (FEFlowMMSParameters){
-            .mpiTestParameter = {.testName = "incompressible 2d cubic tri_p3_p2_p2 with real coefficients",
-                                 .nproc = 1,
-                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p3_p2_p2_real_coefficients",
-                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                                              "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
-                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
-                                              "-snes_convergence_test correct_pressure "
-                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged "
-                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                              "-fieldsplit_0_pc_type lu "
-                                              "-fieldsplit_pressure_ksp_rtol 1e-10  -fieldsplit_pressure_ksp_atol 1E-12 -fieldsplit_pressure_pc_type jacobi "
-                                              "-strouhal 0.0024 -reynolds 23126.27 -peclet 16373.178 "
-                                              "-mu 1.1 -k 1.2 -cp 1.3 "},
-            .createMethod =
-                [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
-                },
-            .uExact = incompressible_cubic_u,
-            .pExact = incompressible_cubic_p,
-            .TExact = incompressible_cubic_T,
-            .u_tExact = incompressible_cubic_u_t,
-            .T_tExact = incompressible_cubic_T_t,
-            .f0_v = f0_incompressible_cubic_v,
-            .f0_w = f0_incompressible_cubic_w,
-            .f0_q = NULL}),
+        (FEFlowMMSParameters){.mpiTestParameter = testingResources::MpiTestParameter(
+                                  "incompressible 2d cubic tri_p3_p2_p2", 1,
+                                  "-dm_plex_separate_marker -dm_refine 0 "
+                                  "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
+                                  "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                  "-snes_convergence_test correct_pressure "
+                                  "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                  "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                  "-fieldsplit_0_pc_type lu "
+                                  "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi",
+                                  "outputs/finiteElement/incompressible_2d_tri_p3_p2_p2"),
+                              .createMethod =
+                                  [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
+                                      return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
+                                          name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
+                                  },
+                              .uExact = incompressible_cubic_u,
+                              .pExact = incompressible_cubic_p,
+                              .TExact = incompressible_cubic_T,
+                              .u_tExact = incompressible_cubic_u_t,
+                              .T_tExact = incompressible_cubic_T_t,
+                              .f0_v = f0_incompressible_cubic_v,
+                              .f0_w = f0_incompressible_cubic_w,
+                              .f0_q = NULL},
+        (FEFlowMMSParameters){.mpiTestParameter = testingResources::MpiTestParameter(
+                                  "incompressible 2d quadratic tri_p2_p1_p1 with real coefficients", 1,
+                                  "-dm_plex_separate_marker -dm_refine 0 "
+                                  "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                  "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                  "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                  "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                  "-fieldsplit_0_pc_type lu "
+                                  "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                  "-strouhal 0.00242007695844728 -reynolds 23126.2780617827  -peclet 16373.1785965753 "
+                                  "-mu 1.1 -k 1.2 -cp 1.3 ",
+                                  "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1_real_coefficients"),
+                              .createMethod =
+                                  [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
+                                      return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
+                                          name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
+                                  },
+                              .uExact = incompressible_quadratic_u,
+                              .pExact = incompressible_quadratic_p,
+                              .TExact = incompressible_quadratic_T,
+                              .u_tExact = incompressible_quadratic_u_t,
+                              .T_tExact = incompressible_quadratic_T_t,
+                              .f0_v = f0_incompressible_quadratic_v,
+                              .f0_w = f0_incompressible_quadratic_w,
+                              .f0_q = NULL},
+        (FEFlowMMSParameters){.mpiTestParameter = testingResources::MpiTestParameter(
+                                  "incompressible 2d cubic tri_p3_p2_p2 with real coefficients", 1,
+                                  "-dm_plex_separate_marker -dm_refine 0 "
+                                  "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
+                                  "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                  "-snes_convergence_test correct_pressure "
+                                  "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged "
+                                  "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                  "-fieldsplit_0_pc_type lu "
+                                  "-fieldsplit_pressure_ksp_rtol 1e-10  -fieldsplit_pressure_ksp_atol 1E-12 -fieldsplit_pressure_pc_type jacobi "
+                                  "-strouhal 0.0024 -reynolds 23126.27 -peclet 16373.178 "
+                                  "-mu 1.1 -k 1.2 -cp 1.3 ",
+                                  "outputs/finiteElement/incompressible_2d_tri_p3_p2_p2_real_coefficients"),
+                              .createMethod =
+                                  [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
+                                      return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
+                                          name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
+                                  },
+                              .uExact = incompressible_cubic_u,
+                              .pExact = incompressible_cubic_p,
+                              .TExact = incompressible_cubic_T,
+                              .u_tExact = incompressible_cubic_u_t,
+                              .T_tExact = incompressible_cubic_T_t,
+                              .f0_v = f0_incompressible_cubic_v,
+                              .f0_w = f0_incompressible_cubic_w,
+                              .f0_q = NULL}),
     [](const testing::TestParamInfo<FEFlowMMSParameters> &info) { return info.param.mpiTestParameter.getTestName(); });

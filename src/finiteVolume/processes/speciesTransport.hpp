@@ -38,7 +38,6 @@ class SpeciesTransport : public FlowProcess {
         PetscInt numberSpecies;
 
         /* functions to compute species enthalpy */
-        eos::ThermodynamicFunction computeTemperatureFunction;
         eos::ThermodynamicTemperatureFunction computeSpeciesSensibleEnthalpyFunction;
 
         /* store a scratch space for speciesSpeciesSensibleEnthalpy */

@@ -4,8 +4,10 @@
 #include <petsc.h>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 #include "eos/eos.hpp"
+#include "solver/cellSolver.hpp"
 #include "solver/solver.hpp"
 
 namespace ablate::eos {
@@ -19,7 +21,7 @@ class ChemistryModel : public eos::EOS {
      * provide constructor to eos
      * @param name
      */
-    explicit ChemistryModel(std::string name) : eos::EOS(name){};
+    explicit ChemistryModel(std::string name) : eos::EOS(std::move(name)){};
 
     /**
      * The batch source interface can be used so solve multiple nodes simultaneously.
@@ -27,7 +29,7 @@ class ChemistryModel : public eos::EOS {
      */
     class SourceCalculator {
        public:
-        virtual ~SourceCalculator(){};
+        virtual ~SourceCalculator() = default;
         /**
          * The compute source can be used as a prestep allowing the add source to be used at each stage without reevaluating
          */
@@ -45,6 +47,11 @@ class ChemistryModel : public eos::EOS {
      * @return
      */
     virtual std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const ablate::domain::Range& cellRange) = 0;
+
+    /**
+     * Optional function to get a solution update
+     */
+    virtual std::vector<std::tuple<ablate::solver::CellSolver::SolutionFieldUpdateFunction, void*, std::vector<std::string>>> GetSolutionFieldUpdates() { return {}; }
 };
 }  // namespace ablate::eos
 
