@@ -700,7 +700,7 @@ void RBF::Initialize(ablate::domain::Range cellRange) {
     RBF::stencilWeights -= cStart;
 
     for (PetscInt c = cStart; c < cEnd; ++c) {
-        RBF::cellList[c] = cellRange.points ? cellRange.points[c] : c;
+        RBF::cellList[c] = cellRange.GetPoint(c);
 
         RBF::nStencil[c] = -1;
         RBF::stencilList[c] = nullptr;
