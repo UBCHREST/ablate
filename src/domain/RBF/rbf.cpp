@@ -139,7 +139,7 @@ void RBF::Matrix(const PetscInt c) {
     const DM dm = RBF::subDomain->GetSubDM();
 
     // Get the list of neighbor cells
-    DMPlexGetNeighborCells(dm, c, -1, -1.0, RBF::minNumberCells, RBF::useCells, RBF::returnNeighborVertices, &nCells, &list);
+    DMPlexGetNeighbors(dm, c, -1, -1.0, RBF::minNumberCells, RBF::useCells, RBF::returnNeighborVertices, &nCells, &list);
     RBF::nStencil[c] = nCells;
     RBF::stencilList[c] = list;
 

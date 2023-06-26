@@ -239,7 +239,7 @@ PetscErrorCode PetscSortedArrayComplement(const PetscInt nb, const PetscInt b[],
  *
  * Note: The intended use is to use either maxLevels OR maxDist OR minNumberCells. Right now a check isn't done on only selecting one, but that might be added in the future.
  */
-PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useCells, PetscBool returnNeighborVertices, PetscInt *nCells,
+PetscErrorCode DMPlexGetNeighbors(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useCells, PetscBool returnNeighborVertices, PetscInt *nCells,
                                       PetscInt *cells[]) {
     const PetscInt maxLevelListSize = 10000;
     const PetscInt maxListSize = 100000;

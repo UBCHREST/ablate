@@ -123,7 +123,7 @@ INSTANTIATE_TEST_SUITE_P(MeshTests, RBFSupportTestFixture_ReturnID,
 
 /********************   End unit tests for DMPlexGetContainingCell    *************************/
 
-/********************   Begin unit tests for DMPlexGetNeighborCells    *************************/
+/********************   Begin unit tests for DMPlexGetNeighbors    *************************/
 
 struct RBFSupportParameters_NeighborCells {
     testingResources::MpiTestParameter mpiTestParameter;
@@ -171,7 +171,7 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
             PetscMPIInt rank;
             MPI_Comm_rank(PetscObjectComm((PetscObject)mesh->GetDM()), &rank);
 
-            DMPlexGetNeighborCells(mesh->GetDM(),
+            DMPlexGetNeighbors(mesh->GetDM(),
                                    testingParam.centerCell[rank],
                                    testingParam.numLevels,
                                    testingParam.maxDistance,
@@ -187,7 +187,7 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
 
             ASSERT_EQ(nCells, testingParam.expectedSizeOfList[rank]);
 
-            // There may be a better way of doing this, but with DMPlexGetNeighborCells sticking with C-only code there may not be.
+            // There may be a better way of doing this, but with DMPlexGetNeighbors sticking with C-only code there may not be.
             // Also note that as cells is a dynamically allocated array there is not way (that I know of) to get the number of elements.
             for (int i = 0; i < nCells; ++i) {
                 ASSERT_EQ(cells[i], testingParam.expectedList[rank][i]);
@@ -850,7 +850,7 @@ TEST_P(RBFSupportTestFixture_ErrorChecking, ShouldThrowErrorForTooManyInputs) {
 
             PetscInt nCells, *cells;
 
-            EXPECT_ANY_THROW(DMPlexGetNeighborCells(mesh->GetDM(), 0, 1, 1.0, 1, PETSC_TRUE, PETSC_FALSE, &nCells, &cells) >> utilities::PetscUtilities::checkError);
+            EXPECT_ANY_THROW(DMPlexGetNeighbors(mesh->GetDM(), 0, 1, 1.0, 1, PETSC_TRUE, PETSC_FALSE, &nCells, &cells) >> utilities::PetscUtilities::checkError);
         }
         ablate::environment::RunEnvironment::Finalize();
     EndWithMPI
@@ -861,4 +861,4 @@ INSTANTIATE_TEST_SUITE_P(MeshTests, RBFSupportTestFixture_ErrorChecking,
                                          (RBFSupportParameters_ErrorChecking){.mpiTestParameter = testingResources::MpiTestParameter("DualProcs", 2)}),
                          [](const testing::TestParamInfo<RBFSupportParameters_ErrorChecking>& info) { return info.param.mpiTestParameter.getTestName(); });
 
-/********************   End unit tests for DMPlexGetNeighborCells    *************************/
+/********************   End unit tests for DMPlexGetNeighbors    *************************/

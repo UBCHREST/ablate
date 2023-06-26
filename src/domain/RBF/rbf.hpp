@@ -69,7 +69,7 @@ class RBF {
      * Set the derivatives to use
      * @param numDer - Number of derivatives to set
      * @param dx, dy, dz - Lists of length numDer indicating the derivatives
-     * @param useCellsLocal - Use common vertices when determining neighbors. If false then use common edges.
+     * @param useCellsLocal - Use common cells when determining neighbors. If false then use common edges.
      */
     void SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useCellsLocal);
 
