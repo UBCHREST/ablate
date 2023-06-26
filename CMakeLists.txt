@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.18.4)
 include(config/petscCompilers.cmake)
 
 # Set the project details
-project(ablateLibrary VERSION 0.11.23)
+project(ablateLibrary VERSION 0.11.24)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED IMPORTED_TARGET GLOBAL PETSc)
