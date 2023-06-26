@@ -1,5 +1,5 @@
-#include <yaml-cpp/yaml.h>
 #include "PetscTestFixture.hpp"
+#include "chemTabTestFixture.hpp"
 #include "domain/mockField.hpp"
 #include "eos/chemTab.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
@@ -21,10 +21,12 @@
     return;
 #endif
 
+class ChemTabModelRegistrarFixture : public testingResources::PetscTestFixture {};
+
 /*******************************************************************************************************
  * This test ensure that the chemTabModel can be created using the input file
  */
-TEST(ChemTabTests, ShouldCreateFromRegistar) {
+TEST_F(ChemTabModelRegistrarFixture, ShouldCreateFromRegistrar) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
     // arrange
@@ -47,29 +49,7 @@ TEST(ChemTabTests, ShouldCreateFromRegistar) {
     ASSERT_TRUE(std::dynamic_pointer_cast<ablate::eos::ChemTab>(instance) != nullptr) << " should be an instance of ablate::chemistry::ChemTabModel";
 }
 
-/*******************************************************************************************************
- * Tests for expected input/outputs
- */
-struct ChemTabModelTestParameters {
-    std::string modelPath;
-    std::string testTargetFile;
-};
-class ChemTabModelTestFixture : public testingResources::PetscTestFixture, public testing::WithParamInterface<ChemTabModelTestParameters> {
-   protected:
-    YAML::Node testTargets;
-
-    void SetUp() override {
-        testingResources::PetscTestFixture::SetUp();
-        testTargets = YAML::LoadFile(GetParam().testTargetFile);
-
-        // this should be an array
-        if (!testTargets.IsSequence()) {
-            FAIL() << "The provided test targets " + GetParam().testTargetFile + " must be an sequence.";
-        }
-    }
-};
-
-TEST_P(ChemTabModelTestFixture, ShouldReturnCorrectSpeciesAndVariables) {
+TEST_P(ChemTabTestFixture, ShouldReturnCorrectSpeciesAndVariables) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
     // iterate over each test
@@ -94,7 +74,7 @@ TEST_P(ChemTabModelTestFixture, ShouldReturnCorrectSpeciesAndVariables) {
 /*******************************************************************************************************
  * Tests for getting the Compute Mass Fractions Functions
  */
-TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectMassFractions) {
+TEST_P(ChemTabTestFixture, ShouldComputeCorrectMassFractions) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
     // iterate over each test
@@ -118,7 +98,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectMassFractions) {
 /*******************************************************************************************************
  * Tests for getting the Source and Source Energy Predictions
  */
-TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectSource) {
+TEST_P(ChemTabTestFixture, ShouldComputeCorrectSource) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
     // iterate over each test
@@ -144,17 +124,18 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectSource) {
         PetscReal actualSourceEnergy = 0.0;
         chemTabModel.ChemistrySource(density, conservedProgressVariable.data(), &actualSourceEnergy, actualSourceProgress.data());
 
-        assert_float_close(expectedSourceEnergy, actualSourceEnergy) << "The sourceEnergy is incorrect for model " << testTarget["testName"].as<std::string>();
+        assert_float_close(expectedSourceEnergy * density, actualSourceEnergy) << "The sourceEnergy is incorrect for model " << testTarget["testName"].as<std::string>();
 
         for (std::size_t r = 0; r < expectedSourceProgress.size(); r++) {
             std::cerr << "expected source: " << expectedSourceProgress[r] << " actual source: " << actualSourceProgress[r] << std::endl << std::flush;
-            assert_float_close(expectedSourceProgress[r], actualSourceProgress[r]) << " the percent difference of (" << expectedSourceProgress[r] << ", " << actualSourceProgress[r]
-                                                                                   << ") should be less than 5.0E-6 for index [" << r << "] for model " << testTarget["testName"].as<std::string>();
+            assert_float_close(expectedSourceProgress[r] * density, actualSourceProgress[r])
+                << " the percent difference of (" << expectedSourceProgress[r] << ", " << actualSourceProgress[r] << ") should be less than 5.0E-6 for index [" << r << "] for model "
+                << testTarget["testName"].as<std::string>();
         }
     }
 }
 
-TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectThermalProperties) {
+TEST_P(ChemTabTestFixture, ShouldComputeCorrectThermalProperties) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
     // iterate over each test
@@ -176,22 +157,49 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectThermalProperties) {
 
         // build a conserved array for only euler
         std::vector<PetscReal> eulerConserved = {0.0, density, densityEnergy, momentum};
-        std::vector<PetscReal> allFieldsConserved = eulerConserved;
+        std::vector<PetscReal> chemTabFieldsConserved = eulerConserved;
         for (auto pv : inputProgressVariables) {
-            allFieldsConserved.push_back(pv * density);
+            chemTabFieldsConserved.push_back(pv * density);
+        }
+        chemTabFieldsConserved.resize(chemTabFieldsConserved.size() + expectedMassFractions.size());
+
+        std::vector<PetscReal> tChemFieldsConserved = eulerConserved;
+        for (auto yi : expectedMassFractions) {
+            tChemFieldsConserved.push_back(yi * density);
         }
 
         // create fake fields for testings
-        auto fields = {ablateTesting::domain::MockField::Create(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD, 3, 1),
-                       ablateTesting::domain::MockField::Create(ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD, inputProgressVariablesNames, (PetscInt)eulerConserved.size())};
+        std::vector<ablate::domain::Field> chemTabFields = {
+            ablateTesting::domain::MockField::Create(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD, 3, 1),
+            ablateTesting::domain::MockField::Create(ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD, inputProgressVariablesNames, (PetscInt)eulerConserved.size()),
+            ablateTesting::domain::MockField::Create(
+                ablate::eos::ChemTab::DENSITY_YI_DECODE_FIELD, tchem->GetSpeciesVariables(), (PetscInt)(eulerConserved.size() + inputProgressVariablesNames.size()))};
+        std::vector<ablate::domain::Field> tChemFields = {
+            ablateTesting::domain::MockField::Create(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD, 3, 1),
+            ablateTesting::domain::MockField::Create(ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD, tchem->GetSpeciesVariables(), (PetscInt)(eulerConserved.size()))};
 
         // compute the reference temperature for other calculations
-        auto tChemTemperatureFunction = tchem->GetThermodynamicMassFractionFunction(ablate::eos::ThermodynamicProperty::Temperature, fields);
+        auto tChemTemperatureFunction = tchem->GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, tChemFields);
         PetscReal tChemComputedTemperature;
-        ASSERT_EQ(tChemTemperatureFunction.function(eulerConserved.data(), expectedMassFractions.data(), &tChemComputedTemperature, tChemTemperatureFunction.context.get()), 0);
-        auto chemTabTemperatureFunction = chemTab->GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, fields);
+        ASSERT_EQ(tChemTemperatureFunction.function(tChemFieldsConserved.data(), &tChemComputedTemperature, tChemTemperatureFunction.context.get()), 0);
+
+        // Compute the mass fractions from chemTab
+        auto chemTabDensityMassFractionDecode = chemTab->GetSolutionFieldUpdates().front();
+        auto densityMassFractionFunctionDecode = std::get<0>(chemTabDensityMassFractionDecode);
+        auto densityMassFractionFunctionContext = std::get<1>(chemTabDensityMassFractionDecode);
+        PetscInt solutionOffsets[3] = {chemTabFields[0].offset, chemTabFields[1].offset, chemTabFields[2].offset};
+        // Use the computed massFractions from chemTab
+        ASSERT_EQ(densityMassFractionFunctionDecode(NAN, -1, nullptr, solutionOffsets, chemTabFieldsConserved.data(), densityMassFractionFunctionContext), 0);
+
+        // make sure that the density mass fractions are correct
+        for (std::size_t s = 0; s < expectedMassFractions.size(); ++s) {
+            assert_float_close(chemTabFieldsConserved[s + chemTabFields[2].offset], tChemFieldsConserved[s + tChemFields[1].offset]) << "The density mass fraction should be correctly computed.";
+        }
+
+        // Compute the reference temperature
+        auto chemTabTemperatureFunction = chemTab->GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, chemTabFields);
         PetscReal chemTabComputedTemperature;
-        ASSERT_EQ(chemTabTemperatureFunction.function(allFieldsConserved.data(), &chemTabComputedTemperature, chemTabTemperatureFunction.context.get()), 0);
+        ASSERT_EQ(chemTabTemperatureFunction.function(chemTabFieldsConserved.data(), &chemTabComputedTemperature, chemTabTemperatureFunction.context.get()), 0);
         ASSERT_FLOAT_EQ(chemTabComputedTemperature, tChemComputedTemperature) << " The TChem and ChemTab temperatures should be equal";
 
         // Now check the other thermodynamic properties
@@ -208,21 +216,22 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectThermalProperties) {
             PetscReal tChemComputedProperty, chemTabComputedProperty;
 
             // Test the direction function
-            auto tChemFunction = tchem->GetThermodynamicMassFractionFunction(testProperty, fields);
-            ASSERT_EQ(tChemFunction.function(eulerConserved.data(), expectedMassFractions.data(), &tChemComputedProperty, tChemFunction.context.get()), 0);
+            auto tChemFunction = tchem->GetThermodynamicMassFractionFunction(testProperty, tChemFields);
+            ASSERT_EQ(tChemFunction.function(tChemFieldsConserved.data(), expectedMassFractions.data(), &tChemComputedProperty, tChemFunction.context.get()), 0);
 
-            auto chemTabFunction = chemTab->GetThermodynamicFunction(testProperty, fields);
-            ASSERT_EQ(chemTabFunction.function(allFieldsConserved.data(), &chemTabComputedProperty, chemTabFunction.context.get()), 0);
+            auto chemTabFunction = chemTab->GetThermodynamicFunction(testProperty, chemTabFields);
+            ASSERT_EQ(chemTabFunction.function(chemTabFieldsConserved.data(), &chemTabComputedProperty, chemTabFunction.context.get()), 0);
 
             ASSERT_FLOAT_EQ(tChemComputedProperty, chemTabComputedProperty) << " The TChem and ChemTab " << testProperty << " should be equal";
 
             // test the function where temperature is an input
-            auto tChemFunctionTemperature = tchem->GetThermodynamicTemperatureMassFractionFunction(testProperty, fields);
-            ASSERT_EQ(tChemFunctionTemperature.function(eulerConserved.data(), expectedMassFractions.data(), tChemComputedTemperature, &tChemComputedProperty, tChemFunctionTemperature.context.get()),
-                      0);
+            auto tChemFunctionTemperature = tchem->GetThermodynamicTemperatureMassFractionFunction(testProperty, tChemFields);
+            ASSERT_EQ(
+                tChemFunctionTemperature.function(tChemFieldsConserved.data(), expectedMassFractions.data(), tChemComputedTemperature, &tChemComputedProperty, tChemFunctionTemperature.context.get()),
+                0);
 
-            auto chemTabFunctionTemperature = chemTab->GetThermodynamicTemperatureFunction(testProperty, fields);
-            ASSERT_EQ(chemTabFunctionTemperature.function(allFieldsConserved.data(), chemTabComputedTemperature, &chemTabComputedProperty, chemTabFunctionTemperature.context.get()), 0);
+            auto chemTabFunctionTemperature = chemTab->GetThermodynamicTemperatureFunction(testProperty, chemTabFields);
+            ASSERT_EQ(chemTabFunctionTemperature.function(chemTabFieldsConserved.data(), chemTabComputedTemperature, &chemTabComputedProperty, chemTabFunctionTemperature.context.get()), 0);
 
             ASSERT_FLOAT_EQ(tChemComputedProperty, chemTabComputedProperty) << " The TChem and ChemTab " << testProperty << " should be equal when computed with temperature";
         }
@@ -232,7 +241,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectThermalProperties) {
 /*******************************************************************************************************
  * Tests for getting the Progress Variables
  */
-TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectProgressVariables) {
+TEST_P(ChemTabTestFixture, ShouldComputeCorrectProgressVariables) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
     for (const auto& testTarget : testTargets) {
@@ -253,10 +262,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectProgressVariables) {
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(ChemTabTests, ChemTabModelTestFixture,
-                         testing::Values((ChemTabModelTestParameters){.modelPath = "inputs/eos/chemTabTestModel_1", .testTargetFile = "inputs/eos/chemTabTestModel_1/testTargets.yaml"}));
-
-TEST_P(ChemTabModelTestFixture, ShouldComputeFieldFromProgressVariable) {
+TEST_P(ChemTabTestFixture, ShouldComputeFieldFromProgressVariable) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
     // arrange
@@ -299,6 +305,9 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeFieldFromProgressVariable) {
         }
     }
 }
+
+INSTANTIATE_TEST_SUITE_P(ChemTabTests, ChemTabTestFixture,
+                         testing::Values((ChemTabTestParameters){.modelPath = "inputs/eos/chemTabTestModel_1", .testTargetFile = "inputs/eos/chemTabTestModel_1/testTargets.yaml"}));
 
 /*********************************************************************************************************
  * Test for when tensorflow is not available

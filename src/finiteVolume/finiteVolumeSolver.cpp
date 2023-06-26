@@ -45,6 +45,9 @@ void ablate::finiteVolume::FiniteVolumeSolver::Setup() {
 }
 
 void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
+    // call the base class Initialize
+    ablate::solver::CellSolver::Initialize();
+
     // add each boundary condition
     for (const auto& boundary : boundaryConditions) {
         const auto& fieldId = subDomain->GetField(boundary->GetFieldName());

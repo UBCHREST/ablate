@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 #include "domain/field.hpp"
+#include "domain/fieldDescriptor.hpp"
 
 namespace ablate::eos {
 
@@ -113,6 +114,12 @@ class EOS {
      * @return
      */
     [[nodiscard]] virtual const std::vector<std::string>& GetProgressVariables() const = 0;
+
+    /**
+     * Helper function that would allow setting up of any additional required fields needed by the eos
+     * @return
+     */
+    [[nodiscard]] virtual std::vector<std::shared_ptr<domain::FieldDescriptor>> GetAdditionalFields() const { return {}; }
 
     /**
      * Properties known by this equation of state used for the FieldFunction calculations. This can be the same as the GetSpeciesVariables.

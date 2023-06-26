@@ -17,9 +17,10 @@ class RBF {
     // Radial Basis Function type and parameters
     const int polyOrder = 4;
 
-    PetscInt nPoly = -1;                 // The number of polynomial components to include
-    PetscInt minNumberCells = -1;        // Minimum number of cells needed to compute the RBF
-    PetscBool useVertices = PETSC_TRUE;  // Use vertices or edges/faces when computing neighbor cells
+    PetscInt nPoly = -1;                             // The number of polynomial components to include
+    PetscInt minNumberCells = -1;                    // Minimum number of cells-vertices needed to compute the RBF
+    PetscBool useCells = PETSC_FALSE;                // Use vertices or edges/faces when computing neighbor cells/vertices
+    PetscBool returnNeighborVertices = PETSC_FALSE;  // If it is true, it returns neighbor vertices, else it returns neighbor cells
 
     // Information from the subDomain cell range
     PetscInt cStart = 0, cEnd = 0;  // The cell range
@@ -68,12 +69,12 @@ class RBF {
      * Set the derivatives to use
      * @param numDer - Number of derivatives to set
      * @param dx, dy, dz - Lists of length numDer indicating the derivatives
-     * @param useVerticesLocal - Use common vertices when determining neighbors. If false then use common edges.
+     * @param useCellsLocal - Use common cells when determining neighbors. If false then use common edges.
      */
-    void SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVerticesLocal);
+    void SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useCellsLocal);
 
     /**
-     * Set the derivatives to use, defaulting to useVertices=TRUE
+     * Set the derivatives to use, defaulting to useCells=False
      * @param numDer - Number of derivatives to set
      * @param dx, dy, dz - Lists of length numDer indicating the derivatives
      */

@@ -653,8 +653,6 @@ TEST_P(TChemSootComputeSourceTestFixture, ShouldComputeCorrectSource) {
     // perform source add
     sourceTermCalculator->AddSource(range.GetRange(), domain->GetSolutionVector(), computedF);
 
-    VecView(computedF, PETSC_VIEWER_STDOUT_WORLD);
-
     // ASSERT
     PetscScalar* sourceArray;
     VecGetArray(computedF, &sourceArray) >> ablate::utilities::PetscUtilities::checkError;

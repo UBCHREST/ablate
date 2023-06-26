@@ -5,7 +5,7 @@ ablate::monitors::RadiationFieldMonitor::RadiationFieldMonitor(const std::shared
     : eos(eosIn), radiationModel(radiationModelIn), interval(intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>()) {}
 
 void ablate::monitors::RadiationFieldMonitor::Register(std::shared_ptr<ablate::solver::Solver> solverIn) {
-    Monitor::Register(solverIn);
+    FieldMonitor::Register(solverIn);
 
     // Create the monitor name
     std::string dmID = "radiationFieldMonitor";
