@@ -139,7 +139,7 @@ void RBF::Matrix(const PetscInt c) {
     const DM dm = RBF::subDomain->GetSubDM();
 
     // Get the list of neighbor cells
-    DMPlexGetNeighbors(dm, c, -1, -1.0, RBF::minNumberCells, RBF::useCells, RBF::returnNeighborVertices, &nCells, &list);
+    DMPlexGetNeighbors(dm, c, -1, -1.0, RBF::minNumberCells, RBF::useCells, (PetscBool)(RBF::useNeighborVertices), &nCells, &list);
     RBF::nStencil[c] = nCells;
     RBF::stencilList[c] = list;
 
@@ -557,7 +557,7 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, Vec f, PetscReal 
 /************ End Interpolation Code **********************/
 
 /************ Constructor, Setup, and Initialization Code **********************/
-RBF::RBF(int polyOrder, bool hasDerivatives, bool hasInterpolation) : polyOrder(polyOrder), hasDerivatives(hasDerivatives), hasInterpolation(hasInterpolation) {}
+RBF::RBF(int polyOrder, bool hasDerivatives, bool hasInterpolation, bool useNeighborVertices) : polyOrder(polyOrder), useNeighborVertices(useNeighborVertices), hasDerivatives(hasDerivatives), hasInterpolation(hasInterpolation){}
 
 RBF::~RBF() {
     if ((RBF::cEnd - RBF::cStart) > 0) {
