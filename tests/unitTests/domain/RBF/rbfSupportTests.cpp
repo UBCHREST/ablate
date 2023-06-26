@@ -172,14 +172,14 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
             MPI_Comm_rank(PetscObjectComm((PetscObject)mesh->GetDM()), &rank);
 
             DMPlexGetNeighbors(mesh->GetDM(),
-                                   testingParam.centerCell[rank],
-                                   testingParam.numLevels,
-                                   testingParam.maxDistance,
-                                   testingParam.minNumberCells,
-                                   testingParam.useCells,
-                                   testingParam.returnNeighborVertices,
-                                   &nCells,
-                                   &cells) >>
+                               testingParam.centerCell[rank],
+                               testingParam.numLevels,
+                               testingParam.maxDistance,
+                               testingParam.minNumberCells,
+                               testingParam.useCells,
+                               testingParam.returnNeighborVertices,
+                               &nCells,
+                               &cells) >>
                 utilities::PetscUtilities::checkError;
 
             PetscSortInt(nCells, cells);
