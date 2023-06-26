@@ -139,7 +139,7 @@ void RBF::Matrix(const PetscInt c) {
     const DM dm = RBF::subDomain->GetSubDM();
 
     // Get the list of neighbor cells
-    DMPlexGetNeighborCells(dm, c, -1, -1.0, RBF::minNumberCells, RBF::useVertices, &nCells, &list);
+    DMPlexGetNeighbors(dm, c, -1, -1.0, RBF::minNumberCells, RBF::useCells, RBF::returnNeighborVertices, &nCells, &list);
     RBF::nStencil[c] = nCells;
     RBF::stencilList[c] = list;
 
@@ -241,9 +241,9 @@ void RBF::Matrix(const PetscInt c) {
 
 /************ Begin Derivative Code **********************/
 
-void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVerticesLocal) {
+void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useCellsLocal) {
     if (numDer > 0) {
-        RBF::useVertices = useVerticesLocal;
+        RBF::useCells = useCellsLocal;
         RBF::nDer = numDer;
 
         PetscMalloc1(3 * numDer, &(RBF::dxyz)) >> utilities::PetscUtilities::checkError;
@@ -262,7 +262,7 @@ void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt
 /**
  * Set derivatives, defaulting to using vertices
  */
-void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]) { RBF::SetDerivatives(numDer, dx, dy, dz, PETSC_TRUE); }
+void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]) { RBF::SetDerivatives(numDer, dx, dy, dz, PETSC_FALSE); }
 
 // Compute the RBF weights at the cell center of p using a cell-list
 // c - The center cell in cellRange ordering
@@ -700,7 +700,7 @@ void RBF::Initialize(ablate::domain::Range cellRange) {
     RBF::stencilWeights -= cStart;
 
     for (PetscInt c = cStart; c < cEnd; ++c) {
-        RBF::cellList[c] = cellRange.points ? cellRange.points[c] : c;
+        RBF::cellList[c] = cellRange.GetPoint(c);
 
         RBF::nStencil[c] = -1;
         RBF::stencilList[c] = nullptr;

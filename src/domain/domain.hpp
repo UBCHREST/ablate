@@ -110,13 +110,6 @@ class Domain : private utilities::Loggable<Domain> {
     std::vector<std::weak_ptr<io::Serializable>> GetSerializableSubDomains();
 
     /**
-     * Get the petscField object from the dm or auxDm for this region
-     * @param fieldName
-     * @return
-     */
-    PetscObject GetPetscFieldObject(const Field& field);
-
-    /**
      *  returns the field  by global id
      * @param fieldId
      * @return

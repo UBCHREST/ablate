@@ -1,10 +1,12 @@
 #include "compressibleFlowFields.hpp"
+
+#include <utility>
 #include "domain/fieldDescription.hpp"
 #include "utilities/vectorUtilities.hpp"
 
 ablate::finiteVolume::CompressibleFlowFields::CompressibleFlowFields(std::shared_ptr<eos::EOS> eos, std::shared_ptr<domain::Region> region,
                                                                      std::shared_ptr<parameters::Parameters> conservedFieldParameters)
-    : eos(eos), region(region), conservedFieldOptions(conservedFieldParameters) {}
+    : eos(std::move(eos)), region(std::move(region)), conservedFieldOptions(std::move(conservedFieldParameters)) {}
 
 std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::finiteVolume::CompressibleFlowFields::GetFields() {
     std::vector<std::shared_ptr<ablate::domain::FieldDescription>> flowFields{
@@ -38,6 +40,20 @@ std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::finiteVol
                                                                            std::vector<std::string>{EV_TAG}));
         flowFields.emplace_back(
             std::make_shared<domain::FieldDescription>(PROGRESS_FIELD, PROGRESS_FIELD, eos->GetProgressVariables(), domain::FieldLocation::AUX, domain::FieldType::FVM, region, auxFieldOptions));
+    }
+
+    // check the eos/chemModel for any additional required fields
+    for (auto& fieldDescriptor : eos->GetAdditionalFields()) {
+        for (auto& field : fieldDescriptor->GetFields()) {
+            switch (field->location) {
+                case domain::FieldLocation::SOL:
+                    flowFields.push_back(field->Specialize(domain::FieldType::FVM, region, conservedFieldOptions));
+                    break;
+                case domain::FieldLocation::AUX:
+                    flowFields.push_back(field->Specialize(domain::FieldType::FVM, region, auxFieldOptions));
+                    break;
+            }
+        }
     }
 
     return flowFields;

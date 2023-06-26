@@ -25,14 +25,14 @@ class FieldMonitor : public Monitor, public io::Serializable {
      * only required function, returns the id of the object.  Should be unique for the simulation
      * @return
      */
-    const std::string& GetId() const override { return monitorDomain->GetName(); }
+    [[nodiscard]] const std::string& GetId() const override { return monitorDomain->GetName(); }
 
     /**
      * In order to use the base class, the Register call must be overridden and Register(std::shared_ptr<solver::Solver> solverIn, std::vector<domain::FieldDescription> fields) must be called from the
      * method
      * @param solverIn
      */
-    void Register(std::shared_ptr<solver::Solver> solverIn) override = 0;
+    void Register(std::shared_ptr<solver::Solver> solverIn) override { Monitor::Register(solverIn); }
 
     /**
      * In order to use the base class, the Register call must be overridden and

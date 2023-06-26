@@ -15,5 +15,4 @@ target_sources(ablateLibrary
         cellSolver.hpp
         adaptPhysics.hpp
         physicsTimeStepFunction.hpp
-        adaptPhysicsConstrained.cpp
         )
