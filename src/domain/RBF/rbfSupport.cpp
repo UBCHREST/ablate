@@ -276,7 +276,7 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt maxLevels, Pet
     PetscErrorCode (*neighborFunc)(DM, PetscReal[3], PetscInt, PetscReal, PetscBool, PetscInt *, PetscInt **);
 
     // Determine which internal function to call in while loop; if retutnNeighborVertices is false, the function returns the neighboring cells, and for true value, it returns vertices.
-    l = 0; // Current level
+    l = 0;  // Current level
     if (returnNeighborVertices == PETSC_FALSE) {
         cte = 0;
         neighborFunc = &DMPlexGetNeighborCells_Internal;
