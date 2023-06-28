@@ -400,7 +400,7 @@ PetscErrorCode DMPlexVertexControlVolume(DM dm, const PetscInt v, PetscReal *vol
 // Compute the finite-difference derivative approximation using the Eq. (11) from "3D level set methods for evolving fronts on tetrahedral
 //    meshes with adaptive mesh refinement", by Morgan and Waltz, JCP 336 (2017) 492-512.
 //   This should be second-order accurate for both triangles and quads
-PetscErrorCode DMPlexVertexDerivative(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscScalar g[]) {
+PetscErrorCode DMPlexVertexGrad(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscScalar g[]) {
   PetscFunctionBegin;
 
 
@@ -457,4 +457,3 @@ PetscErrorCode DMPlexVertexDerivative(DM dm, const PetscInt v, Vec data, PetscIn
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
-

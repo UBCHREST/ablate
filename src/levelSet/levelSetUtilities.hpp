@@ -102,26 +102,26 @@ namespace ablate::levelSet::Utilities {
     */
   void VertexGrad(std::shared_ptr<ablate::domain::SubDomain> subDomain, const ablate::domain::Field *field, const PetscInt p, PetscReal *g);
 
-  /**
-    * Vertex gradient using a given cell-centered gradient vector
-    * @param dm - Domain of the data
-    * @param vec - Vector containing the cell-centered gradient information
-    * @param fid - The field ID of the cell-centered gradient information
-    * @param p - Vertex id
-    * @param g - The gradient at p
-    */
-  void VertexGrad(DM dm, Vec vec, const PetscInt fid, const PetscInt p, PetscReal *g);
+//  /**
+//    * Vertex gradient using a given cell-centered gradient vector
+//    * @param dm - Domain of the data
+//    * @param vec - Vector containing the cell-centered gradient information
+//    * @param fid - The field ID of the cell-centered gradient information
+//    * @param p - Vertex id
+//    * @param g - The gradient at p
+//    */
+//  void VertexGrad(DM dm, Vec vec, const PetscInt fid, const PetscInt p, PetscReal *g);
 
-  /**
-    * Compute the upwind derivative
-    * @param dm - Domain of the data
-    * @param vec - Vector containing the cell-centered gradient information
-    * @param fid - The field ID of the cell-centered gradient information
-    * @param p - Vertex id
-    * @param direction - The direction to be considered upwind. +1 for standard upwind, -1 of downwind
-    * @param g - The gradient at p
-    */
-  void VertexUpwindGrad(DM dm, Vec vec, const PetscInt fid, const PetscInt p, const PetscReal direction, PetscReal *g);
+//  /**
+//    * Compute the upwind derivative
+//    * @param dm - Domain of the data
+//    * @param vec - Vector containing the cell-centered gradient information
+//    * @param fid - The field ID of the cell-centered gradient information
+//    * @param p - Vertex id
+//    * @param direction - The direction to be considered upwind. +1 for standard upwind, -1 of downwind
+//    * @param g - The gradient at p
+//    */
+//  void VertexUpwindGrad(DM dm, Vec vec, const PetscInt fid, const PetscInt p, const PetscReal direction, PetscReal *g);
 
   /**
     * Compute the upwind derivative
