@@ -665,7 +665,7 @@ SaveVertexData("ls0.txt", lsField, subDomain);
 
       // Once the neightbor function for vertices is merged this will need to be moved over
       PetscInt nCells, *cells;
-      DMPlexGetNeighborCells(vofDM, cutCell, nLevels, -1.0, -1, PETSC_FALSE, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
+      DMPlexGetNeighbors(vofDM, cutCell, nLevels, -1.0, -1, PETSC_FALSE, PETSC_FALSE, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
 
       for (PetscInt i = 0; i < nCells; ++i) {
 

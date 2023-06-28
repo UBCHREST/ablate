@@ -13,3 +13,5 @@ PetscErrorCode xDMPlexPointLocalRef(DM dm, PetscInt p, PetscInt fID, PetscScalar
 PetscErrorCode xDMPlexPointLocalRead(DM dm, PetscInt p, PetscInt fID, const PetscScalar *array, void *ptr);
 
 PetscErrorCode DMPlexFaceCentroidOutwardNormal(DM dm, PetscInt cell, PetscInt face, PetscReal *centroid, PetscReal *n);
+
+PetscErrorCode DMPlexVertexDerivative(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscScalar g[]);
