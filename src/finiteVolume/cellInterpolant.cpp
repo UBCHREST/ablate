@@ -621,7 +621,7 @@ static PetscErrorCode BuildGradientReconstruction_Internal(DM dm, DMLabel region
     PetscFunctionBegin;
     PetscCall(DMGetDimension(dm, &dim));
     PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));
-    PetscCall(DMPlexGetGhostCellStratum(dm, &cEndInterior, nullptr));
+    PetscCall(DMPlexGetCellTypeStratum(dm, DM_POLYTOPE_FV_GHOST, &cEndInterior, nullptr));
     cEndInterior = cEndInterior < 0 ? cEnd : cEndInterior;
     PetscCall(DMPlexGetMaxSizes(dm, &maxNumFaces, nullptr));
     PetscCall(PetscFVLeastSquaresSetMaxFaces(fvm, maxNumFaces));
@@ -699,7 +699,7 @@ static PetscErrorCode BuildGradientReconstruction_Internal_Tree(DM dm, DMLabel r
     PetscFunctionBegin;
     PetscCall(DMGetDimension(dm, &dim));
     PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));
-    PetscCall(DMPlexGetGhostCellStratum(dm, &cEndInterior, nullptr));
+    PetscCall(DMPlexGetCellTypeStratum(dm, DM_POLYTOPE_FV_GHOST, &cEndInterior, nullptr));
     if (cEndInterior < 0) cEndInterior = cEnd;
     PetscCall(PetscSectionCreate(PetscObjectComm((PetscObject)dm), &neighSec));
     PetscCall(PetscSectionSetChart(neighSec, cStart, cEndInterior));
@@ -837,7 +837,7 @@ PetscErrorCode ablate::finiteVolume::CellInterpolant::ComputeGradientFVM(DM dm, 
     PetscCall(DMGetDimension(dm, &dim));
     PetscCall(PetscFVGetNumComponents(fvm, &pdim));
     PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));
-    PetscCall(DMPlexGetGhostCellStratum(dm, &cEndInterior, nullptr));
+    PetscCall(DMPlexGetCellTypeStratum(dm, DM_POLYTOPE_FV_GHOST, &cEndInterior, nullptr));
     /* Construct the interpolant corresponding to each face from the least-square solution over the cell neighborhood */
     PetscCall(VecGetDM(faceGeometry, &dmFace));
     PetscCall(VecGetDM(cellGeometry, &dmCell));
