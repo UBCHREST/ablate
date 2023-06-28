@@ -53,6 +53,18 @@ void ablate::utilities::PetscUtilities::PetscOptionsDestroyAndCheck(const std::s
     PetscOptionsLeft(*options) >> utilities::PetscUtilities::checkError;
     PetscOptionsDestroy(options) >> utilities::PetscUtilities::checkError;
 }
+void ablate::utilities::PetscUtilities::Set(PetscOptions petscOptions, const char* name, const char* value, bool override) {
+    // If not override, check for use first
+    if (!override) {
+        PetscBool exists;
+        PetscOptionsHasName(nullptr, nullptr, name, &exists) >> utilities::PetscUtilities::checkError;
+        if (exists) {
+            return;
+        }
+    }
+
+    PetscOptionsSetValue(nullptr, name, value) >> utilities::PetscUtilities::checkError;
+}
 
 namespace ablate::utilities {
 

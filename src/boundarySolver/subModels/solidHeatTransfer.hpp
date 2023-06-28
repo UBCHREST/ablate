@@ -9,25 +9,90 @@ namespace ablate::boundarySolver::subModels {
 
 class SolidHeatTransfer {
    private:
-    // Hold the orginal DM, this DM is shared by both TSs
-    DM subModelDM;
-    // Hold a TS for heating
-    TS heatingTS;
+    // Define a enum for the properties needed for the solver
+    typedef enum { specificHeat, conductivity, density, total } ConductionProperties;
 
-    // Hold a separate TS for sublimation
-    TS sublimationTS;
+    // Hold the original dm for the subModel
+    DM subModelDm{};
+
+    // Hold the TS for stepping in time
+    TS ts{};
+
+    // The options used to create the dm, ts, ect
+    PetscOptions options{};
+
+    // Hold the properties constants
+    PetscScalar properties[total];
+
+    // Store the maximum surface temperature
+    PetscScalar maximumSurfaceTemperature;
+
+    // Store the far field temperature
+    PetscScalar farFieldTemperature;
+
+    /**
+     * Setup the discretization on the active dm
+     * @param activeDm the active dm
+     * @param bcType the kind of boundary condition to add
+     * @return
+     */
+    PetscErrorCode SetupDiscretization(DM activeDm, DMBoundaryConditionType bcType = DM_BC_NATURAL);
 
    public:
     /**
      * Create a single 1D solid model
      * @param parameters
      */
-    SolidHeatTransfer(std::shared_ptr<ablate::parameters::Parameters> parameters);
+    explicit SolidHeatTransfer(const std::shared_ptr<ablate::parameters::Parameters> &properties, const std::shared_ptr<ablate::parameters::Parameters> &options = {});
 
     /**
      * Clean up the petsc objects
      */
     ~SolidHeatTransfer();
+
+   private:
+    /**
+     * Compute the jacobian term g0 - integrand for the test and basis function term i
+     */
+    static void JacobianG0Term(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
+                               const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift,
+                               const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar g3[]);
+
+    /**
+     * Compute the jacobian term g3 - integrand for the test function gradient and basis function gradient term
+     */
+    static void JacobianG3Term(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
+                               const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift,
+                               const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar g3[]);
+
+    /**
+     * Compute the test function integrated.  Note there is only a single field.
+     */
+    static void WIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[],
+                                       const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t,
+                                       const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar f0[]);
+
+    /**
+     * Compute the test function integrated.  Note there is only a single field.
+     */
+    static void WIntegrandTestGradientFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[],
+                                               const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
+                                               PetscReal t, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar f1[]);
+
+    /**
+     * Boundary condition when the sublimation/max temperature is applied the surface or the far field
+     * @return
+     */
+    static PetscErrorCode EssentialCoupledWallBC(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nc, PetscScalar *u, void *ctx);
+
+    /**
+     * Boundary condition during heating
+     * @return
+     */
+    static void NaturalCoupledWallBC(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
+                                     const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal x[],
+                                     const PetscReal n[], PetscInt numConstants, const PetscScalar constants[], PetscScalar f0[]);
+
 };
 
 }  // namespace ablate::boundarySolver::subModels
