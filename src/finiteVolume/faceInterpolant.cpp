@@ -46,7 +46,7 @@ ablate::finiteVolume::FaceInterpolant::FaceInterpolant(const std::shared_ptr<abl
 
     // perform some fv and mpi ghost cell checks
     PetscInt gcStart;
-    DMPlexGetGhostCellStratum(dm, &gcStart, nullptr) >> utilities::PetscUtilities::checkError;
+    DMPlexGetCellTypeStratum(dm, DM_POLYTOPE_FV_GHOST, &gcStart, nullptr) >> utilities::PetscUtilities::checkError;
 
     // check for ghost cells
     DMLabel ghostLabel;

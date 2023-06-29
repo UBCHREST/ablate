@@ -105,7 +105,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
 
         // check if it is an exterior boundary cell ghost
         PetscInt boundaryCellStart;
-        DMPlexGetGhostCellStratum(dm, &boundaryCellStart, nullptr) >> utilities::PetscUtilities::checkError;
+        DMPlexGetCellTypeStratum(dm, DM_POLYTOPE_FV_GHOST, &boundaryCellStart, nullptr) >> utilities::PetscUtilities::checkError;
 
         // march over every cell
         for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
