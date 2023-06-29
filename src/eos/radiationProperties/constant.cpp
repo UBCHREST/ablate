@@ -20,15 +20,11 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
                                                                                                                                     const std::vector<domain::Field> &fields) const {
     switch (property) {
         case RadiationProperty::Absorptivity:
-            return ThermodynamicTemperatureFunction{
-                .function = ConstantAbsorptionTemperatureFunction,
-                .context = std::make_shared<FunctionContext>(
-                    FunctionContext{.absorptivity = absorptivityIn, .emissivity = emissivityIn, .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields)})};
+            return ThermodynamicTemperatureFunction{.function = ConstantAbsorptionTemperatureFunction,
+                                                    .context = std::make_shared<FunctionContext>(FunctionContext{.absorptivity = absorptivityIn, .emissivity = emissivityIn})};
         case RadiationProperty::Emissivity:
-            return ThermodynamicTemperatureFunction{
-                .function = ConstantEmissionTemperatureFunction,
-                .context = std::make_shared<FunctionContext>(
-                    FunctionContext{.absorptivity = absorptivityIn, .emissivity = emissivityIn, .temperatureFunction = eos->GetThermodynamicFunction(ThermodynamicProperty::Temperature, fields)})};
+            return ThermodynamicTemperatureFunction{.function = ConstantEmissionTemperatureFunction,
+                                                    .context = std::make_shared<FunctionContext>(FunctionContext{.absorptivity = absorptivityIn, .emissivity = emissivityIn})};
         default:
             throw std::invalid_argument("Unknown radiationProperties property in ablate::eos::radiationProperties::Constant");
     }

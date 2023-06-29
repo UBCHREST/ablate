@@ -91,10 +91,8 @@ solvers:
       # this is only an example of how to combine multiple models.  A simple fixed constant would be ideal for a real simulation
       properties: !ablate::eos::radiationProperties::Sum
         - !ablate::eos::radiationProperties::Constant
-          eos: *eos
           absorptivity: .4
           emissivity: 1
         - !ablate::eos::radiationProperties::Constant
-          eos: *eos
           absorptivity: .6
           emissivity: 1

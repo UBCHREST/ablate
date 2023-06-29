@@ -11,7 +11,6 @@ class Constant : public RadiationModel {
     struct FunctionContext {
         const PetscReal absorptivity;
         const PetscReal emissivity;
-        const ThermodynamicFunction temperatureFunction;
     };
 
     PetscReal absorptivityIn;
@@ -29,24 +28,7 @@ class Constant : public RadiationModel {
      * @param property
      * @param ctx
      */
-    static PetscErrorCode ConstantAbsorptionFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
-
-    /**
-     * private static function for evaluating constant properties without temperature
-     * @param conserved
-     * @param property
-     * @param ctx
-     */
     static PetscErrorCode ConstantAbsorptionTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
-
-    /**
-     * Returns the black body scaled by the input value of emissivity
-     * @param conserved
-     * @param property
-     * @param ctx
-     * @return
-     */
-    static PetscErrorCode ConstantEmissionFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
 
     /**
      * Returns the black body scaled by the input value of emissivity
