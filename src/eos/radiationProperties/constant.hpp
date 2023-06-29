@@ -14,7 +14,6 @@ class Constant : public RadiationModel {
         const ThermodynamicFunction temperatureFunction;
     };
 
-    const std::shared_ptr<eos::EOS> eos;  //! eos is needed to compute temperature
     PetscReal absorptivityIn;
     PetscReal emissivityIn;
 
@@ -60,7 +59,7 @@ class Constant : public RadiationModel {
     static PetscErrorCode ConstantEmissionTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
 
    public:
-    explicit Constant(std::shared_ptr<eos::EOS> eosIn, double absorptivity, double emissivity);
+    explicit Constant(double absorptivity, double emissivity);
     explicit Constant(const Constant&) = delete;
     void operator=(const Constant&) = delete;
 

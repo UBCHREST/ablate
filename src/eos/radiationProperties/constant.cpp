@@ -1,7 +1,6 @@
 #include "constant.hpp"
 
-ablate::eos::radiationProperties::Constant::Constant(std::shared_ptr<eos::EOS> eosIn, double absorptivity, double emissivity)
-    : eos(std::move(eosIn)), absorptivityIn(absorptivity), emissivityIn(emissivity) {}
+ablate::eos::radiationProperties::Constant::Constant(double absorptivity, double emissivity) : absorptivityIn(absorptivity), emissivityIn(emissivity) {}
 
 PetscErrorCode ablate::eos::radiationProperties::Constant::ConstantAbsorptionTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal *property, void *ctx) {
     PetscFunctionBeginUser;
@@ -37,4 +36,4 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
 
 #include "registrar.hpp"
 REGISTER(ablate::eos::radiationProperties::RadiationModel, ablate::eos::radiationProperties::Constant, "constant value transport model (often used for testing)",
-         ARG(ablate::eos::EOS, "eos", "The EOS used to compute field properties"), ARG(double, "absorptivity", "radiative absorptivity"), ARG(double, "emissivity", "radiative emissivity"));
+         ARG(double, "absorptivity", "radiative absorptivity"), ARG(double, "emissivity", "radiative emissivity"));
