@@ -1,7 +1,9 @@
 #include "solidHeatTransfer.hpp"
 #include "utilities/constants.hpp"
+#include "domain/RBF/rbfSupport.hpp"
 
 ablate::boundarySolver::subModels::SolidHeatTransfer::SolidHeatTransfer(const std::shared_ptr<ablate::parameters::Parameters> &propertiesIn,
+                                                                        const std::shared_ptr<ablate::mathFunctions::MathFunction>& initialization,
                                                                         const std::shared_ptr<ablate::parameters::Parameters> &optionsIn) {
     // Create a petsc options
     PetscOptionsCreate(&options) >> utilities::PetscUtilities::checkError;
@@ -12,15 +14,15 @@ ablate::boundarySolver::subModels::SolidHeatTransfer::SolidHeatTransfer(const st
     }
 
     // Add any required default values if needed
-    ablate::utilities::PetscUtilities::Set(options, "-ts_type", "beuler");
-    PetscOptionsSetValue(options, "-ts_max_steps", "100000");
-    PetscOptionsSetValue(options, "-snes_error_if_not_converged", NULL);
-    PetscOptionsSetValue(options, "-pc_type", "lu");
+    ablate::utilities::PetscUtilities::Set(options, "-ts_type", "beuler", false);
+    ablate::utilities::PetscUtilities::Set(options, "-ts_max_steps", "100000", false);
+    ablate::utilities::PetscUtilities::Set(options, "-snes_error_if_not_converged", nullptr, false);
+    ablate::utilities::PetscUtilities::Set(options, "-pc_type", "lu", false);
     // Set the mesh parameters
-    PetscOptionsSetValue(options, "-dm_plex_separate_marker", NULL);
-    PetscOptionsSetValue(options, "-dm_plex_dim", "1");
-    PetscOptionsSetValue(options, "-dm_plex_box_faces", "15");
-    PetscOptionsSetValue(options, "-dm_plex_box_upper", "0.1");
+    ablate::utilities::PetscUtilities::Set(options, "-dm_plex_separate_marker", nullptr, false);
+    ablate::utilities::PetscUtilities::Set(options, "-dm_plex_dim", "1", false);
+    ablate::utilities::PetscUtilities::Set(options, "-dm_plex_box_faces", "15", false);
+    ablate::utilities::PetscUtilities::Set(options, "-dm_plex_box_upper", "0.1", false);
 
     // Get the properties
     properties[specificHeat] = propertiesIn->GetExpect<PetscScalar>("specificHeat");
@@ -44,7 +46,7 @@ ablate::boundarySolver::subModels::SolidHeatTransfer::SolidHeatTransfer(const st
 
     // Create the time stepping
     TSCreate(PETSC_COMM_SELF, &ts) >> utilities::PetscUtilities::checkError;
-    PetscObjectSetOptions((PetscObject) ts, options) >> utilities::PetscUtilities::checkError;
+    PetscObjectSetOptions((PetscObject)ts, options) >> utilities::PetscUtilities::checkError;
     TSSetDM(ts, subModelDm) >> utilities::PetscUtilities::checkError;
     DMTSSetBoundaryLocal(subModelDm, DMPlexTSComputeBoundary, nullptr) >> utilities::PetscUtilities::checkError;
     DMTSSetIFunctionLocal(subModelDm, DMPlexTSComputeIFunctionFEM, nullptr) >> utilities::PetscUtilities::checkError;
@@ -55,16 +57,30 @@ ablate::boundarySolver::subModels::SolidHeatTransfer::SolidHeatTransfer(const st
     // create the first global vectorr
     Vec u;
     DMCreateGlobalVector(subModelDm, &u) >> utilities::PetscUtilities::checkError;
-    PetscObjectSetName((PetscObject) u, "temperature") >> utilities::PetscUtilities::checkError;
+    PetscObjectSetName((PetscObject)u, "temperature") >> utilities::PetscUtilities::checkError;
     TSSetSolution(ts, u) >> utilities::PetscUtilities::checkError;
 
     // Set the initial conditions using a math function
-//    SetInitialConditions(ts, u) >> utilities::PetscUtilities::checkError;
+    VecZeroEntries(u) >> utilities::PetscUtilities::checkError;
 
+    // Create the array for field function (temperature)
+    mathFunctions::PetscFunction functions[1] = {initialization->GetPetscFunction()};
+    void *context[1] = {initialization->GetContext()};
+
+    DMProjectFunction(subModelDm, 0.0, functions, context, INSERT_VALUES, u) >> utilities::PetscUtilities::checkError;
+
+    // precompute some of the required information
+    DMPlexGetContainingCell(subModelDm, surfaceCoordinate, &surfaceCell) >> utilities::PetscUtilities::checkError;
 
 }
 
 ablate::boundarySolver::subModels::SolidHeatTransfer::~SolidHeatTransfer() {
+    if(subModelDm){
+        DMDestroy(&subModelDm) >> utilities::PetscUtilities::checkError;
+    }
+    if(ts){
+        TSDestroy(&ts) >> utilities::PetscUtilities::checkError;
+    }
     if (options) {
         utilities::PetscUtilities::PetscOptionsDestroyAndCheck("ablate::boundarySolver::subModels::SolidHeatTransfer", &options);
     }
@@ -172,13 +188,13 @@ void ablate::boundarySolver::subModels::SolidHeatTransfer::WIntegrandTestGradien
         f1[d] = constants[conductivity] * u_x[d];
     }
 }
-PetscErrorCode ablate::boundarySolver::subModels::SolidHeatTransfer::EssentialCoupledWallBC(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt Nc, PetscScalar *u, void *ctx) { return 0; }
-static PetscErrorCode EssentialCoupledWallBC(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nc, PetscScalar *u, void *ctx) {
-    *u = *((PetscScalar*)ctx);
+
+PetscErrorCode ablate::boundarySolver::subModels::SolidHeatTransfer::EssentialCoupledWallBC(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt Nc, PetscScalar *u, void *ctx) {
+    *u = *((PetscScalar *)ctx);
     return PETSC_SUCCESS;
 }
 
-static void NaturalCoupledWallBC(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
+void ablate::boundarySolver::subModels::SolidHeatTransfer::NaturalCoupledWallBC(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
                                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal x[],
                                  const PetscReal n[], PetscInt numConstants, const PetscScalar constants[], PetscScalar f0[]) {
     // The normal is facing out, so scale the heat flux by -1

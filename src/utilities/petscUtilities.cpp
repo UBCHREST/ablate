@@ -57,13 +57,13 @@ void ablate::utilities::PetscUtilities::Set(PetscOptions petscOptions, const cha
     // If not override, check for use first
     if (!override) {
         PetscBool exists;
-        PetscOptionsHasName(nullptr, nullptr, name, &exists) >> utilities::PetscUtilities::checkError;
+        PetscOptionsHasName(petscOptions, nullptr, name, &exists) >> utilities::PetscUtilities::checkError;
         if (exists) {
             return;
         }
     }
 
-    PetscOptionsSetValue(nullptr, name, value) >> utilities::PetscUtilities::checkError;
+    PetscOptionsSetValue(petscOptions, name, value) >> utilities::PetscUtilities::checkError;
 }
 
 namespace ablate::utilities {
