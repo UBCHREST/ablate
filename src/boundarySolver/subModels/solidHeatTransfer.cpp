@@ -1,9 +1,10 @@
 #include "solidHeatTransfer.hpp"
-#include "utilities/constants.hpp"
+#include <petsc/private/petscfeimpl.h>
 #include "domain/RBF/rbfSupport.hpp"
+#include "utilities/constants.hpp"
 
 ablate::boundarySolver::subModels::SolidHeatTransfer::SolidHeatTransfer(const std::shared_ptr<ablate::parameters::Parameters> &propertiesIn,
-                                                                        const std::shared_ptr<ablate::mathFunctions::MathFunction>& initialization,
+                                                                        const std::shared_ptr<ablate::mathFunctions::MathFunction> &initialization,
                                                                         const std::shared_ptr<ablate::parameters::Parameters> &optionsIn) {
     // Create a petsc options
     PetscOptionsCreate(&options) >> utilities::PetscUtilities::checkError;
@@ -16,6 +17,8 @@ ablate::boundarySolver::subModels::SolidHeatTransfer::SolidHeatTransfer(const st
     // Add any required default values if needed
     ablate::utilities::PetscUtilities::Set(options, "-ts_type", "beuler", false);
     ablate::utilities::PetscUtilities::Set(options, "-ts_max_steps", "100000", false);
+    ablate::utilities::PetscUtilities::Set(options, "-dm_plex_box_upper", "0.1", false);
+    ablate::utilities::PetscUtilities::Set(options, "-ts_adapt_type", "basic", false);
     ablate::utilities::PetscUtilities::Set(options, "-snes_error_if_not_converged", nullptr, false);
     ablate::utilities::PetscUtilities::Set(options, "-pc_type", "lu", false);
     // Set the mesh parameters
@@ -52,9 +55,11 @@ ablate::boundarySolver::subModels::SolidHeatTransfer::SolidHeatTransfer(const st
     DMTSSetIFunctionLocal(subModelDm, DMPlexTSComputeIFunctionFEM, nullptr) >> utilities::PetscUtilities::checkError;
     DMTSSetIJacobianLocal(subModelDm, DMPlexTSComputeIJacobianFEM, nullptr) >> utilities::PetscUtilities::checkError;
     TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> utilities::PetscUtilities::checkError;
+    TSSetPreStep(ts, UpdateBoundaryCondition) >> utilities::PetscUtilities::checkError;
     TSSetFromOptions(ts) >> utilities::PetscUtilities::checkError;
+    TSSetApplicationContext(ts, this) >> utilities::PetscUtilities::checkError;
 
-    // create the first global vectorr
+    // create the first global vector
     Vec u;
     DMCreateGlobalVector(subModelDm, &u) >> utilities::PetscUtilities::checkError;
     PetscObjectSetName((PetscObject)u, "temperature") >> utilities::PetscUtilities::checkError;
@@ -71,14 +76,13 @@ ablate::boundarySolver::subModels::SolidHeatTransfer::SolidHeatTransfer(const st
 
     // precompute some of the required information
     DMPlexGetContainingCell(subModelDm, surfaceCoordinate, &surfaceCell) >> utilities::PetscUtilities::checkError;
-
 }
 
 ablate::boundarySolver::subModels::SolidHeatTransfer::~SolidHeatTransfer() {
-    if(subModelDm){
+    if (subModelDm) {
         DMDestroy(&subModelDm) >> utilities::PetscUtilities::checkError;
     }
-    if(ts){
+    if (ts) {
         TSDestroy(&ts) >> utilities::PetscUtilities::checkError;
     }
     if (options) {
@@ -132,7 +136,7 @@ PetscErrorCode ablate::boundarySolver::subModels::SolidHeatTransfer::SetupDiscre
 
     // Add the far field BC
     const PetscInt rightWallId = 2;
-    PetscCall(PetscDSAddBoundary(ds, DM_BC_ESSENTIAL, "farFieldWall", label, 1, &rightWallId, 0, 0, nullptr, (void (*)(void))EssentialCoupledWallBC, nullptr, &farFieldTemperature, nullptr));
+    PetscCall(PetscDSAddBoundary(ds, DM_BC_ESSENTIAL, "farFieldWall", label, 1, &rightWallId, 0, 0, nullptr, (void (*)())EssentialCoupledWallBC, nullptr, &farFieldTemperature, nullptr));
 
     // Set the constants for the properties
     PetscCall(PetscDSSetConstants(ds, total, properties));
@@ -140,6 +144,142 @@ PetscErrorCode ablate::boundarySolver::subModels::SolidHeatTransfer::SetupDiscre
     // copy over the discratation
     PetscCall(PetscFEDestroy(&fe));
 
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+PetscErrorCode ablate::boundarySolver::subModels::SolidHeatTransfer::UpdateBoundaryCondition(TS ts) {
+    PetscFunctionBeginUser;
+    DM dm;
+    PetscCall(TSGetDM(ts, &dm));
+
+    // Get the pointer to the solidHeatTransfer object
+    SolidHeatTransfer *solidHeatTransfer;
+    PetscCall(TSGetApplicationContext(ts, &solidHeatTransfer));
+
+    // Get the current global vector
+    Vec currentGlobalVec;
+    PetscCall(TSGetSolution(ts, &currentGlobalVec));
+
+    // Get the current time
+    PetscReal time;
+    PetscCall(TSGetTime(ts, &time));
+
+    // Get the local vector and fill in any boundary values
+    Vec locVec;
+    PetscCall(DMGetLocalVector(dm, &locVec));
+    PetscCall(DMPlexInsertBoundaryValues(dm, PETSC_TRUE, locVec, time, nullptr, nullptr, nullptr));
+    PetscCall(DMGlobalToLocal(dm, currentGlobalVec, INSERT_VALUES, locVec));
+
+    // Get the surface temperature and heat flux
+    SurfaceState surface{};
+    PetscCall(solidHeatTransfer->ComputeSurfaceInformation(dm, locVec, surface));
+
+    // Get the array
+    const PetscScalar *locVecArray;
+    PetscCall(VecGetArrayRead(locVec, &locVecArray));
+
+    // Now determine what kind of boundary we need
+    DMBoundaryConditionType neededBcType = DM_BC_NATURAL;
+    if (surface.temperature >= solidHeatTransfer->maximumSurfaceTemperature) {
+        neededBcType = DM_BC_ESSENTIAL;
+    }
+
+    // Get the ds
+    PetscDS ds;
+    PetscCall(DMGetDS(dm, &ds));
+    DMBoundaryConditionType currentBcType;
+
+    // Get the current bc
+    constexpr PetscInt coupledWallId = 0;  // assume the boundary is always zero
+    PetscCall(PetscDSGetBoundary(ds, coupledWallId, nullptr, &currentBcType, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr));
+    // Change the boundary if needed
+    std::cout << "temperature/hf " << surface.temperature << " --- " << surface.heatFlux << std::endl;
+
+    if (currentBcType != neededBcType && currentBcType != DM_BC_ESSENTIAL) {
+        // Clone the DM
+        DM newDM;
+        PetscCall(DMClone(dm, &newDM));
+
+        // Setup the new dm
+        PetscCall(solidHeatTransfer->SetupDiscretization(newDM, neededBcType));
+
+        // Reset the TS
+        PetscCall(TSReset(ts));
+
+        // Create a new global vector
+        Vec newGlobalVector;
+        PetscCall(DMCreateGlobalVector(newDM, &newGlobalVector));
+
+        // Copy the name
+        const char *name;
+        PetscCall(PetscObjectGetName((PetscObject)currentGlobalVec, &name));
+        PetscCall(PetscObjectSetName((PetscObject)newGlobalVector, name));
+
+        // Map from the local vector back to the global
+        PetscCall(DMLocalToGlobal(newDM, locVec, INSERT_VALUES, newGlobalVector));
+
+        // Set in the TS
+        PetscCall(TSSetDM(ts, newDM));
+        PetscCall(TSSetSolution(ts, newGlobalVector));
+    }
+
+    // Cleanup
+    PetscCall(DMRestoreLocalVector(dm, &locVec));
+
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+PetscErrorCode ablate::boundarySolver::subModels::SolidHeatTransfer::ComputeSurfaceInformation(DM dm, Vec locVec, SurfaceState &surface) const {
+    PetscFunctionBeginUser;
+
+    // Map that coordinate back if needed
+    PetscScalar refCoord[3];
+    PetscCall(DMPlexCoordinatesToReference(dm, surfaceCell, 1, surfaceCoordinate, refCoord));
+
+    // Build a tabulation to compute the values there
+    PetscDS ds;
+    PetscFE fe;
+    PetscCall(DMGetDS(dm, &ds));
+    PetscCall(PetscDSGetDiscretization(ds, 0, (PetscObject *)&fe));
+    PetscInt dim;
+    PetscCall(DMGetDimension(dm, &dim));
+
+    // Get the cell geometry
+    PetscQuadrature q;
+    PetscCall(PetscFEGetQuadrature(fe, &q));
+    PetscFEGeom feGeometry;
+    PetscCall(PetscFECreateCellGeometry(fe, q, &feGeometry));
+
+    PetscTabulation tab;
+    const PetscInt nrepl = 1;    // The number of replicas
+    const PetscInt nPoints = 1;  // the number of points
+    const PetscInt kOrder = 1;   // The number of derivatives calculated
+    PetscCall(PetscFECreateTabulation(fe, nrepl, nPoints, refCoord, kOrder, &tab));
+
+    {  // compute the single point values
+        const PetscInt pointInBasis = 0;
+        // extract the local cell information
+        PetscCall(DMPlexComputeCellGeometryFEM(dm, surfaceCell, q, feGeometry.v, feGeometry.J, feGeometry.invJ, feGeometry.detJ));
+        PetscScalar *clPhi = nullptr;
+        PetscInt cSize;
+        PetscCall(DMPlexVecGetClosure(dm, nullptr, locVec, surfaceCell, &cSize, &clPhi));
+
+        // Get the interpolated value
+        surface.temperature = 0.0;
+        PetscCall(PetscFEInterpolateAtPoints_Static(fe, tab, clPhi, &feGeometry, pointInBasis, &surface.temperature));
+        PetscScalar temperatureGrad[3] = {0.0, 0.0, 0.0};
+        PetscCall(PetscFEFreeInterpolateGradient_Static(fe, tab->T[1], clPhi, dim, feGeometry.invJ, nullptr, pointInBasis, temperatureGrad));
+
+        // get the constants
+        PetscInt numConstants;
+        const PetscScalar *constants;
+        PetscCall(PetscDSGetConstants(ds, &numConstants, &constants));
+        surface.heatFlux = -temperatureGrad[0] * constants[conductivity];
+    }
+
+    // cleanup
+    PetscCall(PetscFEDestroyCellGeometry(fe, &feGeometry));
+    PetscCall(PetscTabulationDestroy(&tab));
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -194,9 +334,13 @@ PetscErrorCode ablate::boundarySolver::subModels::SolidHeatTransfer::EssentialCo
     return PETSC_SUCCESS;
 }
 
-void ablate::boundarySolver::subModels::SolidHeatTransfer::NaturalCoupledWallBC(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
-                                 const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal x[],
-                                 const PetscReal n[], PetscInt numConstants, const PetscScalar constants[], PetscScalar f0[]) {
+void ablate::boundarySolver::subModels::SolidHeatTransfer::NaturalCoupledWallBC(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[],
+                                                                                const PetscScalar u_t[], const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[],
+                                                                                const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal x[], const PetscReal n[],
+                                                                                PetscInt numConstants, const PetscScalar constants[], PetscScalar f0[]) {
     // The normal is facing out, so scale the heat flux by -1
     f0[0] = -10000.0;
+}
+PetscErrorCode ablate::boundarySolver::subModels::SolidHeatTransfer::Solve(PetscReal heatFluxToSurface, PetscReal dt, ablate::boundarySolver::subModels::SolidHeatTransfer::SurfaceState &) {
+    return 0;
 }

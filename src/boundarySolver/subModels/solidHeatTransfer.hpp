@@ -48,6 +48,9 @@ class SolidHeatTransfer {
     // hold the cell of interest or surface cell
     PetscInt surfaceCell = -1;
 
+    // Store the heatFlux onto the surface
+    PetscScalar heatFluxToSurface;
+
     /**
      * Setup the discretization on the active dm
      * @param activeDm the active dm
@@ -56,6 +59,22 @@ class SolidHeatTransfer {
      */
     PetscErrorCode SetupDiscretization(DM activeDm, DMBoundaryConditionType bcType = DM_BC_NATURAL);
 
+    /**
+     * Function to update the boundary condition
+     * @param ts
+     * @return
+     */
+    static PetscErrorCode UpdateBoundaryCondition(TS ts);
+
+    /**
+     * Compute the surface information at this point in time
+     * @param dm
+     * @param locVec
+     * @param surface
+     * @return
+     */
+    PetscErrorCode ComputeSurfaceInformation(DM dm, Vec locVec, SurfaceState &surface) const;
+
    public:
     /**
      * Create a single 1D solid model
@@ -63,7 +82,7 @@ class SolidHeatTransfer {
      * @param initialization, math function to initialize the temperature
      * @param options
      */
-    explicit SolidHeatTransfer(const std::shared_ptr<ablate::parameters::Parameters> &properties, const std::shared_ptr<ablate::mathFunctions::MathFunction>& initialization,
+    explicit SolidHeatTransfer(const std::shared_ptr<ablate::parameters::Parameters> &properties, const std::shared_ptr<ablate::mathFunctions::MathFunction> &initialization,
                                const std::shared_ptr<ablate::parameters::Parameters> &options = {});
 
     /**
@@ -76,7 +95,7 @@ class SolidHeatTransfer {
      * @param dt
      * @return
      */
-    PetscErrorCode Solve(PetscReal dt, SurfaceState&);
+    PetscErrorCode Solve(PetscReal heatFluxToSurface, PetscReal dt, SurfaceState &);
 
    private:
     /**
