@@ -3,8 +3,8 @@
 using namespace ablate::domain::rbf;
 
 /************ Begin Inverse Multiquadric Derived Class **********************/
-IMQ::IMQ(int p, double scale, bool doesNotHaveDerivatives, bool doesNotHaveInterpolation, bool useNeighborVertices)
-    : RBF(p, !doesNotHaveDerivatives, !doesNotHaveInterpolation, useNeighborVertices), scale(scale < PETSC_SMALL ? __RBF_IMQ_DEFAULT_PARAM : scale){};
+IMQ::IMQ(int p, double scale, bool doesNotHaveDerivatives, bool doesNotHaveInterpolation, bool returnNeighborVertices)
+    : RBF(p, !doesNotHaveDerivatives, !doesNotHaveInterpolation, returnNeighborVertices), scale(scale < PETSC_SMALL ? __RBF_IMQ_DEFAULT_PARAM : scale){};
 
 // Inverse Multiquadric: 1/sqrt(1+(er)^2)
 PetscReal IMQ::RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) {
@@ -74,4 +74,4 @@ REGISTER(ablate::domain::rbf::RBF, ablate::domain::rbf::IMQ, "Radial Basis Funct
          OPT(double, "scale", "Scaling parameter. Must be >0. Any value <PETSC_SMALL will result in a default scale of 0.1."),
          OPT(bool, "doesNotHaveDerivatives", "Compute derivative information. Default is false."),
          OPT(bool, "doesNotHaveInterpolation", "Compute interpolation information. Default is false."),
-         OPT(bool, "useNeighborVertices", "Perform RBF based on neighboring vertices (TRUE) or cells (FALSE). Default is false."));
+         OPT(bool, "returnNeighborVertices", "Perform RBF based on neighboring vertices (TRUE) or cells (FALSE). Default is false."));

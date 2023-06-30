@@ -3,8 +3,8 @@
 using namespace ablate::domain::rbf;
 
 /************ Begin Polyharmonic Spline Derived Class **********************/
-PHS::PHS(int p, int phsOrder, bool doesNotHaveDerivatives, bool doesNotHaveInterpolation, bool useNeighborVertices)
-    : RBF(p, !doesNotHaveDerivatives, !doesNotHaveInterpolation, useNeighborVertices), phsOrder(phsOrder < 1 ? __RBF_PHS_DEFAULT_PARAM : 2 * phsOrder + 1){};
+PHS::PHS(int p, int phsOrder, bool doesNotHaveDerivatives, bool doesNotHaveInterpolation, bool returnNeighborVertices)
+    : RBF(p, !doesNotHaveDerivatives, !doesNotHaveInterpolation, returnNeighborVertices), phsOrder(phsOrder < 1 ? __RBF_PHS_DEFAULT_PARAM : 2 * phsOrder + 1){};
 
 // Polyharmonic spline: r^(2*m+1)
 PetscReal PHS::RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) {
@@ -73,4 +73,4 @@ REGISTER(ablate::domain::rbf::RBF, ablate::domain::rbf::PHS, "Radial Basis Funct
          OPT(int, "phsOrder", "Order of the polyharmonic spline. Must be >=1. The actual order will be 2*phsOrder+1. Any value <1 will result in a default order of 9."),
          OPT(bool, "doesNotHaveDerivatives", "Compute derivative information. Default is false."),
          OPT(bool, "doesNotHaveInterpolation", "Compute interpolation information. Default is false."),
-         OPT(bool, "useNeighborVertices", "Perform RBF based on neighboring vertices (TRUE) or cells (FALSE). Default is false."));
+         OPT(bool, "returnNeighborVertices", "Perform RBF based on neighboring vertices (TRUE) or cells (FALSE). Default is false."));

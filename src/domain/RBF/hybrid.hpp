@@ -18,7 +18,7 @@ class HYBRID : public RBF {
    public:
     std::string_view type() const override { return "HYBRID"; }
 
-    HYBRID(int p = 4, std::vector<double> weights = {}, std::vector<std::shared_ptr<RBF>> rbfList = {}, bool doesNotHaveDerivatives = false, bool doesNotHaveInterpolation = false, bool useNeighborVertices = false);
+    HYBRID(int p = 4, std::vector<double> weights = {}, std::vector<std::shared_ptr<RBF>> rbfList = {}, bool doesNotHaveDerivatives = false, bool doesNotHaveInterpolation = false, bool returnNeighborVertices = false);
 
     PetscReal RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) override;
     PetscReal RBFDer(PetscInt dim, PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) override;

@@ -4,8 +4,8 @@
 using namespace ablate::domain::rbf;
 
 /************ Begin Polyharmonic Spline Derived Class **********************/
-HYBRID::HYBRID(int p, std::vector<double> weights, std::vector<std::shared_ptr<RBF>> rbfList, bool doesNotHaveDerivatives, bool doesNotHaveInterpolation, bool useNeighborVertices)
-    : RBF(p, !doesNotHaveDerivatives, !doesNotHaveInterpolation, useNeighborVertices), weights(weights), rbfList(rbfList){};
+HYBRID::HYBRID(int p, std::vector<double> weights, std::vector<std::shared_ptr<RBF>> rbfList, bool doesNotHaveDerivatives, bool doesNotHaveInterpolation, bool returnNeighborVertices)
+    : RBF(p, !doesNotHaveDerivatives, !doesNotHaveInterpolation, returnNeighborVertices), weights(weights), rbfList(rbfList){};
 
 PetscReal HYBRID::RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) {
     PetscReal val = 0.0;
@@ -32,4 +32,4 @@ REGISTER(ablate::domain::rbf::RBF, ablate::domain::rbf::HYBRID, "Radial Basis Fu
          ARG(std::vector<ablate::domain::rbf::RBF>, "rbfList", "List of RBF kernels to use."),
          OPT(bool, "doesNotHaveDerivatives", "Compute derivative information. Default is false."),
          OPT(bool, "doesNotHaveInterpolation", "Compute interpolation information. Default is false."),
-         OPT(bool, "useNeighborVertices", "Perform RBF based on neighboring vertices (TRUE) or cells (FALSE). Default is false."));
+         OPT(bool, "returnNeighborVertices", "Perform RBF based on neighboring vertices (TRUE) or cells (FALSE). Default is false."));
