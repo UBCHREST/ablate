@@ -2,7 +2,7 @@
 #include <memory>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
-#include "domain/RBF/rbfSupport.hpp"
+#include "utilities/petscSupport.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
 #include "environment/runEnvironment.hpp"
