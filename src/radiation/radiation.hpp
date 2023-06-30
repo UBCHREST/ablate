@@ -1,9 +1,15 @@
 #ifndef ABLATELIBRARY_RADIATION_HPP
 #define ABLATELIBRARY_RADIATION_HPP
 
+#include <petsc/private/dmimpl.h>
+#include <petscdm.h>
+#include <petscdmswarm.h>
+#include <petscsf.h>
 #include <memory>
 #include <set>
+#include <utility>
 #include "eos/radiationProperties/radiationProperties.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
 #include "io/interval/interval.hpp"
 #include "monitors/logs/log.hpp"
@@ -11,6 +17,8 @@
 #include "solver/timeStepper.hpp"
 #include "utilities/constants.hpp"
 #include "utilities/loggable.hpp"
+#include "utilities/mpiUtilities.hpp"
+#include "utilities/petscUtilities.hpp"
 
 namespace ablate::radiation {
 
@@ -53,8 +61,38 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
         PetscReal Krad = 1;  //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
     };
 
-    /** Returns the black body intensity for a given temperature and emissivity */
-    static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
+    /**
+     * Returns the black body intensity for a given temperature and emissivity
+     * @param temperature
+     * @param refractiveIndex
+     * @return
+     */
+    static inline PetscReal GetBlackBodyTotalIntensity(PetscReal temperature, const PetscReal refractiveIndex) {
+        return refractiveIndex * refractiveIndex * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature / ablate::utilities::Constants::pi;
+    }
+
+    /**
+     * Returns the black body intensity at a specific wavelength. This must be integrated over a bandwidth.
+     *
+     * @param temperature
+     * @param wavelength
+     * @param refractiveIndex
+     * @return
+     */
+    static inline PetscReal GetBlackBodyWavelengthIntensity(const PetscReal temperature, const PetscReal wavelength, const PetscReal refractiveIndex) {
+        PetscReal E_lambda = (2 * ablate::utilities::Constants::pi * ablate::utilities::Constants::h * ablate::utilities::Constants::c * ablate::utilities::Constants::c);
+        E_lambda /= refractiveIndex * refractiveIndex * wavelength * wavelength * wavelength * wavelength * wavelength;
+        E_lambda /= exp((ablate::utilities::Constants::h * ablate::utilities::Constants::c) / (refractiveIndex * wavelength * ablate::utilities::Constants::k * temperature)) - 1;
+        E_lambda /= ablate::utilities::Constants::pi;
+
+        return E_lambda;
+    }
+
+    /**
+     * Represents the name of the class for logging and other utilities
+     * @return
+     */
+    static inline std::string GetClassType() { return "Radiation"; }
 
     /** SubDomain Register and Setup **/
     virtual void Setup(const ablate::domain::Range& cellRange, ablate::domain::SubDomain& subDomain);
@@ -72,20 +110,32 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * @param kappa the absorptivity of the cell
      * @return
      */
-    inline PetscReal GetIntensity(PetscInt index, const ablate::domain::Range& cellRange, PetscReal temperature, PetscReal kappa) {
-        // Compute the losses
-        PetscReal netIntensity = -4.0 * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
+    inline void GetIntensity(PetscReal* intensity, PetscInt index, const domain::Range& cellRange, PetscReal temperature, PetscReal kappa) {
+        for (int i = 0; i < (int)absorptivityFunction.propertySize; ++i) {                                                  // Compute the losses
+            PetscReal netIntensity = -4.0 * ablate::utilities::Constants::pi * GetBlackBodyTotalIntensity(temperature, 1);  //! This should take the emission as an input (if non-grey)
 
-        // add in precomputed gains
-        netIntensity += evaluatedGains[index - cellRange.start];
+            // add in precomputed gains
+            netIntensity += evaluatedGains[absorptivityFunction.propertySize * (index - cellRange.start) + i];
 
-        // scale by kappa
-        netIntensity *= kappa;
+            // scale by kappa
+            netIntensity *= kappa;
 
-        return abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
+            intensity[i] = abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
+        }
     }
 
+    //  Add a class called "radiation surface properties" which is used to compute the amount of intensity absorbed by the material. This should be an optional input in the radiation base class.
+    // GetIntensity should compute this, because otherwise the losses will not be accounted for.
+    // Just embed a function within the GetIntensity function that "Computes surface properties" and decides how much of the radiation to do.
+    // Also. the losses are wavelength dependent based on what portion of the black body temperature they are emitting.
+    // Then, the camera properties will be able to be viewed as a radiation surface property.
+    // The radiation solver can take a vector of radiation surface properties.
+    // Each radiation surface property will be evaluated on the EvaluateGains call.
+    // Each property can be output separately.
+
     inline std::string GetId() { return solverId; };
+
+    inline eos::ThermodynamicTemperatureFunction GetAbsorptionFunction() { return absorptivityFunction; };
 
     /** Evaluates the ray intensity from the domain to update the effects of irradiation. Does not impact the solution unless the solve function is called again.
      * */
@@ -93,10 +143,11 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
 
     /** Determines the next location of the search particles during the initialization
      * */
-    virtual void ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray, DM radReturn);  //!< Routine to move the particle one step
+    virtual void ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray, DM radReturn, PetscInt nlocalpoints,
+                              PetscInt nglobalpoints);  //!< Routine to move the particle one step
 
     //! If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory and record its index
-    void IdentifyNewRaysOnRank(domain::SubDomain& subDomain, DM radReturn);
+    virtual void IdentifyNewRaysOnRank(domain::SubDomain& subDomain, DM radReturn, PetscInt nlocalpoints);
 
     /** Determines what component of the incoming radiation should be accounted for when evaluating the irradiation for each ray.
      * Dummy function that doesn't do anything unless it is overridden by the surface implementation
@@ -122,7 +173,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
         //!< Stores the cell indices of the segment locally.
         PetscInt cell;
         //!< Stores the space steps of the segment locally.
-        PetscReal h;
+        PetscReal pathLength;
     };
 
     /** Virtual coordinates are used during the search to compute path length properties in case the simulation is not 3 dimensional */
@@ -154,6 +205,18 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      * @param adv a multiple of the minimum cell radius by which to advance the DMSwarm coordinates ahead of the virtual coordinates
      * */
     void UpdateCoordinates(PetscInt ipart, Virtualcoord* virtualcoord, PetscReal* coord, PetscReal adv) const;
+
+    /**
+     * Delete the particles that are outside of the domain
+     * This is used in the initialization for ray tracing solvers which rely on domain bounds to inform the placement of particles around the boundary regions.
+     * @param subDomain
+     */
+    void DeleteOutOfBounds(ablate::domain::SubDomain& subDomain);
+
+    virtual void SetBoundary(CellSegment& raySegment, PetscInt index, Identifier identifier) {
+        raySegment.cell = index;
+        raySegment.pathLength = -1;
+    }
 
     /// Class inputs and Variables
     PetscInt dim = 0;  //!< Number of dimensions that the domain exists within
@@ -202,6 +265,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
 
     //! hold a pointer to the absorptivity function
     eos::ThermodynamicTemperatureFunction absorptivityFunction;
+    eos::ThermodynamicTemperatureFunction emissivityFunction;
 
     // !Store a log used to output the required information
     const std::shared_ptr<ablate::monitors::logs::Log> log = nullptr;

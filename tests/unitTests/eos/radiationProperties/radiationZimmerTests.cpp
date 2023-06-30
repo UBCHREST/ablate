@@ -19,10 +19,6 @@ TEST_P(ZimmerTestFixture, ShouldProduceExpectedValuesForField) {
     // ARRANGE
     std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();  //!< Create a mock eos with parameters to feed to the Zimmer model.
     /** Input values for the mock eos to carry into the Zimer model. This will require values for each of the fields. */
-    EXPECT_CALL(*eos, GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, testing::_))
-        .Times(::testing::Exactly(1))
-        .WillOnce(::testing::Return(
-            ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction([](const PetscReal conserved[], PetscReal* property) { *property = ZimmerTestFixture::GetParam().temperatureIn; })));
     EXPECT_CALL(*eos, GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty::Density, testing::_))
         .Times(::testing::Exactly(1))
         .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicTemperatureFunction(
@@ -30,13 +26,14 @@ TEST_P(ZimmerTestFixture, ShouldProduceExpectedValuesForField) {
 
     auto zimmerModel = std::make_shared<ablate::eos::radiationProperties::Zimmer>(
         eos, ZimmerTestFixture::GetParam().upperLimitTest, ZimmerTestFixture::GetParam().lowerLimitTest);  //!< An instantiation of the Zimmer model (with options set to nullptr)
-    auto absorptivityFunction = zimmerModel->GetRadiationPropertiesFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, ZimmerTestFixture::GetParam().fields);
+    auto absorptivityFunction = zimmerModel->GetRadiationPropertiesTemperatureFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, ZimmerTestFixture::GetParam().fields);
 
     /** This section should set the fields with a certain distribution of material such that the absorptivity of that field produces a specific result */
 
     // ACT
     PetscReal computedAbsorptivity = NAN;  //!< Declaration of the computed absorptivity
     absorptivityFunction.function(ZimmerTestFixture::GetParam().conservedValues.data(),
+                                  ZimmerTestFixture::GetParam().temperatureIn,
                                   &computedAbsorptivity,
                                   absorptivityFunction.context.get());  //!< Getting the absorptivity from the density, temperature, and mass fraction fields
 

@@ -100,6 +100,8 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
         radiation->Setup(faceRange.GetRange(), bSolver.GetSubDomain());
         radiation->Initialize(faceRange.GetRange(), bSolver.GetSubDomain());  //!< Pass the non-dynamic range into the radiation solver
 
+        if (radiation->GetAbsorptionFunction().propertySize != 1) throw std::invalid_argument("The sublimation solver currently only accepts one radiation wavelength.");
+
         bSolver.RegisterPreRHSFunction(SublimationPreRHS, this);
     }
 }
@@ -136,7 +138,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     // Use the solution from the radiation solve.
     PetscReal radIntensity = 0;
     if (sublimation->radiation) {
-        radIntensity = sublimation->radiation->GetSurfaceIntensity(fg->faceId, boundaryTemperature, sublimation->emissivity);
+        sublimation->radiation->GetSurfaceIntensity(&radIntensity, fg->faceId, boundaryTemperature, sublimation->emissivity);
     }
 
     // compute the heat flux. Add the radiation heat flux for this face intensity if the radiation solver exists
@@ -274,7 +276,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationOutputFu
 
     PetscReal radIntensity = 0;
     if (sublimation->radiation) {
-        radIntensity = sublimation->radiation->GetSurfaceIntensity(fg->faceId, boundaryTemperature, sublimation->emissivity);
+        sublimation->radiation->GetSurfaceIntensity(&radIntensity, fg->faceId, boundaryTemperature, sublimation->emissivity);
     }
 
     // compute the heat flux

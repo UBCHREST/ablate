@@ -15,6 +15,7 @@ void ablate::radiation::OrthogonalRadiation::Setup(const ablate::domain::Range& 
      * Initialize the log if provided
      */
     absorptivityFunction = radiationModel->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, subDomain.GetFields());
+    emissivityFunction = radiationModel->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Emissivity, subDomain.GetFields());
 
     if (log) {
         log->Initialize(subDomain.GetComm());
@@ -28,7 +29,6 @@ void ablate::radiation::OrthogonalRadiation::Setup(const ablate::domain::Range& 
      * Obtain the geometric information about the cells in the DM
      * */
 
-    StartEvent("OrthogonalRadiation::Setup");
     if (log) log->Printf("Starting Initialize\n");
 
     DMPlexGetMinRadius(subDomain.GetDM(), &minCellRadius) >> utilities::PetscUtilities::checkError;
@@ -133,9 +133,10 @@ void ablate::radiation::OrthogonalRadiation::Setup(const ablate::domain::Range& 
     DMSwarmMigrate(radSearch, PETSC_TRUE) >> utilities::PetscUtilities::checkError;  //!< Sets the search particles in the cell indexes to which they have been assigned
 
     if (log) {
-        log->Printf("Particles Setup\n");
+        log->Printf("Particles Setup: %i\n", ipart);
+        DMSwarmGetSize(radSearch, &ipart) >> utilities::PetscUtilities::checkError;
+        log->Printf("After First Migrate: %i\n", ipart);
     }
-    EndEvent();
 }
 
 #include "registrar.hpp"

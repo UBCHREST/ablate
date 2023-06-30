@@ -218,7 +218,7 @@ void testingResources::MpiTestFixture::CompareOutputFile(const std::string& expe
                         ASSERT_TRUE(!actualValueString.empty()) << " on line (" << lineNumber << ") " << expectedLine << " of file " << expectedFileName;
                         break;
                     case 'z':
-                        // should be close to zer
+                        // should be close to zero
                         ASSERT_LT(std::abs(std::stod(actualValueString)), 1.0E-13) << " on line (" << lineNumber << ") " << expectedLine << " of file " << expectedFileName;
                         break;
                     case 'n': {

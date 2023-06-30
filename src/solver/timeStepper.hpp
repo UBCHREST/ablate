@@ -127,6 +127,8 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
 
     TS &GetTS() { return ts; }
 
+    Vec GetSolutionVector() { return domain->GetSolutionVector(); }
+
     /**
      * Optional call to Initialize before setup
      */
