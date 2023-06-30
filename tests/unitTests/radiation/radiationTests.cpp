@@ -194,7 +194,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             "timeStepper", domain, ablate::parameters::MapParameters::Create({{"ts_max_steps", 0}}), {}, std::make_shared<ablate::domain::Initializer>(initialConditionEuler));
 
         // Create an instance of radiation
-        auto radiationPropertiesModel = std::make_shared<ablate::eos::radiationProperties::Constant>(eos, 1.0, 1.0);
+        auto radiationPropertiesModel = std::make_shared<ablate::eos::radiationProperties::Constant>(1.0, 1.0);
         auto radiationModel = GetParam().radiationFactory(radiationPropertiesModel);
         auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
         auto radiation = std::make_shared<ablate::radiation::VolumeRadiation>("radiation", interiorLabel, nullptr, radiationModel, nullptr, nullptr);

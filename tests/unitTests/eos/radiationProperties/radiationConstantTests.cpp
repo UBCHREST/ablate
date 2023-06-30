@@ -1,5 +1,4 @@
 #include "eos/mockEOS.hpp"
-#include "eos/perfectGas.hpp"
 #include "eos/radiationProperties/constant.hpp"
 #include "gtest/gtest.h"
 
@@ -9,7 +8,7 @@ TEST(RadiationConstantTests, ShouldRecordConstantValuesForDirectRadiationFunctio
 
     std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();  //!< Create a mock eos with parameters to feed to the model.
 
-    auto constantModel = std::make_shared<ablate::eos::radiationProperties::Constant>(eos, expectedAbsorptivity, 1);
+    auto constantModel = std::make_shared<ablate::eos::radiationProperties::Constant>(expectedAbsorptivity, 1);
 
     auto absorptivityFunction = constantModel->GetRadiationPropertiesTemperatureFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, {});
 
@@ -28,7 +27,7 @@ TEST(ConstantTransportTests, ShouldRecordConstantValuesForRadiationTemperatureFu
 
     std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();  //!< Create a mock eos with parameters to feed to the model.
 
-    auto constantModel = std::make_shared<ablate::eos::radiationProperties::Constant>(eos, expectedAbsorptivity, 1);
+    auto constantModel = std::make_shared<ablate::eos::radiationProperties::Constant>(expectedAbsorptivity, 1);
 
     auto absorptivityFunction = constantModel->GetRadiationPropertiesTemperatureFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, {});
 

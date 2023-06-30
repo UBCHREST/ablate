@@ -56,8 +56,8 @@ INSTANTIATE_TEST_SUITE_P(
                                                              std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
 
                                                          return std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>>{
-                                                             std::make_shared<ablate::eos::radiationProperties::Constant>(eos, 1.4, 1),
-                                                             std::make_shared<ablate::eos::radiationProperties::Constant>(eos, 1.6, 1)};
+                                                             std::make_shared<ablate::eos::radiationProperties::Constant>(1.4, 1),
+                                                             std::make_shared<ablate::eos::radiationProperties::Constant>(1.6, 1)};
                                                      },
                                                  .expectedParameters = {{ablate::eos::radiationProperties::RadiationProperty::Absorptivity, 3.0}}},
                     (RadiationSumTestParameters){
@@ -67,7 +67,7 @@ INSTANTIATE_TEST_SUITE_P(
 
                                 std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
 
-                                return std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>>{std::make_shared<ablate::eos::radiationProperties::Constant>(eos, 1.4, 1)};
+                                return std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>>{std::make_shared<ablate::eos::radiationProperties::Constant>(1.4, 1)};
                             },
                         .expectedParameters = {{ablate::eos::radiationProperties::RadiationProperty::Absorptivity, 1.4}}},
                     (RadiationSumTestParameters){
@@ -76,9 +76,9 @@ INSTANTIATE_TEST_SUITE_P(
                                 std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();  //!< Create a mock eos with parameters to feed to the Zimmer model.
                                 std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
 
-                                return std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>>{std::make_shared<ablate::eos::radiationProperties::Constant>(eos, 1.4, 1),
-                                                                                                                      std::make_shared<ablate::eos::radiationProperties::Constant>(eos, 2.4, 1),
-                                                                                                                      std::make_shared<ablate::eos::radiationProperties::Constant>(eos, 3.5, 1)};
+                                return std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>>{std::make_shared<ablate::eos::radiationProperties::Constant>(1.4, 1),
+                                                                                                                      std::make_shared<ablate::eos::radiationProperties::Constant>(2.4, 1),
+                                                                                                                      std::make_shared<ablate::eos::radiationProperties::Constant>(3.5, 1)};
                             },
                         .expectedParameters = {{ablate::eos::radiationProperties::RadiationProperty::Absorptivity, 7.3}}}
 
