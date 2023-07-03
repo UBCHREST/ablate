@@ -62,7 +62,7 @@ ablate::boundarySolver::subModels::SolidHeatTransfer::SolidHeatTransfer(const st
     // create the first global vector
     Vec u;
     DMCreateGlobalVector(subModelDm, &u) >> utilities::PetscUtilities::checkError;
-    PetscObjectSetName((PetscObject)u, "temperature") >> utilities::PetscUtilities::checkError;
+    PetscObjectSetName((PetscObject)u, "bcField") >> utilities::PetscUtilities::checkError;
     TSSetSolution(ts, u) >> utilities::PetscUtilities::checkError;
 
     // Set the initial conditions using a math function
@@ -76,6 +76,23 @@ ablate::boundarySolver::subModels::SolidHeatTransfer::SolidHeatTransfer(const st
 
     // precompute some of the required information
     DMPlexGetContainingCell(subModelDm, surfaceCoordinate, &surfaceCell) >> utilities::PetscUtilities::checkError;
+
+    // Create an auxDm and aux vector containing
+    DMClone(subModelDm, &auxDm);
+
+    // Set a single fe field for heatFlux
+    PetscFE feHeatFlux;
+    PetscFECreateLagrange(PETSC_COMM_SELF, 1, 1, PETSC_TRUE, 1 /*degree  of space */, PETSC_DETERMINE, &feHeatFlux) >> utilities::PetscUtilities::checkError;
+    PetscObjectSetName((PetscObject)feHeatFlux, "heatFlux") >> utilities::PetscUtilities::checkError;
+
+    /* Set discretization and boundary conditions for each mesh */
+    DMSetField(auxDm, 0, nullptr, (PetscObject)feHeatFlux) >> utilities::PetscUtilities::checkError;
+    DMCreateDS(auxDm) >> utilities::PetscUtilities::checkError;
+
+    // Give the aux vector to the subModelDm
+    DMCreateLocalVector(auxDm, &localAuxVector) >> utilities::PetscUtilities::checkError;
+    VecZeroEntries(localAuxVector) >> utilities::PetscUtilities::checkError;
+    DMSetAuxiliaryVec(subModelDm, nullptr, 0, 0, localAuxVector) >> utilities::PetscUtilities::checkError;
 }
 
 ablate::boundarySolver::subModels::SolidHeatTransfer::~SolidHeatTransfer() {
@@ -88,6 +105,9 @@ ablate::boundarySolver::subModels::SolidHeatTransfer::~SolidHeatTransfer() {
     if (options) {
         utilities::PetscUtilities::PetscOptionsDestroyAndCheck("ablate::boundarySolver::subModels::SolidHeatTransfer", &options);
     }
+    if(localAuxVector){
+        VecDestroy(&localAuxVector) >> utilities::PetscUtilities::checkError;
+    }
 }
 PetscErrorCode ablate::boundarySolver::subModels::SolidHeatTransfer::SetupDiscretization(DM activeDm, DMBoundaryConditionType bcType) {
     PetscFunctionBeginUser;
@@ -96,13 +116,13 @@ PetscErrorCode ablate::boundarySolver::subModels::SolidHeatTransfer::SetupDiscre
     PetscInt dim;
     PetscCall(DMGetDimension(activeDm, &dim));
 
-    /* Create finite element */
-    PetscFE fe;
-    PetscCall(PetscFECreateLagrange(PETSC_COMM_SELF, dim, 1, PETSC_TRUE, 1 /*degree  of space */, PETSC_DETERMINE, &fe));
-    PetscCall(PetscObjectSetName((PetscObject)fe, "temperature"));
+    /* Create finite element field for temperature */
+    PetscFE feTemperature;
+    PetscCall(PetscFECreateLagrange(PETSC_COMM_SELF, dim, 1, PETSC_TRUE, 1 /*degree  of space */, PETSC_DETERMINE, &feTemperature));
+    PetscCall(PetscObjectSetName((PetscObject)feTemperature, "temperature"));
 
     /* Set discretization and boundary conditions for each mesh */
-    PetscCall(DMSetField(activeDm, 0, nullptr, (PetscObject)fe));
+    PetscCall(DMSetField(activeDm, 0, nullptr, (PetscObject)feTemperature));
     PetscCall(DMCreateDS(activeDm));
 
     // setup the problem
@@ -141,8 +161,8 @@ PetscErrorCode ablate::boundarySolver::subModels::SolidHeatTransfer::SetupDiscre
     // Set the constants for the properties
     PetscCall(PetscDSSetConstants(ds, total, properties));
 
-    // copy over the discratation
-    PetscCall(PetscFEDestroy(&fe));
+    // clean up the fields
+    PetscCall(PetscFEDestroy(&feTemperature));
 
     PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -199,6 +219,10 @@ PetscErrorCode ablate::boundarySolver::subModels::SolidHeatTransfer::UpdateBound
         // Clone the DM
         DM newDM;
         PetscCall(DMClone(dm, &newDM));
+
+       // Set the aux vector in the new dm
+        PetscCall(DMSetAuxiliaryVec(newDM, nullptr, 0, 0, solidHeatTransfer->localAuxVector));
+
 
         // Setup the new dm
         PetscCall(solidHeatTransfer->SetupDiscretization(newDM, neededBcType));
@@ -339,7 +363,8 @@ void ablate::boundarySolver::subModels::SolidHeatTransfer::NaturalCoupledWallBC(
                                                                                 const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal x[], const PetscReal n[],
                                                                                 PetscInt numConstants, const PetscScalar constants[], PetscScalar f0[]) {
     // The normal is facing out, so scale the heat flux by -1
-    f0[0] = -10000.0;
+    f0[0] = -a[aOff[0]];
+    std::cout << "hf: " << a[aOff[0]] << std::endl;
 }
 PetscErrorCode ablate::boundarySolver::subModels::SolidHeatTransfer::Solve(PetscReal heatFluxToSurface, PetscReal dt, ablate::boundarySolver::subModels::SolidHeatTransfer::SurfaceState &) {
     return 0;

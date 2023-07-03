@@ -48,8 +48,11 @@ class SolidHeatTransfer {
     // hold the cell of interest or surface cell
     PetscInt surfaceCell = -1;
 
-    // Store the heatFlux onto the surface
-    PetscScalar heatFluxToSurface;
+    // Hold onto an aux vector to allow easy updating of the heatFlux
+    DM auxDm;
+
+    // Hold onto an aux vector to allow easy updating of the heatFlux
+    Vec localAuxVector;
 
     /**
      * Setup the discretization on the active dm
