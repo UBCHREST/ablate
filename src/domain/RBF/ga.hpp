@@ -14,7 +14,7 @@ class GA : public RBF {
    public:
     std::string_view type() const override { return "GA"; }
 
-    GA(int p = 4, double scale = 0.1, bool doesNotHaveDerivatives = false, bool doesNotHaveInterpolation = false);
+    GA(int p = 4, double scale = 0.1, bool doesNotHaveDerivatives = false, bool doesNotHaveInterpolation = false, bool returnNeighborVertices = false);
 
     PetscReal RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) override;
     PetscReal RBFDer(PetscInt dim, PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) override;

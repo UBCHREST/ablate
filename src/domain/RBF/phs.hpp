@@ -14,7 +14,7 @@ class PHS : public RBF {
    public:
     std::string_view type() const override { return "PHS"; }
 
-    PHS(int p = 4, int phsOrder = 4, bool doesNotHaveDerivatives = false, bool doesNotHaveInterpolation = false);
+    PHS(int p = 4, int phsOrder = 4, bool doesNotHaveDerivatives = false, bool doesNotHaveInterpolation = false, bool returnNeighborVertices = false);
 
     PetscReal RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) override;
     PetscReal RBFDer(PetscInt dim, PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) override;

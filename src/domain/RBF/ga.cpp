@@ -3,8 +3,8 @@
 using namespace ablate::domain::rbf;
 
 /************ Begin Gaussian Derived Class **********************/
-GA::GA(int p, double scale, bool doesNotHaveDerivatives, bool doesNotHaveInterpolation)
-    : RBF(p, !doesNotHaveDerivatives, !doesNotHaveInterpolation), scale(scale < PETSC_SMALL ? __RBF_GA_DEFAULT_PARAM : scale){};
+GA::GA(int p, double scale, bool doesNotHaveDerivatives, bool doesNotHaveInterpolation, bool returnNeighborVertices)
+    : RBF(p, !doesNotHaveDerivatives, !doesNotHaveInterpolation, returnNeighborVertices), scale(scale < PETSC_SMALL ? __RBF_GA_DEFAULT_PARAM : scale){};
 
 // Gaussian: r^m
 PetscReal GA::RBFVal(PetscInt dim, PetscReal x[], PetscReal y[]) {
@@ -72,4 +72,6 @@ PetscReal GA::RBFDer(PetscInt dim, PetscReal xIn[], PetscInt dx, PetscInt dy, Pe
 REGISTER(ablate::domain::rbf::RBF, ablate::domain::rbf::GA, "Radial Basis Function",
          OPT(int, "polyOrder", "Order of the augmenting RBF polynomial. Must be >= 1. Any value <1 will result in a polyOrder of 4."),
          OPT(double, "scale", "Scaling parameter. Must be >0. Any value <PETSC_SMALL will result in a default scale of 0.1."),
-         OPT(bool, "doesNotHaveDerivatives", "Compute derivative information. Default is false."), OPT(bool, "doesNotHaveInterpolation", "Compute interpolation information. Default is false."));
+         OPT(bool, "doesNotHaveDerivatives", "Compute derivative information. Default is false."),
+         OPT(bool, "doesNotHaveInterpolation", "Compute interpolation information. Default is false."),
+         OPT(bool, "returnNeighborVertices", "Perform RBF based on neighboring vertices (TRUE) or cells (FALSE). Default is false."));

@@ -35,10 +35,7 @@ void LevelSetSolver::Setup() {
 void LevelSetSolver::Initialize() {
 
   // Initialize the RBF data structures
-  ablate::domain::Range cellRange;
-  GetCellRange(cellRange);
-  LevelSetSolver::rbf->Initialize(cellRange);
-  RestoreRange(cellRange);
+  LevelSetSolver::rbf->Initialize();
 
 }
 

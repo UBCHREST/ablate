@@ -20,7 +20,7 @@ class RBF {
     PetscInt nPoly = -1;                             // The number of polynomial components to include
     PetscInt minNumberCells = -1;                    // Minimum number of cells-vertices needed to compute the RBF
     PetscBool useCells = PETSC_FALSE;                // Use vertices or edges/faces when computing neighbor cells/vertices
-    PetscBool returnNeighborVertices = PETSC_FALSE;  // If it is true, it returns neighbor vertices, else it returns neighbor cells
+    const bool returnNeighborVertices;     // If it is true formulates the RBF based on vertices surrounding a cell, otherwise will use cells surrounding a cell
 
     // Information from the subDomain cell range
     PetscInt cStart = 0, cEnd = 0;  // The cell range
@@ -50,18 +50,20 @@ class RBF {
 
     void CheckField(const ablate::domain::Field *field);  // Checks whether the field is SOL or AUX
 
+    void FreeStencilData();
+
    protected:
     PetscReal DistanceSquared(PetscInt dim, PetscReal x[], PetscReal y[]);
     PetscReal DistanceSquared(PetscInt dim, PetscReal x[]);
     void Loc3D(PetscInt dim, PetscReal xIn[], PetscReal x[3]);
 
    public:
-    explicit RBF(int polyOrder = 4, bool hasDerivatives = true, bool hasInterpolation = true);
+    explicit RBF(int polyOrder = 4, bool hasDerivatives = true, bool hasInterpolation = true, bool returnNeighborVertices = false);
 
     virtual ~RBF();
 
     /** SubDomain Register and Setup **/
-    void Initialize(ablate::domain::Range cellRange);
+    void Initialize();
     void Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain);
 
     // Derivative stuff
