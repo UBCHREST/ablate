@@ -22,9 +22,11 @@ int main(int argc, char** args) {
     {
 
         auto a = std::string( "-Alpha");
+        auto aa = a.c_str();
         auto b = std::string( "-beta");
+        auto bb = b.c_str();
 
-        PetscOptionsSetValue(NULL,a.c_str(),b.c_str()) >> utilities::PetscUtilities::checkError;
+        PetscOptionsSetValue(NULL,aa,bb) >> utilities::PetscUtilities::checkError;
 
 
 //    // check to see if we should print version
