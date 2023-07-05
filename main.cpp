@@ -21,8 +21,10 @@ int main(int argc, char** args) {
     ablate::utilities::PetscUtilities::Initialize();
     {
 
+        auto a = std::string( "-Alpha");
+        auto b = std::string( "-beta");
 
-        PetscOptionsSetValue(NULL,std::string( "-Alpha").c_str(),std::string("Beta").c_str()) >> utilities::PetscUtilities::checkError;
+        PetscOptionsSetValue(NULL,a.c_str(),b.c_str()) >> utilities::PetscUtilities::checkError;
 
 
 //    // check to see if we should print version
