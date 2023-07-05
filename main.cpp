@@ -20,7 +20,9 @@ int main(int argc, char** args) {
     environment::RunEnvironment::Initialize(&argc, &args);
     ablate::utilities::PetscUtilities::Initialize();
     {
-        PetscOptionsSetValue(NULL, "-Alpha","Beta") >> utilities::PetscUtilities::checkError;
+
+
+        PetscOptionsSetValue(NULL,std::string( "-Alpha").c_str(),std::string("Beta").c_str()) >> utilities::PetscUtilities::checkError;
 
 
 //    // check to see if we should print version
