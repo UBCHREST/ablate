@@ -26,7 +26,7 @@ int main(int argc, char** args) {
         auto bb = b.c_str();
 //        const char bb[6] = "-beta";
 
-        char result[100];
+        char result[100] = "                                                                                                   ";
         strcpy(result, bb);
         std::cout << "stringLength: " << result << std::endl;
 //        PetscOptionsSetValue(NULL, aa, bb) >> utilities::PetscUtilities::checkError;
