@@ -26,8 +26,10 @@ int main(int argc, char** args) {
         auto bb = b.c_str();
 //        const char bb[6] = "-beta";
 
-        std::cout << "stringLength: " << strlen(bb) << std::endl;
-        PetscOptionsSetValue(NULL, aa, bb) >> utilities::PetscUtilities::checkError;
+        char result[100];
+        strcpy(result, bb);
+        std::cout << "stringLength: " << result << std::endl;
+//        PetscOptionsSetValue(NULL, aa, bb) >> utilities::PetscUtilities::checkError;
 
         //    // check to see if we should print version
         //    PetscBool printInfo = PETSC_FALSE;
