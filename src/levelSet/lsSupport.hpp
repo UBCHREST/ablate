@@ -12,6 +12,26 @@ PetscErrorCode DMPlexVertexGetCells(DM dm, const PetscInt p, PetscInt *nCells, P
 PetscErrorCode xDMPlexPointLocalRef(DM dm, PetscInt p, PetscInt fID, PetscScalar *array, void *ptr);
 PetscErrorCode xDMPlexPointLocalRead(DM dm, PetscInt p, PetscInt fID, const PetscScalar *array, void *ptr);
 
-PetscErrorCode DMPlexFaceCentroidOutwardNormal(DM dm, PetscInt cell, PetscInt face, PetscReal *centroid, PetscReal *n);
+PetscErrorCode DMPlexFaceCentroidOutwardAreaNormal(DM dm, PetscInt cell, PetscInt face, PetscReal *centroid, PetscReal *n);
 
-PetscErrorCode DMPlexVertexGrad(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscScalar g[]);
+/**
+  * Compute the gradient of a field defined over vertices at a vertex
+  * @param dm - The DM of the data stored in vec
+  * @param v - Vertex where to compute the gradient
+  * @param data - Vector containing the data
+  * @param fID - Field ID of the data to take the gradient of
+  * @param g - The gradient at c
+  */
+PetscErrorCode DMPlexVertexGradFromVertex(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscScalar g[]);
+
+/**
+  * Compute the gradient of a field defined over vertices at a cell center
+  * @param dm - The DM of the data stored in vec
+  * @param c - Cell where to compute the gradient
+  * @param data - Vector containing the data
+  * @param fID - Field ID of the data to take the gradient of
+  * @param g - The gradient at c
+  */
+PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscScalar g[]);
+
+

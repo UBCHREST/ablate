@@ -92,13 +92,13 @@ void ablate::levelSet::Utilities::CellValGrad(std::shared_ptr<ablate::domain::Su
 
 }
 
-void ablate::levelSet::Utilities::VertexGrad(std::shared_ptr<ablate::domain::SubDomain> subDomain, const ablate::domain::Field *field, const PetscInt p, PetscReal *g) {
+void ablate::levelSet::Utilities::VertexToVertexGrad(std::shared_ptr<ablate::domain::SubDomain> subDomain, const ablate::domain::Field *field, const PetscInt p, PetscReal *g) {
   // Given a field determine the gradient at a vertex
 
   DM  dm = subDomain->GetFieldDM(*field);
   Vec vec = subDomain->GetVec(*field);
 
-  DMPlexVertexGrad(dm, p, vec, field->id, g) >> ablate::utilities::PetscUtilities::checkError;
+  DMPlexVertexGradFromVertex(dm, p, vec, field->id, g) >> ablate::utilities::PetscUtilities::checkError;
 
 }
 
@@ -721,7 +721,7 @@ SaveVertexData("ls1.txt", lsField, subDomain);
 
         xDMPlexPointLocalRef(lsDM, vert, lsID, lsArray, &phi) >> ablate::utilities::PetscUtilities::checkError;
 
-        DMPlexVertexGrad(lsDM, vert, lsVec, lsID, g) >> ablate::utilities::PetscUtilities::checkError;
+        DMPlexVertexGradFromVertex(lsDM, vert, lsVec, lsID, g) >> ablate::utilities::PetscUtilities::checkError;
 
         VertexUpwindGrad(lsDM, cellGradArray, cellToIndex, vert, PetscSignReal(*phi), g);
 

@@ -100,7 +100,7 @@ namespace ablate::levelSet::Utilities {
     * @param p - Vertex id
     * @param g - The gradient at p
     */
-  void VertexGrad(std::shared_ptr<ablate::domain::SubDomain> subDomain, const ablate::domain::Field *field, const PetscInt p, PetscReal *g);
+  void VertexToVertexGrad(std::shared_ptr<ablate::domain::SubDomain> subDomain, const ablate::domain::Field *field, const PetscInt p, PetscReal *g);
 
 //  /**
 //    * Vertex gradient using a given cell-centered gradient vector

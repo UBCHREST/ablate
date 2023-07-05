@@ -194,7 +194,7 @@ PetscErrorCode xDMPlexPointLocalRead(DM dm, PetscInt p, PetscInt fID, const Pets
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-PetscErrorCode DMPlexFaceCentroidOutwardNormal(DM dm, PetscInt cell, PetscInt face, PetscReal *centroid, PetscReal *n) {
+PetscErrorCode DMPlexFaceCentroidOutwardAreaNormal(DM dm, PetscInt cell, PetscInt face, PetscReal *centroid, PetscReal *n) {
   PetscFunctionBegin;
 
   // Get the cell center
@@ -202,8 +202,8 @@ PetscErrorCode DMPlexFaceCentroidOutwardNormal(DM dm, PetscInt cell, PetscInt fa
   PetscCall(DMPlexComputeCellGeometryFVM(dm, cell, NULL, x0, NULL));
 
   // Centroid and normal for face/edge
-  PetscReal faceCenter[3], normal[3];
-  PetscCall(DMPlexComputeCellGeometryFVM(dm, face, NULL, faceCenter, normal));
+  PetscReal faceArea, faceCenter[3], normal[3];
+  PetscCall(DMPlexComputeCellGeometryFVM(dm, face, &faceArea, faceCenter, normal));
 
   PetscInt dim;
   PetscCall(DMGetDimension(dm, &dim));
@@ -216,9 +216,10 @@ PetscErrorCode DMPlexFaceCentroidOutwardNormal(DM dm, PetscInt cell, PetscInt fa
     // Make sure the normal is aligned with the vector connecting the cell center and the face center
     PetscReal sgn = 0.0;
     for( PetscInt d = 0; d < dim; ++d) {
-      sgn += normal[d]*(centroid[d] - x0[d]);
+      sgn += normal[d]*(faceCenter[d] - x0[d]);
     }
-    sgn = PetscSignReal(sgn);
+
+    sgn = faceArea*PetscSignReal(sgn);
 
     for( PetscInt d = 0; d < dim; ++d) {
       n[d] = sgn*normal[d];
@@ -400,7 +401,7 @@ PetscErrorCode DMPlexVertexControlVolume(DM dm, const PetscInt v, PetscReal *vol
 // Compute the finite-difference derivative approximation using the Eq. (11) from "3D level set methods for evolving fronts on tetrahedral
 //    meshes with adaptive mesh refinement", by Morgan and Waltz, JCP 336 (2017) 492-512.
 //   This should be second-order accurate for both triangles and quads
-PetscErrorCode DMPlexVertexGrad(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscScalar g[]) {
+PetscErrorCode DMPlexVertexGradFromVertex(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscScalar g[]) {
   PetscFunctionBegin;
 
 
@@ -411,11 +412,11 @@ PetscErrorCode DMPlexVertexGrad(DM dm, const PetscInt v, Vec data, PetscInt fID,
   PetscInt dim;
 
   PetscCall(DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd));  // Range of vertices
-  PetscCheck(v >= vStart && v < vEnd, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "DMPlexVertexDerivative must have a valid vertex as input.");
+  PetscCheck(v >= vStart && v < vEnd, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "DMPlexVertexGradFromVertex must have a valid vertex as input.");
 
   PetscCall(DMGetDimension(dm, &dim));
 
-  PetscCheck(dim>0 && dim<4, PETSC_COMM_SELF, PETSC_ERR_SUP, "DMPlexVertexDerivative does not support a DM of dimension %d", dim);
+  PetscCheck(dim>0 && dim<4, PETSC_COMM_SELF, PETSC_ERR_SUP, "DMPlexVertexGradFromVertex does not support a DM of dimension %d", dim);
 
   for (PetscInt d = 0; d < dim; ++d) {
     g[d] = 0.0;
@@ -449,6 +450,8 @@ PetscErrorCode DMPlexVertexGrad(DM dm, const PetscInt v, Vec data, PetscInt fID,
     }
   }
 
+  PetscCall(VecRestoreArrayRead(data, &dataArray));
+
   PetscReal cvVol;
   PetscCall(DMPlexVertexControlVolume(dm, v, &cvVol));
   for (PetscInt d = 0; d < dim; ++d) {
@@ -457,3 +460,145 @@ PetscErrorCode DMPlexVertexGrad(DM dm, const PetscInt v, Vec data, PetscInt fID,
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
+
+
+PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscScalar g[]) {
+  PetscFunctionBegin;
+
+  PetscInt nFace;
+  const PetscInt *faces;
+  const PetscScalar *dataArray;
+  PetscInt cStart, cEnd;
+  PetscInt vStart, vEnd;
+  PetscInt dim;
+
+  PetscCall(DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd));  // Range of vertices
+  PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));  // Range of cells
+  PetscCheck(c >= cStart && c < cEnd, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "DMPlexCellToCellGrad must have a valid cell as input.");
+
+  PetscCall(DMGetDimension(dm, &dim));
+
+  PetscCheck(dim>0 && dim<4, PETSC_COMM_SELF, PETSC_ERR_SUP, "DMPlexCellToCellGrad does not support a DM of dimension %d", dim);
+
+  for (PetscInt d = 0; d < dim; ++d) {
+    g[d] = 0.0;
+  }
+
+  PetscCall(VecGetArrayRead(data, &dataArray));
+
+  // Get all faces associated with the cell
+  PetscCall(DMPlexGetConeSize(dm, c, &nFace));
+  PetscCall(DMPlexGetCone(dm, c, &faces));
+  for (PetscInt f = 0; f < nFace; ++f) {
+
+
+    PetscReal N[3] = {0.0, 0.0, 0.0};
+    PetscCall(DMPlexFaceCentroidOutwardAreaNormal(dm, c, faces[f], NULL, N));
+
+    // All points associated with this face
+    PetscInt nClosure, *closure = NULL;
+    PetscCall(DMPlexGetTransitiveClosure(dm, faces[f], PETSC_TRUE, &nClosure, &closure));
+
+    PetscReal cnt = 0.0, ave = 0.0;
+    for (PetscInt cl = 0; cl < nClosure * 2; cl += 2) {
+      if (closure[cl] >= vStart && closure[cl] < vEnd) {  // Only use the points corresponding to a vertex
+        const PetscScalar *val;
+        PetscCall(xDMPlexPointLocalRead(dm, closure[cl], fID, dataArray, &val));
+        ave += *val;
+        cnt += 1.0;
+      }
+    }
+
+    PetscCall(DMPlexRestoreTransitiveClosure(dm, faces[f], PETSC_TRUE, &nClosure, &closure));  // Restore the points
+
+    // Function value at the face center
+    ave /= cnt;
+    for (PetscInt d = 0; d < dim; ++d) {
+      g[d] += ave*N[d];
+    }
+  }
+
+  PetscCall(VecRestoreArrayRead(data, &dataArray));
+
+  PetscReal vol;
+  PetscCall(DMPlexComputeCellGeometryFVM(dm, c, &vol, NULL, NULL));
+  for (PetscInt d = 0; d < dim; ++d) {
+    g[d] /= vol;
+  }
+
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+
+
+//PetscErrorCode DMPlexCellToCellGrad(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscScalar g[]) {
+//  PetscFunctionBegin;
+
+//  PetscInt nFace;
+//  const PetscInt *faces;
+//  const PetscScalar *dataArray;
+//  PetscInt cStart, cEnd;
+//  PetscInt dim;
+
+
+//  PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));  // Range of cells
+//  PetscCheck(c >= cStart && c < cEnd, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "DMPlexCellToCellGrad must have a valid cell as input.");
+
+//  PetscCall(DMGetDimension(dm, &dim));
+
+//  PetscCheck(dim>0 && dim<4, PETSC_COMM_SELF, PETSC_ERR_SUP, "DMPlexCellToCellGrad does not support a DM of dimension %d", dim);
+
+//  for (PetscInt d = 0; d < dim; ++d) {
+//    g[d] = 0.0;
+//  }
+
+//  PetscCall(VecGetArrayRead(data, &dataArray));
+
+//  // Get all faces associated with the cell
+//  PetscCall(DMPlexGetConeSize(dm, c, &nFace));
+//  PetscCall(DMPlexGetCone(dm, c, &faces));
+//  for (PetscInt f = 0; f < nFace; ++f) {
+
+//    PetscReal N[3], faceCenter[3];
+//    PetscCall(DMPlexFaceCentroidOutwardAreaNormal(dm, c, faces[f], faceCenter, N));
+
+//    // Get cells associated with this face
+//    const PetscInt *cells;
+//    PetscCall(DMPlexGetSupport(dm, faces[f], &cells));
+
+//    // The face might not be halfway between the vector connecting the two cell centers. Do linear interpolation to get the value.
+//    PetscReal *val[2], cellCenter[2][3], centerVal;
+
+//    PetscCall(DMPlexComputeCellGeometryFVM(dm, cells[0], NULL, cellCenter[0], NULL));
+//    PetscCall(xDMPlexPointLocalRead(dm, cells[0], fID, dataArray, &val[0]));
+
+//    PetscCall(DMPlexComputeCellGeometryFVM(dm, cells[1], NULL, cellCenter[1], NULL));
+//    PetscCall(xDMPlexPointLocalRead(dm, cells[1], fID, dataArray, &val[1]));
+
+
+
+
+
+//    centerVal = 0.5*(*val);
+
+//    PetscCall(xDMPlexPointLocalRead(dm, cells[1], fID, dataArray, &val));
+//    centerVal += 0.5*(*val);
+
+//    for (PetscInt d = 0; d < dim; ++d) {
+//      g[d] += centerVal*N[d];
+//    }
+//  }
+
+//  PetscCall(VecRestoreArrayRead(data, &dataArray));
+
+//  PetscReal vol;
+//  PetscCall(DMPlexComputeCellGeometryFVM(dm, c, &vol, NULL, NULL));
+//  for (PetscInt d = 0; d < dim; ++d) {
+//    g[d] /= vol;
+//  }
+
+//  PetscFunctionReturn(PETSC_SUCCESS);
+//}
+
