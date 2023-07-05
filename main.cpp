@@ -23,8 +23,8 @@ int main(int argc, char** args) {
         auto a = std::string("-Alpha");
         auto aa = a.c_str();
         auto b = std::string("-beta");
-//        auto bb = b.c_str();
-        const char bb[6] = "-beta";
+        auto bb = b.c_str();
+//        const char bb[6] = "-beta";
 
         char result[100] = "                                                                                                   ";
         strcpy(result, bb);
