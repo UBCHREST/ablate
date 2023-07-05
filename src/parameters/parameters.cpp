@@ -17,7 +17,7 @@ void ablate::parameters::Parameters::Fill(PetscOptions options) const {
         auto value = GetString(key).value();
 
         // check for any environment overrides
-        ablate::environment::RunEnvironment::Get().ExpandVariables(value);
+//        ablate::environment::RunEnvironment::Get().ExpandVariables(value);
 
         // set the options
         PetscOptionsSetValue(options, name.c_str(), value.c_str()) >> utilities::PetscUtilities::checkError;
