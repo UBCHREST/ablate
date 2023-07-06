@@ -24,6 +24,17 @@ PetscErrorCode DMPlexFaceCentroidOutwardAreaNormal(DM dm, PetscInt cell, PetscIn
   */
 PetscErrorCode DMPlexVertexGradFromVertex(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscScalar g[]);
 
+
+/**
+  * Compute the gradient of a field defined over cells at a vertex
+  * @param dm - The DM of the data stored in vec
+  * @param v - Vertex where to compute the gradient
+  * @param data - Vector containing the data
+  * @param fID - Field ID of the data to take the gradient of
+  * @param g - The gradient at c
+  */
+PetscErrorCode DMPlexVertexGradFromCell(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscScalar g[]);
+
 /**
   * Compute the gradient of a field defined over vertices at a cell center
   * @param dm - The DM of the data stored in vec
@@ -35,3 +46,6 @@ PetscErrorCode DMPlexVertexGradFromVertex(DM dm, const PetscInt v, Vec data, Pet
 PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscScalar g[]);
 
 
+PetscErrorCode DMPlexGetCommonPoints(DM dm, const PetscInt p1, const PetscInt p2, const PetscInt depth, PetscInt *nPoints, PetscInt *points[]);
+
+PetscErrorCode DMPlexCornerSurfaceAreaNormal(DM dm, const PetscInt v, const PetscInt c, PetscReal N[]);
