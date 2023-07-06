@@ -6,7 +6,7 @@ namespace ablate::mathFunctions {
 
 class FunctionWrapper : public MathFunction {
    public:
-    typedef std::function<int(int dim, double time, const double x[], int nf, double* u, void* ctx)> Function;
+    typedef std::function<PetscErrorCode(int dim, double time, const double x[], int nf, double* u, void* ctx)> Function;
 
    private:
     Function function;

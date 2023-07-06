@@ -3,7 +3,6 @@
 #include <memory>
 #include <vector>
 #include "MpiTestFixture.hpp"
-#include "PetscTestErrorChecker.hpp"
 #include "convergenceTester.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"

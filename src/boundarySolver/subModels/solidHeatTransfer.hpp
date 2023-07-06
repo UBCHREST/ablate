@@ -20,7 +20,7 @@ class SolidHeatTransfer {
         PetscScalar temperature;
     };
 
-   public:
+   private:
     // Define a enum for the properties needed for the solver
     typedef enum { specificHeat, conductivity, density, total } ConductionProperties;
 
@@ -28,7 +28,7 @@ class SolidHeatTransfer {
     DM subModelDm{};
 
     // Hold the TS for stepping in time
-    TS ts{};
+    TS subModelTs{};
 
     // The options used to create the dm, ts, ect
     PetscOptions options{};
@@ -46,7 +46,10 @@ class SolidHeatTransfer {
     static constexpr PetscScalar surfaceCoordinate[3] = {0.0, 0.0, 0.0};
 
     // hold the cell of interest or surface cell
-    PetscInt surfaceCell = -1;
+    PetscInt surfaceCell = PETSC_DECIDE;
+
+    // hold the boundary vertex or surface vertex
+    PetscInt surfaceVertex = PETSC_DECIDE;
 
     // Hold onto an aux vector to allow easy updating of the heatFlux
     DM auxDm;
@@ -54,13 +57,19 @@ class SolidHeatTransfer {
     // Hold onto an aux vector to allow easy updating of the heatFlux
     Vec localAuxVector;
 
+    //! Store the marker value for the left wall boundary id
+    static constexpr PetscInt leftWallId = 1;
+
+    //! Store the marker value for the right wall boundary id
+    static constexpr PetscInt rightWallId = 2;
+
     /**
      * Setup the discretization on the active dm
      * @param activeDm the active dm
      * @param bcType the kind of boundary condition to add
      * @return
      */
-    PetscErrorCode SetupDiscretization(DM activeDm, DMBoundaryConditionType bcType = DM_BC_NATURAL);
+    PetscErrorCode SetupDiscretization(DM activeDm, DMBoundaryConditionType bcType = DM_BC_ESSENTIAL);
 
     /**
      * Function to update the boundary condition
@@ -99,6 +108,12 @@ class SolidHeatTransfer {
      * @return
      */
     PetscErrorCode Solve(PetscReal heatFluxToSurface, PetscReal dt, SurfaceState &);
+
+    /**
+     * Return the sub model TS
+     * @return
+     */
+    [[nodiscard]] TS GetTS() const { return subModelTs; }
 
    private:
     /**
@@ -142,6 +157,48 @@ class SolidHeatTransfer {
     static void NaturalCoupledWallBC(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
                                      const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal x[],
                                      const PetscReal n[], PetscInt numConstants, const PetscScalar constants[], PetscScalar f0[]);
+
+    /**
+     * Inline helper function to get the current surface heatFlux
+     * @return
+     */
+    inline PetscErrorCode GetSurfaceHeatFlux(PetscScalar &heatFluxToSurface) const {
+        PetscFunctionBegin;
+        // Update the heat flux in the auxVector
+        const PetscScalar *locAuxArray;
+        PetscCall(VecGetArrayRead(localAuxVector, &locAuxArray));
+
+        const PetscScalar *locAuxValue;
+        PetscCall(DMPlexPointLocalRead(auxDm, surfaceVertex, locAuxArray, &locAuxValue));
+
+        // Set the heat flux
+        heatFluxToSurface = locAuxValue[0];
+
+        // cleanup
+        PetscCall(VecRestoreArrayRead(localAuxVector, &locAuxArray));
+        PetscFunctionReturn(PETSC_SUCCESS);
+    }
+
+    /**
+     * Inline helper function to set the current surface heatFlux
+     * @return
+     */
+    [[nodiscard]] inline PetscErrorCode SetSurfaceHeatFlux(PetscScalar heatFluxToSurface) const {
+        PetscFunctionBegin;
+        // Update the heat flux in the auxVector
+        PetscScalar *locAuxArray;
+        PetscCall(VecGetArray(localAuxVector, &locAuxArray));
+
+        PetscScalar *locAuxValue;
+        PetscCall(DMPlexPointLocalRef(auxDm, surfaceVertex, locAuxArray, &locAuxValue));
+
+        // Set the heat flux
+        locAuxValue[0] = heatFluxToSurface;
+
+        // cleanup
+        PetscCall(VecRestoreArray(localAuxVector, &locAuxArray));
+        PetscFunctionReturn(PETSC_SUCCESS);
+    }
 };
 
 }  // namespace ablate::boundarySolver::subModels

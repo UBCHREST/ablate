@@ -1,8 +1,10 @@
 #include "convergenceTester.hpp"
 #include <monitors/logs/stdOut.hpp>
+#include <utility>
 #include "PetscTestErrorChecker.hpp"
-testingResources::ConvergenceTester::ConvergenceTester(std::string name, std::shared_ptr<ablate::monitors::logs::Log> logIn)
-    : name(name), log(logIn ? logIn : std::make_shared<ablate::monitors::logs::StdOut>()) {}
+
+testingResources::ConvergenceTester::ConvergenceTester(std::string name, const std::shared_ptr<ablate::monitors::logs::Log>& logIn)
+    : name(std::move(name)), log(logIn ? logIn : std::make_shared<ablate::monitors::logs::StdOut>()) {}
 void testingResources::ConvergenceTester::Record(PetscReal h, const std::vector<PetscReal>& error) {
     hHistory.push_back(PetscLog10Real(h));
 

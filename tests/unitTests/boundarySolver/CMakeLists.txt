@@ -7,3 +7,4 @@ target_sources(ablateUnitTestLibrary
 
 add_subdirectory(lodi)
 add_subdirectory(physics)
+add_subdirectory(subModels)

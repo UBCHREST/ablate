@@ -16,7 +16,7 @@ class ConvergenceTester {
     const std::shared_ptr<ablate::monitors::logs::Log> log;
 
    public:
-    ConvergenceTester(std::string name, std::shared_ptr<ablate::monitors::logs::Log> = {});
+    ConvergenceTester(std::string name, const std::shared_ptr<ablate::monitors::logs::Log>& = {});
 
     void Record(PetscReal h, const std::vector<PetscReal>& error);
 
