@@ -11,7 +11,7 @@ ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOf
                                                           const std::shared_ptr<ablate::mathFunctions::FieldFunction> &massFractions, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux,
                                                           std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling, bool diffusionFlame,
                                                           std::shared_ptr<ablate::radiation::SurfaceRadiation> radiationIn, const std::shared_ptr<io::interval::Interval> &intervalIn,
-                                                          const double emissivityIn, const double solidDensityIn)
+                                                          double emissivityIn, double solidDensityIn, std::shared_ptr<subModels::SolidHeatTransferFactory> solidHeatTransferFactory)
     : latentHeatOfFusion(latentHeatOfFusion),
       transportModel(std::move(transportModel)),
       eos(std::move(eos)),
@@ -24,7 +24,8 @@ ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOf
       radiation(std::move(radiationIn)),
       radiationInterval((intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>())),
       emissivity(emissivityIn == 0 ? 1.0 : emissivityIn),
-      solidDensity(solidDensityIn == 0 ? 1.0 : solidDensityIn) {}
+      solidDensity(solidDensityIn == 0 ? 1.0 : solidDensityIn),
+      solidHeatTransferFactory(std::move(solidHeatTransferFactory)) {}
 
 void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
     // check for species
@@ -34,15 +35,17 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
         inputFields.push_back(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD);
     }
 
+    const std::vector<std::string> auxFields = {finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD};
+
     // register the required sublimantion function
-    bSolver.RegisterFunction(SublimationFunction, this, inputFields, inputFields, {finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD}, BoundarySolver::BoundarySourceType::Flux);
+    bSolver.RegisterFunction(SublimationFunction, this, inputFields, inputFields, auxFields, BoundarySolver::BoundarySourceType::Flux);
 
     // Register an optional output function
     bSolver.RegisterFunction(SublimationOutputFunction,
                              this,
-                             {"conduction", "extraRad", "regressionMassFlux", "regressionRate", "radiation"},
+                             {"conduction", "extraRad", "regressionMassFlux", "regressionRate", "radiation", "surfaceTemperature", "heatFluxConsumedInSolid"},
                              inputFields,
-                             {finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
+                             auxFields,
                              BoundarySolver::BoundarySourceType::Face);
 
     numberSpecies = bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD).numberComponents;
@@ -81,6 +84,22 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
             throw std::invalid_argument("The massFractions must be specified for ablate::boundarySolver::physics::Sublimation when DENSITY_YI_FIELD is active.");
         }
     }
+
+    // setup the solid model if available
+    if (solidHeatTransferFactory) {
+        // Create the BoundaryPreRHSPointFunctionDefinition
+        for (auto &inputField : inputFields) {
+            auto &inputFieldId = bSolver.GetSubDomain().GetField(inputField);
+            solidHeatTransferUpdateFunctionDefinition.inputFieldsOffset.push_back(inputFieldId.offset);
+        }
+        for (const auto &auxField : auxFields) {
+            auto &auxFieldId = bSolver.GetSubDomain().GetField(auxField);
+            solidHeatTransferUpdateFunctionDefinition.auxFieldsOffset.push_back(auxFieldId.offset);
+        }
+
+        solidHeatTransferUpdateFunctionDefinition.function = UpdateBoundaryHeatTransferModel;
+        solidHeatTransferUpdateFunctionDefinition.context = this;
+    }
 }
 
 void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
@@ -95,7 +114,7 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
         for (const auto &i : bSolver.GetBoundaryGeometry()) {
             PetscInt ghost = -1;
             if (ghostLabel) DMLabelGetValue(ghostLabel, i.geometry.faceId, &ghost) >> utilities::PetscUtilities::checkError;
-            if (!(ghost >= 0)) faceRange.Add(i.geometry.faceId);  //!< Add each ID to the range that the radiation solver will use
+            if (ghost < 0) faceRange.Add(i.geometry.faceId);  //!< Add each ID to the range that the radiation solver will use
         }
         radiation->Setup(faceRange.GetRange(), bSolver.GetSubDomain());
         radiation->Initialize(faceRange.GetRange(), bSolver.GetSubDomain());  //!< Pass the non-dynamic range into the radiation solver
@@ -103,6 +122,14 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
         if (radiation->GetAbsorptionFunction().propertySize != 1) throw std::invalid_argument("The sublimation solver currently only accepts one radiation wavelength.");
 
         bSolver.RegisterPreRHSFunction(SublimationPreRHS, this);
+    }
+
+    /** Initialize the solid boundary heat transfer model */
+    if (solidHeatTransferFactory) {
+        for (const auto &geom : bSolver.GetBoundaryGeometry()) {
+            solidHeatTransferModels[geom.geometry.faceId] = solidHeatTransferFactory->Create();
+            solidHeatState[geom.geometry.faceId] = {};
+        }
     }
 }
 
@@ -143,7 +170,13 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
 
     // compute the heat flux. Add the radiation heat flux for this face intensity if the radiation solver exists
     PetscReal conductionIntoSolid = -dTdn * effectiveConductivity;
-    PetscReal sublimationHeatFlux = PetscMax(0.0, conductionIntoSolid + radIntensity);  // note that q = -dTdn as dTdN faces into the solid
+    PetscReal heatFluxConsumedInSolid = 0.0;
+    if (sublimation->solidHeatTransferFactory) {
+        heatFluxConsumedInSolid = sublimation->solidHeatState[fg->faceId].heatFlux;
+    }
+
+    PetscReal sublimationHeatFlux = PetscMax(0.0, conductionIntoSolid + radIntensity - heatFluxConsumedInSolid);  // note that q = -dTdn as dTdN faces into the solid
+
     // If there is an additional heat flux compute and add value
     if (sublimation->additionalHeatFlux) {
         sublimationHeatFlux += sublimation->additionalHeatFlux->Eval(fg->centroid, (int)dim, sublimation->currentTime);
@@ -319,6 +352,14 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationPreRHS(B
         sublimation->radiation->EvaluateGains(
             solver.GetSubDomain().GetSolutionVector(), solver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD), solver.GetSubDomain().GetAuxVector());
     }
+
+    // If there is a solid boundary, update it
+    if (sublimation->solidHeatTransferFactory) {
+        PetscReal dt;
+        TSGetTimeStep(ts, &dt) >> utilities::PetscUtilities::checkError;
+        solver.ComputeBoundaryPreRHSPointFunction(time, dt, locX, sublimation->solidHeatTransferUpdateFunctionDefinition) >> utilities::PetscUtilities::checkError;
+    }
+
     PetscFunctionReturn(0);
 }
 
@@ -390,6 +431,52 @@ void ablate::boundarySolver::physics::Sublimation::UpdateSpecies(TS ts, ablate::
     VecRestoreArray(solVec, &solutionArray) >> utilities::PetscUtilities::checkError;
     solver.RestoreRange(cellRange);
 }
+PetscErrorCode ablate::boundarySolver::physics::Sublimation::UpdateBoundaryHeatTransferModel(PetscReal time, PetscReal dt, PetscInt dim,
+                                                                                             const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg, const PetscFVCellGeom *boundaryCell,
+                                                                                             const PetscInt *uOff, PetscScalar *boundaryValues, const PetscScalar **stencilValues, const PetscInt *aOff,
+                                                                                             PetscScalar *auxValues, const PetscScalar **stencilAuxValues, PetscInt stencilSize,
+                                                                                             const PetscInt *stencil, const PetscScalar *stencilWeights, void *ctx) {
+    PetscFunctionBeginUser;
+    // Mark the locations
+    const int TEMPERATURE_LOC = 0;
+    auto sublimation = (Sublimation *)ctx;
+
+    // extract the temperature
+    std::vector<PetscReal> stencilTemperature(stencilSize, 0);
+    for (PetscInt s = 0; s < stencilSize; s++) {
+        stencilTemperature[s] = stencilAuxValues[s][aOff[TEMPERATURE_LOC]];
+    }
+    PetscReal boundaryTemperature = auxValues[aOff[TEMPERATURE_LOC]];
+
+    // compute dTdn
+    PetscReal dTdn;
+    BoundarySolver::ComputeGradientAlongNormal(dim, fg, auxValues[aOff[TEMPERATURE_LOC]], stencilSize, stencilTemperature.data(), stencilWeights, dTdn);
+
+    // compute the effectiveConductivity
+    PetscReal effectiveConductivity = 0.0;
+    if (sublimation->effectiveConductivity.function) {
+        PetscCall(sublimation->effectiveConductivity.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &effectiveConductivity, sublimation->effectiveConductivity.context.get()));
+    }
+
+    // Use the solution from the radiation solve.
+    PetscReal radIntensity = 0;
+    if (sublimation->radiation) {
+        sublimation->radiation->GetSurfaceIntensity(&radIntensity, fg->faceId, boundaryTemperature, sublimation->emissivity);
+    }
+
+    // compute the heat flux. Add the radiation heat flux for this face intensity if the radiation solver exists
+    PetscReal conductionIntoSolid = -dTdn * effectiveConductivity;
+    PetscReal sublimationHeatFlux = conductionIntoSolid + radIntensity;  // note that q = -dTdn as dTdN faces into the solid
+
+    // Update the boundary solver
+    auto &boundaryState = sublimation->solidHeatState[fg->faceId];
+    sublimation->solidHeatTransferModels[fg->faceId]->Solve(sublimationHeatFlux, dt, boundaryState);
+
+    // update the temperature here
+    auxValues[aOff[TEMPERATURE_LOC]] = boundaryState.temperature;
+
+    PetscFunctionReturn(0);
+}
 
 #include "registrar.hpp"
 REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::physics::Sublimation, "Adds in the euler/yi sources for a sublimating material.  Should be used with a LODI boundary.",
@@ -402,4 +489,5 @@ REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::physic
          OPT(bool, "diffusionFlame", "disables contribution to the momentum equation. Should be true when advection is not solved. (Default is false)"),
          OPT(ablate::radiation::SurfaceRadiation, "radiation", "radiation instance for the sublimation solver to calculate heat flux"),
          OPT(ablate::io::interval::Interval, "radiationInterval", "number of time steps between the radiation solves"), OPT(double, "emissivity", "radiation property of the fuel surface"),
-         OPT(double, "solidDensity", "Solid density of the fuel.  This is only used to output/report the solid regression rate. (Default is 1.0)"));
+         OPT(double, "solidDensity", "Solid density of the fuel.  This is only used to output/report the solid regression rate. (Default is 1.0)"),
+         OPT(ablate::boundarySolver::subModels::SolidHeatTransferFactory, "solidHeatTransferFactory", "Submodel factory for heat flux into the solid"));
