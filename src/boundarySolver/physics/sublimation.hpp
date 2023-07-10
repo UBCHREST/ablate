@@ -2,13 +2,13 @@
 #define ABLATELIBRARY_SUBLIMATION_HPP
 
 #include "boundarySolver/boundaryProcess.hpp"
+#include "boundarySolver/physics/subModels/sublimationModel.hpp"
 #include "eos/radiationProperties/zimmer.hpp"
 #include "eos/transport/transportModel.hpp"
 #include "finiteVolume/processes/navierStokesTransport.hpp"
 #include "finiteVolume/processes/pressureGradientScaling.hpp"
 #include "io/interval/interval.hpp"
 #include "radiation/surfaceRadiation.hpp"
-#include "boundarySolver/subModels/sublimationModel.hpp"
 
 namespace ablate::boundarySolver::physics {
 
@@ -163,29 +163,29 @@ class Sublimation : public BoundaryProcess {
                                                     const PetscScalar *stencilAuxValues[], PetscInt stencilSize, const PetscInt stencil[], const PetscScalar stencilWeights[], const PetscInt sOff[],
                                                     PetscScalar source[], void *ctx);
 
-//    /**
-//     * Call to update the boundary solid model at each point
-//     * @param time
-//     * @param dt
-//     * @param dim
-//     * @param fg
-//     * @param boundaryCell
-//     * @param uOff
-//     * @param boundaryValues
-//     * @param stencilValues
-//     * @param aOff
-//     * @param auxValues
-//     * @param stencilAuxValues
-//     * @param stencilSize
-//     * @param stencil
-//     * @param stencilWeights
-//     * @param ctx
-//     * @return
-//     */
-//    static PetscErrorCode UpdateBoundaryHeatTransferModel(PetscReal time, PetscReal dt, PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg,
-//                                                          const PetscFVCellGeom *boundaryCell, const PetscInt uOff[], PetscScalar *boundaryValues, const PetscScalar *stencilValues[],
-//                                                          const PetscInt aOff[], PetscScalar *auxValues, const PetscScalar *stencilAuxValues[], PetscInt stencilSize, const PetscInt stencil[],
-//                                                          const PetscScalar stencilWeights[], void *ctx);
+    /**
+     * Call to update the boundary solid model at each point
+     * @param time
+     * @param dt
+     * @param dim
+     * @param fg
+     * @param boundaryCell
+     * @param uOff
+     * @param boundaryValues
+     * @param stencilValues
+     * @param aOff
+     * @param auxValues
+     * @param stencilAuxValues
+     * @param stencilSize
+     * @param stencil
+     * @param stencilWeights
+     * @param ctx
+     * @return
+     */
+    static PetscErrorCode UpdateBoundaryHeatTransferModel(PetscReal time, PetscReal dt, PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg,
+                                                          const PetscFVCellGeom *boundaryCell, const PetscInt uOff[], PetscScalar *boundaryValues, const PetscScalar *stencilValues[],
+                                                          const PetscInt aOff[], PetscScalar *auxValues, const PetscScalar *stencilAuxValues[], PetscInt stencilSize, const PetscInt stencil[],
+                                                          const PetscScalar stencilWeights[], void *ctx);
 };
 
 }  // namespace ablate::boundarySolver::physics

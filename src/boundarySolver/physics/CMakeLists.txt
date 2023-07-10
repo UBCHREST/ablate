@@ -8,5 +8,6 @@ target_sources(ablateLibrary
         sublimation.hpp
         arbitrarySource.hpp
         logLawBoundary.hpp
-        )
+)
 
+add_subdirectory(subModels)

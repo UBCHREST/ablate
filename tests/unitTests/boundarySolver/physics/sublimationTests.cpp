@@ -1,11 +1,11 @@
 #include <functional>
 #include "PetscTestFixture.hpp"
+#include "boundarySolver/physics/subModels/completeSublimation.hpp"
 #include "boundarySolver/physics/sublimation.hpp"
 #include "eos/mockEOS.hpp"
 #include "eos/transport/constant.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
-#include "boundarySolver/subModels/completeSublimation.hpp"
 
 struct SublimationTestParameters {
     std::string description;
@@ -51,7 +51,7 @@ TEST_P(SublimationTestFixture, ShouldComputeCorrectSourceTerm) {
             [params](const PetscReal conserved[], PetscReal temperature, PetscReal* property) { *property = params.boundaryPressure; })));
 
     // Create a sublimation model
-    auto sublimationModel = std::make_shared<ablate::boundarySolver::subModels::CompleteSublimation>(params.latentHeatOfFusion);
+    auto sublimationModel = std::make_shared<ablate::boundarySolver::physics::subModels::CompleteSublimation>(params.latentHeatOfFusion);
 
     // create the boundary
     auto transportModel = std::make_shared<ablate::eos::transport::Constant>(params.effectiveConductivity, params.boundaryViscosity);

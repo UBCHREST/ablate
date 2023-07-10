@@ -6,8 +6,7 @@ target_sources(ablateLibrary
         boundarySolver.hpp
         boundaryProcess.hpp
         debugBoundarySolver.hpp
-        )
+)
 
 add_subdirectory(lodi)
 add_subdirectory(physics)
-add_subdirectory(subModels)

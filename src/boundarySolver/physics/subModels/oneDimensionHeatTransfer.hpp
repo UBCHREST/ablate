@@ -1,18 +1,15 @@
-#ifndef ABLATELIBRARY_SUBLIMATIONTEMPERATURE_HPP
-#define ABLATELIBRARY_SUBLIMATIONTEMPERATURE_HPP
+#ifndef ABLATELIBRARY_ONEDIMENSIONHEATTRANSFER_HPP
+#define ABLATELIBRARY_ONEDIMENSIONHEATTRANSFER_HPP
 
 #include <memory>
 #include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
-#include "sublimationModel.hpp"
 
-namespace ablate::boundarySolver::subModels {
+namespace ablate::boundarySolver::physics::subModels {
 
-class SolidHeatTransfer: public SublimationModel {
-   public:
-
+class OneDimensionHeatTransfer {
    private:
-    // Define a enum for the properties needed for the solver
+    // Define an enum for the properties needed for the solver
     typedef enum { specificHeat, conductivity, density, total } ConductionProperties;
 
     // Hold the original dm for the subModel
@@ -30,9 +27,6 @@ class SolidHeatTransfer: public SublimationModel {
     // Store the maximum surface temperature
     PetscScalar maximumSurfaceTemperature;
 
-    // Store the far field temperature
-    PetscScalar farFieldTemperature;
-
     // hold the surfaceCoordinate, this is where we will compute the surface information
     static constexpr PetscScalar surfaceCoordinate[3] = {0.0, 0.0, 0.0};
 
@@ -43,10 +37,10 @@ class SolidHeatTransfer: public SublimationModel {
     PetscInt surfaceVertex = PETSC_DECIDE;
 
     // Hold onto an aux vector to allow easy updating of the heatFlux
-    DM auxDm;
+    DM auxDm{};
 
     // Hold onto an aux vector to allow easy updating of the heatFlux
-    Vec localAuxVector;
+    Vec localAuxVector{};
 
     //! Store the marker value for the left wall boundary id
     static constexpr PetscInt leftWallId = 1;
@@ -54,6 +48,8 @@ class SolidHeatTransfer: public SublimationModel {
     //! Store the marker value for the right wall boundary id
     static constexpr PetscInt rightWallId = 2;
 
+    // store the initialization as it is also used for the far field boundary condition
+    const std::shared_ptr<ablate::mathFunctions::MathFunction> initialization;
     /**
      * Setup the discretization on the active dm
      * @param activeDm the active dm
@@ -76,7 +72,7 @@ class SolidHeatTransfer: public SublimationModel {
      * @param surface
      * @return
      */
-    PetscErrorCode ComputeSurfaceInformation(DM dm, Vec locVec, SurfaceState &surface) const;
+    PetscErrorCode ComputeSurfaceInformation(DM dm, Vec locVec, PetscReal &surfaceTemperature, PetscReal &heatFlux) const;
 
    public:
     /**
@@ -85,20 +81,20 @@ class SolidHeatTransfer: public SublimationModel {
      * @param initialization, math function to initialize the temperature
      * @param options
      */
-    explicit SolidHeatTransfer(const std::shared_ptr<ablate::parameters::Parameters> &properties, const std::shared_ptr<ablate::mathFunctions::MathFunction> &initialization,
-                               const std::shared_ptr<ablate::parameters::Parameters> &options = {});
+    explicit OneDimensionHeatTransfer(const std::shared_ptr<ablate::parameters::Parameters> &properties, const std::shared_ptr<ablate::mathFunctions::MathFunction> &initialization,
+                                      const std::shared_ptr<ablate::parameters::Parameters> &options = {}, PetscScalar maxSurfaceTemperature = PETSC_DEFAULT);
 
     /**
      * Clean up the petsc objects
      */
-    ~SolidHeatTransfer();
+    ~OneDimensionHeatTransfer();
 
     /**
      * Advances the solver for this cell in time and returns the computed surface state
      * @param dt
      * @return
      */
-    PetscErrorCode Solve(PetscReal heatFluxToSurface, PetscReal dt, SurfaceState &);
+    PetscErrorCode Solve(PetscReal heatFluxToSurface, PetscReal dt, PetscReal &surfaceTemperature, PetscReal &heatFlux);
 
     /**
      * Return the sub model TS
@@ -192,5 +188,5 @@ class SolidHeatTransfer: public SublimationModel {
     }
 };
 
-}  // namespace ablate::boundarySolver::subModels
+}  // namespace ablate::boundarySolver::physics::subModels
 #endif  // ABLATELIBRARY_SOLIDHEATTRANSFER_HPP

@@ -1,6 +1,6 @@
 #include <functional>
 #include "PetscTestFixture.hpp"
-#include "boundarySolver/subModels/oneDimensionHeatTransfer.hpp"
+#include "boundarySolver/physics/subModels/oneDimensionHeatTransfer.hpp"
 #include "convergenceTester.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
@@ -46,12 +46,13 @@ TEST_P(OneDimensionHeatTransferTestFixture, ShouldConverge) {
         params.options->Insert("dm_plex_box_faces", nx1D);
 
         // Create the 1D solver
-        auto solidHeatTransfer =
-            std::make_shared<ablate::boundarySolver::subModels::OneDimensionHeatTransfer>(params.properties, exactSolution, params.options, params.maximumSurfaceTemperature.value_or(PETSC_DEFAULT));
+        auto solidHeatTransfer = std::make_shared<ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer>(
+            params.properties, exactSolution, params.options, params.maximumSurfaceTemperature.value_or(PETSC_DEFAULT));
 
         // Advance, pass in a surface heat flux and update the internal properties
-        ablate::boundarySolver::subModels::OneDimensionHeatTransfer::SurfaceState result{};
-        solidHeatTransfer->Solve(0.0, params.timeEnd, result) >> ablate::utilities::PetscUtilities::checkError;
+        PetscReal surfaceTemperature;
+        PetscReal heatFlux;
+        solidHeatTransfer->Solve(0.0, params.timeEnd, surfaceTemperature, heatFlux) >> ablate::utilities::PetscUtilities::checkError;
 
         // extract the required information from the dm
         DM dm;

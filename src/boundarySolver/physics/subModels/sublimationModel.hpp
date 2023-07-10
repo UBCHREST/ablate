@@ -4,7 +4,7 @@
 #include <petsc.h>
 #include "boundarySolver/boundarySolver.hpp"
 
-namespace ablate::boundarySolver::subModels {
+namespace ablate::boundarySolver::physics::subModels {
 
 class SublimationModel {
    public:
@@ -23,24 +23,37 @@ class SublimationModel {
     };
 
     /**
+     * bool indicating if this model needs to be updated before each prestep
+     * @param bSolver
+     * @return
+     */
+    virtual bool RequiresUpdate() { return false; };
+
+    /**
      * Initialize the subModel for each face id in the bSolver
      * @param bSolver
+     * @return bool indicating if this model needs to be updated before each prestep
      */
-    virtual BoundarySolver::BoundaryPreRHSPointFunctionDefinition Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
-        return BoundarySolver::BoundaryPreRHSPointFunctionDefinition{.function = nullptr, .context = nullptr, .inputFieldsOffset = {}, .auxFieldsOffset = {}};
-    }
+    virtual void Initialize(ablate::boundarySolver::BoundarySolver &bSolver){};
+
+    /**
+     * Initialize the subModel for each face id in the bSolver
+     * @param bSolver
+     * @return bool indicating if this model needs to be updated before each prestep
+     */
+    virtual PetscErrorCode Update(PetscInt faceId, PetscReal dt, PetscReal heatFluxToSurface, PetscReal &temperature) { return PETSC_SUCCESS; };
 
     /**
      * Returns the current surface state for a face and current heatflux
      * @param heatFluxToSurface
      */
-    virtual PetscErrorCode Solve(PetscInt faceId, PetscReal heatFluxToSurface, SurfaceState &) = 0;
+    virtual PetscErrorCode Compute(PetscInt faceId, PetscReal heatFluxToSurface, SurfaceState &) = 0;
 
     /**
      * Allow model cleanup
      */
     virtual ~SublimationModel() = default;
 };
-}  // namespace ablate::boundarySolver::subModels
+}  // namespace ablate::boundarySolver::physics::subModels
 
 #endif  // ABLATELIBRARY_SUBLIMATIONMODEL_HPP

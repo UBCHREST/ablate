@@ -2,7 +2,7 @@
 #define ABLATELIBRARY_COMPLETESUBLIMATION_HPP
 
 #include "sublimationModel.hpp"
-namespace ablate::boundarySolver::subModels {
+namespace ablate::boundarySolver::physics::subModels {
 
 class CompleteSublimation : public SublimationModel {
    private:
@@ -19,8 +19,8 @@ class CompleteSublimation : public SublimationModel {
      * Returns the current surface state for a face and current heatflux
      * @param heatFluxToSurface
      */
-    PetscErrorCode Solve(PetscInt faceId, PetscReal heatFluxToSurface, SurfaceState &) override;
+    PetscErrorCode Compute(PetscInt faceId, PetscReal heatFluxToSurface, SurfaceState &) override;
 };
-}  // namespace ablate::boundarySolver::subModels
+}  // namespace ablate::boundarySolver::physics::subModels
 
-#endif  // ABLATELIBRARY_SUBLIMATIONMODEL_HPP
+#endif  // ABLATELIBRARY_COMPLETESUBLIMATION_HPP

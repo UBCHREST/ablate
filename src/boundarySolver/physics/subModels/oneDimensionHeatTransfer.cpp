@@ -3,9 +3,9 @@
 #include "domain/RBF/rbfSupport.hpp"
 #include "utilities/constants.hpp"
 
-ablate::boundarySolver::subModels::OneDimensionHeatTransfer::OneDimensionHeatTransfer(const std::shared_ptr<ablate::parameters::Parameters> &propertiesIn,
-                                                                                      const std::shared_ptr<ablate::mathFunctions::MathFunction> &initializationIn,
-                                                                                      const std::shared_ptr<ablate::parameters::Parameters> &optionsIn, PetscScalar maxSurfaceTemperature)
+ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::OneDimensionHeatTransfer(const std::shared_ptr<ablate::parameters::Parameters> &propertiesIn,
+                                                                                               const std::shared_ptr<ablate::mathFunctions::MathFunction> &initializationIn,
+                                                                                               const std::shared_ptr<ablate::parameters::Parameters> &optionsIn, PetscScalar maxSurfaceTemperature)
     : initialization(initializationIn) {
     // Create a petsc options
     PetscOptionsCreate(&options) >> utilities::PetscUtilities::checkError;
@@ -56,7 +56,7 @@ ablate::boundarySolver::subModels::OneDimensionHeatTransfer::OneDimensionHeatTra
     TSSetExactFinalTime(subModelTs, TS_EXACTFINALTIME_MATCHSTEP) >> utilities::PetscUtilities::checkError;
 
     // Only bother to update the boundary condition if there is a max surface temperature
-    if(maxSurfaceTemperature >= 0) {
+    if (maxSurfaceTemperature >= 0) {
         TSSetPreStep(subModelTs, UpdateBoundaryCondition) >> utilities::PetscUtilities::checkError;
     }
 
@@ -131,7 +131,7 @@ ablate::boundarySolver::subModels::OneDimensionHeatTransfer::OneDimensionHeatTra
     DMSetAuxiliaryVec(subModelDm, nullptr, 0, 0, localAuxVector) >> utilities::PetscUtilities::checkError;
 }
 
-ablate::boundarySolver::subModels::OneDimensionHeatTransfer::~OneDimensionHeatTransfer() {
+ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::~OneDimensionHeatTransfer() {
     if (subModelDm) {
         DMDestroy(&subModelDm) >> utilities::PetscUtilities::checkError;
     }
@@ -145,7 +145,7 @@ ablate::boundarySolver::subModels::OneDimensionHeatTransfer::~OneDimensionHeatTr
         VecDestroy(&localAuxVector) >> utilities::PetscUtilities::checkError;
     }
 }
-PetscErrorCode ablate::boundarySolver::subModels::OneDimensionHeatTransfer::SetupDiscretization(DM activeDm, DMBoundaryConditionType bcType) {
+PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::SetupDiscretization(DM activeDm, DMBoundaryConditionType bcType) {
     PetscFunctionBeginUser;
 
     // make sure that the dimension is set
@@ -200,7 +200,7 @@ PetscErrorCode ablate::boundarySolver::subModels::OneDimensionHeatTransfer::Setu
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-PetscErrorCode ablate::boundarySolver::subModels::OneDimensionHeatTransfer::UpdateBoundaryCondition(TS ts) {
+PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::UpdateBoundaryCondition(TS ts) {
     PetscFunctionBeginUser;
     DM dm;
     PetscCall(TSGetDM(ts, &dm));
@@ -224,8 +224,9 @@ PetscErrorCode ablate::boundarySolver::subModels::OneDimensionHeatTransfer::Upda
     PetscCall(DMGlobalToLocal(dm, currentGlobalVec, INSERT_VALUES, locVec));
 
     // Get the surface temperature and heat flux
-    SurfaceState surface{};
-    PetscCall(oneDimensionHeatTransfer->ComputeSurfaceInformation(dm, locVec, surface));
+    PetscReal surfaceTemperature;
+    PetscReal heatFlux;
+    PetscCall(oneDimensionHeatTransfer->ComputeSurfaceInformation(dm, locVec, surfaceTemperature, heatFlux));
 
     // Get the array
     const PetscScalar *locVecArray;
@@ -233,14 +234,14 @@ PetscErrorCode ablate::boundarySolver::subModels::OneDimensionHeatTransfer::Upda
 
     // Now determine what kind of boundary we need
     DMBoundaryConditionType neededBcType = DM_BC_NATURAL;
-    if (surface.temperature >= oneDimensionHeatTransfer->maximumSurfaceTemperature) {
+    if (surfaceTemperature >= oneDimensionHeatTransfer->maximumSurfaceTemperature) {
         neededBcType = DM_BC_ESSENTIAL;
     }
 
     // Check if the heatflux into the surface is greater than what is being applied
     PetscScalar heatFluxToSurface;
     PetscCall(oneDimensionHeatTransfer->GetSurfaceHeatFlux(heatFluxToSurface));
-    if (heatFluxToSurface < surface.heatFlux) {
+    if (heatFluxToSurface < heatFlux) {
         neededBcType = DM_BC_NATURAL;
     }
 
@@ -289,7 +290,7 @@ PetscErrorCode ablate::boundarySolver::subModels::OneDimensionHeatTransfer::Upda
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-PetscErrorCode ablate::boundarySolver::subModels::OneDimensionHeatTransfer::ComputeSurfaceInformation(DM dm, Vec locVec, SurfaceState &surface) const {
+PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::ComputeSurfaceInformation(DM dm, Vec locVec, PetscReal &surfaceTemperature, PetscReal &heatFlux) const {
     PetscFunctionBeginUser;
 
     // Map that coordinate back if needed
@@ -325,8 +326,8 @@ PetscErrorCode ablate::boundarySolver::subModels::OneDimensionHeatTransfer::Comp
         PetscCall(DMPlexVecGetClosure(dm, nullptr, locVec, surfaceCell, &cSize, &clPhi));
 
         // Get the interpolated value
-        surface.temperature = 0.0;
-        PetscCall(PetscFEInterpolateAtPoints_Static(fe, tab, clPhi, &feGeometry, pointInBasis, &surface.temperature));
+        surfaceTemperature = 0.0;
+        PetscCall(PetscFEInterpolateAtPoints_Static(fe, tab, clPhi, &feGeometry, pointInBasis, &surfaceTemperature));
         PetscScalar temperatureGrad[3] = {0.0, 0.0, 0.0};
         PetscCall(PetscFEFreeInterpolateGradient_Static(fe, tab->T[1], clPhi, dim, feGeometry.invJ, nullptr, pointInBasis, temperatureGrad));
 
@@ -334,7 +335,7 @@ PetscErrorCode ablate::boundarySolver::subModels::OneDimensionHeatTransfer::Comp
         PetscInt numConstants;
         const PetscScalar *constants;
         PetscCall(PetscDSGetConstants(ds, &numConstants, &constants));
-        surface.heatFlux = -temperatureGrad[0] * constants[conductivity];
+        heatFlux = -temperatureGrad[0] * constants[conductivity];
     }
 
     // cleanup
@@ -346,10 +347,11 @@ PetscErrorCode ablate::boundarySolver::subModels::OneDimensionHeatTransfer::Comp
 /**
  * Compute the jacobian term g0 - integrand for the test and basis function term i
  */
-void ablate::boundarySolver::subModels::OneDimensionHeatTransfer::JacobianG0Term(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[],
-                                                                                 const PetscScalar u_t[], const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[],
-                                                                                 const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift,
-                                                                                 const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar g3[]) {
+void ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::JacobianG0Term(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[],
+                                                                                          const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[], const PetscInt aOff[],
+                                                                                          const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t,
+                                                                                          PetscReal u_tShift, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[],
+                                                                                          PetscScalar g3[]) {
     for (PetscInt d = 0; d < dim; ++d) {
         g3[d * dim + d] = u_tShift * constants[density] * constants[specificHeat];
     }
@@ -358,10 +360,11 @@ void ablate::boundarySolver::subModels::OneDimensionHeatTransfer::JacobianG0Term
 /**
  * Compute the jacobian term g3 - integrand for the test function gradient and basis function gradient term
  */
-void ablate::boundarySolver::subModels::OneDimensionHeatTransfer::JacobianG3Term(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[],
-                                                                                 const PetscScalar u_t[], const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[],
-                                                                                 const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift,
-                                                                                 const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar g3[]) {
+void ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::JacobianG3Term(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[],
+                                                                                          const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[], const PetscInt aOff[],
+                                                                                          const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t,
+                                                                                          PetscReal u_tShift, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[],
+                                                                                          PetscScalar g3[]) {
     for (PetscInt d = 0; d < dim; ++d) {
         g3[d * dim + d] = constants[conductivity];
     }
@@ -370,40 +373,41 @@ void ablate::boundarySolver::subModels::OneDimensionHeatTransfer::JacobianG3Term
 /**
  * Compute the test function integrated.  Note there is only a single field.
  */
-void ablate::boundarySolver::subModels::OneDimensionHeatTransfer::WIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[],
-                                                                                         const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[], const PetscInt aOff[],
-                                                                                         const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t,
-                                                                                         const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar f0[]) {
+void ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::WIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[],
+                                                                                                  const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[], const PetscInt aOff[],
+                                                                                                  const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
+                                                                                                  PetscReal t, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[],
+                                                                                                  PetscScalar f0[]) {
     f0[0] = constants[density] * constants[specificHeat] * u_t[0];
 }
 
 /**
  * Compute the test function integrated.  Note there is only a single field.
  */
-void ablate::boundarySolver::subModels::OneDimensionHeatTransfer::WIntegrandTestGradientFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[],
-                                                                                                 const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[], const PetscInt aOff[],
-                                                                                                 const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
-                                                                                                 PetscReal t, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[],
-                                                                                                 PetscScalar f1[]) {
+void ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::WIntegrandTestGradientFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[],
+                                                                                                          const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
+                                                                                                          const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[],
+                                                                                                          const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal x[],
+                                                                                                          PetscInt numConstants, const PetscScalar constants[], PetscScalar f1[]) {
     for (PetscInt d = 0; d < dim; ++d) {
         f1[d] = constants[conductivity] * u_x[d];
     }
 }
 
-PetscErrorCode ablate::boundarySolver::subModels::OneDimensionHeatTransfer::EssentialCoupledWallBC(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt Nc, PetscScalar *u, void *ctx) {
+PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::EssentialCoupledWallBC(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt Nc, PetscScalar *u, void *ctx) {
     *u = *((PetscScalar *)ctx);
     return PETSC_SUCCESS;
 }
 
-void ablate::boundarySolver::subModels::OneDimensionHeatTransfer::NaturalCoupledWallBC(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[],
-                                                                                       const PetscScalar u_t[], const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[],
-                                                                                       const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal x[],
-                                                                                       const PetscReal n[], PetscInt numConstants, const PetscScalar constants[], PetscScalar f0[]) {
+void ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::NaturalCoupledWallBC(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[],
+                                                                                                const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[], const PetscInt aOff[],
+                                                                                                const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
+                                                                                                PetscReal t, const PetscReal x[], const PetscReal n[], PetscInt numConstants,
+                                                                                                const PetscScalar constants[], PetscScalar f0[]) {
     // The normal is facing out, so scale the heat flux by -1
     f0[0] = -a[aOff[0]];
 }
-PetscErrorCode ablate::boundarySolver::subModels::OneDimensionHeatTransfer::Solve(PetscReal heatFluxToSurface, PetscReal dt,
-                                                                                  ablate::boundarySolver::subModels::OneDimensionHeatTransfer::SurfaceState &surfaceState) {
+PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::Solve(PetscReal heatFluxToSurface, PetscReal dt, PetscReal &surfaceTemperature, PetscReal &heatFlux) {
     PetscFunctionBeginHot;
     // Get the current time
     PetscReal time;
@@ -429,7 +433,7 @@ PetscErrorCode ablate::boundarySolver::subModels::OneDimensionHeatTransfer::Solv
     PetscCall(DMGetLocalVector(activeDM, &locVec));
     PetscCall(DMPlexInsertBoundaryValues(activeDM, PETSC_TRUE, locVec, time, nullptr, nullptr, nullptr));
     PetscCall(DMGlobalToLocal(activeDM, globalSolutionVector, INSERT_VALUES, locVec));
-    PetscCall(ComputeSurfaceInformation(activeDM, locVec, surfaceState));
+    PetscCall(ComputeSurfaceInformation(activeDM, locVec, surfaceTemperature, heatFlux));
     PetscCall(DMRestoreLocalVector(activeDM, &locVec));
 
     PetscFunctionReturn(PETSC_SUCCESS);
