@@ -69,7 +69,7 @@ class SolidHeatTransfer {
      * @param bcType the kind of boundary condition to add
      * @return
      */
-    PetscErrorCode SetupDiscretization(DM activeDm, DMBoundaryConditionType bcType = DM_BC_ESSENTIAL);
+    PetscErrorCode SetupDiscretization(DM activeDm, DMBoundaryConditionType bcType = DM_BC_NATURAL);
 
     /**
      * Function to update the boundary condition

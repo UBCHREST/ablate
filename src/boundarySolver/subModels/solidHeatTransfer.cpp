@@ -416,12 +416,14 @@ PetscErrorCode ablate::boundarySolver::subModels::SolidHeatTransfer::Solve(Petsc
     PetscCall(TSGetSolution(subModelTs, &globalSolutionVector));
 
     // compute the current surface state
+    DM activeDM;
+    PetscCall(TSGetDM(subModelTs, &activeDM));
     Vec locVec;
-    PetscCall(DMGetLocalVector(subModelDm, &locVec));
-    PetscCall(DMPlexInsertBoundaryValues(subModelDm, PETSC_TRUE, locVec, time, nullptr, nullptr, nullptr));
-    PetscCall(DMGlobalToLocal(subModelDm, globalSolutionVector, INSERT_VALUES, locVec));
-    PetscCall(ComputeSurfaceInformation(subModelDm, locVec, surfaceState));
-    PetscCall(DMRestoreLocalVector(subModelDm, &locVec));
+    PetscCall(DMGetLocalVector(activeDM, &locVec));
+    PetscCall(DMPlexInsertBoundaryValues(activeDM, PETSC_TRUE, locVec, time, nullptr, nullptr, nullptr));
+    PetscCall(DMGlobalToLocal(activeDM, globalSolutionVector, INSERT_VALUES, locVec));
+    PetscCall(ComputeSurfaceInformation(activeDM, locVec, surfaceState));
+    PetscCall(DMRestoreLocalVector(activeDM, &locVec));
 
     PetscFunctionReturn(PETSC_SUCCESS);
 }

@@ -9,6 +9,7 @@ std::shared_ptr<ablate::boundarySolver::subModels::SolidHeatTransfer> ablate::bo
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::boundarySolver::subModels::SolidHeatTransfer, ablate::boundarySolver::subModels::SolidHeatTransfer, "A factory to create solid heat transfer instances",
-         ARG(ablate::parameters::Parameters, "properties", "the heat transfer properties"), ARG(ablate::mathFunctions::MathFunction, "initialization", " math function to initialize the temperature"),
+REGISTER(ablate::boundarySolver::subModels::SolidHeatTransferFactory, ablate::boundarySolver::subModels::SolidHeatTransferFactory, "A factory to create solid heat transfer instances",
+         ARG(ablate::parameters::Parameters, "properties", "the heat transfer properties (specificHeat, conductivity, density, maximumSurfaceTemperature, farFieldTemperature)"),
+         ARG(ablate::mathFunctions::MathFunction, "initialization", " math function to initialize the temperature"),
          OPT(ablate::parameters::Parameters, "options", "the petsc options for the solver/ts"));

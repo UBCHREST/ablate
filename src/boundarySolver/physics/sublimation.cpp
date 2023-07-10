@@ -289,6 +289,8 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationOutputFu
     const int REGRESSION_MASS_FLUX_LOC = 2;
     const int REGRESSION_RATE_LOC = 3;
     const int RAD_LOC = 4;
+    const int TEMP_OUTPUT_LOC = 5;
+    const int HF_CONSUMED_SOLID = 6;
 
     // extract the temperature
     std::vector<PetscReal> stencilTemperature(stencilSize, 0);
@@ -312,11 +314,21 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationOutputFu
         sublimation->radiation->GetSurfaceIntensity(&radIntensity, fg->faceId, boundaryTemperature, sublimation->emissivity);
     }
 
+    PetscReal heatFluxConsumedInSolid = 0.0;
+    if (sublimation->solidHeatTransferFactory) {
+        heatFluxConsumedInSolid = sublimation->solidHeatState[fg->faceId].heatFlux;
+    }
+
     // compute the heat flux
     PetscReal heatFluxIntoSolid = -dTdn * effectiveConductivity;
     source[sOff[RAD_LOC]] = radIntensity;
     source[sOff[CONDUCTION_LOC]] = heatFluxIntoSolid;
-    PetscReal sublimationHeatFlux = PetscMax(0.0, heatFluxIntoSolid + radIntensity);  // note that q = -dTdn as dTdN faces into the solid
+    source[sOff[HF_CONSUMED_SOLID]] = heatFluxConsumedInSolid;
+    PetscReal sublimationHeatFlux = PetscMax(0.0, heatFluxIntoSolid + radIntensity - heatFluxConsumedInSolid);  // note that q = -dTdn as dTdN faces into the solid
+
+    // Store the temperature as well
+    source[sOff[TEMP_OUTPUT_LOC]] = boundaryTemperature;
+
     // If there is an additional heat flux compute and add value
     PetscReal additionalHeatFlux = 0.0;
     if (sublimation->additionalHeatFlux) {
@@ -354,7 +366,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationPreRHS(B
     }
 
     // If there is a solid boundary, update it
-    if (sublimation->solidHeatTransferFactory) {
+    if (initialStage && sublimation->solidHeatTransferFactory) {
         PetscReal dt;
         TSGetTimeStep(ts, &dt) >> utilities::PetscUtilities::checkError;
         solver.ComputeBoundaryPreRHSPointFunction(time, dt, locX, sublimation->solidHeatTransferUpdateFunctionDefinition) >> utilities::PetscUtilities::checkError;
@@ -466,6 +478,12 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::UpdateBoundaryHeatT
 
     // compute the heat flux. Add the radiation heat flux for this face intensity if the radiation solver exists
     PetscReal conductionIntoSolid = -dTdn * effectiveConductivity;
+
+    // If there is an additional heat flux compute and add value
+    if (sublimation->additionalHeatFlux) {
+        conductionIntoSolid += sublimation->additionalHeatFlux->Eval(fg->centroid, (int)dim, sublimation->currentTime);
+    }
+
     PetscReal sublimationHeatFlux = conductionIntoSolid + radIntensity;  // note that q = -dTdn as dTdN faces into the solid
 
     // Update the boundary solver
