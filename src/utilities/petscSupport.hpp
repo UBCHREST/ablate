@@ -125,25 +125,6 @@ PetscErrorCode DMPlexGetCommonPoints(DM dm, const PetscInt p1, const PetscInt p2
 PetscErrorCode DMPlexRestoreCommonPoints(DM dm, const PetscInt p1, const PetscInt p2, const PetscInt depth, PetscInt *nPoints, PetscInt *points[]);
 
 /**
- * The outward surface area normal of the corner of a cell with respect to a given vertex of said cell
- * @param dm - The mesh
- * @param v - ID of the vertes
- * @param c - ID of the cell with the vertex v
- * @param N - Outward surface area normal
- */
-PetscErrorCode DMPlexCornerSurfaceAreaNormal(DM dm, const PetscInt v, const PetscInt c, PetscReal N[]);
-
-/**
- * The outward surface area normal of an edge+ with respect to a given vertex as defined in Morgan and Waltz
- *  NOTE: This does NOT check if the vertex and edge are actually associated with each other.
- * @param dm - The mesh
- * @param v - ID of the vertes
- * @param e - ID of the edge with the vertex v
- * @param N - Outward surface area normal
- */
-PetscErrorCode DMPlexEdgeSurfaceAreaNormal(DM dm, const PetscInt v, const PetscInt e, PetscReal N[]);
-
-/**
  * Return all values in sorted array a that are NOT in sorted array b. This is done in-place on array a.
  * Inputs:
  *    na - Size of sorted array b[]
