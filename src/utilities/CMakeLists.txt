@@ -3,6 +3,7 @@ target_sources(ablateLibrary
         mathUtilities.cpp
         demangler.cpp
         petscUtilities.cpp
+        petscSupport.cpp
         kokkosUtilities.cpp
         mpiUtilities.cpp
 
@@ -13,6 +14,7 @@ target_sources(ablateLibrary
         mathUtilities.hpp
         vectorUtilities.hpp
         petscUtilities.hpp
+        petscSupport.hpp
         kokkosUtilities.hpp
         mpiUtilities.hpp
         temporaryWorkingDirectory.hpp
