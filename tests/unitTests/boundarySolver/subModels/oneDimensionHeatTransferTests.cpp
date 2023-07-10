@@ -1,26 +1,30 @@
 #include <functional>
 #include "PetscTestFixture.hpp"
-#include "boundarySolver/subModels/solidHeatTransfer.hpp"
+#include "boundarySolver/subModels/oneDimensionHeatTransfer.hpp"
 #include "convergenceTester.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
 
-struct SolidHeatTransferTestParameters {
+struct OneDimensionHeatTransferTestParameters {
     // Creation options
     const std::shared_ptr<ablate::parameters::MapParameters> properties;
     const std::shared_ptr<ablate::parameters::MapParameters> options;
+    std::optional<double> maximumSurfaceTemperature;
 
     // exact solution also used for init
     std::function<std::shared_ptr<ablate::mathFunctions::MathFunction>()> exactSolutionFactory;
 
     // ts options
     PetscReal timeEnd;
+
+    // comparisons
+    PetscReal expectedConvergenceRate;
 };
 
-class SolidHeatTransferTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<SolidHeatTransferTestParameters> {};
+class OneDimensionHeatTransferTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<OneDimensionHeatTransferTestParameters> {};
 
-TEST_P(SolidHeatTransferTestFixture, ShouldConverge) {
+TEST_P(OneDimensionHeatTransferTestFixture, ShouldConverge) {
     // get the required variables
     const auto& params = GetParam();
 
@@ -42,10 +46,11 @@ TEST_P(SolidHeatTransferTestFixture, ShouldConverge) {
         params.options->Insert("dm_plex_box_faces", nx1D);
 
         // Create the 1D solver
-        auto solidHeatTransfer = std::make_shared<ablate::boundarySolver::subModels::SolidHeatTransfer>(params.properties, exactSolution, params.options);
+        auto solidHeatTransfer =
+            std::make_shared<ablate::boundarySolver::subModels::OneDimensionHeatTransfer>(params.properties, exactSolution, params.options, params.maximumSurfaceTemperature.value_or(PETSC_DEFAULT));
 
         // Advance, pass in a surface heat flux and update the internal properties
-        ablate::boundarySolver::subModels::SolidHeatTransfer::SurfaceState result{};
+        ablate::boundarySolver::subModels::OneDimensionHeatTransfer::SurfaceState result{};
         solidHeatTransfer->Solve(0.0, params.timeEnd, result) >> ablate::utilities::PetscUtilities::checkError;
 
         // extract the required information from the dm
@@ -68,7 +73,7 @@ TEST_P(SolidHeatTransferTestFixture, ShouldConverge) {
     }
     // ASSERt
     std::string l2Message;
-    if (!l2History.CompareConvergenceRate({2.0}, l2Message)) {
+    if (!l2History.CompareConvergenceRate({GetParam().expectedConvergenceRate}, l2Message)) {
         FAIL() << l2Message;
     }
 }
@@ -94,21 +99,22 @@ static std::shared_ptr<ablate::mathFunctions::MathFunction> CreateHeatEquationDi
     return ablate::mathFunctions::Create(function);
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    SolidHeatTransfer, SolidHeatTransferTestFixture,
-    testing::Values(
-        // no boundary temperature
-        (SolidHeatTransferTestParameters){.properties = ablate::parameters::MapParameters::Create(
-                                              {{"specificHeat", 1000.0}, {"conductivity", 1.0}, {"density", 1.0}, {"maximumSurfaceTemperature", 000.0}, {"farFieldTemperature", 000.0}}),
-                                          .options = ablate::parameters::MapParameters::Create({{"ts_dt", "0.01"}, {"dm_plex_box_upper", .1}}),
-                                          .exactSolutionFactory = []() { return CreateHeatEquationDirichletExactSolution(.1, 1000.0, 1.0, 1.0, 1000.0, 000.0, .5); },
-                                          .timeEnd = .1},
-        // fixed boundary temperature
-        (SolidHeatTransferTestParameters){.properties = ablate::parameters::MapParameters::Create(
-                                              {{"specificHeat", 1000.0}, {"conductivity", .25}, {"density", 0.7}, {"maximumSurfaceTemperature", 400.0}, {"farFieldTemperature", 400.0}}),
-                                          .options = ablate::parameters::MapParameters::Create({{"ts_dt", "0.01"}, {"dm_plex_box_upper", .25}}),
-                                          .exactSolutionFactory = []() { return CreateHeatEquationDirichletExactSolution(.25, 1000.0, 0.25, 0.7, 1500.0, 400.0, .5); },
-                                          .timeEnd = .1}
+INSTANTIATE_TEST_SUITE_P(SolidHeatTransfer, OneDimensionHeatTransferTestFixture,
+                         testing::Values(
+                             // no boundary temperature
+                             (OneDimensionHeatTransferTestParameters){.properties = ablate::parameters::MapParameters::Create({{"specificHeat", 1000.0}, {"conductivity", 1.0}, {"density", 1.0}}),
+                                                                      .options = ablate::parameters::MapParameters::Create({{"ts_dt", "0.01"}, {"dm_plex_box_upper", .1}}),
+                                                                      .maximumSurfaceTemperature = 0.0,
+                                                                      .exactSolutionFactory = []() { return CreateHeatEquationDirichletExactSolution(.1, 1000.0, 1.0, 1.0, 1000.0, 000.0, .5); },
+                                                                      .timeEnd = .1,
+                                                                      .expectedConvergenceRate = 2.2},
+                             // fixed boundary temperature
+                             (OneDimensionHeatTransferTestParameters){.properties = ablate::parameters::MapParameters::Create({{"specificHeat", 1000.0}, {"conductivity", .25}, {"density", 0.7}}),
+                                                                      .options = ablate::parameters::MapParameters::Create({{"ts_dt", "0.01"}, {"dm_plex_box_upper", .25}}),
+                                                                      .maximumSurfaceTemperature = 400.0,
+                                                                      .exactSolutionFactory = []() { return CreateHeatEquationDirichletExactSolution(.25, 1000.0, 0.25, 0.7, 1500.0, 400.0, .5); },
+                                                                      .timeEnd = .1,
+                                                                      .expectedConvergenceRate = 2.0}
 
-        ),
-    [](const testing::TestParamInfo<SolidHeatTransferTestParameters>& info) { return std::to_string(info.index); });
+                             ),
+                         [](const testing::TestParamInfo<OneDimensionHeatTransferTestParameters>& info) { return std::to_string(info.index); });

@@ -4,11 +4,13 @@ target_sources(ablateLibrary
 #        solidHeatTransferFactory.cpp
 #        sublimationTemperature.cpp
         completeSublimation.cpp
+        oneDimensionHeatTransfer.cpp
 
         PUBLIC
 #        solidHeatTransfer.hpp
 #        sublimationTemperature.hpp
         sublimationModel.hpp
         completeSublimation.hpp
+        oneDimensionHeatTransfer.hpp
         )
 

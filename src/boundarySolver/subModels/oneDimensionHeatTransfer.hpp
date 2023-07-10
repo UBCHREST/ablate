@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_SOLIDHEATTRANSFER_HPP
-#define ABLATELIBRARY_SOLIDHEATTRANSFER_HPP
+#ifndef ABLATELIBRARY_ONEDIMENSIONHEATTRANSFER_HPP
+#define ABLATELIBRARY_ONEDIMENSIONHEATTRANSFER_HPP
 
 #include <memory>
 #include "solver/cellSolver.hpp"
@@ -7,7 +7,7 @@
 
 namespace ablate::boundarySolver::subModels {
 
-class SolidHeatTransfer {
+class OneDimensionHeatTransfer {
    public:
     /**
      * Simple struct to hold the return state of the boundary condition
@@ -39,9 +39,6 @@ class SolidHeatTransfer {
     // Store the maximum surface temperature
     PetscScalar maximumSurfaceTemperature;
 
-    // Store the far field temperature
-    PetscScalar farFieldTemperature;
-
     // hold the surfaceCoordinate, this is where we will compute the surface information
     static constexpr PetscScalar surfaceCoordinate[3] = {0.0, 0.0, 0.0};
 
@@ -52,10 +49,10 @@ class SolidHeatTransfer {
     PetscInt surfaceVertex = PETSC_DECIDE;
 
     // Hold onto an aux vector to allow easy updating of the heatFlux
-    DM auxDm;
+    DM auxDm{};
 
     // Hold onto an aux vector to allow easy updating of the heatFlux
-    Vec localAuxVector;
+    Vec localAuxVector{};
 
     //! Store the marker value for the left wall boundary id
     static constexpr PetscInt leftWallId = 1;
@@ -63,6 +60,8 @@ class SolidHeatTransfer {
     //! Store the marker value for the right wall boundary id
     static constexpr PetscInt rightWallId = 2;
 
+    // store the initialization as it is also used for the far field boundary condition
+    const std::shared_ptr<ablate::mathFunctions::MathFunction> initialization;
     /**
      * Setup the discretization on the active dm
      * @param activeDm the active dm
@@ -94,13 +93,13 @@ class SolidHeatTransfer {
      * @param initialization, math function to initialize the temperature
      * @param options
      */
-    explicit SolidHeatTransfer(const std::shared_ptr<ablate::parameters::Parameters> &properties, const std::shared_ptr<ablate::mathFunctions::MathFunction> &initialization,
-                               const std::shared_ptr<ablate::parameters::Parameters> &options = {});
+    explicit OneDimensionHeatTransfer(const std::shared_ptr<ablate::parameters::Parameters> &properties, const std::shared_ptr<ablate::mathFunctions::MathFunction> &initialization,
+                               const std::shared_ptr<ablate::parameters::Parameters> &options = {}, PetscScalar maxSurfaceTemperature = PETSC_DEFAULT);
 
     /**
      * Clean up the petsc objects
      */
-    ~SolidHeatTransfer();
+    ~OneDimensionHeatTransfer();
 
     /**
      * Advances the solver for this cell in time and returns the computed surface state
