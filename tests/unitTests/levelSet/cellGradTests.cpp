@@ -3,7 +3,7 @@
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
 #include "levelSet/levelSetUtilities.hpp"
-#include "levelSet/lsSupport.hpp"
+#include "utilities/petscSupport.hpp"
 #include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
 #include "utilities/petscUtilities.hpp"

@@ -6,7 +6,7 @@
 #include "utilities/constants.hpp"
 #include "levelSetUtilities.hpp"
 #include "LS-VOF.hpp"
-#include "lsSupport.hpp"
+#include "utilities/petscSupport.hpp"
 #include "cellGrad.hpp"
 #include "domain/range.hpp"
 #include "domain/reverseRange.hpp"
