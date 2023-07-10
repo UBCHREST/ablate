@@ -1,4 +1,4 @@
 target_sources(ablateUnitTestLibrary
         PRIVATE
-        solidHeatTransferTests.cpp
+#        solidHeatTransferTests.cpp
         )

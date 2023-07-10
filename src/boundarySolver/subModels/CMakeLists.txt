@@ -1,10 +1,14 @@
 target_sources(ablateLibrary
         PRIVATE
-        solidHeatTransfer.cpp
-        solidHeatTransferFactory.cpp
+#        solidHeatTransfer.cpp
+#        solidHeatTransferFactory.cpp
+#        sublimationTemperature.cpp
+        completeSublimation.cpp
 
         PUBLIC
-        solidHeatTransfer.hpp
-        solidHeatTransferFactory.hpp
+#        solidHeatTransfer.hpp
+#        sublimationTemperature.hpp
+        sublimationModel.hpp
+        completeSublimation.hpp
         )
 
