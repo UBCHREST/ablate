@@ -287,22 +287,22 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
         // CreateGradientStencil, PetscFVcomputegradient, face stuff cells with common face
 //        boundarySolver::BoundarySolver::ComputeGradient(dim, boundaryValues[uOff[density]], stencilSize, &pointValues[0], stencilWeights, source + sOff[sourceField] + (0 * dim));
 
-        PetscScalar* alpha=nullptr;
-        DMPlexPointLocalFieldRead(dm, c, VFfield.id, solArray, &alpha) >> utilities::PetscUtilities::checkError;
-        if (*alpha < 0.01 || *alpha > 0.99){
-            curvature = 0.0;
-        } else{
-            curvature = -0.5;
-            PetscReal new_mag = PetscSqrtReal( PetscSqr(fcg->centroid[0]) + PetscSqr(fcg->centroid[1]) );
-            PetscReal new_normal_x = fcg->centroid[0]/new_mag;
-            PetscReal new_normal_y = fcg->centroid[1]/new_mag;
-            cellCenterNormal[0] = new_normal_x;
-            cellCenterNormal[1] = new_normal_y;
-        }
+//        PetscScalar* alpha=nullptr;
+//        DMPlexPointLocalFieldRead(dm, c, VFfield.id, solArray, &alpha) >> utilities::PetscUtilities::checkError;
+//        if (*alpha < 0.01 || *alpha > 0.99){
+//            curvature = 0.0;
+//        } else{
+//            curvature = -0.5;
+//            PetscReal new_mag = PetscSqrtReal( PetscSqr(fcg->centroid[0]) + PetscSqr(fcg->centroid[1]) );
+//            PetscReal new_normal_x = fcg->centroid[0]/new_mag;
+//            PetscReal new_normal_y = fcg->centroid[1]/new_mag;
+//            cellCenterNormal[0] = new_normal_x;
+//            cellCenterNormal[1] = new_normal_y;
+//        }
         for (PetscInt d = 0; d < dim; ++d) {
             // calculate surface force and energy
-            surfaceForce[d] = process->sigma * curvature * cellCenterNormal[d];
-//            surfaceForce[d] = process->sigma * curvature * cellCenterNormal[d]/(magCellNormal+utilities::Constants::tiny)/1.0;
+//            surfaceForce[d] = process->sigma * curvature * cellCenterNormal[d];
+            surfaceForce[d] = process->sigma * curvature * cellCenterNormal[d]/(magCellNormal+utilities::Constants::tiny);
 //            surfaceForce[d] = process->sigma * curvature * gradRho[d]/(994.0897506154375-1.1614401858304297) * density/(0.5*(994.0897506154375+1.1614401858304297));//process->sigma * curvature * cellCenterNormal[d];
             surfaceEnergy += surfaceForce[d] * vel[d];
             // add in the contributions
