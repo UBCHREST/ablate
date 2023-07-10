@@ -323,7 +323,7 @@ solvers:
           properties: !ablate::eos::radiationProperties::Sum
             - !ablate::eos::radiationProperties::Zimmer
               eos: *eos
-            - !ablate::eos::radiationProperties::SootMeanAbsorption
+            - !ablate::eos::radiationProperties::SootMeanProperties
               eos: *eos
         emissivity: 0.9
         #density of pmma used to output reg rate
@@ -349,5 +349,5 @@ solvers:
       properties: !ablate::eos::radiationProperties::Sum
         - !ablate::eos::radiationProperties::Zimmer
           eos: *eos
-        - !ablate::eos::radiationProperties::SootMeanAbsorption
+        - !ablate::eos::radiationProperties::SootMeanProperties
           eos: *eos

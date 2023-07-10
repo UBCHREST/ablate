@@ -4,6 +4,7 @@
 #include <array>
 #include "eos/radiationProperties/radiationProperties.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "radiation/radiation.hpp"
 #include "radiationProperties.hpp"
 #include "solver/cellSolver.hpp"
 #include "utilities/mathUtilities.hpp"
@@ -50,33 +51,27 @@ class Zimmer : public RadiationModel {
     constexpr static double MWH2O = 2. * MWH + MWO;
 
     /**
-     * private static function for evaluating constant properties without temperature
+     * Returns black body emissivity for the gas
      * @param conserved
-     * @param property
+     * @param temperature
+     * @param epsilon
      * @param ctx
+     * @return
      */
-    static PetscErrorCode ZimmerFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode ZimmerEmissionTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* epsilon, void* ctx);
 
     /**
      * private static function for evaluating constant properties without temperature
      * @param conserved
-     * @param property
+     * @param kappa
      * @param ctx
      */
-    static PetscErrorCode ZimmerTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
+    static PetscErrorCode ZimmerAbsorptionTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* kappa, void* ctx);
 
    public:
     explicit Zimmer(std::shared_ptr<eos::EOS> eosIn, PetscReal upperLimitIn = 0, PetscReal lowerLimitIn = 0);
     explicit Zimmer(const Zimmer&) = delete;
     void operator=(const Zimmer&) = delete;
-
-    /**
-     * Single function to produce radiation properties function for any property based upon the available fields
-     * @param property
-     * @param fields
-     * @return
-     */
-    [[nodiscard]] ThermodynamicFunction GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const override;
 
     /**
      * Single function to produce thermodynamic function for any property based upon the available fields and temperature

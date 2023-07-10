@@ -102,4 +102,6 @@ solvers:
             region:
               name: interiorCells
             properties: !ablate::eos::radiationProperties::Constant
+              eos: *eos
               absorptivity: 1
+              emissivity: 1
