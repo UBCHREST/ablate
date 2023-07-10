@@ -9,7 +9,7 @@
 namespace ablate::radiation {
 
 class SurfaceRadiation : public ablate::radiation::Radiation {
-   private:
+   protected:
     //! used to look up from the face id to range index
     ablate::domain::ReverseRange indexLookup;
 
@@ -30,23 +30,30 @@ class SurfaceRadiation : public ablate::radiation::Radiation {
     PetscReal SurfaceComponent(const PetscReal normal[], PetscInt iCell, PetscInt nphi, PetscInt ntheta) override;
 
     /**
+     * Represents the name of the class for logging and other utilities
+     * @return
+     */
+    static inline std::string GetClassType() { return "SurfaceRadiation"; }
+
+    /**
      * Compute total intensity (pre computed gains + current loss) with
      * @param faceId the current face id
      * @param temperature the temperature of the face
      * @param emissivity the emissivity of the surface
      * @return
      */
-    inline PetscReal GetSurfaceIntensity(PetscInt faceId, PetscReal temperature, PetscReal emissivity = 1.0) {
-        // Compute the losses
-        PetscReal netIntensity = -ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
-
+    virtual inline void GetSurfaceIntensity(PetscReal* intensity, PetscInt faceId, PetscReal temperature, PetscReal emissivity = 1.0) {
         // add in precomputed gains
-        netIntensity += evaluatedGains[indexLookup.GetAbsoluteIndex(faceId)];
+        for (int i = 0; i < (int)absorptivityFunction.propertySize; ++i) {  // Compute the losses
+            PetscReal netIntensity = -ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
 
-        // scale by kappa
-        netIntensity *= emissivity;
+            netIntensity += evaluatedGains[absorptivityFunction.propertySize * indexLookup.GetAbsoluteIndex(faceId) + i];
 
-        return abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
+            // scale by kappa
+            netIntensity *= emissivity;
+
+            intensity[i] = abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
+        }
     }
 };
 }  // namespace ablate::radiation

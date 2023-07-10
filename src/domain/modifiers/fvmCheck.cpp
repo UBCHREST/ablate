@@ -57,7 +57,7 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
 
     // check if it is an exterior boundary cell ghost
     PetscInt boundaryCellStart;
-    DMPlexGetGhostCellStratum(dm, &boundaryCellStart, nullptr) >> utilities::PetscUtilities::checkError;
+    DMPlexGetCellTypeStratum(dm, DM_POLYTOPE_FV_GHOST, &boundaryCellStart, nullptr) >> utilities::PetscUtilities::checkError;
 
     if (boundaryCellStart < 0 && region == nullptr) {
         throw std::invalid_argument(

@@ -4,4 +4,5 @@ target_sources(ablateUnitTestLibrary
         radiationZimmerTests.cpp
         radiationSumTests.cpp
         radiationSootAbsorptionTests.cpp
+        radiationSootSpectrumTests.cpp
         )

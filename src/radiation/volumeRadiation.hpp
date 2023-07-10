@@ -51,6 +51,7 @@ class VolumeRadiation : public solver::CellSolver, public solver::RHSFunction {
 
     //! hold a pointer to the absorptivity function
     eos::ThermodynamicTemperatureFunction absorptivityFunction;
+    eos::ThermodynamicTemperatureFunction emissivityFunction;
 };
 }  // namespace ablate::radiation
 #endif  // ABLATELIBRARY_VOLUMERADIATION_HPP
