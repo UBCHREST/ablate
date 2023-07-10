@@ -645,78 +645,60 @@ PetscErrorCode DMPlexVertexGradFromVertex(DM dm, const PetscInt v, Vec data, Pet
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-//PetscErrorCode DMPlexVertexGradFromCell(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscScalar g[]) {
-//  PetscFunctionBegin;
+PetscErrorCode DMPlexVertexGradFromCell(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscScalar g[]) {
+  PetscFunctionBegin;
+
+  const PetscScalar *dataArray;
+  PetscInt vStart, vEnd;
+  PetscInt cStart, cEnd;
+  PetscInt dim;
+  PetscInt nStar, *star = NULL;
 
 
-//  PetscInt nEdge;
-//  const PetscInt *edge;
-//  const PetscScalar *dataArray;
-//  PetscInt vStart, vEnd;
-//  PetscInt cStart, cEnd;
-//  PetscInt dim;
-//  PetscInt nStar, *star = NULL;
+  PetscCall(DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd));  // Range of vertices
+  PetscCheck(v >= vStart && v < vEnd, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "DMPlexVertexGradFromVertex must have a valid vertex as input.");
 
-//  PetscCall(DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd));  // Range of vertices
-//  PetscCheck(v >= vStart && v < vEnd, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "DMPlexVertexGradFromVertex must have a valid vertex as input.");
+  PetscCall(DMGetDimension(dm, &dim));
 
-//  PetscCall(DMGetDimension(dm, &dim));
-
-//  PetscCheck(dim>0 && dim<4, PETSC_COMM_SELF, PETSC_ERR_SUP, "DMPlexVertexGradFromVertex does not support a DM of dimension %d", dim);
-
-//  for (PetscInt d = 0; d < dim; ++d) {
-//    g[d] = 0.0;
-//  }
-
-//  PetscCall(VecGetArrayRead(data, &dataArray));
+  PetscCheck(dim>0 && dim<4, PETSC_COMM_SELF, PETSC_ERR_SUP, "DMPlexVertexGradFromVertex does not support a DM of dimension %d", dim);
 
 
-//  // Everything using this vertex
-//  PetscCall(DMPlexGetTransitiveClosure(dm, v, PETSC_FALSE, &nStar, &star));
-//  for (PetscInt st = 0; st < nStar * 2; st += 2) {
+  for (PetscInt d = 0; d < dim; ++d) {
+    g[d] = 0.0;
+  }
 
-//    if (star[st] >= cStart && star[st] < cEnd) {  // It's a cell
+  PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));  // Range of cells
+  PetscCall(VecGetArrayRead(data, &dataArray));
 
-//      // Surface area normal
-//      PetscScalar N[3];
-//      PetscCall(DMPlexCellSurfaceAreaNormal(dm, v, star[st], N));
+  // Everything using this vertex
+  PetscCall(DMPlexGetTransitiveClosure(dm, v, PETSC_FALSE, &nStar, &star));
+  for (PetscInt st = 0; st < nStar * 2; st += 2) {
 
+    if (star[st] >= cStart && star[st] < cEnd) {  // It's a cell
 
-//      const PetscScalar *val;
-//      PetscCall(xDMPlexPointLocalRead(dm, closure[cl], fID, dataArray, &val));
+      // Surface area normal
+      PetscScalar N[3];
+      PetscCall(DMPlexCornerSurfaceAreaNormal(dm, v, star[st], N));
 
+      const PetscScalar *val;
+      PetscCall(xDMPlexPointLocalRead(dm, star[st], fID, dataArray, &val));
 
+      for (PetscInt d = 0; d < dim; ++d) {
+        g[d] += (*val)*N[d];
+      }
+    }
+  }
 
+  PetscCall(VecRestoreArrayRead(data, &dataArray));
 
+  PetscReal cvVol;
+  PetscCall(DMPlexVertexControlVolume(dm, v, &cvVol));
+  for (PetscInt d = 0; d < dim; ++d) {
+    g[d] /= cvVol;
+  }
 
-
-//    // Get vertices associated with this edge
-//    const PetscInt *verts;
-//    PetscCall(DMPlexGetCone(dm, edge[e], &verts));
-
-//    PetscReal *val, edgeVal;
-//    PetscCall(xDMPlexPointLocalRead(dm, verts[0], fID, dataArray, &val));
-
-//    edgeVal = 0.5*(*val);
-
-//    PetscCall(xDMPlexPointLocalRead(dm, verts[1], fID, dataArray, &val));
-//    edgeVal += 0.5*(*val);
-
-//    for (PetscInt d = 0; d < dim; ++d) {
-//      g[d] += edgeVal*N[d];
-//    }
-//  }
-
-//  PetscCall(VecRestoreArrayRead(data, &dataArray));
-
-//  PetscReal cvVol;
-//  PetscCall(DMPlexVertexControlVolume(dm, v, &cvVol));
-//  for (PetscInt d = 0; d < dim; ++d) {
-//    g[d] /= cvVol;
-//  }
-
-//  PetscFunctionReturn(PETSC_SUCCESS);
-//}
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
 
 
 

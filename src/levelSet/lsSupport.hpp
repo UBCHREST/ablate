@@ -45,7 +45,26 @@ PetscErrorCode DMPlexVertexGradFromCell(DM dm, const PetscInt v, Vec data, Petsc
   */
 PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscScalar g[]);
 
-
+/**
+  * Returns all DMPlex points at a given depth which are common between two DMPlex points. For example, if p1 is a cell and p2 is a vertex on the cell with depth=1 this will
+  *   return the edges common to both p1 and p2
+  * @param dm - The mesh
+  * @param p1 - ID of the first point
+  * @param p2 - ID of the second point
+  * @param depth - The depth of the common point(s) to return
+  * @param nPoints - Number of common points
+  * @param points - The common points
+  */
 PetscErrorCode DMPlexGetCommonPoints(DM dm, const PetscInt p1, const PetscInt p2, const PetscInt depth, PetscInt *nPoints, PetscInt *points[]);
+PetscErrorCode DMPlexRestoreCommonPoints(DM dm, const PetscInt p1, const PetscInt p2, const PetscInt depth, PetscInt *nPoints, PetscInt *points[]);
 
+/**
+  * The outward surface area normal of the corner of a cell with respect to a given vertex of said cell
+  * @param dm - The mesh
+  * @param v - ID of the vertes
+  * @param c - ID of the cell with the vertex v
+  * @param N - Outward surface area normal
+  */
 PetscErrorCode DMPlexCornerSurfaceAreaNormal(DM dm, const PetscInt v, const PetscInt c, PetscReal N[]);
+
+
