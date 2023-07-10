@@ -64,7 +64,8 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
         });
     }
 
-    if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD)) {
+    // update the temperature of the preStep does not do it using the sublimation model
+    if (!(sublimationModel && sublimationModel->RequiresUpdate()) && bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD)) {
         // set decode state functions
         computeTemperatureFunction = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Temperature, bSolver.GetSubDomain().GetFields());
         // add in aux update variables

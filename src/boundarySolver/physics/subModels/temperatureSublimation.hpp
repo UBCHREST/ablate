@@ -44,6 +44,13 @@ class TemperatureSublimation : public SublimationModel {
     void Initialize(ablate::boundarySolver::BoundarySolver &bSolver) override;
 
     /**
+     * bool indicating if this model needs to be updated before each prestep
+     * @param bSolver
+     * @return
+     */
+    bool RequiresUpdate() override { return true; };
+
+    /**
      * Initialize the subModel for each face id in the bSolver
      * @param bSolver
      * @return bool indicating if this model needs to be updated before each prestep
