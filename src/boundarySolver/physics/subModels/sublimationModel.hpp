@@ -6,7 +6,11 @@
 
 namespace ablate::boundarySolver::physics::subModels {
 
-class SublimationModel {
+class SublimationModel: public io::Serializable {
+   private:
+    // static name of this model
+    inline const static std::string sublimationModelId = "SublimationModel";
+
    public:
     /**
      * Simple struct to hold the return state of the boundary condition
@@ -52,7 +56,43 @@ class SublimationModel {
     /**
      * Allow model cleanup
      */
-    virtual ~SublimationModel() = default;
+    ~SublimationModel() override = default;
+
+    /**
+     * assume that the sublimation model does not need to Serialize
+     * @return
+     */
+    [[nodiscard]] bool Serialize() const override { return false; }
+
+    /**
+     * only required function, returns the id of the object.  Should be unique for the simulation
+     * @return
+     */
+    [[nodiscard]] const std::string& GetId() const override {
+        return sublimationModelId;
+    }
+
+    /**
+     * Save the state to the PetscViewer
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
+    PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override{
+        return PETSC_SUCCESS;
+    };
+
+    /**
+     * Restore the state from the PetscViewer
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
+    PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override{
+        return PETSC_SUCCESS;
+    }
+
+
 };
 }  // namespace ablate::boundarySolver::physics::subModels
 

@@ -15,8 +15,11 @@ namespace ablate::boundarySolver::physics {
 /**
  * produces required source terms in the "gas phase" assuming that the solid phase sublimates and no regression compared to the simulation time
  */
-class Sublimation : public BoundaryProcess {
+class Sublimation : public BoundaryProcess, public io::Serializable  {
    private:
+    // static name of this model
+    inline const static std::string sublimationId = "Sublimation";
+
     //! transport model used to compute the conductivity
     const std::shared_ptr<ablate::eos::transport::TransportModel> transportModel = nullptr;
     const std::shared_ptr<ablate::eos::EOS> eos;
@@ -108,6 +111,46 @@ class Sublimation : public BoundaryProcess {
     void Setup(PetscInt numberSpecies);
 
     /**
+     * only required function, returns the id of the object.  Should be unique for the simulation
+     * @return
+     */
+    [[nodiscard]] const std::string& GetId() const override {
+        return sublimationId;
+    }
+
+    /**
+     * assume that the sublimation model does not need to Serialize
+     * @return
+     */
+    [[nodiscard]] bool Serialize() const override {
+        return sublimationModel && sublimationModel->Serialize();
+    }
+
+    /**
+     * Save the state to the PetscViewer
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
+    PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override{
+        PetscFunctionBegin;
+        PetscCall(sublimationModel->Save(viewer, sequenceNumber, time));
+        PetscFunctionReturn(PETSC_SUCCESS);
+    };
+
+    /**
+     * Restore the state from the PetscViewer
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
+    PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override{
+        PetscFunctionBegin;
+        PetscCall(sublimationModel->Restore(viewer, sequenceNumber, time));
+        PetscFunctionReturn(PETSC_SUCCESS);
+    }
+
+    /**
      * Prestep to update the radiation solver
      * @param ts
      * @param solver
@@ -186,6 +229,7 @@ class Sublimation : public BoundaryProcess {
                                                           const PetscFVCellGeom *boundaryCell, const PetscInt uOff[], PetscScalar *boundaryValues, const PetscScalar *stencilValues[],
                                                           const PetscInt aOff[], PetscScalar *auxValues, const PetscScalar *stencilAuxValues[], PetscInt stencilSize, const PetscInt stencil[],
                                                           const PetscScalar stencilWeights[], void *ctx);
+
 };
 
 }  // namespace ablate::boundarySolver::physics

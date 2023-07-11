@@ -1,12 +1,14 @@
 #include "oneDimensionHeatTransfer.hpp"
 #include <petsc/private/petscfeimpl.h>
+
+#include <utility>
 #include "domain/RBF/rbfSupport.hpp"
 #include "utilities/constants.hpp"
 
-ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::OneDimensionHeatTransfer(const std::shared_ptr<ablate::parameters::Parameters> &propertiesIn,
+ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::OneDimensionHeatTransfer(std::string solverIdIn, const std::shared_ptr<ablate::parameters::Parameters> &propertiesIn,
                                                                                                const std::shared_ptr<ablate::mathFunctions::MathFunction> &initializationIn,
                                                                                                const std::shared_ptr<ablate::parameters::Parameters> &optionsIn, PetscScalar maxSurfaceTemperature)
-    : initialization(initializationIn) {
+    : solverId(std::move(solverIdIn)), initialization(initializationIn) {
     // Create a petsc options
     PetscOptionsCreate(&options) >> utilities::PetscUtilities::checkError;
 
@@ -66,7 +68,7 @@ ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::OneDimensi
     // create the first global vector
     Vec u;
     DMCreateGlobalVector(subModelDm, &u) >> utilities::PetscUtilities::checkError;
-    PetscObjectSetName((PetscObject)u, "bcField") >> utilities::PetscUtilities::checkError;
+    PetscObjectSetName((PetscObject)u, solverId.c_str()) >> utilities::PetscUtilities::checkError;
     TSSetSolution(subModelTs, u) >> utilities::PetscUtilities::checkError;
 
     // Set the initial conditions using a math function
@@ -435,6 +437,27 @@ PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTrans
     PetscCall(DMGlobalToLocal(activeDM, globalSolutionVector, INSERT_VALUES, locVec));
     PetscCall(ComputeSurfaceInformation(activeDM, locVec, surfaceTemperature, heatFlux));
     PetscCall(DMRestoreLocalVector(activeDM, &locVec));
+
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBegin;
+    // Get the current solution from the TS
+    Vec solution;
+    PetscCall(TSGetSolution(subModelTs, &solution));
+    DM dm;
+    PetscCall(TSGetDM(subModelTs, &dm));
+
+    // Set the output sequence
+    PetscCall(DMSetOutputSequenceNumber(dm, sequenceNumber, time));
+
+    // Write to the file
+    PetscCall(VecView(solution, viewer));
+
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBegin;
 
     PetscFunctionReturn(PETSC_SUCCESS);
 }

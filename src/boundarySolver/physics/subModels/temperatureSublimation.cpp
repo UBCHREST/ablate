@@ -1,4 +1,5 @@
 #include "temperatureSublimation.hpp"
+#include "utilities/mpiUtilities.hpp"
 ablate::boundarySolver::physics::subModels::TemperatureSublimation::TemperatureSublimation(const std::shared_ptr<ablate::parameters::Parameters>& properties,
                                                                                            const std::shared_ptr<ablate::mathFunctions::MathFunction>& initialization,
                                                                                            const std::shared_ptr<ablate::parameters::Parameters>& options)
@@ -16,9 +17,16 @@ void ablate::boundarySolver::physics::subModels::TemperatureSublimation::Initial
     // Get the surface temperature from the properties
     auto sublimationTemperature = properties->GetExpect<double>("sublimationTemperature");
 
+    // Get the rank
+    PetscMPIInt rank;
+    MPI_Comm_rank(bSolver.GetSubDomain().GetComm(), &rank) >> utilities::MpiUtilities::checkError;
+
     /** Initialize the solid boundary heat transfer model */
     for (const auto& geom : bSolver.GetBoundaryGeometry()) {
-        oneDimensionHeatTransfer[geom.geometry.faceId] = std::make_shared<OneDimensionHeatTransfer>(properties, initialization, options, sublimationTemperature);
+        // Create a unique name for this model based pon the faceId and rank
+        auto uniqueId = std::to_string(rank) + "-" + std::to_string(geom.geometry.faceId);
+
+        oneDimensionHeatTransfer[geom.geometry.faceId] = std::make_shared<OneDimensionHeatTransfer>(uniqueId, properties, initialization, options, sublimationTemperature);
         heatFluxIntoSolid[geom.geometry.faceId] = 0.0;
     }
 }
@@ -44,6 +52,21 @@ PetscErrorCode ablate::boundarySolver::physics::subModels::TemperatureSublimatio
     surfaceState.massFlux = PetscMax(0.0, sublimationHeatFlux / latentHeatOfFusion);
     surfaceState.regressionRate = surfaceState.massFlux / solidDensity;
 
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+PetscErrorCode ablate::boundarySolver::physics::subModels::TemperatureSublimation::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBeginUser;
+    for(auto& oneDimModel: oneDimensionHeatTransfer){
+        oneDimModel.second->Save(viewer, sequenceNumber, time);
+    }
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+PetscErrorCode ablate::boundarySolver::physics::subModels::TemperatureSublimation::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBeginUser;
+    for(auto& oneDimModel: oneDimensionHeatTransfer){
+        oneDimModel.second->Restore(viewer, sequenceNumber, time);
+    }
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 

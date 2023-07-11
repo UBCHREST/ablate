@@ -12,6 +12,9 @@ class OneDimensionHeatTransfer {
     // Define an enum for the properties needed for the solver
     typedef enum { specificHeat, conductivity, density, total } ConductionProperties;
 
+    // store the solve_id, so that we can save/restore
+    const std::string solverId;
+
     // Hold the original dm for the subModel
     DM subModelDm{};
 
@@ -81,7 +84,7 @@ class OneDimensionHeatTransfer {
      * @param initialization, math function to initialize the temperature
      * @param options
      */
-    explicit OneDimensionHeatTransfer(const std::shared_ptr<ablate::parameters::Parameters> &properties, const std::shared_ptr<ablate::mathFunctions::MathFunction> &initialization,
+    explicit OneDimensionHeatTransfer(std::string solverId, const std::shared_ptr<ablate::parameters::Parameters> &properties, const std::shared_ptr<ablate::mathFunctions::MathFunction> &initialization,
                                       const std::shared_ptr<ablate::parameters::Parameters> &options = {}, PetscScalar maxSurfaceTemperature = PETSC_DEFAULT);
 
     /**
@@ -101,6 +104,22 @@ class OneDimensionHeatTransfer {
      * @return
      */
     [[nodiscard]] TS GetTS() const { return subModelTs; }
+
+    /**
+     * Save the state to the PetscViewer
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
+    PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time);
+
+    /**
+     * Restore the state from the PetscViewer
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
+    PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time);
 
    private:
     /**

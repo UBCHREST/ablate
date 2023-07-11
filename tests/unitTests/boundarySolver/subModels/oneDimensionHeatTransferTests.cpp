@@ -47,7 +47,7 @@ TEST_P(OneDimensionHeatTransferTestFixture, ShouldConverge) {
 
         // Create the 1D solver
         auto solidHeatTransfer = std::make_shared<ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer>(
-            params.properties, exactSolution, params.options, params.maximumSurfaceTemperature.value_or(PETSC_DEFAULT));
+            "test", params.properties, exactSolution, params.options, params.maximumSurfaceTemperature.value_or(PETSC_DEFAULT));
 
         // Advance, pass in a surface heat flux and update the internal properties
         PetscReal surfaceTemperature;

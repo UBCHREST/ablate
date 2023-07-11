@@ -10,7 +10,7 @@ namespace ablate::boundarySolver {
 // forward declare the boundaryProcess
 class BoundaryProcess;
 
-class BoundarySolver : public solver::CellSolver, public solver::RHSFunction, private utilities::Loggable<BoundarySolver> {
+class BoundarySolver : public solver::CellSolver, public solver::RHSFunction, private utilities::Loggable<BoundarySolver>, public io::Serializable {
    public:
     /**
      * Boundary information.
@@ -281,6 +281,37 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction, pr
      * @return
      */
     PetscErrorCode PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) override;
+
+    /**
+     * Check to see if any of the processes should be serialized
+     * @return
+     */
+    [[nodiscard]] bool Serialize() const override;
+
+    /**
+     * only required function, returns the id of the object.  Should be unique for the simulation
+     * @return
+     */
+    [[nodiscard]]  const std::string& GetId() const override {
+        return GetSolverId();
+    }
+
+    /**
+     * Call each of the processes to be saved
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
+     PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+
+    /**
+     * Restore each of the processes
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
+     PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+
 };
 
 /**

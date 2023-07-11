@@ -939,6 +939,36 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeBoundaryPreRHSPoin
 
     PetscFunctionReturn(0);
 }
+bool ablate::boundarySolver::BoundarySolver::Serialize() const {
+    return std::count_if(boundaryProcesses.begin(), boundaryProcesses.end(), [](auto& testProcess) {
+        auto serializable = std::dynamic_pointer_cast<ablate::io::Serializable>(testProcess);
+        return serializable != nullptr && serializable->Serialize();
+    });
+}
+
+PetscErrorCode ablate::boundarySolver::BoundarySolver::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBeginUser;
+    for (auto& process : boundaryProcesses) {
+        if (auto serializablePtr = std::dynamic_pointer_cast<ablate::io::Serializable>(process)) {
+            if (serializablePtr->Serialize()) {
+                PetscCall(serializablePtr->Save(viewer, sequenceNumber, time));
+            }
+        }
+    }
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::boundarySolver::BoundarySolver::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBeginUser;
+    for (auto& process : boundaryProcesses) {
+        if (auto serializablePtr = std::dynamic_pointer_cast<ablate::io::Serializable>(process)) {
+            if (serializablePtr->Serialize()) {
+                PetscCall(serializablePtr->Restore(viewer, sequenceNumber, time));
+            }
+        }
+    }
+    PetscFunctionReturn(0);
+}
 
 std::istream& ablate::boundarySolver::operator>>(std::istream& is, ablate::boundarySolver::BoundarySolver::BoundarySourceType& value) {
     std::string typeString;

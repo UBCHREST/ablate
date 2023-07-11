@@ -62,6 +62,29 @@ class TemperatureSublimation : public SublimationModel {
      * @param heatFluxToSurface
      */
     PetscErrorCode Compute(PetscInt faceId, PetscReal heatFluxToSurface, SurfaceState &) override;
+
+    /**
+     * The temperature sublimation model needs to save/restore the 1D fields
+     * @return
+     */
+    [[nodiscard]] bool Serialize() const override { return true; }
+
+    /**
+     * Save the state to the PetscViewer
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
+    PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+
+    /**
+     * Restore the state from the PetscViewer
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
+    PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+
 };
 
 }  // namespace ablate::boundarySolver::physics::subModels
