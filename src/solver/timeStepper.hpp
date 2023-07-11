@@ -86,7 +86,7 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances;
 
     //! hold a list of static AdaptInitializers
-    static inline std::map<std::string, AdaptInitializer> adaptInitializers;
+    static inline std::map<std::string, AdaptInitializer> adaptInitializers = {};
 
    public:
     /**
@@ -156,7 +156,7 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
      * @param adaptName This must be the same same used to create the class
      * @param adaptInitializer
      */
-    static void RegisterAdaptInitializer(std::string adaptName, AdaptInitializer adaptInitializer) { adaptInitializers[adaptName] = adaptInitializer; }
+    static void RegisterAdaptInitializer(const std::string &adaptName, AdaptInitializer adaptInitializer) { adaptInitializers[adaptName] = adaptInitializer; }
 };
 }  // namespace ablate::solver
 

@@ -16,7 +16,7 @@
 #include "utilities/mpiUtilities.hpp"
 
 ablate::eos::TChemSoot::TChemSoot(std::filesystem::path mechanismFile, std::shared_ptr<ablate::monitors::logs::Log> log, const std::shared_ptr<ablate::parameters::Parameters> &options)
-    : TChemBase("TChemSoot", std::move(mechanismFile), std::move(log), options) {
+    : TChemBase("TChemSoot", std::move(mechanismFile), log, options) {
     // Insert carbon as the first species
     species.insert(species.begin(), CSolidName);
 
