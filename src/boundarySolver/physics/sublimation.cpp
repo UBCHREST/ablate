@@ -120,13 +120,15 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
         radiation->Initialize(faceRange.GetRange(), bSolver.GetSubDomain());  //!< Pass the non-dynamic range into the radiation solver
 
         if (radiation->GetAbsorptionFunction().propertySize != 1) throw std::invalid_argument("The sublimation solver currently only accepts one radiation wavelength.");
-
-        bSolver.RegisterPreRHSFunction(SublimationPreRHS, this);
     }
 
     /** Initialize the solid boundary heat transfer model */
     if (sublimationModel) {
         sublimationModel->Initialize(bSolver);
+    }
+
+    if (radiation || sublimationModel) {
+        bSolver.RegisterPreRHSFunction(SublimationPreRHS, this);
     }
 }
 
@@ -358,7 +360,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationPreRHS(B
     PetscInt step;
     TSGetStepNumber(ts, &step) >> utilities::PetscUtilities::checkError;
     TSGetTime(ts, &time) >> utilities::PetscUtilities::checkError;
-    if (initialStage && sublimation->radiationInterval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
+    if (initialStage && sublimation->radiation && sublimation->radiationInterval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
         sublimation->radiation->EvaluateGains(
             solver.GetSubDomain().GetSolutionVector(), solver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD), solver.GetSubDomain().GetAuxVector());
     }
@@ -487,6 +489,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::UpdateBoundaryHeatT
 
     // Update the boundary solver
     PetscReal surfaceTemperature;
+    std::cout << "update: " << dt << " --- " << sublimationHeatFlux << std::endl;
     sublimation->sublimationModel->Update(fg->faceId, dt, sublimationHeatFlux, surfaceTemperature);
 
     // update the temperature here

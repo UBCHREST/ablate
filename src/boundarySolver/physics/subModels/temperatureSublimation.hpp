@@ -67,7 +67,7 @@ class TemperatureSublimation : public SublimationModel {
      * The temperature sublimation model needs to save/restore the 1D fields
      * @return
      */
-    [[nodiscard]] bool Serialize() const override { return true; }
+    [[nodiscard]] SerializerType Serialize() const override { return SerializerType::serial; }
 
     /**
      * Save the state to the PetscViewer

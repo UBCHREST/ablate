@@ -62,7 +62,7 @@ class SublimationModel: public io::Serializable {
      * assume that the sublimation model does not need to Serialize
      * @return
      */
-    [[nodiscard]] bool Serialize() const override { return false; }
+    [[nodiscard]] SerializerType Serialize() const override { return io::Serializable::SerializerType::none; }
 
     /**
      * only required function, returns the id of the object.  Should be unique for the simulation

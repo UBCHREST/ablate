@@ -380,18 +380,16 @@ std::map<std::string, double> ablate::finiteVolume::FiniteVolumeSolver::ComputeP
     return timeSteps;
 }
 
-bool ablate::finiteVolume::FiniteVolumeSolver::Serialize() const {
-    return std::count_if(processes.begin(), processes.end(), [](auto& testProcess) {
-        auto serializable = std::dynamic_pointer_cast<ablate::io::Serializable>(testProcess);
-        return serializable != nullptr && serializable->Serialize();
-    });
+ablate::io::Serializable::SerializerType ablate::finiteVolume::FiniteVolumeSolver::Serialize() const {
+    return DetermineSerializerType(processes);
+
 }
 
 PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
     PetscFunctionBeginUser;
     for (auto& process : processes) {
         if (auto serializablePtr = std::dynamic_pointer_cast<ablate::io::Serializable>(process)) {
-            if (serializablePtr->Serialize()) {
+            if (serializablePtr->Serialize() != SerializerType::none) {
                 PetscCall(serializablePtr->Save(viewer, sequenceNumber, time));
             }
         }
@@ -425,7 +423,7 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::Restore(PetscViewer vie
     PetscFunctionBeginUser;
     for (auto& process : processes) {
         if (auto serializablePtr = std::dynamic_pointer_cast<ablate::io::Serializable>(process)) {
-            if (serializablePtr->Serialize()) {
+            if (serializablePtr->Serialize() != SerializerType::none) {
                 PetscCall(serializablePtr->Restore(viewer, sequenceNumber, time));
             }
         }

@@ -77,11 +77,20 @@ void ablate::io::Hdf5MultiFileSerializer::Register(std::weak_ptr<Serializable> s
     if (auto serializableObject = serializable.lock()) {
         // resume if needed
         if (resumed) {
-            auto filePath = GetOutputFilePath(serializableObject->GetId());
-
             PetscViewer petscViewer = nullptr;
             StartEvent("PetscViewerHDF5Open");
-            PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_UPDATE, &petscViewer) >> utilities::PetscUtilities::checkError;
+            switch (serializableObject->Serialize()) {
+                case Serializable::SerializerType::collective: {
+                    auto filePath = GetOutputFilePath(serializableObject->GetId());
+                    PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_UPDATE, &petscViewer) >> utilities::PetscUtilities::checkError;
+                } break;
+                case Serializable::SerializerType::serial: {
+                    auto filePath = GetOutputFilePath(serializableObject->GetId(), rank);
+                    PetscViewerHDF5Open(PETSC_COMM_SELF, filePath.string().c_str(), FILE_MODE_UPDATE, &petscViewer) >> utilities::PetscUtilities::checkError;
+                } break;
+                default:
+                    throw std::invalid_argument("Unable to determine Serializer Type");
+            }
             EndEvent();
 
             // set the petsc options if provided
@@ -136,11 +145,23 @@ PetscErrorCode ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializerSaveS
         for (auto& serializablePtr : hdf5Serializer->serializables) {
             if (auto serializableObject = serializablePtr.lock()) {
                 // Create an output path
-                auto filePath = hdf5Serializer->GetOutputFilePath(serializableObject->GetId());
 
                 PetscViewer petscViewer = nullptr;
                 hdf5Serializer->StartEvent("PetscViewerHDF5Open");
-                PetscCall(PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_WRITE, &petscViewer));
+                switch (serializableObject->Serialize()) {
+                    case Serializable::SerializerType::collective: {
+                        auto filePath = hdf5Serializer->GetOutputFilePath(serializableObject->GetId());
+                        PetscCall(PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_WRITE, &petscViewer));
+                    } break;
+                    case Serializable::SerializerType::serial: {
+                        PetscMPIInt rank;
+                        MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank);
+                        auto filePath = hdf5Serializer->GetOutputFilePath(serializableObject->GetId(), rank);
+                        PetscCall(PetscViewerHDF5Open(PETSC_COMM_SELF, filePath.string().c_str(), FILE_MODE_WRITE, &petscViewer));
+                    } break;
+                    default:
+                        throw std::invalid_argument("Unable to determine Serializer Type");
+                }
                 hdf5Serializer->EndEvent();
 
                 // set the petsc options if provided
@@ -211,7 +232,12 @@ std::filesystem::path ablate::io::Hdf5MultiFileSerializer::GetOutputFilePath(con
 }
 
 std::filesystem::path ablate::io::Hdf5MultiFileSerializer::GetOutputDirectoryPath(const std::string& objectId) const { return rootOutputDirectory / objectId; }
-
+std::filesystem::path ablate::io::Hdf5MultiFileSerializer::GetOutputFilePath(const std::string& objectId, int rank) const {
+    std::stringstream sequenceNumberOutputStream;
+    sequenceNumberOutputStream << "." << std::setw(5) << std::setfill('0') << rank;
+    sequenceNumberOutputStream << "." << std::setw(5) << std::setfill('0') << sequenceNumber;
+    return GetOutputDirectoryPath(objectId) / (objectId + sequenceNumberOutputStream.str() + extension);
+}
 #include "registrar.hpp"
 REGISTER(ablate::io::Serializer, ablate::io::Hdf5MultiFileSerializer, "serializer for IO that writes each time to a separate hdf5 file",
          ARG(ablate::io::interval::Interval, "interval", "The interval object used to determine write interval."),

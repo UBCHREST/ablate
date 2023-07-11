@@ -15,7 +15,7 @@ namespace ablate::boundarySolver::physics {
 /**
  * produces required source terms in the "gas phase" assuming that the solid phase sublimates and no regression compared to the simulation time
  */
-class Sublimation : public BoundaryProcess, public io::Serializable  {
+class Sublimation : public BoundaryProcess, public io::Serializable {
    private:
     // static name of this model
     inline const static std::string sublimationId = "Sublimation";
@@ -114,17 +114,13 @@ class Sublimation : public BoundaryProcess, public io::Serializable  {
      * only required function, returns the id of the object.  Should be unique for the simulation
      * @return
      */
-    [[nodiscard]] const std::string& GetId() const override {
-        return sublimationId;
-    }
+    [[nodiscard]] const std::string &GetId() const override { return sublimationId; }
 
     /**
      * assume that the sublimation model does not need to Serialize
      * @return
      */
-    [[nodiscard]] bool Serialize() const override {
-        return sublimationModel && sublimationModel->Serialize();
-    }
+    [[nodiscard]] SerializerType Serialize() const override { return sublimationModel ? sublimationModel->Serialize() : io::Serializable::SerializerType::none; }
 
     /**
      * Save the state to the PetscViewer
@@ -132,7 +128,7 @@ class Sublimation : public BoundaryProcess, public io::Serializable  {
      * @param sequenceNumber
      * @param time
      */
-    PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override{
+    PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override {
         PetscFunctionBegin;
         PetscCall(sublimationModel->Save(viewer, sequenceNumber, time));
         PetscFunctionReturn(PETSC_SUCCESS);
@@ -144,7 +140,7 @@ class Sublimation : public BoundaryProcess, public io::Serializable  {
      * @param sequenceNumber
      * @param time
      */
-    PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override{
+    PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override {
         PetscFunctionBegin;
         PetscCall(sublimationModel->Restore(viewer, sequenceNumber, time));
         PetscFunctionReturn(PETSC_SUCCESS);
@@ -229,7 +225,6 @@ class Sublimation : public BoundaryProcess, public io::Serializable  {
                                                           const PetscFVCellGeom *boundaryCell, const PetscInt uOff[], PetscScalar *boundaryValues, const PetscScalar *stencilValues[],
                                                           const PetscInt aOff[], PetscScalar *auxValues, const PetscScalar *stencilAuxValues[], PetscInt stencilSize, const PetscInt stencil[],
                                                           const PetscScalar stencilWeights[], void *ctx);
-
 };
 
 }  // namespace ablate::boundarySolver::physics

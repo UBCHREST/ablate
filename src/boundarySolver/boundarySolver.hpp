@@ -286,7 +286,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction, pr
      * Check to see if any of the processes should be serialized
      * @return
      */
-    [[nodiscard]] bool Serialize() const override;
+    [[nodiscard]] SerializerType Serialize() const override;
 
     /**
      * only required function, returns the id of the object.  Should be unique for the simulation

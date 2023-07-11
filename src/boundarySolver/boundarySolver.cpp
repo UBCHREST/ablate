@@ -939,18 +939,16 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeBoundaryPreRHSPoin
 
     PetscFunctionReturn(0);
 }
-bool ablate::boundarySolver::BoundarySolver::Serialize() const {
-    return std::count_if(boundaryProcesses.begin(), boundaryProcesses.end(), [](auto& testProcess) {
-        auto serializable = std::dynamic_pointer_cast<ablate::io::Serializable>(testProcess);
-        return serializable != nullptr && serializable->Serialize();
-    });
+
+ablate::io::Serializable::SerializerType ablate::boundarySolver::BoundarySolver::Serialize() const {
+    return DetermineSerializerType(boundaryProcesses);
 }
 
 PetscErrorCode ablate::boundarySolver::BoundarySolver::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
     PetscFunctionBeginUser;
     for (auto& process : boundaryProcesses) {
         if (auto serializablePtr = std::dynamic_pointer_cast<ablate::io::Serializable>(process)) {
-            if (serializablePtr->Serialize()) {
+            if (serializablePtr->Serialize() != io::Serializable::SerializerType::none) {
                 PetscCall(serializablePtr->Save(viewer, sequenceNumber, time));
             }
         }
@@ -962,7 +960,7 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::Restore(PetscViewer viewe
     PetscFunctionBeginUser;
     for (auto& process : boundaryProcesses) {
         if (auto serializablePtr = std::dynamic_pointer_cast<ablate::io::Serializable>(process)) {
-            if (serializablePtr->Serialize()) {
+            if (serializablePtr->Serialize() != io::Serializable::SerializerType::none) {
                 PetscCall(serializablePtr->Restore(viewer, sequenceNumber, time));
             }
         }

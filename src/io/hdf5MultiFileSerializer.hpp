@@ -46,8 +46,11 @@ class Hdf5MultiFileSerializer : public Serializer, private utilities::Loggable<H
     //! Private functions to load and save the ts metadata data
     void SaveMetadata(TS ts) const;
 
-    //! Private functions to load and save the ts metadata data
+    //! Private functions to determine the path name when using collective
     [[nodiscard]] std::filesystem::path GetOutputFilePath(const std::string& objectId) const;
+
+    //! Private functions to determine the path name when using serial
+    [[nodiscard]] std::filesystem::path GetOutputFilePath(const std::string& objectId, int rank) const;
 
     //! private function to get the output directory
     std::filesystem::path GetOutputDirectoryPath(const std::string& objectId) const;
