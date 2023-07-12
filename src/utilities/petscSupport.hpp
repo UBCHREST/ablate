@@ -54,8 +54,8 @@ PetscErrorCode DMPlexCellRestoreVertices(DM dm, const PetscInt p, PetscInt *nVer
  * @param pArray - Array of verteices
  * @param coords - Array of coordinates, given as [x0 y0 z0 x1 y1 z1 .....]
  */
-PetscErrorCode DMPlexGetVertexCoordinates(DM dm, const PetscInt np, const PetscInt pArray[], PetscScalar *coords[]);
-PetscErrorCode DMPlexRestoreVertexCoordinates(DM dm, const PetscInt np, const PetscInt pArray[], PetscScalar *coords[]);
+PetscErrorCode DMPlexVertexGetCoordinates(DM dm, const PetscInt np, const PetscInt pArray[], PetscScalar *coords[]);
+PetscErrorCode DMPlexVertexRestoreCoordinates(DM dm, const PetscInt np, const PetscInt pArray[], PetscScalar *coords[]);
 
 /**
  * Get/Restore all cells associated with a vertes
@@ -70,16 +70,6 @@ PetscErrorCode DMPlexVertexRestoreCells(DM dm, const PetscInt p, PetscInt *nCell
 // Helper functions due to getting annoyed with having the if-statement for fID
 PetscErrorCode xDMPlexPointLocalRef(DM dm, PetscInt p, PetscInt fID, PetscScalar *array, void *ptr);
 PetscErrorCode xDMPlexPointLocalRead(DM dm, PetscInt p, PetscInt fID, const PetscScalar *array, void *ptr);
-
-/**
- * The outward facing surface area normal
- * @param dm - The DM of the data stored in vec
- * @param cell - The cell to return the outward normal to
- * @param face - Face of the cell
- * @param centroid - Centroid of the face
- * @param n - Outward facing surface area normal
- */
-PetscErrorCode DMPlexFaceCentroidOutwardAreaNormal(DM dm, PetscInt cell, PetscInt face, PetscReal *centroid, PetscReal *n);
 
 /**
  * Compute the gradient of a field defined over vertices at a vertex
