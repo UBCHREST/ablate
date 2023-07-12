@@ -120,7 +120,7 @@ void ablate::levelSet::Utilities::VertexToVertexGrad(std::shared_ptr<ablate::dom
 //  PetscInt nCells, *cells;
 //  DMPlexVertexGetCells(dm, p, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
 
-//  DMPlexGetVertexCoordinates(dm, 1, &p, &coords);
+//  DMPlexVertexGetCoordinates(dm, 1, &p, &coords);
 
 //  VecGetArrayRead(vec, &array);
 
@@ -161,7 +161,7 @@ void ablate::levelSet::Utilities::VertexToVertexGrad(std::shared_ptr<ablate::dom
 //    }
 
 //  }
-//  DMPlexRestoreVertexCoordinates(dm, 1, &p, &coords);
+//  DMPlexVertexRestoreCoordinates(dm, 1, &p, &coords);
 //  DMPlexVertexRestoreCells(dm, p, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
 //  VecRestoreArrayRead(vec, &array) >> utilities::PetscUtilities::checkError;
 
@@ -443,14 +443,14 @@ void SaveVertexData(const char fname[255], const ablate::domain::Field *field, s
 
     DMPlexPointLocalFieldRef(dm, vert, field->id, array, &val) >> ablate::utilities::PetscUtilities::checkError;
 
-    DMPlexGetVertexCoordinates(dm, 1, &vert, &coords);
+    DMPlexVertexGetCoordinates(dm, 1, &vert, &coords);
 
     for (PetscInt d = 0; d < dim; ++d) {
       fprintf(f1, "%+.16e\t", coords[d]);
     }
     fprintf(f1, "%+.16ef\n", *val);
 
-    DMPlexRestoreVertexCoordinates(dm, 1, &vert, &coords);
+    DMPlexVertexRestoreCoordinates(dm, 1, &vert, &coords);
   }
 
   fclose(f1);
@@ -588,7 +588,7 @@ SaveVertexData("ls0.txt", lsField, subDomain);
         DMPlexCellGetVertices(vofDM, cells[i], &nv, &verts) >> ablate::utilities::PetscUtilities::checkError;
 
         PetscScalar *coords;
-        DMPlexGetVertexCoordinates(vofDM, nv, verts, &coords) >> ablate::utilities::PetscUtilities::checkError;
+        DMPlexVertexGetCoordinates(vofDM, nv, verts, &coords) >> ablate::utilities::PetscUtilities::checkError;
 
         for (PetscInt v = 0; v < nv; ++v) {
           PetscInt id = reverseVertRange.GetIndex(verts[v]);
@@ -617,7 +617,7 @@ SaveVertexData("ls0.txt", lsField, subDomain);
           }
         }
 
-        DMPlexRestoreVertexCoordinates(vofDM, nv, verts, &coords) >> ablate::utilities::PetscUtilities::checkError;
+        DMPlexVertexRestoreCoordinates(vofDM, nv, verts, &coords) >> ablate::utilities::PetscUtilities::checkError;
         DMPlexCellRestoreVertices(vofDM, cells[i], &nv, &verts) >> ablate::utilities::PetscUtilities::checkError;
       }
 

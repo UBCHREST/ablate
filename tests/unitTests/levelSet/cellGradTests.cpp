@@ -51,11 +51,11 @@ void setVertexData(const ablate::domain::Field *field, std::shared_ptr<ablate::d
 
     DMPlexPointLocalFieldRef(dm, vert, field->id, array, &val) >> ablate::utilities::PetscUtilities::checkError;
 
-    DMPlexGetVertexCoordinates(dm, 1, &vert, &coords);
+    DMPlexVertexGetCoordinates(dm, 1, &vert, &coords);
 
     computeData(coords, dim, val, NULL);
 
-    DMPlexRestoreVertexCoordinates(dm, 1, &vert, &coords);
+    DMPlexVertexRestoreCoordinates(dm, 1, &vert, &coords);
   }
 
   VecRestoreArray(vec, &array) >> ablate::utilities::PetscUtilities::checkError;
