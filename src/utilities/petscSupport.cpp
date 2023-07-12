@@ -799,7 +799,7 @@ PetscErrorCode DMPlexGetCommonPoints(DM dm, const PetscInt p1, const PetscInt p2
             }
         }
 
-        PetscCheck(nList[i] < 101, PETSC_COMM_SELF, PETSC_ERR_ARG_SIZ, "Number of elements using point %d exceeds 100.", pts[i]);
+        PetscCheck(nList[i] < 101, PETSC_COMM_SELF, PETSC_ERR_ARG_SIZ, "Number of elements using point %d exceeds 100.", (int)pts[i]);
 
         PetscCall(DMPlexRestoreTransitiveClosure(dm, pts[i], PetscBool(depth < inputDepths[i]), &nClosure, &closure));
 
@@ -929,7 +929,7 @@ PetscErrorCode DMPlexVertexGradFromVertex(DM dm, const PetscInt v, Vec data, Pet
 
     PetscCall(DMGetDimension(dm, &dim));
 
-    PetscCheck(dim > 0 && dim < 4, PETSC_COMM_SELF, PETSC_ERR_SUP, "DMPlexVertexGradFromVertex does not support a DM of dimension %d", dim);
+    PetscCheck(dim > 0 && dim < 4, PETSC_COMM_SELF, PETSC_ERR_SUP, "DMPlexVertexGradFromVertex does not support a DM of dimension %d", (int)dim);
 
     for (PetscInt d = 0; d < dim; ++d) {
         g[d] = 0.0;
@@ -987,7 +987,7 @@ PetscErrorCode DMPlexVertexGradFromCell(DM dm, const PetscInt v, Vec data, Petsc
 
     PetscCall(DMGetDimension(dm, &dim));
 
-    PetscCheck(dim > 0 && dim < 4, PETSC_COMM_SELF, PETSC_ERR_SUP, "DMPlexVertexGradFromVertex does not support a DM of dimension %d", dim);
+    PetscCheck(dim > 0 && dim < 4, PETSC_COMM_SELF, PETSC_ERR_SUP, "DMPlexVertexGradFromVertex does not support a DM of dimension %d", (int)dim);
 
     for (PetscInt d = 0; d < dim; ++d) {
         g[d] = 0.0;
@@ -1043,7 +1043,7 @@ PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, Petsc
 
     PetscCall(DMGetDimension(dm, &dim));
 
-    PetscCheck(dim > 0 && dim < 4, PETSC_COMM_SELF, PETSC_ERR_SUP, "DMPlexCellToCellGrad does not support a DM of dimension %d", dim);
+    PetscCheck(dim > 0 && dim < 4, PETSC_COMM_SELF, PETSC_ERR_SUP, "DMPlexCellToCellGrad does not support a DM of dimension %d", (int)dim);
 
     for (PetscInt d = 0; d < dim; ++d) {
         g[d] = 0.0;
