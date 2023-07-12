@@ -705,7 +705,7 @@ static PetscErrorCode DMPlexEdgeSurfaceAreaNormal(DM dm, const PetscInt v, const
             DMPlexSurfaceAreaNormal3D_Internal(dm, -1, vCoords, edgeCenter, nFace, faces, N);
             break;
         default:
-            SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_OUTOFRANGE, "DMPlexEdgeSurfaceAreaNormal can not handle dimensions of %d", dim);
+            SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_OUTOFRANGE, "DMPlexEdgeSurfaceAreaNormal can not handle dimensions of %d", (int)dim);
     }
 
     PetscFunctionReturn(PETSC_SUCCESS);
@@ -864,7 +864,7 @@ static PetscErrorCode DMPlexCornerSurfaceAreaNormal(DM dm, const PetscInt v, con
                 PetscCall(DMPlexRestoreCommonPoints(dm, edges[e], c, 2, &nFaces, &faces));
             } break;
             default:
-                SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_OUTOFRANGE, "DMPlexEdgeSurfaceAreaNormal can not handle dimensions of %d", dim);
+                SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_OUTOFRANGE, "DMPlexEdgeSurfaceAreaNormal can not handle dimensions of %d", (int)dim);
         }
 
         for (PetscInt d = 0; d < dim; ++d) N[d] += n[d];
