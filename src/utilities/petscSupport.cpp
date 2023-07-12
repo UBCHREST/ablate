@@ -1043,7 +1043,7 @@ PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, Petsc
 
     PetscCall(DMGetDimension(dm, &dim));
 
-    PetscCheck(dim > 0 && dim < 4, PETSC_COMM_SELF, PETSC_ERR_SUP, "DMPlexCellToCellGrad does not support a DM of dimension %"  PetscInt_FMT, dim);
+    PetscCheck(dim > 0 && dim < 4, PETSC_COMM_SELF, PETSC_ERR_SUP, "DMPlexCellToCellGrad does not support a DM of dimension %" PetscInt_FMT, dim);
 
     for (PetscInt d = 0; d < dim; ++d) {
         g[d] = 0.0;
