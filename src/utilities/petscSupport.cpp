@@ -803,7 +803,7 @@ PetscErrorCode DMPlexGetCommonPoints(DM dm, const PetscInt p1, const PetscInt p2
 
         PetscCall(DMPlexRestoreTransitiveClosure(dm, pts[i], PetscBool(depth < inputDepths[i]), &nClosure, &closure));
 
-        PetscCall(PetscSortInt(nList[i], &list[i][0]));
+        PetscCall(PetscSortInt(nList[i], list[i]));
     }
 
     PetscCall(PetscSortedArrayCommon(nList[0], list[0], &nList[1], list[1]));
