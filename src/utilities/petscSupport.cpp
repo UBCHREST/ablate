@@ -608,7 +608,6 @@ static PetscErrorCode DMPlexSurfaceAreaNormal2D_Internal(DM dm, const PetscReal 
 
         N[0] += sgn * pObj[1];
         N[1] -= sgn * pObj[0];
-
     }
 
     PetscFunctionReturn(PETSC_SUCCESS);
@@ -646,7 +645,6 @@ static PetscErrorCode DMPlexSurfaceAreaNormal3D_Internal(DM dm, const PetscInt t
         PetscCall(DMPlexGetSupport(dm, faces[f], &cells));
         for (PetscInt c = 0; c < nCells; ++c) {
             if (targetCell < 0 || targetCell == cells[c]) {
-
                 PetscReal cellCenter[dim];
                 PetscReal cellEdge[dim];  // Vector from cell center to edge center
                 PetscReal cellFace[dim];  // Vector from cell center to face center
@@ -790,7 +788,6 @@ PetscErrorCode DMPlexGetCommonPoints(DM dm, const PetscInt p1, const PetscInt p2
     }
 
     for (PetscInt i = 0; i < 2; ++i) {
-
         PetscInt nClosure;
         static PetscInt *closure;
 
@@ -806,7 +803,7 @@ PetscErrorCode DMPlexGetCommonPoints(DM dm, const PetscInt p1, const PetscInt p2
 
         PetscCall(DMPlexRestoreTransitiveClosure(dm, pts[i], PetscBool(depth < inputDepths[i]), &nClosure, &closure));
 
-        PetscCall(PetscSortInt(nList[i], &list[i][0]));
+        PetscCall(PetscSortInt(nList[i], list[i]));
     }
 
     PetscCall(PetscSortedArrayCommon(nList[0], list[0], &nList[1], list[1]));
@@ -828,8 +825,6 @@ PetscErrorCode DMPlexRestoreCommonPoints(DM dm, const PetscInt p1, const PetscIn
 
     PetscFunctionReturn(PETSC_SUCCESS);
 }
-
-
 
 // Compute the corner surface area normal as defined in Morgan and Waltz with respect to a given vertex and an edge center
 // NOTE: This does NOT check if the vertex and cell are actually associated with each other.
@@ -855,25 +850,19 @@ static PetscErrorCode DMPlexCornerSurfaceAreaNormal(DM dm, const PetscInt v, con
         PetscCall(DMPlexComputeCellGeometryFVM(dm, edges[e], NULL, edgeCenter, NULL));
 
         switch (dim) {
-            case 1:
-            {
+            case 1: {
                 n[0] = PetscSignReal(edgeCenter[0] - vCoords[0]);  // In 1D this is simply the vector connecting the vertex to the edge center
-            }
-            break;
-            case 2:
-            {
+            } break;
+            case 2: {
                 PetscCall(DMPlexSurfaceAreaNormal2D_Internal(dm, vCoords, edgeCenter, 1, &c, n));
-            }
-            break;
-            case 3:
-            {
+            } break;
+            case 3: {
                 // Get all of the cells associated with this edges and this cell
                 PetscInt nFaces = 0, *faces = nullptr;
                 PetscCall(DMPlexGetCommonPoints(dm, edges[e], c, 2, &nFaces, &faces));
                 PetscCall(DMPlexSurfaceAreaNormal3D_Internal(dm, c, vCoords, edgeCenter, nFaces, faces, n));
                 PetscCall(DMPlexRestoreCommonPoints(dm, edges[e], c, 2, &nFaces, &faces));
-            }
-            break;
+            } break;
             default:
                 SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_OUTOFRANGE, "DMPlexEdgeSurfaceAreaNormal can not handle dimensions of %" PetscInt_FMT, dim);
         }
