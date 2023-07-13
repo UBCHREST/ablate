@@ -56,7 +56,7 @@ PetscErrorCode ablate::boundarySolver::physics::subModels::TemperatureSublimatio
 }
 PetscErrorCode ablate::boundarySolver::physics::subModels::TemperatureSublimation::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
     PetscFunctionBeginUser;
-    for(auto& oneDimModel: oneDimensionHeatTransfer){
+    for (auto& oneDimModel : oneDimensionHeatTransfer) {
         oneDimModel.second->Save(viewer, sequenceNumber, time);
     }
     PetscFunctionReturn(PETSC_SUCCESS);
@@ -64,7 +64,7 @@ PetscErrorCode ablate::boundarySolver::physics::subModels::TemperatureSublimatio
 
 PetscErrorCode ablate::boundarySolver::physics::subModels::TemperatureSublimation::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
     PetscFunctionBeginUser;
-    for(auto& oneDimModel: oneDimensionHeatTransfer){
+    for (auto& oneDimModel : oneDimensionHeatTransfer) {
         oneDimModel.second->Restore(viewer, sequenceNumber, time);
     }
     PetscFunctionReturn(PETSC_SUCCESS);

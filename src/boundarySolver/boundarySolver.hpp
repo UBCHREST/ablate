@@ -292,9 +292,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction, pr
      * only required function, returns the id of the object.  Should be unique for the simulation
      * @return
      */
-    [[nodiscard]]  const std::string& GetId() const override {
-        return GetSolverId();
-    }
+    [[nodiscard]] const std::string& GetId() const override { return GetSolverId(); }
 
     /**
      * Call each of the processes to be saved
@@ -302,7 +300,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction, pr
      * @param sequenceNumber
      * @param time
      */
-     PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 
     /**
      * Restore each of the processes
@@ -310,8 +308,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction, pr
      * @param sequenceNumber
      * @param time
      */
-     PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
-
+    PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 };
 
 /**

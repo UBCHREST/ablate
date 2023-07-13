@@ -940,9 +940,7 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeBoundaryPreRHSPoin
     PetscFunctionReturn(0);
 }
 
-ablate::io::Serializable::SerializerType ablate::boundarySolver::BoundarySolver::Serialize() const {
-    return DetermineSerializerType(boundaryProcesses);
-}
+ablate::io::Serializable::SerializerType ablate::boundarySolver::BoundarySolver::Serialize() const { return DetermineSerializerType(boundaryProcesses); }
 
 PetscErrorCode ablate::boundarySolver::BoundarySolver::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
     PetscFunctionBeginUser;

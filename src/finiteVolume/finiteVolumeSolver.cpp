@@ -380,10 +380,7 @@ std::map<std::string, double> ablate::finiteVolume::FiniteVolumeSolver::ComputeP
     return timeSteps;
 }
 
-ablate::io::Serializable::SerializerType ablate::finiteVolume::FiniteVolumeSolver::Serialize() const {
-    return DetermineSerializerType(processes);
-
-}
+ablate::io::Serializable::SerializerType ablate::finiteVolume::FiniteVolumeSolver::Serialize() const { return DetermineSerializerType(processes); }
 
 PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
     PetscFunctionBeginUser;

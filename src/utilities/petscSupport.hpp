@@ -27,7 +27,7 @@ PetscErrorCode DMPlexGetNeighbors(DM dm, PetscInt p, PetscInt levels, PetscReal 
  * @param xyz - Location
  * @param cell - Cell containing the location. It will return -1 if xyz is not in the local portion of the DM.
  */
-PetscErrorCode DMPlexGetContainingCell(DM dm, PetscScalar *xyz, PetscInt *cell);
+PetscErrorCode DMPlexGetContainingCell(DM dm, const PetscScalar *xyz, PetscInt *cell);
 
 /**
  * Get the number of vertices for a given cell

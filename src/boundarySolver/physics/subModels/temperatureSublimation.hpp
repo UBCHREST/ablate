@@ -84,7 +84,6 @@ class TemperatureSublimation : public SublimationModel {
      * @param time
      */
     PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
-
 };
 
 }  // namespace ablate::boundarySolver::physics::subModels

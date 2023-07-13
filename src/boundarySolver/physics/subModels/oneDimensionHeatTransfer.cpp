@@ -1,9 +1,8 @@
 #include "oneDimensionHeatTransfer.hpp"
 #include <petsc/private/petscfeimpl.h>
-
 #include <utility>
-#include "domain/RBF/rbfSupport.hpp"
 #include "utilities/constants.hpp"
+#include "utilities/petscSupport.hpp"
 
 ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::OneDimensionHeatTransfer(std::string solverIdIn, const std::shared_ptr<ablate::parameters::Parameters> &propertiesIn,
                                                                                                const std::shared_ptr<ablate::mathFunctions::MathFunction> &initializationIn,

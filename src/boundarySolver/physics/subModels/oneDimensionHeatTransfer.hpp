@@ -84,8 +84,9 @@ class OneDimensionHeatTransfer {
      * @param initialization, math function to initialize the temperature
      * @param options
      */
-    explicit OneDimensionHeatTransfer(std::string solverId, const std::shared_ptr<ablate::parameters::Parameters> &properties, const std::shared_ptr<ablate::mathFunctions::MathFunction> &initialization,
-                                      const std::shared_ptr<ablate::parameters::Parameters> &options = {}, PetscScalar maxSurfaceTemperature = PETSC_DEFAULT);
+    explicit OneDimensionHeatTransfer(std::string solverId, const std::shared_ptr<ablate::parameters::Parameters> &properties,
+                                      const std::shared_ptr<ablate::mathFunctions::MathFunction> &initialization, const std::shared_ptr<ablate::parameters::Parameters> &options = {},
+                                      PetscScalar maxSurfaceTemperature = PETSC_DEFAULT);
 
     /**
      * Clean up the petsc objects
