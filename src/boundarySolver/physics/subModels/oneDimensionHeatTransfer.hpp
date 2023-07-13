@@ -15,9 +15,6 @@ class OneDimensionHeatTransfer {
     // store the solve_id, so that we can save/restore
     const std::string solverId;
 
-    // Hold the original dm for the subModel
-    DM subModelDm{};
-
     // Hold the TS for stepping in time
     TS subModelTs{};
 

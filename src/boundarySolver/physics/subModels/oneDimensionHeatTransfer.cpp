@@ -38,6 +38,7 @@ ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::OneDimensi
     maximumSurfaceTemperature = maxSurfaceTemperature;
 
     // Create the mesh
+    DM subModelDm;
     DMCreate(PETSC_COMM_SELF, &subModelDm) >> utilities::PetscUtilities::checkError;
     DMSetType(subModelDm, DMPLEX) >> utilities::PetscUtilities::checkError;
     PetscObjectSetOptions((PetscObject)subModelDm, options) >> utilities::PetscUtilities::checkError;
@@ -131,12 +132,12 @@ ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::OneDimensi
     DMCreateLocalVector(auxDm, &localAuxVector) >> utilities::PetscUtilities::checkError;
     VecZeroEntries(localAuxVector) >> utilities::PetscUtilities::checkError;
     DMSetAuxiliaryVec(subModelDm, nullptr, 0, 0, localAuxVector) >> utilities::PetscUtilities::checkError;
+
+    // Clean up the subModelDm, we do not need to keep a separate pointer to it
+    DMDestroy(&subModelDm) >> utilities::PetscUtilities::checkError;
 }
 
 ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::~OneDimensionHeatTransfer() {
-    if (subModelDm) {
-        DMDestroy(&subModelDm) >> utilities::PetscUtilities::checkError;
-    }
     if (subModelTs) {
         TSDestroy(&subModelTs) >> utilities::PetscUtilities::checkError;
     }
@@ -281,13 +282,20 @@ PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTrans
         // Map from the local vector back to the global
         PetscCall(DMLocalToGlobal(newDM, locVec, INSERT_VALUES, newGlobalVector));
 
+        // Restore the locVec while we still have access to this dm
+        PetscCall(DMRestoreLocalVector(dm, &locVec));
+
         // Set in the TS
         PetscCall(TSSetDM(ts, newDM));
         PetscCall(TSSetSolution(ts, newGlobalVector));
-    }
 
-    // Cleanup
-    PetscCall(DMRestoreLocalVector(dm, &locVec));
+        // We need to "destroy" the reference count for the new objects so that they are cleared when the ts no longer needs them
+        PetscCall(DMDestroy(&newDM));
+        PetscCall(VecDestroy(&newGlobalVector));
+    } else {
+        // Cleanup
+        PetscCall(DMRestoreLocalVector(dm, &locVec));
+    }
 
     PetscFunctionReturn(PETSC_SUCCESS);
 }
