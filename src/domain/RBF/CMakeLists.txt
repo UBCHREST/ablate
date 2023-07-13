@@ -6,7 +6,6 @@ target_sources(ablateLibrary
         phs.cpp
         hybrid.cpp
         rbf.cpp
-        rbfSupport.cpp
 
         PUBLIC
         ga.hpp
@@ -15,5 +14,4 @@ target_sources(ablateLibrary
         phs.hpp
         hybrid.hpp
         rbf.hpp
-        rbfSupport.hpp
         )
