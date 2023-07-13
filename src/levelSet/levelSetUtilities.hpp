@@ -41,6 +41,17 @@ namespace ablate::levelSet::Utilities {
   void VOF(DM dm, PetscInt p, std::shared_ptr<ablate::mathFunctions::MathFunction> phi, PetscReal *vof, PetscReal *area, PetscReal *vol);
 
   /**
+   * Calculate the VOF for a cell given an analytic level set function
+   * @param subDomain - Domain of the vertex-based level-set field
+   * @param cell - Cell id
+   * @param lsField - Field of the level set
+   * @param vof - The volume-of-fluid
+   * @param area - The face length(2D) or area(3D) in the cell
+   * @param vol - The area/volume of the entire cell
+   */
+  void VOF(std::shared_ptr<ablate::domain::SubDomain> subDomain, PetscInt cell, const ablate::domain::Field *lsField, PetscReal *vof, PetscReal *area, PetscReal *vol);
+
+  /**
    * Return the vertex level set values at a cell's vertices assuming a straight interface in the cell with a given normal vector using a cell-center level set value
    * @param dm - The mesh
    * @param p - Cell id

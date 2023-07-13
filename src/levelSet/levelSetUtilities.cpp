@@ -11,6 +11,11 @@
 #include "domain/range.hpp"
 #include "domain/reverseRange.hpp"
 
+#define xexit(S, ...) {PetscFPrintf(MPI_COMM_WORLD, stderr, \
+  "\x1b[1m(%s:%d, %s)\x1b[0m\n  \x1b[1m\x1b[90mexiting:\x1b[0m " S "\n", \
+  __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); exit(0);}
+
+
 void ablate::levelSet::Utilities::CellValGrad(DM dm, const PetscInt p, PetscReal *c, PetscReal *c0, PetscReal *g) {
   DMPolytopeType    ct;
   PetscInt          Nc;
@@ -419,6 +424,33 @@ void ablate::levelSet::Utilities::VOF(DM dm, PetscInt p, std::shared_ptr<ablate:
 }
 
 
+// Return the VOF in a cell where the level set is defined at vertices
+void ablate::levelSet::Utilities::VOF(std::shared_ptr<ablate::domain::SubDomain> subDomain, PetscInt cell, const ablate::domain::Field *lsField,
+      PetscReal *vof, PetscReal *area, PetscReal *vol) {
+
+    DM   dm = subDomain->GetFieldDM(*lsField);
+    Vec vec = subDomain->GetVec(*lsField);
+    const PetscScalar *array;
+    PetscReal *c;
+
+    PetscInt nv, *verts;
+    DMPlexCellGetVertices(dm, cell, &nv, &verts) >> ablate::utilities::PetscUtilities::checkError;
+    DMGetWorkArray(dm, nv, MPI_REAL, &c);
+
+    VecGetArrayRead(vec, &array) >> ablate::utilities::PetscUtilities::checkError;
+    for (PetscInt i = 0; i < nv; ++i) {
+      const PetscReal *val;
+      xDMPlexPointLocalRead(dm, verts[i], lsField->id, array, &val) >> ablate::utilities::PetscUtilities::checkError;
+      c[i] = *val;
+    }
+    VecRestoreArrayRead(vec, &array) >> ablate::utilities::PetscUtilities::checkError;
+
+    ablate::levelSet::Utilities::VOF(dm, cell, c, vof, area, vol);
+
+    DMRestoreWorkArray(dm, nv, MPI_REAL, &c);
+    DMPlexCellRestoreVertices(dm, cell, &nv, &verts) >> ablate::utilities::PetscUtilities::checkError;
+
+}
 
 
 
@@ -458,6 +490,9 @@ void SaveVertexData(const char fname[255], const ablate::domain::Field *field, s
   VecRestoreArray(vec, &array) >> ablate::utilities::PetscUtilities::checkError;
   ablate::domain::RestoreRange(range);
 }
+
+
+
 
 
 
@@ -554,13 +589,53 @@ void ablate::levelSet::Utilities::Reinitialize(std::shared_ptr<ablate::domain::r
         if (PetscAbsReal(lsVertVals[v]) < PetscAbsScalar(*lsVal)){ // Take the smallest of all possible level-set values
           *lsVal = lsVertVals[v];
         }
+
+PetscReal loc[3] = {0.0, 0.0, 0.0};
+DMPlexComputeCellGeometryFVM(lsDM, verts[v], NULL, loc, NULL) >> ablate::utilities::PetscUtilities::checkError;
+*lsVal =   PetscSqrtReal(PetscSqr(loc[0]) + PetscSqr(loc[1]) + PetscSqr(loc[2])) - 1.0;
+
+
+
       }
 
       DMRestoreWorkArray(vofDM, nv, MPIU_REAL, &lsVertVals) >> ablate::utilities::PetscUtilities::checkError;
       DMPlexCellRestoreVertices(vofDM, cell, &nv, &verts) >> ablate::utilities::PetscUtilities::checkError;
     }
   }
-SaveVertexData("ls0.txt", lsField, subDomain);
+
+//  PetscReal *shiftArray;
+//  PetscInt nShift;
+//  DMGetWorkArray(lsDM, vertRange.end - vertRange.start, MPIU_REAL, &shiftArray) >> ablate::utilities::PetscUtilities::checkError;
+//  DMGetWorkArray(lsDM, vertRange.end - vertRange.start, MPIU_INT, &nShift) >> ablate::utilities::PetscUtilities::checkError;
+
+
+//  for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+//    PetscInt cell = cellRange.GetPoint(c);
+
+//    if (cellMask[c]==0) {
+//      PetscInt nv, *verts;
+//      PetscReal vof;
+//      PetscScalar *targetVOF;
+
+//      DMPlexCellGetVertices(vofDM, cell, &nv, &verts) >> ablate::utilities::PetscUtilities::checkError;
+
+
+//      xDMPlexPointLocalRead(vofDM, cell, vofID, vofArray, &targetVOF) >> ablate::utilities::PetscUtilities::checkError;
+//      ablate::levelSet::Utilities::VOF(subDomain, cell, lsField, &vof, NULL, NULL);
+//      printf("%f\t%f\t%+e\n", vof, *targetVOF, *targetVOF - vof);
+
+
+//      DMPlexCellRestoreVertices(vofDM, cell, &nv, &verts) >> ablate::utilities::PetscUtilities::checkError;
+
+//    }
+
+//  }
+
+
+
+
+//SaveVertexData("ls0.txt", lsField, subDomain);
+
 
   // Now mark all of the necessary neighboring vertices. Note that this can't be put into the previous loop as all of the vertices
   //    for the cut-cells won't be known yet.
@@ -660,7 +735,7 @@ SaveVertexData("ls0.txt", lsField, subDomain);
 
   VecRestoreArrayRead(vofVec, &vofArray) >> ablate::utilities::PetscUtilities::checkError;
 
-SaveVertexData("ls1.txt", lsField, subDomain);
+//SaveVertexData("ls1.txt", lsField, subDomain);
 
 
 
@@ -701,7 +776,7 @@ SaveVertexData("ls1.txt", lsField, subDomain);
 
   PetscReal diff = 1.0;
   PetscInt it = 0;
-  while (diff>1e-2 && it<77e10) {
+  while (diff>1e-5 && it<77e10) {
     ++it;
     for (PetscInt i = 0; i < numCells; ++i) {
       PetscInt cell = cellArray[i];
@@ -727,8 +802,8 @@ SaveVertexData("ls1.txt", lsField, subDomain);
 
         PetscReal mag = ablate::utilities::MathUtilities::MagVector(dim, g) - 1.0;
 
-//        PetscReal s = (*phi)/PetscSqrtReal(PetscSqr(*phi) + h*h);
-        PetscReal s = PetscSignReal(*phi);
+        PetscReal s = (*phi)/PetscSqrtReal(PetscSqr(*phi) + h*h);
+//        PetscReal s = PetscSignReal(*phi);
 
         *phi -= h*s*mag;
 
@@ -738,10 +813,9 @@ SaveVertexData("ls1.txt", lsField, subDomain);
       }
     }
 
-    printf("%d: %+e\n", it, diff);
+//    printf("%d: %+e\n", it, diff);
 
   }
-SaveVertexData("ls2.txt", lsField, subDomain);
 
   DMRestoreWorkArray(vofDM, dim*numCells, MPIU_SCALAR, &cellGradArray) >> ablate::utilities::PetscUtilities::checkError;
   DMRestoreWorkArray(vofDM, numCells, MPIU_INT, &cellArray) >> ablate::utilities::PetscUtilities::checkError;
@@ -751,4 +825,7 @@ SaveVertexData("ls2.txt", lsField, subDomain);
   AODestroy(&cellToIndex) >> ablate::utilities::PetscUtilities::checkError;
   subDomain->RestoreRange(vertRange);
 
+
+//SaveVertexData("ls2.txt", lsField, subDomain);
+//xexit("");
 }
