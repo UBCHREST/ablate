@@ -23,7 +23,7 @@ ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::OneDimensi
     ablate::utilities::PetscUtilities::Set(options, "-ts_adapt_type", "basic", false);
     ablate::utilities::PetscUtilities::Set(options, "-snes_error_if_not_converged", nullptr, false);
     ablate::utilities::PetscUtilities::Set(options, "-pc_type", "lu", false);
-    ablate::utilities::PetscUtilities::Set(options, "-ts_adapt_monitor", "", false);
+
     // Set the mesh parameters
     ablate::utilities::PetscUtilities::Set(options, "-dm_plex_separate_marker", nullptr, false);
     ablate::utilities::PetscUtilities::Set(options, "-dm_plex_dim", "1", false);

@@ -489,7 +489,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::UpdateBoundaryHeatT
 
     // Update the boundary solver
     PetscReal surfaceTemperature;
-    std::cout << "update: " << dt << " --- " << sublimationHeatFlux << std::endl;
+    std::cout << "update: " << dt << " --- " << sublimationHeatFlux << " --- " << boundaryTemperature << std::endl;
     sublimation->sublimationModel->Update(fg->faceId, dt, sublimationHeatFlux, surfaceTemperature);
 
     // update the temperature here
