@@ -3,6 +3,7 @@
 
 #include <petsc.h>
 #include <algorithm>
+#include <memory>
 #include <string>
 
 namespace ablate::io {
