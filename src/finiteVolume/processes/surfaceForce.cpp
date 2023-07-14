@@ -11,12 +11,14 @@ ablate::finiteVolume::processes::SurfaceForce::SurfaceForce(PetscReal sigma) : s
 void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) {
 
 
-    PetscInt polyAug = 8;
-    PetscInt phsOrder = 2;
+//    PetscInt polyAug = 8;
+//    PetscInt phsOrder = 2;
 
-    // Create the radial basis function. This can be changed for another one but make sure to change the include above
-    auto rbf = std::make_shared<ablate::domain::rbf::PHS>(polyAug, phsOrder, false, false);
-    rbf->Setup(flow.GetSubDomain());
+//    // Create the radial basis function. This can be changed for another one but make sure to change the include above
+//    auto rbf = std::make_shared<ablate::domain::rbf::PHS>(polyAug, phsOrder, false, false);
+//    rbf->Setup(flow.GetSubDomain());
+
+    printf("%f\n", sigma);
 
     flow.RegisterRHSFunction(ComputeSource, this);
 }
@@ -275,7 +277,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-ablate::finiteVolume::processes::SurfaceForce::~SurfaceForce() { DMDestroy(&dmData); }
+ablate::finiteVolume::processes::SurfaceForce::~SurfaceForce() {  }
 
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::SurfaceForce, "calculates surface tension force and adds source terms",
          ARG(PetscReal, "sigma", "sigma, surface tension coefficient"));

@@ -356,7 +356,7 @@ TEST_P(RBFTestFixture_Derivative, CheckDerivativeFunctions) {
         subDomain->GetCellRange(nullptr, cellRange);
         for (std::size_t j = 0; j < rbfList.size(); ++j) {
             rbfList[j]->Setup(subDomain);       // This causes issues (I think)
-            rbfList[j]->Initialize(cellRange);  //         Initialize
+            rbfList[j]->Initialize();  //         Initialize
         }
 
         RBFTestFixture_SetData(cellRange, field, subDomain);
@@ -737,7 +737,7 @@ TEST_P(RBFTestFixture_Interpolation, CheckInterpolationFunctions) {
         subDomain->GetCellRange(nullptr, cellRange);
         for (std::size_t j = 0; j < rbfList.size(); ++j) {
             rbfList[j]->Setup(subDomain);       // This causes issues (I think)
-            rbfList[j]->Initialize(cellRange);  //         Initialize
+            rbfList[j]->Initialize();  //         Initialize
         }
 
         // Now set the data using the first RBF. All will use the same data
