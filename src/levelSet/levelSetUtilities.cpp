@@ -590,12 +590,6 @@ void ablate::levelSet::Utilities::Reinitialize(std::shared_ptr<ablate::domain::r
           *lsVal = lsVertVals[v];
         }
 
-PetscReal loc[3] = {0.0, 0.0, 0.0};
-DMPlexComputeCellGeometryFVM(lsDM, verts[v], NULL, loc, NULL) >> ablate::utilities::PetscUtilities::checkError;
-*lsVal =   PetscSqrtReal(PetscSqr(loc[0]) + PetscSqr(loc[1]) + PetscSqr(loc[2])) - 1.0;
-
-
-
       }
 
       DMRestoreWorkArray(vofDM, nv, MPIU_REAL, &lsVertVals) >> ablate::utilities::PetscUtilities::checkError;
@@ -603,40 +597,9 @@ DMPlexComputeCellGeometryFVM(lsDM, verts[v], NULL, loc, NULL) >> ablate::utiliti
     }
   }
 
-//  PetscReal *shiftArray;
-//  PetscInt nShift;
-//  DMGetWorkArray(lsDM, vertRange.end - vertRange.start, MPIU_REAL, &shiftArray) >> ablate::utilities::PetscUtilities::checkError;
-//  DMGetWorkArray(lsDM, vertRange.end - vertRange.start, MPIU_INT, &nShift) >> ablate::utilities::PetscUtilities::checkError;
 
-
-//  for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
-//    PetscInt cell = cellRange.GetPoint(c);
-
-//    if (cellMask[c]==0) {
-//      PetscInt nv, *verts;
-//      PetscReal vof;
-//      PetscScalar *targetVOF;
-
-//      DMPlexCellGetVertices(vofDM, cell, &nv, &verts) >> ablate::utilities::PetscUtilities::checkError;
-
-
-//      xDMPlexPointLocalRead(vofDM, cell, vofID, vofArray, &targetVOF) >> ablate::utilities::PetscUtilities::checkError;
-//      ablate::levelSet::Utilities::VOF(subDomain, cell, lsField, &vof, NULL, NULL);
-//      printf("%f\t%f\t%+e\n", vof, *targetVOF, *targetVOF - vof);
-
-
-//      DMPlexCellRestoreVertices(vofDM, cell, &nv, &verts) >> ablate::utilities::PetscUtilities::checkError;
-
-//    }
-
-//  }
-
-
-
-
-//SaveVertexData("ls0.txt", lsField, subDomain);
-
-
+  // Comment out the rest of the code so that we can focus on the cut-cells only
+/*
   // Now mark all of the necessary neighboring vertices. Note that this can't be put into the previous loop as all of the vertices
   //    for the cut-cells won't be known yet.
   for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
@@ -735,12 +698,7 @@ DMPlexComputeCellGeometryFVM(lsDM, verts[v], NULL, loc, NULL) >> ablate::utiliti
 
   VecRestoreArrayRead(vofVec, &vofArray) >> ablate::utilities::PetscUtilities::checkError;
 
-//SaveVertexData("ls1.txt", lsField, subDomain);
-
-
-
   // Create the mapping between DMPlex cell numbering and location in the array storing cell-centered gradients
-
   PetscInt numCells = 0;
   for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
     numCells += (cellMask[c]>-1);
@@ -760,11 +718,11 @@ DMPlexComputeCellGeometryFVM(lsDM, verts[v], NULL, loc, NULL) >> ablate::utiliti
 
     }
   }
-
+*/
   cellMask += cellRange.start;  // Reset the offset, otherwise DMRestoreWorkArray will return unexpected results
   DMRestoreWorkArray(vofDM, cellRange.end - cellRange.start, MPIU_INT, &cellMask) >> ablate::utilities::PetscUtilities::checkError;
   subDomain->RestoreRange(cellRange);
-
+/*
   AO cellToIndex;
   AOCreateMapping(PETSC_COMM_SELF, numCells, cellArray, indexArray, &cellToIndex) >> ablate::utilities::PetscUtilities::checkError;
 
@@ -802,8 +760,7 @@ DMPlexComputeCellGeometryFVM(lsDM, verts[v], NULL, loc, NULL) >> ablate::utiliti
 
         PetscReal mag = ablate::utilities::MathUtilities::MagVector(dim, g) - 1.0;
 
-        PetscReal s = (*phi)/PetscSqrtReal(PetscSqr(*phi) + h*h);
-//        PetscReal s = PetscSignReal(*phi);
+        PetscReal s = PetscSignReal(*phi);
 
         *phi -= h*s*mag;
 
@@ -812,20 +769,18 @@ DMPlexComputeCellGeometryFVM(lsDM, verts[v], NULL, loc, NULL) >> ablate::utiliti
 
       }
     }
-
-//    printf("%d: %+e\n", it, diff);
-
   }
+
 
   DMRestoreWorkArray(vofDM, dim*numCells, MPIU_SCALAR, &cellGradArray) >> ablate::utilities::PetscUtilities::checkError;
   DMRestoreWorkArray(vofDM, numCells, MPIU_INT, &cellArray) >> ablate::utilities::PetscUtilities::checkError;
   DMRestoreWorkArray(vofDM, numCells, MPIU_INT, &indexArray) >> ablate::utilities::PetscUtilities::checkError;
+  AODestroy(&cellToIndex) >> ablate::utilities::PetscUtilities::checkError;
+*/
+
   vertMask += vertRange.start; // Reset the offset, otherwise DMRestoreWorkArray will return unexpected results
   DMRestoreWorkArray(lsDM, vertRange.end - vertRange.start, MPIU_INT, &vertMask) >> ablate::utilities::PetscUtilities::checkError;
-  AODestroy(&cellToIndex) >> ablate::utilities::PetscUtilities::checkError;
   subDomain->RestoreRange(vertRange);
 
 
-//SaveVertexData("ls2.txt", lsField, subDomain);
-//xexit("");
 }
