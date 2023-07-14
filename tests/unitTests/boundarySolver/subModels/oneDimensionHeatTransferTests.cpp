@@ -77,6 +77,8 @@ TEST_P(OneDimensionHeatTransferTestFixture, ShouldConverge) {
     if (!l2History.CompareConvergenceRate({GetParam().expectedConvergenceRate}, l2Message)) {
         FAIL() << l2Message;
     }
+
+    PetscObjectsDump(nullptr, PETSC_TRUE);
 }
 
 // helper function to create a result function
