@@ -2,6 +2,7 @@
 #define ABLATELIBRARY_SERIALIZABLE_HPP
 
 #include <petsc.h>
+#include <algorithm>
 #include <string>
 
 namespace ablate::io {
