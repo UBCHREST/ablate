@@ -343,7 +343,7 @@ PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTrans
         PetscCall(PetscFEFreeInterpolateGradient_Static(fe, tab->T[1], clPhi, dim, feGeometry.invJ, nullptr, pointInBasis, temperatureGrad));
 
         // clean up the closure
-        PetscCall(DMPlexVecRestoreClosure(dm, NULL, locVec, surfaceCell, &cSize, &clPhi));
+        PetscCall(DMPlexVecRestoreClosure(dm, nullptr, locVec, surfaceCell, &cSize, &clPhi));
 
         // get the constants
         PetscInt numConstants;
@@ -353,8 +353,9 @@ PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTrans
     }
 
     // cleanup
-    PetscCall(PetscFEDestroyCellGeometry(fe, &feGeometry));
     PetscCall(PetscTabulationDestroy(&tab));
+    PetscCall(PetscFEDestroyCellGeometry(fe, &feGeometry));
+
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -435,10 +436,11 @@ void ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::Natur
                                                                                                 PetscReal t, const PetscReal x[], const PetscReal n[], PetscInt numConstants,
                                                                                                 const PetscScalar constants[], PetscScalar f0[]) {
     // The normal is facing out, so scale the heat flux by -1
-    f0[0] = -a[aOff[0]];
-    if(PetscIsInfReal(f0[0]) || PetscIsNanReal(f0[0])){
-        std::cout << "nan" << std::endl;
-    }
+    std::cout << "f0[0]: " << f0[0];
+    f0[0] =-a[aOff[0]];
+//    if(PetscIsInfReal(f0[0]) || PetscIsNanReal(f0[0])){
+        std::cout << " -- " << f0[0] << std::endl;
+//    }
 }
 PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::Solve(PetscReal heatFluxToSurface, PetscReal dt, PetscReal &surfaceTemperature, PetscReal &heatFlux) {
     PetscFunctionBeginHot;
@@ -453,12 +455,7 @@ PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTrans
     PetscCall(SetSurfaceHeatFlux(heatFluxToSurface));
 
     // Step in time
-    PetscErrorCode ierr =  TSSolve(subModelTs, nullptr);
-    if(ierr != 0){
-        Vec globalSolutionVector;
-        PetscCall(TSGetSolution(subModelTs, &globalSolutionVector));
-        VecView(globalSolutionVector, PETSC_VIEWER_STDOUT_WORLD);
-    }
+    PetscCall(TSSolve(subModelTs, nullptr));
 
     // Get the solution vector from the ts
     Vec globalSolutionVector;

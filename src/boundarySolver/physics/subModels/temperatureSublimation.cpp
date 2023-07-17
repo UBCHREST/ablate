@@ -34,8 +34,7 @@ PetscErrorCode ablate::boundarySolver::physics::subModels::TemperatureSublimatio
     PetscFunctionBegin;
 
     // Step the time stepper in time
-    oneDimensionHeatTransfer[faceId]->Solve(heatFluxToSurface, dt, temperature, heatFluxIntoSolid[faceId]);
-
+    PetscCall(oneDimensionHeatTransfer[faceId]->Solve(heatFluxToSurface, dt, temperature, heatFluxIntoSolid[faceId]));
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
