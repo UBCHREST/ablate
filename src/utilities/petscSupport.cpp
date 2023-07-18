@@ -915,7 +915,7 @@ PetscErrorCode DMPlexVertexControlVolume(DM dm, const PetscInt v, PetscReal *vol
 // Compute the finite-difference derivative approximation using the Eq. (11) from "3D level set methods for evolving fronts on tetrahedral
 //    meshes with adaptive mesh refinement", by Morgan and Waltz, JCP 336 (2017) 492-512.
 //   This should be second-order accurate for both triangles and quads
-PetscErrorCode DMPlexVertexGradFromVertex(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscScalar g[]) {
+PetscErrorCode DMPlexVertexGradFromVertex(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]) {
     PetscFunctionBegin;
 
     PetscInt nEdge;
@@ -952,10 +952,10 @@ PetscErrorCode DMPlexVertexGradFromVertex(DM dm, const PetscInt v, Vec data, Pet
         PetscReal *val, edgeVal;
         PetscCall(xDMPlexPointLocalRead(dm, verts[0], fID, dataArray, &val));
 
-        edgeVal = 0.5 * (*val);
+        edgeVal = 0.5 * val[offset];
 
         PetscCall(xDMPlexPointLocalRead(dm, verts[1], fID, dataArray, &val));
-        edgeVal += 0.5 * (*val);
+        edgeVal += 0.5 * val[offset];
 
         for (PetscInt d = 0; d < dim; ++d) {
             g[d] += edgeVal * N[d];
@@ -973,7 +973,7 @@ PetscErrorCode DMPlexVertexGradFromVertex(DM dm, const PetscInt v, Vec data, Pet
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-PetscErrorCode DMPlexVertexGradFromCell(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscScalar g[]) {
+PetscErrorCode DMPlexVertexGradFromCell(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]) {
     PetscFunctionBegin;
 
     const PetscScalar *dataArray;
@@ -1009,7 +1009,7 @@ PetscErrorCode DMPlexVertexGradFromCell(DM dm, const PetscInt v, Vec data, Petsc
             PetscCall(xDMPlexPointLocalRead(dm, star[st], fID, dataArray, &val));
 
             for (PetscInt d = 0; d < dim; ++d) {
-                g[d] += (*val) * N[d];
+                g[d] += val[offset] * N[d];
             }
         }
     }
@@ -1027,7 +1027,7 @@ PetscErrorCode DMPlexVertexGradFromCell(DM dm, const PetscInt v, Vec data, Petsc
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscScalar g[]) {
+PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]) {
     PetscFunctionBegin;
 
     PetscInt nFace;
@@ -1067,7 +1067,7 @@ PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, Petsc
             if (closure[cl] >= vStart && closure[cl] < vEnd) {  // Only use the points corresponding to a vertex
                 const PetscScalar *val;
                 PetscCall(xDMPlexPointLocalRead(dm, closure[cl], fID, dataArray, &val));
-                ave += *val;
+                ave += val[offset];
                 cnt += 1.0;
             }
         }

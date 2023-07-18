@@ -77,9 +77,10 @@ PetscErrorCode xDMPlexPointLocalRead(DM dm, PetscInt p, PetscInt fID, const Pets
  * @param v - Vertex where to compute the gradient
  * @param data - Vector containing the data
  * @param fID - Field ID of the data to take the gradient of
+ * @param offset - If fID points to a vector then indicate which component to use
  * @param g - The gradient at c
  */
-PetscErrorCode DMPlexVertexGradFromVertex(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscScalar g[]);
+PetscErrorCode DMPlexVertexGradFromVertex(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]);
 
 /**
  * Compute the gradient of a field defined over cells at a vertex
@@ -87,9 +88,10 @@ PetscErrorCode DMPlexVertexGradFromVertex(DM dm, const PetscInt v, Vec data, Pet
  * @param v - Vertex where to compute the gradient
  * @param data - Vector containing the data
  * @param fID - Field ID of the data to take the gradient of
+ * @param offset - If fID points to a vector then indicate which component to use
  * @param g - The gradient at c
  */
-PetscErrorCode DMPlexVertexGradFromCell(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscScalar g[]);
+PetscErrorCode DMPlexVertexGradFromCell(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]);
 
 /**
  * Compute the gradient of a field defined over vertices at a cell center
@@ -97,9 +99,10 @@ PetscErrorCode DMPlexVertexGradFromCell(DM dm, const PetscInt v, Vec data, Petsc
  * @param c - Cell where to compute the gradient
  * @param data - Vector containing the data
  * @param fID - Field ID of the data to take the gradient of
+ * @param offset - If fID points to a vector then indicate which component to use
  * @param g - The gradient at c
  */
-PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscScalar g[]);
+PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]);
 
 /**
  * Returns all DMPlex points at a given depth which are common between two DMPlex points. For example, if p1 is a cell and p2 is a vertex on the cell with depth=1 this will
