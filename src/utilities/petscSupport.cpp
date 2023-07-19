@@ -835,9 +835,8 @@ PetscErrorCode DMPlexRestoreCommonPoints(DM dm, const PetscInt p1, const PetscIn
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-// Compute the corner surface area normal as defined in Morgan and Waltz with respect to a given vertex and an edge center
-// NOTE: This does NOT check if the vertex and cell are actually associated with each other.
-static PetscErrorCode DMPlexCornerSurfaceAreaNormal(DM dm, const PetscInt v, const PetscInt c, PetscReal N[]) {
+
+PetscErrorCode DMPlexCornerSurfaceAreaNormal(DM dm, const PetscInt v, const PetscInt c, PetscReal N[]) {
     PetscFunctionBegin;
 
     PetscReal vCoords[3];

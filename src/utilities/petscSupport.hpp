@@ -106,6 +106,19 @@ PetscErrorCode DMPlexVertexGradFromCell(DM dm, const PetscInt v, Vec data, Petsc
  */
 PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]);
 
+
+/**
+ * Compute the corner surface area normal as defined in Morgan and Waltz with respect to a given vertex and a cell
+ *    NOTE: This does NOT check if the vertex and cell are actually associated with each other.
+ * @param dm - The mesh
+ * @param v - The vertex associated with cell c
+ * @param c - The cell associated with vertex v
+ * @param N - The corner surface area normal
+ */
+PetscErrorCode DMPlexCornerSurfaceAreaNormal(DM dm, const PetscInt v, const PetscInt c, PetscReal N[]);
+
+
+
 /**
  * Returns all DMPlex points at a given depth which are common between two DMPlex points. For example, if p1 is a cell and p2 is a vertex on the cell with depth=1 this will
  *   return the edges common to both p1 and p2
