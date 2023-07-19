@@ -39,7 +39,7 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
         int maxAttempts = 4;
 
         // store the reactor type in the chemistry constrains
-        ReactorType reactorType;
+        ReactorType reactorType = ReactorType::ConstantPressure;
 
         // store an optional threshold temperature.  Only compute the reactions if the temperature is above thresholdTemperature
         double thresholdTemperature = 0.0;
@@ -116,8 +116,8 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
     real_type_1d_view dtViewDevice;
 
     // Hard code some values needed for the constant volume reactor
-    static inline constexpr bool solveTla = false; // do not calculate tangent linear approximation (TLA) for the const volume reactions
-    static inline constexpr real_type thetaTla = 0; // this is not used when solveTla is false
+    static inline constexpr bool solveTla = false;   // do not calculate tangent linear approximation (TLA) for the const volume reactions
+    static inline constexpr real_type thetaTla = 0;  // this is not used when solveTla is false
 
     // store device specific kineticModelGasConstants
     tChemLib::KineticModelConstData<typename Tines::UseThisDevice<exec_space>::type> kineticModelGasConstDataDevice;
@@ -140,7 +140,6 @@ std::ostream& operator<<(std::ostream& os, const SourceCalculator::ReactorType& 
  * @return
  */
 std::istream& operator>>(std::istream& is, SourceCalculator::ReactorType& v);
-
 
 }  // namespace ablate::eos::tChem
 

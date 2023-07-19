@@ -57,7 +57,7 @@ ablate::eos::tChem::SourceCalculator::SourceCalculator(const std::vector<domain:
     timeAdvanceDefault._dtmax = constraints.dtMax;
     timeAdvanceDefault._max_num_newton_iterations = constraints.maxNumNewtonIterations;
     timeAdvanceDefault._num_time_iterations_per_interval = constraints.numTimeIterationsPerInterval;
-    timeAdvanceDefault._num_outer_time_iterations_per_interval = 1;// This should always be one to prevent duplicate operations
+    timeAdvanceDefault._num_outer_time_iterations_per_interval = 1;  // This should always be one to prevent duplicate operations
     timeAdvanceDefault._jacobian_interval = constraints.jacobianInterval;
 
     // Copy the default values to device
@@ -66,7 +66,7 @@ ablate::eos::tChem::SourceCalculator::SourceCalculator(const std::vector<domain:
     Kokkos::deep_copy(dtViewDevice, 1E-4);
 
     // determine the number of equations
-    ordinal_type numberOfEquations(0);
+    ordinal_type numberOfEquations;
     switch (chemistryConstraints.reactorType) {
         case ReactorType::ConstantPressure:
             numberOfEquations = ::tChemLib::Impl::IgnitionZeroD_Problem<real_type, Tines::UseThisDevice<host_exec_space>::type>::getNumberOfTimeODEs(kineticModelGasConstData);

@@ -11,12 +11,10 @@
 ablate::eos::tChemSoot::SourceCalculatorSoot::SourceCalculatorSoot(const std::vector<domain::Field>& fields, const std::shared_ptr<TChemSoot>& eosIn,
                                                                    ablate::eos::tChem::SourceCalculator::ChemistryConstraints constraints, const ablate::domain::Range& cellRange)
     : chemistryConstraints(constraints), eos(eosIn), numberSpecies(eosIn->GetSpeciesVariables().size()) {
-
     // make sure that constant volume is not used
-    if(chemistryConstraints.reactorType != tChem::SourceCalculator::ReactorType::ConstantPressure){
+    if (chemistryConstraints.reactorType != tChem::SourceCalculator::ReactorType::ConstantPressure) {
         throw std::invalid_argument("The ablate::eos::tChemSoot::SourceCalculatorSoot requires ReactorType::ConstantPressure");
     }
-
 
     // determine the number of required cells
     std::size_t numberCells = cellRange.end - cellRange.start;
@@ -51,7 +49,7 @@ ablate::eos::tChemSoot::SourceCalculatorSoot::SourceCalculatorSoot(const std::ve
     timeAdvanceDefault._dtmax = constraints.dtMax;
     timeAdvanceDefault._max_num_newton_iterations = constraints.maxNumNewtonIterations;
     timeAdvanceDefault._num_time_iterations_per_interval = constraints.numTimeIterationsPerInterval;
-    timeAdvanceDefault._num_outer_time_iterations_per_interval = 1;// This should always be one to prevent duplicate operations
+    timeAdvanceDefault._num_outer_time_iterations_per_interval = 1;  // This should always be one to prevent duplicate operations
     timeAdvanceDefault._jacobian_interval = constraints.jacobianInterval;
 
     // Copy the default values to device
