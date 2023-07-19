@@ -17,6 +17,11 @@ namespace ablate::eos::tChem {
  */
 class SourceCalculator : public ChemistryModel::SourceCalculator, private utilities::Loggable<SourceCalculator> {
    public:
+    /**
+     * Allow the user of TChem to set the reactor type
+     */
+    enum class ReactorType { ConstantPressure, ConstantVolume };
+
     //! hold a struct that can be used for chemistry constraints
     struct ChemistryConstraints {
         double dtMin = 1.0E-12;
@@ -32,6 +37,9 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
         int numTimeIterationsPerInterval = 100000;
         int jacobianInterval = 1;
         int maxAttempts = 4;
+
+        // store the reactor type in the chemistry constrains
+        ReactorType reactorType;
 
         // store an optional threshold temperature.  Only compute the reactions if the temperature is above thresholdTemperature
         double thresholdTemperature = 0.0;
@@ -107,11 +115,32 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
     real_type_1d_view timeViewDevice;
     real_type_1d_view dtViewDevice;
 
+    // Hard code some values needed for the constant volume reactor
+    static inline constexpr bool solveTla = false; // do not calculate tangent linear approximation (TLA) for the const volume reactions
+    static inline constexpr real_type thetaTla = 0; // this is not used when solveTla is false
+
     // store device specific kineticModelGasConstants
     tChemLib::KineticModelConstData<typename Tines::UseThisDevice<exec_space>::type> kineticModelGasConstDataDevice;
     kmd_type_1d_view_host kineticModelDataClone;
     Kokkos::View<KineticModelGasConstData<typename Tines::UseThisDevice<exec_space>::type>*, typename Tines::UseThisDevice<exec_space>::type> kineticModelGasConstDataDevices;
 };
+
+/**
+ * Support function for the TChemBase::ReactorType Enum
+ * @param os
+ * @param v
+ * @return
+ */
+std::ostream& operator<<(std::ostream& os, const SourceCalculator::ReactorType& v);
+
+/**
+ * Support function for the TChemBase::ReactorType Enum
+ * @param os
+ * @param v
+ * @return
+ */
+std::istream& operator>>(std::istream& is, SourceCalculator::ReactorType& v);
+
 
 }  // namespace ablate::eos::tChem
 
