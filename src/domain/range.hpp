@@ -40,6 +40,14 @@ void GetRange(DM dm, const std::shared_ptr<Region> region, PetscInt depth, Range
 void GetCellRange(DM dm, const std::shared_ptr<Region> region, Range &cellRange);
 
 /**
+ * Get the range of cells defined over the region for this solver without any ghost cells.
+ * @param dm
+ * @param region
+ * @param cellRange
+ */
+void GetCellRangeWithoutGhost(DM dm, const std::shared_ptr<ablate::domain::Region> region, ablate::domain::Range &cellRange);
+
+/**
  * Get the range of faces/edges defined over the region for this solver.
  * @param dm
  * @param region

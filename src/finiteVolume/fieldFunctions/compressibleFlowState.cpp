@@ -61,7 +61,9 @@ std::shared_ptr<ablate::mathFunctions::MathFunction> ablate::finiteVolume::field
 
 #include "registrar.hpp"
 REGISTER_DEFAULT(ablate::finiteVolume::fieldFunctions::CompressibleFlowState, ablate::finiteVolume::fieldFunctions::CompressibleFlowState,
-                 "a simple structure used to describe a compressible flow field using an EOS, T, pressure, vel, Yi", ARG(ablate::eos::EOS, "eos", "the eos used for the flow field"),
-                 ARG(ablate::mathFunctions::MathFunction, "temperature", "the temperature field (K)"), ARG(ablate::mathFunctions::MathFunction, "pressure", "the pressure field (Pa)"),
+                 "a simple structure used to describe a compressible flow field using an EOS, T, pressure, vel, Yi",
+                 ARG(ablate::eos::EOS, "eos", "the eos used for the flow field"),
+                 ARG(ablate::mathFunctions::MathFunction, "temperature", "the temperature field (K)"),
+                 ARG(ablate::mathFunctions::MathFunction, "pressure", "the pressure field (Pa)"),
                  ARG(ablate::mathFunctions::MathFunction, "velocity", "the velocity field (m/2)"),
                  OPT(ablate::mathFunctions::FieldFunction, "other", "a fieldFunctions used to describe other properties such as alpha, mass fractions, or progress variable"));

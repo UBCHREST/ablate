@@ -46,6 +46,23 @@ void ablate::domain::GetCellRange(DM dm, const std::shared_ptr<ablate::domain::R
     ablate::domain::GetRange(dm, region, depth, cellRange);
 }
 
+void ablate::domain::GetCellRangeWithoutGhost(DM dm, const std::shared_ptr<ablate::domain::Region> region, ablate::domain::Range &cellRange) {
+
+    // I do NOT know if this is generally applicable. Does every region with surrounding ghost nodes have a _minusGhost option? Need to check with Matt M.
+
+    PetscInt depth;
+    std::shared_ptr<ablate::domain::Region> regionWOGhost = nullptr;
+    if (region) {
+      regionWOGhost = std::make_shared<domain::Region>(region->GetName() + "_minusGhost");
+    }
+    else {
+      regionWOGhost = std::make_shared<domain::Region>("_minusGhost");
+    }
+
+    DMPlexGetDepth(dm, &depth) >> utilities::PetscUtilities::checkError;
+    ablate::domain::GetRange(dm, regionWOGhost, depth, cellRange);
+}
+
 void ablate::domain::GetFaceRange(DM dm, const std::shared_ptr<ablate::domain::Region> region, ablate::domain::Range &faceRange) {
     // Start out getting all the faces
     PetscInt depth;

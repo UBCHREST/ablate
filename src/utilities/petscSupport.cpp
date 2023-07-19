@@ -187,8 +187,16 @@ static PetscErrorCode DMPlexGetNeighborVertices_Internal(DM dm, PetscReal x0[3],
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
+PetscErrorCode DMPlexRestoreNeighbors(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useCells, PetscBool returnNeighborVertices, PetscInt *nCells,
+                                  PetscInt **cells) {
+  PetscFunctionBegin;
+  if (nCells) *nCells = 0;
+  PetscCall(DMRestoreWorkArray(dm, 0, MPIU_INT, cells));
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
 PetscErrorCode DMPlexGetNeighbors(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useCells, PetscBool returnNeighborVertices, PetscInt *nCells,
-                                  PetscInt *cells[]) {
+                                  PetscInt **cells) {
     const PetscInt maxLevelListSize = 10000;
     const PetscInt maxListSize = 100000;
     PetscInt numNew, nLevelList[2];
@@ -334,7 +342,8 @@ PetscErrorCode DMPlexGetNeighbors(DM dm, PetscInt p, PetscInt maxLevels, PetscRe
     } else {
         numberCells = n;
     }
-    PetscCall(PetscMalloc1(numberCells, cells));
+//    PetscCall(PetscMalloc1(numberCells, cells));
+    PetscCall(DMGetWorkArray(dm, numberCells, MPIU_INT, cells));
     PetscCall(PetscArraycpy(*cells, list, numberCells));
     PetscCall(PetscIntSortSemiOrdered(numberCells, *cells));
     *nCells = numberCells;

@@ -52,6 +52,14 @@ class RBF {
 
     void FreeStencilData();
 
+    PetscReal Curvature2D(const ablate::domain::Field *field, const PetscInt c);
+    PetscReal Curvature3D(const ablate::domain::Field *field, const PetscInt c);
+
+    void Normal1D(const ablate::domain::Field *field, const PetscInt c, PetscScalar *n);
+    void Normal2D(const ablate::domain::Field *field, const PetscInt c, PetscScalar *n);
+    void Normal3D(const ablate::domain::Field *field, const PetscInt c, PetscScalar *n);
+
+
    protected:
     PetscReal DistanceSquared(PetscInt dim, PetscReal x[], PetscReal y[]);
     PetscReal DistanceSquared(PetscInt dim, PetscReal x[]);
@@ -103,6 +111,21 @@ class RBF {
      * @param dx, dy, dz - The derivative
      */
     PetscReal EvalDer(const ablate::domain::Field *field, Vec f, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz);  // Evaluate a derivative
+
+    /**
+     * Return the total curvature of a field
+     * @param field - The field to take the derivative of
+     * @param c - The cell to compute the curvature at
+     */
+    PetscReal Curvature(const ablate::domain::Field *field, const PetscInt c);
+
+    /**
+     * Return the total curvature of a field
+     * @param field - The field to take the derivative of
+     * @param c - The cell to compute the curvature at
+     * @param n - The unit normal at the cell center
+     */
+    void Normal(const ablate::domain::Field *field, const PetscInt c, PetscReal *n);
 
     // Interpolation stuff
     /**

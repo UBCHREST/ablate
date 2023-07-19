@@ -18,9 +18,15 @@ namespace ablate::finiteVolume::processes {
     PetscReal sigma;
 
     private:
-      std::shared_ptr<domain::rbf::RBF> rbf;
+    DM dmData = nullptr;
+
+    // The DMPlex field id of the normal vector and the (smooth) vof field
+    const PetscInt dataNormalID = 0;
+    const PetscInt dataVofID = 1;
+
 
     public:
+
 
     explicit SurfaceForce(PetscReal sigma);
 

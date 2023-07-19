@@ -1,5 +1,7 @@
 target_sources(ablateLibrary
         PRIVATE
+        curvature.cpp
+        normal.cpp
         ga.cpp
         imq.cpp
         mq.cpp

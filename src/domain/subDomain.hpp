@@ -411,6 +411,13 @@ class SubDomain : public io::Serializable {
     void GetCellRange(const std::shared_ptr<ablate::domain::Region> region, ablate::domain::Range& cellRange) const { ablate::domain::GetCellRange(this->GetDM(), region, cellRange); }
 
     /**
+     * Return the range of cells in the subDomain and region without ghost cells
+     * @param region
+     * @param cellRange
+     */
+    void GetCellRangeWithoutGhost(const std::shared_ptr<ablate::domain::Region> region, ablate::domain::Range& cellRange) const { ablate::domain::GetCellRangeWithoutGhost(this->GetDM(), region, cellRange); }
+
+    /**
      * Return the range of faces/edges in the subDomain and region.
      * @param region
      * @param cellRange
