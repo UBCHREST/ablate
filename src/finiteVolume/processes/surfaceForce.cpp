@@ -160,7 +160,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     PetscFunctionBegin;
 
     ablate::finiteVolume::processes::SurfaceForce *process = (ablate::finiteVolume::processes::SurfaceForce *)ctx;
-    ablate::domain::SubDomain subDomain = flow.GetSubDomain();
+    const ablate::domain::SubDomain& subDomain = flow.GetSubDomain();
     const PetscInt dim = subDomain.GetDimensions();
 
     // Look for the euler field and volume fraction (alpha)
