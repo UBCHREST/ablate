@@ -103,7 +103,7 @@ void ablate::levelSet::Utilities::VertexToVertexGrad(std::shared_ptr<ablate::dom
   DM  dm = subDomain->GetFieldDM(*field);
   Vec vec = subDomain->GetVec(*field);
 
-  DMPlexVertexGradFromVertex(dm, p, vec, field->id, g) >> ablate::utilities::PetscUtilities::checkError;
+  DMPlexVertexGradFromVertex(dm, p, vec, field->id, 0, g) >> ablate::utilities::PetscUtilities::checkError;
 
 }
 
@@ -502,7 +502,7 @@ void SaveVertexData(const char fname[255], const ablate::domain::Field *field, s
 //  2 - Mark the required number of vertices (based on the cells) next to the interface cells
 //  3 - Iterate over vertices EXCEPT for those with cut-cells until converged
 //  4 - We may want to look at a fourth step which improve the accuracy
-void ablate::levelSet::Utilities::Reinitialize(std::shared_ptr<ablate::domain::rbf::RBF> rbf, std::shared_ptr<ablate::domain::SubDomain> subDomain, const ablate::domain::Field *vofField, const PetscInt nLevels, const ablate::domain::Field *lsField) {
+void ablate::levelSet::Utilities::Reinitialize(std::shared_ptr<ablate::domain::SubDomain> subDomain, const ablate::domain::Field *vofField, const PetscInt nLevels, const ablate::domain::Field *lsField) {
 
   // Note: Need to write a unit test where the vof and ls fields aren't in the same DM, e.g. one is a SOL vector and one is an AUX vector.
 
@@ -549,6 +549,9 @@ void ablate::levelSet::Utilities::Reinitialize(std::shared_ptr<ablate::domain::r
     *val = PETSC_MAX_REAL;
   }
 
+  PetscReal h;
+  DMPlexGetMinRadius(vofDM, &h) >> ablate::utilities::PetscUtilities::checkError;
+
   VecGetArrayRead(vofVec, &vofArray) >> ablate::utilities::PetscUtilities::checkError;
   for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
     PetscInt cell = cellRange.GetPoint(c);
@@ -561,45 +564,66 @@ void ablate::levelSet::Utilities::Reinitialize(std::shared_ptr<ablate::domain::r
 
       cellMask[c] = 0;  // Mark as a cut-cell
 
-      // Unit normal estimate
-      PetscReal n[3];
-      n[0] = -(rbf->EvalDer(vofField, cell, 1, 0, 0));
-      n[1] = -(rbf->EvalDer(vofField, cell, 0, 1, 0));
-      n[2] = -(dim==3 ? rbf->EvalDer(vofField, cell, 0, 0, 1) : 0.0);
-      ablate::utilities::MathUtilities::NormVector(dim, n);
-
       PetscInt nv, *verts;
       DMPlexCellGetVertices(vofDM, cell, &nv, &verts) >> ablate::utilities::PetscUtilities::checkError;
 
-      PetscReal *lsVertVals = NULL;
-      DMGetWorkArray(vofDM, nv, MPIU_REAL, &lsVertVals) >> ablate::utilities::PetscUtilities::checkError;
-
-      // Level set values at the vertices
-      ablate::levelSet::Utilities::VertexLevelSet_VOF(vofDM, cell, *vofVal, n, &lsVertVals);
-
-
       for (PetscInt v = 0; v < nv; ++v) {
-
         // Mark as a cut-cell vertex
         vertMask[reverseVertRange.GetIndex(verts[v])] = 0; // Mark vertex as associated with a cut-cell
-
-        PetscScalar *lsVal;
-        xDMPlexPointLocalRef(lsDM, verts[v], lsID, lsArray, &lsVal) >> ablate::utilities::PetscUtilities::checkError;
-
-        if (PetscAbsReal(lsVertVals[v]) < PetscAbsScalar(*lsVal)){ // Take the smallest of all possible level-set values
-          *lsVal = lsVertVals[v];
-        }
-
       }
 
-      DMRestoreWorkArray(vofDM, nv, MPIU_REAL, &lsVertVals) >> ablate::utilities::PetscUtilities::checkError;
       DMPlexCellRestoreVertices(vofDM, cell, &nv, &verts) >> ablate::utilities::PetscUtilities::checkError;
     }
   }
 
+  for (PetscInt v = vertRange.start; v < vertRange.end; ++v) {
+
+    if (vertMask[v]==0) {
+
+      PetscInt vert = vertRange.GetPoint(v);
+
+      PetscReal x0[3];
+      DMPlexComputeCellGeometryFVM(lsDM, vert, NULL, x0, NULL) >> ablate::utilities::PetscUtilities::checkError;
+
+      PetscScalar *lsVal;
+      xDMPlexPointLocalRef(lsDM, vert, lsID, lsArray, &lsVal) >> ablate::utilities::PetscUtilities::checkError;
+
+
+
+      PetscInt nCells, *cells;
+      DMPlexVertexGetCells(lsDM, vert, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
+
+      *lsVal = 0.0;
+      PetscReal totalWeight = 0.0;
+      for (PetscInt i = 0; i < nCells; ++i) {
+        PetscScalar *vofVal, x[3];
+        xDMPlexPointLocalRead(vofDM, cells[i], vofID, vofArray, &vofVal) >> ablate::utilities::PetscUtilities::checkError;
+        DMPlexComputeCellGeometryFVM(vofDM, cells[i], NULL, x, NULL) >> ablate::utilities::PetscUtilities::checkError;
+
+        ablate::utilities::MathUtilities::Subtract(dim, x, x0, x);
+        PetscReal wt = ablate::utilities::MathUtilities::MagVector(dim, x);
+
+        *lsVal += (*vofVal)*wt;
+        totalWeight += wt;
+      }
+      *lsVal /= totalWeight;
+
+      *lsVal = -2.0*(2.0*(*lsVal) - 1.0)*h;
+
+      DMPlexVertexRestoreCells(lsDM, vert, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
+
+//*lsVal = PetscSqrtReal(PetscSqr(x0[0]) + PetscSqr(x0[1])) - 1.0;
+
+
+    }
+  }
+
+
+
+
 
   // Comment out the rest of the code so that we can focus on the cut-cells only
-/*
+
   // Now mark all of the necessary neighboring vertices. Note that this can't be put into the previous loop as all of the vertices
   //    for the cut-cells won't be known yet.
   for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
@@ -718,23 +742,20 @@ void ablate::levelSet::Utilities::Reinitialize(std::shared_ptr<ablate::domain::r
 
     }
   }
-*/
+
   cellMask += cellRange.start;  // Reset the offset, otherwise DMRestoreWorkArray will return unexpected results
   DMRestoreWorkArray(vofDM, cellRange.end - cellRange.start, MPIU_INT, &cellMask) >> ablate::utilities::PetscUtilities::checkError;
   subDomain->RestoreRange(cellRange);
-/*
+
   AO cellToIndex;
   AOCreateMapping(PETSC_COMM_SELF, numCells, cellArray, indexArray, &cellToIndex) >> ablate::utilities::PetscUtilities::checkError;
 
   PetscScalar *cellGradArray;
   DMGetWorkArray(vofDM, dim*numCells, MPIU_SCALAR, &cellGradArray) >> ablate::utilities::PetscUtilities::checkError;
 
-  PetscReal h;
-  DMPlexGetMinRadius(vofDM, &h) >> ablate::utilities::PetscUtilities::checkError;
-
   PetscReal diff = 1.0;
   PetscInt it = 0;
-  while (diff>1e-5 && it<77e10) {
+  while (diff>1e-2 && it<77e10) {
     ++it;
     for (PetscInt i = 0; i < numCells; ++i) {
       PetscInt cell = cellArray[i];
@@ -754,7 +775,7 @@ void ablate::levelSet::Utilities::Reinitialize(std::shared_ptr<ablate::domain::r
 
         xDMPlexPointLocalRef(lsDM, vert, lsID, lsArray, &phi) >> ablate::utilities::PetscUtilities::checkError;
 
-        DMPlexVertexGradFromVertex(lsDM, vert, lsVec, lsID, g) >> ablate::utilities::PetscUtilities::checkError;
+        DMPlexVertexGradFromVertex(lsDM, vert, lsVec, lsID, 0, g) >> ablate::utilities::PetscUtilities::checkError;
 
         VertexUpwindGrad(lsDM, cellGradArray, cellToIndex, vert, PetscSignReal(*phi), g);
 
@@ -769,6 +790,7 @@ void ablate::levelSet::Utilities::Reinitialize(std::shared_ptr<ablate::domain::r
 
       }
     }
+    printf("%e\n", diff);
   }
 
 
@@ -776,7 +798,7 @@ void ablate::levelSet::Utilities::Reinitialize(std::shared_ptr<ablate::domain::r
   DMRestoreWorkArray(vofDM, numCells, MPIU_INT, &cellArray) >> ablate::utilities::PetscUtilities::checkError;
   DMRestoreWorkArray(vofDM, numCells, MPIU_INT, &indexArray) >> ablate::utilities::PetscUtilities::checkError;
   AODestroy(&cellToIndex) >> ablate::utilities::PetscUtilities::checkError;
-*/
+
 
   vertMask += vertRange.start; // Reset the offset, otherwise DMRestoreWorkArray will return unexpected results
   DMRestoreWorkArray(lsDM, vertRange.end - vertRange.start, MPIU_INT, &vertMask) >> ablate::utilities::PetscUtilities::checkError;
