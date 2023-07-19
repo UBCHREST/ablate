@@ -87,8 +87,20 @@ class SubDomain : public io::Serializable {
     void CopySubVectorToGlobal(DM subDM, DM gDM, Vec subVec, Vec globVec, const std::vector<Field>& subFields, const std::vector<Field>& gFields = {}, bool localVector = false) const;
 
    public:
+    /**
+     * Create a subdomain based upon a domain
+     * @param domain
+     * @param dsNumber ds number in the dm,
+     * @param allAuxFields and a list of aux fields to create in this subdomain
+     */
     SubDomain(Domain& domain, PetscInt dsNumber, const std::vector<std::shared_ptr<FieldDescription>>& allAuxFields);
     ~SubDomain() override;
+
+    // prevent unintended copy of the subdomain
+    SubDomain(const SubDomain& temp_obj) = delete;
+
+    // prevent unintended copy of the subdomain
+    SubDomain& operator=(const SubDomain& temp_obj) = delete;
 
     /**
      * Create the auxDM, auxVec, and other structures on the subDomain
@@ -143,7 +155,7 @@ class SubDomain : public io::Serializable {
      * @param field
      * @return
      */
-    inline DM GetFieldDM(const Field& field) noexcept {
+    [[nodiscard]] inline DM GetFieldDM(const Field& field) const noexcept {
         switch (field.location) {
             case FieldLocation::SOL:
                 return GetDM();
@@ -158,7 +170,7 @@ class SubDomain : public io::Serializable {
      * @param field
      * @return
      */
-    inline Vec GetVec(const Field& field) noexcept {
+    [[nodiscard]] inline Vec GetVec(const Field& field) const noexcept {
         switch (field.location) {
             case FieldLocation::SOL:
                 return GetSolutionVector();
@@ -252,19 +264,19 @@ class SubDomain : public io::Serializable {
      * the entire mesh, but the fields are only define under this subdomain
      * @return
      */
-    inline DM GetAuxDM() noexcept { return auxDM; }
+    [[nodiscard]] inline DM GetAuxDM() const noexcept { return auxDM; }
 
     /**
      * Returns the global solution vector
      * @return
      */
-    inline Vec GetSolutionVector() noexcept { return domain.GetSolutionVector(); }
+    [[nodiscard]] inline Vec GetSolutionVector() const noexcept { return domain.GetSolutionVector(); }
 
     /**
      * Returns the local aux vector
      * @return
      */
-    inline Vec GetAuxVector() noexcept { return auxLocalVec; }
+    [[nodiscard]] inline Vec GetAuxVector() const noexcept { return auxLocalVec; }
 
     /**
      * Return the global aux vector with information updated from the auxLocVec
