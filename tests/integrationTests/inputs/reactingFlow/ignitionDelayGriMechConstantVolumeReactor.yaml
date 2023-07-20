@@ -30,7 +30,10 @@ timestepper:
         eos: &eos !ablate::eos::TChem # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked
           mechFile: ../mechanisms/gri30.yml
           options:
+            # Set the reactor to type to be constant volume
             reactorType: ConstantVolume
+            # set a minimum temperature for the chemical kinetics ode integration
+            thresholdTemperature: 560
 
   # set the initial conditions of the flow field
   initialization:

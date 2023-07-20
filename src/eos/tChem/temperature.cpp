@@ -66,6 +66,31 @@ void Temperature_TemplateRun(const std::string& profile_name,
                         f0 = f1;
                         f1 = f2;
                     }
+
+                    // We iterated through the possible iterations, try again with a new guess
+                    t0 = 1000.;
+                    f0 = internalEnergyRef_at_i() - ablate::eos::tChem::impl::SensibleInternalEnergyFcn<real_type, device_type>::team_invoke(member, t, ys, hi_at_i, cpks, enthalpyReference, kmcd);
+                    t1 = t0 + 1;
+                    t = t1;
+                    e1 = ablate::eos::tChem::impl::SensibleInternalEnergyFcn<real_type, device_type>::team_invoke(member, t, ys, hi_at_i, cpks, enthalpyReference, kmcd);
+                    f1 = internalEnergyRef_at_i() - e1;
+
+                    for (int it = 0; it < ITERMAX_T; it++) {
+                        t2 = t1 - f1 * (t1 - t0) / (f1 - f0 + 1E-30);
+                        t2 = Kokkos::max(1.0, t2);
+                        t = t2;
+                        e2 = ablate::eos::tChem::impl::SensibleInternalEnergyFcn<real_type, device_type>::team_invoke(member, t, ys, hi_at_i, cpks, enthalpyReference, kmcd);
+                        f2 = internalEnergyRef_at_i() - e2;
+                        if (Tines::ats<real_type>::abs(f2) <= EPS_T_RHO_E) {
+                            t = t2;
+                            return;
+                        }
+                        t0 = t1;
+                        t1 = t2;
+                        f0 = f1;
+                        f1 = f2;
+                    }
+
                     t = t2;
                 }
             }

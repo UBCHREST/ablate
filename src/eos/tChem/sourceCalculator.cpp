@@ -2,6 +2,7 @@
 #include <TChem_ConstantVolumeIgnitionReactor.hpp>
 #include <TChem_Impl_IgnitionZeroD_Problem.hpp>
 #include <algorithm>
+#include "constantVolumeIgnitionReactorTemperatureThreshold.hpp"
 #include "eos/tChem.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "ignitionZeroDTemperatureThreshold.hpp"
@@ -269,21 +270,39 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
             case ReactorType::ConstantVolume:
                 // These arrays are not used when solveTla is false
                 real_type_3d_view state_z;
+                if (chemistryConstraints.thresholdTemperature != 0.0) {
+                    ablate::eos::tChem::ConstantVolumeIgnitionReactorTemperatureThreshold::runDeviceBatch(chemistryFunctionPolicy,
+                                                                                                          solveTla,
+                                                                                                          thetaTla,
+                                                                                                          tolNewtonDevice,
+                                                                                                          tolTimeDevice,
+                                                                                                          facDevice,
+                                                                                                          timeAdvanceDevice,
+                                                                                                          stateDevice,
+                                                                                                          state_z,
+                                                                                                          timeViewDevice,
+                                                                                                          dtViewDevice,
+                                                                                                          endStateDevice,
+                                                                                                          state_z,
+                                                                                                          kineticModelGasConstDataDevices,
+                                                                                                          chemistryConstraints.thresholdTemperature);
+                } else {
+                    ConstantVolumeIgnitionReactor::runDeviceBatch(chemistryFunctionPolicy,
+                                                                  solveTla,
+                                                                  thetaTla,
+                                                                  tolNewtonDevice,
+                                                                  tolTimeDevice,
+                                                                  facDevice,
+                                                                  timeAdvanceDevice,
+                                                                  stateDevice,
+                                                                  state_z,
+                                                                  timeViewDevice,
+                                                                  dtViewDevice,
+                                                                  endStateDevice,
+                                                                  state_z,
+                                                                  kineticModelGasConstDataDevices);
+                }
 
-                ConstantVolumeIgnitionReactor::runDeviceBatch(chemistryFunctionPolicy,
-                                                              solveTla,
-                                                              thetaTla,
-                                                              tolNewtonDevice,
-                                                              tolTimeDevice,
-                                                              facDevice,
-                                                              timeAdvanceDevice,
-                                                              stateDevice,
-                                                              state_z,
-                                                              timeViewDevice,
-                                                              dtViewDevice,
-                                                              endStateDevice,
-                                                              state_z,
-                                                              kineticModelGasConstDataDevices);
                 break;
         }
 

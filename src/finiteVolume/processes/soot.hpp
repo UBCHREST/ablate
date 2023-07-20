@@ -27,7 +27,8 @@ class Soot : public Process {
     std::shared_ptr<eos::TChem> eos;
 
     // store the default dtInit
-    inline const static PetscReal dtInitDefault = 1E-5;
+    inline const static PetscReal dtInitDefault = 1E-6;
+
     // store the dtInit, this may be different from default if set with petsc options
     PetscReal dtInit = dtInitDefault;
 
