@@ -139,7 +139,7 @@ void ablate::levelSet::Utilities::VOF(DM dm, const PetscInt p, const PetscReal c
 
 // Returns the VOF for a given cell using an analytic level set equation
 // Refer to "Quadrature rules for triangular and tetrahedral elements with generalized functions"
-void ablate::levelSet::Utilities::VOF(DM dm, PetscInt p, std::shared_ptr<ablate::mathFunctions::MathFunction> phi, PetscReal *vof, PetscReal *area, PetscReal *vol) {
+void ablate::levelSet::Utilities::VOF(DM dm, PetscInt p, const std::shared_ptr<ablate::mathFunctions::MathFunction>& phi, PetscReal *vof, PetscReal *area, PetscReal *vol) {
 
   PetscInt          dim, Nc, nVerts, i;
   PetscReal         *c = NULL, *coords = NULL;

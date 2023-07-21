@@ -13,7 +13,7 @@
  * Note: This is adapted from DMInterpolationSetUp. If the cell containing the point is a ghost cell then this will return -1.
  *        If the point is in the upper corner of the domain it will not be able to find the containing cell.
  */
-PetscErrorCode DMPlexGetContainingCell(DM dm, PetscScalar *xyz, PetscInt *cell) {
+PetscErrorCode DMPlexGetContainingCell(DM dm, const PetscScalar *xyz, PetscInt *cell) {
     PetscSF cellSF = NULL;
     Vec pointVec;
     PetscInt dim;
