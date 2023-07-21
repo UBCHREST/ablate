@@ -155,7 +155,7 @@ static void SmoothVOF(ablate::domain::Range cellRange, DM dm, PetscScalar *dataA
 static inline PetscReal SmoothDirac(PetscReal c, PetscReal c0, PetscReal t) {
   return (PetscAbsReal(c-c0) < t ? 0.5*(1.0 + cos(M_PI*(c - c0)/t))/t : 0);
 }
-
+static int cnt = 0;
 PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(const FiniteVolumeSolver &flow, DM dm, PetscReal time, Vec locX, Vec locF, void *ctx) {
     PetscFunctionBegin;
 
@@ -204,14 +204,12 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
 
     // A width of 4 on either side of the interface seems to work well
     const PetscInt smoothWidth = 4;
-//    SmoothVOF(dmData, cellRange, dataVec, dataVofID, smoothWidth);
     SmoothVOF(cellRange, dmData, dataArray, dataVofID, smoothWidth);
-
-    // Now compute the normal for all cells with a smoothed VOF of between 0 and 1
 
     // Range of VOF cells to consider. This should be approximatly two cells on either side if smoothWidth==4.
     // To do all of the smoothed cells use vofRange[2] = {ablate::utilities::Constants::small, 1.0 - ablate::utilities::Constants::small}
     const PetscReal vofRange[2] = {0.25, 0.75};
+//    const PetscReal vofRange[2] = {ablate::utilities::Constants::small, 1.0 - ablate::utilities::Constants::small};
 
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
       PetscInt cell = cellRange.GetPoint(c);
@@ -239,8 +237,9 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
       }
     }
 
-
-//FILE *f1 = fopen("vof.txt","w");
+char fname[255];
+sprintf(fname, "vof%d.txt", cnt++);
+FILE *f1 = fopen(fname,"w");
     // Now compute the curvature, body-force, and energy
     const ablate::domain::Field &eulerField = subDomain.GetField(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD);
     DM eulerDM = subDomain.GetFieldDM(eulerField); // Get an euler-specific DM in case it's not in the same solution vector as the VOF field
@@ -255,6 +254,15 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
 
       const PetscReal *vofVal;
       xDMPlexPointLocalRead(dmData, cell, dataVofID, dataArray, &vofVal);
+
+
+PetscReal loc[3];
+const PetscReal *sharpVOF;
+xDMPlexPointLocalRead(dmVOF, cell, vofField.id, xArray, &sharpVOF);
+DMPlexComputeCellGeometryFVM(dmVOF, cell, NULL, loc, NULL) >> ablate::utilities::PetscUtilities::checkError;
+
+fprintf(f1,"%+f\t%+f\t%+f\t%+f\t", loc[0], loc[1], *sharpVOF, *vofVal);
+
 
       if ( ((*vofVal) > vofRange[0]) && ((*vofVal) < vofRange[1]) ) {
 
@@ -291,12 +299,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
         PetscScalar *eulerSource = nullptr;
         DMPlexPointLocalFieldRef(eulerDM, cell, eulerField.id, fArray, &eulerSource) >> utilities::PetscUtilities::checkError;
 
-        PetscReal loc[3];
-        const PetscReal *sharpVOF;
-        xDMPlexPointLocalRead(dmVOF, cell, vofField.id, xArray, &sharpVOF);
-        DMPlexComputeCellGeometryFVM(dmVOF, cell, NULL, loc, NULL) >> ablate::utilities::PetscUtilities::checkError;
-
-//        fprintf(f1,"%+f\t%+f\t%+f\t%+f\t%+f\t%+f\t%+f\t", loc[0], loc[1], *sharpVOF, *vofVal, n[0], n[1], H);
+fprintf(f1,"%+f\t%+f\t%+f\t", n[0], n[1], H);
 
         eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] = 0;
         for (PetscInt d = 0; d < dim; ++d) {
@@ -310,19 +313,24 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
             eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = surfaceForce;
             eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] += surfaceEnergy;
 
-//            fprintf(f1,"%+f\t", surfaceForce);
+            fprintf(f1,"%+f\t", surfaceForce);
 
         }
-//        fprintf(f1, "\n");
-
-
       }
+      else {
+        fprintf(f1,"%+f\t%+f\t%+f\t", NAN, NAN, NAN);
+        for (PetscInt d = 0; d < dim; ++d) {
+          fprintf(f1,"%+f\t", NAN);
+        }
+      }
+      fprintf(f1, "\n");
+
 
     }
-//fclose(f1);
+fclose(f1);
 
-//    PetscPrintf(MPI_COMM_WORLD, "(%s:%d, %s)\n", __FILE__, __LINE__, __FUNCTION__);
-//    exit(0);
+    PetscPrintf(MPI_COMM_WORLD, "(%s:%d, %s)\n", __FILE__, __LINE__, __FUNCTION__);
+    exit(0);
 
 
     // Cleanup
