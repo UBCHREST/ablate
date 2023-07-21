@@ -11,6 +11,7 @@ target_sources(ablateUnitTestLibrary
         linearTests.cpp
         peakTests.cpp
         linearFunctionTests.cpp
+        nearestPointTests.cpp
         )
 
 add_subdirectory(geom)

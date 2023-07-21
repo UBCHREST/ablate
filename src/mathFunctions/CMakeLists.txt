@@ -12,6 +12,7 @@ target_sources(ablateLibrary
         linear.cpp
         peak.cpp
         linearFunction.cpp
+        nearestPoint.cpp
 
         PUBLIC
         simpleFormula.hpp
@@ -28,6 +29,7 @@ target_sources(ablateLibrary
         linear.hpp
         peak.hpp
         linearFunction.hpp
+        nearestPoint.hpp
         )
 
 add_subdirectory(geom)

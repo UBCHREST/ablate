@@ -5,6 +5,7 @@ target_sources(ablateLibrary
         levelSetFields.cpp
         levelSetSolver.cpp
         levelSetUtilities.cpp
+        vofMathFunction.cpp
 
         PUBLIC
         #lsSupport.hpp
@@ -12,4 +13,5 @@ target_sources(ablateLibrary
         levelSetFields.hpp
         levelSetSolver.hpp
         levelSetUtilities.hpp
+        vofMathFunction.hpp
         )

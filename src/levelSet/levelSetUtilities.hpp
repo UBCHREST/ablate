@@ -35,7 +35,7 @@ namespace ablate::levelSet::Utilities {
    * @param area - The face length(2D) or area(3D) in the cell
    * @param vol - The area/volume of the entire cell
    */
-  void VOF(DM dm, PetscInt p, std::shared_ptr<ablate::mathFunctions::MathFunction> phi, PetscReal *vof, PetscReal *area, PetscReal *vol);
+  void VOF(DM dm, PetscInt p, const std::shared_ptr<ablate::mathFunctions::MathFunction>& phi, PetscReal *vof, PetscReal *area, PetscReal *vol);
 
   /**
    * Return the vertex level set values assuming a straight interface in the cell with a given normal vector.
