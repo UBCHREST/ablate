@@ -1,22 +1,6 @@
 #include <petsc.h>
 
 
-void VOF_1D(const PetscReal coords[], const PetscReal c[], PetscReal *vof, PetscReal *faceLength, PetscReal *cellLength) {
-
-  if (faceLength) *faceLength = 0.0; // Kind of pointless. Want to have the same call as the 2D/3D ones.
-  if (cellLength) *cellLength = coords[1] - coords[0];
-
-  if (vof) {
-    if (c[0]*c[1] < 0.0) { // Has an interface crossing
-      *vof = PetscMin(c[0], c[1])/(PetscMin(c[0], c[1]) - PetscMax(c[0], c[1]));
-    } else {
-      *vof = ( c[0] <= 0 ? 1.0 : 0.0 );
-    }
-  }
-}
-
-
-
 // Area of a triangle.
 // It's 1/2 of the determinant of
 //   | x1 x2 |
@@ -45,6 +29,21 @@ static PetscReal CellVolume_Tetrahedron(const PetscReal coords[]) {
   return PetscAbsReal(vol);
 }
 
+
+
+void VOF_1D(const PetscReal coords[], const PetscReal c[], PetscReal *vof, PetscReal *faceLength, PetscReal *cellLength) {
+
+  if (faceLength) *faceLength = 0.0; // Kind of pointless. Want to have the same call as the 2D/3D ones.
+  if (cellLength) *cellLength = coords[1] - coords[0];
+
+  if (vof) {
+    if (c[0]*c[1] < 0.0) { // Has an interface crossing
+      *vof = PetscMin(c[0], c[1])/(PetscMin(c[0], c[1]) - PetscMax(c[0], c[1]));
+    } else {
+      *vof = ( c[0] <= 0 ? 1.0 : 0.0 );
+    }
+  }
+}
 
 // 2D Simplex: DM_POLYTOPE_TRIANGLE
 // Note: The article returns the area of the unit triangle. To get the actual volume you would

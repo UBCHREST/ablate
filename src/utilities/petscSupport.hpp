@@ -122,7 +122,6 @@ PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscIn
  * Note: This computes the gradient at the cell vertices and then averages those to get the cell center. Due to this it's only
  *    first-order accurate for triangular meshes. This should(?) be replaced with one that uses cell-center values later.
  */
-PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]);
 PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]);
 
 

@@ -73,4 +73,4 @@ REGISTER(ablate::domain::rbf::RBF, ablate::domain::rbf::PHS, "Radial Basis Funct
          OPT(int, "phsOrder", "Order of the polyharmonic spline. Must be >=1. The actual order will be 2*phsOrder+1. Any value <1 will result in a default order of 9."),
          OPT(bool, "doesNotHaveDerivatives", "Compute derivative information. Default is false."),
          OPT(bool, "doesNotHaveInterpolation", "Compute interpolation information. Default is false."),
-         OPT(bool, "returnNeighborVertices", "Perform RBF based on neighboring vertices (TRUE) or cells (FALSE). Default is false."));
+         OPT(bool, "useNeighborVertices", "Perform RBF based on neighboring vertices (TRUE) or cells (FALSE). Default is false."));

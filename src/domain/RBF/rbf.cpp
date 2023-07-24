@@ -557,10 +557,10 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, Vec f, PetscReal 
 /************ End Interpolation Code **********************/
 
 /************ Constructor, Setup, and Initialization Code **********************/
-RBF::RBF(int polyOrder, bool hasDerivatives, bool hasInterpolation, bool returnNeighborVertices) : polyOrder(polyOrder), returnNeighborVertices(returnNeighborVertices), hasDerivatives(hasDerivatives), hasInterpolation(hasInterpolation){}
+RBF::RBF(int polyOrder, bool hasDerivatives, bool hasInterpolation, bool returnNeighborVertices)
+    : polyOrder(polyOrder), returnNeighborVertices(returnNeighborVertices), hasDerivatives(hasDerivatives), hasInterpolation(hasInterpolation) {}
 
 RBF::~RBF() {
-
     RBF::FreeStencilData();
 
     if (dxyz) {
@@ -568,6 +568,24 @@ RBF::~RBF() {
     }
     if (hash) {
         PetscHMapIDestroy(&hash);
+    }
+}
+
+void RBF::FreeStencilData() {
+    if ((RBF::cEnd - RBF::cStart) > 0) {
+        for (PetscInt c = RBF::cStart; c < RBF::cEnd; ++c) {
+            PetscFree(RBF::stencilList[c]);
+            if (RBF::RBFMatrix[c]) MatDestroy(&(RBF::RBFMatrix[c]));
+            PetscFree(RBF::stencilWeights[c]);
+            PetscFree(RBF::stencilXLocs[c]);
+        }
+        RBF::cellList += cStart;
+        RBF::nStencil += cStart;
+        RBF::stencilList += cStart;
+        RBF::RBFMatrix += cStart;
+        RBF::stencilXLocs += cStart;
+        RBF::stencilWeights += cStart;
+        PetscFree6(RBF::cellList, RBF::nStencil, RBF::stencilList, RBF::RBFMatrix, RBF::stencilXLocs, RBF::stencilWeights) >> utilities::PetscUtilities::checkError;
     }
 }
 
@@ -684,7 +702,6 @@ void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) {
 }
 
 void RBF::Initialize() {
-
     ablate::domain::Range range;
 
     // Grab the range of cells from the subDomain

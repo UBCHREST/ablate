@@ -3,4 +3,6 @@ target_sources(ablateUnitTestLibrary
         #levelSetSolverTests.cpp
         LS-VOFTests.cpp
         vofMathFunctionTests.cpp
+        cellGradTests.cpp
+
         )
