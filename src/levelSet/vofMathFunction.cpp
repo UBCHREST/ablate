@@ -1,22 +1,34 @@
 #include "vofMathFunction.hpp"
-
+#include "petscdmplex.h"
+#include "petscfe.h"
 #include <utility>
 #include "levelSetUtilities.hpp"
 #include "utilities/petscSupport.hpp"
 
 ablate::levelSet::VOFMathFunction::VOFMathFunction(std::shared_ptr<ablate::domain::Domain> domain, std::shared_ptr<ablate::mathFunctions::MathFunction> levelSet)
     : FunctionPointer(VOFMathFunctionPetscFunction, this), domain(std::move(domain)), levelSet(std::move(levelSet)) {}
-
+#include <signal.h>
 PetscErrorCode ablate::levelSet::VOFMathFunction::VOFMathFunctionPetscFunction(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt Nf, PetscScalar *u, void *ctx) {
     PetscFunctionBegin;
-    auto vofMathFunction = (VOFMathFunction *)ctx;
 
-    // Get the dm from the domain
-    DM dm = vofMathFunction->domain->GetDM();
+    auto      vofMathFunction = (VOFMathFunction *)ctx;
+    DM        dm = vofMathFunction->domain->GetDM();
+    PetscReal h;
+    PetscInt  cell;
 
-    // Determine the cell/element where this xyz resides
-    PetscInt cell;
-    PetscCall(DMPlexGetContainingCell(dm, x, &cell));
+
+    // Make the tolerance half of the smallest distance between a cell-center and a face.
+    PetscCall(DMPlexGetMinRadius(dm, &h));
+    h *= 0.5;
+
+    PetscCall(DMPlexFindCell(dm, x, h, &cell));
+
+    if (PetscDefined(USE_DEBUG)) {
+      PetscInt cStart, cEnd;
+      PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));
+      PetscCheck(cell > -1, PETSC_COMM_SELF, PETSC_ERR_ARG_OUTOFRANGE, "No cell was found.\n");
+      PetscCheck((cell >= cStart) && (cell < cEnd), PETSC_COMM_SELF, PETSC_ERR_ARG_OUTOFRANGE, "The DAG point found is not a cell.\n");
+    }
 
     // call the support call to compute vof in the cell
     try {
