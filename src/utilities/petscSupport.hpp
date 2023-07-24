@@ -107,7 +107,24 @@ PetscErrorCode DMPlexVertexGradFromCell(DM dm, const PetscInt v, Vec data, Petsc
  * @param offset - If fID points to a vector then indicate which component to use
  * @param g - The gradient at c
  */
+PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]);
+
+
+/**
+ * Compute the gradient of a field defined over cells at a cell center
+ * @param dm - The DM of the data stored in vec
+ * @param c - Cell where to compute the gradient
+ * @param data - Vector containing the data
+ * @param fID - Field ID of the data to take the gradient of
+ * @param offset - If fID points to a vector then indicate which component to use
+ * @param g - The gradient at c
+ *
+ * Note: This computes the gradient at the cell vertices and then averages those to get the cell center. Due to this it's only
+ *    first-order accurate for triangular meshes. This should(?) be replaced with one that uses cell-center values later.
+ */
 PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]);
+PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]);
+
 
 /**
  * Returns all DMPlex points at a given depth which are common between two DMPlex points. For example, if p1 is a cell and p2 is a vertex on the cell with depth=1 this will

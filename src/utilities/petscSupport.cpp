@@ -1166,3 +1166,40 @@ PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, Petsc
 
     PetscFunctionReturn(PETSC_SUCCESS);
 }
+
+
+
+PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]) {
+    PetscFunctionBegin;
+
+    PetscInt cStart, cEnd;
+    PetscInt dim;
+
+    PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));  // Range of cells
+    PetscCheck(c >= cStart && c < cEnd, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "DMPlexCellToCellGrad must have a valid cell as input.");
+
+    PetscCall(DMGetDimension(dm, &dim));
+
+    PetscCheck(dim > 0 && dim < 4, PETSC_COMM_SELF, PETSC_ERR_SUP, "DMPlexCellToCellGrad does not support a DM of dimension %" PetscInt_FMT, dim);
+
+    for (PetscInt d = 0; d < dim; ++d) {
+        g[d] = 0.0;
+    }
+
+    PetscInt nv, *verts;
+    PetscCall(DMPlexCellGetVertices(dm, c, &nv, &verts));
+    for (PetscInt v = 0; v < nv; ++v) {
+      PetscScalar gv[dim];
+      PetscCall(DMPlexVertexGradFromCell(dm, verts[v], data, fID, offset, gv));
+      for (PetscInt d = 0; d < dim; ++d) {
+          g[d] += gv[d];
+      }
+    }
+    for (PetscInt d = 0; d < dim; ++d) {
+        g[d] /= (PetscScalar)nv;
+    }
+    PetscCall(DMPlexCellRestoreVertices(dm, c, &nv, &verts));
+
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
