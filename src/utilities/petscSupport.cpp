@@ -12,6 +12,7 @@
  *
  * Note: This is adapted from DMInterpolationSetUp. If the cell containing the point is a ghost cell then this will return -1.
  *        If the point is in the upper corner of the domain it will not be able to find the containing cell.
+ *        This is also SLOW and needs -dm_plex_hash_location activated.
  */
 PetscErrorCode DMPlexGetContainingCell(DM dm, const PetscScalar *xyz, PetscInt *cell) {
     PetscSF cellSF = NULL;
@@ -27,7 +28,7 @@ PetscErrorCode DMPlexGetContainingCell(DM dm, const PetscScalar *xyz, PetscInt *
 
     PetscCall(VecCreateSeqWithArray(PETSC_COMM_SELF, dim, dim, xyz, &pointVec));
 
-    PetscCall(DMLocatePoints(dm, pointVec, DM_POINTLOCATION_NONE, &cellSF));
+    PetscCall(DMLocatePoints(dm, pointVec, DM_POINTLOCATION_NEAREST, &cellSF));
 
     PetscCall(PetscSFGetGraph(cellSF, NULL, &numFound, &foundPoints, &foundCells));
 
@@ -43,6 +44,71 @@ PetscErrorCode DMPlexGetContainingCell(DM dm, const PetscScalar *xyz, PetscInt *
 
     PetscFunctionReturn(PETSC_SUCCESS);
 }
+
+
+
+
+/**
+ * Return the cell with a centroid of xyz
+ * Inputs:
+ *  dm - The mesh
+ *  xyz - The centroid
+ *  eps - The tolerance or `PETSC_DEFAULT`
+ *
+ * Outputs:
+ *  cell - The cell with a centroid of xyz. Will return -1 if this point is not in the local part of the DM
+ *
+ * The tolerance is interpreted as the maximum Euclidean (L2) distance of the sought point from the specified coordinates.
+ *
+ * Complexity of this function is currently O(n) with n the number of vertices in the local mesh.
+
+.seealso: `DMPLEX`, `DMPlexCreate()`, `DMGetCoordinatesLocal()`, `DMPlexFindVertices`
+@*/
+PetscErrorCode DMPlexFindCell(DM dm, const PetscScalar *xyz, PetscReal eps, PetscInt *cell) {
+//  PetscInt           c, cdim, i, j, o, p, pStart, pEnd;
+//  PetscInt           npoints;
+//  const PetscScalar *coord;
+//  Vec                allCoordsVec;
+//  const PetscScalar *allCoords;
+//  PetscInt          *dagPoints;
+
+  DM                cellGeomDm;
+  PetscInt          cStart, cEnd, dim;
+  const PetscScalar *cellGeomArray;
+  Vec               cellGeomVec;
+
+  PetscFunctionBegin;
+
+  PetscCall(DMGetDimension(dm, &dim));
+
+  if (eps < 0) eps = PETSC_SQRT_MACHINE_EPSILON;
+
+  PetscCall(DMPlexGetDataFVM(dm, nullptr, &cellGeomVec, nullptr, nullptr));
+  PetscCall(VecGetArrayRead(cellGeomVec, &cellGeomArray));
+  PetscCall(VecGetDM(cellGeomVec, &cellGeomDm));
+
+  *cell = -1;
+
+  DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd);
+  for (PetscInt c = cStart; c < cEnd; ++c) {
+
+    const PetscFVCellGeom *cellGeom;
+    PetscCall(DMPlexPointLocalRead(cellGeomDm, c, cellGeomArray, &cellGeom));
+
+    PetscReal norm = 0.0;
+    for (PetscInt d = 0; d < dim; d++) norm += PetscRealPart(PetscSqr(xyz[d] - cellGeom->centroid[d]));
+    norm = PetscSqrtReal(norm);
+    if (norm <= eps) {
+      *cell = c;
+      break;
+    }
+  }
+
+  PetscCall(VecRestoreArrayRead(cellGeomVec, &cellGeomArray));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
 
 /**
  * Return all cells which share an vertex or edge/face with a center cell

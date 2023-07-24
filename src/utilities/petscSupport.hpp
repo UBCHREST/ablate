@@ -31,6 +31,9 @@ PetscErrorCode DMPlexGetNeighbors(DM dm, PetscInt p, PetscInt levels, PetscReal 
  */
 PetscErrorCode DMPlexGetContainingCell(DM dm, const PetscScalar *xyz, PetscInt *cell);
 
+PetscErrorCode DMPlexFindCell(DM dm, const PetscScalar *xyz, PetscReal eps, PetscInt *cell);
+
+
 /**
  * Get the number of vertices for a given cell
  * @param dm - The mesh
