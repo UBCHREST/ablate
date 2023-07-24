@@ -238,6 +238,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     }
 
 char fname[255];
+printf("\t%d\n", cnt);
 sprintf(fname, "vof%d.txt", cnt++);
 FILE *f1 = fopen(fname,"w");
     // Now compute the curvature, body-force, and energy
@@ -261,6 +262,8 @@ const PetscReal *sharpVOF;
 xDMPlexPointLocalRead(dmVOF, cell, vofField.id, xArray, &sharpVOF);
 DMPlexComputeCellGeometryFVM(dmVOF, cell, NULL, loc, NULL) >> ablate::utilities::PetscUtilities::checkError;
 
+
+//                                    1     2         3          4
 fprintf(f1,"%+f\t%+f\t%+f\t%+f\t", loc[0], loc[1], *sharpVOF, *vofVal);
 
 
@@ -298,7 +301,7 @@ fprintf(f1,"%+f\t%+f\t%+f\t%+f\t", loc[0], loc[1], *sharpVOF, *vofVal);
 
         PetscScalar *eulerSource = nullptr;
         DMPlexPointLocalFieldRef(eulerDM, cell, eulerField.id, fArray, &eulerSource) >> utilities::PetscUtilities::checkError;
-
+//                              5     6   7
 fprintf(f1,"%+f\t%+f\t%+f\t", n[0], n[1], H);
 
         eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] = 0;
@@ -312,15 +315,34 @@ fprintf(f1,"%+f\t%+f\t%+f\t", n[0], n[1], H);
             // add in the contributions
             eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = surfaceForce;
             eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] += surfaceEnergy;
-
+//                              8  9
             fprintf(f1,"%+f\t", surfaceForce);
+
+        }
+
+        for (PetscInt d = 0; d < dim; ++d) {
+            // calculate surface force and energy
+            PetscReal vel = euler[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density;
+//                              10 11
+            fprintf(f1,"%+f\t", vel);
 
         }
       }
       else {
-        fprintf(f1,"%+f\t%+f\t%+f\t", NAN, NAN, NAN);
+
+        fprintf(f1,"%+f\t%+f\t%+f\t", 0.0, 0.0, 0.0);
+
+
+        // Zero out everything away from the interface
+        PetscScalar *eulerSource = nullptr;
+        DMPlexPointLocalFieldRef(eulerDM, cell, eulerField.id, fArray, &eulerSource) >> utilities::PetscUtilities::checkError;
+        eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] = 0;
         for (PetscInt d = 0; d < dim; ++d) {
-          fprintf(f1,"%+f\t", NAN);
+            eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = 0.0;
+        }
+
+        for (PetscInt d = 0; d < 2*dim; ++d) {
+          fprintf(f1,"%+f\t", 0.0);
         }
       }
       fprintf(f1, "\n");
@@ -329,8 +351,8 @@ fprintf(f1,"%+f\t%+f\t%+f\t", n[0], n[1], H);
     }
 fclose(f1);
 
-    PetscPrintf(MPI_COMM_WORLD, "(%s:%d, %s)\n", __FILE__, __LINE__, __FUNCTION__);
-    exit(0);
+//    PetscPrintf(MPI_COMM_WORLD, "(%s:%d, %s)\n", __FILE__, __LINE__, __FUNCTION__);
+//    exit(0);
 
 
     // Cleanup
