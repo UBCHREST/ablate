@@ -589,24 +589,6 @@ void RBF::FreeStencilData() {
     }
 }
 
-void RBF::FreeStencilData() {
-  if ((RBF::cEnd - RBF::cStart) > 0) {
-    for (PetscInt c = RBF::cStart; c < RBF::cEnd; ++c) {
-        PetscFree(RBF::stencilList[c]);
-        if (RBF::RBFMatrix[c]) MatDestroy(&(RBF::RBFMatrix[c]));
-        PetscFree(RBF::stencilWeights[c]);
-        PetscFree(RBF::stencilXLocs[c]);
-    }
-    RBF::cellList += cStart;
-    RBF::nStencil += cStart;
-    RBF::stencilList += cStart;
-    RBF::RBFMatrix += cStart;
-    RBF::stencilXLocs += cStart;
-    RBF::stencilWeights += cStart;
-    PetscFree6(RBF::cellList, RBF::nStencil, RBF::stencilList, RBF::RBFMatrix, RBF::stencilXLocs, RBF::stencilWeights) >> utilities::PetscUtilities::checkError;
-  }
-}
-
 void RBF::CheckField(const ablate::domain::Field *field) {  // Checks whether the field is SOL or AUX
     PetscMPIInt size;
     DM dm = RBF::subDomain->GetFieldDM(*field);

@@ -31,6 +31,8 @@ PetscErrorCode DMPlexGetNeighbors(DM dm, PetscInt p, PetscInt levels, PetscReal 
  */
 PetscErrorCode DMPlexGetContainingCell(DM dm, const PetscScalar *xyz, PetscInt *cell);
 
+
+
 PetscErrorCode DMPlexFindCell(DM dm, const PetscScalar *xyz, PetscReal eps, PetscInt *cell);
 
 
@@ -107,7 +109,7 @@ PetscErrorCode DMPlexVertexGradFromCell(DM dm, const PetscInt v, Vec data, Petsc
  * @param offset - If fID points to a vector then indicate which component to use
  * @param g - The gradient at c
  */
-PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]);
+PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]);
 
 
 /**
