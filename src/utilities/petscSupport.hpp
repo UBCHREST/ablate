@@ -13,12 +13,13 @@
  * maxDist - Maximum distance to include
  * numberCells - The number of cells/vertices to return.
  * useCells -
+ * returnVertices - Return vertices surrounding the center cell (PETSC_TRUE) or cells surrounding the center cell (PETSC_FALSE)
  * nCells - Number of neighboring cells/vertices
  * cells - The list of neighboring cell/vertices IDs
  *
  * Note: The intended use is to use either maxLevels OR maxDist OR minNumberCells.
  */
-PetscErrorCode DMPlexRestoreNeighbors(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useCells, PetscBool returnNeighborVertices, PetscInt *nCells,
+PetscErrorCode DMPlexRestoreNeighbors(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useCells, PetscBool returnVertices, PetscInt *nCells,
                                   PetscInt **cells);
 PetscErrorCode DMPlexGetNeighbors(DM dm, PetscInt p, PetscInt levels, PetscReal maxDist, PetscInt minNumberCells, PetscBool useCells, PetscBool returnNeighborVertices, PetscInt *nCells,
                                   PetscInt **cells);

@@ -117,13 +117,13 @@ PetscErrorCode DMPlexFindCell(DM dm, const PetscScalar *xyz, PetscReal eps, Pets
  *    x0 - The location of the true center cell
  *    p - The cell to get the neighboors of
  *    maxDist - Maximum distance from p to consider adding
- *    useCells - Should we include cells which share a vertex (FALSE) or an edge/face (TRUE)
+ *    useFace - Should we include cells which share a vertex (FALSE) or an edge/face (TRUE)
  *
  * Outputs:
  *    nCells - Number of cells found
  *    cells - The IDs of the cells found.
  */
-static PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscReal x0[3], PetscInt p, PetscReal maxDist, PetscBool useCells, PetscInt *nCells, PetscInt *cells[]) {
+static PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscReal x0[3], PetscInt p, PetscReal maxDist, PetscBool useFace, PetscInt *nCells, PetscInt *cells[]) {
     PetscInt cStart, cEnd, vStart, vEnd;
     PetscInt cl, nClosure, *closure = NULL;
     PetscInt st, nStar, *star = NULL;
@@ -137,7 +137,7 @@ static PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscReal x0[3], Pe
 
     PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));  // Range of cells
 
-    if (useCells) {
+    if (useFace) {
         PetscCall(DMPlexGetHeightStratum(dm, 1, &vStart, &vEnd));  // Range of edges (2D) or faces (3D)
     } else {
         PetscCall(DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd));  // Range of vertices
@@ -408,7 +408,6 @@ PetscErrorCode DMPlexGetNeighbors(DM dm, PetscInt p, PetscInt maxLevels, PetscRe
     } else {
         numberCells = n;
     }
-//    PetscCall(PetscMalloc1(numberCells, cells));
     PetscCall(DMGetWorkArray(dm, numberCells, MPIU_INT, cells));
     PetscCall(PetscArraycpy(*cells, list, numberCells));
     PetscCall(PetscIntSortSemiOrdered(numberCells, *cells));

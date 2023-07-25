@@ -181,15 +181,15 @@ void ablate::levelSet::Utilities::VertexToVertexGrad(std::shared_ptr<ablate::dom
 //}
 
 
-  /**
-    * Compute the upwind derivative
-    * @param dm - Domain of the data
-    * @param gradArray - Array storing the cell-center gradients
-    * @param cellToIndex - Petsc AO that convertes from DMPlex ordering to the index location in gradArray
-    * @param p - Vertex id
-    * @param direction - The direction to be considered upwind. +1 for standard upwind, -1 of downwind
-    * @param g - On input the surface area normal at a vertex. On output the upwind gradient at p
-    */
+/**
+  * Compute the upwind derivative
+  * @param dm - Domain of the data
+  * @param gradArray - Array storing the cell-center gradients
+  * @param cellToIndex - Petsc AO that convertes from DMPlex ordering to the index location in gradArray
+  * @param p - Vertex id
+  * @param direction - The direction to be considered upwind. +1 for standard upwind, -1 of downwind
+  * @param g - On input the surface area normal at a vertex. On output the upwind gradient at p
+  */
 void ablate::levelSet::Utilities::VertexUpwindGrad(DM dm, PetscReal *gradArray, AO cellToIndex, const PetscInt p, const PetscReal direction, PetscReal *g) {
   // Given an array which stores cell-centered gradients compute the upwind direction
   // The upwind direction is determined using the dot product between the vector u and the vector connecting the cell-center
