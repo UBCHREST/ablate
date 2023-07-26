@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.18.4)
 include(config/petscCompilers.cmake)
 
 # Set the project details
-project(ablateLibrary VERSION 0.11.29)
+project(ablateLibrary VERSION 0.11.30)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED IMPORTED_TARGET GLOBAL PETSc)
@@ -94,7 +94,7 @@ install(TARGETS ablate ablateLibrary muparser nlohmann_json cppParserLibrary yam
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        )
+)
 set_target_properties(ablate PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # install header file(s)
@@ -107,7 +107,7 @@ install(EXPORT ablateTargets
         FILE ablateTargets.cmake
         NAMESPACE CHREST::
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ablate
-        )
+)
 
 # generate the version file for the config file
 write_basic_package_version_file(
@@ -120,17 +120,17 @@ write_basic_package_version_file(
 configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/config/Config.cmake.in
         "${CMAKE_CURRENT_BINARY_DIR}/ablateConfig.cmake"
         INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ablate
-        )
+)
 
 # install config files
 install(FILES
         "${CMAKE_CURRENT_BINARY_DIR}/ablateConfig.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/ablateConfigVersion.cmake"
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ablate
-        )
+)
 
 # generate the export targets for the build tree
 export(EXPORT ablateTargets
         FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/ablateTargets.cmake"
         NAMESPACE CHREST::
-        )
+)
