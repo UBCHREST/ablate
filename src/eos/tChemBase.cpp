@@ -6,7 +6,6 @@
 #include "monitors/logs/nullLog.hpp"
 #include "utilities/kokkosUtilities.hpp"
 #include "utilities/mpiUtilities.hpp"
-#include "utilities/stringUtilities.hpp"
 
 ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::path mechanismFileIn, const std::shared_ptr<ablate::monitors::logs::Log> &logIn,
                                   const std::shared_ptr<ablate::parameters::Parameters> &options)
