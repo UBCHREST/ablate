@@ -6,22 +6,16 @@ FROM $ABLATE_DEPENDENCY_IMAGE
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get -y install doxygen python3-inflection ruby-dev ruby-bundler
 
-# Setup the petsc env for tests
-ARG PETSC_BUILD_ARCH=arch-ablate-opt
-ENV PETSC_ARCH=$PETSC_BUILD_ARCH
-ENV PKG_CONFIG_PATH="${PETSC_DIR}/${PETSC_ARCH}/lib/pkgconfig:$PKG_CONFIG_PATH"
-ENV PATH="${PETSC_DIR}/${PETSC_ARCH}/bin:$PATH"
-
 # Copy over the source
 COPY . /source
-WORKDIR /build
+WORKDIR /source
 
 # Configure & build
-run cmake -DCMAKE_BUILD_TYPE=Release -S /source/ -B .
-run make -j $(nproc)
+run cmake --preset=local-ablate-opt
+run cmake --build --preset=ablate-only-build -j $(nproc)
 
 # Build the custom documentation components
-run python3 /source/docs/ablateDevGenerator.py  --rootDir=/source/ --ablateExe=/build/ablate
+run python3 /source/docs/ablateDevGenerator.py  --rootDir=/source/ --ablateExe=/source/cmake-build-opt-ablate/ablate
 
 # Write the launch script
 RUN echo "#!/bin/bash" > /start.sh
