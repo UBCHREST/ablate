@@ -35,6 +35,8 @@ jobs:
 
       - name: Building tests
         run: |
+          docker image list
+          
           ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies${{matrix.compiler.id}}${{matrix.indices.id}}:latest
 
           docker buildx build .\
