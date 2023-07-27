@@ -50,6 +50,8 @@ jobs:
           
           docker image list
 
+          docker history framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}
+
       - name: List images
         run: docker image list
 
