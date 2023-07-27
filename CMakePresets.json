@@ -103,7 +103,8 @@
         "ablate",
         "unitTests",
         "integrationTests",
-        "regressionTests"
+        "regressionTests",
+        "format-check"
       ]
     },
     {
