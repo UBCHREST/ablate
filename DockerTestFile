@@ -5,12 +5,6 @@ FROM $ABLATE_DEPENDENCY_IMAGE
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get -y install doxygen python3-inflection
 
-# Setup the petsc env for tests
-ARG PETSC_BUILD_ARCH=arch-ablate-opt
-ENV PETSC_ARCH=$PETSC_BUILD_ARCH
-ENV PKG_CONFIG_PATH="${PETSC_DIR}/${PETSC_ARCH}/lib/pkgconfig:$PKG_CONFIG_PATH"
-ENV PATH="${PETSC_DIR}/${PETSC_ARCH}/bin:$PATH"
-
 # provide hook to disable tensorflow
 ARG ENABLE_TENSOR_FLOW=1
 ENV TENSORFLOW_DIR=${ENABLE_TENSOR_FLOW:+${TENSORFLOW_DIR}}
@@ -18,15 +12,19 @@ ENV TF_ENABLE_ONEDNN_OPTS=0
 
 # Copy over the source
 COPY . /source
-WORKDIR /build
+WORKDIR /source
 
-# Configure & build
-run cmake -DCMAKE_BUILD_TYPE=Release -S /source/ -B .
-run make -j $(nproc)
+# Before building ablate, make sure it is in the correct format
+run cmake --preset=local-ablate-opt  && cmake --build --preset=ablate-format-check
+
+# Build & clean up the intermediate files to prevent file size bloat
+run cmake --build --preset=ablate-test-only-build -j $(nproc) && find . -name CMakeFiles -type d -prune -exec rm -rf {} \;
+
+# Rerun Cmake to make sure that the version is available to the testing pipeline
+run cmake --preset=local-ablate-opt
 
 # Build the custom documentation components
-run python3 /source/docs/ablateDevGenerator.py  --rootDir=/source/ --ablateExe=/build/ablate
+run python3 /source/docs/ablateDevGenerator.py  --rootDir=/source/ --ablateExe=/source/cmake-build-opt-ablate/ablate
 
 # Specify Entry Point for tests
-ENV CTEST_OUTPUT_ON_FAILURE=ON
-CMD bash -c "echo 'Running Tests for ${PETSC_ARCH}' && make format-check && ctest -L 'unitTests|integrationTests'"
+CMD bash -c "echo 'Running Tests for ${PETSC_ARCH}' && ctest --preset=pipeline-testing-fast"

@@ -45,9 +45,12 @@ jobs:
             --build-arg ENABLE_TENSOR_FLOW='${{ matrix.tensorFlowConfig }}' \
             --build-arg ABLATE_DEPENDENCY_IMAGE=$ABLATE_DEPENDENCY_IMAGE \
             --load 
+          
+          echo "Monitor image size"
+          docker history framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}
 
       - name: Get the version from the build file
-        run: echo "VERSION=$(docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} awk -F= '/CMAKE_PROJECT_VERSION:/ {print $NF}' CMakeCache.txt )" >> $GITHUB_ENV
+        run: echo "VERSION=$(docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} cmake --build --preset=ablate-print-version 2>&1 | head -n 1 )" >> $GITHUB_ENV
 
       - name: Check for version
         run: |
@@ -73,7 +76,7 @@ jobs:
       # if any of the regression tests changed also run all regression tests
       - name: Check and run the regression tests
         if: steps.check-regression-test-files.outputs.any_changed == 'true'
-        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ctest -L 'regressionTests'
+        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ctest --preset=pipeline-testing-regressionTests
 
       # copy the configured docs from the test image container
       - name: Configure documentation
