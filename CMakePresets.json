@@ -103,8 +103,21 @@
         "ablate",
         "unitTests",
         "integrationTests",
-        "regressionTests",
+        "regressionTests"
+      ]
+    },
+    {
+      "name": "ablate-format-check",
+      "configurePreset": "local-ablate-opt",
+      "targets": [
         "format-check"
+      ]
+    },
+    {
+      "name": "ablate-print-version",
+      "configurePreset": "local-ablate-opt",
+      "targets": [
+        "print-version"
       ]
     },
     {

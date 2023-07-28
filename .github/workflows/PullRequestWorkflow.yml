@@ -35,8 +35,6 @@ jobs:
 
       - name: Building tests
         run: |
-          docker image list
-          
           ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies${{matrix.compiler.id}}${{matrix.indices.id}}:latest
 
           docker buildx build .\
@@ -48,15 +46,11 @@ jobs:
             --build-arg ABLATE_DEPENDENCY_IMAGE=$ABLATE_DEPENDENCY_IMAGE \
             --load 
           
-          docker image list
-
+          echo "Monitor image size"
           docker history framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}
 
-      - name: List images
-        run: docker image list
-
       - name: Get the version from the build file
-        run: echo "VERSION=$(docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} awk -F= '/CMAKE_PROJECT_VERSION:/ {print $NF}' CMakeCache.txt )" >> $GITHUB_ENV
+        run: echo "VERSION=$(docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} cmake --build --preset=ablate-print-version 2>&1 | head -n 1 )" >> $GITHUB_ENV
 
       - name: Check for version
         run: |

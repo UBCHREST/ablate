@@ -1,0 +1,12 @@
+ARG ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies-gcc:latest
+FROM $ABLATE_DEPENDENCY_IMAGE
+
+# Copy over the source
+COPY . /source
+WORKDIR /source
+
+# Configure ABLATE
+run cmake --preset=local-ablate-opt
+
+# Specify Entry Point for tests
+CMD bash -c "cmake --build --preset=ablate-print-version 2>&1 | head -n 1"

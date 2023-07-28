@@ -15,7 +15,7 @@ run cmake --preset=local-ablate-opt
 run cmake --build --preset=ablate-only-build -j $(nproc)
 
 # Build the custom documentation components
-run python3 /source/docs/ablateDevGenerator.py  --rootDir=/source/ --ablateExe=/source/cmake-build-opt-ablate/ablate
+run python3 /source/docs/ablateDevGenerator.py --rootDir=/source/ --ablateExe=/source/cmake-build-opt-ablate/ablate
 
 # Write the launch script
 RUN echo "#!/bin/bash" > /start.sh

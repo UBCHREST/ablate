@@ -18,7 +18,6 @@ jobs:
         arch: [ { runson: ubuntu-latest, id: -amd64 } ]
         compiler: [ { cc: gcc, cxx: g++, id: -gcc } ]
         indices: [ { index64bit: 0, id: "" } ]
-        petscConfig: [ arch-ablate-opt ]
     runs-on: ${{ matrix.arch.runson }}
     if: github.event_name == 'push'
 
@@ -35,14 +34,13 @@ jobs:
           ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies${{matrix.compiler.id}}${{matrix.indices.id}}:latest
           
           docker buildx build .\
-            --file DockerTestFile \
-            --tag framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} \
-            --build-arg PETSC_BUILD_ARCH='${{ matrix.petscConfig }}' \
-            --build-arg ENABLE_TENSOR_FLOW='${{ matrix.tensorFlowConfig }}' \
+            --file DockerVersionFile \
+            --tag framework-version-image${{matrix.compiler.id}}${{matrix.indices.id}} \
             --build-arg ABLATE_DEPENDENCY_IMAGE=$ABLATE_DEPENDENCY_IMAGE \
             --load
+
       - name: Get the version from the build file
-        run: echo "VERSION=$(docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} awk -F= '/CMAKE_PROJECT_VERSION:/ {print $NF}' CMakeCache.txt )" >> $GITHUB_ENV
+        run: echo "VERSION=$(docker run --rm framework-version-image${{matrix.compiler.id}}${{matrix.indices.id}})" >> $GITHUB_ENV
 
       - name: set version and push tag
         id: tag_version

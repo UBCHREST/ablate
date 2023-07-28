@@ -14,11 +14,17 @@ ENV TF_ENABLE_ONEDNN_OPTS=0
 COPY . /source
 WORKDIR /source
 
-# Configure & build & clean up the intermediate files to prevent file size bloat
-run cmake --preset=local-ablate-opt && cmake --build --preset=ablate-test-only-build -j $(nproc) && find . -name CMakeFiles -type d -prune -exec rm -rf {} \;
+# Before building ablate, make sure it is in the correct format
+run cmake --preset=local-ablate-opt  && cmake --build --preset=ablate-format-check
+
+# Build & clean up the intermediate files to prevent file size bloat
+run cmake --build --preset=ablate-test-only-build -j $(nproc) && find . -name CMakeFiles -type d -prune -exec rm -rf {} \;
+
+# Rerun Cmake to make sure that the version is available to the testing pipeline
+run cmake --preset=local-ablate-opt
 
 # Build the custom documentation components
 run python3 /source/docs/ablateDevGenerator.py  --rootDir=/source/ --ablateExe=/source/cmake-build-opt-ablate/ablate
 
 # Specify Entry Point for tests
-CMD bash -c "echo 'Running Tests for ${PETSC_ARCH}' && make format-check && ctest --preset=pipeline-testing-fast"
+CMD bash -c "echo 'Running Tests for ${PETSC_ARCH}' && ctest --preset=pipeline-testing-fast"

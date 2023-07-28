@@ -46,6 +46,7 @@ include(config/findJson.cmake)
 include(config/findTensorFlow.cmake)
 include(config/findChrestCompilerFlags.cmake)
 include(config/findSLEPc.cmake)
+include(config/printVersion.cmake)
 
 # specify in the required libaries
 target_link_libraries(ablateLibrary
