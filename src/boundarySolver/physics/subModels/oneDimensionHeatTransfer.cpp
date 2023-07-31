@@ -131,7 +131,6 @@ ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::OneDimensi
     DMCreateLocalVector(auxDm, &localAuxVector) >> utilities::PetscUtilities::checkError;
     VecZeroEntries(localAuxVector) >> utilities::PetscUtilities::checkError;
     DMSetAuxiliaryVec(subModelDm, nullptr, 0, 0, localAuxVector) >> utilities::PetscUtilities::checkError;
-
 }
 
 ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::~OneDimensionHeatTransfer() {
@@ -257,42 +256,42 @@ PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTrans
     constexpr PetscInt coupledWallId = 0;  // assume the boundary is always zero
     PetscCall(PetscDSGetBoundary(ds, coupledWallId, nullptr, &currentBcType, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr));
     if (currentBcType != neededBcType) {
-//        // Clone the DM
-//        DM newDM;
-//        PetscCall(DMClone(oneDimensionHeatTransfer->subModelDm, &newDM));
-//
-//        // Set the aux vector in the new dm
-//        PetscCall(DMSetAuxiliaryVec(newDM, nullptr, 0, 0, oneDimensionHeatTransfer->localAuxVector));
-//
-//        // Setup the new dm
-//        PetscCall(oneDimensionHeatTransfer->SetupDiscretization(newDM, neededBcType));
-//
-//        // Reset the TS
-//        PetscCall(TSReset(ts));
-//
-//        // Create a new global vector
-//        Vec newGlobalVector;
-//        PetscCall(DMCreateGlobalVector(newDM, &newGlobalVector));
-//
-//        // Copy the name
-//        const char *name;
-//        PetscCall(PetscObjectGetName((PetscObject)currentGlobalVec, &name));
-//        PetscCall(PetscObjectSetName((PetscObject)newGlobalVector, name));
-//
-//        // Map from the local vector back to the global
-//        PetscCall(DMLocalToGlobal(newDM, locVec, INSERT_VALUES, newGlobalVector));
-//
-//        // Restore the locVec while we still have access to this dm
-//        PetscCall(DMRestoreLocalVector(dm, &locVec));
-//
-//        // Set in the TS
-//        PetscCall(TSSetDM(ts, newDM));
-//        PetscCall(TSSetSolution(ts, newGlobalVector));
-//
-//        // We need to "destroy" the reference count for the new objects so that they are cleared when the ts no longer needs them
-//        PetscCall(DMDestroy(&newDM));
-//        PetscCall(DMDestroy(&dm));
-//        PetscCall(VecDestroy(&newGlobalVector));
+        // Clone the DM
+        DM newDM;
+        PetscCall(DMClone(oneDimensionHeatTransfer->subModelDm, &newDM));
+
+        // Set the aux vector in the new dm
+        PetscCall(DMSetAuxiliaryVec(newDM, nullptr, 0, 0, oneDimensionHeatTransfer->localAuxVector));
+
+        // Setup the new dm
+        PetscCall(oneDimensionHeatTransfer->SetupDiscretization(newDM, neededBcType));
+
+        // Reset the TS
+        PetscCall(TSReset(ts));
+
+        // Create a new global vector
+        Vec newGlobalVector;
+        PetscCall(DMCreateGlobalVector(newDM, &newGlobalVector));
+
+        // Copy the name
+        const char *name;
+        PetscCall(PetscObjectGetName((PetscObject)currentGlobalVec, &name));
+        PetscCall(PetscObjectSetName((PetscObject)newGlobalVector, name));
+
+        // Map from the local vector back to the global
+        PetscCall(DMLocalToGlobal(newDM, locVec, INSERT_VALUES, newGlobalVector));
+
+        // Restore the locVec while we still have access to this dm
+        PetscCall(DMRestoreLocalVector(dm, &locVec));
+
+        // Set in the TS
+        PetscCall(TSSetDM(ts, newDM));
+        PetscCall(TSSetSolution(ts, newGlobalVector));
+
+        // We need to "destroy" the reference count for the new objects so that they are cleared when the ts no longer needs them
+        PetscCall(DMDestroy(&newDM));
+        PetscCall(DMDestroy(&dm));
+        PetscCall(VecDestroy(&newGlobalVector));
     } else {
         // Cleanup
         PetscCall(DMRestoreLocalVector(dm, &locVec));
@@ -369,10 +368,6 @@ void ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::Jacob
                                                                                           PetscScalar g3[]) {
     for (PetscInt d = 0; d < dim; ++d) {
         g3[d * dim + d] = u_tShift * constants[density] * constants[specificHeat];
-        if(PetscIsInfReal(g3[d * dim + d]) || PetscIsNanReal(g3[d * dim + d])){
-            std::cout << "nan" << std::endl;
-        }
-
     }
 }
 
@@ -386,9 +381,6 @@ void ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::Jacob
                                                                                           PetscScalar g3[]) {
     for (PetscInt d = 0; d < dim; ++d) {
         g3[d * dim + d] = constants[conductivity];
-        if(PetscIsInfReal(g3[d * dim + d]) || PetscIsNanReal(g3[d * dim + d])){
-            std::cout << "nan" << std::endl;
-        }
     }
 }
 
@@ -401,9 +393,6 @@ void ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::WInte
                                                                                                   PetscReal t, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[],
                                                                                                   PetscScalar f0[]) {
     f0[0] = constants[density] * constants[specificHeat] * u_t[0];
-    if(PetscIsInfReal( f0[0]) || PetscIsNanReal( f0[0])){
-        std::cout << "nan" << std::endl;
-    }
 }
 
 /**
@@ -416,17 +405,11 @@ void ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::WInte
                                                                                                           PetscInt numConstants, const PetscScalar constants[], PetscScalar f1[]) {
     for (PetscInt d = 0; d < dim; ++d) {
         f1[d] = constants[conductivity] * u_x[d];
-        if(PetscIsInfReal( f1[d]) || PetscIsNanReal( f1[d])){
-            std::cout << "nan" << std::endl;
-        }
     }
 }
 
 PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::EssentialCoupledWallBC(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt Nc, PetscScalar *u, void *ctx) {
     *u = *((PetscScalar *)ctx);
-    if(PetscIsInfReal( *u) || PetscIsNanReal( *u)){
-        std::cout << "nan" << std::endl;
-    }
     return PETSC_SUCCESS;
 }
 
@@ -436,11 +419,7 @@ void ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::Natur
                                                                                                 PetscReal t, const PetscReal x[], const PetscReal n[], PetscInt numConstants,
                                                                                                 const PetscScalar constants[], PetscScalar f0[]) {
     // The normal is facing out, so scale the heat flux by -1
-    std::cout << "f0[0]: " << f0[0];
-    f0[0] =-a[aOff[0]];
-//    if(PetscIsInfReal(f0[0]) || PetscIsNanReal(f0[0])){
-        std::cout << " -- " << f0[0] << std::endl;
-//    }
+    f0[0] = -a[aOff[0]];
 }
 PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::Solve(PetscReal heatFluxToSurface, PetscReal dt, PetscReal &surfaceTemperature, PetscReal &heatFlux) {
     PetscFunctionBeginHot;

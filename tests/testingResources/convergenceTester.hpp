@@ -16,11 +16,22 @@ class ConvergenceTester {
     const std::shared_ptr<ablate::monitors::logs::Log> log;
 
    public:
-    ConvergenceTester(std::string name, const std::shared_ptr<ablate::monitors::logs::Log>& = {});
+    /**
+     * helper class to compare convergence history
+     * @param name
+     */
+    explicit ConvergenceTester(std::string name, const std::shared_ptr<ablate::monitors::logs::Log>& = {});
 
     void Record(PetscReal h, const std::vector<PetscReal>& error);
 
-    bool CompareConvergenceRate(const std::vector<PetscReal>& expectedConvergenceRate, std::string& message);
+    /**
+     * perform the compare, output info, and return status
+     * @param expectedConvergenceRate
+     * @param message
+     * @param checkDifference if true checks to see if rates are close, if false, just checks if rate is greater than expected
+     * @return true if they match, false if they do not
+     */
+    bool CompareConvergenceRate(const std::vector<PetscReal>& expectedConvergenceRate, std::string& message, bool checkDifference = true);
 };
 
 }  // namespace testingResources
