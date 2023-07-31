@@ -122,6 +122,12 @@ class OneDimensionHeatTransfer {
      */
     PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time);
 
+    /**
+     * helper function to get the surface temperature
+     * @return
+     */
+    [[nodiscard]] PetscErrorCode GetSurfaceTemperature(PetscScalar &surfaceTemperature) const;
+
    private:
     /**
      * Compute the jacobian term g0 - integrand for the test and basis function term i
@@ -209,4 +215,4 @@ class OneDimensionHeatTransfer {
 };
 
 }  // namespace ablate::boundarySolver::physics::subModels
-#endif  // ABLATELIBRARY_SOLIDHEATTRANSFER_HPP
+#endif  // ABLATELIBRARY_ONEDIMENSIONHEATTRANSFER_HPP

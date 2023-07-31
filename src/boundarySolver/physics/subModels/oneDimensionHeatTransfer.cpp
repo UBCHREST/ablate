@@ -485,3 +485,22 @@ PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTrans
 
     PetscFunctionReturn(PETSC_SUCCESS);
 }
+PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::GetSurfaceTemperature(PetscScalar &surfaceTemperature) const {
+    PetscFunctionBegin;
+    // compute the current surface state
+    DM activeDM;
+    PetscCall(TSGetDM(subModelTs, &activeDM));
+    PetscReal time;
+    PetscCall(TSGetTime(subModelTs, &time));
+    Vec globalSolutionVector;
+    PetscCall(TSGetSolution(subModelTs, &globalSolutionVector));
+
+    Vec locVec;
+    PetscCall(DMGetLocalVector(activeDM, &locVec));
+    PetscCall(DMPlexInsertBoundaryValues(activeDM, PETSC_TRUE, locVec, time, nullptr, nullptr, nullptr));
+    PetscCall(DMGlobalToLocal(activeDM, globalSolutionVector, INSERT_VALUES, locVec));
+    PetscReal heatFlux;
+    PetscCall(ComputeSurfaceInformation(activeDM, locVec, surfaceTemperature, heatFlux));
+    PetscCall(DMRestoreLocalVector(activeDM, &locVec));
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
