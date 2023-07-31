@@ -20,11 +20,13 @@ ablate::domain::BoxMeshBoundaryCells::BoxMeshBoundaryCells(const std::string& na
         }
     }
 
-    // make sure that all fields have a region
-    for (const auto& fieldDescriptor : fieldDescriptors) {
-        for (auto& fieldDescription : fieldDescriptor->GetFields()) {
-            if (fieldDescription->region == nullptr) {
-                throw std::invalid_argument("All fields in ablate::domain::BoxMeshBoundaryCells::BoxMeshBoundaryCells should specify a region.");
+    // make sure that all fields have a region if we might have unused corners (dim > 1)
+    if (GetDimensions() > 1) {
+        for (const auto& fieldDescriptor : fieldDescriptors) {
+            for (auto& fieldDescription : fieldDescriptor->GetFields()) {
+                if (fieldDescription->region == nullptr) {
+                    throw std::invalid_argument("All fields in ablate::domain::BoxMeshBoundaryCells::BoxMeshBoundaryCells should specify a region.");
+                }
             }
         }
     }
