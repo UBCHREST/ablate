@@ -6,6 +6,7 @@
 #include <vector>
 #include "domain/range.hpp"
 #include "domain/RBF/rbf.hpp"
+#include "domain/reverseRange.hpp"
 #include "finiteVolume/fluxCalculator/fluxCalculator.hpp"
 #include "flowProcess.hpp"
 #include "process.hpp"
@@ -15,15 +16,24 @@
 namespace ablate::finiteVolume::processes {
 
   class SurfaceForce : public Process {
-    PetscReal sigma;
+
 
     private:
     DM dmData = nullptr;
 
     // The DMPlex field id of the normal vector and the (smooth) vof field
-    const PetscInt dataNormalID = 0;
-    const PetscInt dataVofID = 1;
+    const PetscInt dataNormalID = 0;   // At vertices
+    const PetscInt dataVofID = 1;      // At cell centers
 
+    PetscReal sigma;
+
+    ablate::domain::Range cellRange;
+    ablate::domain::ReverseRange reverseCellRange;
+
+    ablate::domain::Range vertRange;
+    ablate::domain::ReverseRange reverseVertRange;
+
+//    void Reinitialize(const ablate::finiteVolume::processes::SurfaceForce* process);
 
     public:
 

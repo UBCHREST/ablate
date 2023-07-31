@@ -1,5 +1,8 @@
 #include "rieman.hpp"
 #include <eos/perfectGas.hpp>
+#include "riemannDecode.hpp"
+
+
 ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::Rieman::RiemanFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR,
                                                                                                                  PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal *massFlux, PetscReal *p12) {
     /*
@@ -21,171 +24,44 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
      * err: final residual for iteration
      * MAXIT: maximum iteration times
      */
+
+//PetscFPrintf(MPI_COMM_WORLD, stderr, "\x1b[1m(%s:%d, %s)\x1b[0m\n  \x1b[1m\x1b[90m\n", __FILE__, __LINE__, __FUNCTION__);
+//exit(0);
+
     PetscInt i = 0;
     const PetscInt MAXIT = 100;
     const PetscReal err = 1e-6;
     PetscReal gamma = *(PetscReal *)ctx;  // pass-in specific heat ratio from EOS
     // This is where Rieman solver lives.
     PetscReal gamm1 = gamma - 1.0, gamp1 = gamma + 1.0;
-    PetscReal pold, pstar, ustar, f_L_0, f_L_1, f_R_0, f_R_1, del_u = uR - uL;
-    PetscReal A, B, sqterm;
-    PetscReal astar, STLR, SHLR, uX;
+    PetscReal pold, pstar, f_L_0, f_L_1, f_R_0, f_R_1, del_u = uR - uL;
+    PetscReal uX;
 
     // Here is the initial guess for pstar - assuming two exapansion wave
     pstar = aL + aR - (0.5 * gamm1 * (uR - uL));
     pstar = pstar / ((aL / PetscPowReal(pL, 0.5 * gamm1 / gamma)) + (aR / PetscPowReal(pR, 0.5 * gamm1 / gamma)));
     pstar = PetscPowReal(pstar, 2.0 * gamma / gamm1);
 
-    if (pstar <= pL)  // expansion wave equation from Toto
-    {
-        f_L_0 = ((2. * aL) / gamm1) * (PetscPowReal(pstar / pL, 0.5 * gamm1 / gamma) - 1.);
-        f_L_1 = (aL / pL / gamma) * PetscPowReal(pstar / pL, -0.5 * gamp1 / gamma);
-    } else  // shock equation from Toro
-    {
-        A = 2 / gamp1 / rhoL;
-        B = gamm1 * pL / gamp1;
-        sqterm = sqrt(A / (pstar + B));
-        f_L_0 = (pstar - pL) * sqterm;
-        f_L_1 = sqterm * (1.0 - (0.5 * (pstar - pL) / (B + pstar)));
-    }
-    if (pstar <= pR)  // expansion wave equation from Toto
-    {
-        f_R_0 = ((2 * aR) / gamm1) * (PetscPowReal(pstar / pR, 0.5 * gamm1 / gamma) - 1);
-        f_R_1 = (aR / pR / gamma) * PetscPowReal(pstar / pR, -0.5 * gamp1 / gamma);
-    } else  // shock euqation from Toro
-    {
-        A = 2 / gamp1 / rhoR;
-        B = gamm1 * pR / gamp1;
-        sqterm = sqrt(A / (pstar + B));
-        f_R_0 = (pstar - pR) * sqterm;
-        f_R_1 = sqterm * (1.0 - (0.5 * (pstar - pR) / (B + pstar)));
-    }
+    ExpansionShockCalculation(pstar, gamma, gamm1, gamp1, 0.0, pL, aL, rhoL, &f_L_0, &f_L_1);
+    ExpansionShockCalculation(pstar, gamma, gamm1, gamp1, 0.0, pR, aR, rhoR, &f_R_0, &f_R_1);
 
     // iteration starts
     while (PetscAbsReal(f_L_0 + f_R_0 + del_u) > err && i <= MAXIT)  // Newton's method
     {
         pold = pstar;
         pstar = pold - (f_L_0 + f_R_0 + del_u) / (f_L_1 + f_R_1);  // new guess
-        if (pstar <= pL)                                           // expansion wave equation from Toto
-        {
-            f_L_0 = ((2. * aL) / gamm1) * (PetscPowReal(pstar / pL, 0.5 * gamm1 / gamma) - 1.);
-            f_L_1 = (aL / pL / gamma) * PetscPowReal(pstar / pL, -0.5 * gamp1 / gamma);
-        } else  // shock equation from Toro
-        {
-            A = 2 / gamp1 / rhoL;
-            B = gamm1 * pL / gamp1;
-            sqterm = sqrt(A / (pstar + B));
-            f_L_0 = (pstar - pL) * sqterm;
-            f_L_1 = sqterm * (1.0 - (0.5 * (pstar - pL) / (B + pstar)));
-        }
-        if (pstar <= pR)  // expansion wave equation from Toto
-        {
-            f_R_0 = ((2 * aR) / gamm1) * (PetscPowReal(pstar / pR, 0.5 * gamm1 / gamma) - 1);
-            f_R_1 = (aR / pR / gamma) * PetscPowReal(pstar / pR, -0.5 * gamp1 / gamma);
-        } else  // shock euqation from Toro
-        {
-            A = 2 / gamp1 / rhoR;
-            B = gamm1 * pR / gamp1;
-            sqterm = sqrt(A / (pstar + B));
-            f_R_0 = (pstar - pR) * sqterm;
-            f_R_1 = sqterm * (1.0 - (0.5 * (pstar - pR) / (B + pstar)));
-        }
+
+
+        ExpansionShockCalculation(pstar, gamma, gamm1, gamp1, 0.0, pL, aL, rhoL, &f_L_0, &f_L_1);
+        ExpansionShockCalculation(pstar, gamma, gamm1, gamp1, 0.0, pR, aR, rhoR, &f_R_0, &f_R_1);
+
         i++;
     }
     if (i > MAXIT) {
         throw std::runtime_error("Can't find pstar; Iteration not converging; Go back and do it again");
     }
 
-    // Now, start backing out the rest of the info.
-    ustar = 0.5 * (uL + uR + f_R_0 - f_L_0);
-    if (ustar >= 0) {
-        if (pstar <= pL)  // left expansion
-        {
-            astar = aL * PetscPowReal(pstar / pL, (gamm1 / (2 * gamma)));
-            STLR = ustar - astar;
-            if (STLR >= 0)  // positive tail wave
-            {
-                SHLR = uL - aL;
-                if (SHLR >= 0)  // positive head wave
-                {
-                    *massFlux = rhoL * uL;
-                    *p12 = pL;
-                    uX = uL;
-                } else  // Eq. 4.56 negative head wave
-                {
-                    A = rhoL * PetscPowReal((2 / gamp1) + ((gamm1 * uL) / (gamp1 * aL)), (2 / gamm1));
-                    uX = 2 / gamp1 * (aL + (gamm1 * uL / 2));
-                    *massFlux = A * uX;
-                    *p12 = pL * PetscPowReal((2 / gamp1) + ((gamm1 * uL) / (gamp1 * aL)), (2 * gamma / gamm1));
-                }
-            } else {
-                auto pRatio = pstar / pL;
-                *massFlux = rhoL * PetscPowReal(pRatio, 1.0 / gamma) * ustar;
-                *p12 = pstar;
-                uX = ustar;
-            }
-
-        } else  // Left shock
-        {
-            A = sqrt((gamp1 * pstar / 2 / gamma / pL) + (gamm1 / 2 / gamma));
-            STLR = uL - (aL * A);  // shock wave speed
-            if (STLR >= 0) {
-                *massFlux = rhoL * uL;
-                *p12 = pL;
-                uX = uL;
-            } else  // negative wave speed
-            {
-                auto pRatio = pstar / pL;
-                *massFlux = rhoL * (pRatio + (gamm1 / gamp1)) / (gamm1 * pRatio / gamp1 + 1) * ustar;
-                *p12 = pstar;
-                uX = ustar;
-            }
-        }
-    } else  // negative ustar
-    {
-        if (pstar <= pR)  // right expansion
-        {
-            SHLR = uR + aR;
-            if (SHLR >= 0)  // positive head wave
-            {
-                astar = aR * PetscPowReal(pstar / pR, (gamm1 / (2 * gamma)));
-                STLR = ustar + astar;
-                if (STLR >= 0)  // positive tail wave
-                {
-                    auto pRatio = pstar / pR;
-                    *massFlux = rhoR * PetscPowReal(pRatio, 1 / gamma) * ustar;
-                    *p12 = pstar;
-                    uX = ustar;
-                } else  // Eq. 4.56 negative tail wave
-                {
-                    A = rhoR * PetscPowReal((2 / gamp1) - ((gamm1 * uR) / (gamp1 * aR)), (2 / gamm1));
-                    uX = 2 / gamp1 * (-aR + (gamm1 * uR / 2));
-                    *massFlux = A * uX;
-                    *p12 = pR * PetscPowReal((2 / gamp1) - ((gamm1 * uR) / (gamp1 * aR)), (2 * gamma / gamm1));
-                }
-            } else  // negative head wave
-            {
-                *massFlux = rhoR * uR;
-                *p12 = pR;
-                uX = uR;
-            }
-        } else  // right shock
-        {
-            A = sqrt((gamp1 * pstar / 2 / gamma / pR) + (gamm1 / 2 / gamma));
-            STLR = uR + (aR * A);  // shock wave speed
-            if (STLR >= 0) {
-                auto pRatio = pstar / pR;
-                *massFlux = rhoR * (pRatio + (gamm1 / gamp1)) / (gamm1 * pRatio / gamp1 + 1) * ustar;
-                *p12 = pstar;
-                uX = ustar;
-            } else  // negative wave speed
-            {
-                *massFlux = rhoR * uR;
-                *p12 = pR;
-                uX = uR;
-            }
-        }
-    }
+    riemannDecode(pstar, uL, aL, rhoL, 0.0, pL, gamma, f_L_0, uR, aR, rhoR, 0.0, pR, gamma, f_R_0, massFlux, p12, &uX);
 
     return uX > 0 ? LEFT : RIGHT;
 }

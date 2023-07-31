@@ -6,7 +6,9 @@ target_sources(ablateLibrary
         ausmpUp.cpp
         rieman.cpp
         riemann2Gas.cpp
+        riemannDecode.cpp
         riemannStiff.cpp
+
         PUBLIC
         fluxCalculator.hpp
         ausm.hpp
@@ -15,5 +17,6 @@ target_sources(ablateLibrary
         ausmpUp.hpp
         rieman.hpp
         riemann2Gas.hpp
+        riemannDecode.hpp
         riemannStiff.hpp
         )
