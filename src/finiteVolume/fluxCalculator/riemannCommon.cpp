@@ -1,5 +1,5 @@
 
-#include "riemannDecode.hpp"
+#include "riemannCommon.hpp"
 
 
 void ExpansionShockCalculation(const PetscReal pstar, const PetscReal gamma, const PetscReal gamm1, const PetscReal gamp1, const PetscReal p0, const PetscReal p, const PetscReal a, const PetscReal rho, PetscReal *f0, PetscReal *f1) {
@@ -19,12 +19,12 @@ void ExpansionShockCalculation(const PetscReal pstar, const PetscReal gamma, con
 }
 
 
-void riemannDecode( const PetscReal pstar,
+ablate::finiteVolume::fluxCalculator::Direction riemannDirection( const PetscReal pstar,
                     const PetscReal uL, const PetscReal aL, const PetscReal rhoL, const PetscReal p0L, const PetscReal pL, const PetscReal gammaL, const PetscReal fL,
                     const PetscReal uR, const PetscReal aR, const PetscReal rhoR, const PetscReal p0R, const PetscReal pR, const PetscReal gammaR, const PetscReal fR,
-                    PetscReal *massFlux, PetscReal *p12, PetscReal *uX) {
+                    PetscReal *massFlux, PetscReal *p12) {
 
-    PetscReal STLR, SHLR, A, pRatio, gamma, gamm1, gamp1, astar;
+    PetscReal STLR, SHLR, A, pRatio, gamma, gamm1, gamp1, astar, uX;
 
     // Now, start backing out the rest of the info.
     PetscReal ustar = 0.5 * (uL + uR + fR - fL);
@@ -43,19 +43,19 @@ void riemannDecode( const PetscReal pstar,
                 {
                     *massFlux = rhoL * uL;
                     *p12 = pL;
-                    *uX = uL;
+                    uX = uL;
                 } else  // Eq. 4.56 negative head wave
                 {
                     A = rhoL * PetscPowReal((2 / gamp1) + ((gamm1 * uL) / (gamp1 * aL)), (2 / gamm1));
-                    *uX = 2 / gamp1 * (aL + (gamm1 * uL / 2));
-                    *massFlux = A * (*uX);
+                    uX = 2 / gamp1 * (aL + (gamm1 * uL / 2));
+                    *massFlux = A * uX;
                     *p12 = (pL + p0L) * PetscPowReal((2 / gamp1) + ((gamm1 * uL) / (gamp1 * aL)), (2 * gamma / gamm1));
                 }
             } else {
                 pRatio = (pstar + p0L) / (pL + p0L);
                 *massFlux = rhoL * PetscPowReal(pRatio, 1.0 / gamma) * ustar;
                 *p12 = pstar;
-                *uX = ustar;
+                uX = ustar;
             }
 
         } else  // Left shock
@@ -65,13 +65,13 @@ void riemannDecode( const PetscReal pstar,
             if (STLR >= 0) {
                 *massFlux = rhoL * uL;
                 *p12 = pL;
-                *uX = uL;
+                uX = uL;
             } else  // negative wave speed
             {
                 pRatio = (pstar + p0L) / (pL + p0L);
                 *massFlux = rhoL * (pRatio + (gamm1 / gamp1)) / (gamm1 * pRatio / gamp1 + 1) * ustar;
                 *p12 = pstar;
-                *uX = ustar;
+                uX = ustar;
             }
         }
     } else  // negative ustar
@@ -91,19 +91,19 @@ void riemannDecode( const PetscReal pstar,
                     pRatio = (pstar + p0R) / (pR + p0R);
                     *massFlux = rhoR * PetscPowReal(pRatio, 1 / gamma) * ustar;
                     *p12 = pstar;
-                    *uX = ustar;
+                    uX = ustar;
                 } else  // Eq. 4.56 negative tail wave
                 {
                     A = rhoR * PetscPowReal((2 / gamp1) - ((gamm1 * uR) / (gamp1 * aR)), (2 / gamm1));
-                    *uX = 2 / gamp1 * (-aR + (gamm1 * uR / 2));
-                    *massFlux = A * (*uX);
+                    uX = 2 / gamp1 * (-aR + (gamm1 * uR / 2));
+                    *massFlux = A * uX;
                     *p12 = (pR + p0R) * PetscPowReal((2 / gamp1) - ((gamm1 * uR) / (gamp1 * aR)), (2 * gamma / gamm1));
                 }
             } else  // negative head wave
             {
                 *massFlux = rhoR * uR;
                 *p12 = pR;
-                *uX = uR;
+                uX = uR;
             }
         } else  // right shock
         {
@@ -113,15 +113,15 @@ void riemannDecode( const PetscReal pstar,
                 pRatio = (pstar + p0R) / (pR + p0R);
                 *massFlux = rhoR * (pRatio + (gamm1 / gamp1)) / (gamm1 * pRatio / gamp1 + 1) * ustar;
                 *p12 = pstar;
-                *uX = ustar;
+                uX = ustar;
             } else  // negative wave speed
             {
                 *massFlux = rhoR * uR;
                 *p12 = pR;
-                *uX = uR;
+                uX = uR;
             }
         }
     }
 
-//    return uX > 0 ? LEFT : RIGHT;
+    return (uX > 0 ? ablate::finiteVolume::fluxCalculator::LEFT : ablate::finiteVolume::fluxCalculator::RIGHT);
 }
