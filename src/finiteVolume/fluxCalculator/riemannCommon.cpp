@@ -1,20 +1,30 @@
 
 #include "riemannCommon.hpp"
+#include "utilities/constants.hpp"
 
 
 void ExpansionShockCalculation(const PetscReal pstar, const PetscReal gamma, const PetscReal gamm1, const PetscReal gamp1, const PetscReal p0, const PetscReal p, const PetscReal a, const PetscReal rho, PetscReal *f0, PetscReal *f1) {
 
     if (pstar <= p)  // expansion wave equation from Toro
     {
-        *f0 = ((2. * a) / gamm1) * (PetscPowReal((pstar + p0) / (p + p0), 0.5 * gamm1 / gamma) - 1.);
-        *f1 = (a / (p + p0) / gamma) * PetscPowReal((pstar + p0) / (p + p0), -0.5 * gamp1 / gamma);
+        PetscReal A = 2.0 * a / gamm1;
+        PetscReal B = 0.5 * gamm1 / gamma;
+        PetscReal pRatio = (pstar + p0) / (p + p0);
+        PetscReal pPow = PetscPowReal(pRatio, B);
+
+        *f0 = A*(pPow - 1.0);
+        *f1 = A*B*pPow/(pstar + p0);
+
     } else  // shock equation from Toro
     {
-        PetscReal A = 2 / gamp1 / rho;
+        PetscReal A = 2 / (gamp1 * rho);
         PetscReal B = gamm1 * (p + p0) / gamp1;
-        PetscReal sqterm = sqrt(A / (pstar + p0 + B));
-        *f0 = (pstar - p) * sqterm;
-        *f1 = sqterm * (1.0 - (0.5 * (pstar - p) / (B + pstar + p0)));
+        PetscReal pFrac = A / (pstar + p0 + B);
+        PetscReal pSqrt = PetscSqrtReal(pFrac);
+
+        *f0 = (pstar - p) * pSqrt;
+        *f1 = 0.5 * pFrac * pSqrt * (2.0*(B+p0) + pstar + p) / A;
+
     }
 }
 
@@ -124,4 +134,43 @@ ablate::finiteVolume::fluxCalculator::Direction riemannDirection( const PetscRea
     }
 
     return (uX > 0 ? ablate::finiteVolume::fluxCalculator::LEFT : ablate::finiteVolume::fluxCalculator::RIGHT);
+}
+
+// Solve the non-linear equation
+ablate::finiteVolume::fluxCalculator::Direction reimannSolver(
+    const PetscReal uL, const PetscReal aL, const PetscReal rhoL, const PetscReal p0L, const PetscReal pL, const PetscReal gammaL,
+    const PetscReal uR, const PetscReal aR, const PetscReal rhoR, const PetscReal p0R, const PetscReal pR, const PetscReal gammaR,
+    const PetscReal pstar0, PetscReal *massFlux, PetscReal *p12) {
+
+  const PetscReal tol = 1e-8;
+  PetscReal pold, f_L_0, f_L_1, f_R_0, f_R_1, pstar = pstar0;
+  const PetscReal del_u = uR - uL;
+  const PetscReal gamLm1 = gammaL - 1.0, gamLp1 = gammaL + 1.0;
+  const PetscReal gamRm1 = gammaR - 1.0, gamRp1 = gammaR + 1.0;
+  const PetscInt MAXIT = 100;
+  PetscInt i = 0;
+
+  do // Newton's method
+  {
+      ExpansionShockCalculation(pstar, gammaL, gamLm1, gamLp1, p0L, pL, aL, rhoL, &f_L_0, &f_L_1);
+      ExpansionShockCalculation(pstar, gammaR, gamRm1, gamRp1, p0R, pR, aR, rhoR, &f_R_0, &f_R_1);
+
+      pold = pstar;
+      pstar = pold - (f_L_0 + f_R_0 + del_u) / (f_L_1 + f_R_1);  // new guess
+
+      // A stiffened gas will have p0L and p0R as positive numbers. If they're both zero (or close enough) then don't allow
+      //  for a negative pstar. Set the value to something just above zero.
+      if (pstar < 0 && (p0L < ablate::utilities::Constants::tiny || p0R < ablate::utilities::Constants::tiny) ) {
+          pstar = ablate::utilities::Constants::small;
+      }
+
+      i++;
+  } while (PetscAbsReal( (pstar - pold) / pstar) > tol && i <= MAXIT);
+
+  if (i > MAXIT) {
+      throw std::runtime_error("Can't find pstar; Iteration not converging; Go back and do it again");
+  }
+
+  return riemannDirection(pstar, uL, aL, rhoL, p0L, pL, gammaL, f_L_0, uR, aR, rhoR, p0R, pR, gammaR, f_R_0, massFlux, p12);
+
 }
