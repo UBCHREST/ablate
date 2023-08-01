@@ -17,15 +17,20 @@ class Region {
     std::size_t id;
 
    public:
-    Region(std::string name = {}, int = 1);
+    /**
+     * Create a region that includes the label name and value
+     * @param name label name
+     * @param value label value
+     */
+    explicit Region(std::string name = {}, int value = 1);
 
-    inline const std::size_t& GetId() const { return id; }
+    [[nodiscard]] inline const std::size_t& GetId() const { return id; }
 
-    inline const std::string& GetName() const { return name; }
+    [[nodiscard]] inline const std::string& GetName() const { return name; }
 
-    inline const PetscInt& GetValue() const { return value; }
+    [[nodiscard]] inline const PetscInt& GetValue() const { return value; }
 
-    inline const std::string ToString() const { return name + ":" + std::to_string(value); };
+    [[nodiscard]] inline const std::string ToString() const { return name + ":" + std::to_string(value); };
 
     /**
      * create and returns a label/region value

@@ -54,8 +54,18 @@ class CompressibleFlowFields : public domain::FieldDescriptor {
     const std::shared_ptr<parameters::Parameters> auxFieldOptions = ablate::parameters::MapParameters::Create({{"petscfv_type", "leastsquares"}, {"petsclimiter_type", "none"}});
 
    public:
-    explicit CompressibleFlowFields(std::shared_ptr<eos::EOS>, std::shared_ptr<domain::Region> = {}, std::shared_ptr<parameters::Parameters> conservedFieldParameters = {});
+    /**
+     * Create a helper class that produces the required compressible flow fields based upon the eos and specifed region
+     * @param eos the eos used to determine the species
+     * @param region the region for all of the fields
+     * @param conservedFieldParameters override the default field parameters for the conserved field
+     */
+    explicit CompressibleFlowFields(std::shared_ptr<eos::EOS> eos, std::shared_ptr<domain::Region> region = {}, std::shared_ptr<parameters::Parameters> conservedFieldParameters = {});
 
+    /**
+     * override and return the compressible flow fields
+     * @return
+     */
     std::vector<std::shared_ptr<domain::FieldDescription>> GetFields() override;
 };
 

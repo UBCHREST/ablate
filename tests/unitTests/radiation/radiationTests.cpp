@@ -171,7 +171,8 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}));
 
             // determine required fields for radiation, this will include euler and temperature
-            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {
+                std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos, std::make_shared<ablate::domain::Region>("domain"))};
 
             auto domain = std::make_shared<ablate::domain::BoxMeshBoundaryCells>("simpleMesh",
                                                                                  fieldDescriptors,
