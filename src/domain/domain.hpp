@@ -38,6 +38,12 @@ class Domain : private utilities::Loggable<Domain> {
            const std::shared_ptr<parameters::Parameters>& options = {}, bool setFromOptions = true);
     virtual ~Domain();
 
+    // prevent copy of a domain
+    Domain(const Domain&) = delete;
+
+    // prevent assignment of domain
+    void operator=(const Domain&) = delete;
+
     // The primary dm
     DM dm;
 
