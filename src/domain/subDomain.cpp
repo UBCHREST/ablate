@@ -729,8 +729,15 @@ void ablate::domain::SubDomain::ProjectFieldFunctionsToLocalVector(const std::ve
         // Note the global DMProjectFunctionLabel can't be used because it overwrites unwritten values.
         // Project this field
         if (fieldLabel) {
-            DMProjectFunctionLabelLocal(dm, time, fieldLabel, 1, &fieldValue, -1, nullptr, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >>
-                utilities::PetscUtilities::checkError;
+            // make sure that some of this field exists here
+            IS regionIS;
+            DMLabelGetStratumIS(fieldLabel, fieldValue, &regionIS) >> utilities::PetscUtilities::checkError;
+
+            if (regionIS) {
+                DMProjectFunctionLabelLocal(dm, time, fieldLabel, 1, &fieldValue, -1, nullptr, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >>
+                    utilities::PetscUtilities::checkError;
+                ISDestroy(&regionIS) >> utilities::PetscUtilities::checkError;
+            }
         } else {
             DMProjectFunctionLocal(dm, time, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> utilities::PetscUtilities::checkError;
         }

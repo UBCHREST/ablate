@@ -51,6 +51,8 @@ timestepper:
             gamma: 1.4
             Rgas: 287.0
         name: domain
+        region:
+          name: domain
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       state:

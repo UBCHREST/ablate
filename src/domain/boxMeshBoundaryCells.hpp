@@ -26,9 +26,9 @@ class BoxMeshBoundaryCells : public Domain {
     inline const static std::string boundaryCellsBack = "boundaryCellsBack";
 
    public:
-    BoxMeshBoundaryCells(const std::string& name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::vector<std::shared_ptr<modifiers::Modifier>> preModifiers,
+    BoxMeshBoundaryCells(const std::string& name, const std::vector<std::shared_ptr<FieldDescriptor>>& fieldDescriptors, std::vector<std::shared_ptr<modifiers::Modifier>> preModifiers,
                          std::vector<std::shared_ptr<modifiers::Modifier>> postModifiers, std::vector<int> faces, const std::vector<double>& lower, const std::vector<double>& upper,
-                         bool simplex = true, std::shared_ptr<parameters::Parameters> options = {});
+                         bool simplex = true, const std::shared_ptr<parameters::Parameters>& options = {});
 
     ~BoxMeshBoundaryCells() override;
 };

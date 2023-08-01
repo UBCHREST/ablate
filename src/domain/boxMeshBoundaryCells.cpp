@@ -8,16 +8,26 @@
 #include "mathFunctions/geom/box.hpp"
 #include "utilities/petscUtilities.hpp"
 
-ablate::domain::BoxMeshBoundaryCells::BoxMeshBoundaryCells(const std::string& name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors,
+ablate::domain::BoxMeshBoundaryCells::BoxMeshBoundaryCells(const std::string& name, const std::vector<std::shared_ptr<FieldDescriptor>>& fieldDescriptors,
                                                            std::vector<std::shared_ptr<modifiers::Modifier>> preModifiers, std::vector<std::shared_ptr<modifiers::Modifier>> postModifiers,
                                                            std::vector<int> faces, const std::vector<double>& lower, const std::vector<double>& upper, bool simplex,
-                                                           std::shared_ptr<parameters::Parameters> options)
-    : Domain(CreateBoxDM(name, std::move(faces), lower, upper, simplex), name, std::move(fieldDescriptors), AddBoundaryModifiers(lower, upper, std::move(preModifiers), std::move(postModifiers)),
-             std::move(options)) {
+                                                           const std::shared_ptr<parameters::Parameters>& options)
+    : Domain(CreateBoxDM(name, std::move(faces), lower, upper, simplex), name, fieldDescriptors, AddBoundaryModifiers(lower, upper, std::move(preModifiers), std::move(postModifiers)), options) {
     // make sure that dm_refine was not set
     if (options) {
         if (options->Get("dm_refine", 0) != 0) {
             throw std::invalid_argument("dm_refine when used with ablate::domain::BoxMeshBoundaryCells must be 0.");
+        }
+    }
+
+    // make sure that all fields have a region if we might have unused corners (dim > 1)
+    if (GetDimensions() > 1) {
+        for (const auto& fieldDescriptor : fieldDescriptors) {
+            for (auto& fieldDescription : fieldDescriptor->GetFields()) {
+                if (fieldDescription->region == nullptr) {
+                    throw std::invalid_argument("All fields in ablate::domain::BoxMeshBoundaryCells::BoxMeshBoundaryCells should specify a region.");
+                }
+            }
         }
     }
 }
