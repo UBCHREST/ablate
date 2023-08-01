@@ -1,7 +1,8 @@
 #include "riemannStiff.hpp"
 #include <eos/perfectGas.hpp>
 #include <eos/stiffenedGas.hpp>
-#include "riemannDecode.hpp"
+#include "riemannCommon.hpp"
+#include <signal.h>
 
 ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::RiemannStiff::RiemannStiffFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
                                                                                                                              PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
@@ -23,7 +24,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
      * rhoL: density on the left cell center
      * pR: pressure on the right cell center
      * pL: pressure on the left cell center
-     * aR: SoS on the  right center cell
+     * aR: SoS on the right center cell
      * aL: SoS on the left center cell
      * pstar: pressure across contact surface
      * ustar: velocity across contact surface
@@ -47,11 +48,9 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     PetscReal p0R = gammaVec[3];
 
     PetscReal pold, pstar, f_L_0, f_L_1, f_R_0, f_R_1, del_u = uR - uL;
-    PetscReal uX;
 
     // Here is the initial guess for pstar - average of left and right pressures
     pstar = 0.5 * (pR + pL);
-
 
     ExpansionShockCalculation(pstar, gammaL, gamLm1, gamLp1, p0L, pL, aL, rhoL, &f_L_0, &f_L_1);
     ExpansionShockCalculation(pstar, gammaR, gamRm1, gamRp1, p0R, pR, aR, rhoR, &f_R_0, &f_R_1);
@@ -70,19 +69,30 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
             }
         }
 
-
         ExpansionShockCalculation(pstar, gammaL, gamLm1, gamLp1, p0L, pL, aL, rhoL, &f_L_0, &f_L_1);
         ExpansionShockCalculation(pstar, gammaR, gamRm1, gamRp1, p0R, pR, aR, rhoR, &f_R_0, &f_R_1);
 
         i++;
     }
+
+
     if (i > MAXIT) {
+
+printf("uL: %+f\n", uL);
+printf("aL: %+f\n", aL);
+printf("rhoL: %+f\n", rhoL);
+printf("pL: %+f\n", pL);
+printf("uR: %+f\n", uR);
+printf("aR: %+f\n", aR);
+printf("rhoR: %+f\n", rhoR);
+printf("pR: %+f\n", pR);
+raise(SIGSEGV);
+PetscFPrintf(MPI_COMM_WORLD, stderr, "(%s:%d, %s)\n", __FILE__, __LINE__, __FUNCTION__);
+exit(0);
         throw std::runtime_error("Can't find pstar; Iteration not converging; Go back and do it again");
     }
 
-    riemannDecode(pstar, uL, aL, rhoL, p0L, pL, gammaL, f_L_0, uR, aR, rhoR, p0R, pR, gammaR, f_R_0, massFlux, p12, &uX);
-
-    return uX > 0 ? LEFT : RIGHT;
+    return riemannDirection(pstar, uL, aL, rhoL, p0L, pL, gammaL, f_L_0, uR, aR, rhoR, p0R, pR, gammaR, f_R_0, massFlux, p12);
 }
 ablate::finiteVolume::fluxCalculator::RiemannStiff::RiemannStiff(std::shared_ptr<eos::EOS> eosL, std::shared_ptr<eos::EOS> eosR) {
     auto perfectGasEosL = std::dynamic_pointer_cast<eos::PerfectGas>(eosL);

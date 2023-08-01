@@ -1,6 +1,6 @@
-#include "rieman.hpp"
+#include "riemann.hpp"
 #include <eos/perfectGas.hpp>
-#include "riemannDecode.hpp"
+#include "riemannCommon.hpp"
 
 
 ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::Rieman::RiemanFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR,
@@ -35,7 +35,6 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     // This is where Rieman solver lives.
     PetscReal gamm1 = gamma - 1.0, gamp1 = gamma + 1.0;
     PetscReal pold, pstar, f_L_0, f_L_1, f_R_0, f_R_1, del_u = uR - uL;
-    PetscReal uX;
 
     // Here is the initial guess for pstar - assuming two exapansion wave
     pstar = aL + aR - (0.5 * gamm1 * (uR - uL));
@@ -61,9 +60,8 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
         throw std::runtime_error("Can't find pstar; Iteration not converging; Go back and do it again");
     }
 
-    riemannDecode(pstar, uL, aL, rhoL, 0.0, pL, gamma, f_L_0, uR, aR, rhoR, 0.0, pR, gamma, f_R_0, massFlux, p12, &uX);
+    return riemannDirection(pstar, uL, aL, rhoL, 0.0, pL, gamma, f_L_0, uR, aR, rhoR, 0.0, pR, gamma, f_R_0, massFlux, p12);
 
-    return uX > 0 ? LEFT : RIGHT;
 }
 ablate::finiteVolume::fluxCalculator::Rieman::Rieman(std::shared_ptr<eos::EOS> eosIn) {
     auto perfectGasEos = std::dynamic_pointer_cast<eos::PerfectGas>(eosIn);

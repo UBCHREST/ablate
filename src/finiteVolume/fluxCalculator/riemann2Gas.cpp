@@ -1,6 +1,6 @@
 #include "riemann2Gas.hpp"
 #include <eos/perfectGas.hpp>
-#include "riemannDecode.hpp"
+#include "riemannCommon.hpp"
 
 ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::Riemann2Gas::Riemann2GasFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
                                                                                                                            PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
@@ -29,8 +29,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
      * err: final residual for iteration
      * MAXIT: maximum iteration times
      */
-//PetscFPrintf(MPI_COMM_WORLD, stderr, "\x1b[1m(%s:%d, %s)\x1b[0m\n  \x1b[1m\x1b[90m\n", __FILE__, __LINE__, __FUNCTION__);
-//exit(0);
+
     PetscInt i = 0;
     const PetscInt MAXIT = 100;
     const PetscReal err = 1e-6;
@@ -42,7 +41,6 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     PetscReal gamRm1 = gammaR - 1.0, gamRp1 = gammaR + 1.0;
 
     PetscReal pold, pstar, f_L_0, f_L_1, f_R_0, f_R_1, del_u = uR - uL;
-    PetscReal uX;
 
     // Here is the initial guess for pstar - assuming two exapansion wave (need to change for 2 gasses)
     pstar = aL + aR - (0.5 * gamLm1 * (uR - uL));
@@ -72,9 +70,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
         throw std::runtime_error("Can't find pstar; Iteration not converging; Go back and do it again");
     }
 
-    riemannDecode(pstar, uL, aL, rhoL, 0.0, pL, gammaL, f_L_0, uR, aR, rhoR, 0.0, pR, gammaR, f_R_0, massFlux, p12, &uX);
-
-    return uX > 0 ? LEFT : RIGHT;
+    return riemannDirection(pstar, uL, aL, rhoL, 0.0, pL, gammaL, f_L_0, uR, aR, rhoR, 0.0, pR, gammaR, f_R_0, massFlux, p12);
 }
 ablate::finiteVolume::fluxCalculator::Riemann2Gas::Riemann2Gas(std::shared_ptr<eos::EOS> eosL, std::shared_ptr<eos::EOS> eosR) {
     auto perfectGasEosL = std::dynamic_pointer_cast<eos::PerfectGas>(eosL);
