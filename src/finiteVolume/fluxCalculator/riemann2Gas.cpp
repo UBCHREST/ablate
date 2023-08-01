@@ -30,47 +30,20 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
      * MAXIT: maximum iteration times
      */
 
-    PetscInt i = 0;
-    const PetscInt MAXIT = 100;
-    const PetscReal err = 1e-6;
     auto gammaVec = (PetscReal *)ctx;  // pass-in specific heat ratio from EOS_Left
     // This is where Riemann solver lives.
     PetscReal gammaL = gammaVec[0];
-    PetscReal gamLm1 = gammaL - 1.0, gamLp1 = gammaL + 1.0;
     PetscReal gammaR = gammaVec[1];
-    PetscReal gamRm1 = gammaR - 1.0, gamRp1 = gammaR + 1.0;
-
-    PetscReal pold, pstar, f_L_0, f_L_1, f_R_0, f_R_1, del_u = uR - uL;
+    PetscReal pstar;
 
     // Here is the initial guess for pstar - assuming two exapansion wave (need to change for 2 gasses)
-    pstar = aL + aR - (0.5 * gamLm1 * (uR - uL));
-    pstar = pstar / ((aL / PetscPowReal(pL, 0.5 * gamLm1 / gammaL)) + (aR / PetscPowReal(pR, 0.5 * gamRm1 / gammaR)));
-    pstar = PetscPowReal(pstar, 2.0 * gammaL / gamLm1);
+//    pstar = aL + aR - (0.5 * gamLm1 * (uR - uL));
+//    pstar = pstar / ((aL / PetscPowReal(pL, 0.5 * gamLm1 / gammaL)) + (aR / PetscPowReal(pR, 0.5 * gamRm1 / gammaR)));
+//    pstar = PetscPowReal(pstar, 2.0 * gammaL / gamLm1);
     pstar = 0.5 * (pR + pL);
 
-    ExpansionShockCalculation(pstar, gammaL, gamLm1, gamLp1, 0.0, pL, aL, rhoL, &f_L_0, &f_L_1);
-    ExpansionShockCalculation(pstar, gammaR, gamRm1, gamRp1, 0.0, pR, aR, rhoR, &f_R_0, &f_R_1);
+    return reimannSolver(uL, aL, rhoL, 0, pL, gammaL, uR, aR, rhoR, 0, pR, gammaR, pstar, massFlux, p12);
 
-    // iteration starts
-    while (PetscAbsReal(f_L_0 + f_R_0 + del_u) > err && i <= MAXIT)  // Newton's method
-    {
-        pold = pstar;
-        pstar = pold - (f_L_0 + f_R_0 + del_u) / (f_L_1 + f_R_1);  // new guess
-
-        if (pstar < 0) {  // correct if negative pstar
-            pstar = err;
-        }
-
-        ExpansionShockCalculation(pstar, gammaL, gamLm1, gamLp1, 0.0, pL, aL, rhoL, &f_L_0, &f_L_1);
-        ExpansionShockCalculation(pstar, gammaR, gamRm1, gamRp1, 0.0, pR, aR, rhoR, &f_R_0, &f_R_1);
-
-        i++;
-    }
-    if (i > MAXIT) {
-        throw std::runtime_error("Can't find pstar; Iteration not converging; Go back and do it again");
-    }
-
-    return riemannDirection(pstar, uL, aL, rhoL, 0.0, pL, gammaL, f_L_0, uR, aR, rhoR, 0.0, pR, gammaR, f_R_0, massFlux, p12);
 }
 ablate::finiteVolume::fluxCalculator::Riemann2Gas::Riemann2Gas(std::shared_ptr<eos::EOS> eosL, std::shared_ptr<eos::EOS> eosR) {
     auto perfectGasEosL = std::dynamic_pointer_cast<eos::PerfectGas>(eosL);
