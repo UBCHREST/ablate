@@ -4,9 +4,10 @@ target_sources(ablateLibrary
         averageFlux.cpp
         offFlux.cpp
         ausmpUp.cpp
-        rieman.cpp
+        riemann.cpp
         riemann2Gas.cpp
-        riemannDecode.cpp
+        riemannCommon.hpp
+        riemannCommon.cpp
         riemannStiff.cpp
 
         PUBLIC
@@ -15,8 +16,7 @@ target_sources(ablateLibrary
         averageFlux.hpp
         offFlux.hpp
         ausmpUp.hpp
-        rieman.hpp
+        riemann.hpp
         riemann2Gas.hpp
-        riemannDecode.hpp
         riemannStiff.hpp
         )

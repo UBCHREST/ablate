@@ -6,7 +6,7 @@
 #include "finiteVolume/fluxCalculator/ausmpUp.hpp"
 #include "finiteVolume/fluxCalculator/averageFlux.hpp"
 #include "finiteVolume/fluxCalculator/offFlux.hpp"
-#include "finiteVolume/fluxCalculator/rieman.hpp"
+#include "finiteVolume/fluxCalculator/riemann.hpp"
 #include "finiteVolume/fluxCalculator/riemann2Gas.hpp"
 #include "finiteVolume/fluxCalculator/riemannStiff.hpp"
 #include "gtest/gtest.h"

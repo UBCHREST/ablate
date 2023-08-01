@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_RIEMAN_H
-#define ABLATELIBRARY_RIEMAN_H
+#ifndef ABLATELIBRARY_RIEMANN_H
+#define ABLATELIBRARY_RIEMANN_H
 #include <eos/eos.hpp>
 #include <memory>
 #include "fluxCalculator.hpp"
@@ -22,4 +22,4 @@ class Rieman : public fluxCalculator::FluxCalculator {
 };
 }  // namespace ablate::finiteVolume::fluxCalculator
 
-#endif  // ABLATELIBRARY_RIEMAN_H
+#endif  // ABLATELIBRARY_RIEMANN_H
