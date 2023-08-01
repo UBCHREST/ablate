@@ -50,10 +50,14 @@ timestepper:
           parameters:
             gamma: 1.4
             Rgas: 287.0
+        region:
+          name: domain
       - !ablate::domain::FieldDescription
         name: pressure
         type: FV
         location: aux
+        region:
+          name: domain
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       state: &initFlowState
