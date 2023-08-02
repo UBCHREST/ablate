@@ -1,6 +1,10 @@
 #ifndef ABLATELIBRARY_LEVELSETUTILITIES_HPP
 #define ABLATELIBRARY_LEVELSETUTILITIES_HPP
 
+#include <petsc.h>
+#include <memory>
+#include "mathFunctions/mathFunction.hpp"
+
 namespace ablate::levelSet::Utilities {
 
 /**

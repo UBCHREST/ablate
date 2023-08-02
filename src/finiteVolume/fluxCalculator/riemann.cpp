@@ -34,7 +34,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     pstar = pstar / ((aL / PetscPowReal(pL, 0.5 * gamm1 / gamma)) + (aR / PetscPowReal(pR, 0.5 * gamm1 / gamma)));
     pstar = PetscPowReal(pstar, 2.0 * gamma / gamm1);
 
-    return reimannSolver(uL, aL, rhoL, 0, pL, gamma, uR, aR, rhoR, 0, pR, gamma, pstar, massFlux, p12);
+    return riemannSolver(uL, aL, rhoL, 0, pL, gamma, uR, aR, rhoR, 0, pR, gamma, pstar, massFlux, p12);
 }
 ablate::finiteVolume::fluxCalculator::Rieman::Rieman(std::shared_ptr<eos::EOS> eosIn) {
     auto perfectGasEos = std::dynamic_pointer_cast<eos::PerfectGas>(eosIn);

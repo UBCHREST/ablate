@@ -1,6 +1,4 @@
 #include "levelSetUtilities.hpp"
-#include <petsc.h>
-#include <memory>
 #include "LS-VOF.hpp"
 #include "mathFunctions/functionWrapper.hpp"
 #include "utilities/petscUtilities.hpp"

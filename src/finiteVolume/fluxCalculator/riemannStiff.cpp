@@ -44,7 +44,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     // Here is the initial guess for pstar - average of left and right pressures
     PetscReal pstar = 0.5 * (pR + pL);
 
-    return reimannSolver(uL, aL, rhoL, p0L, pL, gammaL, uR, aR, rhoR, p0R, pR, gammaR, pstar, massFlux, p12);
+    return riemannSolver(uL, aL, rhoL, p0L, pL, gammaL, uR, aR, rhoR, p0R, pR, gammaR, pstar, massFlux, p12);
 }
 ablate::finiteVolume::fluxCalculator::RiemannStiff::RiemannStiff(std::shared_ptr<eos::EOS> eosL, std::shared_ptr<eos::EOS> eosR) {
     auto perfectGasEosL = std::dynamic_pointer_cast<eos::PerfectGas>(eosL);
