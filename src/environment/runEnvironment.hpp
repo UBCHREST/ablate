@@ -117,7 +117,7 @@ class RunEnvironment {
          * directly set the output directory for the parameters
          * @return
          */
-        inline Parameters& SetOutputDirectory(const std::filesystem::path& path) {
+        inline Parameters& OutputDirectory(const std::filesystem::path& path) {
             Insert("directory", path.string());
             return *this;
         }
@@ -128,6 +128,14 @@ class RunEnvironment {
          */
         inline Parameters& TagDirectory(bool tag) {
             Insert("tagDirectory", tag);
+            return *this;
+        }
+        /**
+         * set the name for the simulation
+         * @return
+         */
+        inline Parameters& Title(std::string simulationTitle) {
+            Insert("title", simulationTitle);
             return *this;
         }
     };
