@@ -1,6 +1,5 @@
 #include "hybrid.hpp"
 
-
 using namespace ablate::domain::rbf;
 
 /************ Begin Polyharmonic Spline Derived Class **********************/
@@ -29,7 +28,6 @@ PetscReal HYBRID::RBFDer(PetscInt dim, PetscReal xIn[], PetscInt dx, PetscInt dy
 REGISTER(ablate::domain::rbf::RBF, ablate::domain::rbf::HYBRID, "Radial Basis Function",
          OPT(int, "polyOrder", "Order of the augmenting RBF polynomial. Must be >= dim. Any value <dim will result in a polyOrder of 4."),
          ARG(std::vector<double>, "weights", "The scale to apply to each sub-RBF. This must match the order in which they are defined."),
-         ARG(std::vector<ablate::domain::rbf::RBF>, "rbfList", "List of RBF kernels to use."),
-         OPT(bool, "doesNotHaveDerivatives", "Compute derivative information. Default is false."),
+         ARG(std::vector<ablate::domain::rbf::RBF>, "rbfList", "List of RBF kernels to use."), OPT(bool, "doesNotHaveDerivatives", "Compute derivative information. Default is false."),
          OPT(bool, "doesNotHaveInterpolation", "Compute interpolation information. Default is false."),
          OPT(bool, "useNeighborVertices", "Perform RBF based on neighboring vertices (TRUE) or cells (FALSE). Default is false."));

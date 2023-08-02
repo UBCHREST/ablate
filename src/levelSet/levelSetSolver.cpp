@@ -1,199 +1,187 @@
 #include "levelSetSolver.hpp"
-#include "levelSetUtilities.hpp"
 #include "domain/range.hpp"
+#include "levelSetUtilities.hpp"
 
 using namespace ablate::levelSet;
 
 LevelSetSolver::LevelSetSolver(std::string solverId, std::shared_ptr<ablate::domain::Region> region, std::shared_ptr<ablate::parameters::Parameters> options,
-const std::shared_ptr<ablate::domain::rbf::RBF>& rbf) : Solver(solverId, region, options), rbf(rbf) {}
-
+                               const std::shared_ptr<ablate::domain::rbf::RBF> &rbf)
+    : Solver(solverId, region, options), rbf(rbf) {}
 
 // This is done once
 void LevelSetSolver::Setup() {
+    // Make sure that the level set field has been created in the YAML file.
+    if (!(subDomain->ContainsField(LevelSetFields::LEVELSET_FIELD))) {
+        throw std::runtime_error("ablate::levelSet::LevelSetSolver expects a level set field to be defined.");
+    }
+    if (!(subDomain->ContainsField(LevelSetFields::CURVATURE_FIELD))) {
+        throw std::runtime_error("ablate::levelSet::LevelSetSolver expects a curvature field to be defined.");
+    }
+    if (!(subDomain->ContainsField(LevelSetFields::NORMAL_FIELD))) {
+        throw std::runtime_error("ablate::levelSet::LevelSetSolver expects a normal field to be defined.");
+    }
 
-// Make sure that the level set field has been created in the YAML file.
-  if (!(subDomain->ContainsField(LevelSetFields::LEVELSET_FIELD))) {
-    throw std::runtime_error("ablate::levelSet::LevelSetSolver expects a level set field to be defined.");
-  }
-  if (!(subDomain->ContainsField(LevelSetFields::CURVATURE_FIELD))) {
-    throw std::runtime_error("ablate::levelSet::LevelSetSolver expects a curvature field to be defined.");
-  }
-  if (!(subDomain->ContainsField(LevelSetFields::NORMAL_FIELD))) {
-    throw std::runtime_error("ablate::levelSet::LevelSetSolver expects a normal field to be defined.");
-  }
+    // Store the fields for easy access later
+    LevelSetSolver::lsField = &(subDomain->GetField(LevelSetFields::LEVELSET_FIELD));
+    LevelSetSolver::curvField = &(subDomain->GetField(LevelSetFields::CURVATURE_FIELD));
+    LevelSetSolver::normalField = &(subDomain->GetField(LevelSetFields::NORMAL_FIELD));
 
-  // Store the fields for easy access later
-  LevelSetSolver::lsField = &(subDomain->GetField(LevelSetFields::LEVELSET_FIELD));
-  LevelSetSolver::curvField = &(subDomain->GetField(LevelSetFields::CURVATURE_FIELD));
-  LevelSetSolver::normalField = &(subDomain->GetField(LevelSetFields::NORMAL_FIELD));
-
-  // Setup the RBF
-  LevelSetSolver::rbf->Setup(subDomain);
+    // Setup the RBF
+    LevelSetSolver::rbf->Setup(subDomain);
 }
 
 // Done whenever the subDomain changes
 void LevelSetSolver::Initialize() {
-
-  // Initialize the RBF data structures
-  ablate::domain::Range cellRange;
-  GetCellRange(cellRange);
-  LevelSetSolver::rbf->Initialize(cellRange);
-  RestoreRange(cellRange);
-
+    // Initialize the RBF data structures
+    ablate::domain::Range cellRange;
+    GetCellRange(cellRange);
+    LevelSetSolver::rbf->Initialize(cellRange);
+    RestoreRange(cellRange);
 }
 
 ///*************   Begin Curvature and Normal Vector functions ******************/
 
 // Might want to have this based on cell values rather than RBF
 void LevelSetSolver::Normal1D(PetscInt c, PetscScalar *n) {
+    PetscReal cx = 0.0, g = 0.0;
+    std::shared_ptr<ablate::domain::rbf::RBF> rbf = LevelSetSolver::rbf;
+    const ablate::domain::Field *lsField = LevelSetSolver::lsField;
 
-  PetscReal cx = 0.0, g = 0.0;
-  std::shared_ptr<ablate::domain::rbf::RBF> rbf = LevelSetSolver::rbf;
-  const ablate::domain::Field *lsField = LevelSetSolver::lsField;
+    cx = rbf->EvalDer(lsField, c, 1, 0, 0);
+    g = PetscSqrtReal(cx * cx);
 
-  cx = rbf->EvalDer(lsField, c, 1, 0, 0);
-  g = PetscSqrtReal(cx*cx);
-
-  n[0] = cx/g;
+    n[0] = cx / g;
 }
 
 void LevelSetSolver::Normal2D(PetscInt c, PetscScalar *n) {
+    PetscReal cx = 0.0, cy = 0.0, g = 0.0;
+    std::shared_ptr<ablate::domain::rbf::RBF> rbf = LevelSetSolver::rbf;
+    const ablate::domain::Field *lsField = LevelSetSolver::lsField;
 
-  PetscReal   cx = 0.0, cy = 0.0, g = 0.0;
-  std::shared_ptr<ablate::domain::rbf::RBF> rbf = LevelSetSolver::rbf;
-  const ablate::domain::Field *lsField = LevelSetSolver::lsField;
+    cx = rbf->EvalDer(lsField, c, 1, 0, 0);
+    cy = rbf->EvalDer(lsField, c, 0, 1, 0);
+    g = PetscSqrtReal(cx * cx + cy * cy);
 
-  cx = rbf->EvalDer(lsField, c, 1, 0, 0);
-  cy = rbf->EvalDer(lsField, c, 0, 1, 0);
-  g = PetscSqrtReal(cx*cx + cy*cy);
-
-  n[0] = cx/g;
-  n[1] = cy/g;
-
-
+    n[0] = cx / g;
+    n[1] = cy / g;
 }
 
 void LevelSetSolver::Normal3D(PetscInt c, PetscReal *n) {
+    PetscReal cx = 0.0, cy = 0.0, cz = 0.0, g = 0.0;
+    std::shared_ptr<ablate::domain::rbf::RBF> rbf = LevelSetSolver::rbf;
+    const ablate::domain::Field *lsField = LevelSetSolver::lsField;
 
-  PetscReal   cx = 0.0, cy = 0.0, cz = 0.0, g = 0.0;
-  std::shared_ptr<ablate::domain::rbf::RBF> rbf = LevelSetSolver::rbf;
-  const ablate::domain::Field *lsField = LevelSetSolver::lsField;
+    cx = rbf->EvalDer(lsField, c, 1, 0, 0);
+    cy = rbf->EvalDer(lsField, c, 0, 1, 0);
+    cz = rbf->EvalDer(lsField, c, 0, 0, 1);
+    g = sqrt(cx * cx + cy * cy + cz * cz);
 
-  cx = rbf->EvalDer(lsField, c, 1, 0, 0);
-  cy = rbf->EvalDer(lsField, c, 0, 1, 0);
-  cz = rbf->EvalDer(lsField, c, 0, 0, 1);
-  g = sqrt(cx*cx + cy*cy + cz*cz);
-
-  n[0] = cx/g;
-  n[1] = cy/g;
-  n[2] = cz/g;
+    n[0] = cx / g;
+    n[1] = cy / g;
+    n[2] = cz / g;
 }
 
-PetscReal LevelSetSolver::Curvature1D(PetscInt c) {
-  return 0.0;
-}
+PetscReal LevelSetSolver::Curvature1D(PetscInt c) { return 0.0; }
 
 PetscReal LevelSetSolver::Curvature2D(PetscInt c) {
+    PetscReal k = 0.0;
+    PetscReal cx, cy, cxx, cyy, cxy;
+    std::shared_ptr<ablate::domain::rbf::RBF> rbf = LevelSetSolver::rbf;
+    const ablate::domain::Field *lsField = LevelSetSolver::lsField;
 
-  PetscReal k = 0.0;
-  PetscReal cx, cy, cxx, cyy, cxy;
-  std::shared_ptr<ablate::domain::rbf::RBF> rbf = LevelSetSolver::rbf;
-  const ablate::domain::Field *lsField = LevelSetSolver::lsField;
+    cx = rbf->EvalDer(lsField, c, 1, 0, 0);
+    cy = rbf->EvalDer(lsField, c, 0, 1, 0);
+    cxx = rbf->EvalDer(lsField, c, 2, 0, 0);
+    cyy = rbf->EvalDer(lsField, c, 0, 2, 0);
+    cxy = rbf->EvalDer(lsField, c, 1, 1, 0);
 
-  cx = rbf->EvalDer(lsField, c, 1, 0, 0);
-  cy = rbf->EvalDer(lsField, c, 0, 1, 0);
-  cxx = rbf->EvalDer(lsField, c, 2, 0, 0);
-  cyy = rbf->EvalDer(lsField, c, 0, 2, 0);
-  cxy = rbf->EvalDer(lsField, c, 1, 1, 0);
+    k = (cxx * cy * cy + cyy * cx * cx - 2.0 * cxy * cx * cy) / pow(cx * cx + cy * cy, 1.5);
 
-  k = (cxx*cy*cy + cyy*cx*cx - 2.0*cxy*cx*cy)/pow(cx*cx+cy*cy,1.5);
-
-  return k;
+    return k;
 }
 
 PetscReal LevelSetSolver::Curvature3D(PetscInt c) {
+    PetscReal k = 0.0;
+    PetscReal cx, cy, cz;
+    PetscReal cxx, cyy, czz;
+    PetscReal cxy, cxz, cyz;
+    std::shared_ptr<ablate::domain::rbf::RBF> rbf = LevelSetSolver::rbf;
+    const ablate::domain::Field *lsField = LevelSetSolver::lsField;
 
-  PetscReal k = 0.0;
-  PetscReal cx, cy, cz;
-  PetscReal cxx, cyy, czz;
-  PetscReal cxy, cxz, cyz;
-  std::shared_ptr<ablate::domain::rbf::RBF> rbf = LevelSetSolver::rbf;
-  const ablate::domain::Field *lsField = LevelSetSolver::lsField;
+    cx = rbf->EvalDer(lsField, c, 1, 0, 0);
+    cy = rbf->EvalDer(lsField, c, 0, 1, 0);
+    cz = rbf->EvalDer(lsField, c, 0, 0, 1);
+    cxx = rbf->EvalDer(lsField, c, 2, 0, 0);
+    cyy = rbf->EvalDer(lsField, c, 0, 2, 0);
+    czz = rbf->EvalDer(lsField, c, 0, 0, 2);
+    cxy = rbf->EvalDer(lsField, c, 1, 1, 0);
+    cxz = rbf->EvalDer(lsField, c, 1, 0, 1);
+    cyz = rbf->EvalDer(lsField, c, 0, 1, 1);
 
-  cx = rbf->EvalDer(lsField, c, 1, 0, 0);
-  cy = rbf->EvalDer(lsField, c, 0, 1, 0);
-  cz = rbf->EvalDer(lsField, c, 0, 0, 1);
-  cxx = rbf->EvalDer(lsField, c, 2, 0, 0);
-  cyy = rbf->EvalDer(lsField, c, 0, 2, 0);
-  czz = rbf->EvalDer(lsField, c, 0, 0, 2);
-  cxy = rbf->EvalDer(lsField, c, 1, 1, 0);
-  cxz = rbf->EvalDer(lsField, c, 1, 0, 1);
-  cyz = rbf->EvalDer(lsField, c, 0, 1, 1);
+    k = (cxx * (cy * cy + cz * cz) + cyy * (cx * cx + cz * cz) + czz * (cx * cx + cy * cy) - 2.0 * (cxy * cx * cy + cxz * cx * cz + cyz * cy * cz)) / pow(cx * cx + cy * cy + cz * cz, 1.5);
 
-  k = (cxx*(cy*cy + cz*cz) + cyy*(cx*cx + cz*cz) + czz*(cx*cx + cy*cy) - 2.0*(cxy*cx*cy + cxz*cx*cz + cyz*cy*cz))/pow(cx*cx+cy*cy+cz*cz,1.5);
-
-  return k;
+    return k;
 }
 
 // Maybe have it point directly to the function during setup
 PetscReal LevelSetSolver::Curvature(PetscInt c) {
-  switch (subDomain->GetDimensions()) {
-    case 1:
-      return 0.0;
-    case 2:
-      return LevelSetSolver::Curvature2D(c);
-    case 3:
-      return LevelSetSolver::Curvature3D(c);
-    default:
-      throw std::runtime_error("ablate::levelSet::LevelSetSolver::Curvature encountered an unknown dimension.");
-  }
+    switch (subDomain->GetDimensions()) {
+        case 1:
+            return 0.0;
+        case 2:
+            return LevelSetSolver::Curvature2D(c);
+        case 3:
+            return LevelSetSolver::Curvature3D(c);
+        default:
+            throw std::runtime_error("ablate::levelSet::LevelSetSolver::Curvature encountered an unknown dimension.");
+    }
 }
 
 void LevelSetSolver::Normal(PetscInt c, PetscReal *n) {
-  switch (subDomain->GetDimensions()) {
-    case 1:
-      throw std::runtime_error("Still need to setup ablate::levelSet::LevelSetSolver::Normal for 1D grids.\n");
-    case 2:
-      return LevelSetSolver::Normal2D(c, n);
-    case 3:
-      return LevelSetSolver::Normal3D(c, n);
-    default:
-      throw std::runtime_error("ablate::levelSet::LevelSetSolver::Normal encountered an unknown dimension.");
-  }
+    switch (subDomain->GetDimensions()) {
+        case 1:
+            throw std::runtime_error("Still need to setup ablate::levelSet::LevelSetSolver::Normal for 1D grids.\n");
+        case 2:
+            return LevelSetSolver::Normal2D(c, n);
+        case 3:
+            return LevelSetSolver::Normal3D(c, n);
+        default:
+            throw std::runtime_error("ablate::levelSet::LevelSetSolver::Normal encountered an unknown dimension.");
+    }
 }
 
 void LevelSetSolver::ComputeAllNormal() {
-  DM            dm = subDomain->GetDM();
-  domain::Range cellRange;
-  PetscReal    *array, *n;
-  Vec           auxVec = subDomain->GetAuxVector();       // For normal vector
+    DM dm = subDomain->GetDM();
+    domain::Range cellRange;
+    PetscReal *array, *n;
+    Vec auxVec = subDomain->GetAuxVector();  // For normal vector
 
-  GetCellRange(cellRange);
-  VecGetArray(auxVec, &array) >> utilities::PetscUtilities::checkError;
-  for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
-    PetscInt cell = cellRange.points ? cellRange.points[c] : c;
-    DMPlexPointLocalFieldRef(dm, cell, LevelSetSolver::normalField->id, array, &n) >> utilities::PetscUtilities::checkError;
-    LevelSetSolver::Normal(cell, n);
-  }
-  VecRestoreArray(auxVec, &array) >> utilities::PetscUtilities::checkError;
-  RestoreRange(cellRange);
+    GetCellRange(cellRange);
+    VecGetArray(auxVec, &array) >> utilities::PetscUtilities::checkError;
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+        PetscInt cell = cellRange.points ? cellRange.points[c] : c;
+        DMPlexPointLocalFieldRef(dm, cell, LevelSetSolver::normalField->id, array, &n) >> utilities::PetscUtilities::checkError;
+        LevelSetSolver::Normal(cell, n);
+    }
+    VecRestoreArray(auxVec, &array) >> utilities::PetscUtilities::checkError;
+    RestoreRange(cellRange);
 }
 
 void LevelSetSolver::ComputeAllCurvature() {
-  DM            dm = subDomain->GetDM();
-  domain::Range cellRange;
-  PetscReal    *array, *h;
-  Vec           auxVec = subDomain->GetAuxVector();       // For normal vector
+    DM dm = subDomain->GetDM();
+    domain::Range cellRange;
+    PetscReal *array, *h;
+    Vec auxVec = subDomain->GetAuxVector();  // For normal vector
 
-  GetCellRange(cellRange);
-  VecGetArray(auxVec, &array) >> utilities::PetscUtilities::checkError;
-  for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
-    PetscInt cell = cellRange.points ? cellRange.points[c] : c;
-    DMPlexPointLocalFieldRef(dm, cell, LevelSetSolver::curvField->id, array, &h);
-    h[0] = LevelSetSolver::Curvature(cell);
-  }
-  VecRestoreArray(auxVec, &array) >> utilities::PetscUtilities::checkError;
-  RestoreRange(cellRange);
+    GetCellRange(cellRange);
+    VecGetArray(auxVec, &array) >> utilities::PetscUtilities::checkError;
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+        PetscInt cell = cellRange.points ? cellRange.points[c] : c;
+        DMPlexPointLocalFieldRef(dm, cell, LevelSetSolver::curvField->id, array, &h);
+        h[0] = LevelSetSolver::Curvature(cell);
+    }
+    VecRestoreArray(auxVec, &array) >> utilities::PetscUtilities::checkError;
+    RestoreRange(cellRange);
 }
 
 /*************   End Curvature and Normal Vector functions ******************/
@@ -201,36 +189,31 @@ void LevelSetSolver::ComputeAllCurvature() {
 // Returns the VOF for a given cell. Refer to "Quadrature rules for triangular and tetrahedral elements with generalized functions"
 //  by Holdych, Noble, and Secor, Int. J. Numer. Meth. Engng 2008; 73:1310-1327.
 void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, PetscReal *vol) {
+    DM dm = subDomain->GetDM();
+    PetscScalar c0, n[3] = {0.0, 0.0, 0.0};
+    const PetscScalar *array;
+    Vec solVec = subDomain->GetSolutionVector();  // For level set
+    Vec auxVec = subDomain->GetAuxVector();       // For normal vector
 
-  DM                dm = subDomain->GetDM();
-  PetscScalar       c0, n[3] = {0.0, 0.0, 0.0};
-  const PetscScalar *array;
-  Vec               solVec = subDomain->GetSolutionVector();  // For level set
-  Vec               auxVec = subDomain->GetAuxVector();       // For normal vector
+    // Level-set value at cell-center
+    VecGetArrayRead(solVec, &array) >> ablate::utilities::PetscUtilities::checkError;
+    DMPlexPointLocalFieldRead(dm, p, LevelSetSolver::lsField->id, array, &c0) >> ablate::utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(solVec, &array) >> ablate::utilities::PetscUtilities::checkError;
 
-  // Level-set value at cell-center
-  VecGetArrayRead(solVec, &array) >> ablate::utilities::PetscUtilities::checkError;
-  DMPlexPointLocalFieldRead(dm, p, LevelSetSolver::lsField->id, array, &c0) >> ablate::utilities::PetscUtilities::checkError;
-  VecRestoreArrayRead(solVec, &array) >> ablate::utilities::PetscUtilities::checkError;
+    // Normal vector
+    VecGetArrayRead(auxVec, &array) >> ablate::utilities::PetscUtilities::checkError;
+    DMPlexPointLocalFieldRead(dm, p, LevelSetSolver::normalField->id, array, n) >> ablate::utilities::PetscUtilities::checkError;
+    VecRestoreArrayRead(auxVec, &array) >> ablate::utilities::PetscUtilities::checkError;
 
-  // Normal vector
-  VecGetArrayRead(auxVec, &array) >> ablate::utilities::PetscUtilities::checkError;
-  DMPlexPointLocalFieldRead(dm, p, LevelSetSolver::normalField->id, array, n) >> ablate::utilities::PetscUtilities::checkError;
-  VecRestoreArrayRead(auxVec, &array) >> ablate::utilities::PetscUtilities::checkError;
-
-  ablate::levelSet::Utilities::VOF(dm, p, c0, n, vof, area, vol);
-
+    ablate::levelSet::Utilities::VOF(dm, p, c0, n, vof, area, vol);
 }
 
-
 //// Given a VOF field compute the level set field and normal vectors at the cell center
-//void LevelSetSolver::Reinitialize(const ablate::domain::Field *field, Vec f) {
+// void LevelSetSolver::Reinitialize(const ablate::domain::Field *field, Vec f) {
 
 //  DM vertexDM;
 
 //  DMClone(subDomain->GetDM(), &vertexDM);
-
-
 
 //  ablate::domain::Range vertexRange;
 
@@ -238,20 +221,10 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 ////  ablate::solver::Solver::GetRange((0, &vertexRange);
 //  GetCellRange(&vertexRange);
 
-
-
-
-
 //}
 
-
-
-
-
-
-
 //// Reinitialize a level set field to make it a signed distance function and to match a target VOF for each cell
-//void LevelSetSolver::Reinitialize(TS ts, ablate::solver::Solver &solver) {
+// void LevelSetSolver::Reinitialize(TS ts, ablate::solver::Solver &solver) {
 ////    // Get the solution vec and dm
 ////    auto dm = solver.GetSubDomain().GetDM();
 ////    auto solVec = solver.GetSubDomain().GetSolutionVector();
@@ -271,7 +244,6 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 
 ////    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
 ////        PetscInt cell = cellRange.points ? cellRange.points[c] : c;
-
 
 ////        // Get the euler and density field
 ////        const PetscScalar *euler = nullptr;
@@ -303,14 +275,6 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 ////    VecRestoreArray(solVec, &solutionArray) >> utilities::PetscUtilities::checkError;
 ////    solver.RestoreRange(cellRange);
 
-
-
-
-
-
-
-
-
 ////  PetscInt          c, cStart, cEnd;
 ////  DM                dm = LevelSetField::dm;
 ////  const PetscScalar *vofVal;
@@ -331,7 +295,6 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 //////Stuff like const auto &eulerFieldInfo = solver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD); will return the field info in the DM.
 //////Make the level set a solution variable in the ablate solver
 
-
 ////  DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
 ////  for (c = cStart; c < cEnd; ++c) {
 ////    LevelSetField::VOF(c, &vof, &faceArea, &cellVolume);
@@ -342,9 +305,7 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 ////  VecRestoreArrayRead(VOF, &vofVal) >> utilities::PetscUtilities::checkError;
 ////  VecDestroy(&newPhi);
 
-
 //}
-
 
 ////std::string LevelSetSolver::GetRBFType() {
 
@@ -361,8 +322,6 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 ////      return("unknown");
 ////  }
 ////}
-
-
 
 ////bool LevelSetField::HasInterface(const PetscInt p) {
 ////  bool              hasInterface = false;
@@ -407,7 +366,6 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 ////  return phi;
 ////}
 
-
 /////* Star */
 ////PetscReal LevelSetField::Star(PetscReal pos[], PetscReal center[]) {
 ////  PetscReal shiftedPos[] = {pos[0] - center[0], pos[1] - center[1], pos[2] - center[2]};
@@ -415,13 +373,13 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 ////  return phi;
 ////}
 
-//PetscReal LevelSetSolver::Interpolate(PetscScalar xyz[3]) {
-//  std::shared_ptr<ablate::domain::rbf::RBF>  rbf = LevelSetSolver::rbf;
-//  DMInterpolationInfo   ctx;
-//  DM                    dm = rbf->GetDM();
-//  PetscInt              c = -1;
-//  Vec                   phi = LevelSetField::phi;
-//  PetscReal             val;
+// PetscReal LevelSetSolver::Interpolate(PetscScalar xyz[3]) {
+//   std::shared_ptr<ablate::domain::rbf::RBF>  rbf = LevelSetSolver::rbf;
+//   DMInterpolationInfo   ctx;
+//   DM                    dm = rbf->GetDM();
+//   PetscInt              c = -1;
+//   Vec                   phi = LevelSetField::phi;
+//   PetscReal             val;
 
 //  DMInterpolationCreate(PETSC_COMM_WORLD, &ctx) >> utilities::PetscUtilities::checkError;
 //  DMInterpolationSetDim(ctx, LevelSetField::dim) >> utilities::PetscUtilities::checkError;
@@ -430,7 +388,6 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 //  c = ctx->cells[0];
 //  DMInterpolationDestroy(&ctx) >> utilities::PetscUtilities::checkError;
 
-
 //  PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscInt c, PetscReal xEval[3]) {
 
 //  val = rbf->Interpolate(phi, c, xyz);
@@ -438,15 +395,13 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 //  return val;
 //}
 
-//PetscReal LevelSetSolver::Interpolate(const PetscReal x, const double y, const double z) {
+// PetscReal LevelSetSolver::Interpolate(const PetscReal x, const double y, const double z) {
 
 //  PetscReal xyz[3] = {x, y, z};
 //  PetscReal val = LevelSetSolver::Interpolate(xyz);
 
 //  return val;
 //}
-
-
 
 ////void LevelSetField::Advect(Vec velocity, const PetscReal dt) {
 
@@ -457,7 +412,6 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 ////  PetscScalar       *newVal;
 ////  const PetscScalar *vel;
 ////  PetscReal         pos[3] = {0.0, 0.0, 0.0};
-
 
 ////  VecDuplicate(phi, &nextPhi);
 
@@ -486,14 +440,9 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 ////  VecGhostUpdateBegin(phi, INSERT_VALUES, SCATTER_FORWARD) >> utilities::PetscUtilities::checkError;
 ////  VecGhostUpdateEnd(phi, INSERT_VALUES, SCATTER_FORWARD) >> utilities::PetscUtilities::checkError;
 
-
 ////  VecDestroy(&nextPhi);
 
-
-
 ////}
-
-
 
 ////// Reinitialize a level set field to make it a signed distance function and to match a target VOF for each cell
 ////void LevelSetField::Reinitialize(Vec VOF) {
@@ -517,7 +466,6 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 //////Stuff like const auto &eulerFieldInfo = solver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD); will return the field info in the DM.
 //////Make the level set a solution variable in the ablate solver
 
-
 ////  DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
 ////  for (c = cStart; c < cEnd; ++c) {
 ////    LevelSetField::VOF(c, &vof, &faceArea, &cellVolume);
@@ -528,13 +476,9 @@ void LevelSetSolver::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Pets
 ////  VecRestoreArrayRead(VOF, &vofVal) >> utilities::PetscUtilities::checkError;
 ////  VecDestroy(&newPhi);
 
-
 ////}
 
-
 #include "registrar.hpp"
-REGISTER(ablate::solver::Solver, ablate::levelSet::LevelSetSolver, "level set solver",
-         ARG(std::string, "id", "the name of the level set solver"),
+REGISTER(ablate::solver::Solver, ablate::levelSet::LevelSetSolver, "level set solver", ARG(std::string, "id", "the name of the level set solver"),
          OPT(ablate::domain::Region, "region", "the region to apply this solver.  Default is entire domain"),
-         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the solver"),
-         OPT(ablate::domain::rbf::RBF, "rbf", "The radial basis function to use"));
+         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the solver"), OPT(ablate::domain::rbf::RBF, "rbf", "The radial basis function to use"));

@@ -1,13 +1,12 @@
 #ifndef ABLATELIBRARY_LEVELSETFIELD_HPP
 #define ABLATELIBRARY_LEVELSETFIELD_HPP
 
+#include <cstring>
 #include <domain/region.hpp>
 #include <memory>
 #include <string>
-#include <cstring>
 #include <vector>
 #include "domain/fieldDescriptor.hpp"
-
 
 namespace ablate::levelSet {
 
@@ -25,13 +24,8 @@ class LevelSetFields : public domain::FieldDescriptor {
     inline const static std::string NORMAL_FIELD = "normal";
 
     std::vector<std::shared_ptr<domain::FieldDescription>> GetFields() override;
-
 };
 
 }  // namespace ablate::levelSet
 
 #endif  // ABLATELIBRARY_LEVELSETFIELD_HPP
-
-
-
-

@@ -557,7 +557,8 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, Vec f, PetscReal 
 /************ End Interpolation Code **********************/
 
 /************ Constructor, Setup, and Initialization Code **********************/
-RBF::RBF(int polyOrder, bool hasDerivatives, bool hasInterpolation, bool useNeighborVertices) : polyOrder(polyOrder), useNeighborVertices(useNeighborVertices), hasDerivatives(hasDerivatives), hasInterpolation(hasInterpolation){}
+RBF::RBF(int polyOrder, bool hasDerivatives, bool hasInterpolation, bool useNeighborVertices)
+    : polyOrder(polyOrder), useNeighborVertices(useNeighborVertices), hasDerivatives(hasDerivatives), hasInterpolation(hasInterpolation) {}
 
 RBF::~RBF() {
     if ((RBF::cEnd - RBF::cStart) > 0) {

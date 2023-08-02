@@ -1,8 +1,8 @@
 #include "riemannStiff.hpp"
+#include <signal.h>
 #include <eos/perfectGas.hpp>
 #include <eos/stiffenedGas.hpp>
 #include "riemannCommon.hpp"
-#include <signal.h>
 
 ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::RiemannStiff::RiemannStiffFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
                                                                                                                              PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
@@ -34,7 +34,6 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
      * MAXIT: maximum iteration times
      */
 
-
     auto gammaVec = (PetscReal *)ctx;  // pass-in specific heat ratio from EOS_Left
     // This is where Riemann solver lives.
     PetscReal gammaL = gammaVec[0];
@@ -43,10 +42,9 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     PetscReal p0R = gammaVec[3];
 
     // Here is the initial guess for pstar - average of left and right pressures
-    PetscReal pstar =  0.5 * (pR + pL);
+    PetscReal pstar = 0.5 * (pR + pL);
 
     return reimannSolver(uL, aL, rhoL, p0L, pL, gammaL, uR, aR, rhoR, p0R, pR, gammaR, pstar, massFlux, p12);
-
 }
 ablate::finiteVolume::fluxCalculator::RiemannStiff::RiemannStiff(std::shared_ptr<eos::EOS> eosL, std::shared_ptr<eos::EOS> eosR) {
     auto perfectGasEosL = std::dynamic_pointer_cast<eos::PerfectGas>(eosL);

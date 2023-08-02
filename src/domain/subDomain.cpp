@@ -4,8 +4,6 @@
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/petscUtilities.hpp"
 
-
-
 ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const std::vector<std::shared_ptr<FieldDescription>>& allAuxFields)
     : domain(domainIn),
       name(defaultName),
@@ -108,8 +106,6 @@ ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const 
             offset += newAuxField.numberComponents;
         }
     }
-
-
 }
 
 ablate::domain::SubDomain::~SubDomain() {
