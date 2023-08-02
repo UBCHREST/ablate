@@ -7,7 +7,6 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     /*
      * gamma: specific heat ratio (pass in from EOS)
      * gamm1 = gamma - 1
-     * gamp1 = gamma + 1
      * uL: velocity on the left cell center
      * uR: velocity on the right cell center
      * rhoR: density on the right cell center
@@ -18,10 +17,6 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
      * aL: SoS on the left center cell
      * pstar: pressure across contact surface
      * ustar: velocity across contact surface
-     * rhostarR: density on the right of the contact surface
-     * whostarL: density on the left of the contact surface
-     * err: final residual for iteration
-     * MAXIT: maximum iteration times
      */
 
     PetscReal gamma = *(PetscReal *)ctx;  // pass-in specific heat ratio from EOS

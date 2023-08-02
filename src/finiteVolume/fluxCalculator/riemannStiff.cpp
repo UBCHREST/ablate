@@ -11,11 +11,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
                                                                                                                              PetscReal *p12) {
     /*
      * gammaL: specific heat ratio for gas on left (pass in from EOS)
-     * gamLm1 = gammaL - 1
-     * gamLp1 = gammaL + 1
      * gammaR: specific heat ratio for stiffened gas on right (pass in from EOS)
-     * gamRm1 = gammaR - 1
-     * gamRp1 = gammaR + 1
      * p0L: reference pressure for stiffened gas on left (pass in from EOS)
      * p0R: reference pressure for stiffened gas on right (pass in from EOS)
      * uL: velocity on the left cell center
@@ -27,11 +23,6 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
      * aR: SoS on the right center cell
      * aL: SoS on the left center cell
      * pstar: pressure across contact surface
-     * ustar: velocity across contact surface
-     * rhostarR: density on the right of the contact surface
-     * whostarL: density on the left of the contact surface
-     * err: final residual for iteration
-     * MAXIT: maximum iteration times
      */
 
     auto gammaVec = (PetscReal *)ctx;  // pass-in specific heat ratio from EOS_Left

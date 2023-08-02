@@ -29,6 +29,26 @@ static void expansionShockCalculation(const PetscReal pstar, const PetscReal gam
 static ablate::finiteVolume::fluxCalculator::Direction riemannDirection(const PetscReal pstar, const PetscReal uL, const PetscReal aL, const PetscReal rhoL, const PetscReal p0L, const PetscReal pL,
                                                                         const PetscReal gammaL, const PetscReal fL, const PetscReal uR, const PetscReal aR, const PetscReal rhoR, const PetscReal p0R,
                                                                         const PetscReal pR, const PetscReal gammaR, const PetscReal fR, PetscReal *massFlux, PetscReal *p12) {
+
+
+
+    /*
+     * gammaL: specific heat ratio for gas on left (pass in from EOS)
+     * gammaR: specific heat ratio for stiffened gas on right (pass in from EOS)
+     * p0L: reference pressure for stiffened gas on left (pass in from EOS)
+     * p0R: reference pressure for stiffened gas on right (pass in from EOS)
+     * uL: velocity on the left cell center
+     * uR: velocity on the right cell center
+     * rhoR: density on the right cell center
+     * rhoL: density on the left cell center
+     * pR: pressure on the right cell center
+     * pL: pressure on the left cell center
+     * aR: SoS on the right center cell
+     * aL: SoS on the left center cell
+     * pstar: pressure across contact surface
+     * ustar: velocity across contact surface
+     */
+
     PetscReal STLR, SHLR, A, pRatio, gamma, gamm1, gamp1, astar, uX;
 
     // Now, start backing out the rest of the info.
