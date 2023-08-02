@@ -406,12 +406,12 @@ PetscErrorCode ablate::solver::TimeStepper::ComputePhysicsTimeStep(PetscReal* dt
 }
 
 void ablate::solver::TimeStepper::RegisterSerializableComponents(const std::shared_ptr<io::Serializer>& serializerToRegister) const {
-    if (serializer) {
+    if (serializerToRegister) {
         // Register any subdomain with the serializer
         for (auto& subDomain : domain->GetSerializableSubDomains()) {
             if (auto subDomainPtr = subDomain.lock()) {
                 if (subDomainPtr->Serialize()) {
-                    serializer->Register(subDomain);
+                    serializerToRegister->Register(subDomain);
                 }
             }
         }
@@ -420,7 +420,7 @@ void ablate::solver::TimeStepper::RegisterSerializableComponents(const std::shar
         for (auto& solver : solvers) {
             auto serializable = std::dynamic_pointer_cast<io::Serializable>(solver);
             if (serializable && serializable->Serialize()) {
-                serializer->Register(serializable);
+                serializerToRegister->Register(serializable);
             }
         }
 
@@ -429,7 +429,7 @@ void ablate::solver::TimeStepper::RegisterSerializableComponents(const std::shar
             for (const auto& monitor : monitorPerSolver.second) {
                 auto serializable = std::dynamic_pointer_cast<io::Serializable>(monitor);
                 if (serializable && serializable->Serialize()) {
-                    serializer->Register(serializable);
+                    serializerToRegister->Register(serializable);
                 }
             }
         }
