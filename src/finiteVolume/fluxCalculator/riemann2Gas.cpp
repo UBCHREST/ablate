@@ -1,6 +1,6 @@
 #include "riemann2Gas.hpp"
 #include <eos/perfectGas.hpp>
-#include "riemannCommon.hpp"
+#include "riemannDecode.hpp"
 
 ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::Riemann2Gas::Riemann2GasFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
                                                                                                                            PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,

@@ -2,19 +2,26 @@
 #define ABLATELIBRARY_RIEMANNCOMMON_HPP
 
 #include "fluxCalculator.hpp"
-
-// These are functions common to all of the Reimann solvers
-
-void ExpansionShockCalculation(const PetscReal pstar, const PetscReal gamma, const PetscReal gamm1, const PetscReal gamp1, const PetscReal p0, const PetscReal p, const PetscReal a, const PetscReal rho, PetscReal *f0, PetscReal *f1);
-
-ablate::finiteVolume::fluxCalculator::Direction riemannDirection( const PetscReal pstar,
-                    const PetscReal uL, const PetscReal aL, const PetscReal rhoL, const PetscReal p0L, const PetscReal pL, const PetscReal gammaL, const PetscReal fL,
-                    const PetscReal uR, const PetscReal aR, const PetscReal rhoR, const PetscReal p0R, const PetscReal pR, const PetscReal gammaR, const PetscReal fR,
-                    PetscReal *massFlux, PetscReal *p12);
-
-ablate::finiteVolume::fluxCalculator::Direction reimannSolver(
-    const PetscReal uL, const PetscReal aL, const PetscReal rhoL, const PetscReal p0L, const PetscReal pL, const PetscReal gammaL,
-    const PetscReal uR, const PetscReal aR, const PetscReal rhoR, const PetscReal p0R, const PetscReal pR, const PetscReal gammaR,
-    const PetscReal pstar0, PetscReal *massFlux, PetscReal *p12);
+/**
+ * Solve the Riemann problem.
+ * @param uL: velocity on the left cell center
+ * @param aL: speed of sound on the left center cell
+ * @param rhoL: density on the left cell center
+ * @param p0L: reference pressure for stiffened gas on left (pass in from EOS). Will be zero if perfect gas or single gas
+ * @param pL: pressure on the left cell center
+ * @param gammaL: specific heat ratio for gas on left (pass in from EOS)
+ * @param uR: velocity on the right cell center
+ * @param aR: speed of sound on the right center cell
+ * @param rhoR: density on the right cell center
+ * @param p0R: reference pressure for stiffened gas on right (pass in from EOS). Will be zero if perfect gas or single gas
+ * @param pR: pressure on the right cell center
+ * @param gammaR: specific heat ratio for gas on right (pass in from EOS)
+ * @param pstar0: initial guess at the pressure across contact surface
+ * @param massFlux: mass flux across the cell face(?)
+ * @param p12: interface pressure(?)
+ */
+ablate::finiteVolume::fluxCalculator::Direction riemannSolver(const PetscReal uL, const PetscReal aL, const PetscReal rhoL, const PetscReal p0L, const PetscReal pL, const PetscReal gammaL,
+                                                              const PetscReal uR, const PetscReal aR, const PetscReal rhoR, const PetscReal p0R, const PetscReal pR, const PetscReal gammaR,
+                                                              const PetscReal pstar0, PetscReal *massFlux, PetscReal *p12);
 
 #endif  // ABLATELIBRARY_RIEMANNCOMMON_HPP

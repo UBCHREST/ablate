@@ -2,9 +2,8 @@
 #include "riemannCommon.hpp"
 #include "utilities/constants.hpp"
 
-
-void ExpansionShockCalculation(const PetscReal pstar, const PetscReal gamma, const PetscReal gamm1, const PetscReal gamp1, const PetscReal p0, const PetscReal p, const PetscReal a, const PetscReal rho, PetscReal *f0, PetscReal *f1) {
-
+static void expansionShockCalculation(const PetscReal pstar, const PetscReal gamma, const PetscReal gamm1, const PetscReal gamp1, const PetscReal p0, const PetscReal p, const PetscReal a,
+                                      const PetscReal rho, PetscReal *f0, PetscReal *f1) {
     if (pstar <= p)  // expansion wave equation from Toro
     {
         PetscReal A = 2.0 * a / gamm1;
@@ -28,12 +27,9 @@ void ExpansionShockCalculation(const PetscReal pstar, const PetscReal gamma, con
     }
 }
 
-
-ablate::finiteVolume::fluxCalculator::Direction riemannDirection( const PetscReal pstar,
-                    const PetscReal uL, const PetscReal aL, const PetscReal rhoL, const PetscReal p0L, const PetscReal pL, const PetscReal gammaL, const PetscReal fL,
-                    const PetscReal uR, const PetscReal aR, const PetscReal rhoR, const PetscReal p0R, const PetscReal pR, const PetscReal gammaR, const PetscReal fR,
-                    PetscReal *massFlux, PetscReal *p12) {
-
+static ablate::finiteVolume::fluxCalculator::Direction riemannDirection(const PetscReal pstar, const PetscReal uL, const PetscReal aL, const PetscReal rhoL, const PetscReal p0L, const PetscReal pL,
+                                                                        const PetscReal gammaL, const PetscReal fL, const PetscReal uR, const PetscReal aR, const PetscReal rhoR, const PetscReal p0R,
+                                                                        const PetscReal pR, const PetscReal gammaR, const PetscReal fR, PetscReal *massFlux, PetscReal *p12) {
     PetscReal STLR, SHLR, A, pRatio, gamma, gamm1, gamp1, astar, uX;
 
     // Now, start backing out the rest of the info.
@@ -137,18 +133,21 @@ ablate::finiteVolume::fluxCalculator::Direction riemannDirection( const PetscRea
 }
 
 // Solve the non-linear equation
-ablate::finiteVolume::fluxCalculator::Direction reimannSolver(
-    const PetscReal uL, const PetscReal aL, const PetscReal rhoL, const PetscReal p0L, const PetscReal pL, const PetscReal gammaL,
-    const PetscReal uR, const PetscReal aR, const PetscReal rhoR, const PetscReal p0R, const PetscReal pR, const PetscReal gammaR,
-    const PetscReal pstar0, PetscReal *massFlux, PetscReal *p12) {
+ablate::finiteVolume::fluxCalculator::Direction riemannSolver(const PetscReal uL, const PetscReal aL, const PetscReal rhoL, const PetscReal p0L, const PetscReal pL, const PetscReal gammaL,
+                                                              const PetscReal uR, const PetscReal aR, const PetscReal rhoR, const PetscReal p0R, const PetscReal pR, const PetscReal gammaR,
+                                                              const PetscReal pstar0, PetscReal *massFlux, PetscReal *p12) {
+    const PetscReal tol = 1e-8;
+    PetscReal pold, f_L_0, f_L_1, f_R_0, f_R_1, pstar = pstar0;
+    const PetscReal del_u = uR - uL;
+    const PetscReal gamLm1 = gammaL - 1.0, gamLp1 = gammaL + 1.0;
+    const PetscReal gamRm1 = gammaR - 1.0, gamRp1 = gammaR + 1.0;
+    const PetscInt MAXIT = 100;
+    PetscInt i = 0;
 
-  const PetscReal tol = 1e-8;
-  PetscReal pold, f_L_0, f_L_1, f_R_0, f_R_1, pstar = pstar0;
-  const PetscReal del_u = uR - uL;
-  const PetscReal gamLm1 = gammaL - 1.0, gamLp1 = gammaL + 1.0;
-  const PetscReal gamRm1 = gammaR - 1.0, gamRp1 = gammaR + 1.0;
-  const PetscInt MAXIT = 100;
-  PetscInt i = 0;
+    do  // Newton's method
+    {
+        expansionShockCalculation(pstar, gammaL, gamLm1, gamLp1, p0L, pL, aL, rhoL, &f_L_0, &f_L_1);
+        expansionShockCalculation(pstar, gammaR, gamRm1, gamRp1, p0R, pR, aR, rhoR, &f_R_0, &f_R_1);
 
   do // Newton's method
   {

@@ -1,8 +1,7 @@
 #include "riemannStiff.hpp"
 #include <eos/perfectGas.hpp>
 #include <eos/stiffenedGas.hpp>
-#include "riemannCommon.hpp"
-#include <signal.h>
+#include "riemannDecode.hpp"
 
 ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::RiemannStiff::RiemannStiffFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
                                                                                                                              PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
@@ -24,7 +23,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
      * rhoL: density on the left cell center
      * pR: pressure on the right cell center
      * pL: pressure on the left cell center
-     * aR: SoS on the right center cell
+     * aR: SoS on the  right center cell
      * aL: SoS on the left center cell
      * pstar: pressure across contact surface
      * ustar: velocity across contact surface
