@@ -18,4 +18,5 @@ target_sources(ablateLibrary
         speedOfSound.hpp
         ignitionZeroDTemperatureThreshold.hpp
         sourceCalculator.hpp
+        constantVolumeIgnitionReactorTemperatureThreshold.hpp
         )

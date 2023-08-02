@@ -19,7 +19,7 @@ struct Range {
      * @param i
      * @return
      */
-    inline PetscInt GetPoint(PetscInt i) const { return points ? points[i] : i; }
+    [[nodiscard]] inline PetscInt GetPoint(PetscInt i) const { return points ? points[i] : i; }
 };
 
 /**

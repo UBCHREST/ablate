@@ -68,6 +68,34 @@ struct TemperatureFcn {
                     f0 = f1;
                     f1 = f2;
                 }
+
+                // We iterated through the possible iterations, try again with a new guess
+                t0 = 1000.;
+                t = t0;
+                f0 = internalEnergyRef() -
+                     ablate::eos::tChemSoot::impl::SensibleInternalEnergyFcn<real_type, DeviceType>::team_invoke(member, Yc, svGas, hi_Scratch, cp_gas_Scratch, hi_Ref_Values, kmcd);
+                t1 = t0 + 1;
+                t = t1;
+                e1 = -ablate::eos::tChemSoot::impl::SensibleInternalEnergyFcn<real_type, DeviceType>::team_invoke(member, Yc, svGas, hi_Scratch, cp_gas_Scratch, hi_Ref_Values, kmcd);
+                f1 = internalEnergyRef() - e1;
+
+                for (int it = 0; it < ITERMAX_T; it++) {
+                    t2 = t1 - f1 * (t1 - t0) / (f1 - f0 + 1E-30);
+                    t2 = std::max(1.0, t2);
+                    t = t2;
+                    e2 = ablate::eos::tChemSoot::impl::SensibleInternalEnergyFcn<real_type, DeviceType>::team_invoke(member, Yc, svGas, hi_Scratch, cp_gas_Scratch, hi_Ref_Values, kmcd);
+                    f2 = internalEnergyRef() - e2;
+                    if (Tines::ats<real_type>::abs(f2) <= EPS_T_RHO_E) {
+                        t = t2;
+                        // Make Sure Temperature is set in the stateSpace
+                        return svGas.Temperature();
+                    }
+                    t0 = t1;
+                    t1 = t2;
+                    f0 = f1;
+                    f1 = f2;
+                }
+
                 t = t2;
             }
         }
