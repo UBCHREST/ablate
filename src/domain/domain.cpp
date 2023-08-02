@@ -120,7 +120,7 @@ void ablate::domain::Domain::CreateStructures() {
     }
 }
 
-std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(const std::shared_ptr<domain::Region>& region) {
+std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(const std::shared_ptr<domain::Region>& region) const {
     // Check to see if there is a label for this region
     if (region) {
         // March over each ds region, and return the subdomain if this region is inside of any subDomain region

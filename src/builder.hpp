@@ -13,7 +13,7 @@ class Builder {
      * build the time stepper to run
      * @param factory
      */
-    static std::shared_ptr<ablate::solver::TimeStepper>  Build(const std::shared_ptr<cppParser::Factory>& factory);
+    static std::shared_ptr<ablate::solver::TimeStepper> Build(const std::shared_ptr<cppParser::Factory>& factory);
 
     /**
      * default run method for particles and flow

@@ -21,4 +21,5 @@ target_sources(ablateLibrary
         constants.hpp
         stringUtilities.hpp
         staticInitializer.hpp
+        nonCopyable.hpp
         )

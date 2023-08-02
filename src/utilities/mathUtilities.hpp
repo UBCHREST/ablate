@@ -266,8 +266,38 @@ class MathUtilities {
      */
     static PetscReal ComputeDeterminant(PetscInt dim, PetscScalar transformationMatrix[3][3]);
 
+    /**
+     * Enum types for the compute norm function
+     */
+    enum class Norm { L1, L1_NORM, L2, LINF, L2_NORM };
+
+    /**
+     * Computes the specified norm between x and y.  Note that y is used for scratch space and may be override
+     * @param normType
+     * @param x
+     * @param y
+     * @param norm, the norm must be the same size as the block size of x/y
+     * @return
+     */
+    static PetscErrorCode ComputeNorm(Norm normType, Vec x, Vec y, PetscReal norm[]);
+
     MathUtilities() = delete;
 };
+
+/**
+ * Support function for the Scope Enum
+ * @param os
+ * @param v
+ * @return
+ */
+std::ostream& operator<<(std::ostream& os, const MathUtilities::Norm& v);
+/**
+ * Support function for the Scope Enum
+ * @param os
+ * @param v
+ * @return
+ */
+std::istream& operator>>(std::istream& is, MathUtilities::Norm& v);
 
 }  // namespace ablate::utilities
 

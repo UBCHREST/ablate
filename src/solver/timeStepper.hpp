@@ -19,7 +19,7 @@
 #include "utilities/staticInitializer.hpp"
 
 namespace ablate::solver {
-class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private utilities::Loggable<TimeStepper>, private utilities::StaticInitializer {
+class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private utilities::Loggable<TimeStepper>, private utilities::StaticInitializer, private ablate::utilities::NonCopyable {
    public:
     /**
      * Optional initializer that can be called for TS before the first time step (TSSolve)
@@ -119,9 +119,9 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
      * @param verboseSourceCheck
      */
     explicit TimeStepper(std::shared_ptr<ablate::domain::Domain> domain, const std::shared_ptr<ablate::parameters::Parameters> &arguments = {}, std::shared_ptr<io::Serializer> serializer = {},
-                std::shared_ptr<ablate::domain::Initializer> initialization = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {},
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances = {},
-                bool verboseSourceCheck = {});
+                         std::shared_ptr<ablate::domain::Initializer> initialization = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {},
+                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances = {},
+                         bool verboseSourceCheck = {});
 
     /**
      * Allow the TimeStepper to clean up the ts
@@ -138,7 +138,7 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
      * Return the ts to allow outside time stepping/control
      * @return
      */
-    const ablate::domain::Domain& GetDomain() { return *domain; }
+    const ablate::domain::Domain &GetDomain() { return *domain; }
 
     /**
      * return the solution vector to allow outside manipulation/output

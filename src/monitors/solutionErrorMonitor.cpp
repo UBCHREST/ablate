@@ -3,8 +3,8 @@
 #include "mathFunctions/mathFunction.hpp"
 #include "utilities/petscUtilities.hpp"
 
-ablate::monitors::SolutionErrorMonitor::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope errorScope, ablate::monitors::SolutionErrorMonitor::Norm normType,
-                                                             std::shared_ptr<logs::Log> logIn)
+ablate::monitors::SolutionErrorMonitor::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope errorScope, ablate::utilities::MathUtilities::Norm normType,
+                                                             const std::shared_ptr<logs::Log>& logIn)
     : errorScope(errorScope), normType(normType), log(logIn ? logIn : std::make_shared<logs::StdOut>()) {}
 
 PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
@@ -28,7 +28,7 @@ PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, Petsc
     PetscInt* numberComponentsPerField;
     PetscCall(PetscDSGetComponents(ds, &numberComponentsPerField));
 
-    SolutionErrorMonitor* errorMonitor = (SolutionErrorMonitor*)ctx;
+    auto* errorMonitor = (SolutionErrorMonitor*)ctx;
 
     // if this is the first time step init the log
     if (!errorMonitor->log->Initialized()) {
@@ -107,9 +107,6 @@ std::vector<PetscReal> ablate::monitors::SolutionErrorMonitor::ComputeError(TS t
     VecDuplicate(u, &exactVec) >> utilities::PetscUtilities::checkError;
     DMProjectFunction(dm, time, &exactFuncs[0], &exactCtxs[0], INSERT_ALL_VALUES, exactVec) >> utilities::PetscUtilities::checkError;
 
-    // Compute the error
-    VecAXPY(exactVec, -1.0, u) >> utilities::PetscUtilities::checkError;
-
     // If we treat this as a single vector or multiple components change how this is done
     totalComponents = errorScope == Scope::VECTOR ? 1 : totalComponents;
 
@@ -118,45 +115,9 @@ std::vector<PetscReal> ablate::monitors::SolutionErrorMonitor::ComputeError(TS t
 
     // Compute the l2 errors
     std::vector<PetscReal> ferrors(totalComponents);
-    NormType petscNormType;
-    switch (normType) {
-        case Norm::L1_NORM:
-        case Norm::L1:
-            petscNormType = NORM_1;
-            break;
-        case Norm::L2_NORM:
-        case Norm::L2:
-            petscNormType = NORM_2;
-            break;
-        case Norm::LINF:
-            petscNormType = NORM_INFINITY;
-            break;
-        default:
-            std::stringstream error;
-            error << "Unable to process norm type " << normType;
-            throw std::invalid_argument(error.str());
-    }
 
-    // compute the norm along the stride
-    VecStrideNormAll(exactVec, petscNormType, &ferrors[0]) >> utilities::PetscUtilities::checkError;
-
-    // normalize the error if _norm
-    if (normType == Norm::L1_NORM) {
-        PetscInt size;
-        VecGetSize(exactVec, &size);
-        PetscReal factor = (1.0 / (size / totalComponents));
-        for (PetscInt c = 0; c < totalComponents; c++) {
-            ferrors[c] *= factor;
-        }
-    }
-    if (normType == Norm::L2_NORM) {
-        PetscInt size;
-        VecGetSize(exactVec, &size);
-        PetscReal factor = PetscSqrtReal(1.0 / (size / totalComponents));
-        for (PetscInt c = 0; c < totalComponents; c++) {
-            ferrors[c] *= factor;
-        }
-    }
+    // compute the norm
+    ablate::utilities::MathUtilities::ComputeNorm(normType, u, exactVec, ferrors.data()) >> utilities::PetscUtilities::checkError;
 
     VecDestroy(&exactVec) >> utilities::PetscUtilities::checkError;
     return ferrors;
@@ -187,45 +148,8 @@ std::istream& ablate::monitors::operator>>(std::istream& is, ablate::monitors::S
     return is;
 }
 
-std::ostream& ablate::monitors::operator<<(std::ostream& os, const ablate::monitors::SolutionErrorMonitor::Norm& v) {
-    switch (v) {
-        case SolutionErrorMonitor::Norm::L1:
-            return os << "l1";
-        case SolutionErrorMonitor::Norm::L1_NORM:
-            return os << "l1_norm";
-        case SolutionErrorMonitor::Norm::L2:
-            return os << "l2";
-        case SolutionErrorMonitor::Norm::LINF:
-            return os << "linf";
-        case SolutionErrorMonitor::Norm::L2_NORM:
-            return os << "l2_norm";
-        default:
-            return os;
-    }
-}
-
-std::istream& ablate::monitors::operator>>(std::istream& is, ablate::monitors::SolutionErrorMonitor::Norm& v) {
-    std::string enumString;
-    is >> enumString;
-
-    if (enumString == "l2") {
-        v = SolutionErrorMonitor::Norm::L2;
-    } else if (enumString == "linf") {
-        v = SolutionErrorMonitor::Norm::LINF;
-    } else if (enumString == "l2_norm") {
-        v = SolutionErrorMonitor::Norm::L2_NORM;
-    } else if (enumString == "l1_norm") {
-        v = SolutionErrorMonitor::Norm::L1_NORM;
-    } else if (enumString == "l1") {
-        v = SolutionErrorMonitor::Norm::L1;
-    } else {
-        throw std::invalid_argument("Unknown norm type " + enumString);
-    }
-    return is;
-}
-
 #include "registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::SolutionErrorMonitor, "Computes and reports the error every time step",
          ENUM(ablate::monitors::SolutionErrorMonitor::Scope, "scope", "how the error should be calculated ('vector', 'component')"),
-         ENUM(ablate::monitors::SolutionErrorMonitor::Norm, "type", "norm type ('l1','l1_norm','l2', 'linf', 'l2_norm')"),
+         ENUM(ablate::utilities::MathUtilities::Norm, "type", "norm type ('l1','l1_norm','l2', 'linf', 'l2_norm')"),
          OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
