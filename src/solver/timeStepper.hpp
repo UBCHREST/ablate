@@ -188,6 +188,12 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
      * @param adaptInitializer
      */
     static void RegisterAdaptInitializer(const std::string &adaptName, AdaptInitializer adaptInitializer) { adaptInitializers[adaptName] = adaptInitializer; }
+
+    /**
+     * reusable function that checks for serializable components/objects in the time stepper and registers
+     * @param serializer the serializer to add components to
+     */
+    void RegisterSerializableComponents(const std::shared_ptr<io::Serializer> &serializer) const;
 };
 }  // namespace ablate::solver
 

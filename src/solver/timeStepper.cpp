@@ -97,34 +97,9 @@ bool ablate::solver::TimeStepper::Initialize() {
             }
         }
 
-        if (serializer) {
-            // Register any subdomain with the serializer
-            for (auto& subDomain : domain->GetSerializableSubDomains()) {
-                if (auto subDomainPtr = subDomain.lock()) {
-                    if (subDomainPtr->Serialize()) {
-                        serializer->Register(subDomain);
-                    }
-                }
-            }
+        // register components with the serializers
+        RegisterSerializableComponents(serializer);
 
-            // Register the solver with the serializer
-            for (auto& solver : solvers) {
-                auto serializable = std::dynamic_pointer_cast<io::Serializable>(solver);
-                if (serializable && serializable->Serialize()) {
-                    serializer->Register(serializable);
-                }
-            }
-
-            // register any monitors with the seralizer
-            for (const auto& monitorPerSolver : monitors) {
-                for (const auto& monitor : monitorPerSolver.second) {
-                    auto serializable = std::dynamic_pointer_cast<io::Serializable>(monitor);
-                    if (serializable && serializable->Serialize()) {
-                        serializer->Register(serializable);
-                    }
-                }
-            }
-        }
         // Get the solution vector
         Vec solutionVec = domain->GetSolutionVector();
 
@@ -428,6 +403,37 @@ PetscErrorCode ablate::solver::TimeStepper::ComputePhysicsTimeStep(PetscReal* dt
     PetscCallMPI(MPI_Allreduce(&localDtMin, dt, 1, MPIU_REAL, MPIU_MIN, PetscObjectComm((PetscObject)ts)));
 
     PetscFunctionReturn(0);
+}
+
+void ablate::solver::TimeStepper::RegisterSerializableComponents(const std::shared_ptr<io::Serializer>& serializerToRegister) const {
+    if (serializer) {
+        // Register any subdomain with the serializer
+        for (auto& subDomain : domain->GetSerializableSubDomains()) {
+            if (auto subDomainPtr = subDomain.lock()) {
+                if (subDomainPtr->Serialize()) {
+                    serializer->Register(subDomain);
+                }
+            }
+        }
+
+        // Register the solver with the serializer
+        for (auto& solver : solvers) {
+            auto serializable = std::dynamic_pointer_cast<io::Serializable>(solver);
+            if (serializable && serializable->Serialize()) {
+                serializer->Register(serializable);
+            }
+        }
+
+        // register any monitors with the serializer
+        for (const auto& monitorPerSolver : monitors) {
+            for (const auto& monitor : monitorPerSolver.second) {
+                auto serializable = std::dynamic_pointer_cast<io::Serializable>(monitor);
+                if (serializable && serializable->Serialize()) {
+                    serializer->Register(serializable);
+                }
+            }
+        }
+    }
 }
 
 #include "registrar.hpp"
