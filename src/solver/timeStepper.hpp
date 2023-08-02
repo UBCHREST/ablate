@@ -148,8 +148,9 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
 
     /**
      * Optional call to Initialize before setup
+     * @return returns true if it needed to be initialized
      */
-    void Initialize();
+    virtual bool Initialize();
 
     /**
      * Initializes if needed, then calls solve

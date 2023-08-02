@@ -1,5 +1,4 @@
 #include "stdOut.hpp"
-#include <stdarg.h>
 #include "nullLog.hpp"
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/petscUtilities.hpp"

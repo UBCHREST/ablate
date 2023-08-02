@@ -64,12 +64,17 @@ ablate::solver::TimeStepper::TimeStepper(const std::string& nameIn, std::shared_
 
 ablate::solver::TimeStepper::~TimeStepper() { TSDestroy(&ts) >> utilities::PetscUtilities::checkError; }
 
-void ablate::solver::TimeStepper::Initialize() {
+bool ablate::solver::TimeStepper::Initialize() {
     StartEvent((this->name + "::Initialize").c_str());
+
+    // Keep track if this need to be initialized
+    bool justInitialized = false;
+
     if (!initialized) {
         domain->InitializeSubDomains(solvers, initializations, exactSolutions);
         TSSetDM(ts, domain->GetDM()) >> utilities::PetscUtilities::checkError;
         initialized = true;
+        justInitialized = true;
 
         // Register any functions with the dm/ts
         if (!boundaryFunctionSolvers.empty()) {
@@ -128,7 +133,9 @@ void ablate::solver::TimeStepper::Initialize() {
         TSSetFromOptions(ts) >> utilities::PetscUtilities::checkError;
     }
     EndEvent();
+    return justInitialized;
 }
+
 void ablate::solver::TimeStepper::Solve() {
     // Call initialize, this will only initialize if it has not been called
     Initialize();
