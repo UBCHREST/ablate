@@ -1,10 +1,13 @@
 #include "sourceCalculator.hpp"
+#include <TChem_ConstantVolumeIgnitionReactor.hpp>
 #include <TChem_Impl_IgnitionZeroD_Problem.hpp>
 #include <algorithm>
+#include "constantVolumeIgnitionReactorTemperatureThreshold.hpp"
 #include "eos/tChem.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "ignitionZeroDTemperatureThreshold.hpp"
 #include "utilities/mpiUtilities.hpp"
+#include "utilities/stringUtilities.hpp"
 
 void ablate::eos::tChem::SourceCalculator::ChemistryConstraints::Set(const std::shared_ptr<ablate::parameters::Parameters>& options) {
     if (options) {
@@ -21,6 +24,7 @@ void ablate::eos::tChem::SourceCalculator::ChemistryConstraints::Set(const std::
         jacobianInterval = options->Get("jacobianInterval", jacobianInterval);
         maxAttempts = options->Get("maxAttempts", maxAttempts);
         thresholdTemperature = options->Get("thresholdTemperature", thresholdTemperature);
+        reactorType = options->Get("reactorType", ReactorType::ConstantPressure);
     }
 }
 
@@ -54,7 +58,7 @@ ablate::eos::tChem::SourceCalculator::SourceCalculator(const std::vector<domain:
     timeAdvanceDefault._dtmax = constraints.dtMax;
     timeAdvanceDefault._max_num_newton_iterations = constraints.maxNumNewtonIterations;
     timeAdvanceDefault._num_time_iterations_per_interval = constraints.numTimeIterationsPerInterval;
-    timeAdvanceDefault._num_outer_time_iterations_per_interval = 10;
+    timeAdvanceDefault._num_outer_time_iterations_per_interval = 1;  // This should always be one to prevent duplicate operations
     timeAdvanceDefault._jacobian_interval = constraints.jacobianInterval;
 
     // Copy the default values to device
@@ -63,7 +67,15 @@ ablate::eos::tChem::SourceCalculator::SourceCalculator(const std::vector<domain:
     Kokkos::deep_copy(dtViewDevice, 1E-4);
 
     // determine the number of equations
-    auto numberOfEquations = ::tChemLib::Impl::IgnitionZeroD_Problem<real_type, Tines::UseThisDevice<host_exec_space>::type>::getNumberOfTimeODEs(kineticModelGasConstData);
+    ordinal_type numberOfEquations;
+    switch (chemistryConstraints.reactorType) {
+        case ReactorType::ConstantPressure:
+            numberOfEquations = ::tChemLib::Impl::IgnitionZeroD_Problem<real_type, Tines::UseThisDevice<host_exec_space>::type>::getNumberOfTimeODEs(kineticModelGasConstData);
+            break;
+        case ReactorType::ConstantVolume:
+            numberOfEquations = ::tChemLib::Impl::ConstantVolumeIgnitionReactor_Problem<real_type, Tines::UseThisDevice<host_exec_space>::type>::getNumberOfTimeODEs(kineticModelGasConstData);
+            break;
+    }
 
     // size up the tolerance constraints
     tolTimeDevice = real_type_2d_view("tolTimeDevice", numberOfEquations, 2);
@@ -212,27 +224,88 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
             });
 
         auto chemistryFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(::tChemLib::exec_space(), numberCells, Kokkos::AUTO());
-        chemistryFunctionPolicy.set_scratch_size(1, Kokkos::PerTeam(::tChemLib::Scratch<real_type_1d_view>::shmem_size(::tChemLib::IgnitionZeroD::getWorkSpaceSize(kineticModelGasConstDataDevice))));
+
+        // determine the required team size
+        switch (chemistryConstraints.reactorType) {
+            case ReactorType::ConstantPressure:
+                chemistryFunctionPolicy.set_scratch_size(
+                    1, Kokkos::PerTeam(::tChemLib::Scratch<real_type_1d_view>::shmem_size(::tChemLib::IgnitionZeroD::getWorkSpaceSize(kineticModelGasConstDataDevice))));
+                break;
+            case ReactorType::ConstantVolume:
+                chemistryFunctionPolicy.set_scratch_size(
+                    1, Kokkos::PerTeam(::tChemLib::Scratch<real_type_1d_view>::shmem_size(::tChemLib::ConstantVolumeIgnitionReactor::getWorkSpaceSize(solveTla, kineticModelGasConstDataDevice))));
+                break;
+        }
 
         // assume a constant pressure zero D reaction for each cell
-        if (chemistryConstraints.thresholdTemperature != 0.0) {
-            // If there is a thresholdTemperature, use the modified version of IgnitionZeroDTemperatureThreshold
-            ablate::eos::tChem::IgnitionZeroDTemperatureThreshold::runDeviceBatch(chemistryFunctionPolicy,
-                                                                                  tolNewtonDevice,
-                                                                                  tolTimeDevice,
-                                                                                  facDevice,
-                                                                                  timeAdvanceDevice,
-                                                                                  stateDevice,
-                                                                                  timeViewDevice,
-                                                                                  dtViewDevice,
-                                                                                  endStateDevice,
-                                                                                  kineticModelGasConstDataDevices,
-                                                                                  chemistryConstraints.thresholdTemperature);
-        } else {
-            // else fall back to the default tChem version
-            tChemLib::IgnitionZeroD::runDeviceBatch(
-                chemistryFunctionPolicy, tolNewtonDevice, tolTimeDevice, facDevice, timeAdvanceDevice, stateDevice, timeViewDevice, dtViewDevice, endStateDevice, kineticModelGasConstDataDevices);
+        switch (chemistryConstraints.reactorType) {
+            case ReactorType::ConstantPressure:
+                if (chemistryConstraints.thresholdTemperature != 0.0) {
+                    // If there is a thresholdTemperature, use the modified version of IgnitionZeroDTemperatureThreshold
+                    ablate::eos::tChem::IgnitionZeroDTemperatureThreshold::runDeviceBatch(chemistryFunctionPolicy,
+                                                                                          tolNewtonDevice,
+                                                                                          tolTimeDevice,
+                                                                                          facDevice,
+                                                                                          timeAdvanceDevice,
+                                                                                          stateDevice,
+                                                                                          timeViewDevice,
+                                                                                          dtViewDevice,
+                                                                                          endStateDevice,
+                                                                                          kineticModelGasConstDataDevices,
+                                                                                          chemistryConstraints.thresholdTemperature);
+                } else {
+                    // else fall back to the default tChem version
+                    tChemLib::IgnitionZeroD::runDeviceBatch(chemistryFunctionPolicy,
+                                                            tolNewtonDevice,
+                                                            tolTimeDevice,
+                                                            facDevice,
+                                                            timeAdvanceDevice,
+                                                            stateDevice,
+                                                            timeViewDevice,
+                                                            dtViewDevice,
+                                                            endStateDevice,
+                                                            kineticModelGasConstDataDevices);
+                }
+                break;
+            case ReactorType::ConstantVolume:
+                // These arrays are not used when solveTla is false
+                real_type_3d_view state_z;
+                if (chemistryConstraints.thresholdTemperature != 0.0) {
+                    ablate::eos::tChem::ConstantVolumeIgnitionReactorTemperatureThreshold::runDeviceBatch(chemistryFunctionPolicy,
+                                                                                                          solveTla,
+                                                                                                          thetaTla,
+                                                                                                          tolNewtonDevice,
+                                                                                                          tolTimeDevice,
+                                                                                                          facDevice,
+                                                                                                          timeAdvanceDevice,
+                                                                                                          stateDevice,
+                                                                                                          state_z,
+                                                                                                          timeViewDevice,
+                                                                                                          dtViewDevice,
+                                                                                                          endStateDevice,
+                                                                                                          state_z,
+                                                                                                          kineticModelGasConstDataDevices,
+                                                                                                          chemistryConstraints.thresholdTemperature);
+                } else {
+                    ConstantVolumeIgnitionReactor::runDeviceBatch(chemistryFunctionPolicy,
+                                                                  solveTla,
+                                                                  thetaTla,
+                                                                  tolNewtonDevice,
+                                                                  tolTimeDevice,
+                                                                  facDevice,
+                                                                  timeAdvanceDevice,
+                                                                  stateDevice,
+                                                                  state_z,
+                                                                  timeViewDevice,
+                                                                  dtViewDevice,
+                                                                  endStateDevice,
+                                                                  state_z,
+                                                                  kineticModelGasConstDataDevices);
+                }
+
+                break;
         }
+
         // check the output pressure, if it is zero the integration failed
         auto endStateDeviceLocal = endStateDevice;
         auto nSpecLocal = kineticModelGasConstDataDevice.nSpec;
@@ -362,4 +435,31 @@ void ablate::eos::tChem::SourceCalculator::AddSource(const ablate::domain::Range
     // cleanup
     VecRestoreArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
     EndEvent();
+}
+
+std::ostream& ablate::eos::tChem::operator<<(std::ostream& os, const ablate::eos::tChem::SourceCalculator::ReactorType& v) {
+    switch (v) {
+        case ablate::eos::tChem::SourceCalculator::ReactorType::ConstantPressure:
+            return os << "ConstantPressure";
+        case ablate::eos::tChem::SourceCalculator::ReactorType::ConstantVolume:
+            return os << "ConstantVolume";
+        default:
+            return os;
+    }
+}
+
+std::istream& ablate::eos::tChem::operator>>(std::istream& is, ablate::eos::tChem::SourceCalculator::ReactorType& v) {
+    std::string enumString;
+    is >> enumString;
+
+    // make the comparisons easier to converting to lower
+    ablate::utilities::StringUtilities::ToLower(enumString);
+
+    if (enumString == "constantvolume") {
+        v = ablate::eos::tChem::SourceCalculator::ReactorType::ConstantVolume;
+    } else {
+        // default to constant pressure
+        v = ablate::eos::tChem::SourceCalculator::ReactorType::ConstantPressure;
+    }
+    return is;
 }

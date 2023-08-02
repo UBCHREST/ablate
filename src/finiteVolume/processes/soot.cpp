@@ -190,7 +190,7 @@ PetscErrorCode ablate::finiteVolume::processes::Soot::ComputeSootChemistryPreSte
                 PetscReal density = conserved[flowEulerId.offset + ablate::finiteVolume::CompressibleFlowFields::RHO];
                 pointInformation.currentDensity = density;
                 pointArray[ODE_T] = *temperature;
-                pointArray[ODE_NDD] = conserved[flowDensityProgressId.offset] / density / NddScaling;
+                pointArray[ODE_NDD] = (conserved[flowDensityProgressId.offset] / density) / NddScaling;
 
                 // Fill the yi scratch
                 for (PetscInt s = 0; s < flowDensityYiId.numberComponents; s++) {
@@ -302,7 +302,7 @@ PetscErrorCode ablate::finiteVolume::processes::Soot::AddSootChemistrySourceToFl
 
     solver.RestoreRange(cellRange);
     PetscCall(VecRestoreArray(fVec, &fArray));
-    PetscCall(VecGetArrayRead(soot->sourceVec, &sourceArray));
+    PetscCall(VecRestoreArrayRead(soot->sourceVec, &sourceArray));
 
     PetscFunctionReturn(0);
 }
@@ -327,10 +327,13 @@ PetscErrorCode ablate::finiteVolume::processes::Soot::SinglePointSootChemistryRH
     localOdeValues[ODE_NDD] = PetscMax(xArray[ODE_NDD], 0);
 
     // Add in the Soot Reaction Sources
-    real_type SVF = localOdeValues[C_s] * pointInfo->currentDensity / solidCarbonDensity;
+    PetscReal SVF = localOdeValues[C_s] * pointInfo->currentDensity / solidCarbonDensity;
+
+    // compute ndd that is not scalled
+    PetscReal ndd = PetscMax(localOdeValues[ODE_NDD], 0) * NddScaling;
 
     // Total S.A. of soot / unit volume
-    PetscReal SA_V = calculateSurfaceArea_V(localOdeValues[C_s], localOdeValues[ODE_NDD], pointInfo->currentDensity);
+    PetscReal SA_V = calculateSurfaceArea_V(localOdeValues[C_s], ndd, pointInfo->currentDensity);
 
     // Need the Concentrations of C2H2, O2, O, and OH
     // It is unclear in the formulations of the Reaction Rates whether to use to concentration in regards to the total mixture or just the gas phace, There is a difference due to the density relation
@@ -344,8 +347,8 @@ PetscErrorCode ablate::finiteVolume::processes::Soot::SinglePointSootChemistryRH
     PetscReal NucRate = calculateNucleationReactionRate(localOdeValues[ODE_T], C2H2Conc, SVF);
     PetscReal SGRate = calculateSurfaceGrowthReactionRate(localOdeValues[ODE_T], C2H2Conc, SA_V);
 
-    PetscReal AggRate = calculateAgglomerationRate(localOdeValues[C_s], localOdeValues[ODE_NDD], localOdeValues[ODE_T], pointInfo->currentDensity);
-    PetscReal O2OxRate = calculateO2OxidationRate(localOdeValues[C_s], localOdeValues[ODE_NDD], O2Conc, pointInfo->currentDensity, localOdeValues[ODE_T], SA_V);
+    PetscReal AggRate = calculateAgglomerationRate(localOdeValues[C_s], ndd, localOdeValues[ODE_T], pointInfo->currentDensity);
+    PetscReal O2OxRate = calculateO2OxidationRate(localOdeValues[C_s], ndd, O2Conc, pointInfo->currentDensity, localOdeValues[ODE_T], SA_V);
     PetscReal OOxRate = calculateOOxidationRate(OConc, localOdeValues[ODE_T], SA_V, SVF);
     PetscReal OHOxRate = calculateOHOxidationRate(OHConc, localOdeValues[ODE_T], SA_V, SVF);
 

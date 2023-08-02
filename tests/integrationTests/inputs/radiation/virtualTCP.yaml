@@ -40,17 +40,23 @@ timestepper:
         conservedFieldOptions:
           petscfv_type: leastsquares
           petsclimiter_type: vanleer
+        region:
+          name: domain
 
       # create a conserved field to track ndd
       - !ablate::finiteVolume::ExtraVariable
         name: "Progress"
         components: [ "NDD" ]
+        region:
+          name: domain
 
       # by adding a pressure field the code will compute and output pressure
       - !ablate::domain::FieldDescription
         name: pressure
         type: FV
         location: aux
+        region:
+          name: domain
 
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler

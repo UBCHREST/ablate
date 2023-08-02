@@ -89,12 +89,43 @@
   ],
   "buildPresets": [
     {
-      "name": "local-ablate-debug",
+      "name": "local-ablate-debug-build",
       "configurePreset": "local-ablate-debug"
     },
     {
-      "name": "local-ablate-opt",
+      "name": "local-ablate-opt-build",
       "configurePreset": "local-ablate-opt"
+    },
+    {
+      "name": "ablate-test-only-build",
+      "configurePreset": "local-ablate-opt",
+      "targets": [
+        "ablate",
+        "unitTests",
+        "integrationTests",
+        "regressionTests"
+      ]
+    },
+    {
+      "name": "ablate-format-check",
+      "configurePreset": "local-ablate-opt",
+      "targets": [
+        "format-check"
+      ]
+    },
+    {
+      "name": "ablate-print-version",
+      "configurePreset": "local-ablate-opt",
+      "targets": [
+        "print-version"
+      ]
+    },
+    {
+      "name": "ablate-only-build",
+      "configurePreset": "local-ablate-opt",
+      "targets": [
+        "ablate"
+      ]
     }
   ],
   "testPresets": [
@@ -118,6 +149,54 @@
       "execution": {
         "noTestsAction": "error",
         "stopOnFailure": true
+      }
+    },
+    {
+      "name": "pipeline-testing-fast",
+      "configurePreset": "local-ablate-opt",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": true
+      },
+      "filter": {
+        "include": {
+          "label": "unitTests|integrationTests"
+        }
+      }
+    },
+    {
+      "name": "pipeline-testing-all",
+      "configurePreset": "local-ablate-opt",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": true
+      },
+      "filter": {
+        "include": {
+          "label": "unitTests|integrationTests|regressionTests"
+        }
+      }
+    },
+    {
+      "name": "pipeline-testing-regressionTests",
+      "configurePreset": "local-ablate-opt",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": true
+      },
+      "filter": {
+        "include": {
+          "label": "regressionTests"
+        }
       }
     }
   ]

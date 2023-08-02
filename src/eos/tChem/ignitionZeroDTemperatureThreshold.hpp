@@ -82,6 +82,7 @@ void IgnitionZeroDTemperatureThreshold_TemplateRun(  /// required template argum
 
                     const auto temperature = sv_at_i.Temperature();
 
+                    // only bother to integrate this point in the ode if the temperature is greater than thresholdTemperature
                     if (temperature > thresholdTemperature) {
                         const auto pressure = sv_at_i.Pressure();
                         const auto Ys = sv_at_i.MassFractions();
