@@ -1,8 +1,9 @@
 #include "riemann2Gas.hpp"
 #include <eos/perfectGas.hpp>
-#include "riemannCommon.hpp"
 
-ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::Riemann2Gas::Riemann2GasFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
+using namespace ablate::finiteVolume::fluxCalculator;
+
+Direction Riemann2Gas::Riemann2GasFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
                                                                                                                            PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
                                                                                                                            PetscReal *massFlux,
 
@@ -33,9 +34,11 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     //    pstar = PetscPowReal(pstar, 2.0 * gammaL / gamLm1);
     pstar = 0.5 * (pR + pL);
 
-    return riemannSolver(uL, aL, rhoL, 0, pL, gammaL, uR, aR, rhoR, 0, pR, gammaR, pstar, massFlux, p12);
+    Direction dir = riemannSolver(uL, aL, rhoL, 0, pL, gammaL, uR, aR, rhoR, 0, pR, gammaR, pstar, massFlux, p12);
+
+    return dir;
 }
-ablate::finiteVolume::fluxCalculator::Riemann2Gas::Riemann2Gas(std::shared_ptr<eos::EOS> eosL, std::shared_ptr<eos::EOS> eosR) {
+Riemann2Gas::Riemann2Gas(std::shared_ptr<eos::EOS> eosL, std::shared_ptr<eos::EOS> eosR) {
     auto perfectGasEosL = std::dynamic_pointer_cast<eos::PerfectGas>(eosL);
     auto perfectGasEosR = std::dynamic_pointer_cast<eos::PerfectGas>(eosR);
     if (!perfectGasEosL) {
@@ -48,6 +51,7 @@ ablate::finiteVolume::fluxCalculator::Riemann2Gas::Riemann2Gas(std::shared_ptr<e
     gammaVec[1] = perfectGasEosR->GetSpecificHeatRatio();
 }
 
+
 #include "registrar.hpp"
-REGISTER(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::Riemann2Gas, "Exact Riemann Solution for 2 Perfect Gasses",
+REGISTER(FluxCalculator, Riemann2Gas, "Exact Riemann Solution for 2 Perfect Gasses",
          ARG(ablate::eos::EOS, "eosL", "only valid for perfect gas"), ARG(ablate::eos::EOS, "eosR", "only valid for perfect gas"));

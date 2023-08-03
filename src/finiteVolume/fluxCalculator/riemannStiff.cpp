@@ -1,9 +1,10 @@
 #include "riemannStiff.hpp"
 #include <eos/perfectGas.hpp>
 #include <eos/stiffenedGas.hpp>
-#include "riemannCommon.hpp"
 
-ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::RiemannStiff::RiemannStiffFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
+using namespace ablate::finiteVolume::fluxCalculator;
+
+Direction RiemannStiff::RiemannStiffFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
                                                                                                                              PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
                                                                                                                              PetscReal *massFlux,
 
@@ -34,9 +35,11 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     // Here is the initial guess for pstar - average of left and right pressures
     PetscReal pstar = 0.5 * (pR + pL);
 
-    return riemannSolver(uL, aL, rhoL, p0L, pL, gammaL, uR, aR, rhoR, p0R, pR, gammaR, pstar, massFlux, p12);
+    Direction dir = riemannSolver(uL, aL, rhoL, p0L, pL, gammaL, uR, aR, rhoR, p0R, pR, gammaR, pstar, massFlux, p12);
+
+    return dir;
 }
-ablate::finiteVolume::fluxCalculator::RiemannStiff::RiemannStiff(std::shared_ptr<eos::EOS> eosL, std::shared_ptr<eos::EOS> eosR) {
+RiemannStiff::RiemannStiff(std::shared_ptr<eos::EOS> eosL, std::shared_ptr<eos::EOS> eosR) {
     auto perfectGasEosL = std::dynamic_pointer_cast<eos::PerfectGas>(eosL);
     auto perfectGasEosR = std::dynamic_pointer_cast<eos::PerfectGas>(eosR);
     auto stiffenedGasEosL = std::dynamic_pointer_cast<eos::StiffenedGas>(eosL);
@@ -64,5 +67,5 @@ ablate::finiteVolume::fluxCalculator::RiemannStiff::RiemannStiff(std::shared_ptr
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::RiemannStiff, "Exact Riemann Solution for 2 Stiffened Gasses",
+REGISTER(FluxCalculator, RiemannStiff, "Exact Riemann Solution for 2 Stiffened Gasses",
          ARG(ablate::eos::EOS, "eosL", "only valid for perfect or stiffened gas"), ARG(ablate::eos::EOS, "eosR", "only valid for perfect or stiffened gas"));
