@@ -42,7 +42,7 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
   parameters:
     cfl: .25
   eos: *eos
-  fluxCalculator: !ablate::finiteVolume::fluxCalculator::Rieman
+  fluxCalculator: !ablate::finiteVolume::fluxCalculator::Riemann
     eos: *eos
   boundaryConditions:
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
