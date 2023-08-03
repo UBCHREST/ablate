@@ -44,7 +44,7 @@ solvers:
     parameters:
       cfl: .25
     eos: *eos
-    fluxCalculator: !ablate::finiteVolume::fluxCalculator::Rieman
+    fluxCalculator: !ablate::finiteVolume::fluxCalculator::Riemann
       eos: *eos
     monitors:
       - !ablate::monitors::TimeStepMonitor

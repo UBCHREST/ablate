@@ -6,7 +6,7 @@
 #include "finiteVolume/fluxCalculator/ausmpUp.hpp"
 #include "finiteVolume/fluxCalculator/averageFlux.hpp"
 #include "finiteVolume/fluxCalculator/offFlux.hpp"
-#include "finiteVolume/fluxCalculator/rieman.hpp"
+#include "finiteVolume/fluxCalculator/riemann.hpp"
 #include "finiteVolume/fluxCalculator/riemann2Gas.hpp"
 #include "finiteVolume/fluxCalculator/riemannStiff.hpp"
 #include "gtest/gtest.h"
@@ -135,10 +135,10 @@ INSTANTIATE_TEST_SUITE_P(
                                        .expectedDirection = {NA, NA, NA, NA}
 
         },
-        // Rieman flux testing
+        // Riemann flux testing
         (FluxCalculatorTestParameters){
-            .testName = "RiemanFlux",
-            .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Rieman>(
+            .testName = "RiemannFlux",
+            .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Riemann>(
                 std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}))),
             .uL = {0.0, -2.0, 0.0, 0.0, 19.5975},
             .aL = {1.18321596, 0.74833148, 37.4165739, 0.1183216, 10.3708995},  // gam=1.4 a = \gam * p / \rho
