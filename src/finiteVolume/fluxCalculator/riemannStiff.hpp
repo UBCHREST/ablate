@@ -23,7 +23,4 @@ class RiemannStiff : public fluxCalculator::RiemannSolver {
 
 }  // namespace ablate::finiteVolume::fluxCalculator
 
-
-
-
 #endif  // ABLATELIBRARY_RIEMANNSTIFFR_HPP

@@ -4,8 +4,6 @@
 
 using namespace ablate::finiteVolume::fluxCalculator;
 
-
-
 static void expansionShockCalculation(const PetscReal pstar, const PetscReal gamma, const PetscReal gamm1, const PetscReal gamp1, const PetscReal p0, const PetscReal p, const PetscReal a,
                                       const PetscReal rho, PetscReal *f0, PetscReal *f1) {
     if (pstar <= p)  // expansion wave equation from Toro
@@ -30,9 +28,9 @@ static void expansionShockCalculation(const PetscReal pstar, const PetscReal gam
     }
 }
 
-static Direction riemannDirection(const PetscReal pstar, const PetscReal uL, const PetscReal aL, const PetscReal rhoL, const PetscReal p0L, const PetscReal pL,
-                                                                        const PetscReal gammaL, const PetscReal fL, const PetscReal uR, const PetscReal aR, const PetscReal rhoR, const PetscReal p0R,
-                                                                        const PetscReal pR, const PetscReal gammaR, const PetscReal fR, PetscReal *massFlux, PetscReal *p12) {
+static Direction riemannDirection(const PetscReal pstar, const PetscReal uL, const PetscReal aL, const PetscReal rhoL, const PetscReal p0L, const PetscReal pL, const PetscReal gammaL,
+                                  const PetscReal fL, const PetscReal uR, const PetscReal aR, const PetscReal rhoR, const PetscReal p0R, const PetscReal pR, const PetscReal gammaR, const PetscReal fR,
+                                  PetscReal *massFlux, PetscReal *p12) {
     /*
      * gammaL: specific heat ratio for gas on left (pass in from EOS)
      * gammaR: specific heat ratio for stiffened gas on right (pass in from EOS)
@@ -153,9 +151,9 @@ static Direction riemannDirection(const PetscReal pstar, const PetscReal uL, con
 }
 
 // Solve the non-linear equation
-Direction RiemannSolver::riemannSolver(const PetscReal uL, const PetscReal aL, const PetscReal rhoL, const PetscReal p0L, const PetscReal pL, const PetscReal gammaL,
-                                                              const PetscReal uR, const PetscReal aR, const PetscReal rhoR, const PetscReal p0R, const PetscReal pR, const PetscReal gammaR,
-                                                              const PetscReal pstar0, PetscReal *massFlux, PetscReal *p12) {
+Direction RiemannSolver::riemannSolver(const PetscReal uL, const PetscReal aL, const PetscReal rhoL, const PetscReal p0L, const PetscReal pL, const PetscReal gammaL, const PetscReal uR,
+                                       const PetscReal aR, const PetscReal rhoR, const PetscReal p0R, const PetscReal pR, const PetscReal gammaR, const PetscReal pstar0, PetscReal *massFlux,
+                                       PetscReal *p12) {
     const PetscReal tol = 1e-8;
     PetscReal pold, f_L_0, f_L_1, f_R_0, f_R_1, pstar = pstar0;
     const PetscReal del_u = uR - uL;

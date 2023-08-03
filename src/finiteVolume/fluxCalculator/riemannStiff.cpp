@@ -4,11 +4,9 @@
 
 using namespace ablate::finiteVolume::fluxCalculator;
 
-Direction RiemannStiff::RiemannStiffFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
-                                                                                                                             PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
-                                                                                                                             PetscReal *massFlux,
+Direction RiemannStiff::RiemannStiffFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal *massFlux,
 
-                                                                                                                             PetscReal *p12) {
+                                                 PetscReal *p12) {
     /*
      * gammaL: specific heat ratio for gas on left (pass in from EOS)
      * gammaR: specific heat ratio for stiffened gas on right (pass in from EOS)
@@ -67,5 +65,5 @@ RiemannStiff::RiemannStiff(std::shared_ptr<eos::EOS> eosL, std::shared_ptr<eos::
 }
 
 #include "registrar.hpp"
-REGISTER(FluxCalculator, RiemannStiff, "Exact Riemann Solution for 2 Stiffened Gasses",
-         ARG(ablate::eos::EOS, "eosL", "only valid for perfect or stiffened gas"), ARG(ablate::eos::EOS, "eosR", "only valid for perfect or stiffened gas"));
+REGISTER(FluxCalculator, RiemannStiff, "Exact Riemann Solution for 2 Stiffened Gasses", ARG(ablate::eos::EOS, "eosL", "only valid for perfect or stiffened gas"),
+         ARG(ablate::eos::EOS, "eosR", "only valid for perfect or stiffened gas"));

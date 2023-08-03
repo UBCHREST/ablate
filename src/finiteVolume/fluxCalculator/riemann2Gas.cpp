@@ -3,11 +3,9 @@
 
 using namespace ablate::finiteVolume::fluxCalculator;
 
-Direction Riemann2Gas::Riemann2GasFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
-                                                                                                                           PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
-                                                                                                                           PetscReal *massFlux,
+Direction Riemann2Gas::Riemann2GasFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal *massFlux,
 
-                                                                                                                           PetscReal *p12) {
+                                               PetscReal *p12) {
     /*
      * gammaL: specific heat ratio for gas on left (pass in from EOS)
      * gammaR: specific heat ratio for gas on right (pass in from EOS)
@@ -51,7 +49,6 @@ Riemann2Gas::Riemann2Gas(std::shared_ptr<eos::EOS> eosL, std::shared_ptr<eos::EO
     gammaVec[1] = perfectGasEosR->GetSpecificHeatRatio();
 }
 
-
 #include "registrar.hpp"
-REGISTER(FluxCalculator, Riemann2Gas, "Exact Riemann Solution for 2 Perfect Gasses",
-         ARG(ablate::eos::EOS, "eosL", "only valid for perfect gas"), ARG(ablate::eos::EOS, "eosR", "only valid for perfect gas"));
+REGISTER(FluxCalculator, Riemann2Gas, "Exact Riemann Solution for 2 Perfect Gasses", ARG(ablate::eos::EOS, "eosL", "only valid for perfect gas"),
+         ARG(ablate::eos::EOS, "eosR", "only valid for perfect gas"));

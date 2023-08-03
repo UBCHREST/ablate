@@ -3,8 +3,8 @@
 
 using namespace ablate::finiteVolume::fluxCalculator;
 
-
-Direction Riemann::RiemannFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal *massFlux, PetscReal *p12) {
+Direction Riemann::RiemannFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal *massFlux,
+                                       PetscReal *p12) {
     /*
      * gamma: specific heat ratio (pass in from EOS)
      * gamm1 = gamma - 1
@@ -33,7 +33,6 @@ Direction Riemann::RiemannFluxFunction(void *ctx, PetscReal uL, PetscReal aL, Pe
     Direction dir = riemannSolver(uL, aL, rhoL, 0, pL, gamma, uR, aR, rhoR, 0, pR, gamma, pstar, massFlux, p12);
 
     return dir;
-
 }
 Riemann::Riemann(std::shared_ptr<eos::EOS> eosIn) {
     auto perfectGasEos = std::dynamic_pointer_cast<eos::PerfectGas>(eosIn);

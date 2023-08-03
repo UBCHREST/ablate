@@ -3,7 +3,6 @@
 
 #include "fluxCalculator.hpp"
 
-
 namespace ablate::finiteVolume::fluxCalculator {
 /*
  * Computes the flux by treating all surfaces as Riemann problems, different stiffened gas on left/right.
@@ -11,7 +10,7 @@ namespace ablate::finiteVolume::fluxCalculator {
  */
 class RiemannSolver : public FluxCalculator {
    protected:
-     /**
+    /**
      * Solve the Riemann problem.
      * @param uL: velocity on the left cell center
      * @param aL: speed of sound on the left center cell
@@ -29,18 +28,11 @@ class RiemannSolver : public FluxCalculator {
      * @param massFlux: mass flux across the cell face(?)
      * @param p12: interface pressure(?)
      */
-     static Direction riemannSolver(const PetscReal uL, const PetscReal aL, const PetscReal rhoL, const PetscReal p0L, const PetscReal pL, const PetscReal gammaL,
-                                                                  const PetscReal uR, const PetscReal aR, const PetscReal rhoR, const PetscReal p0R, const PetscReal pR, const PetscReal gammaR,
-                                                                  const PetscReal pstar0, PetscReal *massFlux, PetscReal *p12);
-
-
-
-
-
-
+    static Direction riemannSolver(const PetscReal uL, const PetscReal aL, const PetscReal rhoL, const PetscReal p0L, const PetscReal pL, const PetscReal gammaL, const PetscReal uR,
+                                   const PetscReal aR, const PetscReal rhoR, const PetscReal p0R, const PetscReal pR, const PetscReal gammaR, const PetscReal pstar0, PetscReal *massFlux,
+                                   PetscReal *p12);
 };
 
 }  // namespace ablate::finiteVolume::fluxCalculator
-
 
 #endif  // ABLATELIBRARY_RIEMANNCOMMON_HPP
