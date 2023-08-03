@@ -65,5 +65,5 @@ RiemannStiff::RiemannStiff(std::shared_ptr<eos::EOS> eosL, std::shared_ptr<eos::
 }
 
 #include "registrar.hpp"
-REGISTER(FluxCalculator, RiemannStiff, "Exact Riemann Solution for 2 Stiffened Gasses", ARG(ablate::eos::EOS, "eosL", "only valid for perfect or stiffened gas"),
-         ARG(ablate::eos::EOS, "eosR", "only valid for perfect or stiffened gas"));
+REGISTER(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::RiemannStiff, "Exact Riemann Solution for 2 Stiffened Gasses",
+         ARG(ablate::eos::EOS, "eosL", "only valid for perfect or stiffened gas"), ARG(ablate::eos::EOS, "eosR", "only valid for perfect or stiffened gas"));

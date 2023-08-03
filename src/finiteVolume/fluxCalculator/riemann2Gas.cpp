@@ -50,5 +50,5 @@ Riemann2Gas::Riemann2Gas(std::shared_ptr<eos::EOS> eosL, std::shared_ptr<eos::EO
 }
 
 #include "registrar.hpp"
-REGISTER(FluxCalculator, Riemann2Gas, "Exact Riemann Solution for 2 Perfect Gasses", ARG(ablate::eos::EOS, "eosL", "only valid for perfect gas"),
-         ARG(ablate::eos::EOS, "eosR", "only valid for perfect gas"));
+REGISTER(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::Riemann2Gas, "Exact Riemann Solution for 2 Perfect Gasses",
+         ARG(ablate::eos::EOS, "eosL", "only valid for perfect gas"), ARG(ablate::eos::EOS, "eosR", "only valid for perfect gas"));

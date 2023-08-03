@@ -9,7 +9,7 @@ namespace ablate::finiteVolume::fluxCalculator {
  * Computes the flux by treating all surfaces as Riemann problems, different stiffened gas on left/right.
  * Reference Chang and Liou, JCP, 2007, Appendix B
  */
-class RiemannStiff : public fluxCalculator::RiemannSolver {
+class RiemannStiff : public RiemannSolver {
    private:
     static Direction RiemannStiffFluxFunction(void *, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal *massFlux,
                                               PetscReal *p12);

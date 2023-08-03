@@ -43,4 +43,4 @@ Riemann::Riemann(std::shared_ptr<eos::EOS> eosIn) {
 }
 
 #include "registrar.hpp"
-REGISTER(FluxCalculator, Riemann, "Exact Riemann Solution", ARG(ablate::eos::EOS, "eos", "only valid for perfect gas"));
+REGISTER(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::Riemann, "Exact Riemann Solution", ARG(ablate::eos::EOS, "eos", "only valid for perfect gas"));
