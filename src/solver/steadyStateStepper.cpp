@@ -38,8 +38,12 @@ void ablate::solver::SteadyStateStepper::Solve() {
     // Store the max steps to use for a final check
     TSGetMaxSteps(GetTS(), &maxSteps) >> ablate::utilities::PetscUtilities::checkError;
 
+    // Get the current step and time.  For restart cases this step might not be zero
+    PetscInt step;
+    TSGetStepNumber(GetTS(), &step) >> ablate::utilities::PetscUtilities::checkError;
+
     // Set the initial max time steps
-    TSSetMaxSteps(GetTS(), checkInterval) >> ablate::utilities::PetscUtilities::checkError;
+    TSSetMaxSteps(GetTS(), checkInterval + step) >> ablate::utilities::PetscUtilities::checkError;
 
     // perform a basic solve (this will set up anything else that needs to be setup)
     TimeStepper::Solve();
@@ -56,7 +60,6 @@ void ablate::solver::SteadyStateStepper::Solve() {
         converged = true;
 
         // Get the current step and time
-        PetscInt step;
         TSGetStepNumber(GetTS(), &step) >> ablate::utilities::PetscUtilities::checkError;
 
         PetscReal time;

@@ -106,6 +106,21 @@ bool ablate::solver::TimeStepper::Initialize() {
         // set the ts from options
         TSSetSolution(ts, solutionVec) >> utilities::PetscUtilities::checkError;
         TSSetFromOptions(ts) >> utilities::PetscUtilities::checkError;
+
+        TSAdapt adapt = nullptr;
+        TSGetAdapt(ts, &adapt) >> ablate::utilities::PetscUtilities::checkError;
+        if (adapt) {
+            TSAdaptType adaptType;
+            TSAdaptGetType(adapt, &adaptType) >> ablate::utilities::PetscUtilities::checkError;
+            if (auto adaptInitializer = adaptInitializers[std::string(adaptType)]) {
+                adaptInitializer(ts, adapt);
+            }
+        }
+
+        // If there was a serializer, restore the ts
+        if (serializer) {
+            serializer->RestoreTS(ts);
+        }
     }
     EndEvent();
     return justInitialized;
@@ -115,23 +130,8 @@ void ablate::solver::TimeStepper::Solve() {
     // Call initialize, this will only initialize if it has not been called
     Initialize();
 
-    TSAdapt adapt = nullptr;
-    TSGetAdapt(ts, &adapt) >> ablate::utilities::PetscUtilities::checkError;
-    if (adapt) {
-        TSAdaptType adaptType;
-        TSAdaptGetType(adapt, &adaptType) >> ablate::utilities::PetscUtilities::checkError;
-        if (auto adaptInitializer = adaptInitializers[std::string(adaptType)]) {
-            adaptInitializer(ts, adapt);
-        }
-    }
-
     // Get the solution vector
     Vec solutionVec = domain->GetSolutionVector();
-
-    // If there was a serializer, restore the ts
-    if (serializer) {
-        serializer->RestoreTS(ts);
-    }
 
     // If there are no solvers
     if (solvers.empty()) {
