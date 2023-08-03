@@ -12,7 +12,7 @@ ablate::domain::BoxMeshBoundaryCells::BoxMeshBoundaryCells(const std::string& na
                                                            std::vector<std::shared_ptr<modifiers::Modifier>> preModifiers, std::vector<std::shared_ptr<modifiers::Modifier>> postModifiers,
                                                            std::vector<int> faces, const std::vector<double>& lower, const std::vector<double>& upper, bool simplex,
                                                            const std::shared_ptr<parameters::Parameters>& options)
-    : Domain(CreateBoxDM(name, std::move(faces), lower, upper, simplex), name, std::move(fieldDescriptors),
+    : Domain(CreateBoxDM(name, std::move(faces), lower, upper, simplex), name, fieldDescriptors,
              // We need to get the optional dm_plex_scale to determine bounds
              AddBoundaryModifiers(lower, upper, options ? options->Get("dm_plex_scale", 1.0) : 1.0, std::move(preModifiers), std::move(postModifiers)), options) {
     // make sure that dm_refine was not set
