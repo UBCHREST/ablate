@@ -5,6 +5,7 @@ target_sources(ablateLibrary
         cellSolver.cpp
         adaptPhysics.cpp
         adaptPhysicsConstrained.cpp
+        steadyStateStepper.cpp
 
         PUBLIC
         timeStepper.hpp
@@ -15,4 +16,7 @@ target_sources(ablateLibrary
         cellSolver.hpp
         adaptPhysics.hpp
         physicsTimeStepFunction.hpp
+        steadyStateStepper.hpp
         )
+
+add_subdirectory(criteria)
