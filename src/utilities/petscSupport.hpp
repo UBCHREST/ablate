@@ -40,7 +40,7 @@ PetscErrorCode DMPlexGetContainingCell(DM dm, const PetscScalar *xyz, PetscInt *
  * @param eps - Tolerance to utilize when searching for cells
  * @param cell - Cell containing the location. It will return -1 if xyz is not in the local portion of the DM.
  */
-PetscErrorCode DMPlexFindCell(DM dm, const PetscScalar *xyz, const PetscReal eps, PetscInt *cell);
+PetscErrorCode DMPlexFindCell(DM dm, const PetscScalar *xyz, PetscReal eps, PetscInt *cell);
 
 
 /**

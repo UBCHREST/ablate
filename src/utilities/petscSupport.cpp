@@ -64,7 +64,7 @@ PetscErrorCode DMPlexGetContainingCell(DM dm, const PetscScalar *xyz, PetscInt *
 
 .seealso: `DMPLEX`, `DMPlexCreate()`, `DMGetCoordinatesLocal()`, `DMPlexFindVertices`
 @*/
-PetscErrorCode DMPlexFindCell(DM dm, const PetscScalar *xyz, const PetscReal eps, PetscInt *cell) {
+PetscErrorCode DMPlexFindCell(DM dm, const PetscScalar *xyz, PetscReal eps, PetscInt *cell) {
 //  PetscInt           c, cdim, i, j, o, p, pStart, pEnd;
 //  PetscInt           npoints;
 //  const PetscScalar *coord;
