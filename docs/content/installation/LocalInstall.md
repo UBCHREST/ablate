@@ -38,11 +38,11 @@ CLion is a C/C++ IDE that uses cmake files for configuration. These directions o
     ```bash
     # debug mode
     cmake  --preset=local-ablate-debug
-    cmake --build --preset=local-ablate-debug -j
+    cmake --build --preset=local-ablate-debug-build -j
 
     # optimized
     cmake  --preset=local-ablate-opt
-    cmake --build --preset=local-ablate-opt -j
+    cmake --build --preset=local-ablate-opt-build -j
     ```
 4. Run all the ABLATE tests
     ```bash
