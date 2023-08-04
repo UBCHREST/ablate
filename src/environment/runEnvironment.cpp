@@ -1,13 +1,14 @@
 #include "runEnvironment.hpp"
 #include <mpi.h>
 #include <chrono>
+#include <memory>
 #include <regex>
 #include <string>
 #include "version.h"
 
 ablate::environment::RunEnvironment::RunEnvironment() : outputDirectory(), title("") {}
 
-ablate::environment::RunEnvironment::RunEnvironment(const parameters::Parameters& parameters, std::filesystem::path inputPath) : title(parameters.GetExpect<std::string>("title")) {
+ablate::environment::RunEnvironment::RunEnvironment(const parameters::Parameters& parameters, const std::filesystem::path& inputPath) : title(parameters.GetExpect<std::string>("title")) {
     // check to see if the output directory is set
     auto specifiedOutputDirectory = parameters.Get<std::filesystem::path>("directory");
     outputDirectory = specifiedOutputDirectory.value_or((inputPath.empty() ? std::filesystem::current_path() : inputPath.parent_path()) / title);
@@ -56,7 +57,7 @@ ablate::environment::RunEnvironment::RunEnvironment(const parameters::Parameters
 }
 
 void ablate::environment::RunEnvironment::Setup(const ablate::parameters::Parameters& parameters, std::filesystem::path inputPath) {
-    environment::RunEnvironment::runEnvironment = std::unique_ptr<environment::RunEnvironment>(new environment::RunEnvironment(parameters, inputPath));
+    environment::RunEnvironment::runEnvironment = std::make_unique<environment::RunEnvironment>(parameters, inputPath);
 }
 
 void ablate::environment::RunEnvironment::Initialize(int* argc, char*** args) {
@@ -84,4 +85,4 @@ void ablate::environment::RunEnvironment::Setup() { environment::RunEnvironment:
 
 void ablate::environment::RunEnvironment::ExpandVariables(std::string& value) const { value = std::regex_replace(value, OutputDirectoryVariable, GetOutputDirectory().string()); }
 
-std::string_view ablate::environment::RunEnvironment::GetVersion() { return std::string_view(ABLATE_VERSION); }
+std::string_view ablate::environment::RunEnvironment::GetVersion() { return {ABLATE_VERSION}; }

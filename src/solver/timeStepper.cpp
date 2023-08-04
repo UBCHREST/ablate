@@ -1,8 +1,5 @@
 #include "timeStepper.hpp"
 #include <petscdm.h>
-
-#include <utility>
-
 #include <utility>
 #include "adaptPhysics.hpp"
 #include "adaptPhysicsConstrained.hpp"
@@ -67,12 +64,17 @@ ablate::solver::TimeStepper::TimeStepper(const std::string& nameIn, std::shared_
 
 ablate::solver::TimeStepper::~TimeStepper() { TSDestroy(&ts) >> utilities::PetscUtilities::checkError; }
 
-void ablate::solver::TimeStepper::Initialize() {
+bool ablate::solver::TimeStepper::Initialize() {
     StartEvent((this->name + "::Initialize").c_str());
+
+    // Keep track if this need to be initialized
+    bool justInitialized = false;
+
     if (!initialized) {
         domain->InitializeSubDomains(solvers, initializations, exactSolutions);
         TSSetDM(ts, domain->GetDM()) >> utilities::PetscUtilities::checkError;
         initialized = true;
+        justInitialized = true;
 
         // Register any functions with the dm/ts
         if (!boundaryFunctionSolvers.empty()) {
@@ -95,64 +97,41 @@ void ablate::solver::TimeStepper::Initialize() {
             }
         }
 
-        if (serializer) {
-            // Register any subdomain with the serializer
-            for (auto& subDomain : domain->GetSerializableSubDomains()) {
-                if (auto subDomainPtr = subDomain.lock()) {
-                    if (subDomainPtr->Serialize()) {
-                        serializer->Register(subDomain);
-                    }
-                }
-            }
+        // register components with the serializers
+        RegisterSerializableComponents(serializer);
 
-            // Register the solver with the serializer
-            for (auto& solver : solvers) {
-                auto serializable = std::dynamic_pointer_cast<io::Serializable>(solver);
-                if (serializable && serializable->Serialize()) {
-                    serializer->Register(serializable);
-                }
-            }
-
-            // register any monitors with the seralizer
-            for (const auto& monitorPerSolver : monitors) {
-                for (const auto& monitor : monitorPerSolver.second) {
-                    auto serializable = std::dynamic_pointer_cast<io::Serializable>(monitor);
-                    if (serializable && serializable->Serialize()) {
-                        serializer->Register(serializable);
-                    }
-                }
-            }
-        }
         // Get the solution vector
         Vec solutionVec = domain->GetSolutionVector();
 
         // set the ts from options
         TSSetSolution(ts, solutionVec) >> utilities::PetscUtilities::checkError;
         TSSetFromOptions(ts) >> utilities::PetscUtilities::checkError;
+
+        TSAdapt adapt = nullptr;
+        TSGetAdapt(ts, &adapt) >> ablate::utilities::PetscUtilities::checkError;
+        if (adapt) {
+            TSAdaptType adaptType;
+            TSAdaptGetType(adapt, &adaptType) >> ablate::utilities::PetscUtilities::checkError;
+            if (auto adaptInitializer = adaptInitializers[std::string(adaptType)]) {
+                adaptInitializer(ts, adapt);
+            }
+        }
+
+        // If there was a serializer, restore the ts
+        if (serializer) {
+            serializer->RestoreTS(ts);
+        }
     }
     EndEvent();
+    return justInitialized;
 }
+
 void ablate::solver::TimeStepper::Solve() {
     // Call initialize, this will only initialize if it has not been called
     Initialize();
 
-    TSAdapt adapt = nullptr;
-    TSGetAdapt(ts, &adapt) >> ablate::utilities::PetscUtilities::checkError;
-    if (adapt) {
-        TSAdaptType adaptType;
-        TSAdaptGetType(adapt, &adaptType) >> ablate::utilities::PetscUtilities::checkError;
-        if (auto adaptInitializer = adaptInitializers[std::string(adaptType)]) {
-            adaptInitializer(ts, adapt);
-        }
-    }
-
     // Get the solution vector
     Vec solutionVec = domain->GetSolutionVector();
-
-    // If there was a serializer, restore the ts
-    if (serializer) {
-        serializer->RestoreTS(ts);
-    }
 
     // If there are no solvers
     if (solvers.empty()) {
@@ -424,6 +403,37 @@ PetscErrorCode ablate::solver::TimeStepper::ComputePhysicsTimeStep(PetscReal* dt
     PetscCallMPI(MPI_Allreduce(&localDtMin, dt, 1, MPIU_REAL, MPIU_MIN, PetscObjectComm((PetscObject)ts)));
 
     PetscFunctionReturn(0);
+}
+
+void ablate::solver::TimeStepper::RegisterSerializableComponents(const std::shared_ptr<io::Serializer>& serializerToRegister) const {
+    if (serializerToRegister) {
+        // Register any subdomain with the serializer
+        for (auto& subDomain : domain->GetSerializableSubDomains()) {
+            if (auto subDomainPtr = subDomain.lock()) {
+                if (subDomainPtr->Serialize()) {
+                    serializerToRegister->Register(subDomain);
+                }
+            }
+        }
+
+        // Register the solver with the serializer
+        for (auto& solver : solvers) {
+            auto serializable = std::dynamic_pointer_cast<io::Serializable>(solver);
+            if (serializable && serializable->Serialize()) {
+                serializerToRegister->Register(serializable);
+            }
+        }
+
+        // register any monitors with the serializer
+        for (const auto& monitorPerSolver : monitors) {
+            for (const auto& monitor : monitorPerSolver.second) {
+                auto serializable = std::dynamic_pointer_cast<io::Serializable>(monitor);
+                if (serializable && serializable->Serialize()) {
+                    serializerToRegister->Register(serializable);
+                }
+            }
+        }
+    }
 }
 
 #include "registrar.hpp"

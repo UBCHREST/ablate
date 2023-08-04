@@ -5,11 +5,12 @@
 #include <fstream>
 #include <io/interval/interval.hpp>
 #include <iostream>
+#include <utility>
 #include "generators.hpp"
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/petscUtilities.hpp"
 
-ablate::io::Hdf5Serializer::Hdf5Serializer(std::shared_ptr<ablate::io::interval::Interval> interval) : interval(interval) {
+ablate::io::Hdf5Serializer::Hdf5Serializer(std::shared_ptr<ablate::io::interval::Interval> interval) : interval(std::move(interval)) {
     // Load the metadata from the file is available, otherwise set to 0
     auto restartFilePath = environment::RunEnvironment::Get().GetOutputDirectory() / "restart.rst";
 
@@ -44,7 +45,7 @@ void ablate::io::Hdf5Serializer::Register(std::weak_ptr<Serializable> serializab
 
 PetscErrorCode ablate::io::Hdf5Serializer::Hdf5SerializerSaveStateFunction(TS ts, PetscInt steps, PetscReal time, Vec u, void* ctx) {
     PetscFunctionBeginUser;
-    Hdf5Serializer* hdf5Serializer = (Hdf5Serializer*)ctx;
+    auto* hdf5Serializer = (Hdf5Serializer*)ctx;
 
     // Make sure that the same timeStep is not output more than once (this can be from a restart)
     if (steps <= hdf5Serializer->timeStep) {

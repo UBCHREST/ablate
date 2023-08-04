@@ -3,16 +3,23 @@
 
 #include <memory>
 #include <ostream>
+#include <solver/timeStepper.hpp>
 #include "factory.hpp"
 
 namespace ablate {
 class Builder {
    public:
     /**
+     * build the time stepper to run
+     * @param factory
+     */
+    static std::shared_ptr<ablate::solver::TimeStepper> Build(const std::shared_ptr<cppParser::Factory>& factory);
+
+    /**
      * default run method for particles and flow
      * @param factory
      */
-    static void Run(std::shared_ptr<cppParser::Factory> factory);
+    static void Run(const std::shared_ptr<cppParser::Factory>& factory);
 
     /**
      * print the version information for the ablate library
