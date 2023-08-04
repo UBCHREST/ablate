@@ -112,7 +112,7 @@ TEST_P(OneDimensionHeatTransferTestFixture, ShouldConverge) {
 
         // Get the L2 and LInf norms
         std::vector<PetscReal> l2Norm =
-            ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::monitors::SolutionErrorMonitor::Norm::L2_NORM).ComputeError(ts, time, solution);
+            ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::utilities::MathUtilities::Norm::L2_NORM).ComputeError(ts, time, solution);
 
         // Compute the error
         ablate::mathFunctions::PetscFunction petscExactFunction[1] = {exactSolution->GetPetscFunction()};

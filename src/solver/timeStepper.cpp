@@ -419,7 +419,7 @@ void ablate::solver::TimeStepper::RegisterSerializableComponents(const std::shar
         // Register the solver with the serializer
         for (auto& solver : solvers) {
             auto serializable = std::dynamic_pointer_cast<io::Serializable>(solver);
-            if (serializable && serializable->Serialize()!= io::Serializable::SerializerType::none) {
+            if (serializable && serializable->Serialize() != io::Serializable::SerializerType::none) {
                 serializerToRegister->Register(serializable);
             }
         }
@@ -428,12 +428,11 @@ void ablate::solver::TimeStepper::RegisterSerializableComponents(const std::shar
         for (const auto& monitorPerSolver : monitors) {
             for (const auto& monitor : monitorPerSolver.second) {
                 auto serializable = std::dynamic_pointer_cast<io::Serializable>(monitor);
-                if (serializable && serializable->Serialize() !=io::Serializable::SerializerType::none) {
+                if (serializable && serializable->Serialize() != io::Serializable::SerializerType::none) {
                     serializerToRegister->Register(serializable);
                 }
             }
         }
-
     }
 }
 
