@@ -60,7 +60,7 @@ class RunEnvironment {
     static void Setup();
 
     // static access methods
-    static void Setup(const parameters::Parameters&, std::filesystem::path inputPath = {});
+    static void Setup(const parameters::Parameters&, const std::filesystem::path& inputPath = {});
     inline static const RunEnvironment& Get() {
         if (!runEnvironment) {
             runEnvironment.reset(new RunEnvironment());

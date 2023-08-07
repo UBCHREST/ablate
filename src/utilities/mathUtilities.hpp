@@ -169,7 +169,7 @@ class MathUtilities {
      * @param c
      */
     template <int dim, class T>
-    static inline void CrossVector(const T* a, const T* b, T* c) {
+    static inline void CrossVector([[maybe_unused]] const T* a, [[maybe_unused]] const T* b, T* c) {
         if constexpr (dim == 3) {
             c[0] = (a[1] * b[2] - b[1] * a[2]);
             c[1] = (b[0] * a[2] - a[0] * b[2]);

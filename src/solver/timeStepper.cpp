@@ -410,7 +410,7 @@ void ablate::solver::TimeStepper::RegisterSerializableComponents(const std::shar
         // Register any subdomain with the serializer
         for (auto& subDomain : domain->GetSerializableSubDomains()) {
             if (auto subDomainPtr = subDomain.lock()) {
-                if (subDomainPtr->Serialize()) {
+                if (subDomainPtr->Serialize() != io::Serializable::SerializerType::none) {
                     serializerToRegister->Register(subDomain);
                 }
             }
@@ -419,16 +419,16 @@ void ablate::solver::TimeStepper::RegisterSerializableComponents(const std::shar
         // Register the solver with the serializer
         for (auto& solver : solvers) {
             auto serializable = std::dynamic_pointer_cast<io::Serializable>(solver);
-            if (serializable && serializable->Serialize()) {
+            if (serializable && serializable->Serialize() != io::Serializable::SerializerType::none) {
                 serializerToRegister->Register(serializable);
             }
         }
 
-        // register any monitors with the serializer
+        // register any monitors with the seralizer
         for (const auto& monitorPerSolver : monitors) {
             for (const auto& monitor : monitorPerSolver.second) {
                 auto serializable = std::dynamic_pointer_cast<io::Serializable>(monitor);
-                if (serializable && serializable->Serialize()) {
+                if (serializable && serializable->Serialize() != io::Serializable::SerializerType::none) {
                     serializerToRegister->Register(serializable);
                 }
             }

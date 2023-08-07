@@ -56,7 +56,7 @@ ablate::environment::RunEnvironment::RunEnvironment(const parameters::Parameters
     }
 }
 
-void ablate::environment::RunEnvironment::Setup(const ablate::parameters::Parameters& parameters, std::filesystem::path inputPath) {
+void ablate::environment::RunEnvironment::Setup(const ablate::parameters::Parameters& parameters, const std::filesystem::path& inputPath) {
     environment::RunEnvironment::runEnvironment = std::make_unique<environment::RunEnvironment>(parameters, inputPath);
 }
 
