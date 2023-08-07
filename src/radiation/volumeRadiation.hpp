@@ -27,14 +27,13 @@ class VolumeRadiation : public solver::CellSolver, public solver::RHSFunction {
     /**
      *
      * @param solverId the id for this solver
-     * @param region the boundary cell region
      * @param rayNumber
      * @param options other options
      */
-    VolumeRadiation(const std::string& solverId1, const std::shared_ptr<domain::Region>& region, const std::shared_ptr<io::interval::Interval>& interval,
+    VolumeRadiation(const std::string& solverId1, const std::shared_ptr<io::interval::Interval>& interval,
                     std::shared_ptr<radiation::Radiation> radiation, const std::shared_ptr<parameters::Parameters>& options1, const std::shared_ptr<monitors::logs::Log>& unnamed1);
 
-    ~VolumeRadiation();
+    ~VolumeRadiation() override;
 
     /**
      * serves to update the radiation
