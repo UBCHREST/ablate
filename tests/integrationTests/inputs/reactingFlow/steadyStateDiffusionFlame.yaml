@@ -51,25 +51,7 @@ timestepper: !ablate::solver::SteadyStateStepper
       - !ablate::domain::modifiers::DistributeWithGhostCells
         ghostCellDepth: 2
     postModifiers:
-      - !ablate::domain::modifiers::TagLabelInterface
-        # tag the left boundary faces needed to remove the boundary from the interiorFlowRegion
-        leftRegion:
-          name: boundaryCellsLeft
-        rightRegion:
-          name: domain
-        boundaryFaceRegion:
-          name: boundaryFaceLeft
-      - !ablate::domain::modifiers::SubtractLabel
-        # remove the slabBurnerFace from the flowRegion
-        differenceRegion:
-          name: interiorFlowRegion
-        minuendRegion:
-          name: interiorCells
-        subtrahendRegions:
-          - name: boundaryFaceLeft
-        incompleteLabel: true
       - !ablate::domain::modifiers::GhostBoundaryCells
-      # the DmViewFromOptions should output once with full mesh/dm details
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
         # create an ideal gas eos using the tchem library
@@ -148,7 +130,7 @@ solvers:
     id: flowField
     # only apply this solver on the main region (no bc cells)
     region:
-      name: interiorFlowRegion
+      name: interiorCells
     # the flow solver requires the equation of state to compute properties
     eos: *eos
     # Allow transport used the Sutherland model
@@ -180,7 +162,7 @@ solvers:
     region:
       name: boundaryCellsLeft
     fieldBoundary:
-      name: boundaryFaceLeft
+      name: boundaryFaces
     processes:
       - !ablate::boundarySolver::lodi::Inlet
         eos: *eos

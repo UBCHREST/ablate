@@ -65,7 +65,7 @@ timestepper:
         eos: *eos
         temperature: 1200.0
         pressure: 101325.0
-        velocity: [ 0.0 ]
+        velocity: 0.0, 0.0, 0.0
         # the mass fractions must be specified to compute rho, e, etc.
         other: !ablate::finiteVolume::fieldFunctions::MassFractions
           # the mass fraction class allows for a subset of mass fractions to be specified. The rest are assumed zero.

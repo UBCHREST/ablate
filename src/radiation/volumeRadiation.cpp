@@ -1,12 +1,10 @@
 #include "volumeRadiation.hpp"
-#include "eos/radiationProperties/zimmer.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "io/interval/fixedInterval.hpp"
 
-ablate::radiation::VolumeRadiation::VolumeRadiation(const std::string& solverId1, const std::shared_ptr<domain::Region>& region, const std::shared_ptr<io::interval::Interval>& intervalIn,
-                                                    std::shared_ptr<radiation::Radiation> radiationIn, const std::shared_ptr<parameters::Parameters>& options,
-                                                    const std::shared_ptr<ablate::monitors::logs::Log>& log)
-    : CellSolver(solverId1, region, options), interval((intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>())), radiation(std::move(radiationIn)) {}
+ablate::radiation::VolumeRadiation::VolumeRadiation(const std::string& solverId1, const std::shared_ptr<io::interval::Interval>& intervalIn, std::shared_ptr<radiation::Radiation> radiationIn,
+                                                    const std::shared_ptr<parameters::Parameters>& options, const std::shared_ptr<ablate::monitors::logs::Log>& log)
+    : CellSolver(solverId1, radiationIn->GetRegion(), options), interval((intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>())), radiation(std::move(radiationIn)) {}
 ablate::radiation::VolumeRadiation::~VolumeRadiation() = default;
 
 void ablate::radiation::VolumeRadiation::Setup() {
@@ -21,7 +19,7 @@ void ablate::radiation::VolumeRadiation::Setup() {
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
         PetscInt ghost = -1;
         if (ghostLabel) DMLabelGetValue(ghostLabel, iCell, &ghost) >> utilities::PetscUtilities::checkError;
-        if (!(ghost >= 0)) radiationCellRange.Add(iCell);
+        if (ghost < 0) radiationCellRange.Add(iCell);
     }
 
     ablate::solver::CellSolver::Setup();
@@ -108,6 +106,6 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
 
 #include "registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::radiation::VolumeRadiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
-         ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(ablate::io::interval::Interval, "interval", "number of time steps between the radiation solves"),
+         ARG(ablate::io::interval::Interval, "interval", "number of time steps between the radiation solves"),
          ARG(ablate::radiation::Radiation, "radiation", "a radiation solver to allow for choice between multiple implementations"),
          OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
