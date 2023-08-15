@@ -40,6 +40,7 @@ ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::OneDimensi
     // Create the mesh
     DMCreate(PETSC_COMM_SELF, &subModelDm) >> utilities::PetscUtilities::checkError;
     DMSetType(subModelDm, DMPLEX) >> utilities::PetscUtilities::checkError;
+    PetscObjectReference((PetscObject)subModelDm) >> utilities::PetscUtilities::checkError;
     PetscObjectSetOptions((PetscObject)subModelDm, options) >> utilities::PetscUtilities::checkError;
     PetscObjectSetName((PetscObject)subModelDm, "oneDimMesh") >> utilities::PetscUtilities::checkError;
     DMSetFromOptions(subModelDm) >> utilities::PetscUtilities::checkError;
@@ -125,12 +126,18 @@ ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::OneDimensi
 
     /* Set discretization and boundary conditions for each mesh */
     DMSetField(auxDm, 0, nullptr, (PetscObject)feHeatFlux) >> utilities::PetscUtilities::checkError;
+    PetscFEDestroy(&feHeatFlux) >> utilities::PetscUtilities::checkError;
+
+    // once the fields are added to the DS, you need to finish set up
     DMCreateDS(auxDm) >> utilities::PetscUtilities::checkError;
 
     // Give the aux vector to the subModelDm
     DMCreateLocalVector(auxDm, &localAuxVector) >> utilities::PetscUtilities::checkError;
     VecZeroEntries(localAuxVector) >> utilities::PetscUtilities::checkError;
     DMSetAuxiliaryVec(subModelDm, nullptr, 0, 0, localAuxVector) >> utilities::PetscUtilities::checkError;
+
+    // cleanup u
+    VecDestroy(&u) >> utilities::PetscUtilities::checkError;
 }
 
 ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::~OneDimensionHeatTransfer() {
@@ -145,6 +152,9 @@ ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::~OneDimens
     }
     if (localAuxVector) {
         VecDestroy(&localAuxVector) >> utilities::PetscUtilities::checkError;
+    }
+    if (auxDm) {
+        DMDestroy(&auxDm) >> utilities::PetscUtilities::checkError;
     }
 }
 PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::SetupDiscretization(DM activeDm, DMBoundaryConditionType bcType) {
@@ -266,9 +276,6 @@ PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTrans
         // Setup the new dm
         PetscCall(oneDimensionHeatTransfer->SetupDiscretization(newDM, neededBcType));
 
-        // Reset the TS
-        PetscCall(TSReset(ts));
-
         // Create a new global vector
         Vec newGlobalVector;
         PetscCall(DMCreateGlobalVector(newDM, &newGlobalVector));
@@ -285,6 +292,7 @@ PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTrans
         PetscCall(DMRestoreLocalVector(dm, &locVec));
 
         // Set in the TS
+        PetscCall(TSReset(ts));
         PetscCall(TSSetDM(ts, newDM));
         PetscCall(TSSetSolution(ts, newGlobalVector));
 

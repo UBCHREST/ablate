@@ -25,45 +25,6 @@ struct OneDimensionHeatTransferTestParameters {
 
 class OneDimensionHeatTransferTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<OneDimensionHeatTransferTestParameters> {};
 
-/**
- * This function is only useful if ts_monitor_solution_exact is set for the options.  An example would include
- * params.options->Insert("dm_view", "hdf5:/path/to/debug/sol." + std::to_string(l) + ".h5");
- * params.options->Insert("ts_monitor_solution_exact", "hdf5:/path/to/debug/sol." + std::to_string(l) + ".h5::append");
- * @param ts
- * @param step
- * @param ptime
- * @param solution
- * @param ctx
- * @return
- */
-PetscErrorCode TSMonitorSolution(TS ts, PetscInt step, PetscReal ptime, Vec solution, void* ctx) {
-    PetscFunctionBegin;
-    // get the function
-    auto exactSolution = (ablate::mathFunctions::MathFunction*)ctx;
-
-    // Compute the error
-    ablate::mathFunctions::PetscFunction petscExactFunction[1] = {exactSolution->GetPetscFunction()};
-    void* petscExactContext[1] = {exactSolution->GetContext()};
-
-    // Get the dm from the vec
-    DM dm;
-    PetscCall(VecGetDM(solution, &dm));
-    PetscOptions options;
-    PetscObjectGetOptions((PetscObject)ts, &options);
-
-    Vec exact;
-    PetscCall(VecDuplicate(solution, &exact));
-    PetscCall(PetscObjectSetName((PetscObject)exact, "exact"));
-    PetscCall(PetscObjectSetOptions((PetscObject)exact, options));
-    PetscCall(PetscObjectSetOptions((PetscObject)solution, options));
-
-    PetscCall(DMProjectFunction(dm, ptime, petscExactFunction, petscExactContext, INSERT_VALUES, exact));
-    PetscCall(DMSetOutputSequenceNumber(dm, step, ptime));
-    PetscCall(VecViewFromOptions(solution, nullptr, "-ts_monitor_solution_exact"));
-    PetscCall(VecViewFromOptions(exact, nullptr, "-ts_monitor_solution_exact"));
-    PetscFunctionReturn(PETSC_SUCCESS);
-}
-
 TEST_P(OneDimensionHeatTransferTestFixture, ShouldConverge) {
     // get the required variables
     const auto& params = GetParam();
@@ -89,9 +50,6 @@ TEST_P(OneDimensionHeatTransferTestFixture, ShouldConverge) {
         auto solidHeatTransfer = std::make_shared<ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer>(
             "test", params.properties, exactSolution, params.options, params.maximumSurfaceTemperature.value_or(PETSC_DEFAULT));
 
-        auto ts = solidHeatTransfer->GetTS();
-        TSMonitorSet(ts, TSMonitorSolution, exactSolution.get(), nullptr);
-
         // Advance, pass in a surface heat flux and update the internal properties
         PetscReal surfaceTemperature;
         PetscReal heatFlux;
@@ -111,8 +69,8 @@ TEST_P(OneDimensionHeatTransferTestFixture, ShouldConverge) {
         PetscDSSetExactSolution(ds, 0, exactSolution->GetPetscFunction(), exactSolution->GetContext());
 
         // Get the L2 and LInf norms
-        std::vector<PetscReal> l2Norm =
-            ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::utilities::MathUtilities::Norm::L2_NORM).ComputeError(ts, time, solution);
+        std::vector<PetscReal> l2Norm = ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::utilities::MathUtilities::Norm::L2_NORM)
+                                            .ComputeError(solidHeatTransfer->GetTS(), time, solution);
 
         // Compute the error
         ablate::mathFunctions::PetscFunction petscExactFunction[1] = {exactSolution->GetPetscFunction()};
