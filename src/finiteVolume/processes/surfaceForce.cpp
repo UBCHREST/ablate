@@ -93,6 +93,41 @@ void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::
     flow.RegisterRHSFunction(ComputeSource, this);
 }
 
+
+
+void SaveCellData(const char fname[255], DM dm, Vec vec, PetscInt dim, PetscInt nc, ablate::domain::Range range, const PetscInt id) {
+
+
+  PetscReal    *array, *val;
+
+  VecGetArray(vec, &array) >> ablate::utilities::PetscUtilities::checkError;
+
+  FILE *f1 = fopen(fname, "w");
+
+  for (PetscInt c = range.start; c < range.end; ++c) {
+    PetscInt cell = range.points ? range.points[c] : c;
+
+    PetscReal x0[3];
+    DMPlexComputeCellGeometryFVM(dm, cell, NULL, x0, NULL) >> ablate::utilities::PetscUtilities::checkError;
+    DMPlexPointLocalFieldRef(dm, cell, id, array, &val) >> ablate::utilities::PetscUtilities::checkError;
+
+    for (PetscInt d = 0; d < dim; ++d) {
+      fprintf(f1, "%+f\t", x0[d]);
+    }
+    for (PetscInt d = 0; d < nc; ++d) {
+      fprintf(f1, "%+f\t", val[d]);
+    }
+    fprintf(f1, "\n");
+  }
+
+  fclose(f1);
+
+  VecRestoreArray(vec, &array) >> ablate::utilities::PetscUtilities::checkError;
+
+}
+
+
+
 PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(const FiniteVolumeSolver &solver, DM dm, PetscReal time, Vec locX, Vec locFVec, void *ctx) {
     PetscFunctionBegin;
 
@@ -149,6 +184,10 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     DMGetCoordinateSection(dm, &coordsSection) >> utilities::PetscUtilities::checkError;
     DMGetCoordinatesLocal(dm, &localCoordsVector) >> utilities::PetscUtilities::checkError;
     VecGetArray(localCoordsVector, &coordsArray) >> utilities::PetscUtilities::checkError;
+
+
+SaveCellData("vof.txt", dm, locX, dim, 1, cellRange, VFfield.id);
+exit(0);
 
     // march over the stored vortices
     for (const auto &info : process->vertexStencils) {
