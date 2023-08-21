@@ -252,7 +252,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     std::vector<PetscScalar> evaluatedGains;
 
     //! Store the petscSF that is used for pulling remote ray calculation
-    PetscSF remoteAccess;
+    PetscSF remoteAccess = nullptr;
 
     //! the name of this solver
     std::string solverId;
@@ -271,6 +271,13 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     const std::shared_ptr<ablate::monitors::logs::Log> log = nullptr;
     static inline constexpr char IdentifierField[] = "identifier";
     static inline constexpr char VirtualCoordField[] = "virtual coord";
+
+   public:
+    /**
+     * public function to return the region for this radiation solver
+     * @return
+     */
+    inline std::shared_ptr<domain::Region> GetRegion() const { return region; }
 };
 /**
  * provide write for the id

@@ -197,7 +197,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             auto radiationPropertiesModel = std::make_shared<ablate::eos::radiationProperties::Constant>(1.0, 1.0);
             auto radiationModel = GetParam().radiationFactory(radiationPropertiesModel);
             auto interiorLabel = std::make_shared<ablate::domain::Region>("interiorCells");
-            auto radiation = std::make_shared<ablate::radiation::VolumeRadiation>("radiation", interiorLabel, nullptr, radiationModel, nullptr, nullptr);
+            auto radiation = std::make_shared<ablate::radiation::VolumeRadiation>("radiation", nullptr, radiationModel, nullptr, nullptr);
 
             // register the flowSolver with the timeStepper
             timeStepper.Register(radiation, {std::make_shared<ablate::monitors::TimeStepMonitor>()});

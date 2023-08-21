@@ -315,8 +315,8 @@ PetscErrorCode DMPlexGetNeighbors(DM dm, PetscInt p, PetscInt maxLevels, PetscRe
         DMPlexGetTransitiveClosure(dm, p, PETSC_TRUE, &closureSize, &closure);
         PetscInt start, end;
         DMPlexGetDepthStratum(dm, 0, &start, &end);  // Get the range of vertex indices
-        for (PetscInt i = 0; i < closureSize * 2; i += 2) {
-            PetscInt point = closure[i];
+        for (PetscInt ii = 0; ii < closureSize * 2; ii += 2) {
+            PetscInt point = closure[ii];
             if (point >= start && point < end) {
                 // point is a vertex of the cell
                 list[n] = point;

@@ -4,7 +4,7 @@
 #include "solver/timeStepper.hpp"
 #include "version.h"
 
-void ablate::Builder::Run(std::shared_ptr<cppParser::Factory> parser) {
+std::shared_ptr<ablate::solver::TimeStepper> ablate::Builder::Build(const std::shared_ptr<cppParser::Factory>& parser) {
     // get the global arguments
     auto globalArguments = parser->GetByName<ablate::parameters::Parameters>("arguments");
     if (globalArguments) {
@@ -34,6 +34,14 @@ void ablate::Builder::Run(std::shared_ptr<cppParser::Factory> parser) {
         }
     }
 
+    return timeStepper;
+}
+
+void ablate::Builder::Run(const std::shared_ptr<cppParser::Factory>& parser) {
+    // build the time stepper
+    auto timeStepper = Build(parser);
+
+    // advance the time stepper
     timeStepper->Solve();
 }
 

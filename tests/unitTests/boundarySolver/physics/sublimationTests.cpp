@@ -1,5 +1,6 @@
 #include <functional>
 #include "PetscTestFixture.hpp"
+#include "boundarySolver/physics/subModels/completeSublimation.hpp"
 #include "boundarySolver/physics/sublimation.hpp"
 #include "eos/mockEOS.hpp"
 #include "eos/transport/constant.hpp"
@@ -49,9 +50,12 @@ TEST_P(SublimationTestFixture, ShouldComputeCorrectSourceTerm) {
         .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicTemperatureFunction(
             [params](const PetscReal conserved[], PetscReal temperature, PetscReal* property) { *property = params.boundaryPressure; })));
 
+    // Create a sublimation model
+    auto sublimationModel = std::make_shared<ablate::boundarySolver::physics::subModels::CompleteSublimation>(params.latentHeatOfFusion);
+
     // create the boundary
     auto transportModel = std::make_shared<ablate::eos::transport::Constant>(params.effectiveConductivity, params.boundaryViscosity);
-    auto boundary = std::make_shared<ablate::boundarySolver::physics::Sublimation>(params.latentHeatOfFusion, transportModel, eos, params.speciesMassFractions, params.additionalHeatTransfer);
+    auto boundary = std::make_shared<ablate::boundarySolver::physics::Sublimation>(sublimationModel, transportModel, eos, params.speciesMassFractions, params.additionalHeatTransfer);
 
     // initialization is not needed for testing if species are not set
     boundary->Setup(params.numberSpecies);

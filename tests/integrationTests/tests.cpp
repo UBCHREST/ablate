@@ -62,7 +62,8 @@ INSTANTIATE_TEST_SUITE_P(
                           {"outputs/reactingFlow/ignitionDelayGriMechConstantVolumeReactor.Temperature.txt", "ignitionDelayTemperature.csv"}}),
         MpiTestParameter("inputs/reactingFlow/ignitionDelay2S_CH4_CM2.yaml", 1, "", "", {{"outputs/reactingFlow/ignitionDelay2S_CH4_CM2.Temperature.txt", "ignitionDelayTemperature.txt"}}),
         MpiTestParameter("inputs/reactingFlow/ignitionDelayMMASoot.yaml", 1, "", "", {{"outputs/reactingFlow/ignitionDelayMMASoot.Temperature.txt", "ignitionDelayTemperature.csv"}}),
-        MpiTestParameter("inputs/reactingFlow/ignitionDelayMMASootProcess.yaml", 1, "", "", {{"outputs/reactingFlow/ignitionDelayMMASootProcess.Temperature.txt", "ignitionDelayTemperature.csv"}})),
+        MpiTestParameter("inputs/reactingFlow/ignitionDelayMMASootProcess.yaml", 1, "", "", {{"outputs/reactingFlow/ignitionDelayMMASootProcess.Temperature.txt", "ignitionDelayTemperature.csv"}}),
+        MpiTestParameter("inputs/reactingFlow/steadyStateDiffusionFlame.yaml", 1, "", "outputs/reactingFlow/steadyStateDiffusionFlame.txt")),
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
 INSTANTIATE_TEST_SUITE_P(Machinery, IntegrationTestsSpecifier,

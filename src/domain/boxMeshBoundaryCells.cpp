@@ -12,7 +12,9 @@ ablate::domain::BoxMeshBoundaryCells::BoxMeshBoundaryCells(const std::string& na
                                                            std::vector<std::shared_ptr<modifiers::Modifier>> preModifiers, std::vector<std::shared_ptr<modifiers::Modifier>> postModifiers,
                                                            std::vector<int> faces, const std::vector<double>& lower, const std::vector<double>& upper, bool simplex,
                                                            const std::shared_ptr<parameters::Parameters>& options)
-    : Domain(CreateBoxDM(name, std::move(faces), lower, upper, simplex), name, fieldDescriptors, AddBoundaryModifiers(lower, upper, std::move(preModifiers), std::move(postModifiers)), options) {
+    : Domain(CreateBoxDM(name, std::move(faces), lower, upper, simplex), name, fieldDescriptors,
+             // We need to get the optional dm_plex_scale to determine bounds
+             AddBoundaryModifiers(lower, upper, options ? options->Get("dm_plex_scale", 1.0) : 1.0, std::move(preModifiers), std::move(postModifiers)), options) {
     // make sure that dm_refine was not set
     if (options) {
         if (options->Get("dm_refine", 0) != 0) {
@@ -69,9 +71,17 @@ DM ablate::domain::BoxMeshBoundaryCells::CreateBoxDM(const std::string& name, st
     PetscObjectSetName((PetscObject)dm, name.c_str()) >> utilities::PetscUtilities::checkError;
     return dm;
 }
-std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>> ablate::domain::BoxMeshBoundaryCells::AddBoundaryModifiers(std::vector<double> lower, std::vector<double> upper,
+std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>> ablate::domain::BoxMeshBoundaryCells::AddBoundaryModifiers(std::vector<double> lower, std::vector<double> upper, double scaleFactor,
                                                                                                                              std::vector<std::shared_ptr<modifiers::Modifier>> preModifiers,
                                                                                                                              std::vector<std::shared_ptr<modifiers::Modifier>> postModifiers) {
+    // scale the bounds by the scale factor incase petsc scaled them
+    for (auto& pt : lower) {
+        pt *= scaleFactor;
+    }
+    for (auto& pt : upper) {
+        pt *= scaleFactor;
+    }
+
     auto modifiers = std::move(preModifiers);
     auto interiorLabel = std::make_shared<domain::Region>(interiorCellsLabel);
     auto boundaryFaceRegion = std::make_shared<domain::Region>(boundaryFacesLabel);

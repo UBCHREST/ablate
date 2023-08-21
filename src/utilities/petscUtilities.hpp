@@ -68,6 +68,15 @@ class PetscUtilities {
     static void Set(PetscOptions petscOptions, const std::map<std::string, std::string>& options);
 
     /**
+     * Set specific petsc options object.  If overide is false, this will not replace exisiting options
+     * @param petscOptions
+     * @param name
+     * @param value
+     * @param override
+     */
+    static void Set(PetscOptions petscOptions, const char name[], const char value[], bool override = true);
+
+    /**
      * Clean up and check for unused options
      * @param name
      * @param options

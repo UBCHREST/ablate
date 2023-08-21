@@ -181,7 +181,7 @@ class FiniteVolumeSolver : public solver::CellSolver,
      * Returns true if any of the processes are marked as serializable
      * @return
      */
-    bool Serialize() const override;
+    SerializerType Serialize() const override;
 
     /**
      * only required function, returns the id of the object.  Should be unique for the simulation

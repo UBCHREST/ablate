@@ -28,6 +28,9 @@ class Hdf5MultiFileSerializer : public Serializer, private utilities::Loggable<H
     PetscInt timeStep;
     bool resumed = false;
 
+    //! store the root output directory incase the run environment changes it over size
+    std::filesystem::path rootOutputDirectory = {};
+
     // keep a list of postProcesses ids
     std::vector<std::string> postProcessesIds;
 
@@ -43,22 +46,30 @@ class Hdf5MultiFileSerializer : public Serializer, private utilities::Loggable<H
     //! Private functions to load and save the ts metadata data
     void SaveMetadata(TS ts) const;
 
-    //! Private functions to load and save the ts metadata data
+    //! Private functions to determine the path name when using collective
     [[nodiscard]] std::filesystem::path GetOutputFilePath(const std::string& objectId) const;
 
+    //! Private functions to determine the path name when using serial
+    [[nodiscard]] std::filesystem::path GetOutputFilePath(const std::string& objectId, int rank) const;
+
     //! private function to get the output directory
-    static std::filesystem::path GetOutputDirectoryPath(const std::string& objectId);
+    std::filesystem::path GetOutputDirectoryPath(const std::string& objectId) const;
 
    public:
     /**
      * Separates into multiple files to solve some io issues
      */
-    explicit Hdf5MultiFileSerializer(std::shared_ptr<ablate::io::interval::Interval>, std::shared_ptr<parameters::Parameters> options = nullptr);
+    explicit Hdf5MultiFileSerializer(std::shared_ptr<ablate::io::interval::Interval>, const std::shared_ptr<parameters::Parameters>& options = nullptr);
 
     /**
      * Allow file cleanup
      */
     ~Hdf5MultiFileSerializer() override;
+
+    /**
+     * Public method to clear and reset the any serializable
+     */
+    void Reset() { serializables.clear(); }
 
     /**
      * Handles registering the object and restore if available.

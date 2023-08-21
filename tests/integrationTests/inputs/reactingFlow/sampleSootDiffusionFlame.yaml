@@ -4,7 +4,7 @@
 environment:
   title: _1DSampleSootDiffusionFlame
   tagDirectory: false
-arguments: {}
+arguments: { }
 timestepper:
   arguments:
     ts_type: rk
@@ -15,9 +15,9 @@ timestepper:
     ts_adapt_type: physicsConstrained
   domain: !ablate::domain::BoxMeshBoundaryCells
     name: simpleBoxField
-    faces: [50]
-    lower: [ 0.0]
-    upper: [ 0.01]
+    faces: [ 50 ]
+    lower: [ 0.0 ]
+    upper: [ 0.01 ]
     simplex: false
     options:
       dm_plex_hash_location: true
@@ -26,25 +26,7 @@ timestepper:
       - !ablate::domain::modifiers::DistributeWithGhostCells
         ghostCellDepth: 2
     postModifiers:
-      - !ablate::domain::modifiers::TagLabelInterface
-        # tag the left boundary faces needed to remove the boundary from the interiorFlowRegion
-        leftRegion:
-          name: boundaryCellsLeft
-        rightRegion:
-          name: domain
-        boundaryFaceRegion:
-          name: boundaryFaceLeft
-      - !ablate::domain::modifiers::SubtractLabel
-        # remove the slabBurnerFace from the flowRegion
-        differenceRegion:
-          name: interiorFlowRegion
-        minuendRegion:
-          name: interiorCells
-        subtrahendRegions:
-          - name: boundaryFaceLeft
-        incompleteLabel: true
       - !ablate::domain::modifiers::GhostBoundaryCells
-          # the DmViewFromOptions should output once with full mesh/dm details
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: !ablate::eos::TChemSoot  &eos
@@ -67,11 +49,11 @@ timestepper:
       state: &flowFieldState
         eos: *eos
         temperature: !ablate::mathFunctions::Peak
-          startValues: [300]
-          peakValues: [2710]
-          endValues: [300]
+          startValues: [ 300 ]
+          peakValues: [ 2710 ]
+          endValues: [ 300 ]
           start: 0.0
-          peak:  0.007 
+          peak: 0.007
           end: 0.01
         pressure: 101325.0
         velocity: "0.0"
@@ -81,13 +63,13 @@ timestepper:
           values:
             - fieldName: O2
               field: !ablate::mathFunctions::Linear
-                startValues: [0.0]
-                endValues: [1.0]
+                startValues: [ 0.0 ]
+                endValues: [ 1.0 ]
                 end: .01
             - fieldName: C2H4
               field: !ablate::mathFunctions::Linear
-                startValues: [1.0]
-                endValues: [0.0]
+                startValues: [ 1.0 ]
+                endValues: [ 0.0 ]
                 end: .01
     - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
       state: *flowFieldState
@@ -101,18 +83,18 @@ solvers:
   - !ablate::finiteVolume::CompressibleFlowSolver
     id: flowField
     region:
-      name: interiorFlowRegion
+      name: interiorCells
     eos: *eos
     transport: !ablate::eos::tChemSoot::SootSpeciesTransportModel
-      transport:  !ablate::eos::transport::Sutherland
+      transport: !ablate::eos::transport::Sutherland
         eos: *eos
     evTransport: !ablate::eos::tChemSoot::SootProgressTransportModel
-      transport:  !ablate::eos::transport::Sutherland
+      transport: !ablate::eos::transport::Sutherland
         eos: *eos
     monitors:
-    - !ablate::monitors::TimeStepMonitor
-      interval: 10
-    - !ablate::monitors::CurveMonitor
+      - !ablate::monitors::TimeStepMonitor
+        interval: 10
+      - !ablate::monitors::CurveMonitor
         interval: 25
     additionalProcesses:
       - !ablate::finiteVolume::processes::Chemistry
@@ -121,7 +103,7 @@ solvers:
         eos: *eos
         pressure: 101325.0
       - !ablate::finiteVolume::processes::ThermophoreticDiffusion
-        transport:  !ablate::eos::transport::Sutherland
+        transport: !ablate::eos::transport::Sutherland
           eos: *eos
   - !ablate::boundarySolver::BoundarySolver
     id: walls
@@ -138,7 +120,7 @@ solvers:
     region:
       name: boundaryCellsLeft
     fieldBoundary:
-      name: boundaryFaceLeft
+      name: boundaryFaces
     processes:
       - !ablate::boundarySolver::lodi::Inlet
         eos: *eos

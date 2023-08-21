@@ -82,8 +82,6 @@ solvers:
         eos: *eos
   - !ablate::radiation::VolumeRadiation
     id: radiationSolver
-    region:
-      name: interiorCells
     interval: 1
     radiation: !ablate::radiation::Radiation
       id: radiation

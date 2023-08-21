@@ -3,7 +3,6 @@
 #include <memory>
 #include <vector>
 #include "MpiTestFixture.hpp"
-#include "PetscTestErrorChecker.hpp"
 #include "convergenceTester.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
@@ -109,9 +108,9 @@ TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
             timeStepper.Solve();
 
             // Get the L2 and LInf norms
-            std::vector<PetscReal> l2Norm = ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::monitors::SolutionErrorMonitor::Norm::L2_NORM)
+            std::vector<PetscReal> l2Norm = ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::utilities::MathUtilities::Norm::L2_NORM)
                                                 .ComputeError(timeStepper.GetTS(), timeStepper.GetTime(), mesh->GetSolutionVector());
-            std::vector<PetscReal> lInfNorm = ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::monitors::SolutionErrorMonitor::Norm::LINF)
+            std::vector<PetscReal> lInfNorm = ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::utilities::MathUtilities::Norm::LINF)
                                                   .ComputeError(timeStepper.GetTS(), timeStepper.GetTime(), mesh->GetSolutionVector());
 
             // Store the residual into history

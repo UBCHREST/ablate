@@ -10,7 +10,7 @@ namespace ablate::boundarySolver {
 // forward declare the boundaryProcess
 class BoundaryProcess;
 
-class BoundarySolver : public solver::CellSolver, public solver::RHSFunction, private utilities::Loggable<BoundarySolver> {
+class BoundarySolver : public solver::CellSolver, public solver::RHSFunction, private utilities::Loggable<BoundarySolver>, public io::Serializable {
    public:
     /**
      * Boundary information.
@@ -67,6 +67,34 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction, pr
      */
     static void ComputeGradientAlongNormal(PetscInt dim, const BoundaryFVFaceGeom* fg, PetscScalar boundaryValue, PetscInt stencilSize, const PetscScalar* stencilValues,
                                            const PetscScalar* stencilWeights, PetscScalar& dPhiDNorm);
+
+    /**
+     * Simple function definition used to iterate over all boundary cells before the time step
+     */
+    using BoundaryPreRHSPointFunction = PetscErrorCode (*)(PetscReal time, PetscReal dt, PetscInt dim, const BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell, const PetscInt uOff[],
+                                                           PetscScalar* boundaryValues, const PetscScalar* stencilValues[], const PetscInt aOff[], PetscScalar* auxValues,
+                                                           const PetscScalar* stencilAuxValues[], PetscInt stencilSize, const PetscInt stencil[], const PetscScalar stencilWeights[], void* ctx);
+
+    /**
+     * Provide a helper function to do point wise functions over the pre-rhs side function.  This is not called directly by the boundary solver but can be used by processes
+     */
+    struct BoundaryPreRHSPointFunctionDefinition {
+        BoundaryPreRHSPointFunction function;
+        void* context;
+
+        std::vector<PetscInt> inputFieldsOffset;
+        std::vector<PetscInt> auxFieldsOffset;
+    };
+
+    /**
+     * Helper function that can be called from other locations to to iterate over each boundary cell
+     * @param time
+     * @param dt
+     * @param locXVec
+     * @param boundaryPreRhsPointFunction
+     * @return
+     */
+    PetscErrorCode ComputeBoundaryPreRHSPointFunction(PetscReal time, PetscReal dt, Vec locXVec, const BoundaryPreRHSPointFunctionDefinition& boundaryPreRhsPointFunction);
 
    private:
     /**
@@ -253,6 +281,34 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction, pr
      * @return
      */
     PetscErrorCode PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) override;
+
+    /**
+     * Check to see if any of the processes should be serialized
+     * @return
+     */
+    [[nodiscard]] SerializerType Serialize() const override;
+
+    /**
+     * only required function, returns the id of the object.  Should be unique for the simulation
+     * @return
+     */
+    [[nodiscard]] const std::string& GetId() const override { return GetSolverId(); }
+
+    /**
+     * Call each of the processes to be saved
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
+    PetscErrorCode Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+
+    /**
+     * Restore each of the processes
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
+    PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 };
 
 /**

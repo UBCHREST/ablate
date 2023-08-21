@@ -11,7 +11,17 @@ class BoxMeshBoundaryCells : public Domain {
    private:
     static DM CreateBoxDM(const std::string& name, std::vector<int> faces, std::vector<double> lower, std::vector<double> upper, bool simplex = true);
 
-    static std::vector<std::shared_ptr<modifiers::Modifier>> AddBoundaryModifiers(std::vector<double> lower, std::vector<double> upper, std::vector<std::shared_ptr<modifiers::Modifier>> preModifiers,
+    /**
+     *
+     * @param lower
+     * @param upper
+     * @param scaleFactor the petsc input may specify scale factor.  This allows us to scale lower/upper to make sure we find the correct bounds
+     * @param preModifiers
+     * @param postModifiers
+     * @return
+     */
+    static std::vector<std::shared_ptr<modifiers::Modifier>> AddBoundaryModifiers(std::vector<double> lower, std::vector<double> upper, double scaleFactor,
+                                                                                  std::vector<std::shared_ptr<modifiers::Modifier>> preModifiers,
                                                                                   std::vector<std::shared_ptr<modifiers::Modifier>> postModifiers);
 
     inline const static std::string interiorCellsLabel = "interiorCells";

@@ -287,8 +287,6 @@ solvers:
     processes:
       # the sublimation boundary solver is responsible for predicting mass release and flow source terms
       - !ablate::boundarySolver::physics::Sublimation
-        # the latent heat of fusion of PMMA is used to predict the mass release from heating
-        latentHeatOfFusion: 840890
         # the transport model is enforce to update the zero slip wall condition
         transportModel: !ablate::eos::transport::Sutherland
           eos: *eos
@@ -299,6 +297,13 @@ solvers:
         massFractions: *fuelMassFrac
         # the radiviative heat flux to the surface is updated every 10 flow time steps
         radiationInterval: 10
+
+        # The sublimation model is used to compute mass flux rate from the surface, the default is complete sublimation
+        sublimationModel:
+          # the latent heat of fusion of PMMA is used to predict the mass release from heating
+          latentHeatOfFusion: 840890
+          #density of pmma used to output reg rate
+          solidDensity: 1190.0
 
         # a surface radiation solver is used to compute heat flux to the surface
         radiation: !ablate::radiation::SurfaceRadiation
@@ -314,8 +319,7 @@ solvers:
             - !ablate::eos::radiationProperties::SootMeanProperties
               eos: *eos
         emissivity: 0.9
-        #density of pmma used to output reg rate
-        solidDensity: 1190.0
+
     monitors:
       # the boundary solver monitor is used to record regression rate and heat flux to the surface
       - !ablate::monitors::BoundarySolverMonitor

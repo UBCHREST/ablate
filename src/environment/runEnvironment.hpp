@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <parameters/mapParameters.hpp>
 #include <regex>
 #include <string>
 #include "parameters/parameters.hpp"
@@ -48,7 +49,7 @@ class RunEnvironment {
     inline static std::vector<FinalizeFunction> finalizeFunctions;
 
    public:
-    explicit RunEnvironment(const parameters::Parameters&, std::filesystem::path inputPath = {});
+    explicit RunEnvironment(const parameters::Parameters&, const std::filesystem::path& inputPath = {});
     ~RunEnvironment() = default;
 
     // force RunEnvironment to be a singleton
@@ -59,7 +60,7 @@ class RunEnvironment {
     static void Setup();
 
     // static access methods
-    static void Setup(const parameters::Parameters&, std::filesystem::path inputPath = {});
+    static void Setup(const parameters::Parameters&, const std::filesystem::path& inputPath = {});
     inline static const RunEnvironment& Get() {
         if (!runEnvironment) {
             runEnvironment.reset(new RunEnvironment());
@@ -107,9 +108,41 @@ class RunEnvironment {
      */
     static std::string_view GetVersion();
 
+    /**
+     * Run time parameters is a simple class that helps set RunEnvironmentParameters when not using an input file
+     */
+    class Parameters : public parameters::MapParameters {
+       public:
+        /**
+         * directly set the output directory for the parameters
+         * @return
+         */
+        inline Parameters& OutputDirectory(const std::filesystem::path& path) {
+            Insert("directory", path.string());
+            return *this;
+        }
+
+        /**
+         * turn on directory tagging
+         * @return
+         */
+        inline Parameters& TagDirectory(bool tag) {
+            Insert("tagDirectory", tag);
+            return *this;
+        }
+        /**
+         * set the name for the simulation
+         * @return
+         */
+        inline Parameters& Title(std::string simulationTitle) {
+            Insert("title", simulationTitle);
+            return *this;
+        }
+    };
+
    private:
     inline static std::unique_ptr<RunEnvironment> runEnvironment = std::unique_ptr<RunEnvironment>();
 };
 }  // namespace ablate::environment
 
-#endif  // ABLATELIBRARY_RUNENVIRONMENT_H
+#endif  // ABLATELIBRARY_RUNENVIRONMENT_HPP

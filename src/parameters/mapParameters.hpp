@@ -60,6 +60,20 @@ class MapParameters : public Parameters {
     [[nodiscard]] const std::map<std::string, std::string>& GetMap() const { return values; }
 
     /**
+     * Allow inserting additional items into a map
+     * @tparam T
+     * @param key
+     * @param value
+     */
+    template <class T>
+    void Insert(std::string key, T value) {
+        // convert to string
+        std::stringstream ss;
+        ss << value;
+        values[key] = ss.str();
+    }
+
+    /**
      * static helper function to create a new MapParameters shared pointer from a list of parameters
      * ablate::parameters::MapParameters::Create({{"item1", "value1"}, {"item2", "value2"}, {"item3", 234}});
      * @return
