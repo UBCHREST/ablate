@@ -16,6 +16,7 @@ add_subdirectory(monitors)
 add_subdirectory(io)
 add_subdirectory(boundarySolver)
 add_subdirectory(radiation)
+add_subdirectory(levelSet)
 
 # Allow public access to the header files in the directory
 target_include_directories(ablateUnitTestLibrary PUBLIC ${CMAKE_CURRENT_LIST_DIR})

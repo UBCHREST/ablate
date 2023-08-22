@@ -29,7 +29,7 @@ class RunEnvironment {
     //! the title of the simulation
     const std::string title;
 
-    // default empty funEnvironment
+    // default empty runEnvironment
     explicit RunEnvironment();
 
     //! store known directory variables
