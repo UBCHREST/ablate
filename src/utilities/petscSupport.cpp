@@ -45,9 +45,6 @@ PetscErrorCode DMPlexGetContainingCell(DM dm, const PetscScalar *xyz, PetscInt *
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-
-
-
 /**
  * Return the cell with a centroid of xyz
  * Inputs:
@@ -65,50 +62,48 @@ PetscErrorCode DMPlexGetContainingCell(DM dm, const PetscScalar *xyz, PetscInt *
 .seealso: `DMPLEX`, `DMPlexCreate()`, `DMGetCoordinatesLocal()`, `DMPlexFindVertices`
 @*/
 PetscErrorCode DMPlexFindCell(DM dm, const PetscScalar *xyz, PetscReal eps, PetscInt *cell) {
-//  PetscInt           c, cdim, i, j, o, p, pStart, pEnd;
-//  PetscInt           npoints;
-//  const PetscScalar *coord;
-//  Vec                allCoordsVec;
-//  const PetscScalar *allCoords;
-//  PetscInt          *dagPoints;
+    //  PetscInt           c, cdim, i, j, o, p, pStart, pEnd;
+    //  PetscInt           npoints;
+    //  const PetscScalar *coord;
+    //  Vec                allCoordsVec;
+    //  const PetscScalar *allCoords;
+    //  PetscInt          *dagPoints;
 
-  DM                cellGeomDm;
-  PetscInt          cStart, cEnd, dim;
-  const PetscScalar *cellGeomArray;
-  Vec               cellGeomVec;
+    DM cellGeomDm;
+    PetscInt cStart, cEnd, dim;
+    const PetscScalar *cellGeomArray;
+    Vec cellGeomVec;
 
-  PetscFunctionBegin;
+    PetscFunctionBegin;
 
-  PetscCall(DMGetDimension(dm, &dim));
+    PetscCall(DMGetDimension(dm, &dim));
 
-  if (eps < 0) eps = PETSC_SQRT_MACHINE_EPSILON;
+    if (eps < 0) eps = PETSC_SQRT_MACHINE_EPSILON;
 
-  PetscCall(DMPlexGetDataFVM(dm, nullptr, &cellGeomVec, nullptr, nullptr));
-  PetscCall(VecGetArrayRead(cellGeomVec, &cellGeomArray));
-  PetscCall(VecGetDM(cellGeomVec, &cellGeomDm));
+    PetscCall(DMPlexGetDataFVM(dm, nullptr, &cellGeomVec, nullptr, nullptr));
+    PetscCall(VecGetArrayRead(cellGeomVec, &cellGeomArray));
+    PetscCall(VecGetDM(cellGeomVec, &cellGeomDm));
 
-  *cell = -1;
+    *cell = -1;
 
-  DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd);
-  for (PetscInt c = cStart; c < cEnd; ++c) {
+    DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd);
+    for (PetscInt c = cStart; c < cEnd; ++c) {
+        const PetscFVCellGeom *cellGeom;
+        PetscCall(DMPlexPointLocalRead(cellGeomDm, c, cellGeomArray, &cellGeom));
 
-    const PetscFVCellGeom *cellGeom;
-    PetscCall(DMPlexPointLocalRead(cellGeomDm, c, cellGeomArray, &cellGeom));
-
-    PetscReal norm = 0.0;
-    for (PetscInt d = 0; d < dim; d++) norm += PetscRealPart(PetscSqr(xyz[d] - cellGeom->centroid[d]));
-    norm = PetscSqrtReal(norm);
-    if (norm <= eps) {
-      *cell = c;
-      break;
+        PetscReal norm = 0.0;
+        for (PetscInt d = 0; d < dim; d++) norm += PetscRealPart(PetscSqr(xyz[d] - cellGeom->centroid[d]));
+        norm = PetscSqrtReal(norm);
+        if (norm <= eps) {
+            *cell = c;
+            break;
+        }
     }
-  }
 
-  PetscCall(VecRestoreArrayRead(cellGeomVec, &cellGeomArray));
+    PetscCall(VecRestoreArrayRead(cellGeomVec, &cellGeomArray));
 
-  PetscFunctionReturn(PETSC_SUCCESS);
+    PetscFunctionReturn(PETSC_SUCCESS);
 }
-
 
 /**
  * Return all cells which share an vertex or edge/face with a center cell
@@ -254,14 +249,15 @@ static PetscErrorCode DMPlexGetNeighborVertices_Internal(DM dm, PetscReal x0[3],
 }
 
 PetscErrorCode DMPlexRestoreNeighbors(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useCells, PetscBool returnNeighborVertices, PetscInt *nCells,
-                                  PetscInt **cells) {
-  PetscFunctionBegin;
-  if (nCells) *nCells = 0;
-  PetscCall(DMRestoreWorkArray(dm, 0, MPIU_INT, cells));
-  PetscFunctionReturn(PETSC_SUCCESS);
+                                      PetscInt **cells) {
+    PetscFunctionBegin;
+    if (nCells) *nCells = 0;
+    PetscCall(DMRestoreWorkArray(dm, 0, MPIU_INT, cells));
+    PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-PetscErrorCode DMPlexGetNeighbors(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useCells, PetscBool returnNeighborVertices, PetscInt *nCells, PetscInt **cells) {
+PetscErrorCode DMPlexGetNeighbors(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useCells, PetscBool returnNeighborVertices, PetscInt *nCells,
+                                  PetscInt **cells) {
     const PetscInt maxLevelListSize = 10000;
     const PetscInt maxListSize = 100000;
     PetscInt numNew, nLevelList[2];
@@ -896,7 +892,6 @@ PetscErrorCode DMPlexRestoreCommonPoints(DM dm, const PetscInt p1, const PetscIn
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-
 PetscErrorCode DMPlexCornerSurfaceAreaNormal(DM dm, const PetscInt v, const PetscInt c, PetscReal N[]) {
     PetscFunctionBegin;
 
@@ -1161,188 +1156,168 @@ PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, Petsc
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-
-
-
-
-
-
-
 // Copied from petsc/src/dm/impls/plex/plexgeometry
-static PetscErrorCode DMPlexGetLineIntersection_2D_Internal(const PetscReal segmentA[], const PetscReal segmentB[], PetscReal intersection[], PetscBool *hasIntersection)
-{
-  const PetscReal p0_x  = segmentA[0 * 2 + 0];
-  const PetscReal p0_y  = segmentA[0 * 2 + 1];
-  const PetscReal p1_x  = segmentA[1 * 2 + 0];
-  const PetscReal p1_y  = segmentA[1 * 2 + 1];
-  const PetscReal p2_x  = segmentB[0 * 2 + 0];
-  const PetscReal p2_y  = segmentB[0 * 2 + 1];
-  const PetscReal p3_x  = segmentB[1 * 2 + 0];
-  const PetscReal p3_y  = segmentB[1 * 2 + 1];
-  const PetscReal s1_x  = p1_x - p0_x;
-  const PetscReal s1_y  = p1_y - p0_y;
-  const PetscReal s2_x  = p3_x - p2_x;
-  const PetscReal s2_y  = p3_y - p2_y;
-  const PetscReal denom = (-s2_x * s1_y + s1_x * s2_y);
+static PetscErrorCode DMPlexGetLineIntersection_2D_Internal(const PetscReal segmentA[], const PetscReal segmentB[], PetscReal intersection[], PetscBool *hasIntersection) {
+    const PetscReal p0_x = segmentA[0 * 2 + 0];
+    const PetscReal p0_y = segmentA[0 * 2 + 1];
+    const PetscReal p1_x = segmentA[1 * 2 + 0];
+    const PetscReal p1_y = segmentA[1 * 2 + 1];
+    const PetscReal p2_x = segmentB[0 * 2 + 0];
+    const PetscReal p2_y = segmentB[0 * 2 + 1];
+    const PetscReal p3_x = segmentB[1 * 2 + 0];
+    const PetscReal p3_y = segmentB[1 * 2 + 1];
+    const PetscReal s1_x = p1_x - p0_x;
+    const PetscReal s1_y = p1_y - p0_y;
+    const PetscReal s2_x = p3_x - p2_x;
+    const PetscReal s2_y = p3_y - p2_y;
+    const PetscReal denom = (-s2_x * s1_y + s1_x * s2_y);
 
-  PetscFunctionBegin;
-  *hasIntersection = PETSC_FALSE;
-  /* Non-parallel lines */
-  if (denom != 0.0) {
-    const PetscReal s = (-s1_y * (p0_x - p2_x) + s1_x * (p0_y - p2_y)) / denom;
-    const PetscReal t = (s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / denom;
+    PetscFunctionBegin;
+    *hasIntersection = PETSC_FALSE;
+    /* Non-parallel lines */
+    if (denom != 0.0) {
+        const PetscReal s = (-s1_y * (p0_x - p2_x) + s1_x * (p0_y - p2_y)) / denom;
+        const PetscReal t = (s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / denom;
 
-    if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
-      *hasIntersection = PETSC_TRUE;
-      if (intersection) {
-        intersection[0] = p0_x + (t * s1_x);
-        intersection[1] = p0_y + (t * s1_y);
-      }
+        if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
+            *hasIntersection = PETSC_TRUE;
+            if (intersection) {
+                intersection[0] = p0_x + (t * s1_x);
+                intersection[1] = p0_y + (t * s1_y);
+            }
+        }
     }
-  }
-  PetscFunctionReturn(PETSC_SUCCESS);
+    PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 /* The plane is segmentB x segmentC: https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection */
-static PetscErrorCode DMPlexGetLineTriangleIntersection_3D_Internal(const PetscReal segmentA[], const PetscReal segmentB[], const PetscReal segmentC[], PetscReal intersection[], PetscBool *hasIntersection)
-{
-  const PetscReal p0_x  = segmentA[0 * 3 + 0];
-  const PetscReal p0_y  = segmentA[0 * 3 + 1];
-  const PetscReal p0_z  = segmentA[0 * 3 + 2];
-  const PetscReal p1_x  = segmentA[1 * 3 + 0];
-  const PetscReal p1_y  = segmentA[1 * 3 + 1];
-  const PetscReal p1_z  = segmentA[1 * 3 + 2];
+static PetscErrorCode DMPlexGetLineTriangleIntersection_3D_Internal(const PetscReal segmentA[], const PetscReal segmentB[], const PetscReal segmentC[], PetscReal intersection[],
+                                                                    PetscBool *hasIntersection) {
+    const PetscReal p0_x = segmentA[0 * 3 + 0];
+    const PetscReal p0_y = segmentA[0 * 3 + 1];
+    const PetscReal p0_z = segmentA[0 * 3 + 2];
+    const PetscReal p1_x = segmentA[1 * 3 + 0];
+    const PetscReal p1_y = segmentA[1 * 3 + 1];
+    const PetscReal p1_z = segmentA[1 * 3 + 2];
 
-  const PetscReal q0_x  = segmentB[0 * 3 + 0];
-  const PetscReal q0_y  = segmentB[0 * 3 + 1];
-  const PetscReal q0_z  = segmentB[0 * 3 + 2];
-  const PetscReal q1_x  = segmentB[1 * 3 + 0];
-  const PetscReal q1_y  = segmentB[1 * 3 + 1];
-  const PetscReal q1_z  = segmentB[1 * 3 + 2];
+    const PetscReal q0_x = segmentB[0 * 3 + 0];
+    const PetscReal q0_y = segmentB[0 * 3 + 1];
+    const PetscReal q0_z = segmentB[0 * 3 + 2];
+    const PetscReal q1_x = segmentB[1 * 3 + 0];
+    const PetscReal q1_y = segmentB[1 * 3 + 1];
+    const PetscReal q1_z = segmentB[1 * 3 + 2];
 
-  const PetscReal r0_x  = segmentC[0 * 3 + 0];
-  const PetscReal r0_y  = segmentC[0 * 3 + 1];
-  const PetscReal r0_z  = segmentC[0 * 3 + 2];
-  const PetscReal r1_x  = segmentC[1 * 3 + 0];
-  const PetscReal r1_y  = segmentC[1 * 3 + 1];
-  const PetscReal r1_z  = segmentC[1 * 3 + 2];
+    const PetscReal r0_x = segmentC[0 * 3 + 0];
+    const PetscReal r0_y = segmentC[0 * 3 + 1];
+    const PetscReal r0_z = segmentC[0 * 3 + 2];
+    const PetscReal r1_x = segmentC[1 * 3 + 0];
+    const PetscReal r1_y = segmentC[1 * 3 + 1];
+    const PetscReal r1_z = segmentC[1 * 3 + 2];
 
-  const PetscReal s0_x  = p1_x - p0_x;
-  const PetscReal s0_y  = p1_y - p0_y;
-  const PetscReal s0_z  = p1_z - p0_z;
-  const PetscReal s1_x  = q1_x - q0_x;
-  const PetscReal s1_y  = q1_y - q0_y;
-  const PetscReal s1_z  = q1_z - q0_z;
-  const PetscReal s2_x  = r1_x - r0_x;
-  const PetscReal s2_y  = r1_y - r0_y;
-  const PetscReal s2_z  = r1_z - r0_z;
-  const PetscReal s3_x  = s1_y * s2_z - s1_z * s2_y; /* s1 x s2 */
-  const PetscReal s3_y  = s1_z * s2_x - s1_x * s2_z;
-  const PetscReal s3_z  = s1_x * s2_y - s1_y * s2_x;
-  const PetscReal s4_x  = s0_y * s2_z - s0_z * s2_y; /* s0 x s2 */
-  const PetscReal s4_y  = s0_z * s2_x - s0_x * s2_z;
-  const PetscReal s4_z  = s0_x * s2_y - s0_y * s2_x;
-  const PetscReal s5_x  = s1_y * s0_z - s1_z * s0_y; /* s1 x s0 */
-  const PetscReal s5_y  = s1_z * s0_x - s1_x * s0_z;
-  const PetscReal s5_z  = s1_x * s0_y - s1_y * s0_x;
-  const PetscReal denom = -(s0_x * s3_x + s0_y * s3_y + s0_z * s3_z); /* -s0 . (s1 x s2) */
+    const PetscReal s0_x = p1_x - p0_x;
+    const PetscReal s0_y = p1_y - p0_y;
+    const PetscReal s0_z = p1_z - p0_z;
+    const PetscReal s1_x = q1_x - q0_x;
+    const PetscReal s1_y = q1_y - q0_y;
+    const PetscReal s1_z = q1_z - q0_z;
+    const PetscReal s2_x = r1_x - r0_x;
+    const PetscReal s2_y = r1_y - r0_y;
+    const PetscReal s2_z = r1_z - r0_z;
+    const PetscReal s3_x = s1_y * s2_z - s1_z * s2_y; /* s1 x s2 */
+    const PetscReal s3_y = s1_z * s2_x - s1_x * s2_z;
+    const PetscReal s3_z = s1_x * s2_y - s1_y * s2_x;
+    const PetscReal s4_x = s0_y * s2_z - s0_z * s2_y; /* s0 x s2 */
+    const PetscReal s4_y = s0_z * s2_x - s0_x * s2_z;
+    const PetscReal s4_z = s0_x * s2_y - s0_y * s2_x;
+    const PetscReal s5_x = s1_y * s0_z - s1_z * s0_y; /* s1 x s0 */
+    const PetscReal s5_y = s1_z * s0_x - s1_x * s0_z;
+    const PetscReal s5_z = s1_x * s0_y - s1_y * s0_x;
+    const PetscReal denom = -(s0_x * s3_x + s0_y * s3_y + s0_z * s3_z); /* -s0 . (s1 x s2) */
 
-  PetscFunctionBegin;
-  *hasIntersection = PETSC_FALSE;
-  /* Line not parallel to plane */
-  if (denom != 0.0) {
-    const PetscReal t = (s3_x * (p0_x - q0_x) + s3_y * (p0_y - q0_y) + s3_z * (p0_z - q0_z)) / denom;
-    const PetscReal u = (s4_x * (p0_x - q0_x) + s4_y * (p0_y - q0_y) + s4_z * (p0_z - q0_z)) / denom;
-    const PetscReal v = (s5_x * (p0_x - q0_x) + s5_y * (p0_y - q0_y) + s5_z * (p0_z - q0_z)) / denom;
+    PetscFunctionBegin;
+    *hasIntersection = PETSC_FALSE;
+    /* Line not parallel to plane */
+    if (denom != 0.0) {
+        const PetscReal t = (s3_x * (p0_x - q0_x) + s3_y * (p0_y - q0_y) + s3_z * (p0_z - q0_z)) / denom;
+        const PetscReal u = (s4_x * (p0_x - q0_x) + s4_y * (p0_y - q0_y) + s4_z * (p0_z - q0_z)) / denom;
+        const PetscReal v = (s5_x * (p0_x - q0_x) + s5_y * (p0_y - q0_y) + s5_z * (p0_z - q0_z)) / denom;
 
-    if (t >= 0 && t <= 1 && u >= 0 && u <= 1 && v >= 0 && v <= 1 && (u + v) <= 1) {
-      *hasIntersection = PETSC_TRUE;
-      if (intersection) {
-        intersection[0] = p0_x + (t * s0_x);
-        intersection[1] = p0_y + (t * s0_y);
-        intersection[2] = p0_z + (t * s0_z);
-      }
+        if (t >= 0 && t <= 1 && u >= 0 && u <= 1 && v >= 0 && v <= 1 && (u + v) <= 1) {
+            *hasIntersection = PETSC_TRUE;
+            if (intersection) {
+                intersection[0] = p0_x + (t * s0_x);
+                intersection[1] = p0_y + (t * s0_y);
+                intersection[2] = p0_z + (t * s0_z);
+            }
+        }
+        // printf("%+f\t%+f\t%+f\n", t, u, v);
     }
-// printf("%+f\t%+f\t%+f\n", t, u, v);
-  }
-  PetscFunctionReturn(PETSC_SUCCESS);
+    PetscFunctionReturn(PETSC_SUCCESS);
 }
-
 
 // Determine the intersection of a face and a line
 PetscErrorCode DMPlexFaceLineIntersection(DM dm, const PetscInt f, const PetscReal segment[], PetscReal intersection[], PetscBool *hasIntersection) {
-  PetscInt dim;
-  const PetscScalar *array;
-  PetscScalar       *coords = NULL;
-  PetscInt           numCoords;
-  PetscBool          isDG;
+    PetscInt dim;
+    const PetscScalar *array;
+    PetscScalar *coords = NULL;
+    PetscInt numCoords;
+    PetscBool isDG;
 
-  PetscFunctionBegin;
-  PetscCall(DMGetDimension(dm, &dim));
+    PetscFunctionBegin;
+    PetscCall(DMGetDimension(dm, &dim));
 
-  PetscCall(DMPlexGetCellCoordinates(dm, f, &isDG, &numCoords, &array, &coords));
+    PetscCall(DMPlexGetCellCoordinates(dm, f, &isDG, &numCoords, &array, &coords));
 
-  switch (dim) {
-    case 1:
-    {
-      *hasIntersection = PETSC_FALSE;
+    switch (dim) {
+        case 1: {
+            *hasIntersection = PETSC_FALSE;
+        } break;
+        case 2: {
+            PetscCall(DMPlexGetLineIntersection_2D_Internal(coords, segment, intersection, hasIntersection));
+        } break;
+        case 3: {
+            PetscReal segmentA[6], segmentB[6];
+
+            // Triangle 0 - 1 - 2
+            segmentA[0] = segmentB[0] = coords[3];
+            segmentA[1] = segmentB[1] = coords[4];
+            segmentA[2] = segmentB[2] = coords[5];
+
+            segmentA[3] = coords[0];
+            segmentA[4] = coords[1];
+            segmentA[5] = coords[2];
+
+            segmentB[3] = coords[6];
+            segmentB[4] = coords[7];
+            segmentB[5] = coords[8];
+
+            PetscCall(DMPlexGetLineTriangleIntersection_3D_Internal(segment, segmentA, segmentB, intersection, hasIntersection));
+
+            if (numCoords == 12 && !(*hasIntersection)) {  // The face is a quad, so try triangle 0 - 3 - 2
+                segmentA[0] = segmentB[0] = coords[9];
+                segmentA[1] = segmentB[1] = coords[10];
+                segmentA[2] = segmentB[2] = coords[11];
+                PetscCall(DMPlexGetLineTriangleIntersection_3D_Internal(segment, segmentA, segmentB, intersection, hasIntersection));
+            }
+        } break;
+        default:
+            PetscFunctionReturn(PETSC_ERR_SUP);
     }
-    break;
-    case 2:
-    {
-      PetscCall(DMPlexGetLineIntersection_2D_Internal(coords, segment, intersection, hasIntersection));
-    }
-    break;
-    case 3:
-    {
-      PetscReal segmentA[6], segmentB[6];
 
-      //Triangle 0 - 1 - 2
-      segmentA[0] = segmentB[0] = coords[3];
-      segmentA[1] = segmentB[1] = coords[4];
-      segmentA[2] = segmentB[2] = coords[5];
+    PetscCall(DMPlexRestoreCellCoordinates(dm, f, &isDG, &numCoords, &array, &coords));
 
-      segmentA[3] = coords[0];
-      segmentA[4] = coords[1];
-      segmentA[5] = coords[2];
-
-      segmentB[3] = coords[6];
-      segmentB[4] = coords[7];
-      segmentB[5] = coords[8];
-
-      PetscCall(DMPlexGetLineTriangleIntersection_3D_Internal(segment, segmentA, segmentB, intersection, hasIntersection));
-
-      if (numCoords==12 && !(*hasIntersection)) { // The face is a quad, so try triangle 0 - 3 - 2
-        segmentA[0] = segmentB[0] = coords[9];
-        segmentA[1] = segmentB[1] = coords[10];
-        segmentA[2] = segmentB[2] = coords[11];
-        PetscCall(DMPlexGetLineTriangleIntersection_3D_Internal(segment, segmentA, segmentB, intersection, hasIntersection));
-      }
-    }
-    break;
-    default:
-      PetscFunctionReturn(PETSC_ERR_SUP);
-  }
-
-  PetscCall(DMPlexRestoreCellCoordinates(dm, f, &isDG, &numCoords, &array, &coords));
-
-  PetscFunctionReturn(PETSC_SUCCESS);
-
+    PetscFunctionReturn(PETSC_SUCCESS);
 }
-
-
-
 
 #include <petsc/private/hashmapi.h>
 PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]) {
-
     PetscFunctionBegin;
 
-    PetscInt       cStart, cEnd;
+    PetscInt cStart, cEnd;
     PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));  // Range of cells
     PetscCheck(c >= cStart && c < cEnd, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "DMPlexCellToCellGrad must have a valid cell as input.");
 
-    PetscInt       dim;
+    PetscInt dim;
     PetscCall(DMGetDimension(dm, &dim));
     PetscCheck(dim > 1 && dim < 4, PETSC_COMM_SELF, PETSC_ERR_SUP, "DMPlexCellToCellGrad does not support a DM of dimension %" PetscInt_FMT, dim);
 
@@ -1353,69 +1328,65 @@ PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscIn
     PetscInt nVert, *verts;
     PetscCall(DMPlexCellGetVertices(dm, c, &nVert, &verts));
 
-    PetscHMapI hash = NULL; // Used to convert from vertex numbering to 0->nVert-1
+    PetscHMapI hash = NULL;  // Used to convert from vertex numbering to 0->nVert-1
     PetscCall(PetscHMapICreate(&hash));
 
     PetscReal *vertVals;
     PetscCall(DMGetWorkArray(dm, nVert, MPIU_REAL, &vertVals));
 
-
     // Locations of the vertices
     PetscReal *vertCoords;
     PetscCall(DMPlexVertexGetCoordinates(dm, nVert, verts, &vertCoords));
     for (PetscInt v = 0; v < nVert; ++v) {
-      PetscCall(PetscHMapISet(hash, verts[v], v));
+        PetscCall(PetscHMapISet(hash, verts[v], v));
 
-      vertVals[v] = 0.0;
+        vertVals[v] = 0.0;
 
-      PetscInt nCells, *cells;
-      PetscCall(DMPlexVertexGetCells(dm, verts[v], &nCells, &cells));
+        PetscInt nCells, *cells;
+        PetscCall(DMPlexVertexGetCells(dm, verts[v], &nCells, &cells));
 
-      PetscReal totalWt = 0.0;
-      for (PetscInt i = 0; i < nCells; ++i) {
-        PetscReal *cellVal, cellCenter[3], wt = 0.0;
-        PetscCall(xDMPlexPointLocalRead(dm, cells[i], fID, dataArray, &cellVal));
-        PetscCall(DMPlexComputeCellGeometryFVM(dm, cells[i], NULL, cellCenter, NULL));
-        for (PetscInt d = 0; d < dim; ++d) wt += PetscSqr(cellCenter[d] - vertCoords[v*dim + d]);
-        wt = 1.0/PetscSqrtReal(wt);
-        totalWt += wt;
-        vertVals[v] += wt*cellVal[offset];
-      }
-      PetscCall(DMPlexVertexRestoreCells(dm, verts[v], &nCells, &cells));
+        PetscReal totalWt = 0.0;
+        for (PetscInt i = 0; i < nCells; ++i) {
+            PetscReal *cellVal, cellCenter[3], wt = 0.0;
+            PetscCall(xDMPlexPointLocalRead(dm, cells[i], fID, dataArray, &cellVal));
+            PetscCall(DMPlexComputeCellGeometryFVM(dm, cells[i], NULL, cellCenter, NULL));
+            for (PetscInt d = 0; d < dim; ++d) wt += PetscSqr(cellCenter[d] - vertCoords[v * dim + d]);
+            wt = 1.0 / PetscSqrtReal(wt);
+            totalWt += wt;
+            vertVals[v] += wt * cellVal[offset];
+        }
+        PetscCall(DMPlexVertexRestoreCells(dm, verts[v], &nCells, &cells));
 
-      vertVals[v] /= totalWt;
+        vertVals[v] /= totalWt;
     }
     PetscCall(DMPlexVertexRestoreCoordinates(dm, nVert, verts, &vertCoords));
     PetscCall(DMPlexCellRestoreVertices(dm, c, &nVert, &verts));
 
-
     for (PetscInt d = 0; d < dim; ++d) g[d] = 0.0;
 
-
-    PetscInt       nFaces;
+    PetscInt nFaces;
     const PetscInt *faces;
     PetscCall(DMPlexGetConeSize(dm, c, &nFaces));
     PetscCall(DMPlexGetCone(dm, c, &faces));
     for (PetscInt f = 0; f < nFaces; ++f) {
-      PetscInt nVert, *verts;
-      PetscCall(DMPlexCellGetVertices(dm, faces[f], &nVert, &verts));
+        PetscInt nVert, *verts;
+        PetscCall(DMPlexCellGetVertices(dm, faces[f], &nVert, &verts));
 
-      PetscReal faceValue = 0.0;
-      for (PetscInt v = 0; v < nVert; ++v) {
-        PetscInt id;
-        PetscHMapIGet(hash, verts[v], &id);
-        faceValue += vertVals[id];
-      }
-      faceValue /= nVert;
+        PetscReal faceValue = 0.0;
+        for (PetscInt v = 0; v < nVert; ++v) {
+            PetscInt id;
+            PetscHMapIGet(hash, verts[v], &id);
+            faceValue += vertVals[id];
+        }
+        faceValue /= nVert;
 
-      PetscCall(DMPlexCellRestoreVertices(dm, faces[f], &nVert, &verts));
+        PetscCall(DMPlexCellRestoreVertices(dm, faces[f], &nVert, &verts));
 
-      PetscReal N[dim];
-      PetscCall(DMPlexFaceCentroidOutwardAreaNormal(dm, c, faces[f], NULL, N));
+        PetscReal N[dim];
+        PetscCall(DMPlexFaceCentroidOutwardAreaNormal(dm, c, faces[f], NULL, N));
 
-      for (PetscInt d = 0; d < dim; ++d) g[d] += faceValue*N[d];
+        for (PetscInt d = 0; d < dim; ++d) g[d] += faceValue * N[d];
     }
-
 
     PetscHMapIDestroy(&hash);
     PetscCall(DMRestoreWorkArray(dm, nVert, MPIU_REAL, &vertVals));
@@ -1424,7 +1395,6 @@ PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscIn
     PetscReal cellVolume;
     PetscCall(DMPlexComputeCellGeometryFVM(dm, c, &cellVolume, NULL, NULL));
     for (PetscInt d = 0; d < dim; ++d) g[d] /= cellVolume;
-
 
     PetscFunctionReturn(PETSC_SUCCESS);
 }

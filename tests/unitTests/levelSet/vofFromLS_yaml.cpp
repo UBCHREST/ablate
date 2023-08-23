@@ -1,18 +1,16 @@
-#include "environment/runEnvironment.hpp"
-#include "utilities/petscUtilities.hpp"
+#include <petscviewerhdf5.h>
 #include <filesystem>
 #include "MpiTestFixture.hpp"
 #include "MpiTestParamFixture.hpp"
 #include "builder.hpp"
+#include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
 #include "parameters/mapParameters.hpp"
 #include "petscsys.h"
+#include "utilities/petscUtilities.hpp"
 #include "yamlParser.hpp"
-#include <petscviewerhdf5.h>
-
 
 using namespace ablate;
-
 
 struct LevelSetParameters_YAML {
     testingResources::MpiTestParameter mpiTestParameter;
@@ -25,18 +23,17 @@ class LevelSetTestFixture : public testingResources::MpiTestFixture, public ::te
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
 
-
 void ReadHDFFile(std::filesystem::path filePath, Vec *vec) {
-  PetscViewer petscViewer = nullptr;
+    PetscViewer petscViewer = nullptr;
 
-  VecCreate(PETSC_COMM_WORLD, vec) >> ablate::utilities::PetscUtilities::checkError;
-  PetscObjectSetName((PetscObject)(*vec), "solution") >> ablate::utilities::PetscUtilities::checkError;
-  PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_READ, &petscViewer) >> ablate::utilities::PetscUtilities::checkError;
-  PetscViewerHDF5PushGroup(petscViewer, "/fields") >> ablate::utilities::PetscUtilities::checkError;
-  PetscViewerHDF5PushTimestepping(petscViewer) >> ablate::utilities::PetscUtilities::checkError;
-  PetscViewerHDF5SetTimestep(petscViewer, 0) >> ablate::utilities::PetscUtilities::checkError;
-  VecLoad(*vec, petscViewer) >> ablate::utilities::PetscUtilities::checkError;
-  PetscViewerDestroy(&petscViewer) >> ablate::utilities::PetscUtilities::checkError;
+    VecCreate(PETSC_COMM_WORLD, vec) >> ablate::utilities::PetscUtilities::checkError;
+    PetscObjectSetName((PetscObject)(*vec), "solution") >> ablate::utilities::PetscUtilities::checkError;
+    PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_READ, &petscViewer) >> ablate::utilities::PetscUtilities::checkError;
+    PetscViewerHDF5PushGroup(petscViewer, "/fields") >> ablate::utilities::PetscUtilities::checkError;
+    PetscViewerHDF5PushTimestepping(petscViewer) >> ablate::utilities::PetscUtilities::checkError;
+    PetscViewerHDF5SetTimestep(petscViewer, 0) >> ablate::utilities::PetscUtilities::checkError;
+    VecLoad(*vec, petscViewer) >> ablate::utilities::PetscUtilities::checkError;
+    PetscViewerDestroy(&petscViewer) >> ablate::utilities::PetscUtilities::checkError;
 }
 
 TEST_P(LevelSetTestFixture, ShouldMakeVOFfromLSYaml) {
@@ -64,7 +61,6 @@ TEST_P(LevelSetTestFixture, ShouldMakeVOFfromLSYaml) {
             // run with the parser
             ablate::Builder::Run(parser);
 
-
             // Load the solution vector
             std::filesystem::path solutionPath = GetParam().solutionFile;
             Vec solVec;
@@ -83,9 +79,6 @@ TEST_P(LevelSetTestFixture, ShouldMakeVOFfromLSYaml) {
 
             VecDestroy(&solVec);
             VecDestroy(&outputVec);
-
-
-
         }
         ablate::environment::RunEnvironment::Finalize();
 
@@ -95,17 +88,9 @@ TEST_P(LevelSetTestFixture, ShouldMakeVOFfromLSYaml) {
 INSTANTIATE_TEST_SUITE_P(
     LevelSetUnitTests, LevelSetTestFixture,
     testing::Values(
+        (LevelSetParameters_YAML){.mpiTestParameter = testingResources::MpiTestParameter("2D_Circle"), .yamlFile = "inputs/levelSet/2D_Circle.yaml", .solutionFile = "outputs/levelSet/2D_Circle.hdf5"},
         (LevelSetParameters_YAML){
-          .mpiTestParameter = testingResources::MpiTestParameter("2D_Circle"),
-          .yamlFile = "inputs/levelSet/2D_Circle.yaml",
-          .solutionFile = "outputs/levelSet/2D_Circle.hdf5"},
+            .mpiTestParameter = testingResources::MpiTestParameter("2D_Ellipse"), .yamlFile = "inputs/levelSet/2D_Ellipse.yaml", .solutionFile = "outputs/levelSet/2D_Ellipse.hdf5"},
         (LevelSetParameters_YAML){
-          .mpiTestParameter = testingResources::MpiTestParameter("2D_Ellipse"),
-          .yamlFile = "inputs/levelSet/2D_Ellipse.yaml",
-          .solutionFile = "outputs/levelSet/2D_Ellipse.hdf5"},
-        (LevelSetParameters_YAML){
-          .mpiTestParameter = testingResources::MpiTestParameter("2D_Circle_Tri"),
-          .yamlFile = "inputs/levelSet/2D_Circle_Tri.yaml",
-          .solutionFile = "outputs/levelSet/2D_Circle_Tri.hdf5"}
-          ),
-        [](const testing::TestParamInfo<LevelSetParameters_YAML> &info) { return info.param.mpiTestParameter.getTestName(); });
+            .mpiTestParameter = testingResources::MpiTestParameter("2D_Circle_Tri"), .yamlFile = "inputs/levelSet/2D_Circle_Tri.yaml", .solutionFile = "outputs/levelSet/2D_Circle_Tri.hdf5"}),
+    [](const testing::TestParamInfo<LevelSetParameters_YAML> &info) { return info.param.mpiTestParameter.getTestName(); });
