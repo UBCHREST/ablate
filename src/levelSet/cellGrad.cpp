@@ -157,18 +157,6 @@ PetscErrorCode Grad_3D_Hex(const PetscReal x0[], const PetscReal coords[], const
         A[i + 24] = coords[i * 3 + 2] - x0[2];
     }
 
-    //    printf("%+f\t%+f\t%+f\t%+f\n", A[0], A[8], A[16], A[24]);
-    //    printf("%+f\t%+f\t%+f\t%+f\n", A[1], A[9], A[17], A[25]);
-    //    printf("%+f\t%+f\t%+f\t%+f\n", A[2], A[10], A[18], A[26]);
-    //    printf("%+f\t%+f\t%+f\t%+f\n", A[3], A[11], A[19], A[27]);
-    //    printf("%+f\t%+f\t%+f\t%+f\n", A[4], A[12], A[20], A[28]);
-    //    printf("%+f\t%+f\t%+f\t%+f\n", A[5], A[13], A[21], A[29]);
-    //    printf("%+f\t%+f\t%+f\t%+f\n", A[6], A[14], A[22], A[30]);
-    //    printf("%+f\t%+f\t%+f\t%+f\n", A[7], A[15], A[23], A[31]);
-    //    for (PetscInt i = 0; i < 8 ; ++i ){
-    //      printf("%+f\n", x[i]);
-    //    }
-
     PetscCallBLAS("LAPACKgels", LAPACKgels_(&transpose, &m, &n, &nrhs, A, &m, x, &m, work, &worksize, &info));
     PetscCheck(info == 0, PETSC_COMM_SELF, PETSC_ERR_LIB, "Bad argument to GELS");
 
@@ -178,13 +166,6 @@ PetscErrorCode Grad_3D_Hex(const PetscReal x0[], const PetscReal coords[], const
         g[1] = x[2];
         g[2] = x[3];
     }
-
-    //    printf("\n");
-    //    for (PetscInt i = 0; i < 4 ; ++i ){
-    //      printf("%+f\n", x[i]);
-    //    }
-    //    printf("%+f\t%+f\t%+f\n", x0[0], x0[1], x0[2]);
-    //    exit(0);
 
     PetscFunctionReturn(0);
 }

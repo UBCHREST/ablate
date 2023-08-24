@@ -101,39 +101,41 @@ void VOF_2D_Tri(const PetscReal coords[], const PetscReal c[], PetscReal *vof, P
     if (cellArea) *cellArea = CellArea_Triangle(coords);
 }
 
-void VOF_2D_Tri_Test() {
-    const PetscReal coords[] = {0.5, 0.0, 1.0, 1.0, -2.0, 0.0};
 
-    PetscReal vof = -1.0, area = -1.0, length = -1.0;
-    const PetscReal trueArea = 5.0 / 4.0;
-    const PetscInt nCases = 14;
-    const PetscReal trueVof[] = {1.0, 0.0, 1.0 / 6.0, 5.0 / 6.0, 4.0 / 9.0, 5.0 / 9.0, 1.0 / 6.0, 5.0 / 6.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0};
-    const PetscReal trueLength[] = {0.0, 0.0, PetscSqrtReal(305.0) / 12.0, PetscSqrtReal(305.0) / 12.0, 5.0 / 3.0, 5.0 / 3.0, 5.0 / 12.0, 5.0 / 12.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    const PetscReal c[] = {
-        -1.0, -1.0, -1.0,  // 1
-        1.0,  1.0,  1.0,   // 0
-        -1.0, 2.0,  1.0,   // 1/6
-        1.0,  -2.0, -1.0,  // 5/6
-        1.0,  -2.0, 1.0,   // 4/9
-        -1.0, 2.0,  -1.0,  // 5/9
-        1.0,  2.0,  -1.0,  // 1/6
-        -1.0, -2.0, 1.0,   // 5/6
-        0.0,  0.0,  -1.0,  // 1
-        0.0,  0.0,  1.0,   // 0
-        0.0,  -1.0, 0.0,   // 1
-        0.0,  1.0,  0.0,   // 0
-        -1.0, 0.0,  0.0,   // 1
-        1.0,  0.0,  0.0,   // 0
-    };
+// Old tests.
+//void VOF_2D_Tri_Test() {
+//    const PetscReal coords[] = {0.5, 0.0, 1.0, 1.0, -2.0, 0.0};
 
-    printf(" Starting to test 2D Tri\n");
-    printf("   -------- VOF ---------   ------ Area ----------\n");
-    for (PetscInt i = 0; i < nCases; ++i) {
-        VOF_2D_Tri(coords, &c[i * 3], &vof, &length, &area);
-        printf("%4d: %d %+.6f  %+.6f   %d %+.6f  %+.6f\n", i, PetscAbsReal(vof - trueVof[i]) < 1.e-8, vof, trueVof[i], PetscAbsReal(length - trueLength[i]) < 1.e-8, length, trueLength[i]);
-    }
-    printf("AREA: %d\t%+f\t%+f\n", PetscAbsReal(area - trueArea) < 1.e-8, area, trueArea);
-}
+//    PetscReal vof = -1.0, area = -1.0, length = -1.0;
+//    const PetscReal trueArea = 5.0 / 4.0;
+//    const PetscInt nCases = 14;
+//    const PetscReal trueVof[] = {1.0, 0.0, 1.0 / 6.0, 5.0 / 6.0, 4.0 / 9.0, 5.0 / 9.0, 1.0 / 6.0, 5.0 / 6.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0};
+//    const PetscReal trueLength[] = {0.0, 0.0, PetscSqrtReal(305.0) / 12.0, PetscSqrtReal(305.0) / 12.0, 5.0 / 3.0, 5.0 / 3.0, 5.0 / 12.0, 5.0 / 12.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+//    const PetscReal c[] = {
+//        -1.0, -1.0, -1.0,  // 1
+//        1.0,  1.0,  1.0,   // 0
+//        -1.0, 2.0,  1.0,   // 1/6
+//        1.0,  -2.0, -1.0,  // 5/6
+//        1.0,  -2.0, 1.0,   // 4/9
+//        -1.0, 2.0,  -1.0,  // 5/9
+//        1.0,  2.0,  -1.0,  // 1/6
+//        -1.0, -2.0, 1.0,   // 5/6
+//        0.0,  0.0,  -1.0,  // 1
+//        0.0,  0.0,  1.0,   // 0
+//        0.0,  -1.0, 0.0,   // 1
+//        0.0,  1.0,  0.0,   // 0
+//        -1.0, 0.0,  0.0,   // 1
+//        1.0,  0.0,  0.0,   // 0
+//    };
+
+//    printf(" Starting to test 2D Tri\n");
+//    printf("   -------- VOF ---------   ------ Area ----------\n");
+//    for (PetscInt i = 0; i < nCases; ++i) {
+//        VOF_2D_Tri(coords, &c[i * 3], &vof, &length, &area);
+//        printf("%4d: %d %+.6f  %+.6f   %d %+.6f  %+.6f\n", i, PetscAbsReal(vof - trueVof[i]) < 1.e-8, vof, trueVof[i], PetscAbsReal(length - trueLength[i]) < 1.e-8, length, trueLength[i]);
+//    }
+//    printf("AREA: %d\t%+f\t%+f\n", PetscAbsReal(area - trueArea) < 1.e-8, area, trueArea);
+//}
 
 // 2D Non-Simplex: DM_POLYTOPE_QUADRILATERAL
 /*
@@ -163,33 +165,35 @@ void VOF_2D_Quad(const PetscReal coords[], const PetscReal c[], PetscReal *vof, 
     if (cellArea) *cellArea = cellArea1 + cellArea2;
 }
 
-void VOF_2D_Quad_Test() {
-    const PetscReal coords[] = {0.0, 0.0, 4.0, -1.0, 3.0, 2.0, 0.5, 1.0};
-    PetscReal vof = -1.0, area = -1.0, length = -1.0;
-    const PetscReal trueArea = 13.0 / 2.0;
-    const PetscInt nCases = 10;
-    const PetscReal trueVof[] = {0.0, 1.0, 9.0 / 832.0, 823.0 / 832.0, 82.0 / 273.0, 191.0 / 273.0, 161.0 / 260.0, 99.0 / 260.0, 1822.0 / 2873.0, 1051.0 / 2873.0};
-    const PetscReal trueLength[] = {0.0,
-                                    0.0,
-                                    9.0 / 16.0,
-                                    9.0 / 16.0,
-                                    38.0 * PetscSqrtReal(2.0) / 21.0,
-                                    38.0 * PetscSqrtReal(2.0) / 21.0,
-                                    33.0 / (10.0 * PetscSqrtReal(2.0)),
-                                    33.0 / (10.0 * PetscSqrtReal(2.0)),
-                                    113.0 * PetscSqrtReal(37.0) / 221.0,
-                                    113.0 * PetscSqrtReal(37.0) / 221.0};
-    const PetscReal c[] = {1.0, 1.0,  1.0,  1.0, -1.0, -1.0, -1.0, -1.0, -0.25, 15.0 / 4.0, 11.0 / 4.0, 0.25, 0.25, -15.0 / 4.0, -11.0 / 4.0, -0.25,      -2.0, 1.0,       3.0,  -0.5,
-                           2.0, -1.0, -3.0, 0.5, -2.0, 3.0,  -1.0, -2.5, 2.0,   -3.0,       1.0,        2.5,  -1.0, -4.0 / 3.0,  1.5,         1.0 / 12.0, 1.0,  4.0 / 3.0, -1.5, -1.0 / 12.0};
 
-    printf(" Starting to test 2D Quad\n");
-    printf("   -------- VOF ---------   ------ Area ----------\n");
-    for (PetscInt i = 0; i < nCases; ++i) {
-        VOF_2D_Quad(coords, &c[i * 4], &vof, &length, &area);
-        printf("%4d: %d %+.6f  %+.6f   %d %+.6f  %+.6f\n", i, PetscAbsReal(vof - trueVof[i]) < 1.e-8, vof, trueVof[i], PetscAbsReal(length - trueLength[i]) < 1.e-8, length, trueLength[i]);
-    }
-    printf("AREA: %d\t%+f\t%+f\n", PetscAbsReal(area - trueArea) < 1.e-8, area, trueArea);
-}
+// Old tests
+//void VOF_2D_Quad_Test() {
+//    const PetscReal coords[] = {0.0, 0.0, 4.0, -1.0, 3.0, 2.0, 0.5, 1.0};
+//    PetscReal vof = -1.0, area = -1.0, length = -1.0;
+//    const PetscReal trueArea = 13.0 / 2.0;
+//    const PetscInt nCases = 10;
+//    const PetscReal trueVof[] = {0.0, 1.0, 9.0 / 832.0, 823.0 / 832.0, 82.0 / 273.0, 191.0 / 273.0, 161.0 / 260.0, 99.0 / 260.0, 1822.0 / 2873.0, 1051.0 / 2873.0};
+//    const PetscReal trueLength[] = {0.0,
+//                                    0.0,
+//                                    9.0 / 16.0,
+//                                    9.0 / 16.0,
+//                                    38.0 * PetscSqrtReal(2.0) / 21.0,
+//                                    38.0 * PetscSqrtReal(2.0) / 21.0,
+//                                    33.0 / (10.0 * PetscSqrtReal(2.0)),
+//                                    33.0 / (10.0 * PetscSqrtReal(2.0)),
+//                                    113.0 * PetscSqrtReal(37.0) / 221.0,
+//                                    113.0 * PetscSqrtReal(37.0) / 221.0};
+//    const PetscReal c[] = {1.0, 1.0,  1.0,  1.0, -1.0, -1.0, -1.0, -1.0, -0.25, 15.0 / 4.0, 11.0 / 4.0, 0.25, 0.25, -15.0 / 4.0, -11.0 / 4.0, -0.25,      -2.0, 1.0,       3.0,  -0.5,
+//                           2.0, -1.0, -3.0, 0.5, -2.0, 3.0,  -1.0, -2.5, 2.0,   -3.0,       1.0,        2.5,  -1.0, -4.0 / 3.0,  1.5,         1.0 / 12.0, 1.0,  4.0 / 3.0, -1.5, -1.0 / 12.0};
+
+//    printf(" Starting to test 2D Quad\n");
+//    printf("   -------- VOF ---------   ------ Area ----------\n");
+//    for (PetscInt i = 0; i < nCases; ++i) {
+//        VOF_2D_Quad(coords, &c[i * 4], &vof, &length, &area);
+//        printf("%4d: %d %+.6f  %+.6f   %d %+.6f  %+.6f\n", i, PetscAbsReal(vof - trueVof[i]) < 1.e-8, vof, trueVof[i], PetscAbsReal(length - trueLength[i]) < 1.e-8, length, trueLength[i]);
+//    }
+//    printf("AREA: %d\t%+f\t%+f\n", PetscAbsReal(area - trueArea) < 1.e-8, area, trueArea);
+//}
 
 // Move stuff like this to the solver
 //  3D Simplex: DM_POLYTOPE_TETRAHEDRON
@@ -359,69 +363,70 @@ void VOF_3D_Tetra(const PetscReal coords[12], const PetscReal c[4], PetscReal *v
     if (cellVol) *cellVol = CellVolume_Tetrahedron(coords);
 }
 
-void VOF_3D_Tetra_Test() {
-    const PetscReal coords[] = {0.0, 0.0, 0.0, 2.0, 0.5, 0.0, 0.0, 1.0, 0.5, 2.0, 0.0, 1.0};
+// Old tests
+//void VOF_3D_Tetra_Test() {
+//    const PetscReal coords[] = {0.0, 0.0, 0.0, 2.0, 0.5, 0.0, 0.0, 1.0, 0.5, 2.0, 0.0, 1.0};
 
-    PetscReal vof = -1.0, vol = -1.0, area = -1.0;
-    const PetscReal trueVol = 5.0 / 12.0;
-    const PetscInt nCases = 22;
-    const PetscReal trueVof[] = {0.0,        1.0,         7.0 / 8.0,  1.0 / 8.0,   7.0 / 8.0,  1.0 / 8.0, 7.0 / 8.0, 1.0 / 8.0, 7.0 / 8.0, 1.0 / 8.0, 11.0 / 18.0,
-                                 7.0 / 18.0, 11.0 / 18.0, 7.0 / 18.0, 11.0 / 18.0, 7.0 / 18.0, 0.0,       1.0,       0.0,       1.0,       0.0,       1.0};
-    const PetscReal trueArea[] = {0.0,
-                                  0.0,
-                                  PetscSqrtReal(89.0) / 32.0,
-                                  PetscSqrtReal(89.0) / 32.0,
-                                  PetscSqrtReal(1.5) / 4.0,
-                                  PetscSqrtReal(1.5) / 4.0,
-                                  PetscSqrtReal(21.0) / 16.0,
-                                  PetscSqrtReal(21.0) / 16.0,
-                                  9.0 / 32.0,
-                                  9.0 / 32.0,
-                                  5.0 * PetscSqrtReal(683.0 / 3.0) / 96.0,
-                                  5.0 * PetscSqrtReal(683.0 / 3.0) / 96.0,
-                                  5.0 * PetscSqrtReal(41.0) / 96.0,
-                                  5.0 * PetscSqrtReal(41.0) / 96.0,
-                                  25.0 / 32.0,
-                                  25.0 / 32.0,
-                                  0.0,
-                                  0.0,
-                                  0.0,
-                                  0.0,
-                                  0.0,
-                                  0.0};
-    const PetscReal c[] = {
-        1.0,  1.0,  1.0,  1.0,   // 0
-        -1.0, -1.0, -1.0, -1.0,  // 1
-        1.0,  -1.0, -1.0, -1.0,  // Case 1, 7/8
-        -1.0, 1.0,  1.0,  1.0,   // Case 2, 1/8
-        -1.0, 1.0,  -1.0, -1.0,  // Case 3, 7/8
-        1.0,  -1.0, 1.0,  1.0,   // Case 4, 1/8
-        -1.0, -1.0, 1.0,  -1.0,  // Case 7, 7/8
-        1.0,  1.0,  -1.0, 1.0,   // Case 8, 1/8
-        -1.0, -1.0, -1.0, 1.0,   // Case 11, 7/8
-        1.0,  1.0,  1.0,  -1.0,  // Case 12, 1/8
-        0.5,  1.0,  -1.0, -1.0,  // Case 5, 11/18
-        -0.5, -1.0, 1.0,  1.0,   // Case 6, 7/18
-        0.5,  -1.0, 1.0,  -1.0,  // Case 9, 11/18
-        -0.5, 1.0,  -1.0, 1.0,   // Case 10, 7/18
-        0.5,  -1.0, -1.0, 1.0,   // Case 13, 11/18
-        -0.5, 1.0,  1.0,  -1.0,  // Case 14, 7/18
-        0.0,  0.0,  1.0,  1.0,   // 0
-        0.0,  0.0,  -1.0, -1.0,  // 1
-        0.0,  1.0,  0.0,  1.0,   // 0
-        0.0,  -1.0, 0.0,  -1.0,  // 1
-        0.0,  1.0,  1.0,  0.0,   // 0
-        0.0,  -1.0, -1.0, 0.0    // 1
-    };
+//    PetscReal vof = -1.0, vol = -1.0, area = -1.0;
+//    const PetscReal trueVol = 5.0 / 12.0;
+//    const PetscInt nCases = 22;
+//    const PetscReal trueVof[] = {0.0,        1.0,         7.0 / 8.0,  1.0 / 8.0,   7.0 / 8.0,  1.0 / 8.0, 7.0 / 8.0, 1.0 / 8.0, 7.0 / 8.0, 1.0 / 8.0, 11.0 / 18.0,
+//                                 7.0 / 18.0, 11.0 / 18.0, 7.0 / 18.0, 11.0 / 18.0, 7.0 / 18.0, 0.0,       1.0,       0.0,       1.0,       0.0,       1.0};
+//    const PetscReal trueArea[] = {0.0,
+//                                  0.0,
+//                                  PetscSqrtReal(89.0) / 32.0,
+//                                  PetscSqrtReal(89.0) / 32.0,
+//                                  PetscSqrtReal(1.5) / 4.0,
+//                                  PetscSqrtReal(1.5) / 4.0,
+//                                  PetscSqrtReal(21.0) / 16.0,
+//                                  PetscSqrtReal(21.0) / 16.0,
+//                                  9.0 / 32.0,
+//                                  9.0 / 32.0,
+//                                  5.0 * PetscSqrtReal(683.0 / 3.0) / 96.0,
+//                                  5.0 * PetscSqrtReal(683.0 / 3.0) / 96.0,
+//                                  5.0 * PetscSqrtReal(41.0) / 96.0,
+//                                  5.0 * PetscSqrtReal(41.0) / 96.0,
+//                                  25.0 / 32.0,
+//                                  25.0 / 32.0,
+//                                  0.0,
+//                                  0.0,
+//                                  0.0,
+//                                  0.0,
+//                                  0.0,
+//                                  0.0};
+//    const PetscReal c[] = {
+//        1.0,  1.0,  1.0,  1.0,   // 0
+//        -1.0, -1.0, -1.0, -1.0,  // 1
+//        1.0,  -1.0, -1.0, -1.0,  // Case 1, 7/8
+//        -1.0, 1.0,  1.0,  1.0,   // Case 2, 1/8
+//        -1.0, 1.0,  -1.0, -1.0,  // Case 3, 7/8
+//        1.0,  -1.0, 1.0,  1.0,   // Case 4, 1/8
+//        -1.0, -1.0, 1.0,  -1.0,  // Case 7, 7/8
+//        1.0,  1.0,  -1.0, 1.0,   // Case 8, 1/8
+//        -1.0, -1.0, -1.0, 1.0,   // Case 11, 7/8
+//        1.0,  1.0,  1.0,  -1.0,  // Case 12, 1/8
+//        0.5,  1.0,  -1.0, -1.0,  // Case 5, 11/18
+//        -0.5, -1.0, 1.0,  1.0,   // Case 6, 7/18
+//        0.5,  -1.0, 1.0,  -1.0,  // Case 9, 11/18
+//        -0.5, 1.0,  -1.0, 1.0,   // Case 10, 7/18
+//        0.5,  -1.0, -1.0, 1.0,   // Case 13, 11/18
+//        -0.5, 1.0,  1.0,  -1.0,  // Case 14, 7/18
+//        0.0,  0.0,  1.0,  1.0,   // 0
+//        0.0,  0.0,  -1.0, -1.0,  // 1
+//        0.0,  1.0,  0.0,  1.0,   // 0
+//        0.0,  -1.0, 0.0,  -1.0,  // 1
+//        0.0,  1.0,  1.0,  0.0,   // 0
+//        0.0,  -1.0, -1.0, 0.0    // 1
+//    };
 
-    printf(" Starting to test 3D Tetra\n");
-    printf("      -------- VOF ---------   ------ Area ----------\n");
-    for (PetscInt i = 0; i < nCases; ++i) {
-        VOF_3D_Tetra(coords, &c[i * 4], &vof, &area, &vol);
-        printf("%4d: %d %+.6f  %+.6f   %d %+.6f  %+.6f\n", i, PetscAbsReal(vof - trueVof[i]) < 1.e-8, vof, trueVof[i], PetscAbsReal(area - trueArea[i]) < 1.e-8, area, trueArea[i]);
-    }
-    printf("VOL: %d\t%+f\t%+f\n", PetscAbsReal(vol - trueVol) < 1.e-8, vol, trueVol);
-}
+//    printf(" Starting to test 3D Tetra\n");
+//    printf("      -------- VOF ---------   ------ Area ----------\n");
+//    for (PetscInt i = 0; i < nCases; ++i) {
+//        VOF_3D_Tetra(coords, &c[i * 4], &vof, &area, &vol);
+//        printf("%4d: %d %+.6f  %+.6f   %d %+.6f  %+.6f\n", i, PetscAbsReal(vof - trueVof[i]) < 1.e-8, vof, trueVof[i], PetscAbsReal(area - trueArea[i]) < 1.e-8, area, trueArea[i]);
+//    }
+//    printf("VOL: %d\t%+f\t%+f\n", PetscAbsReal(vol - trueVol) < 1.e-8, vol, trueVol);
+//}
 
 // 3D Non-Simplex: DM_POLYTOPE_HEXAHEDRON
 /*
@@ -471,28 +476,29 @@ void VOF_3D_Hex(const PetscReal coords[], const PetscReal c[], PetscReal *vof, P
     if (cellVol) *cellVol = sumVOL;
 }
 
-void VOF_3D_Hex_Test() {
-    const PetscReal coords[] = {1.0, 1.0, 1.0, 1.0, 3.0, 2.0, 2.0, 4.0, 2.0, 2.0, 2.0, 1.0, 2.0, 1.0, 2.0, 3.0, 2.0, 2.0, 3.0, 4.0, 3.0, 2.0, 3.0, 3.0};
+// Old tests
+//void VOF_3D_Hex_Test() {
+//    const PetscReal coords[] = {1.0, 1.0, 1.0, 1.0, 3.0, 2.0, 2.0, 4.0, 2.0, 2.0, 2.0, 1.0, 2.0, 1.0, 2.0, 3.0, 2.0, 2.0, 3.0, 4.0, 3.0, 2.0, 3.0, 3.0};
 
-    PetscReal vof = -1.0, vol = -1.0, area = -1.0;
-    const PetscReal trueVol = 3.0;
-    const PetscInt nCases = 6;
-    const PetscReal trueVof[] = {3.0 / 4.0, 1.0 / 4.0, 1.0 / 8.0, 7.0 / 8.0, 9.0 / 512.0, 503.0 / 512.0};
-    const PetscReal trueArea[] = {3.0 / PetscSqrtReal(2.0), 3.0 / PetscSqrtReal(2.0), 1.5, 1.5, 27.0 * PetscSqrtReal(5.0) / 128.0, 27.0 * PetscSqrtReal(5.0) / 128.0};
-    const PetscReal c[] = {
-        0.0,        -2.0,  -2.0,  0.0,        1.0,         1.0,         -1.0,       -1.0,        // x-y
-        0.0,        2.0,   2.0,   0.0,        -1.0,        -1.0,        1.0,        1.0,         //-x+y
-        -0.5,       -0.5,  0.5,   0.5,        0.5,         1.5,         1.5,        0.5,         // x-1.5
-        0.5,        0.5,   -0.5,  -0.5,       -0.5,        -1.5,        -1.5,       -0.5,        // -x+1.5
-        5.0 / 4.0,  -0.75, 0.25,  9.0 / 4.0,  13.0 / 4.0,  17.0 / 4.0,  9.0 / 4.0,  5.0 / 4.0,   // 2x-y+0.25
-        -5.0 / 4.0, 0.75,  -0.25, -9.0 / 4.0, -13.0 / 4.0, -17.0 / 4.0, -9.0 / 4.0, -5.0 / 4.0,  // 2x-y+0.25
-    };
+//    PetscReal vof = -1.0, vol = -1.0, area = -1.0;
+//    const PetscReal trueVol = 3.0;
+//    const PetscInt nCases = 6;
+//    const PetscReal trueVof[] = {3.0 / 4.0, 1.0 / 4.0, 1.0 / 8.0, 7.0 / 8.0, 9.0 / 512.0, 503.0 / 512.0};
+//    const PetscReal trueArea[] = {3.0 / PetscSqrtReal(2.0), 3.0 / PetscSqrtReal(2.0), 1.5, 1.5, 27.0 * PetscSqrtReal(5.0) / 128.0, 27.0 * PetscSqrtReal(5.0) / 128.0};
+//    const PetscReal c[] = {
+//        0.0,        -2.0,  -2.0,  0.0,        1.0,         1.0,         -1.0,       -1.0,        // x-y
+//        0.0,        2.0,   2.0,   0.0,        -1.0,        -1.0,        1.0,        1.0,         //-x+y
+//        -0.5,       -0.5,  0.5,   0.5,        0.5,         1.5,         1.5,        0.5,         // x-1.5
+//        0.5,        0.5,   -0.5,  -0.5,       -0.5,        -1.5,        -1.5,       -0.5,        // -x+1.5
+//        5.0 / 4.0,  -0.75, 0.25,  9.0 / 4.0,  13.0 / 4.0,  17.0 / 4.0,  9.0 / 4.0,  5.0 / 4.0,   // 2x-y+0.25
+//        -5.0 / 4.0, 0.75,  -0.25, -9.0 / 4.0, -13.0 / 4.0, -17.0 / 4.0, -9.0 / 4.0, -5.0 / 4.0,  // 2x-y+0.25
+//    };
 
-    printf(" Starting to test 3D Hex\n");
-    printf("   -------- VOF ---------   ------ Area ----------\n");
-    for (PetscInt i = 0; i < nCases; ++i) {
-        VOF_3D_Hex(coords, &c[i * 8], &vof, &area, &vol);
-        printf("%4d: %d %+.6f  %+.6f   %d %+.6f  %+.6f\n", i, PetscAbsReal(vof - trueVof[i]) < 1.e-8, vof, trueVof[i], PetscAbsReal(area - trueArea[i]) < 1.e-8, area, trueArea[i]);
-    }
-    printf("VOL: %d\t%+f\t%+f\n", PetscAbsReal(vol - trueVol) < 1.e-8, vol, trueVol);
-}
+//    printf(" Starting to test 3D Hex\n");
+//    printf("   -------- VOF ---------   ------ Area ----------\n");
+//    for (PetscInt i = 0; i < nCases; ++i) {
+//        VOF_3D_Hex(coords, &c[i * 8], &vof, &area, &vol);
+//        printf("%4d: %d %+.6f  %+.6f   %d %+.6f  %+.6f\n", i, PetscAbsReal(vof - trueVof[i]) < 1.e-8, vof, trueVof[i], PetscAbsReal(area - trueArea[i]) < 1.e-8, area, trueArea[i]);
+//    }
+//    printf("VOL: %d\t%+f\t%+f\n", PetscAbsReal(vol - trueVol) < 1.e-8, vol, trueVol);
+//}
