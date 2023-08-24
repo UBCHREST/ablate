@@ -101,9 +101,8 @@ void VOF_2D_Tri(const PetscReal coords[], const PetscReal c[], PetscReal *vof, P
     if (cellArea) *cellArea = CellArea_Triangle(coords);
 }
 
-
 // Old tests.
-//void VOF_2D_Tri_Test() {
+// void VOF_2D_Tri_Test() {
 //    const PetscReal coords[] = {0.5, 0.0, 1.0, 1.0, -2.0, 0.0};
 
 //    PetscReal vof = -1.0, area = -1.0, length = -1.0;
@@ -165,9 +164,8 @@ void VOF_2D_Quad(const PetscReal coords[], const PetscReal c[], PetscReal *vof, 
     if (cellArea) *cellArea = cellArea1 + cellArea2;
 }
 
-
 // Old tests
-//void VOF_2D_Quad_Test() {
+// void VOF_2D_Quad_Test() {
 //    const PetscReal coords[] = {0.0, 0.0, 4.0, -1.0, 3.0, 2.0, 0.5, 1.0};
 //    PetscReal vof = -1.0, area = -1.0, length = -1.0;
 //    const PetscReal trueArea = 13.0 / 2.0;
@@ -364,7 +362,7 @@ void VOF_3D_Tetra(const PetscReal coords[12], const PetscReal c[4], PetscReal *v
 }
 
 // Old tests
-//void VOF_3D_Tetra_Test() {
+// void VOF_3D_Tetra_Test() {
 //    const PetscReal coords[] = {0.0, 0.0, 0.0, 2.0, 0.5, 0.0, 0.0, 1.0, 0.5, 2.0, 0.0, 1.0};
 
 //    PetscReal vof = -1.0, vol = -1.0, area = -1.0;
@@ -477,7 +475,7 @@ void VOF_3D_Hex(const PetscReal coords[], const PetscReal c[], PetscReal *vof, P
 }
 
 // Old tests
-//void VOF_3D_Hex_Test() {
+// void VOF_3D_Hex_Test() {
 //    const PetscReal coords[] = {1.0, 1.0, 1.0, 1.0, 3.0, 2.0, 2.0, 4.0, 2.0, 2.0, 2.0, 1.0, 2.0, 1.0, 2.0, 3.0, 2.0, 2.0, 3.0, 4.0, 3.0, 2.0, 3.0, 3.0};
 
 //    PetscReal vof = -1.0, vol = -1.0, area = -1.0;
