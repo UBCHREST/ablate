@@ -7,8 +7,6 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 #include <cmath>
 #include <memory>
 #include <vector>
-#include "MpiTestFixture.hpp"
-#include "PetscTestErrorChecker.hpp"
 #include "domain/boxMesh.hpp"
 #include "environment/runEnvironment.hpp"
 #include "finiteElement/boundaryConditions/essential.hpp"
@@ -17,7 +15,9 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 #include "finiteElement/lowMachFlowSolver.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
+#include "mpiTestFixture.hpp"
 #include "parameters/petscOptionParameters.hpp"
+#include "petscTestErrorChecker.hpp"
 #include "utilities/petscUtilities.hpp"
 
 using namespace ablate;

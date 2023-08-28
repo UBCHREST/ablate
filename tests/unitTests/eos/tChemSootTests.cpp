@@ -1,11 +1,11 @@
 #include <numeric>
-#include "PetscTestFixture.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/dynamicRange.hpp"
 #include "domain/mockField.hpp"
 #include "eos/tChemSoot.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
+#include "petscTestFixture.hpp"
 
 #ifndef KOKKOS_ENABLE_CUDA
 #define ONLY_WITH_CUDA_CHECK \

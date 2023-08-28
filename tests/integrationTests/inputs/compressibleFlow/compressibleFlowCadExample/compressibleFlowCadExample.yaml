@@ -1,0 +1,199 @@
+# Simple test 3D cad reading/halo using cylinder reading
+# The cad file was generated using [FreeCad](https://www.freecadweb.org) and exported as a 
+# .stp file.  When exporting the mesh, select Meter from the "Units for export of STEP" in preferences
+# to ensure the mesh is in SI units.
+---
+test:
+  # a unique test name for this integration tests
+  name: compressibleFlowCadExample
+  # the cad software in PETSc does not clean up after itself so ignore the error
+  environment: "ASAN_OPTIONS=detect_leaks=0"
+  # create a list of asserts to compare
+  assert:
+    # create a default assert that compares the log file
+    "inputs/compressibleFlow/compressibleFlowCadExample/compressibleFlowCadExample.txt"
+
+environment:
+  title: _compressibleFlowCadExample
+  tagDirectory: false
+arguments: { }
+timestepper:
+  # setup default controls for the time stepper
+  arguments:
+    ts_type: rk
+    ts_max_time: 100000
+    ts_max_steps: 10
+    ts_dt: 1.0E-10
+    ts_adapt_safety: 0.9
+  # io controls how often the results are saved to a file for visualization and restart
+  io:
+    interval: 0 # results are saved at every step.  In real simulations this should be much larger.
+
+  # load in a cad file directly and then create a surface mesh then volumetric mesh from the cad geometry
+  domain: !ablate::domain::CadFile
+    name: exampleNozzle
+    path: cylinder.stp
+    # Options to be applied to the volumetric geometry
+    options:
+      dm_refine: 3
+      dm_plex_check_all: true
+    modifiers:
+      # label all boundary faces as "marker" to allow extruding
+      - !ablate::domain::modifiers::TagMeshBoundaryFaces
+        region:
+          name: marker
+      # extrude all boundaries to add needed ghost cells for the boundary solver
+      - !ablate::domain::modifiers::ExtrudeLabel
+        # extrude the boundary cells marked
+        regions:
+          - name: marker
+        # mark all the resulting boundary faces with boundaryFaces label
+        boundaryRegion:
+          name: boundaryFaces
+        # tag the original mesh as the flow region
+        originalRegion:
+          name: flowRegion
+        # tag the new boundary cells for easy boundary condition specifications
+        extrudedRegion:
+          name: boundaryCells
+        thickness: 0.001
+
+      # if using mpi, this modifier distributes cells
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+        ghostCellDepth: 2
+
+      # tag the inlet boundary
+      - !ablate::domain::modifiers::CreateLabel
+        region:
+          name: inletBoundaryCells
+        function: "z < 0 ? 1.0 : 0"
+
+      # repeat for the outlet
+      - !ablate::domain::modifiers::CreateLabel
+        region:
+          name: outletBoundaryCells
+        function: "z > 0.1 ? 1.0 : 0"
+
+        # there are two example ways to apply the wall boundary conditions.  Only one should be selected but both are
+        # presented for example illustration
+        # example 1: define a geometry that tags only the boundary wall cells
+        #- !ablate::domain::modifiers::CreateLabel
+        #  region:
+        #    name: wallBoundaryCells
+        #  function: !ablate::mathFunctions::geom::CylinderShell
+        #    start: [0.0, 0.0, 0.0]
+        #    end: [0.0, 0.0, .1]
+        #    radiusMin: 0.01
+        #    radiusMax: 10
+
+      # example 2: create a wall boundary that is all boundary cells minus inlet/outlet
+      - !ablate::domain::modifiers::SubtractLabel
+        differenceRegion:
+          name: wallBoundaryCells
+        minuendRegion:
+          name: boundaryCells
+        subtrahendRegions:
+          - name: outletBoundaryCells
+          - name: inletBoundaryCells
+
+    fields:
+      # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
+      # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas: 287.0
+  # set the initial conditions of the flow field
+  initialization:
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state: &initFlowState
+        eos: *eos
+        pressure: 101325.0
+        temperature: 300
+        velocity: !ablate::mathFunctions::geom::Cylinder
+          start: [ 0.0, 0.0, -1 ]
+          end: [ 0.0, 0.0, .05 ]
+          radius: 0.005
+          insideValues: "0.0, 0.0, 100.0"
+          outsideValues: "0.0, 0.0, 0.0"
+
+    # when extruding from a tet mesh, the boundary cells must be explicitly set as well
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      region:
+        name: boundaryCells
+      state: *initFlowState
+solvers:
+  - !ablate::finiteVolume::CompressibleFlowSolver
+    id: vortexFlowField
+    # only apply this solver to the flowRegion
+    region:
+      name: flowRegion
+
+    additionalProcesses:
+      - !ablate::finiteVolume::processes::PressureGradientScaling
+        &pgs
+        eos: *eos
+        alphaInit: 10.0
+        maxAlphaAllowed: 100.0
+        domainLength: 0.2
+        log: !ablate::monitors::logs::StdOut
+
+    # a flux calculator must be specified to so solver for advection
+    fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
+      pgs: *pgs
+
+    # the cfl is used to compute the physics time step
+    parameters:
+      cfl: 0.25
+
+    # set the eos and transport
+    eos: *eos
+    transport: !ablate::eos::transport::Sutherland
+      eos: *eos
+
+    monitors:
+      # output time step information for each time step
+      - !ablate::monitors::MaxMinAverage
+        field: velocity
+
+  # use a boundary solver to update the cells in the wallBoundaryCells region to represent standard wall
+  - !ablate::boundarySolver::BoundarySolver
+    id: wallBoundary
+    region:
+      name: wallBoundaryCells
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::IsothermalWall
+        eos: *eos
+        pgs: *pgs
+  # use a boundary solver enforce an inlet
+  - !ablate::boundarySolver::BoundarySolver
+    id: inlet
+    region:
+      name: inletBoundaryCells
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::Inlet
+        eos: *eos
+        pgs: *pgs
+
+  # use a boundary solver allow outward flow
+  - !ablate::boundarySolver::BoundarySolver
+    id: outlet
+    region:
+      name: outletBoundaryCells
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::OpenBoundary
+        eos: *eos
+        reflectFactor: 0.0
+        referencePressure: 101325.0
+        maxAcousticsLength: 0.1
+        pgs: *pgs

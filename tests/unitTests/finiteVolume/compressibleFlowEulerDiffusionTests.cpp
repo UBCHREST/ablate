@@ -2,8 +2,6 @@
 #include <cmath>
 #include <memory>
 #include <vector>
-#include "MpiTestFixture.hpp"
-#include "PetscTestErrorChecker.hpp"
 #include "domain/dmTransfer.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
@@ -16,7 +14,9 @@
 #include "finiteVolume/fluxCalculator/offFlux.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
+#include "mpiTestFixture.hpp"
 #include "parameters/mapParameters.hpp"
+#include "petscTestErrorChecker.hpp"
 #include "utilities/petscUtilities.hpp"
 
 typedef struct {

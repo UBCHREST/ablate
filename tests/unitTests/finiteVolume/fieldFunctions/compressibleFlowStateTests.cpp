@@ -5,10 +5,10 @@
 #include <mathFunctions/functionFactory.hpp>
 #include <mathFunctions/mathFunction.hpp>
 #include <vector>
-#include "PetscTestFixture.hpp"
 #include "eos/perfectGas.hpp"
 #include "gtest/gtest.h"
 #include "parameters/mapParameters.hpp"
+#include "petscTestFixture.hpp"
 
 using namespace ablate;
 

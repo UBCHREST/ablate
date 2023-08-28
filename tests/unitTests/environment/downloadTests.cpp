@@ -1,6 +1,6 @@
-#include <PetscTestFixture.hpp>
 #include <fstream>
 #include <memory>
+#include <petscTestFixture.hpp>
 #include "environment/download.hpp"
 #include "gtest/gtest.h"
 #include "testRunEnvironment.hpp"

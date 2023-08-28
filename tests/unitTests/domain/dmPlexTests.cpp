@@ -1,11 +1,11 @@
 #include <petsc.h>
 #include <cmath>
 #include <memory>
-#include "MpiTestFixture.hpp"
-#include "PetscTestErrorChecker.hpp"
 #include "domain/dmPlex.hpp"
 #include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
+#include "mpiTestFixture.hpp"
+#include "petscTestErrorChecker.hpp"
 #include "utilities/petscUtilities.hpp"
 
 using namespace ablate;

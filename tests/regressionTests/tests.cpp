@@ -1,6 +1,6 @@
 #include <filesystem>
-#include "MpiTestFixture.hpp"
 #include "gtest/gtest.h"
+#include "mpiTestFixture.hpp"
 #include "runners/runners.hpp"
 
 INSTANTIATE_TEST_SUITE_P(RegressionRateExamples, RegressionTestsSpecifier,

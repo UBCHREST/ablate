@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "MpiTestEventListener.hpp"
-#include "MpiTestFixture.hpp"
+#include "mpiTestEventListener.hpp"
+#include "mpiTestFixture.hpp"
 
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);

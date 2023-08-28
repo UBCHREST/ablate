@@ -1,7 +1,7 @@
 #include "convergenceTester.hpp"
 #include <monitors/logs/stdOut.hpp>
 #include <utility>
-#include "PetscTestErrorChecker.hpp"
+#include "petscTestErrorChecker.hpp"
 
 testingResources::ConvergenceTester::ConvergenceTester(std::string name, const std::shared_ptr<ablate::monitors::logs::Log>& logIn)
     : name(std::move(name)), log(logIn ? logIn : std::make_shared<ablate::monitors::logs::StdOut>()) {}

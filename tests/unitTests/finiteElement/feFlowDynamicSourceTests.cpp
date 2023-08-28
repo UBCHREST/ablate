@@ -2,7 +2,6 @@ static char help[] =
     "Time-dependent Low Mach Flow in 2d channels with finite elements. We solve the Low Mach flow problem in a rectangular domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
 #include <petsc.h>
-#include "MpiTestFixture.hpp"
 #include "domain/boxMesh.hpp"
 #include "environment/runEnvironment.hpp"
 #include "finiteElement/boundaryConditions/essential.hpp"
@@ -11,6 +10,7 @@ static char help[] =
 #include "finiteElement/lowMachFlowSolver.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/simpleFormula.hpp"
+#include "mpiTestFixture.hpp"
 #include "parameters/petscOptionParameters.hpp"
 #include "utilities/petscUtilities.hpp"
 

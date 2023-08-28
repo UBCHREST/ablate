@@ -1,5 +1,5 @@
 #include <petsc.h>
-#include <PetscTestFixture.hpp>
+#include <petscTestFixture.hpp>
 #include <vector>
 #include "finiteVolume/processes/les.hpp"
 #include "gtest/gtest.h"

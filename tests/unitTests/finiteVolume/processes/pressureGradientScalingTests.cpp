@@ -2,8 +2,6 @@
 #include <cmath>
 #include <memory>
 #include <vector>
-#include "MpiTestFixture.hpp"
-#include "PetscTestErrorChecker.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
@@ -18,7 +16,9 @@
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "mathFunctions/geom/sphere.hpp"
+#include "mpiTestFixture.hpp"
 #include "parameters/mapParameters.hpp"
+#include "petscTestErrorChecker.hpp"
 #include "utilities/petscUtilities.hpp"
 
 typedef struct {

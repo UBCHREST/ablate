@@ -1,27 +1,29 @@
 
 # Setup the framework library
-add_library(testingResources "")
+add_library(testingResources OBJECT "")
 target_link_libraries(testingResources PUBLIC GTest::gtest GTest::gmock ablateLibrary PRIVATE chrestCompilerFlags)
 
 target_sources(testingResources
         PRIVATE
-        MpiTestFixture.cpp
-        PetscTestViewer.cpp
+        mpiTestFixture.cpp
+        petscTestViewer.cpp
         convergenceTester.cpp
         testRunEnvironment.cpp
         temporaryPath.cpp
 
         PUBLIC
-        MpiTestFixture.hpp
-        MpiTestParamFixture.hpp
-        MpiTestEventListener.hpp
-        PetscTestFixture.hpp
-        PetscTestViewer.hpp
-        PetscTestErrorChecker.hpp
+        mpiTestFixture.hpp
+        mpiTestParamFixture.hpp
+        mpiTestEventListener.hpp
+        petscTestFixture.hpp
+        petscTestViewer.hpp
+        petscTestErrorChecker.hpp
         convergenceTester.hpp
         temporaryPath.hpp
         testRunEnvironment.hpp
         )
+
+add_subdirectory(asserts)
 
 # Allow public access to the header files in the directory
 target_include_directories(testingResources PUBLIC ${CMAKE_CURRENT_LIST_DIR})

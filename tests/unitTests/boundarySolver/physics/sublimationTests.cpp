@@ -1,11 +1,11 @@
 #include <functional>
-#include "PetscTestFixture.hpp"
 #include "boundarySolver/physics/subModels/completeSublimation.hpp"
 #include "boundarySolver/physics/sublimation.hpp"
 #include "eos/mockEOS.hpp"
 #include "eos/transport/constant.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
+#include "petscTestFixture.hpp"
 
 struct SublimationTestParameters {
     std::string description;

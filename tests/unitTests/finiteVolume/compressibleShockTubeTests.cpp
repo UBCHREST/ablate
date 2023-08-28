@@ -6,8 +6,6 @@ static char help[] = "Compressible ShockTube 1D Tests";
 #include <finiteVolume/compressibleFlowFields.hpp>
 #include <memory>
 #include <vector>
-#include "MpiTestFixture.hpp"
-#include "PetscTestErrorChecker.hpp"
 #include "domain/dmTransfer.hpp"
 #include "environment/runEnvironment.hpp"
 #include "eos/perfectGas.hpp"
@@ -16,7 +14,9 @@ static char help[] = "Compressible ShockTube 1D Tests";
 #include "finiteVolume/fluxCalculator/ausm.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
+#include "mpiTestFixture.hpp"
 #include "parameters/mapParameters.hpp"
+#include "petscTestErrorChecker.hpp"
 #include "utilities/petscUtilities.hpp"
 
 using namespace ablate;

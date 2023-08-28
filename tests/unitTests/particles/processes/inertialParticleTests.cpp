@@ -1,5 +1,4 @@
 #include <petsc.h>
-#include "MpiTestFixture.hpp"
 #include "domain/boxMesh.hpp"
 #include "environment/runEnvironment.hpp"
 #include "finiteElement/boundaryConditions/essential.hpp"
@@ -8,6 +7,7 @@
 #include "finiteElement/lowMachFlowFields.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
+#include "mpiTestFixture.hpp"
 #include "parameters/mapParameters.hpp"
 #include "parameters/petscOptionParameters.hpp"
 #include "parameters/petscPrefixOptions.hpp"

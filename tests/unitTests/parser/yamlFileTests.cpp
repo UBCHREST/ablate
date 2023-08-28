@@ -1,7 +1,7 @@
-#include <PetscTestFixture.hpp>
 #include <fstream>
 #include <memory>
 #include <parameters/mapParameters.hpp>
+#include <petscTestFixture.hpp>
 #include <sstream>
 #include "gtest/gtest.h"
 #include "testRunEnvironment.hpp"
