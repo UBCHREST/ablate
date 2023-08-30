@@ -11,7 +11,9 @@
 #define xexit(S, ...) {PetscFPrintf(MPI_COMM_WORLD, stderr, \
   "\x1b[1m(%s:%d, %s)\x1b[0m\n  \x1b[1m\x1b[90mexiting:\x1b[0m " S "\n", \
   __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); exit(0);}
-ablate::finiteVolume::processes::SurfaceForce::SurfaceForce(PetscReal sigma) : sigma(sigma) {}
+ablate::finiteVolume::processes::SurfaceForce::SurfaceForce(PetscReal sigma) : sigma(sigma) {
+    printf("Sigma is equal to %e\n", sigma);
+}
 
 // Done once at the beginning of every run
 void ablate::finiteVolume::processes::SurfaceForce::Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) {
@@ -449,10 +451,10 @@ void SmoothVOF(ablate::domain::Range cellRange, ablate::domain::ReverseRange rev
   PetscReal *updatedVOF;
   DMGetWorkArray(dm, nCellRange, MPIU_REAL, &updatedVOF) >> ablate::utilities::PetscUtilities::checkError;
   updatedVOF -= cellRange.start;
-//  PetscReal diff = 1.0;
-//  while (diff > 1.e-1) {
-  PetscInt iter = 0;
-  while ( (iter++) < 4) {
+  PetscReal diff = 1.0;
+  while (diff > 1.e-2) {
+//  PetscInt iter = 0;
+//  while ( (iter++) < 4) {
 
     // Update all marked cells as the average of the surrounding nearest-neighbors cells
     // Should this store the stencil so as not to redo DMPlexGetNeighbors multiple times?
@@ -475,17 +477,17 @@ void SmoothVOF(ablate::domain::Range cellRange, ablate::domain::ReverseRange rev
     }
 
     // Copy over the data and check for convergence
-//    diff = -1.0;
+    diff = -1.0;
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
       if (mask[c]>0) {
         PetscInt cell = cellRange.GetPoint(c);
         PetscReal *vof;
         xDMPlexPointLocalRef(dm, cell, fID, dataArray, &vof);
-//        diff = PetscMax(diff, PetscAbsReal(*vof - updatedVOF[c]));
+        diff = PetscMax(diff, PetscAbsReal(*vof - updatedVOF[c]));
         *vof = updatedVOF[c];
       }
     }
-//    printf("%e\n", diff);
+    printf("%e\n", diff);
   }
 
   VecRestoreArray(dataVec, &dataArray);
@@ -533,7 +535,7 @@ void ExtendVOF(ablate::domain::Range cellRange, ablate::domain::ReverseRange rev
     }
     else {
       vof0[c] = (*vof > 0.5) ? +1 : 0;
-      *vof = 1.0; // To start the multiplication
+      *vof = 0.0; // To start the multiplication
     }
   }
 
@@ -558,11 +560,11 @@ void ExtendVOF(ablate::domain::Range cellRange, ablate::domain::ReverseRange rev
             xDMPlexPointLocalRef(dm, cells[n], fID, dataArray, &val);
 
             // This is equivalent to sign[id]*vof[0] + (1-sign[id])*(1.0-vof[0]);
-            *val *= (vof0[id] == +1) ? *vof : 1.0 - *vof;
+            *val += (vof0[id] == +1) ? *vof : 1.0 - *vof;
 
           }
         }
-        DMPlexRestoreNeighbors(dm, cell, 1, -1.0, -1, PETSC_TRUE, PETSC_FALSE, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
+        DMPlexRestoreNeighbors(dm, cell, 1, -1.0, -1, PETSC_FALSE, PETSC_FALSE, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
       }
     }
 
@@ -571,7 +573,8 @@ void ExtendVOF(ablate::domain::Range cellRange, ablate::domain::ReverseRange rev
         PetscInt cell = cellRange.GetPoint(c);
         PetscReal *val;
         xDMPlexPointLocalRef(dm, cell, fID, dataArray, &val);
-        *val = PetscPowReal(*val, 1.0/count[c]);
+//        *val = PetscPowReal(*val, 1.0/count[c]);
+        *val /= count[c];
 
         // This is equivalent to sign[c]*(1.0 + val[0]) + (1-sign[c])*(-val[0]);
         *val = (vof0[c] == +1) ? 1.0 + *val : -*val;
@@ -579,6 +582,59 @@ void ExtendVOF(ablate::domain::Range cellRange, ablate::domain::ReverseRange rev
     }
 
   }
+
+  vof0 += cellRange.start;
+  DMRestoreWorkArray(dm, nCellRange, MPIU_INT, &vof0) >> ablate::utilities::PetscUtilities::checkError;
+
+  count += cellRange.start;
+  DMRestoreWorkArray(dm, nCellRange, MPIU_INT, &count) >> ablate::utilities::PetscUtilities::checkError;
+
+  // Now do a smoothing pass
+  PetscReal *newVOF;
+  DMGetWorkArray(dm, nCellRange, MPIU_REAL, &newVOF) >> ablate::utilities::PetscUtilities::checkError;
+  PetscArrayzero(newVOF, nCellRange);
+  newVOF -= cellRange.start;
+
+  for (PetscInt iter = 0; iter < 10; ++iter) {
+
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+      if (mask[c]>0 && mask[c]<(nLevels-1)) {
+        PetscInt cell = cellRange.GetPoint(c);
+        PetscInt nCells, *cells;
+        DMPlexGetNeighbors(dm, cell, 1, -1.0, -1.0, PETSC_FALSE, PETSC_FALSE, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
+
+        newVOF[c] = 0.0;
+        for (PetscInt i = 0; i < nCells; ++i) {
+//          if (cells[i]!=cell) {
+            const PetscReal *vof;
+            xDMPlexPointLocalRead(dm, cells[i], fID, dataArray, &vof);
+            newVOF[c] += *vof;
+//          }
+        }
+
+        newVOF[c] /= nCells;
+
+//        const PetscReal *vof;
+//        xDMPlexPointLocalRead(dm, cell, fID, dataArray, &vof);
+
+//        newVOF[c] = 0.5*(*vof + newVOF[c]/(nCells-1));
+
+        DMPlexRestoreNeighbors(dm, cell, 1, -1.0, -1.0, PETSC_FALSE, PETSC_FALSE, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
+      }
+    }
+
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+      if (mask[c]>0 && mask[c]<(nLevels)) {
+        PetscInt cell = cellRange.GetPoint(c);
+        PetscReal *vof;
+        xDMPlexPointLocalRef(dm, cell, fID, dataArray, &vof);
+        *vof = newVOF[c];
+      }
+    }
+
+  }
+  newVOF += cellRange.start;
+  DMRestoreWorkArray(dm, nCellRange, MPIU_REAL, &newVOF) >> ablate::utilities::PetscUtilities::checkError;
 
   // Set everything else
   for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
@@ -592,11 +648,9 @@ void ExtendVOF(ablate::domain::Range cellRange, ablate::domain::ReverseRange rev
 
   VecRestoreArray(dataVec, &dataArray);
 
-  vof0 += cellRange.start;
-  DMRestoreWorkArray(dm, nCellRange, MPIU_INT, &vof0) >> ablate::utilities::PetscUtilities::checkError;
 
-  count += cellRange.start;
-  DMRestoreWorkArray(dm, nCellRange, MPIU_INT, &count) >> ablate::utilities::PetscUtilities::checkError;
+
+
 
   mask += cellRange.start;
   DMRestoreWorkArray(dm, nCellRange, MPIU_INT, &mask) >> ablate::utilities::PetscUtilities::checkError;
@@ -657,9 +711,9 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     }
 
     // A width of 4 on either side of the interface seems to work well
-    const PetscInt smoothWidth = 4;
-    ExtendVOF(cellRange, reverseCellRange, dmData, dataVec, dataVofID, smoothWidth+2);
-    SmoothVOF(cellRange, reverseCellRange, dmData, dataVec, dataVofID, smoothWidth);
+    const PetscInt smoothWidth = 6;
+    ExtendVOF(cellRange, reverseCellRange, dmData, dataVec, dataVofID, smoothWidth);
+//    SmoothVOF(cellRange, reverseCellRange, dmData, dataVec, dataVofID, smoothWidth);
 
 
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
@@ -690,13 +744,13 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
 
 
     FILE *f1;
-    const PetscInt step = 10;
+    const PetscInt step = 100;
     printf("\t%d\n", ++cnt);
     bool saveFile = (cnt%step==0);
 
     if (saveFile) {
       char fname[255];
-      sprintf(fname, "vof%d.txt", cnt);
+      sprintf(fname, "vofEllipse%d.txt", cnt);
       f1 = fopen(fname,"w");
     }
 
@@ -705,6 +759,7 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     const ablate::domain::Field &eulerField = subDomain.GetField(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD);
     DM eulerDM = subDomain.GetFieldDM(eulerField); // Get an euler-specific DM in case it's not in the same solution vector as the VOF field
     const PetscReal sigma = process->sigma; // Surface tension coefficient
+
     PetscScalar *fArray;
     VecGetArray(locF, &fArray) >> utilities::PetscUtilities::checkError;
 
@@ -720,11 +775,11 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
       xDMPlexPointLocalRead(dmData, cell, dataVofID, dataArray, &vofVal);
 
       // Estimation of the signed-distance function
-      const PetscReal phi = 0.5*(1.0 - 2*vofVal[0])*h;
-      const PetscReal dirac = SmoothDirac(phi, 0.0, 2.0*h);
+//      const PetscReal phi = 0.5*(1.0 - 2*vofVal[0])*h;
+//      const PetscReal dirac = SmoothDirac(phi, 0.0, 2.0*h);
 
 
-//      const PetscReal dirac = 1.0;
+      const PetscReal dirac = 1.0;
 
 
 
@@ -738,8 +793,8 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
       }
 
 
-      if (dirac > 0.0) {
-//      if ( ((*sharpVOF) > ablate::utilities::Constants::small) && ((*sharpVOF) < (1.0 - ablate::utilities::Constants::small)) ) {
+//      if (dirac > 0.0) {
+      if ( ((*sharpVOF) > ablate::utilities::Constants::small) && ((*sharpVOF) < (1.0 - ablate::utilities::Constants::small)) ) {
 
 
         PetscReal n[3] = {0.0, 0.0, 0.0}; // Normal at the cell-center
@@ -780,6 +835,13 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
         eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] = 0;
         for (PetscInt d = 0; d < dim; ++d) {
             // calculate surface force and energy
+
+PetscReal loc[3];
+DMPlexComputeCellGeometryFVM(dmVOF, cell, NULL, loc, NULL) >> ablate::utilities::PetscUtilities::checkError;
+n[d] = loc[d]/sqrt(loc[0]*loc[0] + loc[1]*loc[1]);
+H = 1.0/sqrt(loc[0]*loc[0] + loc[1]*loc[1]);
+
+
             PetscReal surfaceForce = -dirac* sigma * H * n[d];
             PetscReal vel = euler[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density;
             PetscReal surfaceEnergy = surfaceForce * vel;
@@ -850,8 +912,6 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     VecRestoreArrayRead(locX, &xArray) >> utilities::PetscUtilities::checkError;
     VecRestoreArray(dataVec, &dataArray) >> utilities::PetscUtilities::checkError;
     DMRestoreLocalVector(dmData, &dataVec) >> utilities::PetscUtilities::checkError;
-
-//xexit("");
 
     PetscFunctionReturn(PETSC_SUCCESS);
 }
