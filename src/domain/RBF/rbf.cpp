@@ -139,9 +139,7 @@ void RBF::Matrix(const PetscInt c) {
     const DM dm = RBF::subDomain->GetSubDM();
 
     // Get the list of neighbor cells
-    DMPlexGetNeighbors(dm, c, -1, -1.0, RBF::minNumberCells, RBF::useCells, RBF::returnNeighborVertices, &nCells, &list);
-    RBF::nStencil[c] = nCells;
-    RBF::stencilList[c] = list;
+    DMPlexGetNeighbors(dm, c, -1, -1.0, RBF::minNumberCells, RBF::useCells, RBF::returnNeighborVertices, &nCells, &list) >> utilities::PetscUtilities::checkError;
 
     if (numPoly >= nCells) {
         throw std::invalid_argument("Number of surrounding cells, " + std::to_string(nCells) + ", can not support a requested polynomial order of " + std::to_string(p) + " which requires " +
@@ -237,6 +235,12 @@ void RBF::Matrix(const PetscInt c) {
     // Assign output
     RBF::RBFMatrix[c] = A;
     RBF::stencilXLocs[c] = x;
+    RBF::nStencil[c] = nCells;
+    PetscMalloc1(nCells, &(RBF::stencilList[c])) >> utilities::PetscUtilities::checkError;
+    PetscArraycpy(RBF::stencilList[c], list, nCells) >> utilities::PetscUtilities::checkError;
+
+    // Return the work arrays
+    DMPlexRestoreNeighbors(dm, c, -1, -1.0, RBF::minNumberCells, RBF::useCells, RBF::returnNeighborVertices, &nCells, &list) >> utilities::PetscUtilities::checkError;
 }
 
 /************ Begin Derivative Code **********************/
@@ -415,8 +419,6 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, Vec vec, PetscInt c, 
     VecGetArrayRead(vec, &array) >> utilities::PetscUtilities::checkError;
 
     for (PetscInt i = 0; i < nCells; ++i) {
-        // DMPlexPointLocalFieldRead isn't behaving like I would expect. If I don't make f a pointer then it just returns zero.
-        //    Additionally, it looks like it allows for the editing of the value.
         if (fid >= 0) {
             DMPlexPointLocalFieldRead(dm, lst[i], fid, array, &f) >> utilities::PetscUtilities::checkError;
         } else {

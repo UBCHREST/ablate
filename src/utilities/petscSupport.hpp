@@ -13,11 +13,13 @@
  * maxDist - Maximum distance to include
  * numberCells - The number of cells/vertices to return.
  * useCells -
+ * returnVertices - Return vertices surrounding the center cell (PETSC_TRUE) or cells surrounding the center cell (PETSC_FALSE)
  * nCells - Number of neighboring cells/vertices
  * cells - The list of neighboring cell/vertices IDs
  *
  * Note: The intended use is to use either maxLevels OR maxDist OR minNumberCells.
  */
+PetscErrorCode DMPlexRestoreNeighbors(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useCells, PetscBool returnVertices, PetscInt *nCells, PetscInt **cells);
 PetscErrorCode DMPlexGetNeighbors(DM dm, PetscInt p, PetscInt levels, PetscReal maxDist, PetscInt minNumberCells, PetscBool useCells, PetscBool returnNeighborVertices, PetscInt *nCells,
                                   PetscInt **cells);
 
@@ -28,6 +30,15 @@ PetscErrorCode DMPlexGetNeighbors(DM dm, PetscInt p, PetscInt levels, PetscReal 
  * @param cell - Cell containing the location. It will return -1 if xyz is not in the local portion of the DM.
  */
 PetscErrorCode DMPlexGetContainingCell(DM dm, const PetscScalar *xyz, PetscInt *cell);
+
+/**
+ * Return the cell with a given cell center
+ * @param dm - The mesh
+ * @param xyz - Cell center to fine
+ * @param eps - Tolerance to utilize when searching for cells
+ * @param cell - Cell containing the location. It will return -1 if xyz is not in the local portion of the DM.
+ */
+PetscErrorCode DMPlexFindCell(DM dm, const PetscScalar *xyz, PetscReal eps, PetscInt *cell);
 
 /**
  * Get the number of vertices for a given cell
@@ -77,9 +88,10 @@ PetscErrorCode xDMPlexPointLocalRead(DM dm, PetscInt p, PetscInt fID, const Pets
  * @param v - Vertex where to compute the gradient
  * @param data - Vector containing the data
  * @param fID - Field ID of the data to take the gradient of
+ * @param offset - If fID points to a vector then indicate which component to use
  * @param g - The gradient at c
  */
-PetscErrorCode DMPlexVertexGradFromVertex(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscScalar g[]);
+PetscErrorCode DMPlexVertexGradFromVertex(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]);
 
 /**
  * Compute the gradient of a field defined over cells at a vertex
@@ -87,9 +99,10 @@ PetscErrorCode DMPlexVertexGradFromVertex(DM dm, const PetscInt v, Vec data, Pet
  * @param v - Vertex where to compute the gradient
  * @param data - Vector containing the data
  * @param fID - Field ID of the data to take the gradient of
+ * @param offset - If fID points to a vector then indicate which component to use
  * @param g - The gradient at c
  */
-PetscErrorCode DMPlexVertexGradFromCell(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscScalar g[]);
+PetscErrorCode DMPlexVertexGradFromCell(DM dm, const PetscInt v, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]);
 
 /**
  * Compute the gradient of a field defined over vertices at a cell center
@@ -97,9 +110,24 @@ PetscErrorCode DMPlexVertexGradFromCell(DM dm, const PetscInt v, Vec data, Petsc
  * @param c - Cell where to compute the gradient
  * @param data - Vector containing the data
  * @param fID - Field ID of the data to take the gradient of
+ * @param offset - If fID points to a vector then indicate which component to use
  * @param g - The gradient at c
  */
-PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscScalar g[]);
+PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]);
+
+/**
+ * Compute the gradient of a field defined over cells at a cell center
+ * @param dm - The DM of the data stored in vec
+ * @param c - Cell where to compute the gradient
+ * @param data - Vector containing the data
+ * @param fID - Field ID of the data to take the gradient of
+ * @param offset - If fID points to a vector then indicate which component to use
+ * @param g - The gradient at c
+ *
+ * Note: This computes the gradient at the cell vertices and then averages those to get the cell center. Due to this it's only
+ *    first-order accurate for triangular meshes. This should(?) be replaced with one that uses cell-center values later.
+ */
+PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]);
 
 /**
  * Returns all DMPlex points at a given depth which are common between two DMPlex points. For example, if p1 is a cell and p2 is a vertex on the cell with depth=1 this will
@@ -117,9 +145,9 @@ PetscErrorCode DMPlexRestoreCommonPoints(DM dm, const PetscInt p1, const PetscIn
 /**
  * Return all values in sorted array a that are NOT in sorted array b. This is done in-place on array a.
  * Inputs:
- *    na - Size of sorted array b[]
+ *    na - Size of sorted array a[]
  *    a - Array of integers
- *    nb - Size of sorted array a[]
+ *    nb - Size of sorted array b[]
  *    b - Array or integers
  *
  * Outputs:
