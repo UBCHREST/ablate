@@ -43,7 +43,7 @@ jobs:
             --load 
 
       - name: Run all tests
-        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ctest
+        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ctest --preset=pipeline-testing-all
 
   test:
     runs-on: ubuntu-latest

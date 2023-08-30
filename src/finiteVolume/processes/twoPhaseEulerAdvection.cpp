@@ -50,8 +50,8 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormFunc
 
     VecGetArray(F, &aF);
     aF[0] = (gamma1 - 1) * eG * rhoG - (gamma2 - 1) * eL * rhoL + gamma2 * p02;  // pG - pL = 0, pressure equilibrium
-//aF[0] = (gamma1 - 1) * eG * rhoG - (gamma2 - 1) * eL * rhoL + gamma2 * p02 + 1;  // pG - pL + sigma*kappa = 0, manual set sigmaKappa=1
-    aF[1] = eG * rhoL / cv1 - gamma2 / cp2 * (eL * rhoL - p02);                  // TG - TL = 0, temperature equilibrium
+    // aF[0] = (gamma1 - 1) * eG * rhoG - (gamma2 - 1) * eL * rhoL + gamma2 * p02 + 1;  // pG - pL + sigma*kappa = 0, manual set sigmaKappa=1
+    aF[1] = eG * rhoL / cv1 - gamma2 / cp2 * (eL * rhoL - p02);  // TG - TL = 0, temperature equilibrium
     aF[2] = Y1 * rho * rhoL + Y2 * rho * rhoG - rhoG * rhoL;
     aF[3] = Y1 * eG + Y2 * eL - e;
 

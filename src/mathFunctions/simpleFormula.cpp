@@ -93,8 +93,8 @@ PetscErrorCode ablate::mathFunctions::SimpleFormula::ParsedPetscFunction(PetscIn
         int functionSize = 0;
         auto rawResult = parser->parser.Eval(functionSize);
 
-        if (nf < functionSize) {
-            throw std::invalid_argument("The result vector is not sized to hold the function " + parser->parser.GetExpr());
+        if (nf != functionSize) {
+            throw std::invalid_argument("The field array is not sized to hold the specified function " + parser->parser.GetExpr());
         }
 
         // copy over

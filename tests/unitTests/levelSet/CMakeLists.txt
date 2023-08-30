@@ -4,5 +4,7 @@ target_sources(ablateUnitTestLibrary
         LS-VOFTests.cpp
         vofMathFunctionTests.cpp
         cellGradTests.cpp
+        vofFromLS_yaml.cpp
 
         )
+

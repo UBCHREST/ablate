@@ -49,7 +49,7 @@ class Hdf5Serializer : public Serializer {
     static PetscErrorCode Hdf5SerializerSaveStateFunction(TS ts, PetscInt steps, PetscReal time, Vec u, void* mctx);
 
     // Private functions to load and save the ts metadata data
-    void SaveMetadata(TS ts);
+    void SaveMetadata(TS ts) const;
 
    public:
     explicit Hdf5Serializer(std::shared_ptr<ablate::io::interval::Interval>);

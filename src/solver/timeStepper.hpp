@@ -19,7 +19,7 @@
 #include "utilities/staticInitializer.hpp"
 
 namespace ablate::solver {
-class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private utilities::Loggable<TimeStepper>, private utilities::StaticInitializer {
+class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private utilities::Loggable<TimeStepper>, private utilities::StaticInitializer, private ablate::utilities::NonCopyable {
    public:
     /**
      * Optional initializer that can be called for TS before the first time step (TSSolve)
@@ -118,26 +118,44 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
      * @param relativeTolerances
      * @param verboseSourceCheck
      */
-    TimeStepper(std::shared_ptr<ablate::domain::Domain> domain, const std::shared_ptr<ablate::parameters::Parameters> &arguments = {}, std::shared_ptr<io::Serializer> serializer = {},
-                std::shared_ptr<ablate::domain::Initializer> initialization = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {},
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances = {},
-                bool verboseSourceCheck = {});
+    explicit TimeStepper(std::shared_ptr<ablate::domain::Domain> domain, const std::shared_ptr<ablate::parameters::Parameters> &arguments = {}, std::shared_ptr<io::Serializer> serializer = {},
+                         std::shared_ptr<ablate::domain::Initializer> initialization = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {},
+                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances = {},
+                         bool verboseSourceCheck = {});
 
-    ~TimeStepper();
+    /**
+     * Allow the TimeStepper to clean up the ts
+     */
+    virtual ~TimeStepper();
 
+    /**
+     * Return the ts to allow outside time stepping/control
+     * @return
+     */
     TS &GetTS() { return ts; }
 
+    /**
+     * Return the ts to allow outside time stepping/control
+     * @return
+     */
+    const ablate::domain::Domain &GetDomain() { return *domain; }
+
+    /**
+     * return the solution vector to allow outside manipulation/output
+     * @return
+     */
     Vec GetSolutionVector() { return domain->GetSolutionVector(); }
 
     /**
      * Optional call to Initialize before setup
+     * @return returns true if it needed to be initialized
      */
-    void Initialize();
+    virtual bool Initialize();
 
     /**
      * Initializes if needed, then calls solve
      */
-    void Solve();
+    virtual void Solve();
 
     /**
      * Computes the physics based time step that can be used to control the adaptive time step
@@ -145,10 +163,23 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
      */
     PetscErrorCode ComputePhysicsTimeStep(PetscReal *dt);
 
+    /**
+     * register each solver with the time stepper with optional monitor
+     * @param solver
+     * @param monitor
+     */
     void Register(const std::shared_ptr<ablate::solver::Solver> &solver, const std::vector<std::shared_ptr<monitors::Monitor>> & = {});
 
+    /**
+     * Return the current simulation time
+     * @return
+     */
     double GetTime() const;
 
+    /**
+     * The name of this time stepper
+     * @return
+     */
     const std::string &GetName() const { return name; }
 
     /**
@@ -157,6 +188,12 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
      * @param adaptInitializer
      */
     static void RegisterAdaptInitializer(const std::string &adaptName, AdaptInitializer adaptInitializer) { adaptInitializers[adaptName] = adaptInitializer; }
+
+    /**
+     * reusable function that checks for serializable components/objects in the time stepper and registers
+     * @param serializer the serializer to add components to
+     */
+    void RegisterSerializableComponents(const std::shared_ptr<io::Serializer> &serializer) const;
 };
 }  // namespace ablate::solver
 

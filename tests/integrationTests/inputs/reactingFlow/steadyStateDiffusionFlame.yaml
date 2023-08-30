@@ -1,0 +1,168 @@
+# This example will run a diffusion flame until the solution reaches quasi steady state as
+# defined by the criteria list given to the time stepper
+---
+environment:
+  title: _steadyStateDiffusionFlame
+  tagDirectory: false
+arguments: { }
+# Create a stead state stepper.  The Stead State Stepper marches the solution in time until a set of criteria is met
+timestepper: !ablate::solver::SteadyStateStepper
+  # The Steady state stepper can output using the standard serializers
+  io: !ablate::io::Hdf5MultiFileSerializer
+    # results are saved at every 0 steps.  In real simulations this should be much larger.
+    interval: 0
+  # Pass the standard petsc arguments to the TS.
+  arguments:
+    ts_type: rk
+    ts_max_time: 1
+    ts_max_steps: 5000 # If convergence is not reached by ts_max_steps an exception is thrown
+    ts_dt: 1.0e-10
+    ts_adapt_safety: 0.75
+  # A list of criteria can be given to the steady state stepper.  All criteria must be met to be considered converged
+  criteria:
+    # The VariableChange measures the norm between the current and previous variable state.  If less than the tolerance
+    # the variable is considered converged
+    - !ablate::solver::criteria::VariableChange
+      name: temperature
+      tolerance: 200 # This should be smaller for non-test cases
+      norm: l2_norm
+    # The valid range does not check for convergence but throws an error is all points fall outside the valid range.
+    # This is useful for checking for invalid results such as flame extinguishment
+    - !ablate::solver::criteria::ValidRange
+      name: temperature
+      lowerBound: 500
+      upperBound: 100000
+  # state how many time steps will be completed between criteria checks
+  checkInterval: 10
+  # the steady state steppers allows for a log to monitor convergence rate
+  log: !ablate::monitors::logs::StdOut
+
+  # Create a 1D BoxMeshBoundaryCells to monitor the solution
+  domain: !ablate::domain::BoxMeshBoundaryCells
+    name: simpleBoxField
+    faces: [ 50 ]
+    lower: [ 0.0 ]
+    upper: [ 0.01 ]
+    simplex: false
+    options:
+      dm_plex_hash_location: true
+    preModifiers:
+      # distribute the mesh across the mpi rank with ghost cells
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+        ghostCellDepth: 2
+    postModifiers:
+      - !ablate::domain::modifiers::GhostBoundaryCells
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        # create an ideal gas eos using the tchem library
+        eos: !ablate::eos::TChem  &eos
+          mechFile: ../mechanisms/gri30.yml
+          options:
+            # set a minimum temperature for the chemical kinetics ode integration
+            thresholdTemperature: 560
+        conservedFieldOptions:
+          petscfv_type: leastsquares
+        region:
+          name: domain
+      - !ablate::domain::FieldDescription
+        name: pressure
+        type: FV
+        location: aux
+        region:
+          name: domain
+  # provide an initial condition for the flow field
+  initialization:
+    # Set up the euler field (density, density*energy, density*vel) based upon temperature, pressure, velocity and mass fractions
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state: &flowFieldState
+        eos: *eos
+        temperature:
+          "x < 0 ? 653.0  : (x > .01 ? 300.0 : (x < 0.007 ? (306714.2857*x + 653): (-833333.3333*x + 8633.33)  ))"
+        pressure: 101325.0
+        velocity: "0.0"
+        other: !ablate::finiteVolume::fieldFunctions::MassFractions
+          &massFracs
+          eos: *eos
+          values:
+            - fieldName: O2
+              field: !ablate::mathFunctions::Linear
+                startValues: [ 0.0 ]
+                endValues: [ 1.0 ]
+                end: .01
+            - fieldName: H2
+              field: !ablate::mathFunctions::Linear
+                startValues: [ 2.66E-08 ]
+                endValues: [ 0.0 ]
+                end: .01
+            - fieldName: CH4
+              field: !ablate::mathFunctions::Linear
+                startValues: [ 0.03130099 ]
+                endValues: [ 0.0 ]
+                end: .01
+            - fieldName: C2H2
+              field: !ablate::mathFunctions::Linear
+                startValues: [ 0.019041133 ]
+                endValues: [ 0.0 ]
+                end: .01
+            - fieldName: C2H4
+              field: !ablate::mathFunctions::Linear
+                startValues: [ 0.908560465 ]
+                endValues: [ 0.0 ]
+                end: .01
+            - fieldName: C2H6
+              field: !ablate::mathFunctions::Linear
+                startValues: [ 0.012981435 ]
+                endValues: [ 0.0 ]
+                end: .01
+            - fieldName: C3H8
+              field: !ablate::mathFunctions::Linear
+                startValues: [ 0.028115959 ]
+                endValues: [ 0.0 ]
+                end: .01
+    # initialize the conserved mass fractions using the same flow staet
+    - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
+      state: *flowFieldState
+
+# set the solvers diffusion flame
+solvers:
+  # The compressible flow solver is required to solve diffusion and reactions in the flow
+  - !ablate::finiteVolume::CompressibleFlowSolver
+    id: flowField
+    # only apply this solver on the main region (no bc cells)
+    region:
+      name: interiorCells
+    # the flow solver requires the equation of state to compute properties
+    eos: *eos
+    # Allow transport used the Sutherland model
+    transport: !ablate::eos::transport::Sutherland
+      eos: *eos
+    # in addition to the standard processes add chemistry reactions and a pressure fix to keep the diffusion flame at 1 ATM
+    additionalProcesses:
+      - !ablate::finiteVolume::processes::Chemistry
+        eos: *eos
+      - !ablate::finiteVolume::processes::ConstantPressureFix
+        eos: *eos
+        pressure: 101325.0
+
+  # use a fixed inlet to enforce boundary conditions on the right side
+  - !ablate::boundarySolver::BoundarySolver
+    id: walls
+    region:
+      name: boundaryCellsRight
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::Inlet
+        eos: *eos
+
+  # use a fixed inlet to enforce boundary conditions on the left side
+  - !ablate::boundarySolver::BoundarySolver
+    id: slab boundary
+    region:
+      name: boundaryCellsLeft
+    fieldBoundary:
+      name: boundaryFaces
+    processes:
+      - !ablate::boundarySolver::lodi::Inlet
+        eos: *eos

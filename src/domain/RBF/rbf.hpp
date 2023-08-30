@@ -4,7 +4,6 @@
 #include <petsc/private/hashmapi.h>
 #include "domain/range.hpp"  // For domain::Range
 #include "domain/subDomain.hpp"
-#include "utilities/petscSupport.hpp"
 
 #define __RBF_DEFAULT_POLYORDER 3
 

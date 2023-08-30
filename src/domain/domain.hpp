@@ -15,6 +15,7 @@
 #include "mathFunctions/fieldFunction.hpp"
 #include "region.hpp"
 #include "utilities/loggable.hpp"
+#include "utilities/nonCopyable.hpp"
 
 namespace ablate::solver {
 // forward declare the Solver
@@ -25,7 +26,7 @@ namespace ablate::domain {
 // forward declare the subDomain
 class SubDomain;
 
-class Domain : private utilities::Loggable<Domain> {
+class Domain : private utilities::Loggable<Domain>, private ablate::utilities::NonCopyable {
    public:
     //! The name of the solution field vector
     const static inline std::string solution_vector_name = "solution";
@@ -102,7 +103,12 @@ class Domain : private utilities::Loggable<Domain> {
      */
     void ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, Vec globVec, PetscReal time = 0.0);
 
-    std::shared_ptr<SubDomain> GetSubDomain(const std::shared_ptr<Region>& name);
+    /**
+     * return the shared pointer for this subdomain
+     * @param name
+     * @return
+     */
+    std::shared_ptr<SubDomain> GetSubDomain(const std::shared_ptr<Region>& name) const;
 
     /**
      * Provide a list of serialize subDomains

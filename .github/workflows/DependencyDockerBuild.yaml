@@ -39,8 +39,17 @@ jobs:
     strategy:
       matrix:
         arch: [ { runson: ARM64, id: -arm64 }, { runson: ubuntu-latest, id: -amd64 } ]
-        compiler: [ { id: -gcc }, { id: -clang }, { id: -gcc-asan } ]
+        compiler: [ { id: -gcc }, { id: -clang } ]
         indices: [ { index64bit: 0, id: "" },  { index64bit: 1, id: "-index64" } ]
+        include:
+          # only run the fsanitize on amd to save ub resources
+          - arch: { runson: ubuntu-latest, id: -amd64 }
+            compiler: { id: -gcc-asan }
+            indices: [ { index64bit: 0, id: "" } ]
+          - arch: { runson: ubuntu-latest, id: -amd64 }
+            compiler: { id: -gcc-asan }
+            indices: [ { index64bit: 1, id: "-index64" } ]
+
     runs-on: ${{ matrix.arch.runson }}
 
     steps:
@@ -79,8 +88,16 @@ jobs:
       max-parallel: 1
       matrix:
         arch: [ { runson: ARM64, id: -arm64 }, { runson: ubuntu-latest, id: -amd64 } ]
-        compiler: [ { id: -gcc }, {  id: -clang }, { id: -gcc-asan } ]
+        compiler: [ { id: -gcc }, {  id: -clang } ]
         indices: [ { index64bit: 0, id: "" },  { index64bit: 1, id: "-index64" } ]
+        include:
+          # only run the fsanitize on amd to save ub resources
+          - arch: { runson: ubuntu-latest, id: -amd64 }
+            compiler: { id: -gcc-asan }
+            indices: [ { index64bit: 0, id: "" } ]
+          - arch: { runson: ubuntu-latest, id: -amd64 }
+            compiler: { id: -gcc-asan }
+            indices: [ { index64bit: 1, id: "-index64" } ]
 
     steps:
       - name: Set up Docker Buildx

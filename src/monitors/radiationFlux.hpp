@@ -77,7 +77,7 @@ class RadiationFlux : public Monitor, public io::Serializable {
 
     PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override { return 0; };
 
-    [[nodiscard]] bool Serialize() const override { return true; }
+    [[nodiscard]] SerializerType Serialize() const override { return io::Serializable::SerializerType::collective; }
 
     /**
      * This is not needed because this is only called upon serialize.

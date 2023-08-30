@@ -842,6 +842,130 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::PreRHSFunction(TS ts, Pet
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeBoundaryPreRHSPointFunction(
+    PetscReal time, PetscReal dt, Vec locXVec, const ablate::boundarySolver::BoundarySolver::BoundaryPreRHSPointFunctionDefinition& boundaryPreRhsPointFunction) {
+    PetscFunctionBeginUser;
+
+    // Extract the cell geometry, and the dm that holds the information
+    auto dm = subDomain->GetDM();
+    auto auxDM = subDomain->GetAuxDM();
+    auto dim = subDomain->GetDimensions();
+    DM dmCell;
+    const PetscScalar* cellGeomArray;
+    PetscCall(VecGetDM(cellGeomVec, &dmCell));
+    PetscCall(VecGetArrayRead(cellGeomVec, &cellGeomArray));
+
+    // prepare to compute the source, u, and a offsets
+    PetscInt nf;
+    PetscCall(PetscDSGetNumFields(subDomain->GetDiscreteSystem(), &nf));
+
+    // Create the required offset arrays. These are sized for the max possible value
+    PetscInt* offsetsTotal;
+    PetscCall(PetscDSGetComponentOffsets(subDomain->GetDiscreteSystem(), &offsetsTotal));
+    PetscInt* auxOffTotal = nullptr;
+    if (auto auxDS = subDomain->GetAuxDiscreteSystem()) {
+        PetscCall(PetscDSGetComponentOffsets(auxDS, &auxOffTotal));
+    }
+
+    // Get the size of the field
+    PetscInt scratchSize;
+    PetscCall(PetscDSGetTotalDimension(subDomain->GetDiscreteSystem(), &scratchSize));
+    std::vector<PetscScalar> distributedSourceScratch(scratchSize);
+
+    // Get the region to march over
+    if (!gradientStencils.empty()) {
+        // Get pointers to sol, aux, and f vectors
+        PetscScalar *locXArray, *locAuxArray = nullptr;
+        PetscCall(VecGetArray(locXVec, &locXArray));
+        if (auto locAuxVec = subDomain->GetAuxVector()) {
+            PetscCall(VecGetArray(locAuxVec, &locAuxArray));
+        }
+
+        // Store pointers to the stencil variables
+        std::vector<const PetscScalar*> inputStencilValues(maximumStencilSize);
+        std::vector<const PetscScalar*> auxStencilValues(maximumStencilSize);
+
+        // March over each boundary function
+        auto inputOffsetsPointer = boundaryPreRhsPointFunction.inputFieldsOffset.data();
+        auto auxOffsetsPointer = boundaryPreRhsPointFunction.auxFieldsOffset.data();
+
+        // March over each cell in this region
+        for (const auto& stencilInfo : gradientStencils) {
+            // Get the cell geom
+            const PetscFVCellGeom* cg;
+            PetscCall(DMPlexPointLocalRead(dmCell, stencilInfo.cellId, cellGeomArray, &cg));
+
+            // Get pointers to the area of interest
+            PetscScalar *solPt, *auxPt = nullptr;
+            PetscCall(DMPlexPointLocalRef(dm, stencilInfo.cellId, locXArray, &solPt));
+            if (auxDM) {
+                PetscCall(DMPlexPointLocalRef(auxDM, stencilInfo.cellId, locAuxArray, &auxPt));
+            }
+
+            // Get each of the stencil pts
+            for (PetscInt p = 0; p < stencilInfo.stencilSize; p++) {
+                PetscCall(DMPlexPointLocalRead(dm, stencilInfo.stencil[p], locXArray, &inputStencilValues[p]));
+                if (auxDM) {
+                    PetscCall(DMPlexPointLocalRead(auxDM, stencilInfo.stencil[p], locAuxArray, &auxStencilValues[p]));
+                }
+            }
+
+            PetscCall(boundaryPreRhsPointFunction.function(time,
+                                                           dt,
+                                                           dim,
+                                                           &stencilInfo.geometry,
+                                                           cg,
+                                                           inputOffsetsPointer,
+                                                           solPt,
+                                                           inputStencilValues.data(),
+                                                           auxOffsetsPointer,
+                                                           auxPt,
+                                                           auxStencilValues.data(),
+                                                           stencilInfo.stencilSize,
+                                                           stencilInfo.stencil.data(),
+                                                           stencilInfo.gradientWeights.data(),
+                                                           boundaryPreRhsPointFunction.context));
+        }
+
+        // clean up access
+        PetscCall(VecRestoreArray(locXVec, &locXArray));
+        if (auto locAuxVec = subDomain->GetAuxVector()) {
+            PetscCall(VecRestoreArray(locAuxVec, &locAuxArray));
+        }
+
+        // clean up the geom
+        PetscCall(VecRestoreArrayRead(cellGeomVec, &cellGeomArray));
+    }
+
+    PetscFunctionReturn(0);
+}
+
+ablate::io::Serializable::SerializerType ablate::boundarySolver::BoundarySolver::Serialize() const { return DetermineSerializerType(boundaryProcesses); }
+
+PetscErrorCode ablate::boundarySolver::BoundarySolver::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBeginUser;
+    for (auto& process : boundaryProcesses) {
+        if (auto serializablePtr = std::dynamic_pointer_cast<ablate::io::Serializable>(process)) {
+            if (serializablePtr->Serialize() != io::Serializable::SerializerType::none) {
+                PetscCall(serializablePtr->Save(viewer, sequenceNumber, time));
+            }
+        }
+    }
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::boundarySolver::BoundarySolver::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBeginUser;
+    for (auto& process : boundaryProcesses) {
+        if (auto serializablePtr = std::dynamic_pointer_cast<ablate::io::Serializable>(process)) {
+            if (serializablePtr->Serialize() != io::Serializable::SerializerType::none) {
+                PetscCall(serializablePtr->Restore(viewer, sequenceNumber, time));
+            }
+        }
+    }
+    PetscFunctionReturn(0);
+}
+
 std::istream& ablate::boundarySolver::operator>>(std::istream& is, ablate::boundarySolver::BoundarySolver::BoundarySourceType& value) {
     std::string typeString;
     is >> typeString;

@@ -1,0 +1,58 @@
+Checking convergence after 10 steps.
+	VariableChange temperature error: (.*)<expects> <3000
+	Solution not converged after 10 steps.
+Checking convergence after 20 steps.
+	VariableChange temperature error: (.*)<expects> <500
+	Solution not converged after 20 steps.
+Checking convergence after 30 steps.
+	VariableChange temperature error: (.*)<expects> <300
+	Solution not converged after 30 steps.
+Checking convergence after 40 steps.
+	VariableChange temperature converged to (.*)<expects> <200
+	Convergence reached after 40 steps.
+ResultFiles:
+domain
+domain.00000.hdf5
+domain.00001.hdf5
+domain.00002.hdf5
+domain.00003.hdf5
+domain.00004.hdf5
+domain.00005.hdf5
+domain.00006.hdf5
+domain.00007.hdf5
+domain.00008.hdf5
+domain.00009.hdf5
+domain.00010.hdf5
+domain.00011.hdf5
+domain.00012.hdf5
+domain.00013.hdf5
+domain.00014.hdf5
+domain.00015.hdf5
+domain.00016.hdf5
+domain.00017.hdf5
+domain.00018.hdf5
+domain.00019.hdf5
+domain.00020.hdf5
+domain.00021.hdf5
+domain.00022.hdf5
+domain.00023.hdf5
+domain.00024.hdf5
+domain.00025.hdf5
+domain.00026.hdf5
+domain.00027.hdf5
+domain.00028.hdf5
+domain.00029.hdf5
+domain.00030.hdf5
+domain.00031.hdf5
+domain.00032.hdf5
+domain.00033.hdf5
+domain.00034.hdf5
+domain.00035.hdf5
+domain.00036.hdf5
+domain.00037.hdf5
+domain.00038.hdf5
+domain.00039.hdf5
+domain.00040.hdf5
+domain.xmf
+restart.bak
+restart.rst

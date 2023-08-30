@@ -1,21 +1,15 @@
 #include "riemannStiff.hpp"
 #include <eos/perfectGas.hpp>
 #include <eos/stiffenedGas.hpp>
-#include "riemannCommon.hpp"
-#include <signal.h>
 
-ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::RiemannStiff::RiemannStiffFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
-                                                                                                                             PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
-                                                                                                                             PetscReal *massFlux,
+using namespace ablate::finiteVolume::fluxCalculator;
 
-                                                                                                                             PetscReal *p12) {
+Direction RiemannStiff::RiemannStiffFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal *massFlux,
+
+                                                 PetscReal *p12) {
     /*
      * gammaL: specific heat ratio for gas on left (pass in from EOS)
-     * gamLm1 = gammaL - 1
-     * gamLp1 = gammaL + 1
      * gammaR: specific heat ratio for stiffened gas on right (pass in from EOS)
-     * gamRm1 = gammaR - 1
-     * gamRp1 = gammaR + 1
      * p0L: reference pressure for stiffened gas on left (pass in from EOS)
      * p0R: reference pressure for stiffened gas on right (pass in from EOS)
      * uL: velocity on the left cell center
@@ -27,13 +21,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
      * aR: SoS on the right center cell
      * aL: SoS on the left center cell
      * pstar: pressure across contact surface
-     * ustar: velocity across contact surface
-     * rhostarR: density on the right of the contact surface
-     * whostarL: density on the left of the contact surface
-     * err: final residual for iteration
-     * MAXIT: maximum iteration times
      */
-
 
     auto gammaVec = (PetscReal *)ctx;  // pass-in specific heat ratio from EOS_Left
     // This is where Riemann solver lives.
@@ -43,12 +31,13 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     PetscReal p0R = gammaVec[3];
 
     // Here is the initial guess for pstar - average of left and right pressures
-    PetscReal pstar =  0.5 * (pR + pL);
+    PetscReal pstar = 0.5 * (pR + pL);
 
-    return reimannSolver(uL, aL, rhoL, p0L, pL, gammaL, uR, aR, rhoR, p0R, pR, gammaR, pstar, massFlux, p12);
+    Direction dir = riemannSolver(uL, aL, rhoL, p0L, pL, gammaL, uR, aR, rhoR, p0R, pR, gammaR, pstar, massFlux, p12);
 
+    return dir;
 }
-ablate::finiteVolume::fluxCalculator::RiemannStiff::RiemannStiff(std::shared_ptr<eos::EOS> eosL, std::shared_ptr<eos::EOS> eosR) {
+RiemannStiff::RiemannStiff(std::shared_ptr<eos::EOS> eosL, std::shared_ptr<eos::EOS> eosR) {
     auto perfectGasEosL = std::dynamic_pointer_cast<eos::PerfectGas>(eosL);
     auto perfectGasEosR = std::dynamic_pointer_cast<eos::PerfectGas>(eosR);
     auto stiffenedGasEosL = std::dynamic_pointer_cast<eos::StiffenedGas>(eosL);

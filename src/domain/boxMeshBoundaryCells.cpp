@@ -8,16 +8,28 @@
 #include "mathFunctions/geom/box.hpp"
 #include "utilities/petscUtilities.hpp"
 
-ablate::domain::BoxMeshBoundaryCells::BoxMeshBoundaryCells(const std::string& name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors,
+ablate::domain::BoxMeshBoundaryCells::BoxMeshBoundaryCells(const std::string& name, const std::vector<std::shared_ptr<FieldDescriptor>>& fieldDescriptors,
                                                            std::vector<std::shared_ptr<modifiers::Modifier>> preModifiers, std::vector<std::shared_ptr<modifiers::Modifier>> postModifiers,
                                                            std::vector<int> faces, const std::vector<double>& lower, const std::vector<double>& upper, bool simplex,
-                                                           std::shared_ptr<parameters::Parameters> options)
-    : Domain(CreateBoxDM(name, std::move(faces), lower, upper, simplex), name, std::move(fieldDescriptors), AddBoundaryModifiers(lower, upper, std::move(preModifiers), std::move(postModifiers)),
-             std::move(options)) {
+                                                           const std::shared_ptr<parameters::Parameters>& options)
+    : Domain(CreateBoxDM(name, std::move(faces), lower, upper, simplex), name, fieldDescriptors,
+             // We need to get the optional dm_plex_scale to determine bounds
+             AddBoundaryModifiers(lower, upper, options ? options->Get("dm_plex_scale", 1.0) : 1.0, std::move(preModifiers), std::move(postModifiers)), options) {
     // make sure that dm_refine was not set
     if (options) {
         if (options->Get("dm_refine", 0) != 0) {
             throw std::invalid_argument("dm_refine when used with ablate::domain::BoxMeshBoundaryCells must be 0.");
+        }
+    }
+
+    // make sure that all fields have a region if we might have unused corners (dim > 1)
+    if (GetDimensions() > 1) {
+        for (const auto& fieldDescriptor : fieldDescriptors) {
+            for (auto& fieldDescription : fieldDescriptor->GetFields()) {
+                if (fieldDescription->region == nullptr) {
+                    throw std::invalid_argument("All fields in ablate::domain::BoxMeshBoundaryCells::BoxMeshBoundaryCells should specify a region.");
+                }
+            }
         }
     }
 }
@@ -59,9 +71,17 @@ DM ablate::domain::BoxMeshBoundaryCells::CreateBoxDM(const std::string& name, st
     PetscObjectSetName((PetscObject)dm, name.c_str()) >> utilities::PetscUtilities::checkError;
     return dm;
 }
-std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>> ablate::domain::BoxMeshBoundaryCells::AddBoundaryModifiers(std::vector<double> lower, std::vector<double> upper,
+std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>> ablate::domain::BoxMeshBoundaryCells::AddBoundaryModifiers(std::vector<double> lower, std::vector<double> upper, double scaleFactor,
                                                                                                                              std::vector<std::shared_ptr<modifiers::Modifier>> preModifiers,
                                                                                                                              std::vector<std::shared_ptr<modifiers::Modifier>> postModifiers) {
+    // scale the bounds by the scale factor incase petsc scaled them
+    for (auto& pt : lower) {
+        pt *= scaleFactor;
+    }
+    for (auto& pt : upper) {
+        pt *= scaleFactor;
+    }
+
     auto modifiers = std::move(preModifiers);
     auto interiorLabel = std::make_shared<domain::Region>(interiorCellsLabel);
     auto boundaryFaceRegion = std::make_shared<domain::Region>(boundaryFacesLabel);

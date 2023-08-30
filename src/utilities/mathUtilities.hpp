@@ -169,7 +169,7 @@ class MathUtilities {
      * @param c
      */
     template <int dim, class T>
-    static inline void CrossVector(const T* a, const T* b, T* c) {
+    static inline void CrossVector([[maybe_unused]] const T* a, [[maybe_unused]] const T* b, T* c) {
         if constexpr (dim == 3) {
             c[0] = (a[1] * b[2] - b[1] * a[2]);
             c[1] = (b[0] * a[2] - a[0] * b[2]);
@@ -266,8 +266,38 @@ class MathUtilities {
      */
     static PetscReal ComputeDeterminant(PetscInt dim, PetscScalar transformationMatrix[3][3]);
 
+    /**
+     * Enum types for the compute norm function
+     */
+    enum class Norm { L1, L1_NORM, L2, LINF, L2_NORM };
+
+    /**
+     * Computes the specified norm between x and y.  Note that y is used for scratch space and may be override
+     * @param normType
+     * @param x
+     * @param y
+     * @param norm, the norm must be the same size as the block size of x/y
+     * @return
+     */
+    static PetscErrorCode ComputeNorm(Norm normType, Vec x, Vec y, PetscReal norm[]);
+
     MathUtilities() = delete;
 };
+
+/**
+ * Support function for the Scope Enum
+ * @param os
+ * @param v
+ * @return
+ */
+std::ostream& operator<<(std::ostream& os, const MathUtilities::Norm& v);
+/**
+ * Support function for the Scope Enum
+ * @param os
+ * @param v
+ * @return
+ */
+std::istream& operator>>(std::istream& is, MathUtilities::Norm& v);
 
 }  // namespace ablate::utilities
 

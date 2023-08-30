@@ -6,8 +6,7 @@ target_sources(ablateLibrary
         ausmpUp.cpp
         riemann.cpp
         riemann2Gas.cpp
-        riemannCommon.hpp
-        riemannCommon.cpp
+        riemannSolver.cpp
         riemannStiff.cpp
 
         PUBLIC
@@ -18,5 +17,6 @@ target_sources(ablateLibrary
         ausmpUp.hpp
         riemann.hpp
         riemann2Gas.hpp
+        riemannSolver.hpp
         riemannStiff.hpp
         )

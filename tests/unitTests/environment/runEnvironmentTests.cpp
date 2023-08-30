@@ -255,4 +255,18 @@ TEST(RunEnvironmentTest, ShouldProvideDefaultEnvironment) {
     // cleanup
     std::cout << runEnvironment.GetOutputDirectory() << std::endl;
 }
+
+TEST(RunEnvironmentTest, ShouldReturnCorrectParameterFromRunEnvironmentParameters) {
+    // arrange/act
+    // create a new RunEnvironmentParameters and set the expected values
+    auto parameters1 = ablate::environment::RunEnvironment::Parameters().TagDirectory(false).OutputDirectory("/path/to/output/directory");
+    auto parameters2 = ablate::environment::RunEnvironment::Parameters().TagDirectory(true).Title("test123");
+
+    // assert
+    ASSERT_EQ(parameters1.GetExpect<std::filesystem::path>("directory"), "/path/to/output/directory");
+    ASSERT_EQ(parameters1.GetExpect<bool>("tagDirectory"), false);
+    ASSERT_EQ(parameters2.GetExpect<bool>("tagDirectory"), true);
+    ASSERT_EQ(parameters2.GetExpect<std::string>("title"), "test123");
+}
+
 }  // namespace ablateTesting::monitors

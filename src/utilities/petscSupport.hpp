@@ -38,6 +38,15 @@ PetscErrorCode DMPlexFindCell(DM dm, const PetscScalar *xyz, PetscReal eps, Pets
 
 
 /**
+ * Return the cell with a given cell center
+ * @param dm - The mesh
+ * @param xyz - Cell center to fine
+ * @param eps - Tolerance to utilize when searching for cells
+ * @param cell - Cell containing the location. It will return -1 if xyz is not in the local portion of the DM.
+ */
+PetscErrorCode DMPlexFindCell(DM dm, const PetscScalar *xyz, PetscReal eps, PetscInt *cell);
+
+/**
  * Get the number of vertices for a given cell
  * @param dm - The mesh
  * @param p - Vertex ID
@@ -128,6 +137,8 @@ PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, Petsc
 PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]);
 
 
+
+
 /**
  * Returns all DMPlex points at a given depth which are common between two DMPlex points. For example, if p1 is a cell and p2 is a vertex on the cell with depth=1 this will
  *   return the edges common to both p1 and p2
@@ -144,9 +155,9 @@ PetscErrorCode DMPlexRestoreCommonPoints(DM dm, const PetscInt p1, const PetscIn
 /**
  * Return all values in sorted array a that are NOT in sorted array b. This is done in-place on array a.
  * Inputs:
- *    na - Size of sorted array b[]
+ *    na - Size of sorted array a[]
  *    a - Array of integers
- *    nb - Size of sorted array a[]
+ *    nb - Size of sorted array b[]
  *    b - Array or integers
  *
  * Outputs:

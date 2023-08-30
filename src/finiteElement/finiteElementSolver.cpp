@@ -5,6 +5,26 @@
 #include <petscfv.h>
 #include "utilities/petscUtilities.hpp"
 
+PetscErrorCode ISIntersect_Caching_Internal(IS is1, IS is2, IS *isect) {
+    PetscFunctionBegin;
+    *isect = NULL;
+    if (is2 && is1) {
+        char composeStr[33] = {0};
+        PetscObjectId is2id;
+
+        PetscCall(PetscObjectGetId((PetscObject)is2, &is2id));
+        PetscCall(PetscSNPrintf(composeStr, 32, "ISIntersect_Caching_%" PetscInt64_FMT, is2id));
+        PetscCall(PetscObjectQuery((PetscObject)is1, composeStr, (PetscObject *)isect));
+        if (*isect == NULL) {
+            PetscCall(ISIntersect(is1, is2, isect));
+            PetscCall(PetscObjectCompose((PetscObject)is1, composeStr, (PetscObject)*isect));
+        } else {
+            PetscCall(PetscObjectReference((PetscObject)*isect));
+        }
+    }
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
 ablate::finiteElement::FiniteElementSolver::FiniteElementSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields)
