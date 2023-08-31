@@ -28,7 +28,7 @@ PetscErrorCode DMPlexGetContainingCell(DM dm, const PetscScalar *xyz, PetscInt *
 
     PetscCall(VecCreateSeqWithArray(PETSC_COMM_SELF, dim, dim, xyz, &pointVec));
 
-    PetscCall(DMLocatePoints(dm, pointVec, DM_POINTLOCATION_NEAREST, &cellSF));
+    PetscCall(DMLocatePoints(dm, pointVec, DM_POINTLOCATION_NONE, &cellSF));
 
     PetscCall(PetscSFGetGraph(cellSF, NULL, &numFound, &foundPoints, &foundCells));
 
