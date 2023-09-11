@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "runners/integrationTest.hpp"
 #include "mpiTestEventListener.hpp"
 #include "mpiTestFixture.hpp"
+#include "runners/integrationTest.hpp"
 
 /**
  * Build the list of test parameters from the provided lambda
@@ -25,13 +25,15 @@ int main(int argc, char** argv) {
 
                 // Register the test
                 integrationTest->RegisterTest(entry);
-            }
-
-            if (parser->Contains("tests")) {
-                auto integrationTest = parser->GetByName<IntegrationTestFixture>("test");
+            } else if (parser->Contains("tests")) {
+                auto integrationTests = parser->GetByName<std::vector<IntegrationTestFixture>>("tests");
 
                 // Register the test
-                integrationTest->RegisterTest(entry);
+                for (auto& integrationTest : integrationTests) {
+                    integrationTest->RegisterTest(entry);
+                }
+            } else if(!parser->GetByName<bool>("testingIgnore", false)){
+                throw std::invalid_argument("An input file " + entry.path().string() + "in integration tests does not contain test parameters.");
             }
         }
     }
