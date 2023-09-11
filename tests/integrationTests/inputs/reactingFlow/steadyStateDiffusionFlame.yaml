@@ -1,6 +1,12 @@
 # This example will run a diffusion flame until the solution reaches quasi steady state as
 # defined by the criteria list given to the time stepper
 ---
+test:
+  # a unique test name for this integration tests
+  name: steadyStateDiffusionFlame
+  # create a default assert that compares the log file
+  assert: "inputs/reactingFlow/steadyStateDiffusionFlame.txt"
+
 environment:
   title: _steadyStateDiffusionFlame
   tagDirectory: false

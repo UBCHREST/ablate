@@ -1,4 +1,10 @@
 ---
+test:
+  # a unique test name for this integration tests
+  name: twoPhaseCouetteFlow
+  # create a default assert that compares the log file
+  assert: "inputs/volumeOfFluids/twoPhaseCouetteFlow.txt"
+
 environment:
   title: mixedTransport
   tagDirectory: true

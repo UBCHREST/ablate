@@ -1,4 +1,10 @@
 ---
+test:
+  # a unique test name for this integration tests
+  name: waterGravity
+  # create a default assert that compares the log file
+  assert: "inputs/volumeOfFluids/waterGravity.txt"
+
 environment:
   title: WaterWG_50
   tagDirectory: true

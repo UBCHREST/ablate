@@ -1,4 +1,4 @@
-#ifndef ABLATELIBRARY_RUNNERS_HPP
+#ifndef ABLATELIBRARY_INTEGRATIONTEST_HPP
 #define ABLATELIBRARY_RUNNERS_HPP
 
 #include <filesystem>
@@ -16,4 +16,4 @@
  */
 class RegressionTestsSpecifier : public testingResources::MpiTestParamFixture {};
 
-#endif  // ABLATELIBRARY_RUNNERS_HPP
+#endif  // ABLATELIBRARY_INTEGRATIONTEST_HPP

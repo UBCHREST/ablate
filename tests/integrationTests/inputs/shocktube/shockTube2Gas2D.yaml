@@ -1,4 +1,10 @@
 ---
+test:
+  # a unique test name for this integration tests
+  name: shockTube2Gas2D
+  # create a default assert that compares the log file
+  assert: "inputs/shocktube/shockTube2Gas2D.txt"
+
 environment:
   title: SOD_2Gas_6x6_ArAir
   tagDirectory: true

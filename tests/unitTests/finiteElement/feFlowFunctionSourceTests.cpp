@@ -7,6 +7,7 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 #include <cmath>
 #include <memory>
 #include <vector>
+#include "asserts/stdOutAssert.hpp"
 #include "domain/boxMesh.hpp"
 #include "environment/runEnvironment.hpp"
 #include "finiteElement/boundaryConditions/essential.hpp"
@@ -632,7 +633,7 @@ INSTANTIATE_TEST_SUITE_P(
                                   "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
                                   "-dmts_check -1 -snes_linesearch_type basic "
                                   "-gravityDirection 1",
-                                  "outputs/finiteElement/lowMach_2d_tri_p3_p2_p2"),
+                                  std::make_shared<testingResources::asserts::StdOutAssert>("outputs/finiteElement/lowMach_2d_tri_p3_p2_p2")),
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                                       return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
@@ -657,7 +658,7 @@ INSTANTIATE_TEST_SUITE_P(
                                   "-gravityDirection 1 "
                                   "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
                                   "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 ",
-                                  "outputs/finiteElement/lowMach_2d_tri_p3_p2_p2_real_coefficients"),
+                                  std::make_shared<testingResources::asserts::StdOutAssert>("outputs/finiteElement/lowMach_2d_tri_p3_p2_p2_real_coefficients")),
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                                       return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
@@ -680,7 +681,7 @@ INSTANTIATE_TEST_SUITE_P(
                                   "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
                                   "-dmts_check -1 -snes_linesearch_type basic "
                                   "-gravityDirection 1 ",
-                                  "outputs/finiteElement/lowMach_2d_cubic_tri_p3_p2_p2"),
+                                  std::make_shared<testingResources::asserts::StdOutAssert>("outputs/finiteElement/lowMach_2d_cubic_tri_p3_p2_p2")),
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                                       return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
@@ -705,7 +706,7 @@ INSTANTIATE_TEST_SUITE_P(
                                   "-gravityDirection 1 "
                                   "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
                                   "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 ",
-                                  "outputs/finiteElement/lowMach_2d_cubic_tri_p3_p2_p2_real_coefficients"),
+                                  std::make_shared<testingResources::asserts::StdOutAssert>("outputs/finiteElement/lowMach_2d_cubic_tri_p3_p2_p2_real_coefficients")),
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                                       return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
@@ -727,7 +728,7 @@ INSTANTIATE_TEST_SUITE_P(
                                   "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                   "-fieldsplit_0_pc_type lu "
                                   "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi",
-                                  "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1"),
+                                  std::make_shared<testingResources::asserts::StdOutAssert>("outputs/finiteElement/incompressible_2d_tri_p2_p1_p1")),
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                                       return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
@@ -751,7 +752,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                    "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                                    "-fieldsplit_0_pc_type lu "
                                                    "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi",
-                                                   "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1_nproc4"),
+                                                   std::make_shared<testingResources::asserts::StdOutAssert>("outputs/finiteElement/incompressible_2d_tri_p2_p1_p1_nproc4")),
             .createMethod =
                 [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
@@ -775,7 +776,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                    "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                                    "-fieldsplit_0_pc_type lu "
                                                    "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi",
-                                                   "outputs/finiteElement/incompressible_2d_cubic_trig_tri_p2_p1_p1_tconv"),
+                                                   std::make_shared<testingResources::asserts::StdOutAssert>("outputs/finiteElement/incompressible_2d_cubic_trig_tri_p2_p1_p1_tconv")),
             .createMethod =
                 [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
@@ -798,7 +799,7 @@ INSTANTIATE_TEST_SUITE_P(
                                   "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                   "-fieldsplit_0_pc_type lu "
                                   "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi",
-                                  "outputs/finiteElement/incompressible_2d_tri_p3_p2_p2"),
+                                  std::make_shared<testingResources::asserts::StdOutAssert>("outputs/finiteElement/incompressible_2d_tri_p3_p2_p2")),
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                                       return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
@@ -823,7 +824,7 @@ INSTANTIATE_TEST_SUITE_P(
                                   "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
                                   "-strouhal 0.00242007695844728 -reynolds 23126.2780617827  -peclet 16373.1785965753 "
                                   "-mu 1.1 -k 1.2 -cp 1.3 ",
-                                  "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1_real_coefficients"),
+                                  std::make_shared<testingResources::asserts::StdOutAssert>("outputs/finiteElement/incompressible_2d_tri_p2_p1_p1_real_coefficients")),
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                                       return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
@@ -849,7 +850,7 @@ INSTANTIATE_TEST_SUITE_P(
                                   "-fieldsplit_pressure_ksp_rtol 1e-10  -fieldsplit_pressure_ksp_atol 1E-12 -fieldsplit_pressure_pc_type jacobi "
                                   "-strouhal 0.0024 -reynolds 23126.27 -peclet 16373.178 "
                                   "-mu 1.1 -k 1.2 -cp 1.3 ",
-                                  "outputs/finiteElement/incompressible_2d_tri_p3_p2_p2_real_coefficients"),
+                                  std::make_shared<testingResources::asserts::StdOutAssert>("outputs/finiteElement/incompressible_2d_tri_p3_p2_p2_real_coefficients")),
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                                       return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(

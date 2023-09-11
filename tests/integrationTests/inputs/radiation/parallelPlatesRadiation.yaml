@@ -21,6 +21,11 @@
 #$$-1.179E7 y^2 + 2000.0 [K]$$
 #
 ---
+test:
+  # a unique test name for this integration tests
+  name: parallelPlatesRadiation
+  # create a default assert that compares the log file
+  assert: "inputs/radiation/parallelPlatesOutput.txt"
 
 environment:
   title: _rad

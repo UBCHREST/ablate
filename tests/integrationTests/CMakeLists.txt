@@ -3,7 +3,7 @@ target_link_libraries(integrationTests PUBLIC GTest::gtest ablateLibrary testing
 
 target_sources(integrationTests
         PRIVATE
-        tests.cpp
+        main.cpp
         )
 
 add_subdirectory(runners)

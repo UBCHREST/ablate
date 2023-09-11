@@ -1,5 +1,16 @@
 #Tests whether the TurbFlowStats monitor outputs
 ---
+test:
+  # a unique test name for this integration tests
+  name: turbFlowStatsMonitor
+  asserts:
+    - !testingResources::asserts::TextFileAssert
+      expected: "inputs/monitors/turbFlowStatsMonitor/flowField_turbulenceFlowStats.xmf"
+      actual: "flowField_turbulenceFlowStats.xmf"
+    - !testingResources::asserts::TextFileAssert
+      expected: "inputs/monitors/turbFlowStatsMonitor/domain.xmf"
+      actual: "domain.xmf"
+
 environment:
   title: turbFlowStatsMonitor
   tagDirectory: false

@@ -1,5 +1,16 @@
 # This test sets up a simple boundary monitor with known values to test machinery
 ---
+test:
+  # a unique test name for this integration tests
+  name: boundaryMonitorTest2D
+  ranks: 2
+  asserts:
+    # create a default assert that compares the log file
+    - "inputs/machinery/boundaryMonitorTest2D/boundaryMonitorTest2D.txt"
+    - !testingResources::asserts::TextFileAssert
+      expected: "inputs/machinery/boundaryMonitorTest2D/bottomBoundary_monitor.xmf"
+      actual: "bottomBoundary_monitor.xmf"
+
 # metadata for the simulation
 environment:
   title: _boundaryMonitorTest2D

@@ -1,4 +1,5 @@
 #include <petsc.h>
+#include "asserts/stdOutAssert.hpp"
 #include "domain/boxMesh.hpp"
 #include "environment/runEnvironment.hpp"
 #include "finiteElement/boundaryConditions/essential.hpp"
@@ -324,7 +325,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                                                  "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit  "
                                                                                                  " -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                                                                                  "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 ",
-                                                                                                 "outputs/particles/inertialParticle_settling_in_quiescent_fluid_single"),
+                                                                                                 std::make_shared<testingResources::asserts::StdOutAssert>("outputs/particles/inertialParticle_settling_in_quiescent_fluid_single")),
                                           .uExact = quiescent_u,
                                           .pExact = quiescent_p,
                                           .TExact = quiescent_T,
@@ -344,7 +345,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                                                  "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit  "
                                                                                                  " -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                                                                                  "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 ",
-                                                                                                 "outputs/particles/inertialParticle_settling_in_quiescent_fluid_multi"),
+                                                                                                 std::make_shared<testingResources::asserts::StdOutAssert>("outputs/particles/inertialParticle_settling_in_quiescent_fluid_multi")),
                                           .uExact = quiescent_u,
                                           .pExact = quiescent_p,
                                           .TExact = quiescent_T,
@@ -364,7 +365,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                                                  "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit  "
                                                                                                  " -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                                                                                  "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 ",
-                                                                                                 "outputs/particles/inertialParticles_settling_in_quiescent_fluid_deletion"),
+                                                                                                 std::make_shared<testingResources::asserts::StdOutAssert>("outputs/particles/inertialParticles_settling_in_quiescent_fluid_deletion")),
                                           .uExact = quiescent_u,
                                           .pExact = quiescent_p,
                                           .TExact = quiescent_T,

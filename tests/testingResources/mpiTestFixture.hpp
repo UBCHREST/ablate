@@ -29,29 +29,39 @@ struct MpiTestParameter {
     std::vector<std::shared_ptr<asserts::Assert>> asserts;
 
     /**
-     * Constructor for the mpi test parameters
+     * base constructor that takes a single assert or list
      * @param testName
      * @param nproc
      * @param arguments
      * @param environment, optional environment flags
      */
-    explicit MpiTestParameter(std::string testName = "", int nprocIn = 1, std::string arguments = "", std::string environment = {}, std::vector<std::shared_ptr<asserts::Assert>> asserts = {})
-        : testName(std::move(testName)), nproc(nprocIn > 0 ? nprocIn : 1), arguments(std::move(arguments)), environment(std::move(environment)), asserts(std::move(asserts)) {}
-
-    /**
-     * helper constructor that takes a single assert or list
-     * @param testName
-     * @param nproc
-     * @param arguments
-     * @param environment, optional environment flags
-     */
-    explicit MpiTestParameter(std::string testName, int nprocIn, std::string arguments , std::string environment, std::shared_ptr<asserts::Assert> assert,
+    explicit MpiTestParameter(std::string testName, int nprocIn, std::string arguments, std::string environment, std::shared_ptr<asserts::Assert> assert,
                               const std::vector<std::shared_ptr<asserts::Assert>>& assertsIn)
         : testName(std::move(testName)),
           nproc(nprocIn > 0 ? nprocIn : 1),
           arguments(std::move(arguments)),
           environment(std::move(environment)),
           asserts(assert ? ablate::utilities::VectorUtilities::Merge({assert}, assertsIn) : assertsIn) {}
+
+    /**
+     * helper constructor for the mpi test parameters that takes a single of assert
+     * @param testName
+     * @param nproc
+     * @param arguments
+     * @param environment, optional environment flags
+     */
+    explicit MpiTestParameter(std::string testName, int nprocIn, std::string arguments, std::shared_ptr<asserts::Assert> assert, std::string environment = {})
+        : testName(std::move(testName)), nproc(nprocIn > 0 ? nprocIn : 1), arguments(std::move(arguments)), environment(std::move(environment)), asserts({assert}) {}
+
+    /**
+     * helper constructor for the mpi test parameters that takes a list of asserts
+     * @param testName
+     * @param nproc
+     * @param arguments
+     * @param environment, optional environment flags
+     */
+    explicit MpiTestParameter(std::string testName = "", int nprocIn = 1, std::string arguments = "", std::vector<std::shared_ptr<asserts::Assert>> asserts = {}, std::string environment = {})
+        : testName(std::move(testName)), nproc(nprocIn > 0 ? nprocIn : 1), arguments(std::move(arguments)), environment(std::move(environment)), asserts(std::move(asserts)) {}
 
     // A sanitized version of the test name
     [[nodiscard]] std::string getTestName() const {
@@ -187,7 +197,6 @@ class MpiTestFixture : public ::testing::Test {
      * @return
      */
     [[nodiscard]] std::filesystem::path ResultDirectory() const { return std::filesystem::current_path() / mpiTestParameter.getTestName(); }
-
 };
 
 // Define macros to simplify the setup and running of mpi based code

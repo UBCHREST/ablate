@@ -1,6 +1,11 @@
 #### Description
 #A test of the rocket monitor output (thrust, specific impulse) using a simple 2d 5x20 plane of cells
 ---
+test:
+  # a unique test name for this integration tests
+  name: rocketMonitor
+  # create a default assert that compares the log file
+  assert: "inputs/monitors/rocketMonitor.txt"
 
 environment:
   title: rocketMonitor

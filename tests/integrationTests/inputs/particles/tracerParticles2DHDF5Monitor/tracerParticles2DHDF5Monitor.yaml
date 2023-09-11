@@ -1,4 +1,20 @@
 ---
+test:
+  # a unique test name for this integration tests
+  name: tracerParticles2DHDF5Monitor
+  # the number of ranks to run with mpi
+  ranks: 2
+  # create a list of asserts to compare
+  asserts:
+    # create a default assert that compares the log file
+    - "inputs/particles/tracerParticles2DHDF5Monitor/tracerParticles2DHDF5Monitor.txt"
+    - !testingResources::asserts::TextFileAssert
+      expected: "inputs/particles/tracerParticles2DHDF5Monitor/flowTracerParticles.xmf"
+      actual: "flowTracerParticles.xmf"
+    - !testingResources::asserts::TextFileAssert
+      expected: "inputs/particles/tracerParticles2DHDF5Monitor/domain.xmf"
+      actual: "domain.xmf"
+
 # example incompressible flow with tracer particles and hdf5 output
 environment:
   title: _2DTracerParticles

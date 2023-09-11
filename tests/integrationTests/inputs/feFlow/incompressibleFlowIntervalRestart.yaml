@@ -1,5 +1,19 @@
 # Example setup for incompressible flow that uses a finite volume solver and checks for simulation restart using output at a specified interval with an offset number of max steps.
 ---
+test: !IntegrationRestartTest
+  # specify the basic test parameters for restart test
+  testParameters:
+    # a unique test name for this integration tests
+    name: incompressibleFlowRestart
+    asserts:
+      - "inputs/feFlow/incompressibleFlowRestart.txt"
+      - !testingResources::asserts::TextFileAssert
+        expected: "inputs/feFlow/incompressibleFlowRestartProbe.csv"
+        actual: "incompressibleFlowRestartProbe.csv"
+  # upon restart, override some of the input parameters
+  restartOverrides:
+    timestepper::arguments::ts_max_steps: "30"
+
 environment:
   title: _incompressibleFlowInterval
   tagDirectory: true

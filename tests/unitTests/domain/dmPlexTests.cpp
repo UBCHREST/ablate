@@ -1,5 +1,4 @@
 #include <petsc.h>
-#include <cmath>
 #include <memory>
 #include "domain/dmPlex.hpp"
 #include "environment/runEnvironment.hpp"
@@ -7,6 +6,7 @@
 #include "mpiTestFixture.hpp"
 #include "petscTestErrorChecker.hpp"
 #include "utilities/petscUtilities.hpp"
+#include "asserts/stdOutAssert.hpp"
 
 using namespace ablate;
 
@@ -44,6 +44,6 @@ TEST_P(DMPlexTestFixture, ShouldCreateAndViewDMPlex) {
 }
 
 INSTANTIATE_TEST_SUITE_P(MeshTests, DMPlexTestFixture,
-                         testing::Values((DMPlexParameters){.mpiTestParameter = testingResources::MpiTestParameter("default DMPlex", 1, "", "outputs/domain/dmPlex_NoArguments"),
+                         testing::Values((DMPlexParameters){.mpiTestParameter = testingResources::MpiTestParameter("default DMPlex", 1, "", std::make_shared<testingResources::asserts::StdOutAssert>("outputs/domain/dmPlex_NoArguments")),
                                                             .parameters = nullptr}),
                          [](const testing::TestParamInfo<DMPlexParameters> &info) { return info.param.mpiTestParameter.getTestName(); });

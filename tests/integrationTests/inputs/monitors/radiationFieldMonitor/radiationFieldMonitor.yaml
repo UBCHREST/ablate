@@ -1,6 +1,16 @@
 #### Description
 #A test of the radiation field monitor output (intensity, absorption) using a simple 2d 5x20 plane of cells
 ---
+test:
+  # a unique test name for this integration tests
+  name: radiationFieldMonitor
+  asserts:
+    - !testingResources::asserts::TextFileAssert
+      expected: "inputs/monitors/radiationFieldMonitor/radiationFieldMonitor.xmf"
+      actual: "radiationFieldMonitor.xmf"
+    - !testingResources::asserts::TextFileAssert
+      expected: "inputs/monitors/radiationFieldMonitor/domain.xmf"
+      actual: "domain.xmf"
 
 environment:
   title: radiationFieldMonitor
@@ -49,7 +59,7 @@ timestepper:
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: !ablate::eos::TChem  &eos
-          mechFile: ../mechanisms/gri30.yml
+          mechFile: ../../mechanisms/gri30.yml
           options:
             # set a minimum temperature for the chemical kinetics ode integration
             thresholdTemperature: 560

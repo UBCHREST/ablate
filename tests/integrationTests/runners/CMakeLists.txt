@@ -1,6 +1,9 @@
 target_sources(integrationTests
         PRIVATE
-        main.cpp
-        runners.hpp
-        runners.cpp
+        integrationTest.cpp
+        integrationRestartTest.cpp
+
+        PUBLIC
+        integrationTest.hpp
+        integrationRestartTest.hpp
         )

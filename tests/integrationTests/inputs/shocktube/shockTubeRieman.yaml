@@ -1,4 +1,10 @@
 ---
+test:
+  # a unique test name for this integration tests
+  name: shockTubeRieman
+  # create a default assert that compares the log file
+  assert: "inputs/shocktube/shockTubeRieman.txt"
+
 environment:
   title: SOD_Problem
   tagDirectory: false
