@@ -10,6 +10,6 @@ class Assert {
    public:
     virtual ~Assert() = default;
 };
-}
+}  // namespace testingResources::asserts
 
 #endif  // TESTING_RESOURCE_ASSERT

@@ -1,7 +1,7 @@
 #ifndef TESTING_RESOURCE_FILEASSERT
 #define TESTING_RESOURCE_FILEASSERT
-#include <memory>
 #include <filesystem>
+#include <memory>
 namespace testingResources::asserts {
 
 /**
@@ -14,7 +14,7 @@ class FileAssert {
      * @param expectedFileName
      * @param actualFileName
      */
-    static void CompareFile(const  std::filesystem::path& expectedFileName, const std::filesystem::path& actualFileName);
+    static void CompareFile(const std::filesystem::path& expectedFileName, const std::filesystem::path& actualFileName);
 };
 
 }  // namespace testingResources::asserts

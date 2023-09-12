@@ -14,8 +14,6 @@ void testingResources::asserts::TextFileAssert::Test(testingResources::MpiTestFi
 }
 
 #include "registrar.hpp"
-REGISTER(testingResources::asserts::Assert, testingResources::asserts::TextFileAssert,
-         "Compares the expected and actual text files",
+REGISTER(testingResources::asserts::Assert, testingResources::asserts::TextFileAssert, "Compares the expected and actual text files",
          ARG(std::string, "expected", "expectedFile the path to the expected log file (relative to the root of the testing folder)"),
-         ARG(std::string, "actual", "the file path inside of the output folder")
-         );
+         ARG(std::string, "actual", "the file path inside of the output folder"));

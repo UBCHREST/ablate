@@ -10,6 +10,8 @@ target_sources(testingResources
         convergenceTester.cpp
         testRunEnvironment.cpp
         temporaryPath.cpp
+        integrationTest.cpp
+        integrationRestartTest.cpp
 
         PUBLIC
         mpiTestFixture.hpp
@@ -21,6 +23,8 @@ target_sources(testingResources
         convergenceTester.hpp
         temporaryPath.hpp
         testRunEnvironment.hpp
+        integrationTest.hpp
+        integrationRestartTest.hpp
         )
 
 add_subdirectory(asserts)

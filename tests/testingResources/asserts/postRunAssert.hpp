@@ -1,11 +1,10 @@
 #ifndef TESTING_RESOURCE_POSTRUNASSERT
 #define TESTING_RESOURCE_POSTRUNASSERT
-#include "assert.hpp"
 #include <memory>
+#include "assert.hpp"
 #include "solver/timeStepper.hpp"
 
-
-namespace testingResources{
+namespace testingResources {
 class MpiTestFixture;
 }
 
@@ -21,9 +20,7 @@ class PostRunAssert : public Assert {
      * @param mpiTestFixture
      */
     virtual void Test(testingResources::MpiTestFixture& mpiTestFixture) = 0;
-
 };
-
 
 }  // namespace testingResources::asserts
 

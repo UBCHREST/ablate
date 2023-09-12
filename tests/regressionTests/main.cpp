@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
                     integrationTest->RegisterTest(entry);
                 }
             } else if (!parser->GetByName<bool>("testingIgnore", false)) {
-                throw std::invalid_argument("An input file " + entry.path().string() + " in integration tests does not contain test parameters.");
+                throw std::invalid_argument("An input file " + entry.path().string() + " in regression tests does not contain test parameters.");
             }
         }
     }

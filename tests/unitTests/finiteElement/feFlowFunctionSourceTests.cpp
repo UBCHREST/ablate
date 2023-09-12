@@ -671,29 +671,30 @@ INSTANTIATE_TEST_SUITE_P(
                               .f0_v = f0_lowMach_quadratic_v,
                               .f0_w = f0_lowMach_quadratic_w,
                               .f0_q = f0_lowMach_quadratic_q},
-        (FEFlowMMSParameters){.mpiTestParameter = testingResources::MpiTestParameter(
-                                  "lowMach 2d cubic tri_p3_p2_p2", 1,
-                                  "-dm_plex_separate_marker  -dm_refine 0 "
-                                  "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
-                                  "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
-                                  "-ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
-                                  "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                  "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
-                                  "-dmts_check -1 -snes_linesearch_type basic "
-                                  "-gravityDirection 1 ",
-                                  std::make_shared<testingResources::asserts::StdOutAssert>("outputs/finiteElement/lowMach_2d_cubic_tri_p3_p2_p2")),
-                              .createMethod =
-                                  [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
-                                      return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
-                                  },
-                              .uExact = lowMach_cubic_u,
-                              .pExact = lowMach_cubic_p,
-                              .TExact = lowMach_cubic_T,
-                              .u_tExact = lowMach_cubic_u_t,
-                              .T_tExact = lowMach_cubic_T_t,
-                              .f0_v = f0_lowMach_cubic_v,
-                              .f0_w = f0_lowMach_cubic_w,
-                              .f0_q = f0_lowMach_cubic_q},
+        (FEFlowMMSParameters){
+            .mpiTestParameter =
+                testingResources::MpiTestParameter("lowMach 2d cubic tri_p3_p2_p2", 1,
+                                                   "-dm_plex_separate_marker  -dm_refine 0 "
+                                                   "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
+                                                   "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
+                                                   "-ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
+                                                   "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                                   "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
+                                                   "-dmts_check -1 -snes_linesearch_type basic "
+                                                   "-gravityDirection 1 ",
+                                                   std::make_shared<testingResources::asserts::StdOutAssert>("outputs/finiteElement/lowMach_2d_cubic_tri_p3_p2_p2")),
+            .createMethod =
+                [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
+                    return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
+                },
+            .uExact = lowMach_cubic_u,
+            .pExact = lowMach_cubic_p,
+            .TExact = lowMach_cubic_T,
+            .u_tExact = lowMach_cubic_u_t,
+            .T_tExact = lowMach_cubic_T_t,
+            .f0_v = f0_lowMach_cubic_v,
+            .f0_w = f0_lowMach_cubic_w,
+            .f0_q = f0_lowMach_cubic_q},
         (FEFlowMMSParameters){.mpiTestParameter = testingResources::MpiTestParameter(
                                   "lowMach 2d cubic tri_p3_p2_p2 with real coefficients", 1,
                                   "-dm_plex_separate_marker  -dm_refine 0 "

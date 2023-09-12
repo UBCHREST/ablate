@@ -120,6 +120,7 @@ std::filesystem::path testingResources::MpiTestFixture::BuildResultDirectory() c
 
 #include "registrar.hpp"
 REGISTER_DEFAULT(testingResources::MpiTestParameter, testingResources::MpiTestParameter, "Specifies how an MPI Test will run", ARG(std::string, "name", "the test name"),
-                 OPT(int, "ranks", "the number of MPI ranks (default is 1)"), OPT(std::string, "arguments", "Optional program arguments"), OPT(std::string, "environment", "Add options for ASAN flags"),
+                 OPT(int, "ranks", "the number of MPI ranks (default is 1)"), OPT(std::string, "arguments", "Optional program arguments"),
+                 OPT(std::string, "environment", "Add options for ASAN flags"),
                  OPT(testingResources::asserts::Assert, "assert", "a single assert object that can be used to determine if the case passed or failed"),
                  OPT(std::vector<testingResources::asserts::Assert>, "asserts", "list of assert objects that can be used to determine if the case passed or failed"));

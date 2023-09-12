@@ -1,7 +1,7 @@
 #ifndef TESTING_RESOURCE_PERRANKASSERT
 #define TESTING_RESOURCE_PERRANKASSERT
-#include "assert.hpp"
 #include <memory>
+#include "assert.hpp"
 #include "solver/timeStepper.hpp"
 
 namespace testingResources::asserts {
@@ -16,9 +16,7 @@ class PerRankAssert : public Assert {
      * @param timeStepper
      */
     virtual void Test(std::shared_pointer<ablate::solver::TimeStepper> timeStepper) = 0;
-
 };
-
 
 }  // namespace testingResources::asserts
 

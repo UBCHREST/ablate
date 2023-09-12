@@ -25,8 +25,7 @@ class IntegrationRestartTestFixture : public IntegrationTestFixture {
 
    public:
     explicit IntegrationRestartTestFixture(std::shared_ptr<testingResources::MpiTestParameter> mpiTestParameter, std::string restartInputFile,
-                                           std::shared_ptr<ablate::parameters::Parameters> restartOverrides
-    );
+                                           std::shared_ptr<ablate::parameters::Parameters> restartOverrides);
 };
 
 /**

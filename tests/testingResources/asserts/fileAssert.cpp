@@ -1,9 +1,9 @@
 #include "fileAssert.hpp"
-#include <string>
 #include <gtest/gtest.h>
 #include <filesystem>
 #include <fstream>
 #include <regex>
+#include <string>
 
 const std::string expectedResultDelimiter = std::string("<expects>");
 
@@ -131,5 +131,4 @@ void testingResources::asserts::FileAssert::CompareFile(const std::filesystem::p
     }
 
     ASSERT_FALSE(std::getline(actualStream, actualLine)) << "actual results should reach end of file " << expectedFileName;
-
 }
