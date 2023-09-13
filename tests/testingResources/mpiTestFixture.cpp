@@ -1,10 +1,8 @@
 #include "mpiTestFixture.hpp"
-#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <regex>
-#include "asserts/postRunAssert.hpp"
 
 int* testingResources::MpiTestFixture::argc;
 char*** testingResources::MpiTestFixture::argv;
@@ -23,7 +21,7 @@ std::string testingResources::MpiTestFixture::mpiCommand = STR(COMPILE_MPI_COMMA
 std::string testingResources::MpiTestFixture::mpiCommand = "mpirun";
 #endif
 
-std::string testingResources::MpiTestFixture::ParseCommandLineArgument(int* argcIn, char*** argvIn, const std::string flag) {
+std::string testingResources::MpiTestFixture::ParseCommandLineArgument(int* argcIn, char*** argvIn, const std::string& flag) {
     int commandLineArgumentLocation = -1;
     std::string argument;
     for (auto i = 0; i < *argcIn; i++) {
@@ -31,7 +29,7 @@ std::string testingResources::MpiTestFixture::ParseCommandLineArgument(int* argc
             commandLineArgumentLocation = i;
 
             argument = std::string((*argvIn)[i]);
-            argument = argument.substr(argument.find("=") + 1);
+            argument = argument.substr(argument.find('=') + 1);
         }
     }
 
@@ -96,13 +94,17 @@ void testingResources::MpiTestFixture::RunWithMPI() const {
 }
 
 void testingResources::MpiTestFixture::CheckAsserts() {
+    // We should initialize petsc if it needed by any of the asserts
+    PetscBool petsInitialized;
+    PetscInitialized(&petsInitialized) >> testErrorChecker;
+
+    if (!petsInitialized) {
+        PetscInitializeNoArguments() >> testErrorChecker;
+    }
+
     // Run through each post mpi check
     for (auto& assert : mpiTestParameter.asserts) {
-        if (auto postRunAssert = std::dynamic_pointer_cast<asserts::PostRunAssert>(assert)) {
-            if (postRunAssert) {
-                postRunAssert->Test(*this);
-            }
-        }
+        assert->Test(*this);
     }
 }
 

@@ -1,14 +1,14 @@
 #ifndef TESTING_RESOURCE_STDOUTASSERT
 #define TESTING_RESOURCE_STDOUTASSERT
+#include "assert.hpp"
 #include "fileAssert.hpp"
-#include "postRunAssert.hpp"
 
 namespace testingResources::asserts {
 
 /**
  * Compares the std out stream to an expected log file
  */
-class StdOutAssert : public PostRunAssert, private FileAssert {
+class StdOutAssert : public Assert, private FileAssert {
    private:
     /**
      * The expected log file to compare to

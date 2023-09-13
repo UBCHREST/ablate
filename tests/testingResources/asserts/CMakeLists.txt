@@ -5,11 +5,11 @@ target_sources(testingResources
         fileAssert.cpp
         stdOutAssert.cpp
         textFileAssert.cpp
+        solutionVectorAssert.cpp
 
         PUBLIC
         assert.hpp
-        perRankAssert.hpp
-        postRunAssert.hpp
         stdOutAssert.hpp
         textFileAssert.hpp
+        solutionVectorAssert.hpp
 )

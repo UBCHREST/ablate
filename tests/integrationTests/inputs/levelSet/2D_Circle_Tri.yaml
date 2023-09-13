@@ -1,3 +1,12 @@
+test:
+  # a unique test name for this integration tests
+  name: 2DCircleTriangleLevelSet
+  # specify a single assert to compare the expected solution vector to a hdf5 saved vector
+  assert: !testingResources::asserts::SolutionVectorAssert
+    expected: "inputs/levelSet/2D_Circle_Tri.hdf5"
+    actual: "domain.hdf5"
+    type: linf
+
 environment:
   title: _lsVOF_UnitTetst
   tagDirectory: false
@@ -17,6 +26,7 @@ timestepper:
     faces: [ 80, 80 ]
     lower: [ -2, -2 ]
     upper: [ 2, 2 ]
+    simplex: true
     # specify any modifications to be performed to the mesh/domain
     modifiers: []
     arguments: {}
@@ -27,7 +37,7 @@ timestepper:
     - fieldName: volumeFraction
       field: !ablate::levelSet::VOFMathFunction
         domain: *simpleBoxField
-        levelSet: "sqrt((x/0.5)^2 + (y/1.5)^2 + z^2) - 1.0"
+        levelSet: "sqrt((x/1.0)^2 + (y/1.0)^2 + z^2) - 1.0"
 
 # use no solvers in this very simple example
 solvers: []

@@ -1,14 +1,14 @@
 #ifndef TESTING_RESOURCE_TEXTFILEASSERT
 #define TESTING_RESOURCE_TEXTFILEASSERT
+#include "assert.hpp"
 #include "fileAssert.hpp"
-#include "postRunAssert.hpp"
 
 namespace testingResources::asserts {
 
 /**
  * Compares the expected files to those generated
  */
-class TextFileAssert : public PostRunAssert, private FileAssert {
+class TextFileAssert : public Assert, private FileAssert {
    private:
     /**
      * The expected log file to compare to

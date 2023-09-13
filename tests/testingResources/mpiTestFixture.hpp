@@ -78,7 +78,7 @@ class MpiTestFixture : public ::testing::Test {
     static bool inMpiTestRun;
     static bool keepOutputFile;
     static std::string mpiCommand;
-    static std::string ParseCommandLineArgument(int* argc, char*** argv, std::string flag);
+    static std::string ParseCommandLineArgument(int* argc, char*** argv, const std::string& flag);
     /**
      * Keep a copy of the mpiTest parameter
      */
