@@ -28,10 +28,15 @@ elseif(DEFINED ENV{TENSORFLOW_DIR} AND (NOT $ENV{TENSORFLOW_DIR} STREQUAL ""))
                 TensorFlow
                 PROPERTIES
                 IMPORTED_LOCATION ${TensorFlowLibrary})
+
+        # Build a list of include directories
+        list(APPEND TENSORFLOW_INCLUDE_DIRS ${TENSORFLOW_DIR}/include)
+        list(APPEND TENSORFLOW_INCLUDE_DIRS ${TENSORFLOW_DIR}/include/external/local_tsl/)
+
         set_target_properties(
                 TensorFlow
                 PROPERTIES
-                INTERFACE_INCLUDE_DIRECTORIES ${TENSORFLOW_DIR}/include)
+                INTERFACE_INCLUDE_DIRECTORIES "${TENSORFLOW_INCLUDE_DIRS}" )
         message(STATUS "Tensorflow library has been found at the specified TENSORFLOW_DIR location " ${TENSORFLOW_DIR})
         target_compile_definitions(ablateLibrary PUBLIC WITH_TENSORFLOW)
         target_link_libraries(ablateLibrary PUBLIC TensorFlow)
