@@ -133,4 +133,3 @@ void testingResources::asserts::FileAssert::CompareFile(const std::filesystem::p
 
     ASSERT_FALSE(std::getline(actualStream, actualLine)) << "actual results should reach end of file " << expectedFileName;
 }
-'
