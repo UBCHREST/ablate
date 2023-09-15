@@ -192,6 +192,19 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
             for (int i = 0; i < nCells; ++i) {
                 ASSERT_EQ(cells[i], testingParam.expectedList[rank][i]);
             }
+
+            // Restore the neighbors
+            DMPlexRestoreNeighbors(mesh->GetDM(),
+                                   testingParam.centerCell[rank],
+                                   testingParam.numLevels,
+                                   testingParam.maxDistance,
+                                   testingParam.minNumberCells,
+                                   testingParam.useCells,
+                                   testingParam.returnNeighborVertices,
+                                   &nCells,
+                                   &cells) >>
+                utilities::PetscUtilities::checkError;
+
             PetscFree(cells);
         }
         ablate::environment::RunEnvironment::Finalize();
