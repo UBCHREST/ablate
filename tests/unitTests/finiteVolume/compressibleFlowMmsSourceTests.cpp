@@ -1,6 +1,5 @@
 #include <petsc.h>
 #include <vector>
-#include "MpiTestFixture.hpp"
 #include "domain/dmTransfer.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
@@ -16,6 +15,7 @@
 #include "finiteVolume/processes/arbitrarySource.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
+#include "mpiTestFixture.hpp"
 #include "parameters/mapParameters.hpp"
 #include "utilities/petscUtilities.hpp"
 

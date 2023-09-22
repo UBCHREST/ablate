@@ -1,5 +1,11 @@
 # single example of a periodic domain with an inviscid flow with inertialParticles
 ---
+test:
+  # a unique test name for this integration tests
+  name: tracerParticles3D
+  # create a default assert that compares the log file
+  assert: "inputs/particles/inertialParticles2D.txt"
+
 # metadata for the simulation
 environment:
   title: _2DInertialParticlesInCompressibleFlow

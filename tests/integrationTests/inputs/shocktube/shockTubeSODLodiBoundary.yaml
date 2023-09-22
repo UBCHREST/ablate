@@ -1,4 +1,10 @@
 ---
+test:
+  # a unique test name for this integration tests
+  name: shockTubeSODLodiBoundary
+  # create a default assert that compares the log file
+  assert: "inputs/shocktube/shockTubeSODLodiBoundary.txt"
+
 environment:
   title: _SOD Problem with LODI Boundaries
   tagDirectory: false

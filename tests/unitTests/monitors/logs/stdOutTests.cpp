@@ -1,11 +1,12 @@
 #include <petsc.h>
-#include <MpiTestParamFixture.hpp>
 #include <cmath>
 #include <memory>
-#include "MpiTestFixture.hpp"
+#include <mpiTestParamFixture.hpp>
+#include "asserts/stdOutAssert.hpp"
 #include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
 #include "monitors/logs/stdOut.hpp"
+#include "mpiTestFixture.hpp"
 #include "utilities/petscUtilities.hpp"
 
 using namespace ablate;
@@ -41,6 +42,6 @@ TEST_P(StdOutLogTestFixture, ShouldPrintToStdOut) {
 }
 
 INSTANTIATE_TEST_SUITE_P(LogTests, StdOutLogTestFixture,
-                         testing::Values(testingResources::MpiTestParameter("std out 1 proc", 1, "", "outputs/monitors/logs/stdOutLogFile"),
-                                         testingResources::MpiTestParameter("std out 2 proc", 2, "", "outputs/monitors/logs/stdOutLogFile")),
+                         testing::Values(testingResources::MpiTestParameter("std out 1 proc", 1, "", std::make_shared<testingResources::asserts::StdOutAssert>("outputs/monitors/logs/stdOutLogFile")),
+                                         testingResources::MpiTestParameter("std out 2 proc", 2, "", std::make_shared<testingResources::asserts::StdOutAssert>("outputs/monitors/logs/stdOutLogFile"))),
                          [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });

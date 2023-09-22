@@ -1,5 +1,4 @@
 #include <memory>
-#include "PetscTestFixture.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "mathFunctions/geom/box.hpp"
@@ -13,6 +12,7 @@
 #include "mathFunctions/geom/surface.hpp"
 #include "mathFunctions/geom/triangle.hpp"
 #include "mathFunctions/geom/union.hpp"
+#include "petscTestFixture.hpp"
 
 using namespace ablate::mathFunctions::geom;
 namespace ablateTesting::mathFunctions::geom {

@@ -7,6 +7,16 @@
 #4. Generate the [slabBurner2DMesh.msh](slabBurner2DMesh.msh) mesh file by running without the preview argument.
 #
 ---
+test:
+  # a unique test name for this integration tests
+  name: slabBurner2D
+  # run on multiple mpi ranks
+  ranks: 2
+  # create a list of asserts to compare
+  assert:
+    # create a default assert that compares the log file
+    "inputs/slabBurner2D/expectedOutput.txt"
+
 # metadata for the simulation
 environment:
   title: _slabBurner2D

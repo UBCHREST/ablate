@@ -1,5 +1,11 @@
 # Simple test for mapping the mesh using a simple function when the dm has a coordinate space
 ---
+test:
+  # a unique test name for this integration tests
+  name: meshMappingTestCoordinateSpace
+  # create a default assert that compares the log file
+  assert: "inputs/machinery/meshMappingTestCoordinateSpace.txt"
+
 # metadata for the simulation
 environment:
   title: _meshMappingTestWithCoordinateSpace

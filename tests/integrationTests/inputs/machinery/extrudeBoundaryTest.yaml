@@ -1,5 +1,11 @@
 # Simple test for extruding the boundary in 2D
 ---
+test:
+  # a unique test name for this integration tests
+  name: extrudeBoundaryTest
+  # create a default assert that compares the log file
+  assert: "inputs/machinery/extrudeBoundaryTest.txt"
+
 # metadata for the simulation
 environment:
   title: _extrudeBoundaryTest

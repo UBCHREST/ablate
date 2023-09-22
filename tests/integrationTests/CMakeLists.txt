@@ -3,10 +3,8 @@ target_link_libraries(integrationTests PUBLIC GTest::gtest ablateLibrary testing
 
 target_sources(integrationTests
         PRIVATE
-        tests.cpp
+        main.cpp
         )
-
-add_subdirectory(runners)
 
 gtest_discover_tests(integrationTests
         # set a working directory so your project root so that you can find test data via paths relative to the project root
@@ -15,5 +13,4 @@ gtest_discover_tests(integrationTests
         DISCOVERY_TIMEOUT 360
         )
 
-copy_to_test_directory(${CMAKE_CURRENT_SOURCE_DIR}/outputs/)
 copy_to_test_directory(${CMAKE_CURRENT_SOURCE_DIR}/inputs/)

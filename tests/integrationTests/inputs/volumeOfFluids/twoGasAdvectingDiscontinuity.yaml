@@ -1,4 +1,10 @@
 ---
+test:
+  # a unique test name for this integration tests
+  name: twoGasAdvectingDiscontinuity
+  # create a default assert that compares the log file
+  assert: "inputs/volumeOfFluids/twoGasAdvectingDiscontinuity.txt"
+
 environment:
   title: _Moving_2gas_10pts
   tagDirectory: true

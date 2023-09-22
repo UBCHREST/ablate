@@ -7,9 +7,15 @@
 #Orthogonal radiation detects radiation through the domain as the camera would, assuming the camera is
 # relatively far from the domain.
 ---
+test:
+  # a unique test name for this integration tests
+  name: virtualTCP
+  # create a default assert that compares the log file
+  assert: "inputs/radiation/virtualTCP.txt"
+
 environment:
   title: _tcp
-  tagDirectory: true
+  tagDirectory: truev
 arguments: { }
 timestepper:
   name: theMainTimeStepper

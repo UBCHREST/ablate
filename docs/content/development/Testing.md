@@ -114,24 +114,72 @@ INSTANTIATE_TEST_SUITE_P(ExampleTests, ExampleTestFixture,
 ```
 
 ## Unit Tests
-Unit tests reside in the `tests/unitTests` directory where the test location should match the folder hierarchy in  `src`.  File names should match the corresponding class name followed by `Tests`.  The unit tests should be designed to test single functions/classes where mocks can be used for any required dependency.  Because unit testing should be designed to test a large set of inputs and expected outputs parameterized tests are recommended.
+Unit tests reside in the `tests/unitTests` directory where the test location should match the folder hierarchy in `src`.  File names should match the corresponding class name followed by `Tests`.  The unit tests should be designed to test single functions/classes where mocks can be used for any required dependency.  Because unit testing should be designed to test a large set of inputs and expected outputs parameterized tests are recommended.
 
 ## Integration Tests
-Integration tests use the standard yaml input files to test simulation level functions where the output and generated files are compared against expected outputs.  The integration test files also serve as examples for users and are therefor organized by general topic area inside the `inputs` directory.  All integration tests must be rested in the `tests/integrationTests/tests.cpp` file in an existing or new category.  The tests use an `IntegrationTestsSpecifier` struct to specify the required inputs. Any comments before the first '---' will be treated ad markdown (with the # removed) when the documentation is generated and should be written as such.  Math and equations are rendered using [MathJax](https://www.mathjax.org) using Latex style equations where $$ is used to define math regions.  The `MpiTestParameter` inside `IntegrationTestsSpecifier` is used to specify:
+Integration tests use the standard yaml input files to test simulation level functions where the output and generated files are compared against expected outputs.  The integration test files also serve as examples for users and are therefor organized by general topic area inside the `inputs` directory. Any comments before the first '---' will be treated ad markdown (with the # removed) when the documentation is generated and should be written as such.  Math and equations are rendered using [MathJax](https://www.mathjax.org) using Latex style equations where $$ is used to define math regions.  All input files in this directory will be used for integration tests and must specify the testing parameters.  The default test is a standard integration test shown:
 
-- .testName: the relative path to the input yaml file starting with `inputs/`
-- .nproc: the number of mpi processes to use for testing
-- .expectedOutputFile: the expected output file to compare against standard out.  This file also includes a list of created files at the end of the simulation. See [Expected Output Files](#expected-output-files) section for formatting details
-- .arguments: optional additional command line arguments to be passed to the simulation
-- .expectedFiles: optional list of expected files to compare.  Each entry must be a {"outputs/path/to/file", "nameOfFileInOutputFolder"}
+```yaml
+# metadata used only for integration testing
+test:
+  # a unique test name for this integration tests
+  name: aUniqueNameForThisTest
+  # optionally specify the number of mpi ranks
+  ranks: 2
+  # optionally provide overrides for asan testing (this is not common)
+  environment: ""
+  # optional additional arguments
+  arguments: ""
+  
+  # specify a single
+  assert: "inputs/compressibleFlow/compressibleCouetteFlow.txt"
+  
+  # or list of asserts to compare to the output
+  asserts:
+    - "inputs/compressibleFlow/compressibleCouetteFlow.txt"
+    - !testingResources::asserts::TextFileAssert
+      expected: "inputs/reactingFlow/ignitionDelayGriMech.Temperature.txt"
+      actual: "ignitionDelayTemperature.csv"
+```
 
-If using the `IntegrationRestartTestsSpecifier` the simulation will be restarted after specify a list of `restartOverrides`.  This is used to test save/restore functionality.
+If the same input file is used for more than a single test, the ```tests``` keyword can be used instead.
+```yaml
+# metadata used only for integration testing
+tests:
+  - # a unique test name for this integration tests
+    name: aUniqueNameForThisTest1
+    # specify a single assert
+    assert: "inputs/compressibleFlow/compressibleCouetteFlow.txt"
+  - # a unique test name for this integration tests
+    name: aUniqueNameForThisTest2
+    # optional additional arguments
+    arguments: "--change-input=true"
+    # specify a single assert
+    assert: "inputs/compressibleFlow/compressibleCouetteFlowOutput2.txt"
+```
 
-## Regression Tests
-Regression tests operate similarly to the Integration Tests but are not run as part of the pull request process.  Instead, they run on an automated schedule.  These larger/longer simulations are used to ensure that ABLATE functionally does not regress and serve as well documented examples of using ABLATE with real world problems.
+An advanced restart integration test can also be specified instead of the default.  This is used when restarting the simulation is part of the test.  All the same asserts can be used.  Integration restart and standard tests can be used in the same list.
 
-## Expected Output Files
-The output log and other files can be compared against expected results for testing.  However, the expected number output may slightly differ based upon compiler/computer configurations so the output format was created.  This file uses your specified [regex](https://www.cplusplus.com/reference/regex/) and compares against an expected value used the specified comparison.  Lines in the expected file that contains `<expects>` are parsed and compared against the provided numbers. Online c++ regex testers might be useful for testing.
+```yaml
+test: !IntegrationRestartTest
+    # specify the basic test parameters for restart test
+    testParameters:
+      # a unique test name for this integration tests
+      name: incompressibleFlowIntervalRestart
+      asserts:
+        - "inputs/feFlow/incompressibleFlowIntervalRestart.txt"
+    # optionally upon restart, override some of the input parameters
+    restartOverrides:
+      timestepper::arguments::ts_max_steps: "10"
+    
+    # optionally upon restart, use a separate input file
+    restartInputFile: "inputs/compressibleFlow/hdf5InitializerTest/hdf5InitializerTest.Initialization.yaml"
+```
+
+Any number of asserts can be listed and combined to complete the integration test.  Available asserts include:
+
+### testingResources::asserts::StdOutAssert (Default)
+This is the default assert so the name does not need to be specified.  It compares the output of standard out to an expected file. However, the expected number output may slightly differ based upon compiler/computer configurations so the output format was created.  This file uses your specified [regex](https://www.cplusplus.com/reference/regex/) and compares against an expected value used the specified comparison.  Lines in the expected file that contains `<expects>` are parsed and compared against the provided numbers. Online c++ regex testers might be useful for testing. 
 
 ```
 L_2 Error: \[(.*), (.*), (.*)\]<expects> <1E-13 <1E-13 <1E-13
@@ -157,3 +205,44 @@ and one value equal to 2.  When using the compare tool, you must escape all rege
 | *                    | any string is accepted                                                                                                                     |
 | n                    | should be near value (percent difference <=1E-3)                                                                                           |
 | z                    | should be near zero (<1E-13)                                                                                                               |
+
+The only required input for this file is the relative path to the expected test file. 
+
+```yaml
+      # Example as a single assert
+      assert: "inputs/feFlow/incompressibleFlowIntervalRestart.txt"
+
+      # Example as part of a list of asserts
+      asserts:
+        - "inputs/feFlow/incompressibleFlowIntervalRestart.txt"
+```
+
+### testingResources::asserts::TextFileAssert
+The text file assert is used compare text files generated by ABLATE to expected files.  The text comparisons are handled the same as [testingResources::asserts::StdOutAssert](#testingResources::asserts::StdOutAssert).  The required inputs are path to the expected file and generated/actual file name/path.  The generated/actual path to relative to the output directory.
+```yaml
+      # as a list of asserts
+      asserts:
+        - !testingResources::asserts::TextFileAssert
+          expected: "inputs/feFlow/incompressibleFlowRestartProbe.csv"
+          actual: "incompressibleFlowRestartProbe.csv"
+      # as a single assert
+      assert: !testingResources::asserts::TextFileAssert
+        expected: "inputs/feFlow/incompressibleFlowRestartProbe.csv"
+        actual: "incompressibleFlowRestartProbe.csv"
+```
+
+### testingResources::asserts::SolutionVectorAssert
+The SolutionVectorAssert reads in the solution vector from the specified (actual) file and compared against a saved hdf5 solution.
+
+```yaml
+# specify an assert to compare the expected solution vector to a hdf5 saved vector
+assert: !testingResources::asserts::SolutionVectorAssert
+    expected: "inputs/levelSet/2D_Ellipse.hdf5" # relative path to the expected input file
+    actual: "domain.hdf5" # the actual file in the output directory
+    type: linf # the norm type for comparisons. Options include ('l1','l1_norm','l2', 'linf', 'l2_norm')
+    tolerance: 1E-8 # optional tolerance, default is 1E-12
+```
+
+
+## Regression Tests
+Regression tests operate similarly to the Integration Tests but are not run as part of the pull request process.  Instead, they run on an automated schedule.  These larger/longer simulations are used to ensure that ABLATE functionally does not regress and serve as well documented examples of using ABLATE with real world problems.  They are setup and controlled the same as Integration Tests.

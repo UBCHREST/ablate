@@ -1,5 +1,5 @@
 #include <petsc.h>
-#include <PetscTestFixture.hpp>
+#include <petscTestFixture.hpp>
 #include <vector>
 #include "domain/mockField.hpp"
 #include "eos/perfectGas.hpp"

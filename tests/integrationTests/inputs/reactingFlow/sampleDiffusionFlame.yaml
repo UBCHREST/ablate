@@ -1,6 +1,12 @@
 # Example 1D diffusion flame with a coupled boundary condition.  The diffusion flame only uses
 # the transport processes of the Navier–Stokes equations.
 ---
+test:
+  # a unique test name for this integration tests
+  name: sampleDiffusionFlame
+  # create a default assert that compares the log file
+  assert: "inputs/reactingFlow/sampleDiffusionFlame.txt"
+
 environment:
   title: _1DSampleDiffusionFlame
   tagDirectory: false

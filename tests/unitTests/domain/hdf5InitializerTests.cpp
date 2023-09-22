@@ -1,7 +1,7 @@
-#include "PetscTestFixture.hpp"
 #include "domain/hdf5Initializer.hpp"
 #include "gtest/gtest.h"
 #include "mockField.hpp"
+#include "petscTestFixture.hpp"
 #include "utilities/vectorUtilities.hpp"
 
 struct Hdf5InitializerTestPoint {

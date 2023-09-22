@@ -1,5 +1,15 @@
 # this test ensures that solvers can operate over a subset of the entire domain
 ---
+test:
+  # a unique test name for this integration tests
+  name: subDomainFVM
+  asserts:
+    # create a default assert that compares the log file
+    - "inputs/machinery/subDomainFVM/subDomainFVM.txt"
+    - !testingResources::asserts::TextFileAssert
+      expected: "inputs/machinery/subDomainFVM/fluidField.xmf"
+      actual: "fluidField.xmf"
+
 # metadata for the simulation
 environment:
   title: _subDomainFVM

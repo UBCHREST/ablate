@@ -1,6 +1,12 @@
 # Simple test that checks for DmViewFromOptions monitor
 
 ---
+test:
+  # a unique test name for this integration tests
+  name: dmViewFromOptions
+  # create a default assert that compares the log file
+  assert: "inputs/machinery/dmViewFromOptions.txt"
+
 environment:
   title: incompessibleFlow
   tagDirectory: false

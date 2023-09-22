@@ -1,11 +1,11 @@
 #include <petsc.h>
 #include <memory>
-#include "MpiTestFixture.hpp"
-#include "PetscTestErrorChecker.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
 #include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
+#include "mpiTestFixture.hpp"
+#include "petscTestErrorChecker.hpp"
 #include "utilities/petscSupport.hpp"
 #include "utilities/petscUtilities.hpp"
 

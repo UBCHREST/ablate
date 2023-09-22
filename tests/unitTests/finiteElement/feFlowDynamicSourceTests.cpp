@@ -2,7 +2,7 @@ static char help[] =
     "Time-dependent Low Mach Flow in 2d channels with finite elements. We solve the Low Mach flow problem in a rectangular domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
 #include <petsc.h>
-#include "MpiTestFixture.hpp"
+#include "asserts/stdOutAssert.hpp"
 #include "domain/boxMesh.hpp"
 #include "environment/runEnvironment.hpp"
 #include "finiteElement/boundaryConditions/essential.hpp"
@@ -11,6 +11,7 @@ static char help[] =
 #include "finiteElement/lowMachFlowSolver.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/simpleFormula.hpp"
+#include "mpiTestFixture.hpp"
 #include "parameters/petscOptionParameters.hpp"
 #include "utilities/petscUtilities.hpp"
 
@@ -196,7 +197,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                    "-dmts_check -1 -snes_linesearch_type basic "
                                                    "-gravityDirection 1 "
                                                    "-momentum_source_petscspace_degree 8 -mass_source_petscspace_degree 8  -energy_source_petscspace_degree 8",
-                                                   "outputs/finiteElement/lowMach_dynamicSource_2d_tri_p3_p2_p2"),
+                                                   std::make_shared<testingResources::asserts::StdOutAssert>("outputs/finiteElement/lowMach_dynamicSource_2d_tri_p3_p2_p2")),
             .createMethod =
                 [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
@@ -223,7 +224,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                    "-dmts_check -1 -snes_linesearch_type basic "
                                                    "-gravityDirection 1 "
                                                    "-momentum_source_petscspace_degree 8 -mass_source_petscspace_degree 8  -energy_source_petscspace_degree 8",
-                                                   "outputs/finiteElement/lowMach_dynamicSource_2d_cubic_tri_p3_p2_p2"),
+                                                   std::make_shared<testingResources::asserts::StdOutAssert>("outputs/finiteElement/lowMach_dynamicSource_2d_cubic_tri_p3_p2_p2")),
             .createMethod =
                 [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
@@ -250,32 +251,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                "-fieldsplit_0_pc_type lu "
                                                "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
                                                "-momentum_source_petscspace_degree 2 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 2",
-                                               "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1"),
-                                           .createMethod =
-                                               [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
-                                                   return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
-                                                       name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
-                                               },
-                                           .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y",
-                                           .uDerivativeExact = "1.0, 1.0",
-                                           .pExact = "x + y -1",
-                                           .pDerivativeExact = "0.0",
-                                           .TExact = "t + x +y",
-                                           .TDerivativeExact = "1.0",
-                                           .vSource = "-(1-4+1+2*y*(t+2*x^2-2*x*y)+2*x*(t+x^2+y^2)), -(1-4+1-2*x*(t+2*x^2-2*x*y)+(4*x-2*y)*(t+x^2+y^2))",
-                                           .wSource = "-(1+2*t+3*x^2-2*x*y+y^2)",
-                                           .qSource = ".0"},
-        (FEFlowDynamicSourceMMSParameters){.mpiTestParameter = testingResources::MpiTestParameter(
-                                               "incompressible 2d quadratic tri_p2_p1_p1 4 proc", 4,
-                                               "-dm_plex_separate_marker -dm_refine 1 -dm_distribute "
-                                               "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
-                                               "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                                               "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                               "-fieldsplit_0_pc_type lu "
-                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                                               "-momentum_source_petscspace_degree 2 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 2",
-                                               "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1_nproc4"),
+                                               std::make_shared<testingResources::asserts::StdOutAssert>("outputs/finiteElement/incompressible_2d_tri_p2_p1_p1")),
                                            .createMethod =
                                                [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                                                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
@@ -292,6 +268,31 @@ INSTANTIATE_TEST_SUITE_P(
                                            .qSource = ".0"},
         (FEFlowDynamicSourceMMSParameters){
             .mpiTestParameter =
+                testingResources::MpiTestParameter("incompressible 2d quadratic tri_p2_p1_p1 4 proc", 4,
+                                                   "-dm_plex_separate_marker -dm_refine 1 -dm_distribute "
+                                                   "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                                   "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                                   "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                                   "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                                   "-fieldsplit_0_pc_type lu "
+                                                   "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                                   "-momentum_source_petscspace_degree 2 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 2",
+                                                   std::make_shared<testingResources::asserts::StdOutAssert>("outputs/finiteElement/incompressible_2d_tri_p2_p1_p1_nproc4")),
+            .createMethod =
+                [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
+                },
+            .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y",
+            .uDerivativeExact = "1.0, 1.0",
+            .pExact = "x + y -1",
+            .pDerivativeExact = "0.0",
+            .TExact = "t + x +y",
+            .TDerivativeExact = "1.0",
+            .vSource = "-(1-4+1+2*y*(t+2*x^2-2*x*y)+2*x*(t+x^2+y^2)), -(1-4+1-2*x*(t+2*x^2-2*x*y)+(4*x-2*y)*(t+x^2+y^2))",
+            .wSource = "-(1+2*t+3*x^2-2*x*y+y^2)",
+            .qSource = ".0"},
+        (FEFlowDynamicSourceMMSParameters){
+            .mpiTestParameter =
                 testingResources::MpiTestParameter("incompressible 2d cubic tri_p3_p2_p2", 1,
                                                    "-dm_plex_separate_marker -dm_refine 0 "
                                                    "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
@@ -302,7 +303,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                    "-fieldsplit_0_pc_type lu "
                                                    "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
                                                    "-momentum_source_petscspace_degree 5 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 5",
-                                                   "outputs/finiteElement/incompressible_2d_cubic_p3_p2_p2"),
+                                                   std::make_shared<testingResources::asserts::StdOutAssert>("outputs/finiteElement/incompressible_2d_cubic_p3_p2_p2")),
             .createMethod =
                 [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);

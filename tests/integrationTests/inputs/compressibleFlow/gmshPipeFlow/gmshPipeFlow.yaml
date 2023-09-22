@@ -40,6 +40,14 @@
 #    4. If a higher resolution mesh is needed, adjust the settings in Step 1 or select ```Modules > Mesh > Refine by splitting```
 #3. Output the mesh.  ```File > Save Mesh``` should produce a *.msh file with the same name as the geometry.  The [pipeFlow.geo](pipeFlow.geo) [pipeFlow.msh](pipeFlow.msh) files used in this example are provided to download.
 ---
+test:
+  # a unique test name for this integration tests
+  name: gmshPipeFlow
+  # run mpi with two ranks
+  ranks: 2
+  # create a default assert that compares the log file
+  assert: "inputs/compressibleFlow/gmshPipeFlow/gmshPipeFlow.txt"
+
 # metadata for the simulation
 environment:
   title: _gmshPipeFlow
