@@ -284,6 +284,11 @@ class SubDomain : public io::Serializable {
     Vec GetAuxGlobalVector();
 
     /**
+     * Update the local AUX vector via a local to global and then global to local call
+     */
+    Vec UpdateAuxLocalVector();
+
+    /**
      * The SubDM is defined as a dm that lives only over this subdomain region.  It may be useful for outputting. This function will create (if needed) and
      * return the subdomain. If a subdomain is not needed (same ds over entire dm) the global dm is returned.
      * @return

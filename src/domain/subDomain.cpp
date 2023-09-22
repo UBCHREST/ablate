@@ -220,6 +220,13 @@ Vec ablate::domain::SubDomain::GetAuxGlobalVector() {
     return auxGlobalVec;
 }
 
+Vec ablate::domain::SubDomain::UpdateAuxLocalVector() {
+    if (auxDM) {
+      DMLocalToGlobal(auxDM, auxLocalVec, INSERT_VALUES, auxGlobalVec) >> utilities::PetscUtilities::checkError;
+      DMGlobalToLocal(auxDM, auxGlobalVec, INSERT_VALUES, auxLocalVec) >> utilities::PetscUtilities::checkError;
+
+}
+
 DM ablate::domain::SubDomain::GetSubDM() {
     // If there is no label, just return the entire dm
     if (!label) {
