@@ -383,26 +383,26 @@ PetscErrorCode DMPlexGetNeighbors(DM dm, PetscInt p, PetscInt maxLevels, PetscRe
         }
         PetscCall(PetscSortRealWithArrayInt(n, dist, list));
         PetscCall(PetscFree(dist));
-    } else if (type == 0 && cte == 1) {
-        // Now only include the the numberCells closest cells
-        PetscReal *dist;
-        PetscInt j, dim, i_x, vStart;
-        Vec coords;
-        PetscReal *coordsArray;
-        PetscCall(DMGetDimension(dm, &dim));  // The dimension of the grid
-        PetscCall(PetscMalloc1(n, &dist));
-        PetscCall(DMGetCoordinatesLocal(dm, &coords));           // Get all the vertices coordinates
-        PetscCall(VecGetArray(coords, &coordsArray));            // Copy the quantities in coords vector and paste them to the coordsArray vector
-        PetscCall(DMPlexGetDepthStratum(dm, 0, &vStart, NULL));  // Range of vertices
-        for (i = 0; i < n; ++i) {
-            dist[i] = 0.0;
-            i_x = (list[i] - vStart) * dim;
-            for (j = 0; j < dim; ++j) {  // Compute the distance so that we can check if it's within the required distance.
-                dist[i] += PetscSqr(x0[j] - coordsArray[i_x + j]);
-            }
-        }
-        PetscCall(PetscSortRealWithArrayInt(n, dist, list));
-        PetscCall(PetscFree(dist));
+//    } else if (type == 0 && cte == 1) {
+//        // Now only include the the numberCells closest cells
+//        PetscReal *dist;
+//        PetscInt j, dim, i_x, vStart;
+//        Vec coords;
+//        PetscReal *coordsArray;
+//        PetscCall(DMGetDimension(dm, &dim));  // The dimension of the grid
+//        PetscCall(PetscMalloc1(n, &dist));
+//        PetscCall(DMGetCoordinatesLocal(dm, &coords));           // Get all the vertices coordinates
+//        PetscCall(VecGetArray(coords, &coordsArray));            // Copy the quantities in coords vector and paste them to the coordsArray vector
+//        PetscCall(DMPlexGetDepthStratum(dm, 0, &vStart, NULL));  // Range of vertices
+//        for (i = 0; i < n; ++i) {
+//            dist[i] = 0.0;
+//            i_x = (list[i] - vStart) * dim;
+//            for (j = 0; j < dim; ++j) {  // Compute the distance so that we can check if it's within the required distance.
+//                dist[i] += PetscSqr(x0[j] - coordsArray[i_x + j]);
+//            }
+//        }
+//        PetscCall(PetscSortRealWithArrayInt(n, dist, list));
+//        PetscCall(PetscFree(dist));
     } else {
         numberCells = n;
     }

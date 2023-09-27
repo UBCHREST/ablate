@@ -1,7 +1,8 @@
-#include "levelSetSolver.hpp"
-#include "levelSetUtilities.hpp"
-#include "domain/range.hpp"
 
+#include "geometry.hpp"
+#include <string>
+#include <vector>
+#include "domain/RBF/rbf.hpp"
 
 
 // Might want to have this based on cell values rather than RBF
@@ -59,7 +60,7 @@ static PetscReal Curvature2D(std::shared_ptr<ablate::domain::rbf::RBF> rbf, cons
   return k;
 }
 
-static PetscReal LevelSetSolver::Curvature3D(std::shared_ptr<ablate::domain::rbf::RBF> rbf, const ablate::domain::Field *field, PetscInt c) {
+static PetscReal Curvature3D(std::shared_ptr<ablate::domain::rbf::RBF> rbf, const ablate::domain::Field *field, PetscInt c) {
 
   PetscReal k = 0.0;
   PetscReal cx, cy, cz;
@@ -82,27 +83,30 @@ static PetscReal LevelSetSolver::Curvature3D(std::shared_ptr<ablate::domain::rbf
 }
 
 
-PetscReal ablate::levelSet::geometry::curvature(std::shared_ptr<ablate::domain::rbf::RBF> rbf, const ablate::domain::Field *field, PetscInt c) {
-  switch (rbf->subDomain->GetDimensions()) {
+PetscReal ablate::levelSet::geometry::Curvature(std::shared_ptr<ablate::domain::rbf::RBF> rbf, const ablate::domain::Field *field, PetscInt c) {
+  switch (rbf->GetDimensions()) {
     case 1:
       return 0.0;
     case 2:
-      return Curvature2D(c);
+      return Curvature2D(rbf, field, c);
     case 3:
-      return Curvature3D(c);
+      return Curvature3D(rbf, field, c);
     default:
       throw std::runtime_error("ablate::levelSet::geometry::Curvature encountered an unknown dimension.");
   }
 }
 
-void ablate::levelSet::geometry::normal(PetscInt c, PetscReal *n) {
-  switch (rbf->subDomain->GetDimensions()) {
+void ablate::levelSet::geometry::Normal(std::shared_ptr<ablate::domain::rbf::RBF> rbf, const ablate::domain::Field *field, PetscInt c, PetscReal *n) {
+  switch (rbf->GetDimensions()) {
     case 1:
-      Normal1D(c, n);
+      Normal1D(rbf, field, c, n);
+      break;
     case 2:
-      Normal2D(c, n);
+      Normal2D(rbf, field, c, n);
+      break;
     case 3:
-      Normal3D(c, n);
+      Normal3D(rbf, field, c, n);
+      break;
     default:
       throw std::runtime_error("ablate::levelSet::geometry::Normal encountered an unknown dimension.");
   }

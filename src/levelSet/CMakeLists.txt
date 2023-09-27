@@ -6,6 +6,7 @@ target_sources(ablateLibrary
         levelSetUtilities.cpp
         vofMathFunction.cpp
         cellGrad.cpp
+        geometry.cpp
 
         PUBLIC
         LS-VOF.hpp
@@ -14,4 +15,5 @@ target_sources(ablateLibrary
         levelSetUtilities.hpp
         vofMathFunction.hpp
         cellGrad.hpp
+        geometry.hpp
         )

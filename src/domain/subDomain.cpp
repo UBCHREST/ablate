@@ -220,10 +220,11 @@ Vec ablate::domain::SubDomain::GetAuxGlobalVector() {
     return auxGlobalVec;
 }
 
-Vec ablate::domain::SubDomain::UpdateAuxLocalVector() {
+void ablate::domain::SubDomain::UpdateAuxLocalVector() {
     if (auxDM) {
       DMLocalToGlobal(auxDM, auxLocalVec, INSERT_VALUES, auxGlobalVec) >> utilities::PetscUtilities::checkError;
       DMGlobalToLocal(auxDM, auxGlobalVec, INSERT_VALUES, auxLocalVec) >> utilities::PetscUtilities::checkError;
+    }
 
 }
 

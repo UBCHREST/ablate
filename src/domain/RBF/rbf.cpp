@@ -390,17 +390,16 @@ void RBF::SetupDerivativeStencils() {
 PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz) {
     RBF::CheckField(field);
 
-    return RBF::EvalDer(field, RBF::subDomain->GetVec(*field), c, dx, dy, dz);
+    return RBF::EvalDer(RBF::subDomain->GetFieldDM(*field), RBF::subDomain->GetVec(*field), field->id, c, dx, dy, dz);
 }
 
-PetscReal RBF::EvalDer(const ablate::domain::Field *field, Vec vec, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz) {
+PetscReal RBF::EvalDer(DM dm, Vec vec, const PetscInt fid, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz) {
+
     PetscReal *wt = nullptr;
     PetscScalar val = 0.0, *f;
     const PetscScalar *array;
     PetscInt nCells = -1, *lst = nullptr;
     PetscInt derID = -1, numDer = RBF::nDer;
-    DM dm = RBF::subDomain->GetFieldDM(*field);
-    const PetscInt fid = field->id;
 
     PetscBool hasKey;
     PetscInt derKey = RBF::derivativeKey(dx, dy, dz);
@@ -682,7 +681,7 @@ void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) {
             dz[numDer++] = 2;
         }
 
-        SetDerivatives(numDer, dx, dy, dz);
+        SetDerivatives(numDer, dx, dy, dz, PETSC_FALSE);
     }
 }
 

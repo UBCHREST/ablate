@@ -102,7 +102,7 @@ void SaveCellData(const char fname[255], DM dm, Vec vec, PetscInt dim, PetscInt 
 }
 
 
-void SaveVertexData(const char fname[255], DM dm, Vec vec, PetscInt dim, PetscInt nc, ablate::domain::Range range, const PetscInt id) {
+static void SaveVertexData(const char fname[255], DM dm, Vec vec, PetscInt dim, PetscInt nc, ablate::domain::Range range, const PetscInt id) {
 
   PetscReal    *array, *val;
 
