@@ -681,6 +681,9 @@ static void CutCellLevelSetValues(std::shared_ptr<ablate::domain::SubDomain> sub
 #include "domain/RBF/rbf.hpp"
 static std::shared_ptr<ablate::domain::rbf::RBF> rbf = nullptr;
 
+// Temporary for the review
+static PetscInt **cellNeighbors = nullptr, *numberNeighbors = nullptr;
+
 // Make sure that the work is being done on valid cells and not ghost cells
 bool ablate::levelSet::Utilities::ValidCell(DM dm, PetscInt p) {
     DMPolytopeType ct;
@@ -759,6 +762,22 @@ void ablate::levelSet::Utilities::Reinitialize(std::shared_ptr<ablate::domain::S
   ablate::domain::Range cellRange, vertRange;
   subDomain->GetCellRange(nullptr, cellRange);
   subDomain->GetRange(nullptr, 0, vertRange);
+
+  if (cellNeighbors==nullptr) {
+    PetscMalloc1(cellRange.end - cellRange.start, &cellNeighbors) >> ablate::utilities::PetscUtilities::checkError;
+    cellNeighbors -= cellRange.start;
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+      cellNeighbors[c] = nullptr;
+    }
+  }
+
+  if (numberNeighbors==nullptr) {
+    PetscMalloc1(cellRange.end - cellRange.start, &numberNeighbors) >> ablate::utilities::PetscUtilities::checkError;
+    numberNeighbors -= cellRange.start;
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+      numberNeighbors[c] = 0;
+    }
+  }
 
 
   // Get the point->index mapping for cells
@@ -870,41 +889,14 @@ void ablate::levelSet::Utilities::Reinitialize(std::shared_ptr<ablate::domain::S
     // Get the maximum change across all processors. This also acts as a sync point
     MPI_Allreduce(MPI_IN_PLACE, &maxDiff, 1, MPIU_REAL, MPIU_MAX, auxCOMM);
 
-//    PetscReal magDiff = -1.0;
-//    // Update the cell-center normal vector
-//    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
-
-//      if (cellMask[c] == 1) {
-
-//        PetscInt cell = cellRange.GetPoint(c);
-
-//        // Calculate unit normal vector based on the updated level set values at the vertices
-//        PetscScalar *n = nullptr;
-//        xDMPlexPointLocalRef(auxDM, cell, cellNormalID, auxArray, &n) >> ablate::utilities::PetscUtilities::checkError;
-//        DMPlexCellGradFromVertex(auxDM, cell, auxVec, lsID, 0, n) >> ablate::utilities::PetscUtilities::checkError;
-
-//        PetscReal mag = ablate::utilities::MathUtilities::MagVector(dim, n);
-//        magDiff = PetscMax(magDiff, PetscAbsReal(mag - 1.0));
-
-//        ablate::utilities::MathUtilities::NormVector(dim, n);
-//      }
-//    }
-//    MPI_Allreduce(MPI_IN_PLACE, &magDiff, 1, MPIU_REAL, MPIU_MAX, auxCOMM);
-
-
-
-
-
-
-
-//    PetscPrintf(PETSC_COMM_WORLD, "%d: %+e\t%+e\n", iter, maxDiff, magDiff) >> ablate::utilities::PetscUtilities::checkError;
+//    PetscPrintf(PETSC_COMM_WORLD, "%d: %+e\n", iter, maxDiff) >> ablate::utilities::PetscUtilities::checkError;
   }
 
 //  SaveCellData("normal.txt", cellNormalField, dim, subDomain);
 //  SaveVertexData("ls0.txt", lsField, subDomain);
 
 
-  // Set the vertices too-far away as the largest possible value in the domain with the appropriate sign.
+  // Set the vertices far away as the largest possible value in the domain with the appropriate sign.
   // This is done after the determination of cut-cells so that all vertices associated with cut-cells have been marked.
   PetscReal gMin[3], gMax[3], maxDist = -1.0;
   DMGetBoundingBox(auxDM, gMin, gMax) >> ablate::utilities::PetscUtilities::checkError;
@@ -939,9 +931,6 @@ void ablate::levelSet::Utilities::Reinitialize(std::shared_ptr<ablate::domain::S
 
   // Now mark all of the necessary neighboring vertices. Note that this can't be put into the previous loop as all of the vertices
   //    for the cut-cells won't be known yet.
-
-
-
   for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
     // Only worry about cut-cells
     if ( cellMask[c] == 1) {
@@ -964,9 +953,21 @@ void ablate::levelSet::Utilities::Reinitialize(std::shared_ptr<ablate::domain::S
       c0 /= nv;
       DMPlexCellRestoreVertices(solDM, cutCell, &nv, &verts) >> ablate::utilities::PetscUtilities::checkError;
 
+      if (cellNeighbors[c]==nullptr) {
 
-      PetscInt nCells, *cells;
-      DMPlexGetNeighbors(solDM, cutCell, nLevels, -1.0, -1, PETSC_FALSE, PETSC_FALSE, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
+        PetscInt nCellsNew, *newCells;
+
+        DMPlexGetNeighbors(solDM, cutCell, nLevels, -1.0, -1, PETSC_FALSE, PETSC_FALSE, &nCellsNew, &newCells) >> ablate::utilities::PetscUtilities::checkError;
+        PetscMalloc1(nCellsNew, &cellNeighbors[c]);
+        PetscArraycpy(cellNeighbors[c], newCells, nCellsNew);
+        numberNeighbors[c] = nCellsNew;
+        DMPlexRestoreNeighbors(solDM, cutCell, nLevels, -1.0, -1, PETSC_FALSE, PETSC_FALSE, &nCellsNew, &newCells) >> ablate::utilities::PetscUtilities::checkError;
+
+      }
+      const PetscInt nCells = numberNeighbors[c];
+      const PetscInt *cells = cellNeighbors[c];
+
+
 
       for (PetscInt i = 0; i < nCells; ++i) {
 
@@ -1011,11 +1012,11 @@ void ablate::levelSet::Utilities::Reinitialize(std::shared_ptr<ablate::domain::S
             }
           }
 
-          DMPlexVertexRestoreCoordinates(solDM, nv, verts, &coords) >> ablate::utilities::PetscUtilities::checkError;
           DMPlexCellRestoreVertices(solDM, cells[i], &nv, &verts) >> ablate::utilities::PetscUtilities::checkError;
+          DMPlexVertexRestoreCoordinates(solDM, nv, verts, &coords) >> ablate::utilities::PetscUtilities::checkError;
         }
       }
-      DMPlexRestoreNeighbors(solDM, cutCell, nLevels, -1.0, -1, PETSC_FALSE, PETSC_FALSE, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
+
     }
   }
 
@@ -1364,6 +1365,9 @@ void ablate::levelSet::Utilities::Reinitialize(std::shared_ptr<ablate::domain::S
         *cellH += *H;
       }
       *cellH /= nv;
+
+*cellH = 1.0;
+
       DMPlexCellRestoreVertices(auxDM, cell, &nv, &verts) >> ablate::utilities::PetscUtilities::checkError;
     }
   }
