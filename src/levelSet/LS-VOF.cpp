@@ -48,7 +48,7 @@ void VOF_1D(const PetscReal coords[], const PetscReal c[], PetscReal *vof, Petsc
 void VOF_2D_Tri(const PetscReal coords[], const PetscReal c[], PetscReal *vof, PetscReal *faceLength, PetscReal *cellArea) {
     if (vof || faceLength) {
         //    PetscReal p[3], x[6];
-        PetscInt l[3];
+        PetscInt l[3] = {0, 1, 2};
         PetscReal p[2];
         if (c[0] >= 0.0 && c[1] >= 0.0 && c[2] >= 0.0) {
             if (vof) *vof = 0.0;
@@ -145,14 +145,29 @@ void VOF_2D_Tri(const PetscReal coords[], const PetscReal c[], PetscReal *vof, P
      0--------1
 */
 void VOF_2D_Quad(const PetscReal coords[], const PetscReal c[], PetscReal *vof, PetscReal *faceLength, PetscReal *cellArea) {
-    // Triangle using vertices 3-0-1
-    const PetscReal x1[6] = {coords[6], coords[7], coords[0], coords[1], coords[2], coords[3]};
-    const PetscReal c1[3] = {c[3], c[0], c[1]};
-    PetscReal vof1, cellArea1, faceLength1;
 
-    // Triangle using vertices 3-2-1
-    const PetscReal x2[6] = {coords[6], coords[7], coords[4], coords[5], coords[2], coords[3]};
-    const PetscReal c2[3] = {c[3], c[2], c[1]};
+
+    PetscInt tri1[3] = {3, 0, 1}, tri2[3] = {3, 2, 1};
+
+    // If the interface passes through vertices 1 and 3 switch the triangles to use vertices 0 and 2 as the corner
+    if (PetscAbs(c[1]) < PETSC_SMALL && PetscAbs(c[3]) < PETSC_SMALL) {
+      tri1[0] = 0;
+      tri1[1] = 1;
+      tri1[2] = 2;
+      tri2[0] = 2;
+      tri2[1] = 3;
+      tri2[2] = 0;
+    }
+
+    // Triangle 1
+    const PetscReal x1[6] = {coords[2*tri1[0]], coords[2*tri1[0]+1], coords[2*tri1[1]], coords[2*tri1[1]+1], coords[2*tri1[2]], coords[2*tri1[2]+1]};
+    const PetscReal c1[3] = {c[tri1[0]], c[tri1[1]], c[tri1[2]]};
+
+    // Triangle 2
+    const PetscReal x2[6] = {coords[2*tri2[0]], coords[2*tri2[0]+1], coords[2*tri2[1]], coords[2*tri2[1]+1], coords[2*tri2[2]], coords[2*tri2[2]+1]};
+    const PetscReal c2[3] = {c[tri2[0]], c[tri2[1]], c[tri2[2]]};
+
+    PetscReal vof1, cellArea1, faceLength1;
     PetscReal vof2, cellArea2, faceLength2;
 
     // VOF and area of each triangle.
@@ -162,6 +177,7 @@ void VOF_2D_Quad(const PetscReal coords[], const PetscReal c[], PetscReal *vof, 
     if (vof) *vof = (vof1 * cellArea1 + vof2 * cellArea2) / (cellArea1 + cellArea2);
     if (faceLength) *faceLength = faceLength1 + faceLength2;
     if (cellArea) *cellArea = cellArea1 + cellArea2;
+
 }
 
 // Old tests
@@ -215,7 +231,7 @@ void VOF_3D_Tetra(const PetscReal coords[12], const PetscReal c[4], PetscReal *v
             if (faceArea) *faceArea = 0.0;
         } else {
             PetscBool twoNodes;
-            PetscInt l[4];
+            PetscInt l[4] = {0, 1, 2, 3};
 
             // Determine the vertex permutation so that nodes 0 (and maybe 3) are of opposite sign from nodes 1 and 2 (and possibly 3)
             if ((c[0] >= 0.0 && c[1] < 0.0 && c[2] < 0.0 && c[3] < 0.0) ||    // Case 1

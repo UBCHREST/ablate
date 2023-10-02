@@ -449,6 +449,9 @@ PetscErrorCode DMPlexCellGetNumVertices(DM dm, const PetscInt p, PetscInt *nv) {
         case DM_POLYTOPE_QUAD_PRISM_TENSOR:
             *nv = 8;
             break;
+        case DM_POLYTOPE_FV_GHOST:
+        case DM_POLYTOPE_INTERIOR_GHOST:
+        case DM_POLYTOPE_UNKNOWN:
         default:
             SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "Cannot determine number of vertices for cell type %s", DMPolytopeTypes[ct]);
     }
@@ -1199,19 +1202,16 @@ PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscIn
       PetscInt nCells, *cells;
       PetscCall(DMPlexVertexGetCells(dm, verts[v], &nCells, &cells));
 
-      PetscReal totalWt = 0.0;
       for (PetscInt i = 0; i < nCells; ++i) {
-        PetscReal *cellVal, cellCenter[3], wt = 0.0;
+        PetscReal *cellVal;
         PetscCall(xDMPlexPointLocalRead(dm, cells[i], fID, dataArray, &cellVal));
-        PetscCall(DMPlexComputeCellGeometryFVM(dm, cells[i], NULL, cellCenter, NULL));
-        for (PetscInt d = 0; d < dim; ++d) wt += PetscSqr(cellCenter[d] - vertCoords[v*dim + d]);
-        wt = 1.0/PetscSqrtReal(wt);
-        totalWt += wt;
-        vertVals[v] += wt*cellVal[offset];
+        vertVals[v] += cellVal[offset];
       }
+
+      vertVals[v] /= nCells;
+
       PetscCall(DMPlexVertexRestoreCells(dm, verts[v], &nCells, &cells));
 
-      vertVals[v] /= totalWt;
     }
     PetscCall(DMPlexVertexRestoreCoordinates(dm, nVert, verts, &vertCoords));
     PetscCall(DMPlexCellRestoreVertices(dm, c, &nVert, &verts));
