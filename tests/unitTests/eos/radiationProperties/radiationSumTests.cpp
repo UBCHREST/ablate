@@ -1,8 +1,8 @@
-#include "PetscTestFixture.hpp"
 #include "eos/mockEOS.hpp"
 #include "eos/radiationProperties/constant.hpp"
 #include "eos/radiationProperties/sum.hpp"
 #include "gtest/gtest.h"
+#include "petscTestFixture.hpp"
 
 struct RadiationSumTestParameters {
     std::function<std::vector<std::shared_ptr<ablate::eos::radiationProperties::RadiationModel>>()> getInputModels;

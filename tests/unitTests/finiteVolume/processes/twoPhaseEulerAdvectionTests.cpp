@@ -1,7 +1,7 @@
 #include <petsc.h>
-#include <PetscTestFixture.hpp>
 #include <cmath>
 #include <memory>
+#include <petscTestFixture.hpp>
 #include <vector>
 #include "eos/perfectGas.hpp"
 #include "eos/stiffenedGas.hpp"

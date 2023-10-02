@@ -2,7 +2,6 @@
 #include <cmath>
 #include <memory>
 #include <vector>
-#include "MpiTestFixture.hpp"
 #include "boundarySolver/boundarySolver.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/createLabel.hpp"
@@ -16,6 +15,7 @@
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "mathFunctions/geom/sphere.hpp"
+#include "mpiTestFixture.hpp"
 #include "utilities/mathUtilities.hpp"
 #include "utilities/petscUtilities.hpp"
 

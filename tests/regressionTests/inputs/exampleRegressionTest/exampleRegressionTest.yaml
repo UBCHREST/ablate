@@ -20,6 +20,14 @@
 #| b         |  102 |
 #
 ---
+test:
+  # a unique test name for this integration tests
+  name: exampleRegressionTest
+  # create a list of asserts to compare
+  assert:
+    # create a default assert that compares the log file
+    "inputs/exampleRegressionTest/expectedOutput.txt"
+
 # metadata for the simulation
 environment:
   title: _exampleIntegrationTest

@@ -1,6 +1,9 @@
 # This problem tests the subsequent use of a hdf5 file for initialization for compressible flow. It is expected to follow the hdf5InitializerTest
 #
 ---
+# Allow this file to be in the testing directory without any test specified.  It is used by another test
+testingIgnore: true
+
 # metadata for the simulation
 environment:
   title: _hdf5InitializationCompressibleFlowInitialization

@@ -1,4 +1,15 @@
 ---
+test: !IntegrationRestartTest
+  # specify the basic test parameters for restart test
+  testParameters:
+    # a unique test name for this integration tests
+    name: tracerParticles2DRestart
+    asserts:
+      - "inputs/particles/tracerParticles2DRestart.txt"
+  # upon restart, override some of the input parameters
+  restartOverrides:
+    timestepper::arguments::ts_max_steps: "10"
+
 environment:
   title: _2DTracerParticles
 arguments:

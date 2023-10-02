@@ -2,8 +2,6 @@
 #include <cmath>
 #include <memory>
 #include <vector>
-#include "MpiTestFixture.hpp"
-#include "PetscTestErrorChecker.hpp"
 #include "boundarySolver/boundarySolver.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
@@ -15,6 +13,8 @@
 #include "finiteVolume/finiteVolumeSolver.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
+#include "mpiTestFixture.hpp"
+#include "petscTestErrorChecker.hpp"
 #include "utilities/petscUtilities.hpp"
 
 using namespace ablate;

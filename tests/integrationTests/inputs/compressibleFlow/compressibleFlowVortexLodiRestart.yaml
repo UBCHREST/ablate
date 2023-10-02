@@ -30,6 +30,17 @@
 #- $$T = p/(Rgas*rho) = 1/(Rgas*rho) * (pinf + (rho*C^2)/Rc^2 * exp(-(x^2 - y^2)/(2*Rc^2))) $$
 #- $$ timeEnd = 2*l/c = 0.002655211423 $$
 ---
+test: !IntegrationRestartTest
+  # specify the basic test parameters for restart test
+  testParameters:
+    # a unique test name for this integration tests
+    name: compressibleFlowVortexLodiRestart
+    asserts:
+      - "inputs/compressibleFlow/compressibleFlowVortexLodiRestart.txt"
+  # upon restart, override some of the input parameters
+  restartOverrides:
+    timestepper::arguments::ts_max_steps: "20"
+
 # metadata for the simulation
 environment:
   title: _compressibleFlowVortex

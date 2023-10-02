@@ -1,4 +1,10 @@
 ---
+test:
+  # a unique test name for this integration tests
+  name: inertialParticles2D
+  # create a default assert that compares the log file
+  assert: "inputs/particles/tracerParticles3D.txt"
+
 environment:
   title: _TracerParticlesWithIncompressibleFlow3D
 arguments:

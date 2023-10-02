@@ -1,4 +1,3 @@
-#include "PetscTestFixture.hpp"
 #include "chemTabTestFixture.hpp"
 #include "domain/mockField.hpp"
 #include "eos/chemTab.hpp"
@@ -6,6 +5,7 @@
 #include "gtest/gtest.h"
 #include "localPath.hpp"
 #include "mockFactory.hpp"
+#include "petscTestFixture.hpp"
 
 #ifndef WITH_TENSORFLOW
 #define ONLY_WITH_TENSORFLOW_CHECK                                       \

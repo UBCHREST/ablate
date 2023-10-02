@@ -1,4 +1,12 @@
 ---
+test:
+  # a unique test name for this integration tests
+  name: steadyCompressibleFlowLodiTest
+  # run mpi with two ranks
+  ranks: 2
+  # create a default assert that compares the log file
+  assert: "inputs/compressibleFlow/steadyCompressibleFlowLodiTest.txt"
+
 # This is the lodi validation for what should be uniform flow
 environment:
   title: _uniformFlow

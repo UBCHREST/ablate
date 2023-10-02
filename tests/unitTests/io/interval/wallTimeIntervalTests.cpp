@@ -1,6 +1,6 @@
-#include <PetscTestFixture.hpp>
 #include <chrono>
 #include <deque>
+#include <petscTestFixture.hpp>
 #include <vector>
 #include "gtest/gtest.h"
 #include "io/interval/wallTimeInterval.hpp"

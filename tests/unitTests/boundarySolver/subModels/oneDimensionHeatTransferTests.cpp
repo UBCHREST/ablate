@@ -1,11 +1,11 @@
 #include <functional>
-#include "PetscTestFixture.hpp"
 #include "boundarySolver/physics/subModels/oneDimensionHeatTransfer.hpp"
 #include "convergenceTester.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "monitors/solutionErrorMonitor.hpp"
 #include "parameters/mapParameters.hpp"
+#include "petscTestFixture.hpp"
 
 struct OneDimensionHeatTransferTestParameters {
     // Creation options

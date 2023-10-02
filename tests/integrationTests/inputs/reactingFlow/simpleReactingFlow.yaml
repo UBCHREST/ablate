@@ -1,4 +1,10 @@
 ---
+test:
+  # a unique test name for this integration tests
+  name: simpleReactingFlow
+  # create a default assert that compares the log file
+  assert: "inputs/reactingFlow/simpleReactingFlow.txt"
+
 environment:
   title: _simpleReactingFlow
   tagDirectory: false

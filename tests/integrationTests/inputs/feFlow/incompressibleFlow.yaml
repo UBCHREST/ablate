@@ -1,5 +1,11 @@
 # Example setup for incompressible flow that uses a finite volume solver
 ---
+test:
+  # a unique test name for this integration tests
+  name: incompressibleFlow
+  # create a default assert that compares the log file
+  assert: "inputs/feFlow/incompressibleFlow.txt"
+
 # metadata for the simulation
 environment:
   title: incompessibleFlow

@@ -1,4 +1,10 @@
 ---
+test:
+  # a unique test name for this integration tests
+  name: shockTube1DSod_AirWater
+  # create a default assert that compares the log file
+  assert: "inputs/shocktube/shockTube1DSod_AirWater.txt"
+
 environment:
   title: SOD_120pts_AirWater
   tagDirectory: true

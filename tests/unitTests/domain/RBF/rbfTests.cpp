@@ -1,7 +1,5 @@
 #include <petsc.h>
 #include <memory>
-#include "MpiTestFixture.hpp"
-#include "PetscTestErrorChecker.hpp"
 #include "domain/RBF/ga.hpp"
 #include "domain/RBF/hybrid.hpp"
 #include "domain/RBF/imq.hpp"
@@ -12,6 +10,8 @@
 #include "domain/modifiers/distributeWithGhostCells.hpp"
 #include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
+#include "mpiTestFixture.hpp"
+#include "petscTestErrorChecker.hpp"
 #include "utilities/petscUtilities.hpp"
 
 using namespace ablate;

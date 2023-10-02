@@ -7,9 +7,9 @@
 #include <map>
 #include <ostream>
 #include <string>
-#include "PetscTestFixture.hpp"
 #include "eos/eos.hpp"
 #include "gmock/gmock.h"
+#include "petscTestFixture.hpp"
 
 /*******************************************************************************************************
  * Tests for expected input/outputs

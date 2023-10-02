@@ -1,6 +1,16 @@
 # This problem tests the writing of a hdf5 file for initialization for compressible flow.
 #
 ---
+test: !IntegrationRestartTest
+  # specify the basic test parameters for restart test
+  testParameters:
+    # a unique test name for this integration tests
+    name: compressibleFlowPgsLodiRestart
+    asserts:
+      - "inputs/compressibleFlow/hdf5InitializerTest/hdf5InitializerTest.txt"
+  # upon restart, use a separate input file
+  restartInputFile: "inputs/compressibleFlow/hdf5InitializerTest/hdf5InitializerTest.Initialization.yaml"
+
 # metadata for the simulation
 environment:
   title: _hdf5InitializationCompressibleFlow

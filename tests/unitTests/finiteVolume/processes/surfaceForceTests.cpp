@@ -1,7 +1,6 @@
 #include <petsc.h>
 #include <memory>
 #include <vector>
-#include "MpiTestFixture.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
 #include "environment/runEnvironment.hpp"
@@ -11,6 +10,7 @@
 #include "finiteVolume/processes/twoPhaseEulerAdvection.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
+#include "mpiTestFixture.hpp"
 
 struct SurfaceForceTestParameters {
     PetscInt dim;

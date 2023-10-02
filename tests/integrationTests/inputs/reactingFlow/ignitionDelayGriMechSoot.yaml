@@ -1,6 +1,14 @@
 # This input runs a zero-dimension ignition delay calculation using the GRIMech3.0 kinetics mechanism.
 
 ---
+test:
+  # a unique test name for this integration tests
+  name: ignitionDelayGriMechSoot
+  # create a default assert that compares the log file
+  assert: !testingResources::asserts::TextFileAssert
+    expected: "inputs/reactingFlow/ignitionDelayGriMechSoot.Temperature.txt"
+    actual: "ignitionDelayTemperature.csv"
+
 # metadata for the simulation
 environment:
   title: _ignitionDelayGriMechSoot

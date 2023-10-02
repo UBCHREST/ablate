@@ -1,6 +1,18 @@
 # This input runs a zero-dimension ignition delay calculation using the GRIMech3.0 kinetics mechanism.  To run this input the grimech30.mech.dat and grimech30.thermo.dat files will need to be downloaded and the paths updated in this file.
 
 ---
+test:
+  # a unique test name for this integration tests
+  name: ignitionDelayGriMech
+  # create a list of asserts to compare
+  asserts:
+    - !testingResources::asserts::TextFileAssert
+      expected: "inputs/reactingFlow/ignitionDelayGriMech.PeakYi.txt"
+      actual: "ignitionDelayPeakYi.txt"
+    - !testingResources::asserts::TextFileAssert
+      expected: "inputs/reactingFlow/ignitionDelayGriMech.Temperature.txt"
+      actual: "ignitionDelayTemperature.csv"
+
 # metadata for the simulation
 environment:
   title: _ignitionDelayGriMech

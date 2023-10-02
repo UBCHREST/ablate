@@ -2,7 +2,6 @@
 #include <cmath>
 #include <memory>
 #include <vector>
-#include "MpiTestFixture.hpp"
 #include "convergenceTester.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
@@ -19,6 +18,7 @@
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "monitors/solutionErrorMonitor.hpp"
+#include "mpiTestFixture.hpp"
 #include "parameters/mapParameters.hpp"
 #include "utilities/petscUtilities.hpp"
 
