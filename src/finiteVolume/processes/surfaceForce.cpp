@@ -193,6 +193,8 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
 
     }
     subDomain->RestoreRange(cellRange);
+//SaveCellData("locF.txt", locF, eulerField, 5, subDomain);
+//exit(0);
 
     // Cleanup
     VecRestoreArray(locF, &fArray) >> utilities::PetscUtilities::checkError;
