@@ -34,60 +34,60 @@ inline PetscReal SmoothDirac(PetscReal c, PetscReal c0, PetscReal t) {
 }
 
 
-#include "utilities/mpiUtilities.hpp"
-void SaveCellData(const char fname[255], Vec vec, const ablate::domain::Field *field, PetscInt Nc, std::shared_ptr<ablate::domain::SubDomain> subDomain) {
+//#include "utilities/mpiUtilities.hpp"
+//static void SaveCellData(const char fname[255], Vec vec, const ablate::domain::Field *field, PetscInt Nc, std::shared_ptr<ablate::domain::SubDomain> subDomain) {
 
-  ablate::domain::Range range;
-  PetscReal    *array, *val;
-  DM            dm  = subDomain->GetFieldDM(*field);
-  PetscInt      dim = subDomain->GetDimensions();
-  MPI_Comm      comm = PetscObjectComm((PetscObject)dm);
-  int rank, size;
-  MPI_Comm_size(comm, &size) >> ablate::utilities::MpiUtilities::checkError;
-  MPI_Comm_rank(comm, &rank) >> ablate::utilities::MpiUtilities::checkError;
+//  ablate::domain::Range range;
+//  PetscReal    *array, *val;
+//  DM            dm  = subDomain->GetFieldDM(*field);
+//  PetscInt      dim = subDomain->GetDimensions();
+//  MPI_Comm      comm = PetscObjectComm((PetscObject)dm);
+//  int rank, size;
+//  MPI_Comm_size(comm, &size) >> ablate::utilities::MpiUtilities::checkError;
+//  MPI_Comm_rank(comm, &rank) >> ablate::utilities::MpiUtilities::checkError;
 
-  subDomain->GetCellRange(nullptr, range);
+//  subDomain->GetCellRange(nullptr, range);
 
-  VecGetArray(vec, &array) >> ablate::utilities::PetscUtilities::checkError;
-
-
-
-  for (PetscInt r = 0; r < size; ++r) {
-    if ( rank==r ) {
-
-      FILE *f1;
-      if ( rank==0 ) f1 = fopen(fname, "w");
-      else f1 = fopen(fname, "a");
-
-      for (PetscInt c = range.start; c < range.end; ++c) {
-        PetscInt cell = range.points ? range.points[c] : c;
-
-        if (ablate::levelSet::Utilities::ValidCell(dm, cell)) {
-
-          PetscReal x0[3];
-          DMPlexComputeCellGeometryFVM(dm, cell, NULL, x0, NULL) >> ablate::utilities::PetscUtilities::checkError;
-          DMPlexPointLocalFieldRef(dm, cell, field->id, array, &val) >> ablate::utilities::PetscUtilities::checkError;
-
-          for (PetscInt d = 0; d < dim; ++d) {
-            fprintf(f1, "%+f\t", x0[d]);
-          }
-
-          for (PetscInt i = 0; i < Nc; ++i) {
-            fprintf(f1, "%+f\t", val[i]);
-          }
-          fprintf(f1, "\n");
-        }
-      }
-      fclose(f1);
-    }
-
-    MPI_Barrier(PETSC_COMM_WORLD);
-  }
+//  VecGetArray(vec, &array) >> ablate::utilities::PetscUtilities::checkError;
 
 
-  VecRestoreArray(vec, &array) >> ablate::utilities::PetscUtilities::checkError;
-  ablate::domain::RestoreRange(range);
-}
+
+//  for (PetscInt r = 0; r < size; ++r) {
+//    if ( rank==r ) {
+
+//      FILE *f1;
+//      if ( rank==0 ) f1 = fopen(fname, "w");
+//      else f1 = fopen(fname, "a");
+
+//      for (PetscInt c = range.start; c < range.end; ++c) {
+//        PetscInt cell = range.points ? range.points[c] : c;
+
+//        if (ablate::levelSet::Utilities::ValidCell(dm, cell)) {
+
+//          PetscReal x0[3];
+//          DMPlexComputeCellGeometryFVM(dm, cell, NULL, x0, NULL) >> ablate::utilities::PetscUtilities::checkError;
+//          DMPlexPointLocalFieldRef(dm, cell, field->id, array, &val) >> ablate::utilities::PetscUtilities::checkError;
+
+//          for (PetscInt d = 0; d < dim; ++d) {
+//            fprintf(f1, "%+f\t", x0[d]);
+//          }
+
+//          for (PetscInt i = 0; i < Nc; ++i) {
+//            fprintf(f1, "%+f\t", val[i]);
+//          }
+//          fprintf(f1, "\n");
+//        }
+//      }
+//      fclose(f1);
+//    }
+
+//    MPI_Barrier(PETSC_COMM_WORLD);
+//  }
+
+
+//  VecRestoreArray(vec, &array) >> ablate::utilities::PetscUtilities::checkError;
+//  ablate::domain::RestoreRange(range);
+//}
 
 
 PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(const FiniteVolumeSolver &flow, DM dm, PetscReal time, Vec locX, Vec locF, void *ctx) {
@@ -112,11 +112,11 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     PetscScalar *fArray = nullptr;
     const PetscScalar *auxArray = nullptr, *xArray = nullptr;
 
-
     // The grid spacing
     PetscReal h;
     DMPlexGetMinRadius(dm, &h) >> ablate::utilities::PetscUtilities::checkError;
     h *= 2.0; // Min radius returns the distance between a cell-center and a face. Double it to get the average cell size
+//SaveCellData("vof0.txt", locX, vofField, 1, subDomain);
 
     ablate::levelSet::Utilities::Reinitialize(subDomain, locX, vofField, 5, lsField, vertexNormalField, cellNormalField, curvField);
 
