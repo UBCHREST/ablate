@@ -1,5 +1,5 @@
 # Docker file used to serve the ABLATE docs.
-ARG ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies-gcc:latest
+ARG ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies-clang:latest
 FROM $ABLATE_DEPENDENCY_IMAGE
 
 # Install testing/docs dependencies
