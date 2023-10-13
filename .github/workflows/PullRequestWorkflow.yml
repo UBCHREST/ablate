@@ -55,15 +55,13 @@ jobs:
         with:
           tag: 'v${{env.VERSION}}'
 
-      - name: VersionErrorCheck
+      - name: Version check error
+        if: ${{ steps.checkVersionNumber.outputs.exists == 'true' }}
         run: |
-          echo "Checking version: v$VERSION"
-          if ${{ steps.checkVersionNumber.outputs.exists }} then
-            echo "::error file=CMakeLists.txt::The version already exists!"
-            exit 1
-          else
-            echo "version does not exist"
-          fi
+          echo "Version already exists: v$VERSION"
+          echo "::error file=CMakeLists.txt::The version already exists!"
+          exit 1
+       
 
       # run all the standard tests
       - name: Run tests
