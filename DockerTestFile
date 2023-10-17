@@ -15,10 +15,8 @@ COPY . /source
 WORKDIR /source
 
 # Before building ablate, make sure it is in the correct format
-run cmake --preset=local-ablate-opt  && cmake --build --preset=ablate-format-check
-
 # Build & clean up the intermediate files to prevent file size bloat
-run cmake --build --preset=ablate-test-only-build -j $(nproc) && find . -name CMakeFiles -type d -prune -exec rm -rf {} \;
+run cmake --preset=local-ablate-opt  && cmake --build --preset=ablate-format-check && cmake --build --preset=ablate-test-only-build -j $(nproc) && find . -name CMakeFiles -type d -prune -exec rm -rf {} \;
 
 # Rerun Cmake to make sure that the version is available to the testing pipeline
 run cmake --preset=local-ablate-opt
