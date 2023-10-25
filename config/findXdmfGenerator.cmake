@@ -12,8 +12,8 @@ ELSE ()
     set(DISABLE_XDMFGENERATOR_TESTS ON CACHE BOOL "" FORCE)
     FetchContent_Declare(
             xdmfGeneratorLibrary
-            GIT_REPOSITORY https://github.com/UBCHREST/XdmfGenerator.git
-            GIT_TAG v0.1.15
+            GIT_REPOSITORY https://github.com/mmcgurn/petscXdmfGenerator.git
+            GIT_TAG mcgurn/default-stream
     )
     FetchContent_MakeAvailable(xdmfGeneratorLibrary)
     # Put the library into CHREST namespace
