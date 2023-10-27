@@ -5,7 +5,7 @@ homepage = 'https://www.mcs.anl.gov/petsc'
 description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
  scalable (parallel) solution of scientific applications modeled by partial differential equations."""
 
-toolchain = {'name': 'intel', 'version': '2022.00'}
+toolchain = {'name': 'foss', 'version': '2021b'}
 toolchainopts = {'openmp': False, 'usempi': True, 'pic': True}
 
 sources = [{
@@ -20,9 +20,9 @@ sources = [{
 }]
 patches = [
 ]
-checksums = ['4ab485edf278feade7b88332f1f892488eb791f2fe1f97859f53daf43064d7c4']
+checksums = ['5431829f6eb730f1664bc343dc051b8c2ba83d6cebefb3756647bac4715aaefb']
 
-builddependencies = [('CMake', '3.22.1')]
+builddependencies = []
 
 dependencies = []
 
@@ -32,10 +32,34 @@ configopts = '--LIBS="$LIBS -lrt" --with-mpi4py=0 '
 
 shared_libs = 1
 
+# the download dependencies required by ablate
+download_deps = [
+	'ctetgen',
+    'tetgen',
+    'egads',
+    'metis',
+    'mumps',
+    'netcdf',
+    'p4est',
+    'parmetis',
+    'pnetcdf',
+    'hdf5',
+    'scalapack',
+	'suitespar',
+	'superlu_dist',
+	'triangle ',
+	'zlib',
+	'libpng',
+	'kokkos',
+	'opencascade',
+ 	'slepc']
+	
+# special config for ablate petsc	
+configopts += '--download-kokkos-commit=3.7.01 --with-64-bit-indices=1'
 
+# we are building slepc, so we need to add all to the build command
+sourceinstall = True
+petsc_arch = "arch-ablate-opt"
 
-# only required when building PETSc in a SLURM job environment
-configopts += '--with-batch=1 --known-mpi-shared-libraries=1 --known-64-bit-blas-indices=0 '
-# prebuildopts = "srun ./conftest-arch-linux2-c-opt && ./reconfigure-arch-linux2-c-opt.py && "
-
+# setup the default module for pets
 moduleclass = 'numlib'
