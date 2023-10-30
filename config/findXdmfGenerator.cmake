@@ -5,6 +5,9 @@ if (NOT (DEFINED HDF5_ROOT|CACHE{HDF5_ROOT}|ENV{HDF5_ROOT}))
     set(HDF5_ROOT "$ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/" STRING)
 endif ()
 
+# HDF5 libaries need to be found
+find_package(HDF5 REQUIRED GLOBAL)
+
 # Get the xdmfGeneratorLibrary dependency
 IF (TARGET CHREST::xdmfGeneratorLibrary)
     message(STATUS "Found CHREST::xdmfGeneratorLibrary target")

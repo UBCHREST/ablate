@@ -61,6 +61,7 @@ target_link_libraries(ablateLibrary
         Tines::tines
         Threads::Threads
         nlohmann_json::nlohmann_json
+        ${HDF5_LIBRARIES}
         PRIVATE
         chrestCompilerFlags)
 
