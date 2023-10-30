@@ -1,0 +1,74 @@
+# This is a simple example and test to ensure that mixed cell types are working
+---
+test:
+#  # a unique test name for this integration tests
+#  name: mixedCellType2D
+#  # run mpi with two ranks
+#  ranks: 2
+#  # create a default assert that compares the log file
+#  assert: "inputs/compressibleFlow/gmshPipeFlow/gmshPipeFlow.txt"
+
+# metadata for the simulation
+environment:
+  title: _mixedCellType2D
+  tagDirectory: false
+# global arguments that can be used by petsc
+arguments:
+  # The gmsh arguments must be global because they are used before the mesh options are parsed
+  dm_plex_gmsh_use_regions: true
+# set up the time stepper responsible for marching in time
+timestepper:
+  # time stepper specific input arguments
+  arguments:
+    ts_type: rk
+    ts_max_time: 100000
+    ts_max_steps: 50
+    ts_dt: 1.0E-10
+    ts_adapt_safety: 0.9
+    ts_adapt_type: physicsConstrained
+  # io controls how often the results are saved to a file for visualization and restart
+  io:
+    interval: 5 # results are saved at every 5 steps.  In real simulations this should be much larger.
+  # load in the gmsh produced mesh file
+  domain: !ablate::domain::MeshFile
+    path: mixedCells2D.msh
+    options:
+      dm_plex_check_all: true
+      dm_distribute: false # turn off default dm_distribute so that we can extrude label first
+    # specify any modifications to be performed to the mesh/domain
+    modifiers:
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+        ghostCellDepth: 2
+
+    fields:
+      # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
+      # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas: 287.0
+  # set the initial conditions of the flow field
+  initialization:
+    # The ablate::finiteVolume::CompressibleFlowFields is a helper
+    # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state:
+        eos: *eos
+        pressure: 101325.0
+        temperature: 300
+        velocity: "0.0, 0.0"
+
+# this problem uses a single solver (!ablate::finiteVolume::CompressibleFlowSolver)
+solvers: []
+#solver: !ablate::finiteVolume::CompressibleFlowSolver
+#  id: subDomainFVMSolver
+#  # only operate this solver over a subset of the domain
+#  region:
+#    name: fluidFlow
+#  parameters:
+#    cfl: 0.25
+#  eos: *eos
+#  boundaryConditions: []
+#  monitors:
+#    - !ablate::monitors::TimeStepMonitor

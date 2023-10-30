@@ -93,7 +93,7 @@ class Domain : private utilities::Loggable<Domain>, private ablate::utilities::N
      * @param solvers
      * @param initializations
      */
-    void InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers = {}, std::shared_ptr<ablate::domain::Initializer> initializations = {},
+    void InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers = {}, const std::shared_ptr<ablate::domain::Initializer>& initializations = {},
                               const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& = {});
 
     /**

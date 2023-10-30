@@ -2,6 +2,7 @@
 #include <set>
 #include <sstream>
 #include "utilities/mpiUtilities.hpp"
+#include "utilities/petscSupport.hpp"
 #include "utilities/petscUtilities.hpp"
 
 ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const std::vector<std::shared_ptr<FieldDescription>>& allAuxFields)
@@ -200,7 +201,7 @@ PetscErrorCode ablate::domain::SubDomain::ProjectFieldFunctionsToSubDM(const std
         fieldFunctions[fieldId.subId] = fieldInitialization->GetSolutionField().GetPetscFunction();
     }
 
-    PetscCall(DMProjectFunctionLocal(subDM, time, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, locVec));
+    PetscCall(DMProjectFunctionLocalMixedCells(subDM, time, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, locVec));
 
     // push the results back to the global vector
     PetscCall(DMLocalToGlobal(dm, locVec, INSERT_VALUES, globVec));
@@ -739,7 +740,7 @@ void ablate::domain::SubDomain::ProjectFieldFunctionsToLocalVector(const std::ve
                 ISDestroy(&regionIS) >> utilities::PetscUtilities::checkError;
             }
         } else {
-            DMProjectFunctionLocal(dm, time, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> utilities::PetscUtilities::checkError;
+            DMProjectFunctionLocalMixedCells(dm, time, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> utilities::PetscUtilities::checkError;
         }
     }
 }

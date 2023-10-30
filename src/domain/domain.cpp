@@ -1,11 +1,11 @@
 #include "domain.hpp"
 #include <set>
-#include <typeinfo>
 #include <utility>
 #include "solver/solver.hpp"
 #include "subDomain.hpp"
 #include "utilities/demangler.hpp"
 #include "utilities/mpiUtilities.hpp"
+#include "utilities/petscSupport.hpp"
 #include "utilities/petscUtilities.hpp"
 
 ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptorsIn, std::vector<std::shared_ptr<modifiers::Modifier>> modifiersIn,
@@ -140,7 +140,7 @@ std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(
     }
 }
 
-void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers, std::shared_ptr<ablate::domain::Initializer> initializations,
+void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers, const std::shared_ptr<ablate::domain::Initializer>& initializations,
                                                   const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& exactSolutions) {
     // determine the number of fields
     for (auto& solver : solvers) {
@@ -240,7 +240,7 @@ void ablate::domain::Domain::ProjectFieldFunctions(const std::vector<std::shared
                 ISDestroy(&regionIS) >> utilities::PetscUtilities::checkError;
             }
         } else {
-            DMProjectFunctionLocal(dm, time, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> utilities::PetscUtilities::checkError;
+            DMProjectFunctionLocalMixedCells(dm, time, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> utilities::PetscUtilities::checkError;
         }
     }
 
