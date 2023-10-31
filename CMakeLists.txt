@@ -47,6 +47,7 @@ include(config/findTensorFlow.cmake)
 include(config/findChrestCompilerFlags.cmake)
 include(config/findSLEPc.cmake)
 include(config/printVersion.cmake)
+find_package(HDF5 REQUIRED)
 
 # specify in the required libaries
 target_link_libraries(ablateLibrary
