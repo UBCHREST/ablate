@@ -288,7 +288,7 @@ inline void print_array(std::string prefix, PetscReal* array, const int n) {
     std::cout << std::endl;
 }
 
-void ablate::eos::ChemTab::ChemistrySource(const PetscReal density, PetscReal densityProgressVariables[],
+void ablate::eos::ChemTab::ChemistrySource(const PetscReal density, const PetscReal densityProgressVariables[],
                                            PetscReal *densityEnergySource, PetscReal *densityProgressVariableSource) const {
     // call model using generalized invocation method (usable for inversion & source computation)
     ChemTabModelComputeFunction(density, densityProgressVariables, densityEnergySource, densityProgressVariableSource, nullptr);
