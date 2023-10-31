@@ -1,7 +1,6 @@
 #include "chemTab.hpp"
 
 #include <eos/tChem.hpp>
-#include <fstream>
 
 #ifdef WITH_TENSORFLOW
 #include <yaml-cpp/yaml.h>
@@ -90,9 +89,9 @@ ablate::eos::ChemTab::~ChemTab() {
     TF_DeleteSession(session, status);
     TF_DeleteSessionOptions(sessionOpts);
     TF_DeleteStatus(status);
+
     free(sourceEnergyScaler);
     for (std::size_t i = 0; i < speciesNames.size(); i++) free(Wmat[i]);
-
     free(Wmat);
 }
 
@@ -153,8 +152,8 @@ void ablate::eos::ChemTab::LoadBasisVectors(std::istream &inputStream, std::size
 #define safe_free(ptr) \
     if (ptr != NULL) free(ptr)
 
-void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariable[], PetscReal *predictedSourceEnergy, PetscReal *progressVariableSource,
-                                                       PetscReal *densityMassFractions) const {
+void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariables[], PetscReal *densityEnergySource,
+                                                       PetscReal *densityProgressVariableSource, PetscReal *densityMassFractions) const {
     //********* Get Input tensor
     const std::size_t numInputs = 1;
 
@@ -185,7 +184,7 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
     float data[ninputs];
 
     for (std::size_t i = 0; i < ninputs; i++) {
-        data[i] = (float)(densityProgressVariable[i] / density);
+        data[i] = (float)(densityProgressVariables[i] / density);
     }
 
     std::size_t ndata = ninputs * sizeof(float);
@@ -202,7 +201,7 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
     float *outputArray;  // Dwyer: as counter intuitive as it may be static dependents come second, it did pass its tests!
     outputArray = (float *)TF_TensorData(outputValues[1]);
     auto p = (PetscReal)outputArray[0];
-    if (predictedSourceEnergy != nullptr) *predictedSourceEnergy += p * density;
+    if (densityEnergySource != nullptr) *densityEnergySource += p * density;
 
     // store inverted mass fractions
     if (densityMassFractions) {
@@ -213,12 +212,12 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
 
     // store CPV sources
     outputArray = (float *)TF_TensorData(outputValues[0]);
-    if (progressVariableSource != nullptr) {
-        // progressVariableSource[0] = 0;  // Zmix source is always 0!  We
+    if (densityProgressVariableSource != nullptr) {
+        //densityProgressVariableSource[0] = 0;  // Zmix source is always 0!
 
-        // -1 b/c we don't want to go out of bounds with the +1 below, also int is to prevent integer overflow
+        // -1 b/c we don't want to go out of bounds with the +1 below, also to prevent integer overflow
         for (size_t i = 0; i < (progressVariablesNames.size() - 1); ++i) {
-            progressVariableSource[i + 1] += (PetscReal)outputArray[i] * density;  // +1 b/c we are manually filling in Zmix source value (to 0)
+            densityProgressVariableSource[i + 1] += (PetscReal)outputArray[i] * density;  // +1 b/c we are manually filling in Zmix source value (to 0)
         }
     }
 
@@ -231,21 +230,25 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
     }
 }
 
-void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal *progressVariables, PetscReal *densityMassFractions, PetscReal density) const {
+void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal *densityProgressVariables, PetscReal *densityMassFractions, const PetscReal density) const {
     // call model using generalized invocation method (usable for inversion & source computation)
-    ChemTabModelComputeFunction(density, progressVariables, nullptr, nullptr, densityMassFractions);
+    ChemTabModelComputeFunction(density, densityProgressVariables, nullptr, nullptr, densityMassFractions);
 }
 
-void ablate::eos::ChemTab::ComputeMassFractions(const std::vector<PetscReal> &progressVariables, std::vector<PetscReal> &massFractions, PetscReal density) const {
+void ablate::eos::ChemTab::ComputeMassFractions(std::vector<PetscReal> &progressVariables, std::vector<PetscReal> &massFractions, PetscReal density) const {
     if (progressVariables.size() != progressVariablesNames.size()) {
-        throw std::invalid_argument("The Progress variable size is expected to be " + std::to_string(progressVariablesNames.size()));
+        throw std::invalid_argument(
+                "The Progress variable size is expected to be " + std::to_string(progressVariablesNames.size()));
     }
     if (massFractions.size() != speciesNames.size()) {
         throw std::invalid_argument("The Species names for massFractions is expected to be " + std::to_string(progressVariablesNames.size()));
     }
+    // the naming is wrong on purpose so that it will conform to tests.
     ComputeMassFractions(progressVariables.data(), massFractions.data(), density);
+    //ComputeProgressVariables(massFractions.data(), progressVariables.data());
 }
 
+// Apparently only used for tests!
 void ablate::eos::ChemTab::ComputeProgressVariables(const std::vector<PetscReal> &massFractions, std::vector<PetscReal> &progressVariables) const {
     if (progressVariables.size() != progressVariablesNames.size()) {
         throw std::invalid_argument("The Progress variable size is expected to be " + std::to_string(progressVariablesNames.size()));
@@ -256,6 +259,7 @@ void ablate::eos::ChemTab::ComputeProgressVariables(const std::vector<PetscReal>
     ComputeProgressVariables(massFractions.data(), progressVariables.data());
 }
 
+// This is real one used elsewhere probably because it is faster
 void ablate::eos::ChemTab::ComputeProgressVariables(const PetscReal *massFractions, PetscReal *progressVariables) const {
     // c = W'y
     for (size_t i = 0; i < progressVariablesNames.size(); i++) {
@@ -267,13 +271,37 @@ void ablate::eos::ChemTab::ComputeProgressVariables(const PetscReal *massFractio
     }
 }
 
-void ablate::eos::ChemTab::ChemistrySource(PetscReal density, const PetscReal densityProgressVariable[], PetscReal *densityEnergySource, PetscReal *progressVariableSource) const {
+inline double L2_norm(PetscReal* array, int n) {
+    double norm=0;
+    for (int i=0; i<n; i++) {
+        norm+=pow(array[i], 2);
+    }
+    norm = pow(norm/n, 0.5);
+    return norm;
+}
+
+inline void print_array(std::string prefix, PetscReal* array, const int n) {
+    std::cout << prefix;
+    for (int i=0; i<n; i++) {
+        std::cout << array[i] << ", ";
+    }
+    std::cout << std::endl;
+}
+
+void ablate::eos::ChemTab::ChemistrySource(const PetscReal density, PetscReal densityProgressVariables[],
+                                           PetscReal *densityEnergySource, PetscReal *densityProgressVariableSource) const {
+    // call model using generalized invocation method (usable for inversion & source computation)
+    ChemTabModelComputeFunction(density, densityProgressVariables, densityEnergySource, densityProgressVariableSource, nullptr);
+}
+
+void ablate::eos::ChemTab::ChemistrySourceBatch(PetscReal density, const PetscReal densityProgressVariable[][], PetscReal** densityEnergySource, PetscReal** progressVariableSource) const {
     // call model using generalized invocation method (usable for inversion & source computation)
     ChemTabModelComputeFunction(density, densityProgressVariable, densityEnergySource, progressVariableSource, nullptr);
 }
 
 void ablate::eos::ChemTab::View(std::ostream &stream) const { stream << "EOS: " << type << std::endl; }
 
+// How does this work? should we be overriding SourceCalc class methods or this method here?
 std::shared_ptr<ablate::eos::ChemistryModel::SourceCalculator> ablate::eos::ChemTab::CreateSourceCalculator(const std::vector<domain::Field> &fields, const ablate::domain::Range &cellRange) {
     // Look for the euler field
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
@@ -332,6 +360,7 @@ ablate::eos::EOSFunction ablate::eos::ChemTab::GetFieldFunctionFunction(const st
             // Compute the mass fractions from progress
             std::vector<PetscReal> yi(speciesNames.size());
 
+            // TODO: change for batch processing!! (ask Matt about it)
             // compute the progress variables and put into conserved for now
             ComputeMassFractions(progress, yi.data());
 
@@ -377,6 +406,7 @@ ablate::eos::EOSFunction ablate::eos::ChemTab::GetFieldFunctionFunction(const st
             // Compute the mass fractions from progress
             PetscReal yi[speciesNames.size()];
 
+            // TODO: change for batch processing!! (ask Matt about it)
             // compute the progress variables and put into conserved for now
             ComputeMassFractions(progress, yi);
 
@@ -426,6 +456,7 @@ PetscErrorCode ablate::eos::ChemTab::ComputeMassFractions(PetscReal time, PetscI
     // Get the density from euler
     PetscReal density = u[uOff[EULER] + finiteVolume::CompressibleFlowFields::RHO];
 
+    // TODO: change for batch processing!! (ask Matt about it)
     // call the compute mass fractions
     chemTab->ComputeMassFractions(u + uOff[DENSITY_PROGRESS], u + uOff[DENSITY_YI], density);
 
@@ -444,6 +475,8 @@ ablate::eos::ChemTab::ChemTabSourceCalculator::ChemTabSourceCalculator(PetscInt 
                                                                        std::shared_ptr<ChemTab> chemTabModel)
     : densityOffset(densityOffset), densityEnergyOffset(densityEnergyOffset), densityProgressVariableOffset(densityProgressVariableOffset), chemTabModel(std::move(chemTabModel)) {}
 
+// NOTE: I'm not sure however I believe that this could be the ONLY place that needs updating for Batch processing??
+// Comments seem to indicate it is the case...
 void ablate::eos::ChemTab::ChemTabSourceCalculator::AddSource(const ablate::domain::Range &cellRange, Vec locX, Vec locFVec) {
     // get access to the xArray, fArray
     PetscScalar *fArray;
@@ -452,22 +485,38 @@ void ablate::eos::ChemTab::ChemTabSourceCalculator::AddSource(const ablate::doma
     VecGetArrayRead(locX, &xArray) >> utilities::PetscUtilities::checkError;
 
     // Get the solution dm
-    DM dm;
+    DM dm; // NOTE: DM is topological space (i.e. grid)
     VecGetDM(locFVec, &dm) >> utilities::PetscUtilities::checkError;
 
+    // TODO: change this for batch processing!!
     // March over each cell in the range
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;
+        // Dwyer: iCell is the "point"
 
-        // Get the current state variables for this cell
+        // Def: PetscErrorCode DMPlexPointLocalRef(DM dm, PetscInt point, PetscScalar *array, void *ptr)
+        // Help: return read/write access to a point in local array
+        // :param array: - array to index into
+        // :param ptr: output reference/return value
+
+        // Get the current source variables for this cell
         PetscScalar *sourceAtCell = nullptr;
         DMPlexPointLocalRef(dm, iCell, fArray, &sourceAtCell) >> utilities::PetscUtilities::checkError;
 
-        // Get the current state variables for this cell
+         // Get the current state variables for this cell (CPVs)
         const PetscScalar *solutionAtCell = nullptr;
         DMPlexPointLocalRead(dm, iCell, xArray, &solutionAtCell) >> utilities::PetscUtilities::checkError;
 
-        chemTabModel->ChemistrySource(solutionAtCell[densityOffset], solutionAtCell + densityProgressVariableOffset, sourceAtCell + densityEnergyOffset, sourceAtCell + densityProgressVariableOffset);
+        // Def: PetscErrorCode DMPlexPointLocalRead(DM dm, PetscInt point, const PetscScalar *array, void *ptr)
+        // Help: return read access to a point in local array
+        // NOTE: The only difference is that DMPlexPointLocalRef gives read/write access
+        // & DMPlexPointLocalRead gives only ready access
+
+        // Def: ChemTab::ChemistrySource(PetscReal density, const PetscReal densityProgressVariable[], PetscReal *densityEnergySource, PetscReal *progressVariableSource)
+        // Help: last 2 (Souener & CPV_source) are the "return values"
+        chemTabModel->ChemistrySource(solutionAtCell[densityOffset], solutionAtCell + densityProgressVariableOffset,
+                                      sourceAtCell + densityEnergyOffset, sourceAtCell + densityProgressVariableOffset);
+        // NOTE: These "offsets" are pointers since they are CONSTANT class attributes!
     }
     // cleanup
     VecRestoreArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
