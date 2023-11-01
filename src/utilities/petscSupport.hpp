@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+PetscErrorCode DMPlexFaceCentroidOutwardAreaNormal(DM dm, PetscInt cell, PetscInt face, PetscReal *centroid, PetscReal *n);
+
 /**
  * Return the list of neighboring cells/vertices to cell p using a combination of number of levels and maximum distance
  * dm - The mesh

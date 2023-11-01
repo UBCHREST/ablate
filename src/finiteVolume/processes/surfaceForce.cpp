@@ -149,6 +149,15 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
         dirac = SmoothDirac(cellPhi, 0.0, 2.0*h);
       }
 
+      PetscScalar *eulerSource = nullptr;
+      xDMPlexPointLocalRef(eulerDM, cell, eulerField->id, fArray, &eulerSource) >> utilities::PetscUtilities::checkError;
+
+      // Start by zeroing out everything
+      eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHO] = 0.0;
+      eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] = 0.0;
+      for (PetscInt d = 0; d < dim; ++d) {
+          eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = 0.0;
+      }
 
       if (dirac > 1e-10){
         // Normal at the cell-center
@@ -163,30 +172,16 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
         xDMPlexPointLocalRead(eulerDM, cell, eulerField->id, xArray, &euler) >> utilities::PetscUtilities::checkError;
         const PetscScalar density = euler[ablate::finiteVolume::CompressibleFlowFields::RHO];
 
-        PetscScalar *eulerSource = nullptr;
-        xDMPlexPointLocalRef(eulerDM, cell, eulerField->id, fArray, &eulerSource) >> utilities::PetscUtilities::checkError;
-
-        eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] = 0;
         for (PetscInt d = 0; d < dim; ++d) {
             // calculate surface force and energy
 
-            PetscReal surfaceForce = -dirac* sigma * H[0] * n[d];
+            PetscReal surfaceForce = -dirac* density * sigma * H[0] * n[d];
             PetscReal vel = euler[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density;
             PetscReal surfaceEnergy = surfaceForce * vel;
 
             // add in the contributions
             eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = surfaceForce;
             eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] += surfaceEnergy;
-        }
-      }
-      else {
-
-        // Zero out everything away from the interface
-        PetscScalar *eulerSource = nullptr;
-        DMPlexPointLocalFieldRef(eulerDM, cell, eulerField->id, fArray, &eulerSource) >> utilities::PetscUtilities::checkError;
-        eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] = 0;
-        for (PetscInt d = 0; d < dim; ++d) {
-            eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = 0.0;
         }
       }
 

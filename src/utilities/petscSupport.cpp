@@ -607,7 +607,7 @@ PetscErrorCode xDMPlexPointLocalRead(DM dm, PetscInt p, PetscInt fID, const Pets
  * @param centroid - Centroid of the face
  * @param n - Outward facing surface area normal
  */
-static PetscErrorCode DMPlexFaceCentroidOutwardAreaNormal(DM dm, PetscInt cell, PetscInt face, PetscReal *centroid, PetscReal *n) {
+PetscErrorCode DMPlexFaceCentroidOutwardAreaNormal(DM dm, PetscInt cell, PetscInt face, PetscReal *centroid, PetscReal *n) {
     PetscFunctionBegin;
 
     // Get the cell center
@@ -1164,7 +1164,10 @@ PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, Petsc
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-#include <petsc/private/hashmapi.h>
+
+
+
+// This isn't the most accurate as the face center may not lie along the vector connecting two adjacent cells
 PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]) {
 
     PetscFunctionBegin;
@@ -1180,82 +1183,149 @@ PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscIn
     const PetscScalar *dataArray;
     PetscCall(VecGetArrayRead(data, &dataArray));
 
-    // Get all vertices of the cell
-    PetscInt nVert, *verts;
-    PetscCall(DMPlexCellGetVertices(dm, c, &nVert, &verts));
-
-    PetscHMapI hash = NULL; // Used to convert from vertex numbering to 0->nVert-1
-    PetscCall(PetscHMapICreate(&hash));
-
-    PetscReal *vertVals;
-    PetscCall(DMGetWorkArray(dm, nVert, MPIU_REAL, &vertVals));
-
-
-    // Locations of the vertices
-    PetscReal *vertCoords;
-    PetscCall(DMPlexVertexGetCoordinates(dm, nVert, verts, &vertCoords));
-    for (PetscInt v = 0; v < nVert; ++v) {
-      PetscCall(PetscHMapISet(hash, verts[v], v));
-
-      vertVals[v] = 0.0;
-
-      PetscInt nCells, *cells;
-      PetscCall(DMPlexVertexGetCells(dm, verts[v], &nCells, &cells));
-
-      for (PetscInt i = 0; i < nCells; ++i) {
-        PetscReal *cellVal;
-        PetscCall(xDMPlexPointLocalRead(dm, cells[i], fID, dataArray, &cellVal));
-        vertVals[v] += cellVal[offset];
-      }
-
-      vertVals[v] /= nCells;
-
-      PetscCall(DMPlexVertexRestoreCells(dm, verts[v], &nCells, &cells));
-
-    }
-    PetscCall(DMPlexVertexRestoreCoordinates(dm, nVert, verts, &vertCoords));
-    PetscCall(DMPlexCellRestoreVertices(dm, c, &nVert, &verts));
-
-
-    for (PetscInt d = 0; d < dim; ++d) g[d] = 0.0;
-
-
+    // Get all faces of the cell
     PetscInt       nFaces;
     const PetscInt *faces;
     PetscCall(DMPlexGetConeSize(dm, c, &nFaces));
     PetscCall(DMPlexGetCone(dm, c, &faces));
+
+    for (PetscInt d = 0; d < dim; ++d) g[d] = 0.0;
+
     for (PetscInt f = 0; f < nFaces; ++f) {
-      PetscInt nVert, *verts;
-      PetscCall(DMPlexCellGetVertices(dm, faces[f], &nVert, &verts));
 
-      PetscReal faceValue = 0.0;
-      for (PetscInt v = 0; v < nVert; ++v) {
-        PetscInt id;
-        PetscHMapIGet(hash, verts[v], &id);
-        faceValue += vertVals[id];
+      // Compute the face center location and the outward surface area normal
+      PetscReal S[dim], centroid[dim];
+      PetscCall(DMPlexFaceCentroidOutwardAreaNormal(dm, c, faces[f], centroid, S));
+
+      // The cells sharing this face
+      PetscInt       nSharedCells;
+      const PetscInt *sharedCells;
+      PetscCall(DMPlexGetSupportSize(dm, faces[f], &nSharedCells));
+      PetscCall(DMPlexGetSupport(dm, faces[f], &sharedCells));
+      PetscCheck(nSharedCells < 3, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "More than two cells are sharing a face.");
+
+      PetscReal vAve = 0.0, vSum = 0.0;
+      for (PetscInt j = 0; j < nSharedCells; ++j) {
+        PetscInt sc = sharedCells[j];
+
+        PetscReal x[dim];
+        PetscCall(DMPlexComputeCellGeometryFVM(dm, sc, NULL, x, NULL));  // Center of the candidate cell.
+
+        PetscReal dist = 0.0;
+        for (PetscInt d = 0; d < dim; ++d) dist += PetscSqr(x[d] - centroid[d]);
+        dist = PetscSqrtReal(dist);
+
+        PetscReal *val;
+        PetscCall(xDMPlexPointLocalRead(dm, sc, fID, dataArray, &val));
+
+        vAve += val[offset]*dist;
+        vSum += dist;
       }
-      faceValue /= nVert;
 
-      PetscCall(DMPlexCellRestoreVertices(dm, faces[f], &nVert, &verts));
-
-      PetscReal N[dim];
-      PetscCall(DMPlexFaceCentroidOutwardAreaNormal(dm, c, faces[f], NULL, N));
-
-      for (PetscInt d = 0; d < dim; ++d) g[d] += faceValue*N[d];
+      for (PetscInt d = 0; d < dim; ++d) g[d] += vAve*S[d]/vSum;
     }
-
-
-    PetscHMapIDestroy(&hash);
-    PetscCall(DMRestoreWorkArray(dm, nVert, MPIU_REAL, &vertVals));
 
     // Center of the cell
     PetscReal cellVolume;
     PetscCall(DMPlexComputeCellGeometryFVM(dm, c, &cellVolume, NULL, NULL));
     for (PetscInt d = 0; d < dim; ++d) g[d] /= cellVolume;
 
-
     PetscFunctionReturn(PETSC_SUCCESS);
 }
+
+
+//#include <petsc/private/hashmapi.h>
+//PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]) {
+
+//    PetscFunctionBegin;
+
+//    PetscInt       cStart, cEnd;
+//    PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));  // Range of cells
+//    PetscCheck(c >= cStart && c < cEnd, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "DMPlexCellToCellGrad must have a valid cell as input.");
+
+//    PetscInt       dim;
+//    PetscCall(DMGetDimension(dm, &dim));
+//    PetscCheck(dim > 1 && dim < 4, PETSC_COMM_SELF, PETSC_ERR_SUP, "DMPlexCellToCellGrad does not support a DM of dimension %" PetscInt_FMT, dim);
+
+//    const PetscScalar *dataArray;
+//    PetscCall(VecGetArrayRead(data, &dataArray));
+
+//    // Get all vertices of the cell
+//    PetscInt nVert, *verts;
+//    PetscCall(DMPlexCellGetVertices(dm, c, &nVert, &verts));
+
+//    PetscHMapI hash = NULL; // Used to convert from vertex numbering to 0->nVert-1
+//    PetscCall(PetscHMapICreate(&hash));
+
+//    PetscReal *vertVals;
+//    PetscCall(DMGetWorkArray(dm, nVert, MPIU_REAL, &vertVals));
+
+
+//    // Locations of the vertices
+//    PetscReal *vertCoords;
+//    PetscCall(DMPlexVertexGetCoordinates(dm, nVert, verts, &vertCoords));
+//    for (PetscInt v = 0; v < nVert; ++v) {
+//      PetscCall(PetscHMapISet(hash, verts[v], v));
+
+//      vertVals[v] = 0.0;
+
+//      PetscInt nCells, *cells;
+//      PetscCall(DMPlexVertexGetCells(dm, verts[v], &nCells, &cells));
+
+//      for (PetscInt i = 0; i < nCells; ++i) {
+//        PetscReal *cellVal;
+//        PetscCall(xDMPlexPointLocalRead(dm, cells[i], fID, dataArray, &cellVal));
+//        vertVals[v] += cellVal[offset];
+//      }
+
+//      vertVals[v] /= nCells;
+
+//      PetscCall(DMPlexVertexRestoreCells(dm, verts[v], &nCells, &cells));
+
+//    }
+//    PetscCall(DMPlexVertexRestoreCoordinates(dm, nVert, verts, &vertCoords));
+//    PetscCall(DMPlexCellRestoreVertices(dm, c, &nVert, &verts));
+
+
+//    for (PetscInt d = 0; d < dim; ++d) g[d] = 0.0;
+
+
+//    PetscInt       nFaces;
+//    const PetscInt *faces;
+//    PetscCall(DMPlexGetConeSize(dm, c, &nFaces));
+//    PetscCall(DMPlexGetCone(dm, c, &faces));
+//    for (PetscInt f = 0; f < nFaces; ++f) {
+//      PetscInt nVert, *verts;
+//      PetscCall(DMPlexCellGetVertices(dm, faces[f], &nVert, &verts));
+
+//      PetscReal faceValue = 0.0;
+//      for (PetscInt v = 0; v < nVert; ++v) {
+//        PetscInt id;
+//        PetscHMapIGet(hash, verts[v], &id);
+//        faceValue += vertVals[id];
+//      }
+//      faceValue /= nVert;
+
+//      PetscCall(DMPlexCellRestoreVertices(dm, faces[f], &nVert, &verts));
+
+//      PetscReal N[dim];
+//      PetscCall(DMPlexFaceCentroidOutwardAreaNormal(dm, c, faces[f], NULL, N));
+
+//      for (PetscInt d = 0; d < dim; ++d) g[d] += faceValue*N[d];
+//    }
+
+
+//    PetscHMapIDestroy(&hash);
+//    PetscCall(DMRestoreWorkArray(dm, nVert, MPIU_REAL, &vertVals));
+
+//    // Center of the cell
+//    PetscReal cellVolume;
+//    PetscCall(DMPlexComputeCellGeometryFVM(dm, c, &cellVolume, NULL, NULL));
+//    for (PetscInt d = 0; d < dim; ++d) g[d] /= cellVolume;
+
+
+//    PetscFunctionReturn(PETSC_SUCCESS);
+//}
 
 
 //PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]) {
