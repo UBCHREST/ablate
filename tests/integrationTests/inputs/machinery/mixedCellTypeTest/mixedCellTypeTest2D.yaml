@@ -1,12 +1,14 @@
 # This is a simple example and test to ensure that mixed cell types are working
 ---
 test:
-#  # a unique test name for this integration tests
-#  name: mixedCellType2D
-#  # run mpi with two ranks
-#  ranks: 2
-#  # create a default assert that compares the log file
-#  assert: "inputs/compressibleFlow/gmshPipeFlow/gmshPipeFlow.txt"
+  # a unique test name for this integration tests
+  name: mixedCellType2D
+  # run mpi with two ranks
+  ranks: 1
+  # compare the generated xmf file with the expected
+  assert: !testingResources::asserts::TextFileAssert
+    expected: "inputs/mixedCellTypeTest/domain.xmf"
+    actual: "domain.xmf"
 
 # metadata for the simulation
 environment:
