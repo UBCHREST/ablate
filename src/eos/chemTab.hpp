@@ -52,8 +52,13 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @param densityProgressVariableSource , if null, won't be set
      * @param densityMassFractions , if null, won't be set
      */
-    void ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariables[], PetscReal* densityEnergySource, PetscReal* densityProgressVariableSource,
+    void ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariables[],
+                                     PetscReal* densityEnergySource, PetscReal* densityProgressVariableSource,
                                      PetscReal* densityMassFractions) const;
+    void ChemTabModelComputeFunction(const PetscReal density[], const PetscReal*const*const densityProgressVariables,
+                                     PetscReal** densityEnergySource, PetscReal** densityProgressVariableSource,
+                                     PetscReal** densityMassFractions, size_t n) const;
+    // Batched Version of above
 
     //! Tell the compressible flow fields what tags to use with this field
     [[nodiscard]] std::vector<std::string> GetFieldTags() const override { return std::vector<std::string>{ablate::finiteVolume::CompressibleFlowFields::MinusOneToOneRange}; }
@@ -93,6 +98,8 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @param progressVariablesSize
      */
     void ComputeProgressVariables(const PetscReal* massFractions, PetscReal* progressVariables) const;
+    void ComputeProgressVariables(const PetscReal*const* massFractions, PetscReal*const* progressVariables, size_t n) const;
+    // Batched version of above
 
     /**
      * private function to compute the mass fractions assuming euler[0] and densityProgressVariable[1] and densityYi[2] is provided
@@ -146,15 +153,11 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @param conserved
      * @param source
      */
-    void ChemistrySource(const PetscReal density, const PetscReal densityProgressVariable[], PetscReal* densityEnergySource, PetscReal* densityProgressVariableSource) const;
-
-    /**
-     * Single function to compute the source terms for a single point
-     * @param fields
-     * @param conserved
-     * @param source
-     */
-    void ChemistrySourceBatch(const PetscReal *const density, const PetscReal *const*const densityProgressVariable, PetscReal** densityEnergySource, PetscReal** progressVariableSource, int n) const;
+    void ChemistrySource(const PetscReal density, const PetscReal densityProgressVariable[],
+                         PetscReal* densityEnergySource, PetscReal* densityProgressVariableSource) const;
+    void ChemistrySource(const PetscReal *const density, const PetscReal *const*const densityProgressVariable,
+                         PetscReal** densityEnergySource, PetscReal** progressVariableSource, size_t n) const;
+    // Batched version of above
 
 
     /**
@@ -231,7 +234,9 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @param massFractions
      * @param density allows for this function to be used with density*progress variables
      */
-    void ComputeMassFractions(const PetscReal* progressVariables, PetscReal* massFractions, PetscReal density = 1.0) const;
+    void ComputeMassFractions(const PetscReal* densityProgressVariables, PetscReal* densityMassFractions, const PetscReal density = 1.0) const;
+    void ComputeMassFractions(const PetscReal*const* densityProgressVariables, PetscReal** densityMassFractions, const PetscReal density[], size_t n) const;
+    // Batched version of above
 
     /**
      * Computes the progress variables for a given initializer

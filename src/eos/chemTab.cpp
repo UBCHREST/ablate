@@ -198,7 +198,7 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
     //********** Extract source predictions
 
     // store physical variables (e.g. souener & mass fractions)
-    float *outputArray;  // Dwyer: as counter intuitive as it may be static dependents come second, it did pass its tests!
+    float *outputArray;  // Dwyer: as counterintuitive as it may be static dependents come second, it did pass its tests!
     outputArray = (float *)TF_TensorData(outputValues[1]);
     auto p = (PetscReal)outputArray[0];
     if (densityEnergySource != nullptr) *densityEnergySource += p * density;
@@ -230,9 +230,19 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
     }
 }
 
-void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal *densityProgressVariables, PetscReal *densityMassFractions, const PetscReal density) const {
-    // call model using generalized invocation method (usable for inversion & source computation)
-    ChemTabModelComputeFunction(density, densityProgressVariables, nullptr, nullptr, densityMassFractions);
+#define safe_id(array, i) (array ? array[i] : nullptr)
+
+void ablate::eos::ChemTab::ChemTabModelComputeFunction(const PetscReal density[], const PetscReal*const*const densityProgressVariables,
+                                                       PetscReal** densityEnergySource, PetscReal** densityProgressVariableSource,
+                                                       PetscReal** densityMassFractions, size_t n) const {
+    // for now we are implementing batch in the same way that single calls happened
+    // but testing that this works prepares the api for the real thing!
+    for (size_t i=0; i<n; i++) {
+        ChemTabModelComputeFunction(density[i], densityProgressVariables[i],
+                                    safe_id(densityEnergySource, i),
+                                    safe_id(densityProgressVariableSource, i),
+                                    safe_id(densityMassFractions, i));
+    }
 }
 
 void ablate::eos::ChemTab::ComputeMassFractions(std::vector<PetscReal> &progressVariables, std::vector<PetscReal> &massFractions, PetscReal density) const {
@@ -246,6 +256,28 @@ void ablate::eos::ChemTab::ComputeMassFractions(std::vector<PetscReal> &progress
     // the naming is wrong on purpose so that it will conform to tests.
     ComputeMassFractions(progressVariables.data(), massFractions.data(), density);
     //ComputeProgressVariables(massFractions.data(), progressVariables.data());
+}
+
+void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal *densityProgressVariables, PetscReal *densityMassFractions,
+                                                const PetscReal density) const {
+    // call model using generalized invocation method (usable for inversion & source computation)
+    ChemTabModelComputeFunction(density, densityProgressVariables, nullptr,
+                                nullptr, densityMassFractions);
+}
+
+void ablate::eos::ChemTab::ComputeMassFractions(const PetscReal*const* densityProgressVariables, PetscReal** densityMassFractions,
+                                                const PetscReal density[], size_t n) const {
+    ChemTabModelComputeFunction(density, densityProgressVariables, nullptr,
+                                nullptr, densityMassFractions, n);
+}
+
+
+// Batched Version
+void ablate::eos::ChemTab::ComputeProgressVariables(const PetscReal *const *massFractions,
+                                                    PetscReal *const *progressVariables, size_t n) const {
+    for (size_t i = 0; i < n; i++) {
+        ComputeProgressVariables(massFractions[i], progressVariables[i]);
+    }
 }
 
 // Apparently only used for tests!
@@ -291,17 +323,16 @@ inline void print_array(std::string prefix, PetscReal* array, const int n) {
 void ablate::eos::ChemTab::ChemistrySource(const PetscReal density, const PetscReal densityProgressVariables[],
                                            PetscReal *densityEnergySource, PetscReal *densityProgressVariableSource) const {
     // call model using generalized invocation method (usable for inversion & source computation)
-    ChemTabModelComputeFunction(density, densityProgressVariables, densityEnergySource, densityProgressVariableSource, nullptr);
+    ChemTabModelComputeFunction(density, densityProgressVariables, densityEnergySource,
+                                densityProgressVariableSource, nullptr);
 }
 
-void ablate::eos::ChemTab::ChemistrySourceBatch(const PetscReal*const density, const PetscReal*const*const densityProgressVariable,
-                                                PetscReal** densityEnergySource, PetscReal** progressVariableSource, int n) const {
-    // for now we are implementing batch in the same way that single calls happened
-    // but testing that this works prepares the api for the real thing!
-    for (int i=0; i<n; i++) {
-        ChemistrySource(density[i], densityProgressVariable[i], densityEnergySource[i], progressVariableSource[i]);
-    }
-
+// Batched Version
+void ablate::eos::ChemTab::ChemistrySource(const PetscReal*const density, const PetscReal*const*const densityProgressVariables,
+                                           PetscReal** densityEnergySource, PetscReal** densityProgressVariableSource, size_t n) const {
+    // call model using generalized invocation method (usable for inversion & source computation)
+    ChemTabModelComputeFunction(density, densityProgressVariables, densityEnergySource,
+                                densityProgressVariableSource,nullptr, n);
 }
 
 void ablate::eos::ChemTab::View(std::ostream &stream) const { stream << "EOS: " << type << std::endl; }
@@ -546,8 +577,9 @@ void ablate::eos::ChemTab::ChemTabSourceCalculator::AddSource(const ablate::doma
         // NOTE: These "offsets" are pointers since they are CONSTANT class attributes!
     }
 
-    chemTabModel->ChemistrySourceBatch(allDensity, allDensityCPV,allDensityEnergySource,
-                                       allDensityCPVSource, buffer_len);
+    // using batch overloaded version
+    chemTabModel->ChemistrySource(allDensity, allDensityCPV,allDensityEnergySource,
+                                  allDensityCPVSource, buffer_len);
 
     // cleanup
     VecRestoreArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
