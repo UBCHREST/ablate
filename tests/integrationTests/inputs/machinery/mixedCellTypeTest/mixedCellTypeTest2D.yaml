@@ -56,8 +56,8 @@ timestepper:
       state:
         eos: *eos
         pressure: 101325.0
-        temperature: 300
-        velocity: "0.0, 0.0"
+        temperature: 300+x*100
+        velocity: "x*10, y*100"
 
 # this problem uses a single solver (!ablate::finiteVolume::CompressibleFlowSolver)
 solvers: []
