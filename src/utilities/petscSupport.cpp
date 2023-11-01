@@ -1400,7 +1400,10 @@ PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscIn
 }
 
 PetscErrorCode DMProjectFunctionLocalMixedCells(DM dm, PetscReal time, PetscErrorCode (**funcs)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nc, PetscScalar *u, void *ctx), void **ctxs, InsertMode mode, Vec localX){
+
     PetscFunctionBegin;
+    // Call once to cover the FE fields.
+    PetscCall(DMProjectFunctionLocal(dm, time, funcs, ctxs, mode, localX));
 
     // define the cells we would like to project over
     const PetscInt PetscCellTypeCount = 12;
