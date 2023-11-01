@@ -154,7 +154,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @param conserved
      * @param source
      */
-    void ChemistrySourceBatch(PetscReal* density, const PetscReal** densityProgressVariable, PetscReal** densityEnergySource, PetscReal** progressVariableSource) const;
+    void ChemistrySourceBatch(const PetscReal *const density, const PetscReal *const*const densityProgressVariable, PetscReal** densityEnergySource, PetscReal** progressVariableSource, int n) const;
 
 
     /**
