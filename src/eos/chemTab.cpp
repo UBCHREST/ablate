@@ -294,9 +294,14 @@ void ablate::eos::ChemTab::ChemistrySource(const PetscReal density, const PetscR
     ChemTabModelComputeFunction(density, densityProgressVariables, densityEnergySource, densityProgressVariableSource, nullptr);
 }
 
-void ablate::eos::ChemTab::ChemistrySourceBatch(PetscReal density, const PetscReal densityProgressVariable[][], PetscReal** densityEnergySource, PetscReal** progressVariableSource) const {
-    // call model using generalized invocation method (usable for inversion & source computation)
-    ChemTabModelComputeFunction(density, densityProgressVariable, densityEnergySource, progressVariableSource, nullptr);
+void ablate::eos::ChemTab::ChemistrySourceBatch(const PetscReal*const density, const PetscReal*const*const densityProgressVariable,
+                                                PetscReal** densityEnergySource, PetscReal** progressVariableSource, int n) const {
+    // for now we are implementing batch in the same way that single calls happened
+    // but testing that this works prepares the api for the real thing!
+    for (int i=0; i<n; i++) {
+        ChemistrySource(density[i], densityProgressVariable[i], densityEnergySource[i], progressVariableSource[i]);
+    }
+
 }
 
 void ablate::eos::ChemTab::View(std::ostream &stream) const { stream << "EOS: " << type << std::endl; }
@@ -488,6 +493,15 @@ void ablate::eos::ChemTab::ChemTabSourceCalculator::AddSource(const ablate::doma
     DM dm; // NOTE: DM is topological space (i.e. grid)
     VecGetDM(locFVec, &dm) >> utilities::PetscUtilities::checkError;
 
+    // Here we store the batched pointers needed for multiple chemTabModel->ChemistrySource() calls
+    PetscInt buffer_len = cellRange.end - cellRange.start;
+    //PetscScalar* allSourceAtCell[buffer_len]; // apparently these can't be used b/c of secret offsets
+    //const PetscScalar* allSolutionAtCell[buffer_len]; // apparently these can't be used b/c of secret offsets
+    PetscScalar allDensity[buffer_len];
+    const PetscScalar* allDensityCPV[buffer_len];
+    PetscScalar* allDensityEnergySource[buffer_len];
+    PetscScalar* allDensityCPVSource[buffer_len];
+
     // TODO: change this for batch processing!!
     // March over each cell in the range
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
@@ -499,25 +513,42 @@ void ablate::eos::ChemTab::ChemTabSourceCalculator::AddSource(const ablate::doma
         // :param array: - array to index into
         // :param ptr: output reference/return value
 
-        // Get the current source variables for this cell
-        PetscScalar *sourceAtCell = nullptr;
+//        // Get the current source variables for this cell
+//        DMPlexPointLocalRef(dm, iCell, fArray, &allSourceAtCell[c-cellRange.start]) >> utilities::PetscUtilities::checkError;
+
+        PetscScalar* sourceAtCell = nullptr;
         DMPlexPointLocalRef(dm, iCell, fArray, &sourceAtCell) >> utilities::PetscUtilities::checkError;
+        //assert(sourceAtCell==allSourceAtCell[c-cellRange.start]); // silly sanity check
 
          // Get the current state variables for this cell (CPVs)
-        const PetscScalar *solutionAtCell = nullptr;
+        const PetscScalar* solutionAtCell = nullptr;
         DMPlexPointLocalRead(dm, iCell, xArray, &solutionAtCell) >> utilities::PetscUtilities::checkError;
+        //allSolutionAtCell[c-cellRange.start]=solutionAtCell;
+        //DMPlexPointLocalRead(dm, iCell, xArray, &allSolutionAtCell[c-cellRange.start]) >> utilities::PetscUtilities::checkError;
+        //assert(solutionAtCell==allSolutionAtCell[c-cellRange.start]); // silly sanity check
 
         // Def: PetscErrorCode DMPlexPointLocalRead(DM dm, PetscInt point, const PetscScalar *array, void *ptr)
         // Help: return read access to a point in local array
         // NOTE: The only difference is that DMPlexPointLocalRef gives read/write access
         // & DMPlexPointLocalRead gives only ready access
 
-        // Def: ChemTab::ChemistrySource(PetscReal density, const PetscReal densityProgressVariable[], PetscReal *densityEnergySource, PetscReal *progressVariableSource)
-        // Help: last 2 (Souener & CPV_source) are the "return values"
-        chemTabModel->ChemistrySource(solutionAtCell[densityOffset], solutionAtCell + densityProgressVariableOffset,
-                                      sourceAtCell + densityEnergyOffset, sourceAtCell + densityProgressVariableOffset);
+        // store this cell's attributes into arg vectors
+        size_t index = c-cellRange.start;
+        allDensity[index]=solutionAtCell[densityOffset];
+        allDensityCPV[index]=solutionAtCell + densityProgressVariableOffset;
+        allDensityEnergySource[index]=sourceAtCell + densityEnergyOffset;
+        allDensityCPVSource[index]=sourceAtCell + densityProgressVariableOffset;
+
+//        // Def: ChemTab::ChemistrySource(PetscReal density, const PetscReal densityProgressVariable[], PetscReal *densityEnergySource, PetscReal *progressVariableSource)
+//        // Help: last 2 (Souener & CPV_source) are the "return values"
+//        chemTabModel->ChemistrySource(solutionAtCell[densityOffset], solutionAtCell + densityProgressVariableOffset,
+//                                      sourceAtCell + densityEnergyOffset, sourceAtCell + densityProgressVariableOffset);
         // NOTE: These "offsets" are pointers since they are CONSTANT class attributes!
     }
+
+    chemTabModel->ChemistrySourceBatch(allDensity, allDensityCPV,allDensityEnergySource,
+                                       allDensityCPVSource, buffer_len);
+
     // cleanup
     VecRestoreArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
     VecRestoreArrayRead(locX, &xArray) >> utilities::PetscUtilities::checkError;
