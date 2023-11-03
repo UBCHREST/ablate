@@ -3,10 +3,12 @@ target_sources(ablateLibrary
         completeSublimation.cpp
         oneDimensionHeatTransfer.cpp
         temperatureSublimation.cpp
+        arrheniusSublimation.cpp
 
         PUBLIC
         sublimationModel.hpp
         completeSublimation.hpp
         oneDimensionHeatTransfer.hpp
         temperatureSublimation.hpp
+        arrheniusSublimation.hpp
 )

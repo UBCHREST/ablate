@@ -26,41 +26,44 @@ jobs:
 
     steps:
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
       - name: Building tests
-        run: |
-          ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies${{matrix.compiler.id}}${{matrix.indices.id}}:latest
+        uses: docker/build-push-action@v5
+        with:
+          provenance: false
+          file: DockerTestFile
+          tags: framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}
+          context: .
+          build-args: |
+            PETSC_BUILD_ARCH='${{ matrix.petscConfig }}'
+            ENABLE_TENSOR_FLOW='${{ matrix.tensorFlowConfig }}'
+            ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies${{matrix.compiler.id}}${{matrix.indices.id}}:latest
+          load: true
 
-          docker buildx build .\
-            --provenance=false \
-            --file DockerTestFile \
-            --tag framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} \
-            --build-arg PETSC_BUILD_ARCH='${{ matrix.petscConfig }}' \
-            --build-arg ENABLE_TENSOR_FLOW='${{ matrix.tensorFlowConfig }}' \
-            --build-arg ABLATE_DEPENDENCY_IMAGE=$ABLATE_DEPENDENCY_IMAGE \
-            --load 
-          
+      - name: Monitor image size
+        run: |
           echo "Monitor image size"
           docker history framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}
 
       - name: Get the version from the build file
         run: echo "VERSION=$(docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} cmake --build --preset=ablate-print-version 2>&1 | head -n 1 )" >> $GITHUB_ENV
 
-      - name: Check for version
+      - name: Checking the version number for the repo
+        uses: mukunku/tag-exists-action@v1.4.0
+        id: checkVersionNumber
+        with:
+          tag: 'v${{env.VERSION}}'
+
+      - name: Version check error
+        if: ${{ steps.checkVersionNumber.outputs.exists == 'true' }}
         run: |
-          echo "Checking version: v$VERSION"
-          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
-            echo "::error file=CMakeLists.txt::The version already exists!"
-            exit 1
-          else
-            echo "version does not exist"
-          fi
+          echo "Version already exists: v$VERSION"
+          echo "::error file=CMakeLists.txt::The version already exists!"
+          exit 1
+       
 
       # run all the standard tests
       - name: Run tests

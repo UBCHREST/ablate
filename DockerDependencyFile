@@ -9,10 +9,6 @@ FROM $TENSORFLOW_IMAGE as tensor_flow_image
 ARG PETSC_BASE_IMAGE
 FROM $PETSC_BASE_IMAGE
 
-# Install any additional dependencies
-RUN apt-get update
-RUN apt-get install -y clang-format gdb
-
 # copy the tensorflow image
 COPY --from=tensor_flow_image /tensorflow /tensorflow
 ENV TENSORFLOW_DIR=/tensorflow

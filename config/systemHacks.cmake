@@ -4,10 +4,12 @@ if ("${APPLE}" AND (${CMAKE_CXX_COMPILER_ID} STREQUAL "AppleClang"))
     execute_process(COMMAND gfortran --print-file-name=libstdc++.dylib OUTPUT_VARIABLE LIBSTDCPP_PATH)
 
     # convert to an absolute path and get the directory
-    get_filename_component(LIBSTDCPP_PATH ${LIBSTDCPP_PATH} ABSOLUTE)
-    get_filename_component(LIBSTDCPP_PATH ${LIBSTDCPP_PATH} DIRECTORY)
+    if("${LIBSTDCPP_PATH}")
+        get_filename_component(LIBSTDCPP_PATH ${LIBSTDCPP_PATH} ABSOLUTE)
+        get_filename_component(LIBSTDCPP_PATH ${LIBSTDCPP_PATH} DIRECTORY)
 
-    target_link_directories(ablateLibrary PUBLIC ${LIBSTDCPP_PATH})
+        target_link_directories(ablateLibrary PUBLIC ${LIBSTDCPP_PATH})
+    endif ()
 endif ()
 
 ## update the install rpaths

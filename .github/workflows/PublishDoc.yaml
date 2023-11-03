@@ -30,7 +30,7 @@ jobs:
 
       # setup docker image of ablate
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Build the docker image
         run: |
