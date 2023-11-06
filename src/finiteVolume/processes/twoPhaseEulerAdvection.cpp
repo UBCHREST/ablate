@@ -5,6 +5,7 @@
 #include "eos/stiffenedGas.hpp"
 #include "eos/twoPhase.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "levelSet/levelSetUtilities.hpp"
 #include "flowProcess.hpp"
 #include "parameters/emptyParameters.hpp"
 
@@ -255,7 +256,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Setup(ablate::fini
 PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::MultiphaseFlowPreStage(TS flowTs, ablate::solver::Solver &solver, PetscReal stagetime) {
     PetscFunctionBegin;
     // Get flow field data
-    const auto &fvSolver = dynamic_cast<ablate::finiteVolume::FiniteVolumeSolver &>(solver);
+    auto &fvSolver = dynamic_cast<ablate::finiteVolume::FiniteVolumeSolver &>(solver);
     ablate::domain::Range cellRange;
     fvSolver.GetCellRangeWithoutGhost(cellRange);
     PetscInt dim;
@@ -313,7 +314,33 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Multipha
         allFields[uOff[0]] = alpha;  // sets volumeFraction field, does every iteration of time step (euler=1, rk=4)
     }
     // clean up
+
+
+std::shared_ptr<ablate::domain::SubDomain> subDomain = fvSolver.GetSubDomainPtr();
+
+ablate::domain::Range vertRange;
+fvSolver.GetSubDomain().GetRange(nullptr, 0, vertRange);
+DM solDM = fvSolver.GetSubDomain().GetDM();
+DM auxDM = fvSolver.GetSubDomain().GetAuxDM();
+Vec auxVec = fvSolver.GetSubDomain().GetAuxVector();
+
+
+const ablate::domain::Field *vofField = &(subDomain->GetField(TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD));
+const ablate::domain::Field *vertexNormalField = &(subDomain->GetField("vertexNormal"));
+const ablate::domain::Field *cellNormalField = &(subDomain->GetField("cellNormal"));
+const ablate::domain::Field *curvField = &(subDomain->GetField("curvature"));
+
+ablate::levelSet::Utilities::SharpenVOF(subDomain, cellRange, vertRange, globFlowVec, auxVec, solDM, auxDM, vofField->id, vertexNormalField->id, cellNormalField->id, curvField->id);
+
+
+
+//fvSolver.GetSubDomain().RestoreRange(vertRange);
+
+//exit(0);
+
+
     fvSolver.RestoreRange(cellRange);
+
     PetscFunctionReturn(0);
 }
 
@@ -475,7 +502,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     PetscReal alphaMin = PetscMin(alphaR, alphaL);
     PetscReal alphaDif = PetscAbs(alphaL - alphaR);
     PetscReal alphaLiq;
-    fluxCalculator::Direction directionL;
+    fluxCalculator::Direction directionL = fluxCalculator::NA;
     if ((alphaMin + alphaDif) >= (1.0 - 1e-12)) {
         alphaLiq = 0.0;
         massFluxLL = 0.0;
@@ -485,7 +512,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
         directionL = twoPhaseEulerAdvection->fluxCalculatorLiquidLiquid->GetFluxCalculatorFunction()(
             twoPhaseEulerAdvection->fluxCalculatorLiquidLiquid->GetFluxCalculatorContext(), normalVelocityL, aL_L, densityL_L, pL, normalVelocityR, aL_R, densityL_R, pR, &massFluxLL, &p12LL);
     }
-    fluxCalculator::Direction directionGL;
+    fluxCalculator::Direction directionGL = fluxCalculator::NA;
     if (alphaL > alphaR) {
         // gas on left, liquid on right
         directionGL = twoPhaseEulerAdvection->fluxCalculatorGasLiquid->GetFluxCalculatorFunction()(

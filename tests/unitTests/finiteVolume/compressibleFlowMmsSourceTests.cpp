@@ -58,7 +58,7 @@ struct CompressibleFlowMmsTestParameters {
     PetscInt levels;
     std::vector<PetscReal> expectedL2Convergence;
     std::vector<PetscReal> expectedLInfConvergence;
-    std::map<std::string, std::string> conservedFieldParameters;
+    std::map<std::string, std::string> conservedFieldParameters = {};
 };
 
 class CompressibleFlowMmsTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<CompressibleFlowMmsTestParameters> {

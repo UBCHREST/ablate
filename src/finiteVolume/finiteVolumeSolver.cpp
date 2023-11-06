@@ -288,7 +288,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(CellInterpola
     auto& fieldId = subDomain->GetField(field);
 
     // Create the FVMRHS Function
-    CellInterpolant::DiscontinuousFluxFunctionDescription functionDescription{.function = function, .context = context, .field = fieldId.id};
+    CellInterpolant::DiscontinuousFluxFunctionDescription functionDescription{.function = function, .context = context, .field = fieldId.id, .inputFields = {}, .auxFields = {}};
 
     for (auto& inputField : inputFields) {
         auto& inputFieldId = subDomain->GetField(inputField);
@@ -309,7 +309,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(ablate::finit
     auto& fieldId = subDomain->GetField(field);
 
     // Create the FVMRHS Function
-    FaceInterpolant::ContinuousFluxFunctionDescription functionDescription{.function = function, .context = context, .field = fieldId.id};
+    FaceInterpolant::ContinuousFluxFunctionDescription functionDescription{.function = function, .context = context, .field = fieldId.id, .inputFields = {}, .auxFields = {}};
 
     for (auto& inputField : inputFields) {
         auto& inputFieldId = subDomain->GetField(inputField);
@@ -327,7 +327,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(ablate::finit
 void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(CellInterpolant::PointFunction function, void* context, const std::vector<std::string>& fields,
                                                                    const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields) {
     // Create the FVMRHS Function
-    CellInterpolant::PointFunctionDescription functionDescription{.function = function, .context = context};
+    CellInterpolant::PointFunctionDescription functionDescription{.function = function, .context = context, .fields = {}, .inputFields = {}, .auxFields = {}};
 
     for (const auto& field : fields) {
         auto& fieldId = subDomain->GetField(field);

@@ -67,7 +67,7 @@ ablate::eos::tChem::SourceCalculator::SourceCalculator(const std::vector<domain:
     Kokkos::deep_copy(dtViewDevice, 1E-4);
 
     // determine the number of equations
-    ordinal_type numberOfEquations;
+    ordinal_type numberOfEquations = 0;
     switch (chemistryConstraints.reactorType) {
         case ReactorType::ConstantPressure:
             numberOfEquations = ::tChemLib::Impl::IgnitionZeroD_Problem<real_type, Tines::UseThisDevice<host_exec_space>::type>::getNumberOfTimeODEs(kineticModelGasConstData);

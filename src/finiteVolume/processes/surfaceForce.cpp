@@ -105,7 +105,8 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     const ablate::domain::Field *cellNormalField = &(subDomain->GetField("cellNormal"));
     const ablate::domain::Field *eulerField = &(subDomain->GetField(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD));
 
-
+printf("ComputeSource\n");
+exit(0);
     DM eulerDM = subDomain->GetFieldDM(*eulerField); // Get an euler-specific DM in case it's not in the same solution vector as the VOF field
     const PetscReal sigma = process->sigma; // Surface tension coefficient
 

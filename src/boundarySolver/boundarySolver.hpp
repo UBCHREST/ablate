@@ -16,10 +16,10 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction, pr
      * Boundary information.
      */
     typedef struct {
-        PetscInt faceId;       /* local id for this face.  For merged faces this is the first face merged **/
-        PetscReal normal[3];   /* normals (pointing into the boundary from the other region) */
-        PetscReal areas[3];    /* Area-scaled normals */
-        PetscReal centroid[3]; /* Location of centroid (quadrature point) */
+        PetscInt faceId = -1;       /* local id for this face.  For merged faces this is the first face merged **/
+        PetscReal normal[3] = {0.0, 0.0, 0.0};   /* normals (pointing into the boundary from the other region) */
+        PetscReal areas[3] = {0.0, 0.0, 0.0};    /* Area-scaled normals */
+        PetscReal centroid[3] = {0.0, 0.0, 0.0}; /* Location of centroid (quadrature point) */
     } BoundaryFVFaceGeom;
 
     using BoundarySourceFunction = PetscErrorCode (*)(PetscInt dim, const BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell, const PetscInt uOff[], const PetscScalar* boundaryValues,
@@ -110,11 +110,11 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction, pr
         /** store the stencil size for easy access */
         PetscInt stencilSize;
         /** The weights in [point*dim + dir] order */
-        std::vector<PetscScalar> gradientWeights;
+        std::vector<PetscScalar> gradientWeights = {};
         /** The distribution weights in order */
-        std::vector<PetscScalar> distributionWeights;
+        std::vector<PetscScalar> distributionWeights = {};
         /** Store the volume for each stencil cell */
-        std::vector<PetscScalar> volumes;
+        std::vector<PetscScalar> volumes = {};
     };
 
     /**
@@ -125,9 +125,9 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction, pr
         void* context;
         BoundarySourceType type;
 
-        std::vector<PetscInt> sourceFieldsOffset;
-        std::vector<PetscInt> inputFieldsOffset;
-        std::vector<PetscInt> auxFieldsOffset;
+        std::vector<PetscInt> sourceFieldsOffset = {};
+        std::vector<PetscInt> inputFieldsOffset = {};
+        std::vector<PetscInt> auxFieldsOffset = {};
     };
 
     /**
@@ -137,8 +137,8 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction, pr
         BoundaryUpdateFunction function;
         void* context;
 
-        std::vector<PetscInt> inputFields;
-        std::vector<PetscInt> auxFields;
+        std::vector<PetscInt> inputFields = {};
+        std::vector<PetscInt> auxFields = {};
     };
 
     // Hold the region used to define the boundary faces

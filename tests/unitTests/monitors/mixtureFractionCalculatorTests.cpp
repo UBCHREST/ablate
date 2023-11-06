@@ -103,7 +103,7 @@ struct MixtureFractionCalculatorExceptionParameters {
     std::function<std::shared_ptr<ablate::eos::EOS>()> createEOS;
     std::map<std::string, double> massFractionsFuel;
     std::map<std::string, double> massFractionsOxidizer;
-    std::vector<std::string> trackingElements;
+    std::vector<std::string> trackingElements = {};
 };
 class MixtureFractionCalculatorExceptionFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<MixtureFractionCalculatorExceptionParameters> {};
 
@@ -142,3 +142,4 @@ INSTANTIATE_TEST_SUITE_P(MixtureFractionCalculatorTests, MixtureFractionCalculat
                                                                                         .massFractionsFuel = {{"CH4", 1.0}},
                                                                                         .massFractionsOxidizer = {{"N2", 0.75511}, {"O2", 0.2314}}}),
                          [](const testing::TestParamInfo<MixtureFractionCalculatorExceptionParameters>& info) { return testingResources::PetscTestFixture::SanitizeTestName(info.param.name); });
+

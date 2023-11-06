@@ -251,7 +251,7 @@ PetscErrorCode ablate::boundarySolver::physics::subModels::OneDimensionHeatTrans
     }
 
     // Check if the heatflux into the surface is greater than what is being applied
-    PetscScalar heatFluxToSurface;
+    PetscScalar heatFluxToSurface = 0.0;
     PetscCall(oneDimensionHeatTransfer->GetSurfaceHeatFlux(heatFluxToSurface));
     if (heatFluxToSurface < heatFlux) {
         neededBcType = DM_BC_NATURAL;
