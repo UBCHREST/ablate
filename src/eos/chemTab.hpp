@@ -33,7 +33,6 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
     std::vector<std::string> progressVariablesNames = std::vector<std::string>(0);
 
     PetscReal** Wmat = nullptr;
-    PetscReal* sourceEnergyScaler = nullptr;
 
     // Store any initializers specified by the metadata
     std::map<std::string, std::map<std::string, double>> initializers;
@@ -57,7 +56,7 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
                                      PetscReal* densityMassFractions) const;
     void ChemTabModelComputeFunction(const PetscReal density[], const PetscReal*const*const densityProgressVariables,
                                      PetscReal** densityEnergySource, PetscReal** densityProgressVariableSource,
-                                     PetscReal** densityMassFractions, size_t n) const;
+                                     PetscReal** densityMassFractions, size_t batch_size) const;
     // Batched Version of above
 
     //! Tell the compressible flow fields what tags to use with this field
@@ -250,7 +249,11 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      * @return
      */
     [[nodiscard]] std::vector<std::tuple<ablate::solver::CellSolver::SolutionFieldUpdateFunction, void*, std::vector<std::string>>> GetSolutionFieldUpdates() override;
-};
+
+    void extractModelOutputsAtPoint(const PetscReal density, PetscReal *densityEnergySource,
+                                    PetscReal *densityProgressVariableSource, PetscReal *densityMassFractions,
+                                    const std::array<TF_Tensor *, 2> &outputValues, size_t id=0) const;
+    };
 
 #else
 class ChemTab : public ChemistryModel {

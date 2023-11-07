@@ -1,5 +1,4 @@
 #include "chemTab.hpp"
-
 #include <eos/tChem.hpp>
 
 #ifdef WITH_TENSORFLOW
@@ -90,7 +89,6 @@ ablate::eos::ChemTab::~ChemTab() {
     TF_DeleteSessionOptions(sessionOpts);
     TF_DeleteStatus(status);
 
-    free(sourceEnergyScaler);
     for (std::size_t i = 0; i < speciesNames.size(); i++) free(Wmat[i]);
     free(Wmat);
 }
@@ -149,57 +147,23 @@ void ablate::eos::ChemTab::LoadBasisVectors(std::istream &inputStream, std::size
 }
 
 // avoids freeing null pointers
-#define safe_free(ptr) \
-    if (ptr != NULL) free(ptr)
+#define safe_free(ptr) if (ptr != NULL) free(ptr)
 
 void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariables[], PetscReal *densityEnergySource,
                                                        PetscReal *densityProgressVariableSource, PetscReal *densityMassFractions) const {
-    //********* Get Input tensor
-    const std::size_t numInputs = 1;
+    ChemTabModelComputeFunction(&density, &densityProgressVariables, &densityEnergySource, &densityProgressVariableSource, &densityMassFractions, 1);
+}
 
-    TF_Output t0 = {TF_GraphOperationByName(graph, "serving_default_input_1"), 0};
-
-    if (t0.oper == nullptr) throw std::runtime_error("ERROR: Failed TF_GraphOperationByName serving_default_input_1");
-    std::array<TF_Output, numInputs> input = {t0};
-
-    //********* Get Output tensor
-    const std::size_t numOutputs = 2;
-
-    TF_Output t_sourceenergy = {TF_GraphOperationByName(graph, "StatefulPartitionedCall"), 0};
-    TF_Output t_sourceterms = {TF_GraphOperationByName(graph, "StatefulPartitionedCall"), 1};
-
-    if (t_sourceenergy.oper == nullptr) throw std::runtime_error("ERROR: Failed TF_GraphOperationByName StatefulPartitionedCall:0");
-    if (t_sourceterms.oper == nullptr) throw std::runtime_error("ERROR: Failed TF_GraphOperationByName StatefulPartitionedCall:1");
-    std::array<TF_Output, numOutputs> output = {t_sourceenergy, t_sourceterms};
-
-    //********* Allocate data for inputs & outputs
-    std::array<TF_Tensor *, numInputs> inputValues = {nullptr};
-    std::array<TF_Tensor *, numOutputs> outputValues = {nullptr, nullptr};
-
-    std::size_t ndims = 2;
-
-    // according to Varun this should work for including Zmix
-    auto ninputs = progressVariablesNames.size();
-    int64_t dims[] = {1, (int)ninputs};
-    float data[ninputs];
-
-    for (std::size_t i = 0; i < ninputs; i++) {
-        data[i] = (float)(densityProgressVariables[i] / density);
-    }
-
-    std::size_t ndata = ninputs * sizeof(float);
-    TF_Tensor *input_tensor = TF_NewTensor(TF_FLOAT, dims, (int)ndims, data, ndata, &NoOpDeallocator, nullptr);
-    if (input_tensor == nullptr) throw std::runtime_error("ERROR: Failed TF_NewTensor");
-
-    inputValues[0] = input_tensor;
-
-    TF_SessionRun(session, nullptr, input.data(), inputValues.data(), (int)numInputs, output.data(), outputValues.data(), (int)numOutputs, nullptr, 0, nullptr, status);
-    if (TF_GetCode(status) != TF_OK) throw std::runtime_error(TF_Message(status));
-    //********** Extract source predictions
+// Verified to work 11/7/23
+// NOTE: id arg is to index a potentially batched outputValues argument
+void ablate::eos::ChemTab::extractModelOutputsAtPoint(const PetscReal density, PetscReal *densityEnergySource,
+                                                      PetscReal *densityProgressVariableSource,
+                                                      PetscReal *densityMassFractions,
+                                                      const std::array<TF_Tensor *, 2> &outputValues, size_t id) const {
 
     // store physical variables (e.g. souener & mass fractions)
     float *outputArray;  // Dwyer: as counterintuitive as it may be static dependents come second, it did pass its tests!
-    outputArray = (float *)TF_TensorData(outputValues[1]);
+    outputArray = ((float *)TF_TensorData(outputValues[1])) + id*(speciesNames.size()+1); // also increment by id for batch processing
     auto p = (PetscReal)outputArray[0];
     if (densityEnergySource != nullptr) *densityEnergySource += p * density;
 
@@ -211,7 +175,7 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
     }
 
     // store CPV sources
-    outputArray = (float *)TF_TensorData(outputValues[0]);
+    outputArray = ((float *)TF_TensorData(outputValues[0])) + id*(progressVariablesNames.size() - 1);
     if (densityProgressVariableSource != nullptr) {
         //densityProgressVariableSource[0] = 0;  // Zmix source is always 0!
 
@@ -219,6 +183,70 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
         for (size_t i = 0; i < (progressVariablesNames.size() - 1); ++i) {
             densityProgressVariableSource[i + 1] += (PetscReal)outputArray[i] * density;  // +1 b/c we are manually filling in Zmix source value (to 0)
         }
+    }
+}
+
+#define safe_id(array, i) (array ? array[i] : nullptr)
+
+void ablate::eos::ChemTab::ChemTabModelComputeFunction(const PetscReal density[], const PetscReal*const*const densityProgressVariables,
+                                                       PetscReal** densityEnergySource, PetscReal** densityProgressVariableSource,
+                                                       PetscReal** densityMassFractions, size_t batch_size) const {
+    //********* Get Input tensor
+    const std::size_t numInputs = 1;
+
+    // WTF is t0? & What is index 0? <-- t0 is input graph op & index 0 is
+    // index of the input (which is only 0 b/c there is only 1 input)
+    TF_Output t0 = {TF_GraphOperationByName(graph, "serving_default_input_1"), 0};
+
+    if (t0.oper == nullptr) throw std::runtime_error("ERROR: Failed TF_GraphOperationByName serving_default_input_1");
+    std::array<TF_Output, numInputs> input = {t0};
+
+    //********* Get Output tensor
+    const std::size_t numOutputs = 2;
+
+    // NOTE: these names actually do make sense even though implicitly t_sourceenergy also includes inverse outputs
+    TF_Output t_sourceenergy = {TF_GraphOperationByName(graph, "StatefulPartitionedCall"), 0};
+    TF_Output t_sourceterms = {TF_GraphOperationByName(graph, "StatefulPartitionedCall"), 1};
+
+    if (t_sourceenergy.oper == nullptr) throw std::runtime_error("ERROR: Failed TF_GraphOperationByName StatefulPartitionedCall:0");
+    if (t_sourceterms.oper == nullptr) throw std::runtime_error("ERROR: Failed TF_GraphOperationByName StatefulPartitionedCall:1");
+    std::array<TF_Output, numOutputs> output = {t_sourceenergy, t_sourceterms};
+
+    //********* Allocate input_data for inputs & outputs
+    std::array<TF_Tensor *, numInputs> inputValues = {nullptr};
+    std::array<TF_Tensor *, numOutputs> outputValues = {nullptr, nullptr};
+
+    std::size_t ndims = 2;
+
+    // according to Varun this should work for including Zmix
+    auto ninputs = progressVariablesNames.size();
+    int64_t dims[] = {(int)batch_size, (int)ninputs};
+    float input_data[batch_size][ninputs]; // NOTE: we changed the 1st dimension from 1 --> batch_size
+
+    // NOTE: this should be modified sufficiently to support batch inputs!
+    for (size_t i = 0; i < batch_size; i++)
+        for (std::size_t j = 0; j < ninputs; j++)
+            input_data[i][j] = (float)(densityProgressVariables[i][j] / density[i]);
+
+    std::size_t ndata = sizeof(input_data);
+    TF_Tensor *input_tensor = TF_NewTensor(TF_FLOAT, dims, (int)ndims, input_data,
+                                           ndata, &NoOpDeallocator, nullptr);
+    if (input_tensor == nullptr) throw std::runtime_error("ERROR: Failed TF_NewTensor");
+
+    // there is only 1 input tensor per model eval point (unlike e.g. outputs)
+    inputValues[0] = input_tensor;
+
+    TF_SessionRun(session, nullptr, input.data(), inputValues.data(), (int)numInputs,
+                  output.data(), outputValues.data(), (int)numOutputs, nullptr,
+                  0, nullptr, status);
+    if (TF_GetCode(status) != TF_OK) throw std::runtime_error(TF_Message(status));
+    //********** Extract source predictions
+
+    // reiterate the same extraction process for each member of the batch
+    for (size_t i=0; i < batch_size; i++) {
+        extractModelOutputsAtPoint(density[i], safe_id(densityEnergySource, i),
+                                    safe_id(densityProgressVariableSource, i),
+                                    safe_id(densityMassFractions, i), outputValues, i);
     }
 
     // free allocated vectors
@@ -230,20 +258,18 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
     }
 }
 
-#define safe_id(array, i) (array ? array[i] : nullptr)
-
-void ablate::eos::ChemTab::ChemTabModelComputeFunction(const PetscReal density[], const PetscReal*const*const densityProgressVariables,
-                                                       PetscReal** densityEnergySource, PetscReal** densityProgressVariableSource,
-                                                       PetscReal** densityMassFractions, size_t n) const {
-    // for now we are implementing batch in the same way that single calls happened
-    // but testing that this works prepares the api for the real thing!
-    for (size_t i=0; i<n; i++) {
-        ChemTabModelComputeFunction(density[i], densityProgressVariables[i],
-                                    safe_id(densityEnergySource, i),
-                                    safe_id(densityProgressVariableSource, i),
-                                    safe_id(densityMassFractions, i));
-    }
-}
+//void ablate::eos::ChemTab::ChemTabModelComputeFunction(const PetscReal density[], const PetscReal*const*const densityProgressVariables,
+//                                                       PetscReal** densityEnergySource, PetscReal** densityProgressVariableSource,
+//                                                       PetscReal** densityMassFractions, size_t n) const {
+//    // for now we are implementing batch in the same way that single calls happened
+//    // but testing that this works prepares the api for the real thing!
+//    for (size_t i=0; i<n; i++) {
+//        ChemTabModelComputeFunction(density[i], densityProgressVariables[i],
+//                                    safe_id(densityEnergySource, i),
+//                                    safe_id(densityProgressVariableSource, i),
+//                                    safe_id(densityMassFractions, i));
+//    }
+//}
 
 void ablate::eos::ChemTab::ComputeMassFractions(std::vector<PetscReal> &progressVariables, std::vector<PetscReal> &massFractions, PetscReal density) const {
     if (progressVariables.size() != progressVariablesNames.size()) {
@@ -511,6 +537,7 @@ ablate::eos::ChemTab::ChemTabSourceCalculator::ChemTabSourceCalculator(PetscInt 
                                                                        std::shared_ptr<ChemTab> chemTabModel)
     : densityOffset(densityOffset), densityEnergyOffset(densityEnergyOffset), densityProgressVariableOffset(densityProgressVariableOffset), chemTabModel(std::move(chemTabModel)) {}
 
+
 // NOTE: I'm not sure however I believe that this could be the ONLY place that needs updating for Batch processing??
 // Comments seem to indicate it is the case...
 void ablate::eos::ChemTab::ChemTabSourceCalculator::AddSource(const ablate::domain::Range &cellRange, Vec locX, Vec locFVec) {
@@ -526,42 +553,26 @@ void ablate::eos::ChemTab::ChemTabSourceCalculator::AddSource(const ablate::doma
 
     // Here we store the batched pointers needed for multiple chemTabModel->ChemistrySource() calls
     PetscInt buffer_len = cellRange.end - cellRange.start;
-    //PetscScalar* allSourceAtCell[buffer_len]; // apparently these can't be used b/c of secret offsets
-    //const PetscScalar* allSolutionAtCell[buffer_len]; // apparently these can't be used b/c of secret offsets
     PetscScalar allDensity[buffer_len];
     const PetscScalar* allDensityCPV[buffer_len];
     PetscScalar* allDensityEnergySource[buffer_len];
     PetscScalar* allDensityCPVSource[buffer_len];
+    //PetscScalar* allSourceAtCell[buffer_len]; // apparently these can't be used b/c of secret offsets
+    //const PetscScalar* allSolutionAtCell[buffer_len]; // apparently these can't be used b/c of secret offsets
 
-    // TODO: change this for batch processing!!
+    // NOTE: this clunky approach has been verified to work for batch processsing
     // March over each cell in the range
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;
         // Dwyer: iCell is the "point"
 
-        // Def: PetscErrorCode DMPlexPointLocalRef(DM dm, PetscInt point, PetscScalar *array, void *ptr)
-        // Help: return read/write access to a point in local array
-        // :param array: - array to index into
-        // :param ptr: output reference/return value
-
-//        // Get the current source variables for this cell
-//        DMPlexPointLocalRef(dm, iCell, fArray, &allSourceAtCell[c-cellRange.start]) >> utilities::PetscUtilities::checkError;
-
         PetscScalar* sourceAtCell = nullptr;
         DMPlexPointLocalRef(dm, iCell, fArray, &sourceAtCell) >> utilities::PetscUtilities::checkError;
-        //assert(sourceAtCell==allSourceAtCell[c-cellRange.start]); // silly sanity check
 
          // Get the current state variables for this cell (CPVs)
         const PetscScalar* solutionAtCell = nullptr;
         DMPlexPointLocalRead(dm, iCell, xArray, &solutionAtCell) >> utilities::PetscUtilities::checkError;
-        //allSolutionAtCell[c-cellRange.start]=solutionAtCell;
-        //DMPlexPointLocalRead(dm, iCell, xArray, &allSolutionAtCell[c-cellRange.start]) >> utilities::PetscUtilities::checkError;
-        //assert(solutionAtCell==allSolutionAtCell[c-cellRange.start]); // silly sanity check
-
-        // Def: PetscErrorCode DMPlexPointLocalRead(DM dm, PetscInt point, const PetscScalar *array, void *ptr)
-        // Help: return read access to a point in local array
-        // NOTE: The only difference is that DMPlexPointLocalRef gives read/write access
-        // & DMPlexPointLocalRead gives only ready access
+        // NOTE: DMPlexPointLocalRef() is Read/Write while DMPlexPointLocalRead() is Read only
 
         // store this cell's attributes into arg vectors
         size_t index = c-cellRange.start;
@@ -569,17 +580,13 @@ void ablate::eos::ChemTab::ChemTabSourceCalculator::AddSource(const ablate::doma
         allDensityCPV[index]=solutionAtCell + densityProgressVariableOffset;
         allDensityEnergySource[index]=sourceAtCell + densityEnergyOffset;
         allDensityCPVSource[index]=sourceAtCell + densityProgressVariableOffset;
-
-//        // Def: ChemTab::ChemistrySource(PetscReal density, const PetscReal densityProgressVariable[], PetscReal *densityEnergySource, PetscReal *progressVariableSource)
-//        // Help: last 2 (Souener & CPV_source) are the "return values"
-//        chemTabModel->ChemistrySource(solutionAtCell[densityOffset], solutionAtCell + densityProgressVariableOffset,
-//                                      sourceAtCell + densityEnergyOffset, sourceAtCell + densityProgressVariableOffset);
-        // NOTE: These "offsets" are pointers since they are CONSTANT class attributes!
     }
 
-    // using batch overloaded version
+    // Using batch overloaded version
+    // TODO: consider/optimize the problem that is likely requires loop to copy these arrays into TF inputs??
     chemTabModel->ChemistrySource(allDensity, allDensityCPV,allDensityEnergySource,
                                   allDensityCPVSource, buffer_len);
+    // NOTE: These "offsets" are pointers since they are CONSTANT class attributes!
 
     // cleanup
     VecRestoreArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
