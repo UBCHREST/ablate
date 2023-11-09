@@ -116,6 +116,12 @@ class EOS {
     [[nodiscard]] virtual const std::vector<std::string>& GetProgressVariables() const = 0;
 
     /**
+     * Returns any additional field tags that can be used when setting up the field
+     * @return
+     */
+    [[nodiscard]] virtual std::vector<std::string> GetFieldTags() const { return std::vector<std::string>{}; }
+
+    /**
      * Helper function that would allow setting up of any additional required fields needed by the eos
      * @return
      */

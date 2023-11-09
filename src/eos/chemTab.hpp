@@ -8,6 +8,7 @@
 #include "eos/tChem.hpp"
 #ifdef WITH_TENSORFLOW
 #include <tensorflow/c/c_api.h>
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/vectorUtilities.hpp"
 #endif
 
@@ -53,6 +54,9 @@ class ChemTab : public ChemistryModel, public std::enable_shared_from_this<ChemT
      */
     void ChemTabModelComputeFunction(PetscReal density, const PetscReal densityProgressVariable[], PetscReal* predictedSourceEnergy, PetscReal* progressVariableSource,
                                      PetscReal* densityMassFractions) const;
+
+    //! Tell the compressible flow fields what tags to use with this field
+    [[nodiscard]] std::vector<std::string> GetFieldTags() const override { return std::vector<std::string>{ablate::finiteVolume::CompressibleFlowFields::MinusOneToOneRange}; }
 
     /**
      * The source calculator is used to do batch processing for chemistry model.  This is a bad implementation
@@ -240,6 +244,8 @@ class ChemTab : public ChemistryModel {
     [[nodiscard]] const std::vector<std::string>& GetFieldFunctionProperties() const override { throw std::runtime_error(errorMessage); }
 
     [[nodiscard]] const std::vector<std::string>& GetProgressVariables() const override { throw std::runtime_error(errorMessage); }
+
+    [[nodiscard]] std::vector<std::string> GetFieldTags() const override { throw std::runtime_error(errorMessage); }
 
     std::shared_ptr<SourceCalculator> CreateSourceCalculator(const std::vector<domain::Field>& fields, const ablate::domain::Range& cellRange) override { throw std::runtime_error(errorMessage); }
 

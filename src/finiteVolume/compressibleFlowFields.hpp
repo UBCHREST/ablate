@@ -33,10 +33,11 @@ class CompressibleFlowFields : public domain::FieldDescriptor {
     inline const static std::string EV_TAG = "EV";
 
     //! store extra variable founds
-    enum class ValidRange { POSITIVE, FULL, BOUND };
+    enum class ValidRange { POSITIVE, FULL, BOUND, MINUSONETOONE };
     inline const static std::string PositiveRange = "positive";
     inline const static std::string FullRange = "full";
     inline const static std::string BoundRange = "bound";
+    inline const static std::string MinusOneToOneRange = "minusOneToOneRange";
 
     //! these are arbitrary ev fields
     inline const static std::string EV_FIELD = "EV";
