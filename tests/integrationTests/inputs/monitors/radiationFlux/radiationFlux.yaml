@@ -28,7 +28,6 @@ timestepper:
     faces: [ 20, 20 ]
     lower: [ 0, 0 ]
     upper: [ 1, 1 ]
-    simplex: false
     options:
       dm_plex_hash_location: true
     preModifiers:

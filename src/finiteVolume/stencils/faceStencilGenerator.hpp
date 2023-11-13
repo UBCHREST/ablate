@@ -14,7 +14,7 @@ class FaceStencilGenerator {
    public:
     virtual ~FaceStencilGenerator() = default;
 
-    virtual void Generate(PetscInt face, Stencil& stencil, const domain::SubDomain& subDomain, const std::shared_ptr<domain::Region> solverRegion, DM cellDM, const PetscScalar* cellGeomArray,
+    virtual void Generate(PetscInt face, Stencil& stencil, const domain::SubDomain& subDomain, const std::shared_ptr<domain::Region>& solverRegion, DM cellDM, const PetscScalar* cellGeomArray,
                           DM faceDM, const PetscScalar* faceGeomArray) = 0;
 };
 

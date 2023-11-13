@@ -37,7 +37,6 @@ timestepper:
     faces: [ 25, 25 ]
     lower: [ 0.0, -.5 ]
     upper: [ 1.0, .5 ]
-    simplex: false
     options:
       # pass in these options to petsc when setting up the domain.  Using an option list here prevents command line arguments from being seen.
       dm_refine: 0 # must be zero when using the BoxMeshBoundaryCells

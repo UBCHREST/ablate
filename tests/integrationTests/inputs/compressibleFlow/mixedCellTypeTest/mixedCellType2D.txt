@@ -1,0 +1,23 @@
+Timestep: 0000 time = 0        dt = (.*)<expects> ~
+MinMaxAvg Yi for timestep 0000:
+	min: [ 0,  0,  0]
+	max: [ 0,  0,  0]
+	avg: [ 0,  0,  0]
+Timestep: 0500 time = 0.02909  dt = (.*)<expects> ~
+MinMaxAvg Yi for timestep 0500:
+	min: [0.2,  0,  0]
+	max: [ 1, 0.3, 0.5]
+	avg: \[(.*), (.*), (.*)\]<expects> <0.4 >.21 >0.4
+Timestep: 1000 time = 0.05802  dt = (.*)<expects> ~
+MinMaxAvg Yi for timestep 1000:
+	min: [0.2,  0,  0]
+	max: [ 1, 0.3, 0.5]
+	avg: \[(.*), (.*), (.*)\]<expects> >0.4 <.21 <0.4
+ResultFiles:
+domain.hdf5
+domain.xmf
+pgsLog
+pipeFlow.tex
+restart.rst
+vortexFlowField.hdf5
+vortexFlowField.xmf
