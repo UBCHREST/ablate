@@ -6,7 +6,14 @@ test:
   # run mpi with two ranks
   ranks: 1
   # compare the generated xmf file with the expected
-  assert: "inputs/compressibleFlow/mixedCellTypeTest/mixedCellType2D.txt"
+  asserts:
+    - "inputs/compressibleFlow/mixedCellTypeTest/mixedCellType2D.txt"
+    - !testingResources::asserts::TextFileAssert
+      expected: "inputs/compressibleFlow/mixedCellTypeTest/inHexMesh.csv"
+      actual: "inHexMesh.csv"
+    - !testingResources::asserts::TextFileAssert
+      expected: "inputs/compressibleFlow/mixedCellTypeTest/inTriangleMesh.csv"
+      actual: "inTriangleMesh.csv"
 
 # metadata for the simulation
 environment:
@@ -46,7 +53,7 @@ timestepper:
           - name: wall
           - name: outlet
           - name: main
-      -  # use the newly collapsed labels to extrude the boundary.  Do not extrude the cell
+      - # use the newly collapsed labels to extrude the boundary.  Do not extrude the cell
         !ablate::domain::modifiers::ExtrudeLabel
         regions:
           - name: inlet
@@ -138,8 +145,14 @@ solvers:
       # output the timestep and dt at each time step
       - !ablate::monitors::TimeStepMonitor
         interval: 500
-      - !ablate::monitors::MaxMinAverage
-        field: Yi
+      - !ablate::monitors::Probes
+        probes:
+          - name: inHexMesh
+            location: [ 0.0075, 0.005]
+          - name: inTriangleMesh
+            location: [ 0.0125, 0.005 ]
+        bufferSize: 10
+        variables: [ Yi ]
         interval: 500
 
   # use a boundary solver to update the cells in the gMsh inlet region to represent an inlet
