@@ -119,17 +119,18 @@ TEST_P(ChemTabTestFixture, ShouldComputeCorrectSource) {
         }
 
         // act
-        // Size up the results based upon expected
-        std::vector<PetscReal> actualSourceProgress(conservedProgressVariable.size(), 0.0);
-        PetscReal actualSourceEnergy = 0.0;
+        // Size up the results based upon expected. Include an offset to make sure values are added to
+        const double sourceOffset = 100.0;
+        std::vector<PetscReal> actualSourceProgress(conservedProgressVariable.size(), sourceOffset);
+        PetscReal actualSourceEnergy = sourceOffset;
         chemTabModel.ChemistrySource(density, conservedProgressVariable.data(), &actualSourceEnergy, actualSourceProgress.data());
 
-        assert_float_close(expectedSourceEnergy * density, actualSourceEnergy) << "The sourceEnergy is incorrect for model " << testTarget["testName"].as<std::string>();
+        assert_float_close(expectedSourceEnergy * density, actualSourceEnergy - sourceOffset) << "The sourceEnergy is incorrect for model " << testTarget["testName"].as<std::string>();
 
         for (std::size_t r = 0; r < expectedSourceProgress.size(); r++) {
             std::cerr << "expected source: " << expectedSourceProgress[r] << " actual source: " << actualSourceProgress[r] << std::endl << std::flush;
-            assert_float_close(expectedSourceProgress[r] * density, actualSourceProgress[r])
-                << " the percent difference of (" << expectedSourceProgress[r] << ", " << actualSourceProgress[r] << ") should be less than 5.0E-6 for index [" << r << "] for model "
+            assert_float_close(expectedSourceProgress[r] * density, actualSourceProgress[r] - sourceOffset)
+                << " the percent difference of (" << expectedSourceProgress[r] << ", " << (actualSourceProgress[r] - sourceOffset) << ") should be less than 5.0E-6 for index [" << r << "] for model "
                 << testTarget["testName"].as<std::string>();
         }
     }
