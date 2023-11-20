@@ -1,4 +1,5 @@
-# This is a simple example and test to ensure that mixed cell types are working
+# This is a simple example and test to ensure that mixed cell types are working with simple input/output.
+# The mesh that is used was generated in GMsh using both triangle and quads.
 ---
 test:
   # a unique test name for this integration tests
@@ -62,15 +63,4 @@ timestepper:
         velocity: "x*10, y*100"
 
 # this problem uses a single solver (!ablate::finiteVolume::CompressibleFlowSolver)
-solvers: []
-#solver: !ablate::finiteVolume::CompressibleFlowSolver
-#  id: subDomainFVMSolver
-#  # only operate this solver over a subset of the domain
-#  region:
-#    name: fluidFlow
-#  parameters:
-#    cfl: 0.25
-#  eos: *eos
-#  boundaryConditions: []
-#  monitors:
-#    - !ablate::monitors::TimeStepMonitor
+solvers: [ ]

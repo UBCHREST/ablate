@@ -6,8 +6,8 @@ domain.hdf5
 domain.xmf
 inHexMesh.csv
 inTriangleMesh.csv
+mixedCellLatex.tex
 pgsLog
-pipeFlow.tex
 restart.rst
 vortexFlowField.hdf5
 vortexFlowField.xmf

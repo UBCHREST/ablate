@@ -1,4 +1,5 @@
-# This is a simple example and test to ensure that mixed cell types are working
+# This is a simple example and test to ensure that mixed cell types are working with the compressible flow.
+# The mesh that is used was generated in GMsh using both triangle and quads.
 ---
 test:
   # a unique test name for this integration tests
@@ -72,7 +73,7 @@ timestepper:
       - !ablate::domain::modifiers::DistributeWithGhostCells
         ghostCellDepth: 2
       - !ablate::monitors::DmViewFromOptions
-        options: ":$OutputDirectory/pipeFlow.tex:ascii_latex"
+        options: ":$OutputDirectory/mixedCellLatex.tex:ascii_latex"
 
     fields:
       # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
@@ -145,6 +146,7 @@ solvers:
       # output the timestep and dt at each time step
       - !ablate::monitors::TimeStepMonitor
         interval: 500
+      # we can use probes to monitor the advection of the mass fractions through each mesh region
       - !ablate::monitors::Probes
         probes:
           - name: inHexMesh
