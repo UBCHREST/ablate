@@ -214,7 +214,7 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
     // store CPV sources
     outputArray = (float *)TF_TensorData(outputValues[0]);
     if (progressVariableSource != nullptr) {
-        //progressVariableSource[0] = 0;  // Zmix source is always 0!  We
+        // progressVariableSource[0] = 0;  // Zmix source is always 0!  We
 
         // -1 b/c we don't want to go out of bounds with the +1 below, also int is to prevent integer overflow
         for (size_t i = 0; i < (progressVariablesNames.size() - 1); ++i) {
