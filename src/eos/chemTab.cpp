@@ -202,7 +202,7 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
     float *outputArray;  // Dwyer: as counter intuitive as it may be static dependents come second, it did pass its tests!
     outputArray = (float *)TF_TensorData(outputValues[1]);
     auto p = (PetscReal)outputArray[0];
-    if (predictedSourceEnergy != nullptr) *predictedSourceEnergy = p * density;
+    if (predictedSourceEnergy != nullptr) *predictedSourceEnergy += p * density;
 
     // store inverted mass fractions
     if (densityMassFractions) {
@@ -214,11 +214,11 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
     // store CPV sources
     outputArray = (float *)TF_TensorData(outputValues[0]);
     if (progressVariableSource != nullptr) {
-        progressVariableSource[0] = 0;  // Zmix source is always 0!
+        // progressVariableSource[0] = 0;  // Zmix source is always 0!  We
 
         // -1 b/c we don't want to go out of bounds with the +1 below, also int is to prevent integer overflow
         for (size_t i = 0; i < (progressVariablesNames.size() - 1); ++i) {
-            progressVariableSource[i + 1] = (PetscReal)outputArray[i] * density;  // +1 b/c we are manually filling in Zmix source value (to 0)
+            progressVariableSource[i + 1] += (PetscReal)outputArray[i] * density;  // +1 b/c we are manually filling in Zmix source value (to 0)
         }
     }
 
