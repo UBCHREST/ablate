@@ -24,6 +24,9 @@ std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::finiteVol
         case CompressibleFlowFields::ValidRange::FULL:
             evTags.push_back(CompressibleFlowFields::FullRange);
             break;
+        case CompressibleFlowFields::ValidRange::MINUSONETOONE:
+            evTags.push_back(CompressibleFlowFields::MinusOneToOneRange);
+            break;
     }
 
     return {

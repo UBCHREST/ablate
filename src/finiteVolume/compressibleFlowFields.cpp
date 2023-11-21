@@ -24,7 +24,7 @@ std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::finiteVol
 
     if (!eos->GetSpeciesVariables().empty()) {
         flowFields.emplace_back(std::make_shared<domain::FieldDescription>(
-            DENSITY_YI_FIELD, DENSITY_YI_FIELD, eos->GetSpeciesVariables(), domain::FieldLocation::SOL, domain::FieldType::FVM, region, conservedFieldOptions));
+            DENSITY_YI_FIELD, DENSITY_YI_FIELD, eos->GetSpeciesVariables(), domain::FieldLocation::SOL, domain::FieldType::FVM, region, conservedFieldOptions, eos->GetFieldTags()));
         flowFields.emplace_back(
             std::make_shared<domain::FieldDescription>(YI_FIELD, YI_FIELD, eos->GetSpeciesVariables(), domain::FieldLocation::AUX, domain::FieldType::FVM, region, auxFieldOptions));
     }
@@ -37,7 +37,7 @@ std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::finiteVol
                                                                            domain::FieldType::FVM,
                                                                            region,
                                                                            conservedFieldOptions,
-                                                                           std::vector<std::string>{EV_TAG}));
+                                                                           ablate::utilities::VectorUtilities::Merge(eos->GetFieldTags(), {EV_TAG})));
         flowFields.emplace_back(
             std::make_shared<domain::FieldDescription>(PROGRESS_FIELD, PROGRESS_FIELD, eos->GetProgressVariables(), domain::FieldLocation::AUX, domain::FieldType::FVM, region, auxFieldOptions));
     }
@@ -69,6 +69,8 @@ std::istream& ablate::finiteVolume::operator>>(std::istream& is, ablate::finiteV
         v = ablate::finiteVolume::CompressibleFlowFields::ValidRange::POSITIVE;
     } else if (enumString == ablate::finiteVolume::CompressibleFlowFields::FullRange) {
         v = ablate::finiteVolume::CompressibleFlowFields::ValidRange::FULL;
+    } else if (enumString == ablate::finiteVolume::CompressibleFlowFields::MinusOneToOneRange) {
+        v = ablate::finiteVolume::CompressibleFlowFields::ValidRange::MINUSONETOONE;
     }
     return is;
 }

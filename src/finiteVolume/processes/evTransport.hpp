@@ -61,6 +61,12 @@ class EVTransport : public FlowProcess {
     static void BoundExtraVariables(TS ts, ablate::solver::Solver& solver, const std::string& field);
 
     /**
+     * Enforce extra variables to be between minus one and one
+     * @param ts
+     */
+    static void BoundExtraVariablesMinusOneToOne(TS ts, ablate::solver::Solver& solver, const std::string& field);
+
+    /**
      * Enforce extra variables to be zero or greater
      * @param ts
      */
@@ -83,6 +89,12 @@ class EVTransport : public FlowProcess {
      */
     static PetscErrorCode UpdateBoundEVField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, const PetscInt* aOff,
                                              PetscScalar* auxField, void* ctx);
+
+    /**
+     * Function to compute the EV fraction. This function assumes that the input values will be {"euler", "densityYi"} with values between minus one and one
+     */
+    static PetscErrorCode UpdateMinusOneToOneBoundEVField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues,
+                                                          const PetscInt* aOff, PetscScalar* auxField, void* ctx);
 
     /**
      * Function to compute the EV fraction. This function assumes that the input values will be {"euler", "densityYi"} with values zero or greater
