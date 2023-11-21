@@ -261,7 +261,7 @@ PetscErrorCode DMPlexRestoreNeighbors(DM dm, PetscInt p, PetscInt maxLevels, Pet
 
 PetscErrorCode DMPlexGetNeighbors(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useCells, PetscBool returnNeighborVertices, PetscInt *nCells, PetscInt **cells) {
 
-    const PetscInt maxLevelListSize = 10000;
+    const PetscInt maxLevelListSize = 100000;
     const PetscInt maxListSize = 100000;
     PetscInt numNew, nLevelList[2];
     PetscInt *addList = NULL, levelList[2][maxLevelListSize], currentLevelLoc, prevLevelLoc;
@@ -383,26 +383,26 @@ PetscErrorCode DMPlexGetNeighbors(DM dm, PetscInt p, PetscInt maxLevels, PetscRe
         }
         PetscCall(PetscSortRealWithArrayInt(n, dist, list));
         PetscCall(PetscFree(dist));
-//    } else if (type == 0 && cte == 1) {
-//        // Now only include the the numberCells closest cells
-//        PetscReal *dist;
-//        PetscInt j, dim, i_x, vStart;
-//        Vec coords;
-//        PetscReal *coordsArray;
-//        PetscCall(DMGetDimension(dm, &dim));  // The dimension of the grid
-//        PetscCall(PetscMalloc1(n, &dist));
-//        PetscCall(DMGetCoordinatesLocal(dm, &coords));           // Get all the vertices coordinates
-//        PetscCall(VecGetArray(coords, &coordsArray));            // Copy the quantities in coords vector and paste them to the coordsArray vector
-//        PetscCall(DMPlexGetDepthStratum(dm, 0, &vStart, NULL));  // Range of vertices
-//        for (i = 0; i < n; ++i) {
-//            dist[i] = 0.0;
-//            i_x = (list[i] - vStart) * dim;
-//            for (j = 0; j < dim; ++j) {  // Compute the distance so that we can check if it's within the required distance.
-//                dist[i] += PetscSqr(x0[j] - coordsArray[i_x + j]);
-//            }
-//        }
-//        PetscCall(PetscSortRealWithArrayInt(n, dist, list));
-//        PetscCall(PetscFree(dist));
+    } else if (type == 0 && cte == 1) {
+        // Now only include the the numberCells closest vertices
+        PetscReal *dist;
+        PetscInt j, dim, i_x, vStart;
+        Vec coords;
+        PetscReal *coordsArray;
+        PetscCall(DMGetDimension(dm, &dim));  // The dimension of the grid
+        PetscCall(PetscMalloc1(n, &dist));
+        PetscCall(DMGetCoordinatesLocal(dm, &coords));           // Get all the vertices coordinates
+        PetscCall(VecGetArray(coords, &coordsArray));            // Copy the quantities in coords vector and paste them to the coordsArray vector
+        PetscCall(DMPlexGetDepthStratum(dm, 0, &vStart, NULL));  // Range of vertices
+        for (i = 0; i < n; ++i) {
+            dist[i] = 0.0;
+            i_x = (list[i] - vStart) * dim;
+            for (j = 0; j < dim; ++j) {  // Compute the distance so that we can check if it's within the required distance.
+                dist[i] += PetscSqr(x0[j] - coordsArray[i_x + j]);
+            }
+        }
+        PetscCall(PetscSortRealWithArrayInt(n, dist, list));
+        PetscCall(PetscFree(dist));
     } else {
         numberCells = n;
     }
@@ -900,7 +900,7 @@ PetscErrorCode DMPlexRestoreCommonPoints(DM dm, const PetscInt p1, const PetscIn
 
 // Compute the corner surface area normal as defined in Morgan and Waltz with respect to a given vertex and an edge center
 // NOTE: This does NOT check if the vertex and cell are actually associated with each other.
-static PetscErrorCode DMPlexCornerSurfaceAreaNormal(DM dm, const PetscInt v, const PetscInt c, PetscReal N[]) {
+PetscErrorCode DMPlexCornerSurfaceAreaNormal(DM dm, const PetscInt v, const PetscInt c, PetscReal N[]) {
     PetscFunctionBegin;
 
     PetscReal vCoords[3];

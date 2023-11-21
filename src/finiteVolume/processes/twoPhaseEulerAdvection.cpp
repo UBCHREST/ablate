@@ -316,21 +316,21 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Multipha
     // clean up
 
 
-std::shared_ptr<ablate::domain::SubDomain> subDomain = fvSolver.GetSubDomainPtr();
+//std::shared_ptr<ablate::domain::SubDomain> subDomain = fvSolver.GetSubDomainPtr();
 
-ablate::domain::Range vertRange;
-fvSolver.GetSubDomain().GetRange(nullptr, 0, vertRange);
-DM solDM = fvSolver.GetSubDomain().GetDM();
-DM auxDM = fvSolver.GetSubDomain().GetAuxDM();
-Vec auxVec = fvSolver.GetSubDomain().GetAuxVector();
+//ablate::domain::Range vertRange;
+//fvSolver.GetSubDomain().GetRange(nullptr, 0, vertRange);
+//DM solDM = fvSolver.GetSubDomain().GetDM();
+//DM auxDM = fvSolver.GetSubDomain().GetAuxDM();
+//Vec auxVec = fvSolver.GetSubDomain().GetAuxVector();
 
 
-const ablate::domain::Field *vofField = &(subDomain->GetField(TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD));
-const ablate::domain::Field *vertexNormalField = &(subDomain->GetField("vertexNormal"));
-const ablate::domain::Field *cellNormalField = &(subDomain->GetField("cellNormal"));
-const ablate::domain::Field *curvField = &(subDomain->GetField("curvature"));
+//const ablate::domain::Field *vofField = &(subDomain->GetField(TwoPhaseEulerAdvection::VOLUME_FRACTION_FIELD));
+//const ablate::domain::Field *vertexNormalField = &(subDomain->GetField("vertexNormal"));
+//const ablate::domain::Field *cellNormalField = &(subDomain->GetField("cellNormal"));
+//const ablate::domain::Field *curvField = &(subDomain->GetField("curvature"));
 
-ablate::levelSet::Utilities::SharpenVOF(subDomain, cellRange, vertRange, globFlowVec, auxVec, solDM, auxDM, vofField->id, vertexNormalField->id, cellNormalField->id, curvField->id);
+//ablate::levelSet::Utilities::SharpenVOF(subDomain, cellRange, vertRange, globFlowVec, auxVec, solDM, auxDM, vofField->id, vertexNormalField->id, cellNormalField->id, curvField->id);
 
 
 

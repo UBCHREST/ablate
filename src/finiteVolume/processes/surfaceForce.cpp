@@ -105,8 +105,6 @@ PetscErrorCode ablate::finiteVolume::processes::SurfaceForce::ComputeSource(cons
     const ablate::domain::Field *cellNormalField = &(subDomain->GetField("cellNormal"));
     const ablate::domain::Field *eulerField = &(subDomain->GetField(ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD));
 
-printf("ComputeSource\n");
-exit(0);
     DM eulerDM = subDomain->GetFieldDM(*eulerField); // Get an euler-specific DM in case it's not in the same solution vector as the VOF field
     const PetscReal sigma = process->sigma; // Surface tension coefficient
 
@@ -119,7 +117,7 @@ exit(0);
     h *= 2.0; // Min radius returns the distance between a cell-center and a face. Double it to get the average cell size
 //SaveCellData("vof0.txt", locX, vofField, 1, subDomain);
 
-    ablate::levelSet::Utilities::Reinitialize(subDomain, locX, vofField, 5, lsField, vertexNormalField, cellNormalField, curvField);
+    ablate::levelSet::Utilities::Reinitialize(subDomain, locX, vofField, 8, lsField, vertexNormalField, cellNormalField, curvField);
 
     DM auxDM = subDomain->GetAuxDM();
     Vec auxVec = subDomain->GetAuxVector();

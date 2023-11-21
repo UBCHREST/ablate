@@ -226,15 +226,42 @@ void RBF::Matrix(const PetscInt c) {
     }
 
     MatDenseRestoreArrayWrite(A, &vals) >> utilities::PetscUtilities::checkError;
-    MatViewFromOptions(A, NULL, "-ablate::domain::rbf::RBF::A_view") >> utilities::PetscUtilities::checkError;
+//    MatViewFromOptions(A, NULL, "-ablate::domain::rbf::RBF::A_view") >> utilities::PetscUtilities::checkError;
 
     // Factor the matrix
-    MatLUFactor(A, NULL, NULL, NULL) >> utilities::PetscUtilities::checkError;
+
+Mat F;
+try {
+    MatFactorInfo info;
+    MatFactorInfoInitialize(&info) >> utilities::PetscUtilities::checkError;
+    MatGetFactor(A, MATSOLVERPETSC, MAT_FACTOR_LU, &F) >> utilities::PetscUtilities::checkError;
+    info.shifttype = (PetscReal)MAT_SHIFT_POSITIVE_DEFINITE;
+    info.shiftamount = 0.1;
+    MatLUFactorSymbolic(F, A, NULL, NULL, &info) >> utilities::PetscUtilities::checkError;
+    MatLUFactorNumeric(F, A, &info) >> utilities::PetscUtilities::checkError;
+    MatDestroy(&A) >> utilities::PetscUtilities::checkError;
+}
+catch (const std::exception& e) {
+  MatViewFromOptions(A, NULL, "-ablate::domain::rbf::RBF::A_view") >> utilities::PetscUtilities::checkError;
+  int rank;
+  MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+  printf("Rank: %d\n", rank);
+  printf("Cell: %d\n", c);
+  printf("\n");
+  for (PetscInt i = 0 ; i < nCells; ++i) {
+    for(PetscInt d = 0 ; d < dim; ++d) {
+      printf("%+.10f\t", x[i*dim + d]);
+    }
+    printf("\n");
+  }
+  exit(0);
+}
+//    MatLUFactor(A, NULL, NULL, NULL) >> utilities::PetscUtilities::checkError;
 
     PetscFree(xp) >> utilities::PetscUtilities::checkError;
 
     // Assign output
-    RBF::RBFMatrix[c] = A;
+    RBF::RBFMatrix[c] = F;
     RBF::stencilXLocs[c] = x;
     RBF::nStencil[c] = nCells;
     PetscMalloc1(nCells, &(RBF::stencilList[c])) >> utilities::PetscUtilities::checkError;
@@ -265,9 +292,9 @@ void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt
 }
 
 /**
- * Set derivatives, defaulting to using vertices
+ * Set derivatives, defaulting to using common vertices
  */
-void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]) { RBF::SetDerivatives(numDer, dx, dy, dz, PETSC_FALSE); }
+void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]) { RBF::SetDerivatives(numDer, dx, dy, dz, PETSC_TRUE); }
 
 // Compute the RBF weights at the cell center of p using a cell-list
 // c - The center cell in cellRange ordering
@@ -681,7 +708,7 @@ void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) {
             dz[numDer++] = 2;
         }
 
-        SetDerivatives(numDer, dx, dy, dz, PETSC_FALSE);
+        SetDerivatives(numDer, dx, dy, dz, PETSC_TRUE);
     }
 }
 

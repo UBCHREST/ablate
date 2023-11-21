@@ -31,7 +31,21 @@ PetscErrorCode ablate::levelSet::VOFMathFunction::VOFMathFunctionPetscFunction(P
 
     // call the support call to compute vof in the cell
     try {
+
         ablate::levelSet::Utilities::VOF(dm, cell, vofMathFunction->levelSet, u, nullptr, nullptr);
+
+//PetscReal x0[3];
+//DMPlexComputeCellGeometryFVM(dm, cell, NULL, x0, NULL) >> ablate::utilities::PetscUtilities::checkError;
+
+
+////PetscReal phi = PetscSqrtReal(PetscSqr(x0[0]/1.0) + PetscSqr(x0[1]/1.0)) - 1.0;
+////*u = 0.5*(1.0 - tanh(phi/0.1));
+
+
+//PetscReal phi =  PetscSqr(x0[0]*x0[0]+x0[1]*x0[1])-2*(x0[0]*x0[0]-x0[1]*x0[1]) + 1 - 1.004006004;
+//*u = 0.5*(1.0 - tanh(phi/0.1));
+
+
     } catch (std::exception &exp) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exp.what());
     }
