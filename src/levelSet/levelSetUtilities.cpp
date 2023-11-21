@@ -224,6 +224,9 @@ static void VertexUpwindGrad(DM dm, PetscScalar *gradArray, const PetscInt gradI
     // When running in parallel, ghost vertices at the edge of the local domain may not have any surrounding upwind cells, so
     //  ignore the error and simply set the upwind gradient to zero.
 //    if ( size==1 ) {
+//      throw std::runtime_error("ablate::levelSet::Utilities::VertexUpwindGrad encounted a situation where there are no upwind cells");
+//    }
+//    if ( size==1 ) {
 //      char err[255];
 //      sprintf(err, "ablate::levelSet::Utilities::VertexUpwindGrad encounted a situation where there are no upwind cells %f,%f", x0[0], x0[1]);
 //      throw std::runtime_error(err);
@@ -1400,12 +1403,15 @@ MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> ablate::utilities::MpiUtilities::check
         }
         DMPlexRestoreNeighbors(solDM, cell, 1, -1.0, -1, PETSC_FALSE, PETSC_FALSE, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
       }
+
+      DMPlexCellRestoreVertices(solDM, cell, &nv, &verts) >> ablate::utilities::PetscUtilities::checkError;
     }
     VecRestoreArray(workVec, &workArray);
 
     DMLocalToGlobal(auxDM, workVec, INSERT_VALUES, workVecGlobal) >> utilities::PetscUtilities::checkError;
     DMGlobalToLocal(auxDM, workVecGlobal, INSERT_VALUES, workVec) >> utilities::PetscUtilities::checkError;
   }
+  VecRestoreArray(workVec, &workArray);
 
 //  VecGetArray(workVec, &workArray);
 //  for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
@@ -1532,6 +1538,11 @@ PetscPrintf(PETSC_COMM_WORLD, "Reinit\n");
         PetscInt cell = cellRange.GetPoint(c);
         PetscReal *g = nullptr;
         xDMPlexPointLocalRef(auxDM, cell, cellNormalID, auxArray, &g) >> ablate::utilities::PetscUtilities::checkError;
+
+//        if ( dim > 0 ) g[0] = rbf->EvalDer(auxDM, auxVec, lsID, cell, 1, 0, 0);
+//        if ( dim > 1 ) g[1] = rbf->EvalDer(auxDM, auxVec, lsID, cell, 0, 1, 0);
+//        if ( dim > 2 ) g[2] = rbf->EvalDer(auxDM, auxVec, lsID, cell, 0, 0, 1);
+
         DMPlexCellGradFromVertex(auxDM, cell, auxVec, lsID, 0, g);
       }
     }
