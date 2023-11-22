@@ -1112,7 +1112,6 @@ void ablate::levelSet::Utilities::Reinitialize(std::shared_ptr<ablate::domain::S
   PetscInt          *vertMask = nullptr, *cellMask = nullptr;
   DM                solDM = subDomain->GetDM();
   DM                auxDM = subDomain->GetAuxDM();
-//  Vec               solVec = subDomain->GetSolutionVector();
   Vec               auxVec = subDomain->GetAuxVector();
   const PetscScalar *solArray = nullptr;
   PetscScalar       *auxArray = nullptr;
@@ -1403,8 +1402,6 @@ MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> ablate::utilities::MpiUtilities::check
         }
         DMPlexRestoreNeighbors(solDM, cell, 1, -1.0, -1, PETSC_FALSE, PETSC_FALSE, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
       }
-
-      DMPlexCellRestoreVertices(solDM, cell, &nv, &verts) >> ablate::utilities::PetscUtilities::checkError;
     }
     VecRestoreArray(workVec, &workArray);
 

@@ -246,7 +246,7 @@ catch (const std::exception& e) {
   int rank;
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
   printf("Rank: %d\n", rank);
-  printf("Cell: %d\n", c);
+  printf("Cell: %" PetscInt_FMT"d\n", c);
   printf("\n");
   for (PetscInt i = 0 ; i < nCells; ++i) {
     for(PetscInt d = 0 ; d < dim; ++d) {
