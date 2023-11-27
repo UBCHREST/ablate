@@ -14,7 +14,7 @@ namespace ablate::domain {
  * Initializes the domain using a previous result stored in an hdf5 file
  */
 class Hdf5Initializer : public Initializer {
-   private:
+   protected:
     //! the path to the hdf5 that contains the stored data
     std::filesystem::path hdf5Path;
 
@@ -32,12 +32,12 @@ class Hdf5Initializer : public Initializer {
      */
     [[nodiscard]] std::vector<std::shared_ptr<mathFunctions::FieldFunction>> GetFieldFunctions(const std::vector<domain::Field>& fields) const override;
 
-   private:
+   protected:
     /**
      * Helper class to determine when to unload the hdf5Mesh
      */
     class Hdf5Mesh {
-       public:
+       private:
         // Pointer to the viewer that can be used to load the mesh or other vectors
         PetscViewer petscViewer = nullptr;
 
@@ -47,6 +47,7 @@ class Hdf5Initializer : public Initializer {
         // count the number of cells in this mesh
         PetscInt numberCells = -1;
 
+       public:
         /**
          * Try to load in the dm from the hdf5 file
          * @param hdf5Path
@@ -57,13 +58,16 @@ class Hdf5Initializer : public Initializer {
          * provide hook to clean up when not needed
          */
         ~Hdf5Mesh();
+
+        // Allow the Hdf5Initializer to access hdf5 mesh private variables
+        friend class Hdf5Initializer;
     };
 
     /**
      * Helper function
      */
     class Hdf5MathFunction : public ablate::mathFunctions::MathFunction {
-       private:
+       protected:
         // the field used to represent this math function (useful for debugging)
         const std::string field;
 
@@ -95,17 +99,17 @@ class Hdf5Initializer : public Initializer {
          */
         ~Hdf5MathFunction() override;
 
-       private:
         /**
-         * Private method that does the interpolation for the provided point
+         * method that does the interpolation for the provided point
          * @param dim
          * @param x
          * @param Nf
          * @param u
          * @return
          */
-        PetscErrorCode Eval(PetscInt dim, const PetscReal x[], PetscScalar* u) const;
+        virtual PetscErrorCode Eval(PetscInt dim, const PetscReal x[], PetscScalar* u) const;
 
+       private:
         /**
          * The hdf5 static petsc function for this math fucntion
          * @param dim
