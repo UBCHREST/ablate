@@ -49,7 +49,6 @@ timestepper: !ablate::solver::SteadyStateStepper
     faces: [ 50 ]
     lower: [ 0.0 ]
     upper: [ 0.01 ]
-    simplex: false
     options:
       dm_plex_hash_location: true
     preModifiers:

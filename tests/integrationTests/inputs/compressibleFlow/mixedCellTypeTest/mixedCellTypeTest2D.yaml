@@ -1,0 +1,200 @@
+# This is a simple example and test to ensure that mixed cell types are working with the compressible flow.
+# The mesh that is used was generated in GMsh using both triangle and quads.
+---
+test:
+  # a unique test name for this integration tests
+  name: mixedCellType2D
+  # run mpi with two ranks
+  ranks: 1
+  # compare the generated xmf file with the expected
+  asserts:
+    - "inputs/compressibleFlow/mixedCellTypeTest/mixedCellType2D.txt"
+    - !testingResources::asserts::TextFileAssert
+      expected: "inputs/compressibleFlow/mixedCellTypeTest/inHexMesh.csv"
+      actual: "inHexMesh.csv"
+    - !testingResources::asserts::TextFileAssert
+      expected: "inputs/compressibleFlow/mixedCellTypeTest/inTriangleMesh.csv"
+      actual: "inTriangleMesh.csv"
+
+# metadata for the simulation
+environment:
+  title: _mixedCellType2D
+  tagDirectory: false
+# global arguments that can be used by petsc
+arguments:
+  # The gmsh arguments must be global because they are used before the mesh options are parsed
+  dm_plex_gmsh_use_regions: true
+# set up the time stepper responsible for marching in time
+timestepper:
+  # time stepper specific input arguments
+  arguments:
+    ts_type: rk
+    ts_max_time: 100000
+    ts_max_steps: 1000
+    ts_adapt_safety: 0.9
+    ts_adapt_type: physicsConstrained
+  # io controls how often the results are saved to a file for visualization and restart
+  io:
+    interval: 10 # results are saved at every 5 steps.  In real simulations this should be much larger.
+  # load in the gmsh produced mesh file
+  domain: !ablate::domain::MeshFile
+    path: mixedCells2D.msh
+    options:
+      dm_refine: 0
+      dm_plex_check_all: true
+      dm_plex_hash_location: true
+      dm_distribute: false # turn off default dm_distribute so that we can extrude label first
+    # specify any modifications to be performed to the mesh/domain
+    modifiers:
+      - # GMsh/dm_plex_gmsh_use_regions creates individual labels with their separate values. By collapsing the labels to the default values
+        # this input file does not need to individually specify each one for boundary conditions
+        !ablate::domain::modifiers::CollapseLabels
+        regions:
+          - name: inlet
+          - name: wall
+          - name: outlet
+          - name: main
+      - # use the newly collapsed labels to extrude the boundary.  Do not extrude the cell
+        !ablate::domain::modifiers::ExtrudeLabel
+        regions:
+          - name: inlet
+          - name: wall
+          - name: outlet
+        # mark all the resulting boundary faces with boundaryFaces label
+        boundaryRegion:
+          name: boundaryFaces
+        # tag the original mesh as the flow region
+        originalRegion:
+          name: flowRegion
+        # tag the new boundary cells for easy boundary condition specifications
+        extrudedRegion:
+          name: boundaryCells
+      # if using mpi, this modifier distributes cells
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+        ghostCellDepth: 2
+      - !ablate::monitors::DmViewFromOptions
+        options: ":$OutputDirectory/mixedCellLatex.tex:ascii_latex"
+
+    fields:
+      # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
+      # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas: 287.0
+          # species are added to the flow through the eos.  This allows testing of the species transport equations
+          species: [ N2, H2O, O2 ]  # set the initial conditions of the flow field
+  initialization:
+    # The ablate::finiteVolume::CompressibleFlowFields is a helper
+    # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state:
+        &flowFieldState
+        eos: *eos
+        pressure: 101325.0
+        temperature: 300
+        velocity: "0.0, 0.0"
+        # individual mass fractions must be passed to the flow field state to compute density, energy, etc.
+        other: !ablate::finiteVolume::fieldFunctions::MassFractions
+          eos: *eos
+          values:
+            - fieldName: N2
+              field: "x > .005 ? .2 : 1.0"
+            - fieldName: H2O
+              field: " x> .005 ? .3 :0"
+            - fieldName: O2
+              field: " x > .005 ? .5 : 0"
+    # the same state can be used to internalize the DensityMassFractions field from density and mass fractions
+    - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
+      state: *flowFieldState
+
+# solvers can be combined
+solvers:
+  # The compressible flow solver will solve the compressible flow equations over the interiorCells
+  - !ablate::finiteVolume::CompressibleFlowSolver
+    id: vortexFlowField
+    # only apply this solver to the flowRegion, area without faces
+    region:
+      name: flowRegion
+    additionalProcesses:
+      - !ablate::finiteVolume::processes::PressureGradientScaling
+        &pgs
+        eos: *eos
+        alphaInit: 100.0
+        maxAlphaAllowed: 100.0
+        domainLength: 0.165354
+        log: !ablate::monitors::logs::CsvLog
+          name: pgsLog
+
+    # a flux calculator must be specified to so solver for advection
+    fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
+      pgs: *pgs
+
+    # the default transport object assumes constant values for k, mu, diff
+    transport: !ablate::eos::transport::Sutherland
+      eos: *eos
+
+    # cfl is used to compute the physics time step
+    parameters:
+      cfl: 0.25
+
+    # share the existing eos with the compressible flow solver
+    eos: *eos
+
+    monitors:
+      # output the timestep and dt at each time step
+      - !ablate::monitors::TimeStepMonitor
+        interval: 500
+      # we can use probes to monitor the advection of the mass fractions through each mesh region
+      - !ablate::monitors::Probes
+        probes:
+          - name: inHexMesh
+            location: [ 0.0075, 0.005]
+          - name: inTriangleMesh
+            location: [ 0.0125, 0.005 ]
+        bufferSize: 10
+        variables: [ Yi ]
+        interval: 500
+
+  # use a boundary solver to update the cells in the gMsh inlet region to represent an inlet
+  - !ablate::boundarySolver::BoundarySolver
+    id: inlet
+    region:
+      name: inlet
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: false
+    processes:
+      - !ablate::boundarySolver::lodi::Inlet
+        eos: *eos
+        pgs: *pgs
+        velocity: "min(.1, 10000.*t), 0" # for stability, increase the velocity slowly
+
+  # use a boundary solver to update the cells in the gMsh outlet region to represent an open pipe
+  - !ablate::boundarySolver::BoundarySolver
+    id: openBoundary
+    region:
+      name: outlet
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::OpenBoundary
+        eos: *eos
+        reflectFactor: 1.5
+        referencePressure: 101325.0
+        maxAcousticsLength: 0.3
+        pgs: *pgs
+  # use a boundary solver to update the cells in the wall region to represent standard wall
+  - !ablate::boundarySolver::BoundarySolver
+    id: wall
+    region:
+      name: wall
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::IsothermalWall
+        eos: *eos
+        pgs: *pgs

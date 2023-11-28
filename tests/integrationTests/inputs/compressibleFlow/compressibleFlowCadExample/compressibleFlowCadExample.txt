@@ -58,8 +58,6 @@ MinMaxAvg velocity for timestep 0010:
 ResultFiles:
 domain.hdf5
 domain.xmf
-domain_1.xmf
 restart.rst
 vortexFlowField.hdf5
 vortexFlowField.xmf
-vortexFlowField_1.xmf

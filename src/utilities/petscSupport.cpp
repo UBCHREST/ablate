@@ -1398,3 +1398,33 @@ PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscIn
 
     PetscFunctionReturn(PETSC_SUCCESS);
 }
+
+PetscErrorCode DMProjectFunctionLocalMixedCells(DM dm, PetscReal time, PetscErrorCode (**funcs)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nc, PetscScalar *u, void *ctx), void **ctxs,
+                                                InsertMode mode, Vec localX) {
+    PetscFunctionBegin;
+    // Call once to cover the FE fields.
+    PetscCall(DMProjectFunctionLocal(dm, time, funcs, ctxs, mode, localX));
+
+    // define the cells we would like to project over
+    const PetscInt PetscCellTypeCount = 12;
+    const PetscInt types[12] = {DM_POLYTOPE_POINT,
+                                DM_POLYTOPE_SEGMENT,
+                                DM_POLYTOPE_POINT_PRISM_TENSOR,
+                                DM_POLYTOPE_TRIANGLE,
+                                DM_POLYTOPE_QUADRILATERAL,
+                                DM_POLYTOPE_SEG_PRISM_TENSOR,
+                                DM_POLYTOPE_TETRAHEDRON,
+                                DM_POLYTOPE_HEXAHEDRON,
+                                DM_POLYTOPE_TRI_PRISM,
+                                DM_POLYTOPE_TRI_PRISM_TENSOR,
+                                DM_POLYTOPE_QUAD_PRISM_TENSOR,
+                                DM_POLYTOPE_PYRAMID};
+
+    // extract the current cell type label
+    DMLabel ctLabel;
+    PetscCall(DMPlexGetCellTypeLabel(dm, &ctLabel));
+
+    // project on to this mesh over all types
+    PetscCall(DMProjectFunctionLabelLocal(dm, time, ctLabel, PetscCellTypeCount, types, -1, NULL, funcs, ctxs, mode, localX));
+    PetscFunctionReturn(PETSC_SUCCESS);
+}

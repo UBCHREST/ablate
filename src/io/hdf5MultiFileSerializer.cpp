@@ -206,7 +206,11 @@ void ablate::io::Hdf5MultiFileSerializer::SaveMetadata(TS ts) const {
         // keep a back of the restart file incase writing fails
         if (exists(restartFilePath)) {
             auto backupRestartFilePath = rootOutputDirectory / "restart.bak";
-            std::filesystem::copy(restartFilePath, backupRestartFilePath, std::filesystem::copy_options::overwrite_existing);
+            try {
+                std::filesystem::copy(restartFilePath, backupRestartFilePath, std::filesystem::copy_options::overwrite_existing);
+            } catch (const std::filesystem::filesystem_error& error) {
+                std::cout << "Cannot create restart.bak file: " << error.what() << " Continuing without backup file." << std::endl;
+            }
         }
         std::ofstream restartFile;
         restartFile.open(restartFilePath);

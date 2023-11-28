@@ -3,7 +3,7 @@
 #include "utilities/petscUtilities.hpp"
 
 void ablate::finiteVolume::stencil::LeastSquaresAverage::Generate(PetscInt face, ablate::finiteVolume::stencil::Stencil& stencil, const domain::SubDomain& subDomain,
-                                                                  const std::shared_ptr<domain::Region> solverRegion, DM cellDM, const PetscScalar* cellGeomArray, DM faceDM,
+                                                                  const std::shared_ptr<domain::Region>& solverRegion, DM cellDM, const PetscScalar* cellGeomArray, DM faceDM,
                                                                   const PetscScalar* faceGeomArray) {
     auto dm = subDomain.GetDM();
     auto dim = subDomain.GetDimensions();
@@ -36,7 +36,7 @@ void ablate::finiteVolume::stencil::LeastSquaresAverage::Generate(PetscInt face,
     stencil.stencil.insert(stencil.stencil.end(), rightStencil.stencil.begin(), rightStencil.stencil.end());
     std::sort(stencil.stencil.begin(), stencil.stencil.end());
     stencil.stencil.erase(std::unique(stencil.stencil.begin(), stencil.stencil.end()), stencil.stencil.end());
-    stencil.stencilSize = stencil.stencil.size();
+    stencil.stencilSize = (PetscInt)stencil.stencil.size();
 
     // resize the weight arrays and init to zero
     stencil.weights.resize(stencil.stencilSize, 0.0);
@@ -67,7 +67,7 @@ void ablate::finiteVolume::stencil::LeastSquaresAverage::Generate(PetscInt face,
 }
 
 void ablate::finiteVolume::stencil::LeastSquaresAverage::ComputeNeighborCellStencil(PetscInt cell, ablate::finiteVolume::stencil::Stencil& stencil, const ablate::domain::SubDomain& subDomain,
-                                                                                    const std::shared_ptr<domain::Region> solverRegion, DM cellDM, const PetscScalar* cellGeomArray, DM faceDM,
+                                                                                    const std::shared_ptr<domain::Region>& solverRegion, DM cellDM, const PetscScalar* cellGeomArray, DM faceDM,
                                                                                     const PetscScalar* faceGeomArray) {
     // only add the cells if they are in the ds
     if (!subDomain.InRegion(cell)) {
