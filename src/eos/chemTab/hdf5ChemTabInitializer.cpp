@@ -26,6 +26,9 @@ std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>> ablate::eos::
         if (field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_PROGRESS_FIELD) {
             // use the special mapping function
             mathFunction = std::make_shared<Hdf5ChemTabMappingMathFunction>(baseMesh, *chemTab);
+        } else if (field.name == ablate::eos::ChemTab::DENSITY_YI_DECODE_FIELD) {
+            // just skip the init
+            continue;
         } else {
             // get use the field directly
             mathFunction = std::make_shared<Hdf5MathFunction>(baseMesh, ablate::domain::Domain::solution_vector_name + "_" + field.name);
@@ -42,7 +45,11 @@ std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>> ablate::eos::
 ablate::eos::chemTab::Hdf5ChemTabInitializer::Hdf5ChemTabMappingMathFunction::Hdf5ChemTabMappingMathFunction(const std::shared_ptr<Hdf5Mesh>& baseMesh, const ablate::eos::ChemTab& chemTab)
     : Hdf5MathFunction(baseMesh, ablate::domain::Domain::solution_vector_name + "_" + ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD),
       chemTab(chemTab),
-      eulerFunction(std::make_shared<Hdf5MathFunction>(baseMesh, ablate::domain::Domain::solution_vector_name + "_" + ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD)) {}
+      eulerFunction(std::make_shared<Hdf5MathFunction>(baseMesh, ablate::domain::Domain::solution_vector_name + "_" + ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD)),
+      numberOfSpecies((PetscInt)chemTab.GetSpeciesNames().size()) {
+    // resize the number of based off the new progress variables
+    resultSize = (PetscInt)chemTab.GetProgressVariables().size();
+}
 
 PetscErrorCode ablate::eos::chemTab::Hdf5ChemTabInitializer::Hdf5ChemTabMappingMathFunction::Eval(PetscInt xyzDim, const PetscReal xyz[], PetscScalar* u) const {
     PetscFunctionBeginUser;
@@ -52,7 +59,7 @@ PetscErrorCode ablate::eos::chemTab::Hdf5ChemTabInitializer::Hdf5ChemTabMappingM
     PetscCall(ablate::domain::Hdf5Initializer::Hdf5MathFunction::Eval(xyzDim, xyz, yis.data()));
 
     // make sure the number of components is equal
-    if (components != (PetscInt)chemTab.GetSpeciesNames().size()) {
+    if (numberOfSpecies != (PetscInt)chemTab.GetSpeciesNames().size()) {
         throw std::invalid_argument("There appears to be a missmatch between the chemTabModel and species used in the hdf5 file.");
     }
 

@@ -86,6 +86,9 @@ class Hdf5Initializer : public Initializer {
         // The number of dimensions in the dm
         PetscInt dim = -1;
 
+        // The result size, this is normally the number of components but can be overwritten by sub classes
+        PetscInt resultSize = -1;
+
        public:
         /**
          * Load the hdf5 vector

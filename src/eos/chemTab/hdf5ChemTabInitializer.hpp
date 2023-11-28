@@ -39,6 +39,9 @@ class Hdf5ChemTabInitializer : public domain::Hdf5Initializer {
         // Keep a Hdf5MathFunction so we can interpolate density
         std::shared_ptr<Hdf5MathFunction> eulerFunction = nullptr;
 
+        // store the number of species
+        PetscInt numberOfSpecies;
+
        public:
         /**
          * Load the hdf5 vector for Yi
