@@ -233,7 +233,7 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(const PetscReal density[]
                                            ndata, &NoOpDeallocator, nullptr);
     if (input_tensor == nullptr) throw std::runtime_error("ERROR: Failed TF_NewTensor");
 
-    // there is only 1 input tensor per model eval point (unlike e.g. outputs)
+    // there is only 1 input tensor per model eval (unlike e.g. outputs)
     inputValues[0] = input_tensor;
 
     TF_SessionRun(session, nullptr, input.data(), inputValues.data(), (int)numInputs,
