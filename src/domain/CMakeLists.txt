@@ -17,6 +17,7 @@ target_sources(ablateLibrary
         initializer.cpp
         hdf5Initializer.cpp
         initializerList.cpp
+        axisymmetric.cpp
 
         PUBLIC
         domain.hpp
@@ -39,6 +40,7 @@ target_sources(ablateLibrary
         initializer.hpp
         hdf5Initializer.hpp
         initializerList.hpp
+        axisymmetric.hpp
         )
 
 add_subdirectory(modifiers)
