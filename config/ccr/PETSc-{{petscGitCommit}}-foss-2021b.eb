@@ -1,0 +1,65 @@
+name = 'PETSc'
+version = '{{petscVersion}}'
+
+homepage = 'https://www.mcs.anl.gov/petsc'
+description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
+ scalable (parallel) solution of scientific applications modeled by partial differential equations."""
+
+toolchain = {'name': 'foss', 'version': '2021b'}
+toolchainopts = {'openmp': False, 'usempi': True, 'pic': True}
+
+sources = [{
+    'filename': 'petsc-{{petscGitCommit}}.tar.gz',
+    'git_config': {
+        'url': 'https://gitlab.com/petsc',
+        'repo_name': 'petsc',
+        'commit': '{{petscGitCommit}}',
+        'recursive': True,
+        'keep_git_dir': True,
+    },
+}]
+patches = [
+]
+checksums = ['5431829f6eb730f1664bc343dc051b8c2ba83d6cebefb3756647bac4715aaefb']
+
+builddependencies = []
+
+dependencies = []
+
+# enabling --with-mpi4py seems to be totally broken, leads to make errors like:
+# No rule to make target 'mpi4py-build'
+configopts = '--LIBS="$LIBS -lrt" --with-mpi4py=0 '
+
+shared_libs = 1
+
+# the download dependencies required by ablate
+download_deps = [
+	'ctetgen',
+    'tetgen',
+    'egads',
+    'metis',
+    'mumps',
+    'netcdf',
+    'p4est',
+    'parmetis',
+    'pnetcdf',
+    'hdf5',
+    'scalapack',
+	'suitespar',
+	'superlu_dist',
+	'triangle ',
+	'zlib',
+	'libpng',
+	'kokkos',
+	'opencascade',
+ 	'slepc']
+	
+# special config for ablate petsc	
+configopts += '--download-kokkos-commit=3.7.01 --with-64-bit-indices=1'
+
+# we are building slepc, so we need to add all to the build command
+sourceinstall = True
+petsc_arch = "arch-ablate-opt"
+
+# setup the default module for pets
+moduleclass = 'numlib'

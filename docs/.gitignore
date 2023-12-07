@@ -5,6 +5,7 @@ _site
 vendor
 install
 source
+config
 /content/simulations/components/
 /content/simulations/integrationExamples/
 /content/simulations/regressionExamples/

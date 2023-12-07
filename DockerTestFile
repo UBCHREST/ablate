@@ -3,7 +3,7 @@ FROM $ABLATE_DEPENDENCY_IMAGE
 
 # Install testing dependencies
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get -y install doxygen python3-inflection
+RUN apt-get update && apt-get -y install doxygen python3-inflection python3-yaml
 
 # provide hook to disable tensorflow
 ARG ENABLE_TENSOR_FLOW=1

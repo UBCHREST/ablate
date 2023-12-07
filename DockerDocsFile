@@ -4,7 +4,7 @@ FROM $ABLATE_DEPENDENCY_IMAGE
 
 # Install testing/docs dependencies
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get -y install doxygen python3-inflection ruby-dev ruby-bundler
+RUN apt-get update && apt-get -y install doxygen python3-inflection python3-yaml ruby-dev ruby-bundler
 
 # Copy over the source
 COPY . /source
