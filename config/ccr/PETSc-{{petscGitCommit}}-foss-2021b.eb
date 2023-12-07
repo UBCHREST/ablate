@@ -1,5 +1,5 @@
 name = 'PETSc'
-version = '3.19.4'
+version = '{{petscVersion}}'
 
 homepage = 'https://www.mcs.anl.gov/petsc'
 description = """PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the
@@ -9,11 +9,11 @@ toolchain = {'name': 'foss', 'version': '2021b'}
 toolchainopts = {'openmp': False, 'usempi': True, 'pic': True}
 
 sources = [{
-    'filename': 'petsc-9c5460f9.tar.gz',
+    'filename': 'petsc-{{petscGitCommit}}.tar.gz',
     'git_config': {
         'url': 'https://gitlab.com/petsc',
         'repo_name': 'petsc',
-        'commit': '9c5460f9',
+        'commit': '{{petscGitCommit}}',
         'recursive': True,
         'keep_git_dir': True,
     },
