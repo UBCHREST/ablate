@@ -1,8 +1,6 @@
 import os
 import subprocess
-
 import yaml
-
 import componentListGenerator
 import argparse
 import pathlib
@@ -20,7 +18,7 @@ if __name__ == "__main__":
 
     # Get the version and other metadata from the build file
     ablate_metadata_string = subprocess.run([str(args.ablate_exe), "--info"], check=True, capture_output=True,
-                                   text=True).stdout
+                                            text=True).stdout
     ablate_metadata = yaml.safe_load(ablate_metadata_string)['ABLATE']
 
     # write the version to a file
