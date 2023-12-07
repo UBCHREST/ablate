@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     # generate any required config files
     # build the replacement dictionary
-    configGenerator.generate_config_files(args.root_dir / 'config', args.root_dir / 'docs/config', ablate_metadata)
+    configGenerator.generate_config_files(args.root_dir / 'config', args.root_dir / 'docs/content/installation/config', ablate_metadata)
 
     # Get the component information
     componentInformation = subprocess.run([str(args.ablate_exe), "--help"], check=False, capture_output=True,
