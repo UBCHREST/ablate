@@ -49,7 +49,7 @@ include(config/findSLEPc.cmake)
 include(config/printVersion.cmake)
 find_package(HDF5 REQUIRED)
 set(BLA_STATIC ON)
-find_package(BLAS)
+find_package(BLAS REQUIRED)
 
 # specify in the required libaries
 target_link_libraries(ablateLibrary
