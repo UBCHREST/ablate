@@ -48,7 +48,7 @@ include(config/findChrestCompilerFlags.cmake)
 include(config/findSLEPc.cmake)
 include(config/printVersion.cmake)
 find_package(HDF5 REQUIRED)
-find_package(BLAS REQUIRED)
+find_package(BLAS)
 
 # specify in the required libaries
 target_link_libraries(ablateLibrary
