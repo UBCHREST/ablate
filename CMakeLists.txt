@@ -48,6 +48,7 @@ include(config/findChrestCompilerFlags.cmake)
 include(config/findSLEPc.cmake)
 include(config/printVersion.cmake)
 find_package(HDF5 REQUIRED)
+set(BLA_STATIC ON)
 find_package(BLAS)
 
 # specify in the required libaries
