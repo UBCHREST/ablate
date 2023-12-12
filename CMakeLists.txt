@@ -63,7 +63,6 @@ target_link_libraries(ablateLibrary
         Threads::Threads
         nlohmann_json::nlohmann_json
         ${HDF5_LIBRARIES}
-        BLAS::BLAS
         PRIVATE
         chrestCompilerFlags)
 
