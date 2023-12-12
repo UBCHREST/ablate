@@ -48,6 +48,7 @@ include(config/findChrestCompilerFlags.cmake)
 include(config/findSLEPc.cmake)
 include(config/printVersion.cmake)
 find_package(HDF5 REQUIRED)
+find_package(BLAS)
 
 # specify in the required libaries
 target_link_libraries(ablateLibrary
@@ -63,6 +64,7 @@ target_link_libraries(ablateLibrary
         Threads::Threads
         nlohmann_json::nlohmann_json
         ${HDF5_LIBRARIES}
+        BLAS::BLAS
         PRIVATE
         chrestCompilerFlags)
 
