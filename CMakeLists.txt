@@ -48,7 +48,6 @@ include(config/findChrestCompilerFlags.cmake)
 include(config/findSLEPc.cmake)
 include(config/printVersion.cmake)
 find_package(HDF5 REQUIRED)
-find_package(BLAS)
 
 # specify in the required libaries
 target_link_libraries(ablateLibrary
@@ -67,6 +66,15 @@ target_link_libraries(ablateLibrary
         BLAS::BLAS
         PRIVATE
         chrestCompilerFlags)
+
+# depending upon the build, we may need to add blas
+find_package(BLAS)
+if (BLAS_FOUND)
+    target_link_libraries(ablateLibrary
+            PUBLIC
+            BLAS::BLAS)
+endif ()
+
 
 # Set the ablate library requirements
 set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
