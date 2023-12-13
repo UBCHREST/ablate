@@ -37,6 +37,7 @@ class Hdf5ChemTabInitializerTestFixture : public testingResources::PetscTestFixt
 
     // Create the hdf5Initializer
     void SetUp() override {
+        ONLY_WITH_TENSORFLOW_CHECK
         testingResources::PetscTestFixture::SetUp();
 
         // create the chemTab model
