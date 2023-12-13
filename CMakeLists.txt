@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.18.4)
 include(config/petscCompilers.cmake)
 
 # Set the project details
-project(ablateLibrary VERSION 0.12.15)
+project(ablateLibrary VERSION 0.12.16)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED IMPORTED_TARGET GLOBAL PETSc)
@@ -65,6 +65,15 @@ target_link_libraries(ablateLibrary
         ${HDF5_LIBRARIES}
         PRIVATE
         chrestCompilerFlags)
+
+# depending upon the build, we may need to add blas
+find_package(BLAS)
+if (BLAS_FOUND)
+    target_link_libraries(ablateLibrary
+            PUBLIC
+            BLAS::BLAS)
+endif ()
+
 
 # Set the ablate library requirements
 set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
