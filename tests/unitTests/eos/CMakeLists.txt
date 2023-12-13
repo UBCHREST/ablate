@@ -12,3 +12,4 @@ target_sources(ablateUnitTestLibrary
 add_subdirectory(transport)
 add_subdirectory(radiationProperties)
 add_subdirectory(tChemSoot)
+add_subdirectory(chemTab)
