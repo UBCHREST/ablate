@@ -42,16 +42,16 @@ class SurfaceRadiation : public ablate::radiation::Radiation {
      * @param emissivity the emissivity of the surface
      * @return
      */
-    virtual inline void GetSurfaceIntensity(PetscReal* intensity, PetscInt faceId, PetscReal temperature, PetscReal emissivity = 1.0) {
+    virtual inline void GetSurfaceIntensity(PetscReal* intensity, PetscInt faceId, PetscReal temperature, PetscReal emissivity = 1.0, PetscReal absorptivity = 1.0) {
         // add in precomputed gains
         for (int i = 0; i < (int)absorptivityFunction.propertySize; ++i) {  // Compute the losses
-            PetscReal netIntensity = -ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
+            // Emitted From Surface = \epsilon \sigma T^4
+            PetscReal netIntensity = -emissivity*ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
 
-            netIntensity += evaluatedGains[absorptivityFunction.propertySize * indexLookup.GetAbsoluteIndex(faceId) + i];
+            //Absorbed at the surface = q''_Rad * \alpha
+            netIntensity += absorptivity*evaluatedGains[absorptivityFunction.propertySize * indexLookup.GetAbsoluteIndex(faceId) + i];
 
-            // scale by kappa
-            netIntensity *= emissivity;
-
+            // This line just ensures that the netIntenisty isn't going to extreme values, If this clipping is really needed, it probably should be fixed somewhere else -klb
             intensity[i] = abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
         }
     }
