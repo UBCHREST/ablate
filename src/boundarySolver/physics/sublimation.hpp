@@ -82,7 +82,7 @@ class Sublimation : public BoundaryProcess, public io::Serializable {
      * */
     const double emissivity;
 
-        /**
+    /**
      * Absorptivity of the fuel surface. For the gray assumption, this indicates how much of the incoming radiative surface heat flux is absorbed at the fuel surface.
      * */
     const double absorptivity;
@@ -105,7 +105,7 @@ class Sublimation : public BoundaryProcess, public io::Serializable {
                          const std::shared_ptr<ablate::mathFunctions::FieldFunction> & = {}, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {},
                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {}, bool diffusionFlame = false,
                          std::shared_ptr<ablate::radiation::SurfaceRadiation> radiationIn = {}, const std::shared_ptr<io::interval::Interval> &intervalIn = {},
-                         const std::shared_ptr<ablate::parameters::Parameters>& ={});
+                         const std::shared_ptr<ablate::parameters::Parameters> & = {});
 
     void Setup(ablate::boundarySolver::BoundarySolver &bSolver) override;
     void Initialize(ablate::boundarySolver::BoundarySolver &bSolver) override;

@@ -24,9 +24,8 @@ ablate::boundarySolver::physics::Sublimation::Sublimation(std::shared_ptr<subMod
       pressureGradientScaling(std::move(pressureGradientScaling)),
       radiation(std::move(radiationIn)),
       radiationInterval((intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>())),
-      emissivity(parametersIn ? parametersIn->Get<PetscReal>("emissivity",1.) : 1.),
-      absorptivity(parametersIn ? ( parametersIn->Get<PetscReal>("absorptivity",-1) == -1 ?
-              parametersIn->Get<PetscReal>("emissivity",1.) : parametersIn->Get<PetscReal>("absorptivity",-1.) ) : 1.),
+      emissivity(parametersIn ? parametersIn->Get<PetscReal>("emissivity", 1.) : 1.),
+      absorptivity((parametersIn && parametersIn->GetString("absorptivity")) ? parametersIn->Get<PetscReal>("absorptivity", -1.) : emissivity),
       sublimationModel(std::move(sublimationModel)) {}
 
 void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {

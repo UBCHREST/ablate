@@ -66,7 +66,7 @@ void ablate::monitors::BoundarySolverMonitor::Register(std::shared_ptr<solver::S
     DMPlexLabelComplete(boundaryDm, boundaryFaceLabel) >> utilities::PetscUtilities::checkError;
 
     // Now create a sub dm with only the faces
-    DMPlexFilter(boundaryDm, boundaryFaceLabel, 1, &faceDm) >> utilities::PetscUtilities::checkError;
+    DMPlexFilter(boundaryDm, boundaryFaceLabel, 1, PETSC_FALSE, PETSC_FALSE, NULL, &faceDm) >> utilities::PetscUtilities::checkError;
 
     // Add each of the output components on each face in the faceDm
     for (const auto& field : boundarySolver->GetOutputComponents()) {

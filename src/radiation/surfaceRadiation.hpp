@@ -46,10 +46,10 @@ class SurfaceRadiation : public ablate::radiation::Radiation {
         // add in precomputed gains
         for (int i = 0; i < (int)absorptivityFunction.propertySize; ++i) {  // Compute the losses
             // Emitted From Surface = \epsilon \sigma T^4
-            PetscReal netIntensity = -emissivity*ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
+            PetscReal netIntensity = -emissivity * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature;
 
-            //Absorbed at the surface = q''_Rad * \alpha
-            netIntensity += absorptivity*evaluatedGains[absorptivityFunction.propertySize * indexLookup.GetAbsoluteIndex(faceId) + i];
+            // Absorbed at the surface = q''_Rad * \alpha
+            netIntensity += absorptivity * evaluatedGains[absorptivityFunction.propertySize * indexLookup.GetAbsoluteIndex(faceId) + i];
 
             // This line just ensures that the netIntenisty isn't going to extreme values, If this clipping is really needed, it probably should be fixed somewhere else -klb
             intensity[i] = abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;
