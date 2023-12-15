@@ -9,7 +9,7 @@ void ablate::domain::modifiers::PrintDomainSummary::Modify(DM &dm) {
 
     DMView(dm, viewer) >> utilities::PetscUtilities::checkError;
 
-    PetscViewerDestroy(&viewer) >> utilities::PetscUtilities::checkError;
+    PetscOptionsRestoreViewer(&viewer) >> utilities::PetscUtilities::checkError;
 
     // Print any additional information specific to ablate domain
     ablate::monitors::logs::StdOut log;

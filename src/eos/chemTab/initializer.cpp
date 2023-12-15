@@ -3,7 +3,7 @@
 #include <mathFunctions/functionPointer.hpp>
 #include "utilities/vectorUtilities.hpp"
 
-ablate::eos::chemTab::Initializer::Initializer(const std::string &initializer, std::shared_ptr<ablate::eos::EOS> eos)
+ablate::eos::chemTab::Initializer::Initializer(const std::string& initializer, const std::shared_ptr<ablate::eos::EOS>& eos)
     : ablate::mathFunctions::ConstantValue([initializer, eos]() {
           auto chemTabModel = std::dynamic_pointer_cast<ablate::eos::ChemTab>(eos);
           if (!chemTabModel) {

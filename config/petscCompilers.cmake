@@ -35,6 +35,12 @@ if (NOT DEFINED CMAKE_CXX_COMPILER)
 
     pkg_get_variable(PETSC_CXX_FLAGS PETSc cxxflags_extra)
     configure_flags("${PETSC_CXX_FLAGS}" PETSC_FLAGS_OUT)
+
+    # allow adding custom CXX_ADDITIONAL_FLAGS
+    if (DEFINED ENV{CXX_ADDITIONAL_FLAGS})
+        string(APPEND PETSC_FLAGS_OUT " " $ENV{CXX_ADDITIONAL_FLAGS})
+    endif ()
+
     set(CMAKE_CXX_FLAGS_INIT ${PETSC_FLAGS_OUT})
 
     message(STATUS "Using found PETSc c++ Compiler/Flags: ${PETSC_CXX_COMPILER} ${PETSC_FLAGS_OUT}\n")

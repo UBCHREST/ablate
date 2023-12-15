@@ -16,7 +16,7 @@ class Initializer : public ablate::mathFunctions::ConstantValue {
      * @param initializer
      * @param eos
      */
-    explicit Initializer(const std::string& initializer, std::shared_ptr<ablate::eos::EOS> eos);
+    explicit Initializer(const std::string& initializer, const std::shared_ptr<ablate::eos::EOS>& eos);
 };
 
 }  // namespace ablate::eos::chemTab

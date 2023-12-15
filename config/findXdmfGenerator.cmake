@@ -13,7 +13,7 @@ ELSE ()
     FetchContent_Declare(
             xdmfGeneratorLibrary
             GIT_REPOSITORY https://github.com/UBCHREST/XdmfGenerator.git
-            GIT_TAG v0.2.1
+            GIT_TAG v0.2.2
     )
     FetchContent_MakeAvailable(xdmfGeneratorLibrary)
     # Put the library into CHREST namespace

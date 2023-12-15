@@ -43,7 +43,7 @@ ablate::domain::Hdf5Initializer::Hdf5Mesh::Hdf5Mesh(const std::filesystem::path&
 }
 ablate::domain::Hdf5Initializer::Hdf5Mesh::~Hdf5Mesh() {
     // close the viewer
-    PetscViewerDestroy(&petscViewer) >> utilities::PetscUtilities::checkError;
+    PetscOptionsRestoreViewer(&petscViewer) >> utilities::PetscUtilities::checkError;
 
     // free the memory with the mesh
     DMDestroy(&dm) >> utilities::PetscUtilities::checkError;
@@ -80,6 +80,7 @@ ablate::domain::Hdf5Initializer::Hdf5MathFunction::Hdf5MathFunction(std::shared_
     DMSetField(fieldDm, 0, nullptr, (PetscObject)fe) >> utilities::PetscUtilities::checkError;
     PetscFEDestroy(&fe);
     DMCreateDS(fieldDm);
+    resultSize = components;
 }
 
 ablate::domain::Hdf5Initializer::Hdf5MathFunction::~Hdf5MathFunction() {
@@ -122,7 +123,7 @@ PetscErrorCode ablate::domain::Hdf5Initializer::Hdf5MathFunction::Eval(PetscInt 
 double ablate::domain::Hdf5Initializer::Hdf5MathFunction::Eval(const double& x, const double& y, const double& z, const double& t) const {
     PetscFunctionBeginUser;
     PetscReal xyz[3] = {x, y, z};
-    PetscScalar result[components];
+    PetscScalar result[resultSize];
 
     Eval(3, xyz, result) >> utilities::PetscUtilities::checkError;
     return result[0];
@@ -130,7 +131,7 @@ double ablate::domain::Hdf5Initializer::Hdf5MathFunction::Eval(const double& x, 
 }
 double ablate::domain::Hdf5Initializer::Hdf5MathFunction::Eval(const double* xyz, const int& ndims, const double& t) const {
     PetscFunctionBeginUser;
-    PetscScalar result[components];
+    PetscScalar result[resultSize];
 
     Eval(ndims, xyz, result) >> utilities::PetscUtilities::checkError;
     return result[0];
@@ -139,14 +140,14 @@ double ablate::domain::Hdf5Initializer::Hdf5MathFunction::Eval(const double* xyz
 void ablate::domain::Hdf5Initializer::Hdf5MathFunction::Eval(const double& x, const double& y, const double& z, const double& t, std::vector<double>& result) const {
     PetscFunctionBeginUser;
     PetscReal xyz[3] = {x, y, z};
-    result.resize(components);
+    result.resize(resultSize);
 
     Eval(3, xyz, result.data()) >> utilities::PetscUtilities::checkError;
     PetscFunctionReturnVoid();
 }
 void ablate::domain::Hdf5Initializer::Hdf5MathFunction::Eval(const double* xyz, const int& ndims, const double& t, std::vector<double>& result) const {
     PetscFunctionBeginUser;
-    result.resize(components);
+    result.resize(resultSize);
 
     Eval(ndims, xyz, result.data()) >> utilities::PetscUtilities::checkError;
     PetscFunctionReturnVoid();
@@ -157,7 +158,7 @@ PetscErrorCode ablate::domain::Hdf5Initializer::Hdf5MathFunction::Hdf5PetscFunct
     auto hdf5MathFunction = (Hdf5MathFunction*)ctx;
 
     // Make sure that the result can hold the value (the hdf5 result may be smaller)
-    if (nf < hdf5MathFunction->components) {
+    if (nf < hdf5MathFunction->resultSize) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "The PetscFunction in ablate::domain::Hdf5Initializer requires a size of %" PetscInt_FMT, hdf5MathFunction->components);
     }
 
@@ -165,7 +166,7 @@ PetscErrorCode ablate::domain::Hdf5Initializer::Hdf5MathFunction::Hdf5PetscFunct
     PetscCall(hdf5MathFunction->Eval(dim, xyz, u));
 
     // Set any other values to zero
-    for (PetscInt i = hdf5MathFunction->components; i < nf; ++i) {
+    for (PetscInt i = hdf5MathFunction->resultSize; i < nf; ++i) {
         u[i] = 0;
     }
 

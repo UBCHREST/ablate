@@ -105,7 +105,7 @@ void ablate::io::Hdf5MultiFileSerializer::Register(std::weak_ptr<Serializable> s
             EndEvent();
 
             StartEvent("PetscViewerHDF5Destroy");
-            PetscViewerDestroy(&petscViewer) >> utilities::PetscUtilities::checkError;
+            PetscOptionsRestoreViewer(&petscViewer) >> utilities::PetscUtilities::checkError;
             EndEvent();
         } else {
             // Create an output directory
@@ -175,7 +175,7 @@ PetscErrorCode ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializerSaveS
                 hdf5Serializer->EndEvent();
 
                 hdf5Serializer->StartEvent("PetscViewerHDF5Destroy");
-                PetscCall(PetscViewerDestroy(&petscViewer));
+                PetscCall(PetscOptionsRestoreViewer(&petscViewer));
                 hdf5Serializer->EndEvent();
             }
         }

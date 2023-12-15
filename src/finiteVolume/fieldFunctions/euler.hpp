@@ -13,4 +13,4 @@ class Euler : public ablate::mathFunctions::FieldFunction {
 };
 
 }  // namespace ablate::finiteVolume::fieldFunctions
-#endif  // ABLATELIBRARY_FIELD_SOLUTION_EULER_HPP
+#endif  // ABLATELIBRARY_FIELD_FUNCTION_EULER_HPP

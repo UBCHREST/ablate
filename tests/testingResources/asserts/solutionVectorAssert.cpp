@@ -17,7 +17,7 @@ void testingResources::asserts::SolutionVectorAssert::ReadSolutionFromHDFFile(co
     PetscViewerHDF5PushTimestepping(petscViewer) >> ablate::utilities::PetscUtilities::checkError;
     PetscViewerHDF5SetTimestep(petscViewer, 0) >> ablate::utilities::PetscUtilities::checkError;
     VecLoad(*vec, petscViewer) >> ablate::utilities::PetscUtilities::checkError;
-    PetscViewerDestroy(&petscViewer) >> ablate::utilities::PetscUtilities::checkError;
+    PetscOptionsRestoreViewer(&petscViewer) >> ablate::utilities::PetscUtilities::checkError;
 }
 
 void testingResources::asserts::SolutionVectorAssert::Test(testingResources::MpiTestFixture& mpiTestFixture) {
