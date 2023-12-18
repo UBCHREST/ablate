@@ -111,6 +111,7 @@ TEST_P(ChemTabTestFixture, ShouldComputeCorrectSource) {
         std::vector<PetscReal> actualSourceProgress(conservedProgressVariable.size(), sourceOffset);
         PetscReal actualSourceEnergy = sourceOffset;
         chemTabModel.ChemistrySource(density, conservedProgressVariable.data(), &actualSourceEnergy, actualSourceProgress.data());
+        // NOTE: this doesn't need to change for batch processing just make sure to still support point evaluation.
 
         assert_float_close(expectedSourceEnergy * density, actualSourceEnergy - sourceOffset) << "The sourceEnergy is incorrect for model " << testTarget["testName"].as<std::string>();
 
