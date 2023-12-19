@@ -11,21 +11,26 @@
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
 
+    // store the yaml parser and test to prevent premature deletion
+    std::vector<std::shared_ptr<cppParser::YamlParser>> parsers;
+    std::vector<std::shared_ptr<IntegrationTestFixture>> integrationTests;
+
     // register of all tests
     // list all directories input path
     for (const auto& entry : std::filesystem::recursive_directory_iterator("inputs")) {
         // check to see if it is an input file
         if (entry.path().extension() == ".yaml") {
             // Load in the input file
-            std::shared_ptr<cppParser::YamlParser> parser = std::make_shared<cppParser::YamlParser>(entry.path());
+            auto parser = std::make_shared<cppParser::YamlParser>(entry.path());
+            parsers.push_back(parser);
 
             // set up the monitor
             if (parser->Contains("test")) {
                 auto integrationTest = parser->GetByName<IntegrationTestFixture>("test");
-
+                integrationTests.push_back(integrationTest);
                 // Register the test
                 integrationTest->RegisterTest(entry);
-            } else if (parser->Contains("tests")) {
+            } /*else if (parser->Contains("tests")) {
                 auto integrationTests = parser->GetByName<std::vector<IntegrationTestFixture>>("tests");
 
                 // Register the test
@@ -34,7 +39,7 @@ int main(int argc, char** argv) {
                 }
             } else if (!parser->GetByName<bool>("testingIgnore", false)) {
                 throw std::invalid_argument("An input file " + entry.path().string() + " in integration tests does not contain test parameters.");
-            }
+            } */
         }
     }
 

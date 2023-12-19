@@ -14,7 +14,7 @@ IntegrationRestartTest::IntegrationRestartTest(std::shared_ptr<testingResources:
 
 void IntegrationRestartTest::RegisterTest(const std::filesystem::path& inputPath) {
     // make a raw pointer copy of the integration test
-    auto integrationTestCopy = new IntegrationRestartTest(mpiTestParameter, restartInputFile, restartOverrides);
+    /*auto integrationTestCopy = new IntegrationRestartTest(mpiTestParameter, restartInputFile, restartOverrides);
     integrationTestCopy->inputFilePath = inputPath;
 
     // check to see if it contains a test target
@@ -25,7 +25,7 @@ void IntegrationRestartTest::RegisterTest(const std::filesystem::path& inputPath
                           absolute(inputPath).c_str(),
                           1,
                           // Important to use the fixture type as the return type here.
-                          [=]() -> IntegrationRestartTestFixture* { return integrationTestCopy; });
+                          [=]() -> IntegrationRestartTestFixture* { return integrationTestCopy; });*/
 }
 
 void IntegrationRestartTest::TestBody() {

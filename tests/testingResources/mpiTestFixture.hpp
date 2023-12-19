@@ -107,6 +107,10 @@ class MpiTestFixture : public ::testing::Test {
      */
     void SetMpiParameters(MpiTestParameter mpiTestParameterIn) { mpiTestParameter = std::move(mpiTestParameterIn); }
 
+    /**
+     * The executable path to call
+     * @return
+     */
     [[nodiscard]] static std::string ExecutablePath() { return {*argv[0]}; }
 
     /**
@@ -121,7 +125,7 @@ class MpiTestFixture : public ::testing::Test {
      * Build the result directory before the run
      * @return
      */
-    std::filesystem::path BuildResultDirectory() const;
+    [[nodiscard]] std::filesystem::path BuildResultDirectory() const;
 
     /**
      * Determine if we should run mpi code or launch a new processes instead

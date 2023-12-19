@@ -65,7 +65,7 @@ class IntegrationTestFixture : public testingResources::MpiTestFixture {
 /**
  * The actual class that tests all typical types of integration tests
  */
-class IntegrationTest : public IntegrationTestFixture {
+class IntegrationTest : public IntegrationTestFixture, public std::enable_shared_from_this<IntegrationTest>  {
    public:
     explicit IntegrationTest(std::shared_ptr<testingResources::MpiTestParameter> mpiTestParameter);
 

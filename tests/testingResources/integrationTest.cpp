@@ -10,18 +10,23 @@ IntegrationTest::IntegrationTest(std::shared_ptr<testingResources::MpiTestParame
 
 void IntegrationTest::RegisterTest(const std::filesystem::path& inputPath) {
     // make a raw pointer copy of the integration test
-    auto integrationTestCopy = new IntegrationTest(mpiTestParameter);
-    integrationTestCopy->inputFilePath = inputPath;
+    inputFilePath = inputPath;
+
+    // get a copy of this pointer so that this lambda can prevent deletion
+    auto testPointer = shared_from_this();
 
     // check to see if it contains a test target
-    testing::RegisterTest(integrationTestCopy->GetTestSuiteName(std::filesystem::path("inputs")).c_str(),
-                          integrationTestCopy->GetTestName().c_str(),
+    testing::RegisterTest(GetTestSuiteName(std::filesystem::path("inputs")).c_str(),
+                          GetTestName().c_str(),
                           nullptr,
                           nullptr,
                           absolute(inputPath).c_str(),
                           1,
                           // Important to use the fixture type as the return type here.
-                          [=]() -> IntegrationTestFixture* { return integrationTestCopy; });
+                          [testPointer]() -> IntegrationTestFixture* {
+                              auto newTestPointer = new IntegrationTest(testPointer->mpiTestParameter);
+                              newTestPointer->inputFilePath = testPointer->inputFilePath;
+                              return newTestPointer;});
 }
 
 void IntegrationTest::TestBody() {
