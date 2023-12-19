@@ -31,7 +31,7 @@ class IntegrationRestartTestFixture : public IntegrationTestFixture {
 /**
  * Integration restart test holds the actual integration restart test code for IntegrationRestartTestFixture
  */
-class IntegrationRestartTest : public IntegrationRestartTestFixture {
+class IntegrationRestartTest : public IntegrationRestartTestFixture, public std::enable_shared_from_this<IntegrationRestartTest> {
    public:
     explicit IntegrationRestartTest(std::shared_ptr<testingResources::MpiTestParameter> mpiTestParameter, std::string restartInputFile,
                                     std::shared_ptr<ablate::parameters::Parameters> restartOverrides);
