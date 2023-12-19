@@ -9,7 +9,6 @@ IntegrationTestFixture::IntegrationTestFixture(std::shared_ptr<testingResources:
 IntegrationTest::IntegrationTest(std::shared_ptr<testingResources::MpiTestParameter> mpiTestParameter) : IntegrationTestFixture(std::move(mpiTestParameter)) {}
 
 void IntegrationTest::RegisterTest(const std::filesystem::path& inputPath) {
-    // make a raw pointer copy of the integration test
     inputFilePath = inputPath;
 
     // get a copy of this pointer so that this lambda can prevent deletion
@@ -26,7 +25,8 @@ void IntegrationTest::RegisterTest(const std::filesystem::path& inputPath) {
                           [testPointer]() -> IntegrationTestFixture* {
                               auto newTestPointer = new IntegrationTest(testPointer->mpiTestParameter);
                               newTestPointer->inputFilePath = testPointer->inputFilePath;
-                              return newTestPointer;});
+                              return newTestPointer;
+                          });
 }
 
 void IntegrationTest::TestBody() {
