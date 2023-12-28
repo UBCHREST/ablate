@@ -1,5 +1,6 @@
 #include "petscSupport.hpp"
 #include <petsc/private/vecimpl.h>
+#include <petscdm.h> // For DMPolytopeTypeGetNumVertices
 
 /**
  * Return the cell containing the location xyz
@@ -422,39 +423,42 @@ PetscErrorCode DMPlexCellGetNumVertices(DM dm, const PetscInt p, PetscInt *nv) {
 
     PetscCall(DMPlexGetCellType(dm, p, &ct));
 
-    switch (ct) {
-        case DM_POLYTOPE_POINT:
-            *nv = 1;
-            break;
-        case DM_POLYTOPE_SEGMENT:
-        case DM_POLYTOPE_POINT_PRISM_TENSOR:
-            *nv = 2;
-            break;
-        case DM_POLYTOPE_TRIANGLE:
-            *nv = 3;
-            break;
-        case DM_POLYTOPE_QUADRILATERAL:
-        case DM_POLYTOPE_SEG_PRISM_TENSOR:
-        case DM_POLYTOPE_TETRAHEDRON:
-            *nv = 4;
-            break;
-        case DM_POLYTOPE_PYRAMID:
-            *nv = 5;
-            break;
-        case DM_POLYTOPE_TRI_PRISM:
-        case DM_POLYTOPE_TRI_PRISM_TENSOR:
-            *nv = 6;
-            break;
-        case DM_POLYTOPE_HEXAHEDRON:
-        case DM_POLYTOPE_QUAD_PRISM_TENSOR:
-            *nv = 8;
-            break;
-        case DM_POLYTOPE_FV_GHOST:
-        case DM_POLYTOPE_INTERIOR_GHOST:
-        case DM_POLYTOPE_UNKNOWN:
-        default:
-            SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "Cannot determine number of vertices for cell type %s", DMPolytopeTypes[ct]);
-    }
+    *nv = DMPolytopeTypeGetNumVertices(ct);
+
+
+//    switch (ct) {
+//        case DM_POLYTOPE_POINT:
+//            *nv = 1;
+//            break;
+//        case DM_POLYTOPE_SEGMENT:
+//        case DM_POLYTOPE_POINT_PRISM_TENSOR:
+//            *nv = 2;
+//            break;
+//        case DM_POLYTOPE_TRIANGLE:
+//            *nv = 3;
+//            break;
+//        case DM_POLYTOPE_QUADRILATERAL:
+//        case DM_POLYTOPE_SEG_PRISM_TENSOR:
+//        case DM_POLYTOPE_TETRAHEDRON:
+//            *nv = 4;
+//            break;
+//        case DM_POLYTOPE_PYRAMID:
+//            *nv = 5;
+//            break;
+//        case DM_POLYTOPE_TRI_PRISM:
+//        case DM_POLYTOPE_TRI_PRISM_TENSOR:
+//            *nv = 6;
+//            break;
+//        case DM_POLYTOPE_HEXAHEDRON:
+//        case DM_POLYTOPE_QUAD_PRISM_TENSOR:
+//            *nv = 8;
+//            break;
+//        case DM_POLYTOPE_FV_GHOST:
+//        case DM_POLYTOPE_INTERIOR_GHOST:
+//        case DM_POLYTOPE_UNKNOWN:
+//        default:
+//            SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "Cannot determine number of vertices for cell type %s", DMPolytopeTypes[ct]);
+//    }
 
     PetscFunctionReturn(PETSC_SUCCESS);
 }
