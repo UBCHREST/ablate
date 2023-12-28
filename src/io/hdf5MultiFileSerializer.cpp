@@ -105,7 +105,7 @@ void ablate::io::Hdf5MultiFileSerializer::Register(std::weak_ptr<Serializable> s
             EndEvent();
 
             StartEvent("PetscViewerHDF5Destroy");
-            PetscViewerDestroy(&petscViewer) >> utilities::PetscUtilities::checkError;
+            PetscOptionsRestoreViewer(&petscViewer) >> utilities::PetscUtilities::checkError;
             EndEvent();
         } else {
             // Create an output directory
@@ -175,7 +175,7 @@ PetscErrorCode ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializerSaveS
                 hdf5Serializer->EndEvent();
 
                 hdf5Serializer->StartEvent("PetscViewerHDF5Destroy");
-                PetscCall(PetscViewerDestroy(&petscViewer));
+                PetscCall(PetscOptionsRestoreViewer(&petscViewer));
                 hdf5Serializer->EndEvent();
             }
         }
@@ -206,7 +206,11 @@ void ablate::io::Hdf5MultiFileSerializer::SaveMetadata(TS ts) const {
         // keep a back of the restart file incase writing fails
         if (exists(restartFilePath)) {
             auto backupRestartFilePath = rootOutputDirectory / "restart.bak";
-            std::filesystem::copy(restartFilePath, backupRestartFilePath, std::filesystem::copy_options::overwrite_existing);
+            try {
+                std::filesystem::copy(restartFilePath, backupRestartFilePath, std::filesystem::copy_options::overwrite_existing);
+            } catch (const std::filesystem::filesystem_error& error) {
+                std::cout << "Cannot create restart.bak file: " << error.what() << " Continuing without backup file." << std::endl;
+            }
         }
         std::ofstream restartFile;
         restartFile.open(restartFilePath);

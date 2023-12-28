@@ -45,10 +45,10 @@ jobs:
           # only run the fsanitize on amd to save ub resources
           - arch: { runson: ubuntu-latest, id: -amd64 }
             compiler: { id: -gcc-asan }
-            indices: [ { index64bit: 0, id: "" } ]
+            indices: { index64bit: 0, id: "" }
           - arch: { runson: ubuntu-latest, id: -amd64 }
             compiler: { id: -gcc-asan }
-            indices: [ { index64bit: 1, id: "-index64" } ]
+            indices: { index64bit: 1, id: "-index64" }
 
     runs-on: ${{ matrix.arch.runson }}
 
@@ -94,10 +94,10 @@ jobs:
           # only run the fsanitize on amd to save ub resources
           - arch: { runson: ubuntu-latest, id: -amd64 }
             compiler: { id: -gcc-asan }
-            indices: [ { index64bit: 0, id: "" } ]
+            indices: { index64bit: 0, id: "" }
           - arch: { runson: ubuntu-latest, id: -amd64 }
             compiler: { id: -gcc-asan }
-            indices: [ { index64bit: 1, id: "-index64" } ]
+            indices: { index64bit: 1, id: "-index64" }
 
     steps:
       - name: Set up Docker Buildx

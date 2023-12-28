@@ -182,3 +182,9 @@ PetscErrorCode PetscSortedArrayComplement(const PetscInt na, const PetscInt a[],
  *    b - All integers in a and b
  */
 PetscErrorCode PetscSortedArrayCommon(const PetscInt na, const PetscInt a[], PetscInt *nb, PetscInt b[]);
+
+/**
+ * This is a copy of DMProjectFunctionLocal (https://petsc.org/main/manualpages/DM/DMProjectFunctionLocal/) but projects across all cells even with different cell types
+ * @return
+ */
+PetscErrorCode DMProjectFunctionLocalMixedCells(DM, PetscReal, PetscErrorCode (**)(PetscInt, PetscReal, const PetscReal[], PetscInt, PetscScalar *, void *), void **, InsertMode, Vec);

@@ -10,9 +10,9 @@
 
 ablate::domain::BoxMeshBoundaryCells::BoxMeshBoundaryCells(const std::string& name, const std::vector<std::shared_ptr<FieldDescriptor>>& fieldDescriptors,
                                                            std::vector<std::shared_ptr<modifiers::Modifier>> preModifiers, std::vector<std::shared_ptr<modifiers::Modifier>> postModifiers,
-                                                           std::vector<int> faces, const std::vector<double>& lower, const std::vector<double>& upper, bool simplex,
+                                                           std::vector<int> faces, const std::vector<double>& lower, const std::vector<double>& upper,
                                                            const std::shared_ptr<parameters::Parameters>& options)
-    : Domain(CreateBoxDM(name, std::move(faces), lower, upper, simplex), name, fieldDescriptors,
+    : Domain(CreateBoxDM(name, std::move(faces), lower, upper, false), name, fieldDescriptors,
              // We need to get the optional dm_plex_scale to determine bounds
              AddBoundaryModifiers(lower, upper, options ? options->Get("dm_plex_scale", 1.0) : 1.0, std::move(preModifiers), std::move(postModifiers)), options) {
     // make sure that dm_refine was not set
@@ -163,5 +163,5 @@ REGISTER(ablate::domain::Domain, ablate::domain::BoxMeshBoundaryCells,
          OPT(std::vector<ablate::domain::modifiers::Modifier>, "preModifiers", "a list of domain modifiers to apply before ghost labeling"),
          OPT(std::vector<ablate::domain::modifiers::Modifier>, "postModifiers", "a list of domain modifiers to apply after ghost labeling"),
          ARG(std::vector<int>, "faces", "the number of faces in each direction"), ARG(std::vector<double>, "lower", "the lower bound of the mesh"),
-         ARG(std::vector<double>, "upper", "the upper bound of the mesh"), OPT(bool, "simplex", "sets if the elements/cells are simplex"),
+         ARG(std::vector<double>, "upper", "the upper bound of the mesh"),
          OPT(ablate::parameters::Parameters, "options", "PETSc options specific to this dm.  Default value allows the dm to access global options."));

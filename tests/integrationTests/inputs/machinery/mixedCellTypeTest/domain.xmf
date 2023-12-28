@@ -1,0 +1,159 @@
+<?xml version="1.0" ?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf>
+  <Domain Name="domain">
+    <Grid CollectionType="Temporal" GridType="Collection" Name="TimeSeries">
+      <Time TimeType="List">
+        <DataItem Dimensions="1" Format="XML" NumberType="Float">
+          0
+        </DataItem>
+      </Time>
+      <Grid CollectionType="Spatial" GridType="Collection" Name="domain">
+        <Grid GridType="Uniform" Name="domain">
+          <Topology NumberOfElements="64" TopologyType="Triangle">
+            <DataItem Dimensions="64 3" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+              domain.hdf5:/viz/topology/cells
+            </DataItem>
+          </Topology>
+          <Geometry GeometryType="XY">
+            <DataItem DataType="Float" Dimensions="81 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+              domain.hdf5:/geometry/vertices
+            </DataItem>
+          </Geometry>
+          <Attribute Center="Cell" Name="aux_temperature" Type="Scalar">
+            <DataItem Dimensions="1 64 1" ItemType="HyperSlab" Type="HyperSlab">
+              <DataItem Dimensions="3 3" Format="XML">
+                0 0 0 1 1 1 1 64 1
+              </DataItem>
+              <DataItem DataType="Float" Dimensions="1 64 1" Format="HDF" Precision="8">
+                domain.hdf5:/cell_fields/aux_temperature
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Center="Cell" Name="aux_velocity" Type="Vector">
+            <DataItem Dimensions="1 64 2" ItemType="HyperSlab" Type="HyperSlab">
+              <DataItem Dimensions="3 3" Format="XML">
+                0 0 0 1 1 1 1 64 2
+              </DataItem>
+              <DataItem DataType="Float" Dimensions="1 64 2" Format="HDF" Precision="8">
+                domain.hdf5:/cell_fields/aux_velocity
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Center="Cell" Name="solution_euler_rho" Type="Scalar">
+            <DataItem Dimensions="1 64 1" ItemType="HyperSlab" Type="HyperSlab">
+              <DataItem Dimensions="3 3" Format="XML">
+                0 0 0 1 1 4 1 64 1
+              </DataItem>
+              <DataItem DataType="Float" Dimensions="1 64 4" Format="HDF" Precision="8">
+                domain.hdf5:/cell_fields/solution_euler
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Center="Cell" Name="solution_euler_rhoE" Type="Scalar">
+            <DataItem Dimensions="1 64 1" ItemType="HyperSlab" Type="HyperSlab">
+              <DataItem Dimensions="3 3" Format="XML">
+                0 0 1 1 1 4 1 64 1
+              </DataItem>
+              <DataItem DataType="Float" Dimensions="1 64 4" Format="HDF" Precision="8">
+                domain.hdf5:/cell_fields/solution_euler
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Center="Cell" Name="solution_euler_rhoVel0" Type="Scalar">
+            <DataItem Dimensions="1 64 1" ItemType="HyperSlab" Type="HyperSlab">
+              <DataItem Dimensions="3 3" Format="XML">
+                0 0 2 1 1 4 1 64 1
+              </DataItem>
+              <DataItem DataType="Float" Dimensions="1 64 4" Format="HDF" Precision="8">
+                domain.hdf5:/cell_fields/solution_euler
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Center="Cell" Name="solution_euler_rhoVel1" Type="Scalar">
+            <DataItem Dimensions="1 64 1" ItemType="HyperSlab" Type="HyperSlab">
+              <DataItem Dimensions="3 3" Format="XML">
+                0 0 3 1 1 4 1 64 1
+              </DataItem>
+              <DataItem DataType="Float" Dimensions="1 64 4" Format="HDF" Precision="8">
+                domain.hdf5:/cell_fields/solution_euler
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+        <Grid GridType="Uniform" Name="domain">
+          <Topology NumberOfElements="32" TopologyType="Quadrilateral">
+            <DataItem Dimensions="32 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_1_cells" NumberType="Float" Precision="8">
+              domain.hdf5:/viz/topology_1/cells
+            </DataItem>
+          </Topology>
+          <Geometry GeometryType="XY">
+            <DataItem DataType="Float" Dimensions="81 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+              domain.hdf5:/geometry/vertices
+            </DataItem>
+          </Geometry>
+          <Attribute Center="Cell" Name="aux_temperature" Type="Scalar">
+            <DataItem Dimensions="1 32 1" ItemType="HyperSlab" Type="HyperSlab">
+              <DataItem Dimensions="3 3" Format="XML">
+                0 0 0 1 1 1 1 32 1
+              </DataItem>
+              <DataItem DataType="Float" Dimensions="1 32 1" Format="HDF" Precision="8">
+                domain.hdf5:/cell_fields_1/aux_temperature
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Center="Cell" Name="aux_velocity" Type="Vector">
+            <DataItem Dimensions="1 32 2" ItemType="HyperSlab" Type="HyperSlab">
+              <DataItem Dimensions="3 3" Format="XML">
+                0 0 0 1 1 1 1 32 2
+              </DataItem>
+              <DataItem DataType="Float" Dimensions="1 32 2" Format="HDF" Precision="8">
+                domain.hdf5:/cell_fields_1/aux_velocity
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Center="Cell" Name="solution_euler_rho" Type="Scalar">
+            <DataItem Dimensions="1 32 1" ItemType="HyperSlab" Type="HyperSlab">
+              <DataItem Dimensions="3 3" Format="XML">
+                0 0 0 1 1 4 1 32 1
+              </DataItem>
+              <DataItem DataType="Float" Dimensions="1 32 4" Format="HDF" Precision="8">
+                domain.hdf5:/cell_fields_1/solution_euler
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Center="Cell" Name="solution_euler_rhoE" Type="Scalar">
+            <DataItem Dimensions="1 32 1" ItemType="HyperSlab" Type="HyperSlab">
+              <DataItem Dimensions="3 3" Format="XML">
+                0 0 1 1 1 4 1 32 1
+              </DataItem>
+              <DataItem DataType="Float" Dimensions="1 32 4" Format="HDF" Precision="8">
+                domain.hdf5:/cell_fields_1/solution_euler
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Center="Cell" Name="solution_euler_rhoVel0" Type="Scalar">
+            <DataItem Dimensions="1 32 1" ItemType="HyperSlab" Type="HyperSlab">
+              <DataItem Dimensions="3 3" Format="XML">
+                0 0 2 1 1 4 1 32 1
+              </DataItem>
+              <DataItem DataType="Float" Dimensions="1 32 4" Format="HDF" Precision="8">
+                domain.hdf5:/cell_fields_1/solution_euler
+              </DataItem>
+            </DataItem>
+          </Attribute>
+          <Attribute Center="Cell" Name="solution_euler_rhoVel1" Type="Scalar">
+            <DataItem Dimensions="1 32 1" ItemType="HyperSlab" Type="HyperSlab">
+              <DataItem Dimensions="3 3" Format="XML">
+                0 0 3 1 1 4 1 32 1
+              </DataItem>
+              <DataItem DataType="Float" Dimensions="1 32 4" Format="HDF" Precision="8">
+                domain.hdf5:/cell_fields_1/solution_euler
+              </DataItem>
+            </DataItem>
+          </Attribute>
+        </Grid>
+      </Grid>
+    </Grid>
+  </Domain>
+</Xdmf>

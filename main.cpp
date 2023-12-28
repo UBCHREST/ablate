@@ -28,7 +28,7 @@ int main(int argc, char** args) {
     }
     if (printInfo) {
         Builder::PrintInfo(std::cout);
-        std::cout << "----------------------------------------" << std::endl;
+        return 0;
     }
 
     PetscBool printVersion = PETSC_FALSE;

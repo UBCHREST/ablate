@@ -1,9 +1,11 @@
 import os
 import subprocess
+import yaml
 import componentListGenerator
 import argparse
 import pathlib
 import re
+import configGenerator
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -14,18 +16,22 @@ if __name__ == "__main__":
                         help='the root repo directory')
     args = parser.parse_args()
 
-    # Get the version from the build file
-    ablateVersion = subprocess.run([str(args.ablate_exe), "--version"], check=True, capture_output=True,
-                                   text=True).stdout
-    with open(args.root_dir / 'docs/_includes/generated/version.html', 'w') as f:
-        print(ablateVersion, file=f, end='')
+    # Get the version and other metadata from the build file
+    ablate_metadata_string = subprocess.run([str(args.ablate_exe), "--info"], check=True, capture_output=True,
+                                            text=True).stdout
+    ablate_metadata = yaml.safe_load(ablate_metadata_string)['ABLATE']
 
-    # get the petsc build information
-    completeInformation = subprocess.run([str(args.ablate_exe), "-version"], check=False, capture_output=True,
-                                         text=True).stdout
-    petscVersionMatches = re.search('revision: ([^\s]+)', completeInformation)
+    # write the version to a file
+    with open(args.root_dir / 'docs/_includes/generated/version.html', 'w') as f:
+        print(ablate_metadata['version'], file=f, end='')
+
+    # write the version-commit to the petsc version file
     with open(args.root_dir / 'docs/_includes/generated/petscVersion.html', 'w') as f:
-        print(petscVersionMatches.group(1), file=f, end='')
+        print(f'{ablate_metadata["petscVersion"]} {ablate_metadata["petscGitCommit"]} ', file=f, end='')
+
+    # generate any required config files
+    # build the replacement dictionary
+    configGenerator.generate_config_files(args.root_dir / 'config', args.root_dir / 'docs/content/installation/config', ablate_metadata)
 
     # Get the component information
     componentInformation = subprocess.run([str(args.ablate_exe), "--help"], check=False, capture_output=True,
@@ -49,7 +55,7 @@ if __name__ == "__main__":
     doxyFileOrg = open(args.root_dir / 'docs/doxyfile.config', "r")
     with open(args.root_dir / 'docs/doxyfile.tmp.config', 'w') as doxyFile:
         doxyFile.write(doxyFileOrg.read())
-        doxyFile.write(f'PROJECT_NUMBER = {ablateVersion}')
+        doxyFile.write(f'PROJECT_NUMBER = {ablate_metadata["version"]}')
 
     # call doxygen
     completeInformation = subprocess.run(['doxygen', args.root_dir / 'docs/doxyfile.tmp.config'], cwd=args.root_dir,

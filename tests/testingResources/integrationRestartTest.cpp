@@ -13,19 +13,24 @@ IntegrationRestartTest::IntegrationRestartTest(std::shared_ptr<testingResources:
     : IntegrationRestartTestFixture(std::move(mpiTestParameter), std::move(restartInputFile), std::move(restartOverrides)) {}
 
 void IntegrationRestartTest::RegisterTest(const std::filesystem::path& inputPath) {
-    // make a raw pointer copy of the integration test
-    auto integrationTestCopy = new IntegrationRestartTest(mpiTestParameter, restartInputFile, restartOverrides);
-    integrationTestCopy->inputFilePath = inputPath;
+    inputFilePath = inputPath;
+
+    // get a copy of this pointer so that this lambda can prevent deletion
+    auto testPointer = shared_from_this();
 
     // check to see if it contains a test target
-    testing::RegisterTest(integrationTestCopy->GetTestSuiteName(std::filesystem::path("inputs"), "IntegrationRestart").c_str(),
-                          integrationTestCopy->GetTestName().c_str(),
+    testing::RegisterTest(GetTestSuiteName(std::filesystem::path("inputs"), "IntegrationRestart").c_str(),
+                          GetTestName().c_str(),
                           nullptr,
                           nullptr,
                           absolute(inputPath).c_str(),
                           1,
                           // Important to use the fixture type as the return type here.
-                          [=]() -> IntegrationRestartTestFixture* { return integrationTestCopy; });
+                          [testPointer]() -> IntegrationRestartTestFixture* {
+                              auto newTestPointer = new IntegrationRestartTest(testPointer->mpiTestParameter, testPointer->restartInputFile, testPointer->restartOverrides);
+                              newTestPointer->inputFilePath = testPointer->inputFilePath;
+                              return newTestPointer;
+                          });
 }
 
 void IntegrationRestartTest::TestBody() {

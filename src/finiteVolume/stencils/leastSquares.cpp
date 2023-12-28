@@ -3,7 +3,7 @@
 #include "utilities/petscUtilities.hpp"
 
 void ablate::finiteVolume::stencil::LeastSquares::Generate(PetscInt face, ablate::finiteVolume::stencil::Stencil& stencil, const domain::SubDomain& subDomain,
-                                                           const std::shared_ptr<domain::Region> solverRegion, DM cellDM, const PetscScalar* cellGeomArray, DM faceDM,
+                                                           const std::shared_ptr<domain::Region>& solverRegion, DM cellDM, const PetscScalar* cellGeomArray, DM faceDM,
                                                            const PetscScalar* faceGeomArray) {
     auto dm = subDomain.GetDM();
     auto dim = subDomain.GetDimensions();

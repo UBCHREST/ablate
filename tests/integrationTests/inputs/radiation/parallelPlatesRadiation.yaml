@@ -41,7 +41,6 @@ timestepper:
     faces: [ 3, 5 ]
     lower: [ 0 , -0.0105 ]
     upper: [ 0.5 , 0.0105 ]
-    simplex: false
     options:
       dm_refine: 0
       dm_plex_hash_location: true

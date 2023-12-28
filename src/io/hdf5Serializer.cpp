@@ -151,11 +151,11 @@ ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::~Hdf5ObjectSerializer() {
         // If this is the root process generate the xdmf file
         PetscMPIInt rank;
         MPI_Comm_rank(PetscObjectComm(PetscObject(petscViewer)), &rank);
+        PetscOptionsRestoreViewer(&petscViewer) >> utilities::PetscUtilities::checkError;
+
         if (rank == 0 && !filePath.empty() && std::filesystem::exists(filePath)) {
             xdmfGenerator::Generate(filePath);
         }
-
-        PetscViewerDestroy(&petscViewer) >> utilities::PetscUtilities::checkError;
     }
 }
 

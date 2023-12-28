@@ -30,7 +30,6 @@ timestepper:
     faces: [4, 6]
     lower: [0.0, 0.0]
     upper: [0.5, 0.5]
-    simplex: false
     preModifiers:
       - !ablate::domain::modifiers::DistributeWithGhostCells
         ghostCellDepth: 3

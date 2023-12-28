@@ -1,7 +1,9 @@
 #include "builder.hpp"
+#include <yaml-cpp/yaml.h>
 #include "monitors/monitor.hpp"
 #include "solver/solver.hpp"
 #include "solver/timeStepper.hpp"
+#include "utilities/stringUtilities.hpp"
 #include "version.h"
 
 std::shared_ptr<ablate::solver::TimeStepper> ablate::Builder::Build(const std::shared_ptr<cppParser::Factory>& parser) {
@@ -48,8 +50,36 @@ void ablate::Builder::Run(const std::shared_ptr<cppParser::Factory>& parser) {
 void ablate::Builder::PrintVersion(std::ostream& stream) { stream << ABLATE_VERSION; }
 
 void ablate::Builder::PrintInfo(std::ostream& stream) {
-    stream << "ABLATE: " << std::endl;
-    stream << '\t' << "Documentation: https://ablate.dev" << std::endl;
-    stream << '\t' << "Source: https://github.com/UBCHREST/ablate" << std::endl;
-    stream << '\t' << "Version: " << ABLATE_VERSION << std::endl;
+    // force this to print as yaml, so it is human and machine-readable
+    YAML::Emitter out;
+    out << YAML::BeginMap;
+    out << YAML::Key << "ABLATE";
+    out << YAML::Value << YAML::BeginMap;
+    out << YAML::Key << "documentation";
+    out << YAML::Value << "https://ablate.dev";
+    out << YAML::Key << "source";
+    out << YAML::Value << "https://github.com/UBCHREST/ablate";
+    out << YAML::Key << "version";
+    out << YAML::Value << ABLATE_VERSION;
+
+    // build and print the petsc version number
+    out << YAML::Key << "petscVersion";
+    std::stringstream petscVersion;
+    petscVersion << PETSC_VERSION_MAJOR << "." << PETSC_VERSION_MINOR << "." << PETSC_VERSION_SUBMINOR;
+    out << YAML::Value << petscVersion.str();
+
+    // Build the hash if needed, only limit the length if it is more than a hash
+    out << YAML::Key << "petscGitCommit";
+    auto petscGit = std::string(PETSC_VERSION_GIT);
+    if (ablate::utilities::StringUtilities::Contains(petscGit, "-")) {
+        size_t position = petscGit.find_last_of('-');
+        petscGit = petscGit.substr(position + 1);
+    } else {
+        petscGit.resize(8);
+    }
+    out << YAML::Value << petscGit;
+    out << YAML::EndMap << YAML::EndMap;
+
+    // Pipe to the output stream
+    stream << out.c_str();
 }
