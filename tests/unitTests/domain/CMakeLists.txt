@@ -5,7 +5,6 @@ target_sources(ablateUnitTestLibrary
         dynamicRangeTests.cpp
         reverseRangeTests.cpp
         hdf5InitializerTests.cpp
-        axisymmetricTests.cpp
 
         PUBLIC
         mockField.hpp
@@ -13,3 +12,4 @@ target_sources(ablateUnitTestLibrary
 
 add_subdirectory(modifiers)
 add_subdirectory(RBF)
+add_subdirectory(descriptions)

@@ -62,9 +62,7 @@ target_link_libraries(ablateLibrary
         Tines::tines
         Threads::Threads
         nlohmann_json::nlohmann_json
-        ${HDF5_LIBRARIES}
-        PRIVATE
-        chrestCompilerFlags)
+        ${HDF5_LIBRARIES})
 
 # depending upon the build, we may need to add blas
 find_package(BLAS)

@@ -65,7 +65,7 @@ class VectorUtilities {
     }
 
     /**
-     * Fills an array based upon a key vector and map
+     * Fills an vector based upon a key vector and map
      * @tparam T
      * @param list
      * @return
@@ -171,7 +171,56 @@ class VectorUtilities {
         return transformed;
     }
 
-   private:
+    /**
+     * Helper function to convert a vector to array and fill in missing values to zero.  It will throw an exception if the size is to large
+     * @tparam T the array/vector type
+     * @tparam S the desired size of the array
+     * @param vector the input vector
+     * @param defaultValue the fill value
+     * @return
+     */
+    template <class T, std::size_t S>
+    static inline std::array<T, S> ToArray(const std::vector<T>& vector, const T defaultValue) {
+        std::array<T, S> array;
+
+        // check to make sure there is room
+        if (array.size() < vector.size()) {
+            throw std::invalid_argument("The supplied vector {" + std::to_string(vector.size()) + "} is to large for the array {" + std::to_string(array.size()) + "}");
+        }
+
+        std::size_t i = 0;
+        for (; i < vector.size(); ++i) {
+            array[i] = vector[i];
+        }
+
+        for (; i < array.size(); ++i) {
+            array[i] = defaultValue;
+        }
+
+        return array;
+    }
+    /**
+     * Helper function to convert a vector to array and fill in missing values to zero.  It will throw an exception if the size of the vector and array are not the same
+     * @tparam T the array/vector type
+     * @tparam S the desired size of the array
+     * @param vector the input vector
+     * @param defaultValue the fill value
+     * @return
+     */
+    template <class T, std::size_t S>
+    static inline std::array<T, S> ToArray(const std::vector<T>& vector) {
+        std::array<T, S> array;
+
+        // check to make sure there is room
+        if (array.size() != vector.size()) {
+            throw std::invalid_argument("The supplied vector {" + std::to_string(vector.size()) + "} is not sized correctly for the array {" + std::to_string(array.size()) + "}");
+        }
+
+        std::copy(vector.begin(), vector.end(), array.begin());
+
+        return array;
+    }
+
     VectorUtilities() = delete;
 };
 

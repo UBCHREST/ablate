@@ -4,4 +4,5 @@ target_sources(ablateUnitTestLibrary
         petscUtilitiesTests.cpp
         petscSupportTests.cpp
         stringUtilitiesTests.cpp
+        vectorUtilitiesTests.cpp
         )
