@@ -11,6 +11,12 @@ class MeshDescription {
    public:
     virtual ~MeshDescription() = default;
     /**
+     * The overall assumed dimension of the mesh
+     * @return
+     */
+    [[nodiscard]] virtual const PetscInt& GetMeshDimension() const = 0;
+
+    /**
      * Total number of cells in the entire mesh
      * @return
      */
@@ -33,6 +39,12 @@ class MeshDescription {
      * @return
      */
     virtual void BuildTopology(PetscInt cell, PetscInt* cellNodes) const = 0;
+
+    /**
+     * Builds the node coordinate for each vertex
+     * @return
+     */
+    virtual void SetCoordinate(PetscInt node, PetscReal* coordinate) const = 0;
 };
 }  // namespace ablate::domain::descriptions
 

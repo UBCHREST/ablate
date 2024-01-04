@@ -24,6 +24,6 @@ TEST_P(AxisymmetricMeshGeneratorFixture, ShouldComputeCorrectNumberOfCellsAndVer
 
 INSTANTIATE_TEST_SUITE_P(AxisymmetricTests, AxisymmetricMeshGeneratorFixture,
                          testing::Values(AxisymmetricMeshGeneratorParameters{
-                             .meshGenerator = std::make_shared<ablate::domain::descriptions::Axisymmetric>(std::vector<PetscReal>{0.0, 0.0, 0.0}, std::vector<PetscReal>{0.0, 0.0, 1.0}, 8, 4),
+                             .meshGenerator = std::make_shared<ablate::domain::descriptions::Axisymmetric>(std::vector<PetscReal>{0.0, 0.0, 0.0}, 1.0, 8, 4),
                              .expectedNumberCells = 32,
                              .expectedNumberVertices = 45}));

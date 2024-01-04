@@ -28,7 +28,7 @@ class MeshGenerator : public Domain {
 
    public:
     /**
-     * Create a mesh using a simple descprtion of nodes/vertcies
+     * Create a mesh using a simple description of nodes/vertices
      * @param name
      * @param fieldDescriptors
      * @param description
