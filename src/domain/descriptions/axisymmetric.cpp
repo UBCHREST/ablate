@@ -21,18 +21,18 @@ void ablate::domain::descriptions::Axisymmetric::BuildTopology(PetscInt cell, Pe
     PetscInt localWedge = cell % numberWedges;
 
     // Set the center nodes
-    const auto lowerCenter = slice * numberCellsPerSlice;
-    const auto upperCenter = (slice + 1) * numberCellsPerSlice;
+    const auto lowerCenter = slice * numberVerticesPerHalfSlice;
+    const auto upperCenter = (slice + 1) * numberVerticesPerHalfSlice;
     cellNodes[0] = lowerCenter;
     cellNodes[3] = upperCenter;
 
     // set the lower nodes
     cellNodes[1] = localWedge + 1 + lowerCenter;
-    cellNodes[2] = (localWedge + 2) == (numberWedges + 2) ? lowerCenter + 1 : lowerCenter + 2 + localWedge;  // checking for wrap around
+    cellNodes[2] = (localWedge + 2) == (numberWedges + 1) ? lowerCenter + 1 : lowerCenter + 2 + localWedge;  // checking for wrap around
 
     // repeat for the upper nodes
     cellNodes[5] = localWedge + 1 + upperCenter;
-    cellNodes[4] = (localWedge + 2) == (numberWedges + 2) ? upperCenter + 1 : upperCenter + 2 + localWedge;  // checking for wrap around
+    cellNodes[4] = (localWedge + 2) == (numberWedges + 1) ? upperCenter + 1 : upperCenter + 2 + localWedge;  // checking for wrap around
 }
 void ablate::domain::descriptions::Axisymmetric::SetCoordinate(PetscInt node, PetscReal *coordinate) const {
     // start the coordinate at the start location

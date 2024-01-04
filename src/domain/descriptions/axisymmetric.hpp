@@ -15,7 +15,7 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
    private:
     //! Store the start and end location of the mesh
     const std::array<PetscReal, 3> startLocation;
-    const PetscReal length;//this is in z
+    const PetscReal length;  // this is in z
 
     //! hard code the assumed mesh dimension
     inline static const PetscInt dim = 3;
@@ -83,7 +83,6 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
      * @return
      */
     void SetCoordinate(PetscInt node, PetscReal* coordinate) const override;
-
-};  // namespace ablate::domain
+};
 }  // namespace ablate::domain::descriptions
 #endif  // ABLATELIBRARY_AXISYMMETRIC_HPP

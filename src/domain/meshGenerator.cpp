@@ -60,7 +60,7 @@ DM ablate::domain::MeshGenerator::CreateDM(const std::string& name, std::shared_
 
     // Determine the max cone size and set the value for each cell.  Cells come before points
     PetscInt maxConeSize = 0;
-    for (PetscInt c = 0; c < numCells; c++) {
+    for (PetscInt c = 0; c < numCells; ++c) {
         auto cellType = description->GetCellType(c);
 
         // Determine the cone size and dim
@@ -78,7 +78,7 @@ DM ablate::domain::MeshGenerator::CreateDM(const std::string& name, std::shared_
     PetscInt cone[maxConeSize];
 
     // Compute and set the cone for each cell
-    for (PetscInt c = 0; c < numCells; c++) {
+    for (PetscInt c = 0; c < numCells; ++c) {
         description->BuildTopology(c, cone);
 
         // Offset the cone from the number of numVertices
@@ -125,10 +125,10 @@ DM ablate::domain::MeshGenerator::CreateDM(const std::string& name, std::shared_
         // March over each vertex
         for (PetscInt v = 0; v < numVertices; ++v) {
             // Get the pointer for this coordinate
-            auto vertex = coords+ (v * dim);
+            auto vertex = coords + (v * dim);
 
             // Set it to zero for safety
-            for(PetscInt d = 0; d < dim; ++d){
+            for (PetscInt d = 0; d < dim; ++d) {
                 vertex[d] = 0.0;
             }
 
