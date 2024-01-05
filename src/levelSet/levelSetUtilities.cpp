@@ -1129,7 +1129,7 @@ printf("%+f\n", h);
     bool doesNotHaveDerivatives = false;
     bool doesNotHaveInterpolation = false;
     bool returnNeighborVertices = true;
-    vertRBF = std::make_shared<ablate::domain::rbf::GA>(polyAug, h, doesNotHaveDerivatives, doesNotHaveInterpolation, returnNeighborVertices);
+    vertRBF = std::make_shared<ablate::domain::rbf::PHS>(polyAug, h, doesNotHaveDerivatives, doesNotHaveInterpolation, returnNeighborVertices);
 
     vertRBF->Setup(subDomain);       // This causes issues (I think)
     vertRBF->Initialize();  //         Initialize
@@ -1428,6 +1428,11 @@ DMGetWorkArray(auxDM, vertRange.end - vertRange.start, MPIU_INT, &divMask) >> ab
 PetscArrayzero(divMask, vertRange.end - vertRange.start) >> ablate::utilities::PetscUtilities::checkError;
 divMask -= vertRange.start; // offset so that we can use start->end
 
+//PetscReal *vertGrad;
+//DMGetWorkArray(auxDM, dim*(vertRange.end - vertRange.start), MPIU_REAL, &vertGrad) >> ablate::utilities::PetscUtilities::checkError;
+//PetscArrayzero(vertGrad, dim*(vertRange.end - vertRange.start)) >> ablate::utilities::PetscUtilities::checkError;
+//vertGrad -= dim*vertRange.start; // offset so that we can use start->end
+
 for (PetscInt v = vertRange.start; v < vertRange.end; ++v) {
 
   if (vertMask[v] > 1) {
@@ -1456,23 +1461,28 @@ for (PetscInt v = vertRange.start; v < vertRange.end; ++v) {
         PetscInt cell = cellRange.GetPoint(c);
         PetscReal *g = nullptr;
         xDMPlexPointLocalRef(auxDM, cell, cellNormalID, auxArray, &g) >> ablate::utilities::PetscUtilities::checkError;
+        DMPlexCellGradFromVertex(auxDM, cell, auxVec, lsID, 0, g) >> ablate::utilities::PetscUtilities::checkError;
 
-        DMPlexCellGradFromVertex(auxDM, cell, auxVec, lsID, 0, g);
+        PetscReal *nrm = nullptr;
+        xDMPlexPointLocalRef(auxDM, cell, curvID, auxArray, &nrm) >> ablate::utilities::PetscUtilities::checkError;
+        *nrm = ablate::utilities::MathUtilities::MagVector(dim, g);
 
-        const PetscReal nrm = ablate::utilities::MathUtilities::MagVector(dim, g);
 
-
-        // See Eq. (30) in "A high-order elliptic PDE based level set reinitialization method using a discontinuous Galerkin discretization"
-        //    by Adams, Giani, and Coombs
-        PetscReal fac = 0.0;
-        if (nrm > 1)  fac = 1.0 - 1.0/nrm;
-        else          fac = 1.0 - nrm;
-
-        for (PetscInt d = 0; d < dim; ++d) g[d] *= fac;
 
       }
     }
     subDomain->UpdateAuxLocalVector();
+
+    for (PetscInt v = vertRange.start; v < vertRange.end; ++v) {
+      if (vertMask[v] > 1) {
+        PetscInt vert = vertRange.GetPoint(v);
+
+        PetscReal *g = nullptr;
+        xDMPlexPointLocalRef(auxDM, vert, vertexNormalID, auxArray, &g) >> ablate::utilities::PetscUtilities::checkError;
+        DMPlexVertexGradFromVertex(auxDM, vert, auxVec, lsID, 0, g) >> ablate::utilities::PetscUtilities::checkError;
+
+      }
+    }
 
     maxDiff = -PETSC_MAX_REAL;
 
@@ -1486,31 +1496,34 @@ for (PetscInt v = vertRange.start; v < vertRange.end; ++v) {
 
         const PetscReal phi0 = *phi;
 
-//        if (divMask[v]) {
-//          PetscReal div = 0.0;
-//          for (PetscInt d = 0; d < dim; ++d) {
-//            PetscReal g[3];
-//            DMPlexVertexGradFromCell(auxDM, vert, auxVec, cellNormalID, d, g);
-//            div += g[d];
-//          }
+        const PetscReal *arrayG = nullptr;
+        xDMPlexPointLocalRef(auxDM, vert, vertexNormalID, auxArray, &arrayG) >> ablate::utilities::PetscUtilities::checkError;
 
-//          *phi += 0.1*h*h*div;
+        PetscReal g[dim], n[dim];
+        PetscReal nrm = ablate::utilities::MathUtilities::MagVector(dim, arrayG);
+        for (PetscInt d = 0; d < dim; ++d){
+          g[d] = arrayG[d];
+          n[d] = arrayG[d]/nrm;
+        }
 
-//        }
-//        else {
-          PetscReal g[dim];
-          DMPlexVertexGradFromVertex(auxDM, vert, auxVec, lsID, 0, g) >> ablate::utilities::PetscUtilities::checkError;
-          VertexUpwindGrad(auxDM, auxArray, cellNormalID, vert, PetscSignReal(*phi), g);
+        VertexUpwindGrad(auxDM, auxArray, cellNormalID, vert, PetscSignReal(*phi), g);
 
-          const PetscReal mag = ablate::utilities::MathUtilities::MagVector(dim, g) - 1.0;
+        nrm = ablate::utilities::MathUtilities::MagVector(dim, g);
 
-          *phi -= 0.5*PetscSignReal(*phi)*h*mag;
+        const PetscReal alphaH = PetscMax(nrm, 1.0)*h;
 
-//PetscReal x[3];
-//DMPlexComputeCellGeometryFVM(auxDM, vert, NULL, x, NULL) >> ablate::utilities::PetscUtilities::checkError;
-//*phi = sqrt(x[0]*x[0] + x[1]*x[1]) - 1.0;
+        PetscReal sgn;
+        if (phi0 < -alphaH) sgn = -1.0;
+        else if (phi0 > alphaH) sgn = 1.0;
+        else sgn = phi0/alphaH + PetscSinReal(M_PI*phi0/alphaH)/M_PI;
 
-//        }
+        PetscReal gNRM[dim];
+        DMPlexVertexGradFromCell(auxDM, vert, auxVec, curvID, 0, gNRM);
+
+        PetscReal dtProd = 0.0;
+        if (divMask[v]==1) dtProd = ablate::utilities::MathUtilities::DotVector(dim, gNRM, n);
+
+        *phi += h*(0.0*h*dtProd - sgn*(nrm - 1.0));
 
         maxDiff = PetscMax(maxDiff, PetscAbsReal(*phi - phi0));
 
@@ -1532,98 +1545,6 @@ DMRestoreWorkArray(auxDM, vertRange.end - vertRange.start, MPIU_INT, &divMask) >
 
 SaveVertexData(auxDM, auxVec, "ls2.txt", lsField, subDomain);
 printf("1617\n");
-exit(0);
-//exit(0);
-
-  // Try a smoother
-  // Mark the outer layer as fixed in the smoothing step
-//  for (PetscInt v = vertRange.start; v < vertRange.end; ++v) {
-//    if (vertMask[v]==2) {
-//      PetscInt vert = vertRange.GetPoint(v);
-//      PetscInt nVerts, *verts;
-
-//      DMPlexGetNeighbors(auxDM, vert, 1, -1.0, -1.0, PETSC_TRUE, PETSC_TRUE, &nVerts, &verts) >> ablate::utilities::PetscUtilities::checkError;
-//      for (PetscInt i = 0; i < nVerts; ++i) {
-//        PetscInt id = reverseVertRange.GetIndex(verts[i]);
-//        if (vertMask[id] == 0) {
-//          vertMask[v] = 3;
-//        }
-//      }
-//      DMPlexRestoreNeighbors(auxDM, vert, 1, -1.0, -1.0, PETSC_TRUE, PETSC_TRUE, &nVerts, &verts) >> ablate::utilities::PetscUtilities::checkError;
-//    }
-//  }
-
-//  for(iter=0;iter<10;++iter){
-
-//    for (PetscInt v = vertRange.start; v < vertRange.end; ++v) {
-//      if (vertMask[v]==1 || vertMask[v]==2 ) {
-//        PetscInt vert = vertRange.GetPoint(v);
-//        PetscInt nVerts, *verts;
-
-
-//        DMPlexGetNeighbors(auxDM, vert, 1, -1.0, -1.0, PETSC_TRUE, PETSC_TRUE, &nVerts, &verts) >> ablate::utilities::PetscUtilities::checkError;
-
-//        tempLS[v] = 0.0;
-//        PetscInt nv = 0;
-//        for (PetscInt i = 0; i < nVerts; ++i) {
-//          PetscInt id = reverseVertRange.GetIndex(verts[i]);
-//          if (verts[i] != vert && vertMask[id] > 0) {
-////          if (vertMask[id] > 0) {
-//            ++nv;
-//            const PetscReal *phi = nullptr;
-//            xDMPlexPointLocalRead(auxDM, verts[i], lsID, auxArray, &phi);
-//            tempLS[v] += *phi;
-//          }
-//        }
-
-
-////        tempLS[v] /= nv;
-//        const PetscReal *phi = nullptr;
-//        xDMPlexPointLocalRead(auxDM, vert, lsID, auxArray, &phi);
-//        if (nv>0) {
-//          tempLS[v] = 0.5*phi[0] + 0.5*tempLS[v]/(nv);
-//        }
-//        else {
-//          tempLS[v] = phi[0];
-//        }
-
-
-//        DMPlexRestoreNeighbors(auxDM, vert, 1, -1.0, -1.0, PETSC_FALSE, PETSC_TRUE, &nVerts, &verts) >> ablate::utilities::PetscUtilities::checkError;
-
-//      }
-//    }
-
-//    for (PetscInt v = vertRange.start; v < vertRange.end; ++v) {
-//      if (vertMask[v]==1 || vertMask[v]==2) {
-//        PetscInt vert = vertRange.GetPoint(v);
-//        PetscReal *phi = nullptr;
-//        xDMPlexPointLocalRef(auxDM, vert, lsID, auxArray, &phi) >> ablate::utilities::PetscUtilities::checkError;
-//        *phi = tempLS[v];
-//      }
-//    }
-//    subDomain->UpdateAuxLocalVector();
-//  }
-
-
-
-//  for (PetscInt v = vertRange.start; v < vertRange.end; ++v) {
-
-//    if (vertMask[v] > 0) {
-//      PetscInt vert = vertRange.GetPoint(v);
-
-//      PetscReal *phi;
-//      xDMPlexPointLocalRef(auxDM, vert, lsID, auxArray, &phi) >> ablate::utilities::PetscUtilities::checkError;
-
-//      PetscReal x0[3];
-//      DMPlexComputeCellGeometryFVM(auxDM, vert, NULL, x0, NULL) >> ablate::utilities::PetscUtilities::checkError;
-
-//      *phi = PetscSqrtReal(PetscSqr(x0[0]) + PetscSqr(x0[1])) - 1.0;
-//    }
-//  }
-
-
-
-
 
 
   // Calculate unit normal vector based on the updated level set values at the vertices
@@ -1686,126 +1607,108 @@ exit(0);
 
 SaveCellData(auxDM, auxVec, "curv0.txt", curvField, 1, subDomain);
 printf("1730\n");
-
+exit(0);
   // Extension
   PetscInt vertexCurvID = lsID; // Store the vertex curvatures in the work vec at the same location as the level-set
 
 
 
+#if 0 // Smoothing iteration
+  for (PetscInt iter = 0; iter < 10; ++iter) {
 
-for (PetscInt iter = 0; iter < 10; ++iter) {
+    VecGetArray(workVec, &workArray);
+    for (PetscInt v = vertRange.start; v < vertRange.end; ++v) {
 
-  VecGetArray(workVec, &workArray);
-  for (PetscInt v = vertRange.start; v < vertRange.end; ++v) {
+      PetscInt vert = vertRange.GetPoint(v);
+      PetscReal *vertexH = nullptr;
+      xDMPlexPointLocalRef(auxDM, vert, vertexCurvID, workArray, &vertexH);
 
-    PetscInt vert = vertRange.GetPoint(v);
-    PetscReal *vertexH = nullptr;
-    xDMPlexPointLocalRef(auxDM, vert, vertexCurvID, workArray, &vertexH);
+      if (vertMask[v] > 0) {
 
-    if (vertMask[v] > 0) {
-
-//      for (PetscInt d = 0; d < dim; ++d) {
-//        PetscReal g[dim];
-//        DMPlexVertexGradFromCell(auxDM, vert, auxVec, cellNormalID, d, g);
-//        *vertexH += g[d];
-//      }
+  //      for (PetscInt d = 0; d < dim; ++d) {
+  //        PetscReal g[dim];
+  //        DMPlexVertexGradFromCell(auxDM, vert, auxVec, cellNormalID, d, g);
+  //        *vertexH += g[d];
+  //      }
 
 
-        PetscInt nc = 0;
-        *vertexH = 0.0;
+          PetscInt nc = 0;
+          *vertexH = 0.0;
 
-        PetscInt nCells, *cells;
-        DMPlexVertexGetCells(auxDM, vert, &nCells, &cells);
-        for (PetscInt c = 0; c < nCells; ++c) {
+          PetscInt nCells, *cells;
+          DMPlexVertexGetCells(auxDM, vert, &nCells, &cells);
+          for (PetscInt c = 0; c < nCells; ++c) {
 
-          PetscInt id = reverseCellRange.GetIndex(cells[c]);
+            PetscInt id = reverseCellRange.GetIndex(cells[c]);
 
-          if (cellMask[id] > 0) {
-            ++nc;
-            const PetscReal *cellH = nullptr;
-            xDMPlexPointLocalRead(auxDM, cells[c], curvID, auxArray, &cellH);
+            if (cellMask[id] > 0) {
+              ++nc;
+              const PetscReal *cellH = nullptr;
+              xDMPlexPointLocalRead(auxDM, cells[c], curvID, auxArray, &cellH);
 
-            *vertexH += *cellH;
+              *vertexH += *cellH;
+            }
           }
-        }
 
-        *vertexH /= nc;
+          *vertexH /= nc;
 
-        DMPlexVertexRestoreCells(auxDM, v, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
+          DMPlexVertexRestoreCells(auxDM, v, &nCells, &cells) >> ablate::utilities::PetscUtilities::checkError;
 
-
-    }
-    else {
-      *vertexH = 0.0;
-    }
-  }
-  VecRestoreArray(workVec, &workArray);
-
-  DMLocalToGlobal(auxDM, workVec, INSERT_VALUES, workVecGlobal) >> utilities::PetscUtilities::checkError;
-  DMGlobalToLocal(auxDM, workVecGlobal, INSERT_VALUES, workVec) >> utilities::PetscUtilities::checkError;
-
-  VecGetArray(workVec, &workArray);
-  for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
-
-    PetscInt cell = cellRange.GetPoint(c);
-
-    if (cellMask[c] > 0) {
-
-      PetscScalar *H = nullptr;
-      xDMPlexPointLocalRef(auxDM, cell, curvID, auxArray, &H);
-
-      PetscInt nVerts, *verts;
-      DMPlexCellGetVertices(auxDM, cell, &nVerts, &verts) >> ablate::utilities::PetscUtilities::checkError;
-
-      *H = 0.0;
-
-      PetscInt nv = 0;
-      for (PetscInt v = 0; v < nVerts; ++v) {
-
-        PetscInt id = reverseVertRange.GetIndex(verts[v]);
-
-        if (vertMask[id] > 0) {
-
-          PetscScalar *vH = nullptr;
-          xDMPlexPointLocalRef(auxDM, verts[v], vertexCurvID, workArray, &vH);
-
-          *H += *vH;
-          ++nv;
-        }
 
       }
-      *H /= nv;
-
-
-      DMPlexCellRestoreVertices(auxDM, cell, &nVerts, &verts) >> ablate::utilities::PetscUtilities::checkError;
+      else {
+        *vertexH = 0.0;
+      }
     }
-  }
-  VecRestoreArray(workVec, &workArray);
+    VecRestoreArray(workVec, &workArray);
 
-  subDomain->UpdateAuxLocalVector();
+    DMLocalToGlobal(auxDM, workVec, INSERT_VALUES, workVecGlobal) >> utilities::PetscUtilities::checkError;
+    DMGlobalToLocal(auxDM, workVecGlobal, INSERT_VALUES, workVec) >> utilities::PetscUtilities::checkError;
 
-} // End smoothing iteration
+    VecGetArray(workVec, &workArray);
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
 
-//  VecGetArray(workVec, &workArray);
-//  for (PetscInt v = vertRange.start; v < vertRange.end; ++v) {
-//    if (vertMask[v] > 1) {
-//      PetscInt cutCell = closestCell[v];
+      PetscInt cell = cellRange.GetPoint(c);
 
-//      if (cutCell<0) {
-//        printf("WTF\n");
-//        exit(0);
-//      }
+      if (cellMask[c] > 0) {
 
-//      PetscInt vert = vertRange.GetPoint(v);
-//      PetscReal *vertexH = nullptr, *cellH = nullptr;
-//      xDMPlexPointLocalRef(auxDM, vert, vertexCurvID, workArray, &vertexH);
-//      xDMPlexPointLocalRef(auxDM, cutCell, curvID, auxArray, &cellH);
+        PetscScalar *H = nullptr;
+        xDMPlexPointLocalRef(auxDM, cell, curvID, auxArray, &H);
 
-//      *vertexH = *cellH;
+        PetscInt nVerts, *verts;
+        DMPlexCellGetVertices(auxDM, cell, &nVerts, &verts) >> ablate::utilities::PetscUtilities::checkError;
 
-//    }
-//  }
-//  VecRestoreArray(workVec, &workArray);
+        *H = 0.0;
+
+        PetscInt nv = 0;
+        for (PetscInt v = 0; v < nVerts; ++v) {
+
+          PetscInt id = reverseVertRange.GetIndex(verts[v]);
+
+          if (vertMask[id] > 0) {
+
+            PetscScalar *vH = nullptr;
+            xDMPlexPointLocalRef(auxDM, verts[v], vertexCurvID, workArray, &vH);
+
+            *H += *vH;
+            ++nv;
+          }
+
+        }
+        *H /= nv;
+
+
+        DMPlexCellRestoreVertices(auxDM, cell, &nVerts, &verts) >> ablate::utilities::PetscUtilities::checkError;
+      }
+    }
+    VecRestoreArray(workVec, &workArray);
+
+    subDomain->UpdateAuxLocalVector();
+
+  } // End smoothing iteration
+#endif
+
+
   DMLocalToGlobal(auxDM, workVec, INSERT_VALUES, workVecGlobal) >> utilities::PetscUtilities::checkError;
   DMGlobalToLocal(auxDM, workVecGlobal, INSERT_VALUES, workVec) >> utilities::PetscUtilities::checkError;
 
