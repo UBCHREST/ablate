@@ -1,12 +1,13 @@
 #include "meshGenerator.hpp"
 #include <petsc/private/dmpleximpl.h>
+#include <utility>
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/vectorUtilities.hpp"
 
 ablate::domain::MeshGenerator::MeshGenerator(const std::string& name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors,
                                              std::shared_ptr<ablate::domain::descriptions::MeshDescription> description, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers,
                                              const std::shared_ptr<parameters::Parameters>& options)
-    : Domain(CreateDM(name, description), name, std::move(fieldDescriptors), std::move(modifiers), options) {}
+    : Domain(CreateDM(name, std::move(description)), name, std::move(fieldDescriptors), std::move(modifiers), options) {}
 
 ablate::domain::MeshGenerator::~MeshGenerator() {
     if (dm) {

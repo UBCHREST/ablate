@@ -1,7 +1,7 @@
 #include "axisymmetric.hpp"
 #include "utilities/vectorUtilities.hpp"
 
-ablate::domain::descriptions::Axisymmetric::Axisymmetric(std::vector<PetscReal> startLocation, PetscReal length, PetscInt numberWedges, PetscInt numberSlices)
+ablate::domain::descriptions::Axisymmetric::Axisymmetric(const std::vector<PetscReal> &startLocation, PetscReal length, PetscInt numberWedges, PetscInt numberSlices)
     : startLocation(utilities::VectorUtilities::ToArray<PetscReal, 3>(startLocation)),
       length(length),
       numberWedges(numberWedges),
@@ -11,7 +11,12 @@ ablate::domain::descriptions::Axisymmetric::Axisymmetric(std::vector<PetscReal> 
       numberCells(numberWedges * numberSlices),
       numberVertices((numberWedges + 1) * (numberSlices + 1))
 
-{}
+{
+    // make sure there are at least 4 wedges and one slice
+    if (numberWedges < 4 || numberSlices < 1) {
+        throw std::invalid_argument("Axisymmetric requires at least 4 wedges and 1 slice.");
+    }
+}
 
 void ablate::domain::descriptions::Axisymmetric::BuildTopology(PetscInt cell, PetscInt *cellNodes) const {
     // determine which slice this is

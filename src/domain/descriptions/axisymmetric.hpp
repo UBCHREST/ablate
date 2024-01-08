@@ -46,7 +46,7 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
      * @param numberWedges
      * @param numberSlices
      */
-    Axisymmetric(std::vector<PetscReal> startLocation, PetscReal length, PetscInt numberWedges, PetscInt numberSlices);
+    Axisymmetric(const std::vector<PetscReal>& startLocation, PetscReal length, PetscInt numberWedges, PetscInt numberSlices);
 
     /**
      * The overall assumed dimension of the mesh
