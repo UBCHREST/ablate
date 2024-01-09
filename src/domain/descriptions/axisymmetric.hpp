@@ -26,17 +26,29 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
     //! Store the number of slices, slicing of the cylinder along the z axis
     const PetscInt numberSlices;
 
+    //! Store the number of shells, slicing of the cylinder along the radius
+    const PetscInt numberShells;
+
     //! Store the number of cells per slice
     const PetscInt numberCellsPerSlice;
 
-    //! Store the number of vertices per half slice
-    const PetscInt numberVerticesPerHalfSlice;
+    //! store the number of cells per slice
+    const PetscInt numberCellsPerShell;
+
+    //! Store the number of vertices per shell, does not include the center
+    const PetscInt numberVerticesPerShell;
+
+    //! Store the number of vertices in the center
+    const PetscInt numberCenterVertices;
 
     //! Compute the number of cells
     const PetscInt numberCells;
 
     //! And the number of vertices
     const PetscInt numberVertices;
+
+    //! store the number of tri prism cells to simplify the logic
+    const PetscInt numberTriPrismCells;
 
    public:
     /**
@@ -46,7 +58,7 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
      * @param numberWedges
      * @param numberSlices
      */
-    Axisymmetric(const std::vector<PetscReal>& startLocation, PetscReal length, PetscInt numberWedges, PetscInt numberSlices);
+    Axisymmetric(const std::vector<PetscReal>& startLocation, PetscReal length, PetscInt numberWedges, PetscInt numberSlices, PetscInt numberShells);
 
     /**
      * The overall assumed dimension of the mesh
@@ -70,7 +82,7 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
      * Return the cell type for this cell, based off zero offset
      * @return
      */
-    [[nodiscard]] DMPolytopeType GetCellType(PetscInt cell) const override { return DM_POLYTOPE_TRI_PRISM; }
+    [[nodiscard]] DMPolytopeType GetCellType(PetscInt cell) const override;
 
     /**
      * Builds the topology based upon a zero vertex offset.  The cellNodes should be sized to hold cell
