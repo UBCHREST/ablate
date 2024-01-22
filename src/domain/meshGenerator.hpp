@@ -13,7 +13,7 @@ namespace ablate::domain {
 class MeshGenerator : public Domain {
    private:
     /**
-     * Private function to read the desciprtion and generatre the mesh
+     * Private function to read the description and generate the mesh
      * @param name
      * @return
      */
@@ -41,4 +41,4 @@ class MeshGenerator : public Domain {
     ~MeshGenerator() override;
 };
 }  // namespace ablate::domain
-#endif  // ABLATECLIENTTEMPLATE_AXISYMMETRIC_HPP
+#endif  // ABLATELIBRARY_MESHGENERATOR_HPP

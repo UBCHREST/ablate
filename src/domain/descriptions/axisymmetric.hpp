@@ -57,12 +57,15 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
    public:
     /**
      * generate and precompute a bunch of the required parameters
-     * @param startLocation
-     * @param endLocation
-     * @param numberWedges
-     * @param numberSlices
+     * @param startLocation the start coordinate of the mesh, must be 3D
+     * @param length the length of the domain starting at the start coordinate
+     * @param radiusFunction a radius function that describes the radius as a function of z
+     * @param numberWedges wedges/pie slices in the circle
+     * @param numberSlices slicing of the cylinder along the z axis
+     * @param numberShells slicing of the cylinder along the radius
      */
-    Axisymmetric(const std::vector<PetscReal>& startLocation, PetscReal length, std::shared_ptr<ablate::mathFunctions::MathFunction> radiusFunction,  PetscInt numberWedges, PetscInt numberSlices, PetscInt numberShells);
+    Axisymmetric(const std::vector<PetscReal>& startLocation, PetscReal length, std::shared_ptr<ablate::mathFunctions::MathFunction> radiusFunction, PetscInt numberWedges, PetscInt numberSlices,
+                 PetscInt numberShells);
 
     /**
      * The overall assumed dimension of the mesh

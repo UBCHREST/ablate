@@ -5,7 +5,7 @@ test:
   # a unique test name for this integration tests
   name: dmViewFromOptions
   # create a default assert that compares the log file
-  assert: "inputs/machinery/dmViewFromOptions.txt"
+  assert: "inputs/domain/dmViewFromOptions.txt"
 
 environment:
   title: incompessibleFlow

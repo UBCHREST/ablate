@@ -1,14 +1,14 @@
-# Simple test for mapping the mesh using a simple function
+# Simple test for extruding the boundary in 2D
 ---
 test:
   # a unique test name for this integration tests
-  name: meshMappingTest
+  name: extrudeBoundaryTest
   # create a default assert that compares the log file
-  assert: "inputs/machinery/meshMappingTest.txt"
+  assert: "inputs/domain/extrudeBoundaryTest.txt"
 
 # metadata for the simulation
 environment:
-  title: _meshMappingTest
+  title: _extrudeBoundaryTest
   tagDirectory: false
 # global arguments that can be used by petsc
 arguments:
@@ -20,21 +20,21 @@ timestepper:
   arguments: { }
   # create a simple box mesh for simulation
   domain: !ablate::domain::BoxMesh
-    name: mappingMesh
+    name: extrudedMesh
     # keep the mesh simple with only 4 faces in each direction
     faces: [ 4, 4 ]
     # range the mesh between 0.0, 0.0 to 1.0, 1.0
     lower: [ 0, 0 ]
     upper: [ 1, 1 ]
+    options:
+      # output the result label for interior cells
+      dm_label_view: interiorCells
     # create a dummy example fild
     fields:
       - name: exampleFVField
         components: [ "xx", "yy" ]
         type: FVM
     modifiers:
-      # define a simple mesh mapper that translate in x and y
-      - !ablate::domain::modifiers::MeshMapper
-        "x+1.0, y+2.0"
       # extrude the boundary cells crea
       - !ablate::domain::modifiers::ExtrudeLabel
         # use the labels defined by the dm_plex_separate_marker option
@@ -52,11 +52,16 @@ timestepper:
         # for all cells/faces/points that were extruded.  This does include overlap faces that are in the boundaryRegion, originalRegion, and extrudedRegion regions
         extrudedRegion:
           name: boundaryCells
+      # the DmViewFromOptions "modifier" does not modify the dm but outputs. See [PetscOptionsGetViewer](https://petsc.org/release/docs/manualpages/Viewer/PetscOptionsGetViewer.html) for more details
+      - !ablate::monitors::DmViewFromOptions
+        options: ascii
+      - !ablate::monitors::DmViewFromOptions
+        options: ascii::ascii_info_detail
+      - !ablate::monitors::DmViewFromOptions
+        options: ":$OutputDirectory/mesh.tex:ascii_latex"
       # the $OutputDirectory is a special keyword that gets parsed by ablate to update to the output directory
       - !ablate::monitors::DmViewFromOptions
         options: "hdf5:$OutputDirectory/dm.h5"
-      - !ablate::monitors::DmViewFromOptions
-        options: ascii::ascii_info_detail  
   initialization:
     - fieldName: "exampleFVField"
       field: "x, y"

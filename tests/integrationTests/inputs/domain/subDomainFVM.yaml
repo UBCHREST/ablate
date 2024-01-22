@@ -5,9 +5,9 @@ test:
   name: subDomainFVM
   asserts:
     # create a default assert that compares the log file
-    - "inputs/machinery/subDomainFVM/subDomainFVM.txt"
+    - "inputs/domain/subDomainFVM/subDomainFVM.txt"
     - !testingResources::asserts::TextFileAssert
-      expected: "inputs/machinery/subDomainFVM/fluidField.xmf"
+      expected: "inputs/domain/subDomainFVM/fluidField.xmf"
       actual: "fluidField.xmf"
 
 # metadata for the simulation

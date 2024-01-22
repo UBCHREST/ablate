@@ -147,5 +147,15 @@ DM ablate::domain::MeshGenerator::CreateDM(const std::string& name, std::shared_
     DMPlexCopyCoordinates(dm, idm) >> utilities::PetscUtilities::checkError;
     ReplaceDm(dm, idm);
 
+    // set the name
+    PetscObjectSetName((PetscObject)dm, name.c_str()) >> utilities::PetscUtilities::checkError;
+
     return dm;
 }
+
+#include "registrar.hpp"
+REGISTER(ablate::domain::Domain, ablate::domain::MeshGenerator, "The MeshGenerator will use a mesh description to generate an arbitrary mesh based upon supplied cells/nodes from the description.",
+         ARG(std::string, "name", "the name of the domain/mesh object"), OPT(std::vector<ablate::domain::FieldDescriptor>, "fields", "a list of fields/field descriptors"),
+         ARG(ablate::domain::descriptions::MeshDescription, "description", "the mesh description used to describe the cell/nodes used to create the new mesh"),
+         OPT(std::vector<ablate::domain::modifiers::Modifier>, "modifiers", "a list of domain modifier"),
+         OPT(ablate::parameters::Parameters, "options", "PETSc options specific to this dm.  Default value allows the dm to access global options."));

@@ -113,3 +113,9 @@ void ablate::domain::descriptions::Axisymmetric::SetCoordinate(PetscInt node, Pe
     coordinate[1] += radius * radiusFactor * PetscSinReal(2.0 * nodeRotationIndex * PETSC_PI / numberWedges);
 }
 DMPolytopeType ablate::domain::descriptions::Axisymmetric::GetCellType(PetscInt cell) const { return cell < numberTriPrismCells ? DM_POLYTOPE_TRI_PRISM : DM_POLYTOPE_HEXAHEDRON; }
+
+#include "registrar.hpp"
+REGISTER(ablate::domain::descriptions::MeshDescription, ablate::domain::descriptions::Axisymmetric, "The Axisymmetric MeshDescription is used to create an axisymmetric mesh around the z axis",
+         ARG(std::vector<double>, "start", "the start coordinate of the mesh, must be 3D"), ARG(double, "length", "the length of the domain starting at the start coordinate"),
+         ARG(ablate::mathFunctions::MathFunction, "radius", "a radius function that describes the radius as a function of z"), ARG(int, "numberWedges", "wedges/pie slices in the circle"),
+         ARG(int, "numberSlices", "slicing of the cylinder along the z axis"), ARG(int, "numberShells", "slicing of the cylinder along the radius"));
