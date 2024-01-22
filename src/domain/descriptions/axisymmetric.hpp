@@ -4,6 +4,7 @@
 #include <array>
 #include <memory>
 #include <vector>
+#include "mathFunctions/mathFunction.hpp"
 #include "meshDescription.hpp"
 
 namespace ablate::domain::descriptions {
@@ -16,6 +17,9 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
     //! Store the start and end location of the mesh
     const std::array<PetscReal, 3> startLocation;
     const PetscReal length;  // this is in z
+
+    //! function used to describe a single return value (radius) as a functino of z
+    const std::shared_ptr<ablate::mathFunctions::MathFunction> radiusFunction;
 
     //! hard code the assumed mesh dimension
     inline static const PetscInt dim = 3;
@@ -58,7 +62,7 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
      * @param numberWedges
      * @param numberSlices
      */
-    Axisymmetric(const std::vector<PetscReal>& startLocation, PetscReal length, PetscInt numberWedges, PetscInt numberSlices, PetscInt numberShells);
+    Axisymmetric(const std::vector<PetscReal>& startLocation, PetscReal length, std::shared_ptr<ablate::mathFunctions::MathFunction> radiusFunction,  PetscInt numberWedges, PetscInt numberSlices, PetscInt numberShells);
 
     /**
      * The overall assumed dimension of the mesh

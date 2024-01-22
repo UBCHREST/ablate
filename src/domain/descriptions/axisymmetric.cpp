@@ -1,9 +1,13 @@
 #include "axisymmetric.hpp"
+
+#include <utility>
 #include "utilities/vectorUtilities.hpp"
 
-ablate::domain::descriptions::Axisymmetric::Axisymmetric(const std::vector<PetscReal> &startLocation, PetscReal length, PetscInt numberWedges, PetscInt numberSlices, PetscInt numberShells)
+ablate::domain::descriptions::Axisymmetric::Axisymmetric(const std::vector<PetscReal> &startLocation, PetscReal length, std::shared_ptr<ablate::mathFunctions::MathFunction> radiusFunction,
+                                                         PetscInt numberWedges, PetscInt numberSlices, PetscInt numberShells)
     : startLocation(utilities::VectorUtilities::ToArray<PetscReal, 3>(startLocation)),
       length(length),
+      radiusFunction(std::move(radiusFunction)),
       numberWedges(numberWedges),
       numberSlices(numberSlices),
       numberShells(numberShells),
@@ -100,9 +104,12 @@ void ablate::domain::descriptions::Axisymmetric::SetCoordinate(PetscInt node, Pe
     auto offset = delta * nodeSlice;
     coordinate[2] += offset;
 
+    // compute the maximum radius at this coordinate
+    auto radius = radiusFunction->Eval(coordinate, 3, NAN);
+
     // if we are not at the center
     auto radiusFactor = ((PetscReal)nodeShell) / ((PetscReal)numberShells);
-    coordinate[0] += radiusFactor * PetscCosReal(2.0 * nodeRotationIndex * PETSC_PI / numberWedges);
-    coordinate[1] += radiusFactor * PetscSinReal(2.0 * nodeRotationIndex * PETSC_PI / numberWedges);
+    coordinate[0] += radius * radiusFactor * PetscCosReal(2.0 * nodeRotationIndex * PETSC_PI / numberWedges);
+    coordinate[1] += radius * radiusFactor * PetscSinReal(2.0 * nodeRotationIndex * PETSC_PI / numberWedges);
 }
 DMPolytopeType ablate::domain::descriptions::Axisymmetric::GetCellType(PetscInt cell) const { return cell < numberTriPrismCells ? DM_POLYTOPE_TRI_PRISM : DM_POLYTOPE_HEXAHEDRON; }
