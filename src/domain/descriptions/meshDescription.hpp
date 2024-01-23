@@ -2,6 +2,7 @@
 #define ABLATELIBRARY_MESHDESCRIPTION_HPP
 
 #include <petsc.h>
+#include <domain/region.hpp>
 
 namespace ablate::domain::descriptions {
 /**
@@ -45,6 +46,11 @@ class MeshDescription {
      * @return
      */
     virtual void SetCoordinate(PetscInt node, PetscReal* coordinate) const = 0;
+
+    /**
+     * returns the boundary region to label for the entire region
+     */
+    [[nodiscard]] virtual std::shared_ptr<ablate::domain::Region> GetBoundaryRegion() const = 0;
 };
 }  // namespace ablate::domain::descriptions
 

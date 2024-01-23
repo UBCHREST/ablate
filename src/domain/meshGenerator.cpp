@@ -5,9 +5,9 @@
 #include "utilities/vectorUtilities.hpp"
 
 ablate::domain::MeshGenerator::MeshGenerator(const std::string& name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors,
-                                             std::shared_ptr<ablate::domain::descriptions::MeshDescription> description, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers,
+                                             const std::shared_ptr<ablate::domain::descriptions::MeshDescription>& description, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers,
                                              const std::shared_ptr<parameters::Parameters>& options)
-    : Domain(CreateDM(name, std::move(description)), name, std::move(fieldDescriptors), std::move(modifiers), options) {}
+    : Domain(CreateDM(name, description), name, std::move(fieldDescriptors), std::move(modifiers), options) {}
 
 ablate::domain::MeshGenerator::~MeshGenerator() {
     if (dm) {
@@ -34,7 +34,7 @@ void ablate::domain::MeshGenerator::ReplaceDm(DM& originalDm, DM& replaceDm) {
     }
 }
 
-DM ablate::domain::MeshGenerator::CreateDM(const std::string& name, std::shared_ptr<ablate::domain::descriptions::MeshDescription> description) {
+DM ablate::domain::MeshGenerator::CreateDM(const std::string& name, const std::shared_ptr<ablate::domain::descriptions::MeshDescription>& description) {
     // Create the new dm and set it to be a dmplex
     DM dm;
     DMCreate(PETSC_COMM_WORLD, &dm) >> utilities::MpiUtilities::checkError;
@@ -150,9 +150,60 @@ DM ablate::domain::MeshGenerator::CreateDM(const std::string& name, std::shared_
     // set the name
     PetscObjectSetName((PetscObject)dm, name.c_str()) >> utilities::PetscUtilities::checkError;
 
+    // label of the boundaries
+    LabelBoundaries(description, dm);
+
     return dm;
 }
 
+void ablate::domain::MeshGenerator::LabelBoundaries(const std::shared_ptr<ablate::domain::descriptions::MeshDescription>& description, DM& dm) {
+    // start by marking all the boundary faces
+    auto boundaryRegion = description->GetBoundaryRegion();
+    DMLabel boundaryLabel;
+    PetscInt boundaryValue;
+    boundaryRegion->CreateLabel(dm, boundaryLabel, boundaryValue);
+    DMPlexMarkBoundaryFaces(dm, boundaryValue, boundaryLabel)  >> utilities::PetscUtilities::checkError;
+
+    // determine the new vertex/nodes bounds
+    PetscInt vStart, vEnd;
+    DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd) >> utilities::PetscUtilities::checkError;;  // Range of vertices
+
+    // determine the new face bounds
+    PetscInt fStart, fEnd;
+    DMPlexGetHeightStratum(dm, 1, &fStart, &fEnd) >> utilities::PetscUtilities::checkError;;  // Range of faces
+
+    // now march over each face to see if it is part of another label
+    std::set<PetscInt> faceSet;
+    for(PetscInt f = fStart; f < fEnd; ++f){
+        // check to see if this face is in the boundary label, if not skip for now
+        if(!boundaryRegion->InRegion(dm, f)){
+            continue;
+        }
+
+        // reset the faceSet
+        faceSet.clear();
+
+        // This returns everything associated with the cell in the correct ordering
+        PetscInt cl, nClosure, *closure = nullptr;
+        DMPlexGetTransitiveClosure(dm, f, PETSC_TRUE, &nClosure, &closure)  >> utilities::PetscUtilities::checkError;
+
+        // we look at every other point in the closure because we do not need point orientations
+        for (cl = 0; cl < nClosure * 2; cl += 2) {
+            if (closure[cl] >= vStart && closure[cl] < vEnd) {  // Only use the points corresponding to a vertex
+                faceSet.insert(closure[cl] - vStart); // we subtract away vStart to reset the node numbering
+            }
+        }
+
+        DMPlexRestoreTransitiveClosure(dm, f, PETSC_TRUE, &nClosure, &closure)  >> utilities::PetscUtilities::checkError;  // Restore the points
+
+        // see if it in the list
+        std::cout << "face: " << f << std::endl;
+        for(const auto& n : faceSet){
+            std::cout << "\t" << n << std::endl;
+        }
+
+    }
+}
 #include "registrar.hpp"
 REGISTER(ablate::domain::Domain, ablate::domain::MeshGenerator, "The MeshGenerator will use a mesh description to generate an arbitrary mesh based upon supplied cells/nodes from the description.",
          ARG(std::string, "name", "the name of the domain/mesh object"), OPT(std::vector<ablate::domain::FieldDescriptor>, "fields", "a list of fields/field descriptors"),

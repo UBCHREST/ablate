@@ -102,6 +102,16 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
      * @return
      */
     void SetCoordinate(PetscInt node, PetscReal* coordinate) const override;
+
+    /**
+     * Returns a hard coded boundary region name
+     * @return
+     */
+    [[nodiscard]] std::shared_ptr<ablate::domain::Region> GetBoundaryRegion() const override{
+        return std::make_shared<ablate::domain::Region>("boundary");
+    }
+
+
 };
 }  // namespace ablate::domain::descriptions
 #endif  // ABLATELIBRARY_AXISYMMETRIC_HPP
