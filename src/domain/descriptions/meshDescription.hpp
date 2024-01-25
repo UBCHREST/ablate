@@ -3,6 +3,7 @@
 
 #include <petsc.h>
 #include <domain/region.hpp>
+#include <set>
 
 namespace ablate::domain::descriptions {
 /**
@@ -51,6 +52,11 @@ class MeshDescription {
      * returns the boundary region to label for the entire region
      */
     [[nodiscard]] virtual std::shared_ptr<ablate::domain::Region> GetBoundaryRegion() const = 0;
+
+    /**
+     * returns a region if the nodes set (on a face) belongs to a certain region
+     */
+    [[nodiscard]] virtual std::shared_ptr<ablate::domain::Region> GetRegion(const std::set<PetscInt>& face) const = 0;
 };
 }  // namespace ablate::domain::descriptions
 

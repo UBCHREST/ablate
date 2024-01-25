@@ -54,6 +54,11 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
     //! store the number of tri prism cells to simplify the logic
     const PetscInt numberTriPrismCells;
 
+    //! precompute the region identifier for the boundary
+    const static inline std::shared_ptr<ablate::domain::Region> shellBoundary = std::make_shared<ablate::domain::Region>("outerShell");
+    const static inline std::shared_ptr<ablate::domain::Region> lowerCapBoundary = std::make_shared<ablate::domain::Region>("lowerCap");
+    const static inline std::shared_ptr<ablate::domain::Region> upperCapBoundary = std::make_shared<ablate::domain::Region>("upperCap");
+
    public:
     /**
      * generate and precompute a bunch of the required parameters
@@ -107,11 +112,14 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
      * Returns a hard coded boundary region name
      * @return
      */
-    [[nodiscard]] std::shared_ptr<ablate::domain::Region> GetBoundaryRegion() const override{
-        return std::make_shared<ablate::domain::Region>("boundary");
-    }
+    [[nodiscard]] std::shared_ptr<ablate::domain::Region> GetBoundaryRegion() const override { return std::make_shared<ablate::domain::Region>("boundary"); }
 
-
+    /**
+     * returns the boundary region for the end caps and outer shell
+     * @param face
+     * @return
+     */
+    [[nodiscard]] virtual std::shared_ptr<ablate::domain::Region> GetRegion(const std::set<PetscInt>& face) const override;
 };
 }  // namespace ablate::domain::descriptions
 #endif  // ABLATELIBRARY_AXISYMMETRIC_HPP

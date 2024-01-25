@@ -112,7 +112,52 @@ void ablate::domain::descriptions::Axisymmetric::SetCoordinate(PetscInt node, Pe
     coordinate[0] += radius * radiusFactor * PetscCosReal(2.0 * nodeRotationIndex * PETSC_PI / numberWedges);
     coordinate[1] += radius * radiusFactor * PetscSinReal(2.0 * nodeRotationIndex * PETSC_PI / numberWedges);
 }
+
 DMPolytopeType ablate::domain::descriptions::Axisymmetric::GetCellType(PetscInt cell) const { return cell < numberTriPrismCells ? DM_POLYTOPE_TRI_PRISM : DM_POLYTOPE_HEXAHEDRON; }
+
+std::shared_ptr<ablate::domain::Region> ablate::domain::descriptions::Axisymmetric::GetRegion(const std::set<PetscInt> &face) const {
+    // check to see if each node in on the surface
+    bool onOuterShell = true;
+    bool onLowerEndCap = true;
+    bool onUpperEndCap = true;
+
+    // compute the outer shell start
+    auto outerShellStart = numberCenterVertices + numberVerticesPerShell * (numberShells - 1);
+
+    for (const auto &node : face) {
+        // check if we are on the outer shell
+        if (node < outerShellStart) {
+            onOuterShell = false;
+        }
+        // check if we are on the end caps
+        PetscInt nodeSlice;
+        if (node < numberCenterVertices) {
+            nodeSlice = node;
+        } else {
+            auto nodeShell = ((node - numberCenterVertices) / numberVerticesPerShell) + 1;
+            nodeSlice = (node - numberCenterVertices - (nodeShell - 1) * numberVerticesPerShell) / numberWedges;
+        }
+
+
+        if (nodeSlice != 0) {
+            onLowerEndCap = false;
+        }
+        if (nodeSlice != numberSlices) {
+            onUpperEndCap = false;
+        }
+    }
+
+    // determine what region to return
+    if (onOuterShell) {
+        return shellBoundary;
+    } else if (onLowerEndCap) {
+        return lowerCapBoundary;
+    } else if (onUpperEndCap) {
+        return upperCapBoundary;
+    }
+
+    return nullptr;
+}
 
 #include "registrar.hpp"
 REGISTER(ablate::domain::descriptions::MeshDescription, ablate::domain::descriptions::Axisymmetric, "The Axisymmetric MeshDescription is used to create an axisymmetric mesh around the z axis",

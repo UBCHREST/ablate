@@ -3,7 +3,7 @@
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/petscUtilities.hpp"
 
-ablate::domain::Region::Region(std::string name, int valueIn) : name(name), value(valueIn == 0 ? 1 : valueIn) {
+ablate::domain::Region::Region(const std::string& name, int valueIn) : name(name), value(valueIn == 0 ? 1 : valueIn) {
     // Create a unique string
     auto hashString = name + ":" + std::to_string(value);
     id = std::hash<std::string>()(hashString);
@@ -37,7 +37,7 @@ void ablate::domain::Region::CheckForLabel(DM dm, MPI_Comm comm) const {
     DMLabel label = nullptr;
     DMGetLabel(dm, GetName().c_str(), &label) >> utilities::PetscUtilities::checkError;
 
-    PetscMPIInt found = (PetscMPIInt)(label != nullptr);
+    auto found = (PetscMPIInt)(label != nullptr);
     PetscMPIInt anyFound;
 
     MPI_Allreduce(&found, &anyFound, 1, MPI_INT, MPI_MAX, comm) >> utilities::MpiUtilities::checkError;

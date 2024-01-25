@@ -162,21 +162,23 @@ void ablate::domain::MeshGenerator::LabelBoundaries(const std::shared_ptr<ablate
     DMLabel boundaryLabel;
     PetscInt boundaryValue;
     boundaryRegion->CreateLabel(dm, boundaryLabel, boundaryValue);
-    DMPlexMarkBoundaryFaces(dm, boundaryValue, boundaryLabel)  >> utilities::PetscUtilities::checkError;
+    DMPlexMarkBoundaryFaces(dm, boundaryValue, boundaryLabel) >> utilities::PetscUtilities::checkError;
 
     // determine the new vertex/nodes bounds
     PetscInt vStart, vEnd;
-    DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd) >> utilities::PetscUtilities::checkError;;  // Range of vertices
+    DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd) >> utilities::PetscUtilities::checkError;
+    ;  // Range of vertices
 
     // determine the new face bounds
     PetscInt fStart, fEnd;
-    DMPlexGetHeightStratum(dm, 1, &fStart, &fEnd) >> utilities::PetscUtilities::checkError;;  // Range of faces
+    DMPlexGetHeightStratum(dm, 1, &fStart, &fEnd) >> utilities::PetscUtilities::checkError;
+    ;  // Range of faces
 
     // now march over each face to see if it is part of another label
     std::set<PetscInt> faceSet;
-    for(PetscInt f = fStart; f < fEnd; ++f){
+    for (PetscInt f = fStart; f < fEnd; ++f) {
         // check to see if this face is in the boundary label, if not skip for now
-        if(!boundaryRegion->InRegion(dm, f)){
+        if (!boundaryRegion->InRegion(dm, f)) {
             continue;
         }
 
@@ -185,23 +187,35 @@ void ablate::domain::MeshGenerator::LabelBoundaries(const std::shared_ptr<ablate
 
         // This returns everything associated with the cell in the correct ordering
         PetscInt cl, nClosure, *closure = nullptr;
-        DMPlexGetTransitiveClosure(dm, f, PETSC_TRUE, &nClosure, &closure)  >> utilities::PetscUtilities::checkError;
+        DMPlexGetTransitiveClosure(dm, f, PETSC_TRUE, &nClosure, &closure) >> utilities::PetscUtilities::checkError;
 
         // we look at every other point in the closure because we do not need point orientations
         for (cl = 0; cl < nClosure * 2; cl += 2) {
             if (closure[cl] >= vStart && closure[cl] < vEnd) {  // Only use the points corresponding to a vertex
-                faceSet.insert(closure[cl] - vStart); // we subtract away vStart to reset the node numbering
+                faceSet.insert(closure[cl] - vStart);           // we subtract away vStart to reset the node numbering
             }
         }
 
-        DMPlexRestoreTransitiveClosure(dm, f, PETSC_TRUE, &nClosure, &closure)  >> utilities::PetscUtilities::checkError;  // Restore the points
+        DMPlexRestoreTransitiveClosure(dm, f, PETSC_TRUE, &nClosure, &closure) >> utilities::PetscUtilities::checkError;  // Restore the points
 
-        // see if it in the list
-        std::cout << "face: " << f << std::endl;
-        for(const auto& n : faceSet){
-            std::cout << "\t" << n << std::endl;
+        // see if the face gets a label
+        std::map<ablate::domain::Region, DMLabel> labels;
+        if (auto region = description->GetRegion(faceSet)) {
+            auto& label = labels[*region];
+            PetscInt labelValue = region->GetValue();
+            // create and get the label if needed
+            if (!label) {
+                boundaryRegion->CreateLabel(dm, label, labelValue);
+            }
+
+            // Set the value
+            DMLabelSetValue(label, f, labelValue) >> utilities::PetscUtilities::checkError;
         }
 
+        // complete each label
+        for (auto& [region, label] : labels) {
+            DMPlexLabelComplete(dm, label) >> utilities::PetscUtilities::checkError;
+        }
     }
 }
 #include "registrar.hpp"
