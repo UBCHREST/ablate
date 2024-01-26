@@ -8,6 +8,7 @@ exampleAxisymmetricMesh in 3 dimensions:
 Labels:
   celltype: 6 strata with value/size (0 (8241), 8 (800), 7 (7200), 3 (820), 1 (24440), 4 (23380))
   depth: 4 strata with value/size (0 (8241), 1 (24440), 2 (24200), 3 (8000))
+  boundary: 1 strata with value/size (1 (4762))
 ResultFiles:
 domain.hdf5
 domain.xmf
