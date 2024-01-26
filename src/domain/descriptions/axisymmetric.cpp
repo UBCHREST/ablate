@@ -44,15 +44,15 @@ void ablate::domain::descriptions::Axisymmetric::BuildTopology(PetscInt cell, Pe
         PetscInt upperSliceLowerShellOffset = (cellShell - 1) * numberVerticesPerShell + numberCenterVertices + (cellSlice + 1) * numberWedges;
         PetscInt upperSliceUpperShellOffset = cellShell * numberVerticesPerShell + numberCenterVertices + (cellSlice + 1) * numberWedges;
 
-        cellNodes[0] = lowerSliceLowerShellOffset + cellIndex;
+        cellNodes[2] = lowerSliceLowerShellOffset + cellIndex;
         cellNodes[1] = lowerSliceUpperShellOffset + cellIndex;
-        cellNodes[2] = (cellIndex + 1 == numberWedges) ? lowerSliceUpperShellOffset : lowerSliceUpperShellOffset + cellIndex + 1 /*check for wrap around*/;
+        cellNodes[0] = (cellIndex + 1 == numberWedges) ? lowerSliceUpperShellOffset : lowerSliceUpperShellOffset + cellIndex + 1 /*check for wrap around*/;
         cellNodes[3] = (cellIndex + 1 == numberWedges) ? lowerSliceLowerShellOffset : lowerSliceLowerShellOffset + cellIndex + 1 /*check for wrap around*/;
 
         cellNodes[4] = upperSliceLowerShellOffset + cellIndex;
-        cellNodes[5] = (cellIndex + 1 == numberWedges) ? upperSliceLowerShellOffset : upperSliceLowerShellOffset + cellIndex + 1 /*check for wrap around*/;
+        cellNodes[7] = (cellIndex + 1 == numberWedges) ? upperSliceLowerShellOffset : upperSliceLowerShellOffset + cellIndex + 1 /*check for wrap around*/;
         cellNodes[6] = (cellIndex + 1 == numberWedges) ? upperSliceUpperShellOffset : upperSliceUpperShellOffset + cellIndex + 1 /*check for wrap around*/;
-        cellNodes[7] = upperSliceUpperShellOffset + cellIndex;
+        cellNodes[5] = upperSliceUpperShellOffset + cellIndex;
     } else {
         // This is a tri prism
         // determine which slice this is

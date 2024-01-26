@@ -11,7 +11,9 @@ environment:
   title: _meshGeneratorAxisymmetric
   tagDirectory: false
 # global arguments that can be used by petsc
-arguments: []
+arguments:
+  # force the new mesh to check everything
+  dm_plex_check_all: ""
 
 # set up the time stepper responsible for marching in time
 timestepper:
