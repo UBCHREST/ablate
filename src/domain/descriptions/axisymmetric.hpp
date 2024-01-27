@@ -119,7 +119,7 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
      * @param face
      * @return
      */
-    [[nodiscard]] virtual std::shared_ptr<ablate::domain::Region> GetRegion(const std::set<PetscInt>& face) const override;
+    [[nodiscard]] std::shared_ptr<ablate::domain::Region> GetRegion(const std::set<PetscInt>& face) const override;
 };
 }  // namespace ablate::domain::descriptions
 #endif  // ABLATELIBRARY_AXISYMMETRIC_HPP

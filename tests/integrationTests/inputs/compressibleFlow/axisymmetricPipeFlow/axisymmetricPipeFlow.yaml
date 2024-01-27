@@ -39,19 +39,19 @@ timestepper:
 
     # specify any modifications to be performed to the mesh/domain
     modifiers:
-      - # use the newly  labels to extrude the boundary.  Do not extrude the cell
-        !ablate::domain::modifiers::ExtrudeLabel
-        regions:
-          - name: outerShell
-        # mark all the resulting boundary faces with boundaryFaces label
-        boundaryRegion:
-          name: boundaryFaces
-        # tag the original mesh as the flow region
-        originalRegion:
-          name: flowRegion
-        # tag the new boundary cells for easy boundary condition specifications
-        extrudedRegion:
-          name: boundaryCells
+#      - # use the newly  labels to extrude the boundary.  Do not extrude the cell
+#        !ablate::domain::modifiers::ExtrudeLabel
+#        regions:
+#          - name: boundary
+#        # mark all the resulting boundary faces with boundaryFaces label
+#        boundaryRegion:
+#          name: boundaryFaces
+#        # tag the original mesh as the flow region
+#        originalRegion:
+#          name: flowRegion
+#        # tag the new boundary cells for easy boundary condition specifications
+#        extrudedRegion:
+#          name: boundaryCells
 
       - !ablate::domain::modifiers::DistributeWithGhostCells
         ghostCellDepth: 2

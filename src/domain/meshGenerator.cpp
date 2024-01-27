@@ -163,6 +163,7 @@ void ablate::domain::MeshGenerator::LabelBoundaries(const std::shared_ptr<ablate
     PetscInt boundaryValue;
     boundaryRegion->CreateLabel(dm, boundaryLabel, boundaryValue);
     DMPlexMarkBoundaryFaces(dm, boundaryValue, boundaryLabel) >> utilities::PetscUtilities::checkError;
+    DMPlexLabelComplete(dm, boundaryLabel) >> utilities::PetscUtilities::checkError;
 
     // determine the new vertex/nodes bounds
     PetscInt vStart, vEnd;

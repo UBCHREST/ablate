@@ -73,12 +73,12 @@ void ablate::domain::descriptions::Axisymmetric::BuildTopology(PetscInt cell, Pe
         const auto nextNodeSliceOffset = numberCenterVertices + numberWedges * (slice + 1);
 
         // set the lower nodes
-        cellNodes[1] = localWedge + nodeSliceOffset;
-        cellNodes[2] = (localWedge + 1) == numberWedges ? nodeSliceOffset : localWedge + 1 + nodeSliceOffset;  // checking for wrap around
+        cellNodes[2] = localWedge + nodeSliceOffset;
+        cellNodes[1] = (localWedge + 1) == numberWedges ? nodeSliceOffset : localWedge + 1 + nodeSliceOffset;  // checking for wrap around
 
         // repeat for the upper nodes
-        cellNodes[5] = localWedge + nextNodeSliceOffset;
-        cellNodes[4] = (localWedge + 1) == numberWedges ? nextNodeSliceOffset : localWedge + 1 + nextNodeSliceOffset;  // checking for wrap around
+        cellNodes[5] = (localWedge + 1) == numberWedges ? nextNodeSliceOffset : localWedge + 1 + nextNodeSliceOffset;  // checking for wrap around
+        cellNodes[4] = localWedge + nextNodeSliceOffset;
     }
 }
 void ablate::domain::descriptions::Axisymmetric::SetCoordinate(PetscInt node, PetscReal *coordinate) const {
