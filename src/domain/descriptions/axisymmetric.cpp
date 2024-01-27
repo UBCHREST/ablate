@@ -44,15 +44,15 @@ void ablate::domain::descriptions::Axisymmetric::BuildTopology(PetscInt cell, Pe
         PetscInt upperSliceLowerShellOffset = (cellShell - 1) * numberVerticesPerShell + numberCenterVertices + (cellSlice + 1) * numberWedges;
         PetscInt upperSliceUpperShellOffset = cellShell * numberVerticesPerShell + numberCenterVertices + (cellSlice + 1) * numberWedges;
 
-        cellNodes[2] = lowerSliceLowerShellOffset + cellIndex;
-        cellNodes[1] = lowerSliceUpperShellOffset + cellIndex;
-        cellNodes[0] = (cellIndex + 1 == numberWedges) ? lowerSliceUpperShellOffset : lowerSliceUpperShellOffset + cellIndex + 1 /*check for wrap around*/;
-        cellNodes[3] = (cellIndex + 1 == numberWedges) ? lowerSliceLowerShellOffset : lowerSliceLowerShellOffset + cellIndex + 1 /*check for wrap around*/;
+        cellNodes[0] = upperSliceLowerShellOffset + cellIndex;
+        cellNodes[1] = lowerSliceLowerShellOffset + cellIndex;
+        cellNodes[2] = lowerSliceUpperShellOffset + cellIndex;
+        cellNodes[3] = upperSliceUpperShellOffset + cellIndex;
 
-        cellNodes[4] = upperSliceLowerShellOffset + cellIndex;
-        cellNodes[7] = (cellIndex + 1 == numberWedges) ? upperSliceLowerShellOffset : upperSliceLowerShellOffset + cellIndex + 1 /*check for wrap around*/;
-        cellNodes[6] = (cellIndex + 1 == numberWedges) ? upperSliceUpperShellOffset : upperSliceUpperShellOffset + cellIndex + 1 /*check for wrap around*/;
-        cellNodes[5] = upperSliceUpperShellOffset + cellIndex;
+        cellNodes[4] = (cellIndex + 1 == numberWedges) ? upperSliceLowerShellOffset : upperSliceLowerShellOffset + cellIndex + 1 /*check for wrap around*/;
+        cellNodes[5] = (cellIndex + 1 == numberWedges) ? upperSliceUpperShellOffset : upperSliceUpperShellOffset + cellIndex + 1 /*check for wrap around*/;
+        cellNodes[6] = (cellIndex + 1 == numberWedges) ? lowerSliceUpperShellOffset : lowerSliceUpperShellOffset + cellIndex + 1 /*check for wrap around*/;
+        cellNodes[7] = (cellIndex + 1 == numberWedges) ? lowerSliceLowerShellOffset : lowerSliceLowerShellOffset + cellIndex + 1 /*check for wrap around*/;
     } else {
         // This is a tri prism
         // determine which slice this is
@@ -137,7 +137,6 @@ std::shared_ptr<ablate::domain::Region> ablate::domain::descriptions::Axisymmetr
             auto nodeShell = ((node - numberCenterVertices) / numberVerticesPerShell) + 1;
             nodeSlice = (node - numberCenterVertices - (nodeShell - 1) * numberVerticesPerShell) / numberWedges;
         }
-
 
         if (nodeSlice != 0) {
             onLowerEndCap = false;

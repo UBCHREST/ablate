@@ -176,6 +176,7 @@ void ablate::domain::MeshGenerator::LabelBoundaries(const std::shared_ptr<ablate
 
     // now march over each face to see if it is part of another label
     std::set<PetscInt> faceSet;
+    std::map<ablate::domain::Region, DMLabel> labels;
     for (PetscInt f = fStart; f < fEnd; ++f) {
         // check to see if this face is in the boundary label, if not skip for now
         if (!boundaryRegion->InRegion(dm, f)) {
@@ -199,23 +200,21 @@ void ablate::domain::MeshGenerator::LabelBoundaries(const std::shared_ptr<ablate
         DMPlexRestoreTransitiveClosure(dm, f, PETSC_TRUE, &nClosure, &closure) >> utilities::PetscUtilities::checkError;  // Restore the points
 
         // see if the face gets a label
-        std::map<ablate::domain::Region, DMLabel> labels;
         if (auto region = description->GetRegion(faceSet)) {
             auto& label = labels[*region];
             PetscInt labelValue = region->GetValue();
             // create and get the label if needed
             if (!label) {
-                boundaryRegion->CreateLabel(dm, label, labelValue);
+                region->CreateLabel(dm, label, labelValue);
             }
 
             // Set the value
             DMLabelSetValue(label, f, labelValue) >> utilities::PetscUtilities::checkError;
         }
-
-        // complete each label
-        for (auto& [region, label] : labels) {
-            DMPlexLabelComplete(dm, label) >> utilities::PetscUtilities::checkError;
-        }
+    }
+    // complete each label
+    for (auto& [region, label] : labels) {
+        DMPlexLabelComplete(dm, label) >> utilities::PetscUtilities::checkError;
     }
 }
 #include "registrar.hpp"

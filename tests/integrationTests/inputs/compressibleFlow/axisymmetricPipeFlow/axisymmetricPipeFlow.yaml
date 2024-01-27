@@ -28,18 +28,21 @@ timestepper:
       start: [0.0, 0.0, 0.0]
       length: 0.5
       radius: ".1 - .1*z*z"
-      numberWedges: 20
-      numberSlices: 40
-      numberShells: 10
+      numberWedges: 8
+      numberSlices: 2
+      numberShells: 2
     # output the result label for interior cells
     options:
       dm_label_view: boundaryCells
+      # force the new mesh to check everything
+      dm_plex_check_all: ""
+
     # specify any modifications to be performed to the mesh/domain
     modifiers:
       - # use the newly  labels to extrude the boundary.  Do not extrude the cell
         !ablate::domain::modifiers::ExtrudeLabel
         regions:
-          - name: boundary
+          - name: outerShell
         # mark all the resulting boundary faces with boundaryFaces label
         boundaryRegion:
           name: boundaryFaces
