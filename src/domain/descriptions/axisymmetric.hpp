@@ -59,6 +59,13 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
     const static inline std::shared_ptr<ablate::domain::Region> lowerCapBoundary = std::make_shared<ablate::domain::Region>("lowerCap");
     const static inline std::shared_ptr<ablate::domain::Region> upperCapBoundary = std::make_shared<ablate::domain::Region>("upperCap");
 
+    /**
+     * Reverse the cell order to make sure hexes appear before tri prism
+     * @param in
+     * @return
+     */
+    inline PetscInt CellReverser(PetscInt in) const { return numberCells - in - 1; }
+
    public:
     /**
      * generate and precompute a bunch of the required parameters

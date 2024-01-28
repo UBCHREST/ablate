@@ -29,29 +29,29 @@ timestepper:
       length: 0.5
       radius: ".1 - .1*z*z"
       numberWedges: 8
-      numberSlices: 2
-      numberShells: 2
+      numberSlices: 4
+      numberShells: 4
     # output the result label for interior cells
     options:
-      dm_label_view: boundaryCells
+      dm_label_view: flowRegion
       # force the new mesh to check everything
       dm_plex_check_all: ""
 
     # specify any modifications to be performed to the mesh/domain
     modifiers:
-#      - # use the newly  labels to extrude the boundary.  Do not extrude the cell
-#        !ablate::domain::modifiers::ExtrudeLabel
-#        regions:
-#          - name: boundary
-#        # mark all the resulting boundary faces with boundaryFaces label
-#        boundaryRegion:
-#          name: boundaryFaces
-#        # tag the original mesh as the flow region
-#        originalRegion:
-#          name: flowRegion
-#        # tag the new boundary cells for easy boundary condition specifications
-#        extrudedRegion:
-#          name: boundaryCells
+      - # use the newly  labels to extrude the boundary.  Do not extrude the cell
+        !ablate::domain::modifiers::ExtrudeLabel
+        regions:
+          - name: boundary
+        # mark all the resulting boundary faces with boundaryFaces label
+        boundaryRegion:
+          name: boundaryFaces
+        # tag the original mesh as the flow region
+        originalRegion:
+          name: flowRegion
+        # tag the new boundary cells for easy boundary condition specifications
+        extrudedRegion:
+          name: boundaryCells
 
       - !ablate::domain::modifiers::DistributeWithGhostCells
         ghostCellDepth: 2
@@ -59,13 +59,13 @@ timestepper:
     # setup some dummy fields
     fields:
       - name: exampleFVField
-        components: [ "xx", "yy", "zz" ]
+        components: [ "xx"]
         type: FVM
 
   # initialize the dummy field
   initialization:
     - fieldName: "exampleFVField"
-      field: "x, y, z"
+      field: "x"
 
 # this is a test input file with no solvers
 solvers: [ ]

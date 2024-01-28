@@ -26,6 +26,8 @@ ablate::domain::descriptions::Axisymmetric::Axisymmetric(const std::vector<Petsc
 
 void ablate::domain::descriptions::Axisymmetric::BuildTopology(PetscInt cell, PetscInt *cellNodes) const {
     // Note that the cell/vertex ordering grows in shells so that tri prism elements are specified first and together.
+    // flip the cell order so that hexes appear before tri prisms
+    cell = CellReverser(cell);
 
     // determine the type of element
     if (cell >= numberTriPrismCells) {
@@ -113,7 +115,10 @@ void ablate::domain::descriptions::Axisymmetric::SetCoordinate(PetscInt node, Pe
     coordinate[1] += radius * radiusFactor * PetscSinReal(2.0 * nodeRotationIndex * PETSC_PI / numberWedges);
 }
 
-DMPolytopeType ablate::domain::descriptions::Axisymmetric::GetCellType(PetscInt cell) const { return cell < numberTriPrismCells ? DM_POLYTOPE_TRI_PRISM : DM_POLYTOPE_HEXAHEDRON; }
+DMPolytopeType ablate::domain::descriptions::Axisymmetric::GetCellType(PetscInt cell) const {
+    // flip the cell order so that hexes appear before tri prisms
+    return CellReverser(cell) < numberTriPrismCells ? DM_POLYTOPE_TRI_PRISM : DM_POLYTOPE_HEXAHEDRON;
+}
 
 std::shared_ptr<ablate::domain::Region> ablate::domain::descriptions::Axisymmetric::GetRegion(const std::set<PetscInt> &face) const {
     // check to see if each node in on the surface

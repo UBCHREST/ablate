@@ -4,11 +4,14 @@ exampleAxisymmetricMesh in 3 dimensions:
   Number of 0-cells per rank: 8241
   Number of 1-cells per rank: 24440
   Number of 2-cells per rank: 24200 (23380)
-  Number of 3-cells per rank: 8000 (7200)
+  Number of 3-cells per rank: 8000 (800)
 Labels:
-  celltype: 6 strata with value/size (0 (8241), 8 (800), 7 (7200), 3 (820), 1 (24440), 4 (23380))
+  celltype: 6 strata with value/size (0 (8241), 7 (7200), 8 (800), 3 (820), 1 (24440), 4 (23380))
   depth: 4 strata with value/size (0 (8241), 1 (24440), 2 (24200), 3 (8000))
   boundary: 1 strata with value/size (1 (4762))
+  upperCap: 1 strata with value/size (1 (801))
+  lowerCap: 1 strata with value/size (1 (801))
+  outerShell: 1 strata with value/size (1 (3240))
 ResultFiles:
 domain.hdf5
 domain.xmf
