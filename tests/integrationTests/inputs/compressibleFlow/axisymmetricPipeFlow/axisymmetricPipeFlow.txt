@@ -1,0 +1,13 @@
+Timestep: 0000 time = 0        dt = 1e-10
+Timestep: 0010 time = 0.0009477 dt = 0.000278863
+Timestep: 0020 time = 0.001356 dt = 2.83979e-05
+Timestep: 0030 time = 0.001637 dt = 2.84175e-05
+Timestep: 0040 time = 0.001916 dt = 2.80858e-05
+Timestep: 0050 time = 0.002194 dt = 2.78672e-05
+ResultFiles:
+domain.hdf5
+domain.xmf
+flowField.hdf5
+flowField.xmf
+pgsLog
+restart.rst
