@@ -19,8 +19,8 @@ ablate::domain::descriptions::Axisymmetric::Axisymmetric(const std::vector<Petsc
       numberVertices(numberVerticesPerShell * numberShells + numberCenterVertices),
       numberTriPrismCells(numberWedges * numberSlices) {
     // make sure there are at least 4 wedges and one slice
-    if (numberWedges < 4 || numberSlices < 1 || numberShells < 1) {
-        throw std::invalid_argument("Axisymmetric requires at least 4 wedges, 1 slice, and 1 shell.");
+    if (numberWedges < 3 || numberSlices < 1 || numberShells < 1) {
+        throw std::invalid_argument("Axisymmetric requires at least 3 wedges, 1 slice, and 1 shell.");
     }
 }
 
