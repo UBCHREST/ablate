@@ -1,0 +1,13 @@
+Timestep: 0000 time = 0        dt = 1e-10
+Timestep: 0010 time = (.*) dt = (.*)<expects> ~ ~
+Timestep: 0020 time = (.*) dt = (.*)<expects> ~ ~
+Timestep: 0030 time = (.*) dt = (.*)<expects> ~ ~
+Timestep: 0040 time = (.*) dt = (.*)<expects> ~ ~
+Timestep: 0050 time = (.*) dt = (.*)<expects> ~ ~
+ResultFiles:
+domain.hdf5
+domain.xmf
+flowField.hdf5
+flowField.xmf
+pgsLog
+restart.rst

@@ -2,7 +2,7 @@
 #include <petsc/private/dmpleximpl.h>  // For ISIntersect_Caching_Internal, used in ablate::domain::SubDomain::GetRange
 #include "utilities/petscUtilities.hpp"
 
-void ablate::domain::GetRange(DM dm, const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::domain::Range &range) {
+void ablate::domain::GetRange(DM dm, const std::shared_ptr<ablate::domain::Region> &region, PetscInt depth, ablate::domain::Range &range) {
     // Start out getting all the points
     IS allPointIS;
     DMGetStratumIS(dm, "dim", depth, &allPointIS) >> utilities::PetscUtilities::checkError;
@@ -39,14 +39,14 @@ void ablate::domain::GetRange(DM dm, const std::shared_ptr<ablate::domain::Regio
     ISDestroy(&allPointIS) >> utilities::PetscUtilities::checkError;
 }
 
-void ablate::domain::GetCellRange(DM dm, const std::shared_ptr<ablate::domain::Region> region, ablate::domain::Range &cellRange) {
+void ablate::domain::GetCellRange(DM dm, const std::shared_ptr<ablate::domain::Region> &region, ablate::domain::Range &cellRange) {
     // Start out getting all the cells
     PetscInt depth;
     DMPlexGetDepth(dm, &depth) >> utilities::PetscUtilities::checkError;
     ablate::domain::GetRange(dm, region, depth, cellRange);
 }
 
-void ablate::domain::GetFaceRange(DM dm, const std::shared_ptr<ablate::domain::Region> region, ablate::domain::Range &faceRange) {
+void ablate::domain::GetFaceRange(DM dm, const std::shared_ptr<ablate::domain::Region> &region, ablate::domain::Range &faceRange) {
     // Start out getting all the faces
     PetscInt depth;
     DMPlexGetDepth(dm, &depth) >> utilities::PetscUtilities::checkError;

@@ -4,7 +4,7 @@ test:
   # a unique test name for this integration tests
   name: meshMappingTestCoordinateSpace
   # create a default assert that compares the log file
-  assert: "inputs/machinery/meshMappingTestCoordinateSpace.txt"
+  assert: "inputs/domain/meshMappingTestCoordinateSpace.txt"
 
 # metadata for the simulation
 environment:

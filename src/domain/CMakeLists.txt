@@ -17,6 +17,7 @@ target_sources(ablateLibrary
         initializer.cpp
         hdf5Initializer.cpp
         initializerList.cpp
+        meshGenerator.cpp
 
         PUBLIC
         domain.hpp
@@ -39,7 +40,9 @@ target_sources(ablateLibrary
         initializer.hpp
         hdf5Initializer.hpp
         initializerList.hpp
-        )
+        meshGenerator.hpp
+)
 
 add_subdirectory(modifiers)
 add_subdirectory(RBF)
+add_subdirectory(descriptions)

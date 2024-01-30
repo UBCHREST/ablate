@@ -3,13 +3,13 @@
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/petscUtilities.hpp"
 
-ablate::domain::Region::Region(std::string name, int valueIn) : name(name), value(valueIn == 0 ? 1 : valueIn) {
+ablate::domain::Region::Region(const std::string& name, int valueIn) : name(name), value(valueIn == 0 ? 1 : valueIn) {
     // Create a unique string
     auto hashString = name + ":" + std::to_string(value);
     id = std::hash<std::string>()(hashString);
 }
 
-void ablate::domain::Region::CreateLabel(DM dm, DMLabel& regionLabel, PetscInt& regionValue) {
+void ablate::domain::Region::CreateLabel(DM dm, DMLabel& regionLabel, PetscInt& regionValue) const {
     DMCreateLabel(dm, GetName().c_str()) >> utilities::PetscUtilities::checkError;
     DMGetLabel(dm, GetName().c_str(), &regionLabel) >> utilities::PetscUtilities::checkError;
     regionValue = GetValue();
@@ -37,7 +37,7 @@ void ablate::domain::Region::CheckForLabel(DM dm, MPI_Comm comm) const {
     DMLabel label = nullptr;
     DMGetLabel(dm, GetName().c_str(), &label) >> utilities::PetscUtilities::checkError;
 
-    PetscMPIInt found = (PetscMPIInt)(label != nullptr);
+    auto found = (PetscMPIInt)(label != nullptr);
     PetscMPIInt anyFound;
 
     MPI_Allreduce(&found, &anyFound, 1, MPI_INT, MPI_MAX, comm) >> utilities::MpiUtilities::checkError;
@@ -51,9 +51,7 @@ bool ablate::domain::Region::InRegion(const std::shared_ptr<Region>& region, DM 
     if (!region) {
         return true;
     }
-    PetscInt ptValue;
-    DMGetLabelValue(dm, region->name.c_str(), point, &ptValue) >> utilities::PetscUtilities::checkError;
-    return ptValue == region->value;
+    return region->InRegion(dm, point);
 }
 
 std::ostream& ablate::domain::operator<<(std::ostream& os, const ablate::domain::Region& region) {

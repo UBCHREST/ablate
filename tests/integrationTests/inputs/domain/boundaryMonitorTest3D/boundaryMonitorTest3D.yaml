@@ -1,19 +1,18 @@
-# This test sets up a simple boundary monitor with known values to test machinery
+# This test sets up a simple boundary monitor with known values to test machinery in 3D
 ---
 test:
   # a unique test name for this integration tests
-  name: boundaryMonitorTest2D
-  ranks: 2
+  name: boundaryMonitorTest3D
   asserts:
     # create a default assert that compares the log file
-    - "inputs/machinery/boundaryMonitorTest2D/boundaryMonitorTest2D.txt"
+    - "inputs/domain/boundaryMonitorTest3D/boundaryMonitorTest3D.txt"
     - !testingResources::asserts::TextFileAssert
-      expected: "inputs/machinery/boundaryMonitorTest2D/bottomBoundary_monitor.xmf"
+      expected: "inputs/domain/boundaryMonitorTest3D/bottomBoundary_monitor.xmf"
       actual: "bottomBoundary_monitor.xmf"
 
 # metadata for the simulation
 environment:
-  title: _boundaryMonitorTest2D
+  title: _boundaryMonitorTest3D
   tagDirectory: false
 arguments:
   # ask petsc to label the boundary values
@@ -34,9 +33,9 @@ timestepper:
   # Create a simple box mesh to start
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
-    faces: [ 25, 25 ]
-    lower: [ -.5, -.5]
-    upper: [ .5, .5 ]
+    faces: [ 5, 5, 5 ]
+    lower: [ -.5, -.5, -.5]
+    upper: [ .5, .5, .5]
     simplex: false
     # pass in these options to petsc when setting up the domain.  Using an option list here prevents command line arguments from being seen.
     options:
@@ -53,7 +52,7 @@ timestepper:
           name: inside
         function: !ablate::mathFunctions::geom::Sphere
           &insideSphere
-          center: [0.0, 0.0]
+          center: [0.0, 0.0, 0.0]
           radius: 0.25
 
       # define the rest of the domain
@@ -96,7 +95,7 @@ timestepper:
         eos: *eos
         pressure: 101325.0
         temperature: 300
-        velocity: "0.0, 0.0"
+        velocity: "0.0, 0.0, 0.0"
 solvers:
   # use a boundary solver to describe the solver in the boundary cells and output the solution
   - !ablate::boundarySolver::BoundarySolver
@@ -107,11 +106,9 @@ solvers:
       # define an ArbitrarySource processes of type Face that outputs two variables
       - !ablate::boundarySolver::physics::ArbitrarySource
         functions:
-          heatFlux: x*t
-          regRate: x*x*t
+          heatFlux: z*t
+          regRate: z*z*t
         type: Face
     monitors:
       # a monitor is needed to write to a hdf5
       - !ablate::monitors::BoundarySolverMonitor
-
-

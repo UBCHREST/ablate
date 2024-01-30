@@ -1,5 +1,6 @@
 #include "extrudeLabel.hpp"
 #include <petsc/private/dmimpl.h>
+#include <petsc/private/petscfeimpl.h>
 #include <petscdmplextransform.h>
 #include <utility>
 #include "tagLabelInterface.hpp"
@@ -84,18 +85,49 @@ void ablate::domain::modifiers::ExtrudeLabel::Modify(DM &dm) {
     originalRegion->CreateLabel(dmAdapt, originalRegionLabel, originalRegionValue);
     extrudedRegion->CreateLabel(dmAdapt, extrudedRegionLabel, extrudedRegionValue);
 
-    // Determine the current max cell int
-    PetscInt originalMaxCell;
-    DMPlexGetHeightStratum(dm, 0, nullptr, &originalMaxCell) >> utilities::PetscUtilities::checkError;
-
     // March over each cell in this rank and determine if it is original or not
-    PetscInt cStart, cEnd;
-    DMPlexGetHeightStratum(dmAdapt, 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
-    for (PetscInt c = cStart; c < cEnd; ++c) {
-        if (c < originalMaxCell) {
-            DMLabelSetValue(originalRegionLabel, c, originalRegionValue) >> utilities::PetscUtilities::checkError;
-        } else {
-            DMLabelSetValue(extrudedRegionLabel, c, extrudedRegionValue) >> utilities::PetscUtilities::checkError;
+    PetscInt cAdaptStart, cAdaptEnd;
+    DMPlexGetHeightStratum(dmAdapt, 0, &cAdaptStart, &cAdaptEnd) >> utilities::PetscUtilities::checkError;
+
+    // cell the depths of the cell layer
+    PetscInt cellDepth;
+    DMPlexGetDepth(dm, &cellDepth) >> utilities::PetscUtilities::checkError;
+    DMLabel depthAdaptLabel, ctAdaptLabel, ctLabel;
+    DMPlexGetDepthLabel(dmAdapt, &depthAdaptLabel) >> utilities::PetscUtilities::checkError;
+    DMPlexGetCellTypeLabel(dmAdapt, &ctAdaptLabel) >> utilities::PetscUtilities::checkError;
+    DMPlexGetCellTypeLabel(dm, &ctLabel) >> utilities::PetscUtilities::checkError;
+
+    // because the new cells can be intertwined with the old cells for mixed use we need to do this cell type by cell type
+    for (PetscInt cellType = 0; cellType < DM_NUM_POLYTOPES; ++cellType) {
+        auto ict = (DMPolytopeType)cellType;
+
+        // get the new range for this cell type
+        PetscInt tAdaptStart, tAdaptEnd;
+        DMLabelGetStratumBounds(ctAdaptLabel, ict, &tAdaptStart, &tAdaptEnd) >> utilities::PetscUtilities::checkError;
+
+        // only check if there are cell of this type
+        if (tAdaptStart < 0) {
+            continue;
+        }
+        // determine the depth of this cell type
+        PetscInt cellTypeDepth;
+        DMLabelGetValue(depthAdaptLabel, tAdaptStart, &cellTypeDepth) >> utilities::PetscUtilities::checkError;
+        if (cellTypeDepth != cellDepth) {
+            continue;
+        }
+
+        // Get the original range for this cell type
+        PetscInt tStart, tEnd;
+        DMLabelGetStratumBounds(ctLabel, ict, &tStart, &tEnd) >> utilities::PetscUtilities::checkError;
+        PetscInt numberOldCells = tStart >= 0 ? tEnd - tStart : 0;
+
+        // march over each new cell
+        for (PetscInt c = tAdaptStart; c < tAdaptEnd; ++c) {
+            if ((c - tAdaptStart) < numberOldCells) {
+                DMLabelSetValue(originalRegionLabel, c, originalRegionValue) >> utilities::PetscUtilities::checkError;
+            } else {
+                DMLabelSetValue(extrudedRegionLabel, c, extrudedRegionValue) >> utilities::PetscUtilities::checkError;
+            }
         }
     }
 
@@ -134,6 +166,7 @@ PetscErrorCode ablate::domain::modifiers::ExtrudeLabel::DMPlexTransformAdaptLabe
     PetscCall(DMPlexTransformCreateDiscLabels(tr, *rdm));
     PetscCall(DMCopyDisc(dm, *rdm));
     PetscCall(DMPlexTransformDestroy(&tr));
+    ((DM_Plex *)(*rdm)->data)->useHashLocation = ((DM_Plex *)dm->data)->useHashLocation;
     PetscFunctionReturn(0);
 }
 

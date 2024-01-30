@@ -10,8 +10,8 @@ namespace ablate::domain {
  */
 struct Range {
     IS is = nullptr;
-    PetscInt start;
-    PetscInt end;
+    PetscInt start{};
+    PetscInt end{};
     const PetscInt *points = nullptr;
 
     /**
@@ -29,7 +29,7 @@ struct Range {
  * @param depth
  * @param range
  */
-void GetRange(DM dm, const std::shared_ptr<Region> region, PetscInt depth, Range &range);
+void GetRange(DM dm, const std::shared_ptr<Region> &region, PetscInt depth, Range &range);
 
 /**
  * Get the range of cells defined over the region for this solver.
@@ -37,7 +37,7 @@ void GetRange(DM dm, const std::shared_ptr<Region> region, PetscInt depth, Range
  * @param region
  * @param cellRange
  */
-void GetCellRange(DM dm, const std::shared_ptr<Region> region, Range &cellRange);
+void GetCellRange(DM dm, const std::shared_ptr<Region> &region, Range &cellRange);
 
 /**
  * Get the range of faces/edges defined over the region for this solver.
@@ -45,7 +45,7 @@ void GetCellRange(DM dm, const std::shared_ptr<Region> region, Range &cellRange)
  * @param region
  * @param faceRange
  */
-void GetFaceRange(DM dm, const std::shared_ptr<Region> region, Range &faceRange);
+void GetFaceRange(DM dm, const std::shared_ptr<Region> &region, Range &faceRange);
 
 /**
  * Restores the range
