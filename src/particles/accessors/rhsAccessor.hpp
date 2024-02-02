@@ -20,7 +20,7 @@ class RhsAccessor : public Accessor<PetscReal> {
     Vec rhsVec;
 
     //! the array for the rhs values
-    PetscScalar* rhsValues;
+    PetscScalar* rhsValues{};
 
    public:
     RhsAccessor(bool cachePointData, const std::map<std::string, Field>& fieldsMap, Vec rhsVec) : Accessor(cachePointData), fieldsMap(fieldsMap), rhsVec(rhsVec) {
@@ -42,7 +42,7 @@ class RhsAccessor : public Accessor<PetscReal> {
         try {
             const auto& field = fieldsMap.at(fieldName);
             if (field.location == domain::FieldLocation::SOL) {
-                return PointData(rhsValues, field);
+                return {rhsValues, field};
             } else {
                 throw std::invalid_argument("The field " + std::string(fieldName) + " is not a solution variable");
             }
@@ -57,4 +57,4 @@ class RhsAccessor : public Accessor<PetscReal> {
     RhsAccessor(const RhsAccessor&) = delete;
 };
 }  // namespace ablate::particles::accessors
-#endif  // ABLATELIBRARY_SWARMDATA_HPP
+#endif  // ABLATELIBRARY_RHSACCESSOR_HPP

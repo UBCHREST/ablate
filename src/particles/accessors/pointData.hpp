@@ -27,7 +27,7 @@ struct Data {
     /**
      * empty default constructor
      */
-    Data() {}
+    Data() = default;
 
     /**
      * The default constructor
@@ -125,4 +125,4 @@ using ConstPointData = Data<const PetscReal>;
 using PointData = Data<PetscReal>;
 
 }  // namespace ablate::particles::accessors
-#endif  // ABLATELIBRARY_SWARMDATA_HPP
+#endif  // ABLATELIBRARY_POINTDATA_HPP

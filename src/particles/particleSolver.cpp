@@ -357,6 +357,7 @@ void ablate::particles::ParticleSolver::ProjectFunction(const std::shared_ptr<ma
     DMSwarmRestoreField(swarmDm, DMSwarmPICField_coor, nullptr, nullptr, (void **)&positionData);
     RestoreField(field, &fieldData);
 }
+
 void ablate::particles::ParticleSolver::SwarmMigrate() {
     // current number of local/global particles
     PetscInt numberLocal;

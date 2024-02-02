@@ -27,7 +27,7 @@ void ablate::particles::processes::drag::Quadratic::ComputeDragForce(const Petsc
     for (int n = 0; n < dim; n++) {
         dragForce[n] = dragForcePrefactor * relVel[n];
     }
-};
+}
 
 #include "registrar.hpp"
 REGISTER_WITHOUT_ARGUMENTS(ablate::particles::processes::drag::DragModel, ablate::particles::processes::drag::Quadratic,

@@ -1,8 +1,13 @@
 #include "fieldDescription.hpp"
+
+#include <utility>
 #include "utilities/petscUtilities.hpp"
 
-ablate::particles::FieldDescription::FieldDescription(std::string name, ablate::domain::FieldLocation type, std::vector<std::string> componentsIn, PetscDataType dataTypeIn)
-    : name(name), components(componentsIn.empty() ? std::vector<std::string>{"_"} : componentsIn), location(type), dataType(dataTypeIn == PETSC_DATATYPE_UNKNOWN ? PETSC_REAL : dataTypeIn) {}
+ablate::particles::FieldDescription::FieldDescription(std::string name, ablate::domain::FieldLocation type, const std::vector<std::string>& componentsIn, PetscDataType dataTypeIn)
+    : name(std::move(name)),
+      components(componentsIn.empty() ? std::vector<std::string>{"_"} : componentsIn),
+      location(type),
+      dataType(dataTypeIn == PETSC_DATATYPE_UNKNOWN ? PETSC_REAL : dataTypeIn) {}
 
 using namespace ablate::utilities;
 #include "registrar.hpp"

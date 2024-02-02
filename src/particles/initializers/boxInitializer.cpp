@@ -1,12 +1,14 @@
 #include "boxInitializer.hpp"
+
+#include <utility>
 #include "utilities/petscUtilities.hpp"
 
 ablate::particles::initializers::BoxInitializer::BoxInitializer(std::vector<double> lowerBound, std::vector<double> upperBound, int particlesPerDim)
-    : lowerBound(lowerBound), upperBound(upperBound), particlesPerDim(particlesPerDim){};
+    : lowerBound(std::move(lowerBound)), upperBound(std::move(upperBound)), particlesPerDim(particlesPerDim) {}
 
 void ablate::particles::initializers::BoxInitializer::Initialize(ablate::domain::SubDomain &flow, DM particleDm) {
     /* The initial number of particles per box dimension */
-    PetscInt Npb = (PetscInt)particlesPerDim;
+    auto Npb = (PetscInt)particlesPerDim;
 
     // determine the geom
     PetscReal partLower[3]; /* Lower left corner of particle box */
@@ -47,7 +49,7 @@ void ablate::particles::initializers::BoxInitializer::Initialize(ablate::domain:
 
     DMSwarmSetLocalSizes(particleDm, Np, 0) >> utilities::PetscUtilities::checkError;
     DMSetFromOptions(particleDm) >> utilities::PetscUtilities::checkError;
-    DMSwarmGetField(particleDm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords) >> utilities::PetscUtilities::checkError;
+    DMSwarmGetField(particleDm, DMSwarmPICField_coor, nullptr, nullptr, (void **)&coords) >> utilities::PetscUtilities::checkError;
     if (rank == 0) {
         switch (dim) {
             case 2:
@@ -81,12 +83,12 @@ void ablate::particles::initializers::BoxInitializer::Initialize(ablate::domain:
                 throw std::runtime_error("Do not support particle layout in dimension " + std::to_string(dim));
         }
     }
-    DMSwarmRestoreField(particleDm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords) >> utilities::PetscUtilities::checkError;
-    DMSwarmGetField(particleDm, DMSwarmPICField_cellid, NULL, NULL, (void **)&cellid) >> utilities::PetscUtilities::checkError;
+    DMSwarmRestoreField(particleDm, DMSwarmPICField_coor, nullptr, nullptr, (void **)&coords) >> utilities::PetscUtilities::checkError;
+    DMSwarmGetField(particleDm, DMSwarmPICField_cellid, nullptr, nullptr, (void **)&cellid) >> utilities::PetscUtilities::checkError;
     for (PetscInt p = 0; p < Np; ++p) {
         cellid[p] = 0;
     }
-    DMSwarmRestoreField(particleDm, DMSwarmPICField_cellid, NULL, NULL, (void **)&cellid) >> utilities::PetscUtilities::checkError;
+    DMSwarmRestoreField(particleDm, DMSwarmPICField_cellid, nullptr, nullptr, (void **)&cellid) >> utilities::PetscUtilities::checkError;
     DMSwarmMigrate(particleDm, PETSC_TRUE) >> utilities::PetscUtilities::checkError;
 }
 

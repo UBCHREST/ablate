@@ -38,4 +38,4 @@ struct Field {
 };
 
 }  // namespace ablate::particles
-#endif  // ABLATELIBRARY_FIELD_HPP
+#endif  // ABLATELIBRARY_PARTICLEFIELD_HPP
