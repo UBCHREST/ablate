@@ -29,8 +29,8 @@ struct FieldDescription {
      * @param components the name of each components, if empty it it is assumed to be one component
      * @param dataType the type of data, default is real
      */
-    FieldDescription(std::string name, domain::FieldLocation type, std::vector<std::string> components = {}, PetscDataType dataType = PETSC_DATATYPE_UNKNOWN);
+    FieldDescription(std::string name, domain::FieldLocation type, const std::vector<std::string>& components = {}, PetscDataType dataType = PETSC_DATATYPE_UNKNOWN);
 };
 
 }  // namespace ablate::particles
-#endif  // ABLATELIBRARY_FIELD_HPP
+#endif  // ABLATELIBRARY_PARTICLEFIELDDESCRIPTION_HPP

@@ -7,7 +7,7 @@ namespace ablate::particles::processes::drag {
 
 class Quadratic : public DragModel {
    public:
-    void ComputeDragForce(const PetscInt dim, const PetscReal *partVel, const PetscReal *flowVel, const PetscReal muF, const PetscReal rhoF, const PetscReal partDiam, PetscReal *dragForce) override;
+    void ComputeDragForce(PetscInt dim, const PetscReal *partVel, const PetscReal *flowVel, PetscReal muF, PetscReal rhoF, PetscReal partDiam, PetscReal *dragForce) override;
 };
 
 }  // namespace ablate::particles::processes::drag

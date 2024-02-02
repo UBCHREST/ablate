@@ -126,7 +126,7 @@ class ParticleSolver : public solver::Solver, public io::Serializable {
      * only required function, returns the id of the object.  Should be unique for the simulation
      * @return
      */
-    const std::string& GetId() const override { return GetSolverId(); }
+    [[nodiscard]] const std::string& GetId() const override { return GetSolverId(); }
 
     /**
      * shared function to view all particles;

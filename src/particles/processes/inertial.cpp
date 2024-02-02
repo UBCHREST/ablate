@@ -1,6 +1,6 @@
 #include "inertial.hpp"
 #include "particles/particleSolver.hpp"
-ablate::particles::processes::Inertial::Inertial(std::shared_ptr<parameters::Parameters> parameters, const std::string& eulerianVelocityFieldIn)
+ablate::particles::processes::Inertial::Inertial(const std::shared_ptr<parameters::Parameters>& parameters, const std::string& eulerianVelocityFieldIn)
     : fluidDensity(parameters->GetExpect<PetscReal>("fluidDensity")),
       fluidViscosity(parameters->GetExpect<PetscReal>("fluidViscosity")),
       gravityField(parameters->GetExpect<std::array<PetscReal, 3>>("gravityField")),
