@@ -151,6 +151,24 @@ class VectorUtilities {
     }
 
     /**
+     * Filters all item in list not of type S
+     * @tparam S the type of item to find
+     * @tparam T
+     * @param list
+     * @return the items in the list of type S
+     */
+    template <class S, class T>
+    static inline std::vector<std::shared_ptr<S>> Filter(const std::vector<std::shared_ptr<T>>& list) {
+        std::vector<std::shared_ptr<S>> filtered;
+        for (auto& item : list) {
+            if (auto itemAsS = std::dynamic_pointer_cast<S>(item)) {
+                filtered.push_back(itemAsS);
+            }
+        }
+        return filtered;
+    }
+
+    /**
      * Finds the first item in list that is of type S
      * @tparam L the vector or map
      * @tparam S the type of item to transform into

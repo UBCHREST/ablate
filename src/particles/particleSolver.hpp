@@ -101,7 +101,7 @@ class ParticleSolver : public solver::Solver, public io::Serializable {
     /**
      * Function to be be called after each flow time step
      */
-    void MacroStepParticles(TS macroTS);
+    virtual void MacroStepParticles(TS macroTS);
 
     /**
      * return access to the particle dm

@@ -7,6 +7,7 @@ target_sources(ablateLibrary
         process.hpp
         tracer.hpp
         inertial.hpp
+        coupledProcess.hpp
         )
 
 add_subdirectory(drag)

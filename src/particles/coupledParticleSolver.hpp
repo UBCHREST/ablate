@@ -2,6 +2,7 @@
 #define ABLATELIBRARY_COUPLEDPARTICLESOLVER_HPP
 
 #include "particleSolver.hpp"
+#include "processes/coupledProcess.hpp"
 #include "solver/rhsFunction.hpp"
 
 namespace ablate::particles {
@@ -11,10 +12,10 @@ namespace ablate::particles {
  * The class implements the RHSFunction to allow inserting source terms back to main TS/flowfield
  */
 class CoupledParticleSolver : public ParticleSolver, public ablate::solver::RHSFunction {
-   public:
-    // A string to hold the coupled source terms name
-    inline static const char CoupledSourceTerm[] = "CoupledSourceTerm";
+    // A string to hold the previous source term name name
+    inline static const char PreviousPackedSolution[] = "PreviousPackedSolution";
 
+   public:
     /**
      * default constructor
      * @param solverId
@@ -55,7 +56,7 @@ class CoupledParticleSolver : public ParticleSolver, public ablate::solver::RHSF
     void Initialize() override;
 
     /**
-     * Called to compute the RHS source term.
+     * Called to compute the RHS source term for the flow/macro TS
      * @param time
      * @param locX The locX vector includes boundary conditions
      * @param F
@@ -63,9 +64,17 @@ class CoupledParticleSolver : public ParticleSolver, public ablate::solver::RHSF
      */
     PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locX, Vec locF) override;
 
+    /**
+     * Override the macroStep for particles to enable coupling with the eulerian fields
+     */
+    void MacroStepParticles(TS macroTS) override;
+
    private:
-    //! store a temporary global vector for the source terms, this is required for the projection
-    Vec globalSourceTerms = {};
+    //! store a temporary global vector for the source terms, this is required for the projection.  This is sized for the eulerian mesh
+    Vec globalSourceEulerianTerms = {};
+
+    //! the processes that add source terms to the particle and domain ts
+    std::vector<std::shared_ptr<processes::CoupledProcess>> coupledProcesses;
 };
 
 }  // namespace ablate::particles
