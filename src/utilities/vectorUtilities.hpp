@@ -226,4 +226,4 @@ class VectorUtilities {
 
 }  // namespace ablate::utilities
 
-#endif  // ABLATELIBRARY_MATHUTILITIES_HPP
+#endif  // ABLATELIBRARY_VECTORUTILITIES_HPP
