@@ -161,7 +161,7 @@ void ablate::particles::ParticleSolver::Initialize() {
     TSSetRHSFunction(particleTs, nullptr, ComputeParticleRHS, this) >> utilities::PetscUtilities::checkError;
 
     // link the solution with the flowTS
-    RegisterPostStep([this](TS flowTs, ablate::solver::Solver &) { this->MacroStepParticles(flowTs); });
+    RegisterPostStep([this](TS flowTs, ablate::solver::Solver &) { MacroStepParticles(flowTs); });
 }
 
 void ablate::particles::ParticleSolver::RegisterParticleField(const FieldDescription &fieldDescription) {
@@ -431,6 +431,7 @@ void ablate::particles::ParticleSolver::MacroStepParticles(TS macroTS) {
     // Migrate any particles that have moved
     SwarmMigrate();
 }
+
 void ablate::particles::ParticleSolver::CoordinatesToSolutionVector() {
     // Get the local number of particles
     PetscInt np;

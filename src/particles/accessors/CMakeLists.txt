@@ -1,6 +1,7 @@
 target_sources(ablateLibrary
         PRIVATE
         eulerianAccessor.cpp
+        eulerianSourceAccessor.cpp
 
         PUBLIC
         pointData.hpp
@@ -8,4 +9,5 @@ target_sources(ablateLibrary
         swarmAccessor.hpp
         rhsAccessor.hpp
         eulerianAccessor.hpp
+        eulerianSourceAccessor.hpp
         )
