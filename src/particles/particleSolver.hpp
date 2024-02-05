@@ -21,7 +21,7 @@ class ParticleSolver : public solver::Solver, public io::Serializable {
     //! These coordinates are part of the solution vector
     inline static const char ParticleCoordinates[] = "coordinates";
 
-   private:
+   protected:
     //!  particle dm, this is a swarm
     DM swarmDm = nullptr;
 
@@ -146,7 +146,7 @@ class ParticleSolver : public solver::Solver, public io::Serializable {
      */
     PetscErrorCode Restore(PetscViewer viewer, PetscInt steps, PetscReal time) override;
 
-   private:
+   protected:
     /**
      * The register fields adds the field to the swarm
      * @param fieldDescriptor
