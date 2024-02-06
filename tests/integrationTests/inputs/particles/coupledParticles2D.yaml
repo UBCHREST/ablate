@@ -1,10 +1,10 @@
-# single example of a periodic domain with an inviscid flow with inertialParticles
+# Simple test for pushing source terms to the cell mesh.  Notice that the time step lag results in a final result that is off by a dt
 ---
 test:
   # a unique test name for this integration tests
   name: coupledParticles2D
   # create a default assert that compares the log file
-#   assert: "inputs/particles/inertialParticles2D.txt"
+  assert: "inputs/particles/coupledParticles2D.txt"
 
 # metadata for the simulation
 environment:
@@ -75,8 +75,11 @@ solvers:
       cfl: 0.5
 
     # no output monitors for the flow solver
-    monitors: []
-      # share the existing eos with the compressible flow solver
+    monitors:
+      - !ablate::monitors::MaxMinAverage
+        field: alpha
+
+    # share the existing eos with the compressible flow solver
     eos: *eos
 
   # use a particle solver with a inertial process
@@ -118,6 +121,4 @@ solvers:
         field: "0.0, 0.0"
     # Monitor particle statistics
     monitors:
-      - !ablate::monitors::ParticleCount
-      - !ablate::monitors::ParticleAverage
       - !ablate::monitors::TimeStepMonitor
