@@ -142,7 +142,7 @@ void ablate::particles::CoupledParticleSolver::Initialize() {
     VecZeroEntries(localEulerianSourceVec) >> utilities::PetscUtilities::checkError;
 }
 
-void ablate::particles::CoupledParticleSolver::MacroStepParticles(TS macroTS) {
+void ablate::particles::CoupledParticleSolver::MacroStepParticles(TS macroTS, bool swarmMigrate) {
     // This function is called after the flow/main TS is advanced so all source terms should have already been added to the flow solver, so reset them to zero here.
     // march over every coupled field
     for (const auto& coupledParticleFieldName : coupledParticleFieldsNames) {
@@ -162,14 +162,14 @@ void ablate::particles::CoupledParticleSolver::MacroStepParticles(TS macroTS) {
 
     // Get the start time
     PetscReal startTime;
-    TSGetTime(macroTS, &startTime) >> utilities::PetscUtilities::checkError;
+    TSGetTime(particleTs, &startTime) >> utilities::PetscUtilities::checkError;
 
     // Call the main time step
-    ParticleSolver::MacroStepParticles(macroTS);
+    ParticleSolver::MacroStepParticles(macroTS, false);
 
     // Get the end time
     PetscReal endTime;
-    TSGetTime(macroTS, &endTime) >> utilities::PetscUtilities::checkError;
+    TSGetTime(particleTs, &endTime) >> utilities::PetscUtilities::checkError;
 
     // extract the vectors again
     DMSwarmCreateGlobalVectorFromField(GetParticleDM(), PackedSolution, &packedSolutionVec) >> utilities::PetscUtilities::checkError;
@@ -192,6 +192,11 @@ void ablate::particles::CoupledParticleSolver::MacroStepParticles(TS macroTS) {
 
     DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), PackedSolution, &packedSolutionVec) >> utilities::PetscUtilities::checkError;
     DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), PreviousPackedSolution, &previousPackedSolutionVec) >> utilities::PetscUtilities::checkError;
+
+    // Migrate any particles that have moved now that we have done the other calculations
+    if (swarmMigrate) {
+        SwarmMigrate();
+    }
 }
 
 #include "registrar.hpp"

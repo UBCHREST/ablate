@@ -99,11 +99,6 @@ class ParticleSolver : public solver::Solver, public io::Serializable {
     void Initialize() override;
 
     /**
-     * Function to be be called after each flow time step
-     */
-    virtual void MacroStepParticles(TS macroTS);
-
-    /**
      * return access to the particle dm
      * @return the swamParticle dm
      */
@@ -147,6 +142,11 @@ class ParticleSolver : public solver::Solver, public io::Serializable {
     PetscErrorCode Restore(PetscViewer viewer, PetscInt steps, PetscReal time) override;
 
    protected:
+    /**
+     * Function to be be called after each flow time step
+     */
+    virtual void MacroStepParticles(TS macroTS, bool swarmMigrate);
+
     /**
      * The register fields adds the field to the swarm
      * @param fieldDescriptor
