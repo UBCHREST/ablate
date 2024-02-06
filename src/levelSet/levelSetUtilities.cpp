@@ -1606,8 +1606,7 @@ printf("1617\n");
   subDomain->UpdateAuxLocalVector();
 
 SaveCellData(auxDM, auxVec, "curv0.txt", curvField, 1, subDomain);
-printf("1730\n");
-exit(0);
+
   // Extension
   PetscInt vertexCurvID = lsID; // Store the vertex curvatures in the work vec at the same location as the level-set
 
