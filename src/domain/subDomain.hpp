@@ -257,7 +257,7 @@ class SubDomain : public io::Serializable {
      * Returns raw access to the global dm
      * @return
      */
-    inline DM& GetDM() const noexcept { return domain.GetDM(); }
+    [[nodiscard]] inline DM& GetDM() const noexcept { return domain.GetDM(); }
 
     /**
      * Returns the dm describing the aux fields living in this subdomain.  The dm is defined across

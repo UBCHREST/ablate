@@ -1,7 +1,6 @@
 target_sources(ablateLibrary
         PRIVATE
         eulerianAccessor.cpp
-        eulerianSourceAccessor.cpp
 
         PUBLIC
         pointData.hpp

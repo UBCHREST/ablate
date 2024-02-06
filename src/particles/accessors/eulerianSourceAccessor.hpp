@@ -17,23 +17,41 @@ namespace ablate::particles::accessors {
 class EulerianSourceAccessor : public Accessor<PetscReal> {
    public:
     // A string to hold the coupled source terms name
-    inline static const char CoupledSourceTerm[] = "CoupledSourceTerm";
+    inline static const char CoupledSourceTermPostfix[] = "_CoupledSourceTerm";
 
    private:
-    const std::shared_ptr<ablate::domain::SubDomain> subDomain;
-
     //! borrowed reference to
     const DM& swarmDm;
 
+    //! a map of fields for easy field lookup
+    const std::map<std::string, Field>& fieldsMap;
+
    public:
-    EulerianSourceAccessor(bool cachePointData, std::shared_ptr<ablate::domain::SubDomain> subDomain, const DM& swarmDm);
+    EulerianSourceAccessor(bool cachePointData, const DM& swarmDm, const std::map<std::string, Field>& fieldsMap) : Accessor(cachePointData), swarmDm(swarmDm), fieldsMap(fieldsMap) {}
 
     /**
-     * Create point data from the rhs field
+     * Create point data from the source field in the DM
      * @param fieldName
      * @return
      */
-    PointData CreateData(const std::string& fieldName) override;
+    PointData CreateData(const std::string& fieldName) override {
+        const auto& field = fieldsMap.at(fieldName + CoupledSourceTermPostfix);
+        if (field.location == domain::FieldLocation::SOL) {
+            throw std::invalid_argument("Eulerian Source Fields should not be SOL fields");
+        } else {
+            // get the field from the dm
+            PetscScalar* values;
+            DMSwarmGetField(swarmDm, field.name.c_str(), nullptr, nullptr, (void**)&values) >> utilities::PetscUtilities::checkError;
+
+            // Register the cleanup
+            RegisterCleanupFunction([=]() {
+                const std::string name = field.name;
+                DMSwarmRestoreField(swarmDm, name.c_str(), nullptr, nullptr, (void**)&values) >> utilities::PetscUtilities::checkError;
+            });
+
+            return {values, field};
+        }
+    }
 
     /**
      * prevent copy of this class

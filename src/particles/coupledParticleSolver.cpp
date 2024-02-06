@@ -7,9 +7,10 @@
 ablate::particles::CoupledParticleSolver::CoupledParticleSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                                 std::vector<FieldDescription> fields, std::vector<std::shared_ptr<processes::Process>> processesIn,
                                                                 std::shared_ptr<initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization,
-                                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
+                                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions, const std::vector<std::string>& coupledFields)
     : ParticleSolver(std::move(solverId), std::move(region), std::move(options), std::move(fields), std::move(processesIn), std::move(initializer), std::move(fieldInitialization),
-                     std::move(exactSolutions)) {
+                     std::move(exactSolutions)),
+      coupledFieldsNames(coupledFields) {
     // filter through the list of processes for those that are coupled
     coupledProcesses = ablate::utilities::VectorUtilities::Filter<processes::CoupledProcess>(processes);
 }
@@ -17,14 +18,66 @@ ablate::particles::CoupledParticleSolver::CoupledParticleSolver(std::string solv
 ablate::particles::CoupledParticleSolver::CoupledParticleSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                                 const std::vector<std::shared_ptr<FieldDescription>>& fields, std::vector<std::shared_ptr<processes::Process>> processes,
                                                                 std::shared_ptr<initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization,
-                                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
+                                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions, const std::vector<std::string>& coupledFields)
     : CoupledParticleSolver(std::move(solverId), std::move(region), std::move(options), ablate::utilities::VectorUtilities::Copy(fields), std::move(processes), std::move(initializer),
-                            std::move(fieldInitialization), std::move(exactSolutions)) {}
+                            std::move(fieldInitialization), std::move(exactSolutions), coupledFields) {}
 
 ablate::particles::CoupledParticleSolver::~CoupledParticleSolver() {
-    if (globalSourceEulerianTerms) {
-        VecDestroy(&globalSourceEulerianTerms) >> utilities::PetscUtilities::checkError;
+    if (localEulerianSourceVec) {
+        VecDestroy(&localEulerianSourceVec) >> utilities::PetscUtilities::checkError;
     }
+}
+
+/**
+ * Map the source terms into the flow field once per time step (They are constant during the time step)
+ * @param time
+ * @param locX
+ * @return
+ */
+PetscErrorCode ablate::particles::CoupledParticleSolver::PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) {
+    PetscFunctionBeginUser;
+    PetscCall(RHSFunction::PreRHSFunction(ts, time, initialStage, locX));
+
+    // march over every coupled field
+    for (std::size_t f = 0; f < coupledFields.size(); ++f) {
+        const auto& coupledField = coupledFields[f];
+
+        // Create the subDM for only this field
+        DM coupledFieldDM;
+        IS coupledFieldIS;
+        PetscInt fieldId[1] = {coupledField.id};
+        PetscCall(DMCreateSubDM(subDomain->GetDM(), 1, fieldId, &coupledFieldIS, &coupledFieldDM));
+
+        // Create a global vector for this subDM to interpolate/push into from the particles
+        Vec eulerianFieldSourceVec;
+        PetscCall(DMGetGlobalVector(coupledFieldDM, &eulerianFieldSourceVec));
+
+        // This is a little hacky, but we must temporarily set the cell dm in the swarm before the project call each time
+        PetscCall(DMSwarmSetCellDM(swarmDm, coupledFieldDM));
+
+        // project from the particle to the subDM vec
+        // project the source terms to the global array
+        const char* fieldnames[1] = {coupledParticleFieldsNames[f].c_str()};
+        Vec fields[1] = {eulerianFieldSourceVec};
+        PetscCall(DMSwarmProjectFields(swarmDm, 1, fieldnames, fields, SCATTER_FORWARD));
+
+        // Bring back to the global source vector
+        PetscCall(VecISCopy(localEulerianSourceVec, coupledFieldIS, SCATTER_FORWARD, eulerianFieldSourceVec));
+
+        PetscCall(DMRestoreGlobalVector(coupledFieldDM, &eulerianFieldSourceVec));
+        PetscCall(DMDestroy(&coupledFieldDM));
+        PetscCall(ISDestroy(&coupledFieldIS));
+    }
+
+    // restore the original cell dm
+    PetscCall(DMSwarmSetCellDM(swarmDm, subDomain->GetDM()));
+
+    // Scale the source vector by the current dt so that when integrated the total is the same
+    PetscReal flowTimeStep;
+    PetscCall(TSGetTimeStep(ts, &flowTimeStep));
+    PetscCall(VecScale(localEulerianSourceVec, 1.0 / flowTimeStep));
+
+    PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 /**
@@ -36,18 +89,8 @@ ablate::particles::CoupledParticleSolver::~CoupledParticleSolver() {
  */
 PetscErrorCode ablate::particles::CoupledParticleSolver::ComputeRHSFunction(PetscReal time, Vec locX, Vec locF) {
     PetscFunctionBeginUser;
-
-    // project the source terms to the global array
-    const char* fieldnames[1] = {accessors::EulerianSourceAccessor::CoupledSourceTerm};
-    Vec fields[1] = {globalSourceEulerianTerms};
-    PetscCall(DMSwarmProjectFields(swarmDm, 1, fieldnames, fields, SCATTER_FORWARD));
-
-    // Add them to the source loc f
-    DMGlobalToLocalBegin(subDomain->GetDM(), locF, ADD_VALUES, locX);
-    DMGlobalToLocalEnd(subDomain->GetDM(), locF, ADD_VALUES, locX);
-
-    // Reset the source terms in the
-
+    // Add back to the local F vector
+    PetscCall(VecAYPX(locF, 1.0, localEulerianSourceVec));
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -55,44 +98,67 @@ void ablate::particles::CoupledParticleSolver::Setup() {
     // Call the main particle setup
     ParticleSolver::Setup();
 
-    // Build the source components from the subdomain
-    std::vector<std::string> sourceComponents;
-
-    for (const auto& field : subDomain->GetFields()) {
-        if (field.numberComponents == 1) {
-            sourceComponents.push_back(field.name);
-        } else {
-            for (const auto& component : field.components) {
-                sourceComponents.push_back(field.name + "_" + component);
+    // add a storage location for coupled source terms into the swarm
+    if (coupledFieldsNames.empty()) {
+        for (const auto& coupledField : subDomain->GetFields()) {
+            coupledFields.push_back(coupledField);
+        }
+    } else {
+        for (const auto& coupledFieldName : coupledFieldsNames) {
+            const auto& coupledField = subDomain->GetField(coupledFieldName);
+            // make sure that it is a solution vector
+            if (coupledField.location != domain::FieldLocation::SOL) {
+                throw std::invalid_argument("All fields coupled to the flow solver must be domain::FieldLocation::SOL");
             }
+            coupledFields.push_back(coupledField);
         }
     }
 
-    // Register a new aux field for the source terms to be passed to the main TS
-    auto sourceField = FieldDescription{accessors::EulerianSourceAccessor::CoupledSourceTerm, domain::FieldLocation::AUX, sourceComponents};
-    RegisterParticleField(sourceField);
+    // clean/reset the coupled field names
+    coupledFieldsNames.clear();
+
+    // for each coupled field create a storage location in the swarm
+    for (const auto& field : coupledFields) {
+        // Register a new aux field for the source terms to be passed to the main TS
+        auto sourceField = FieldDescription{field.name + accessors::EulerianSourceAccessor::CoupledSourceTermPostfix, domain::FieldLocation::AUX, field.components};
+        RegisterParticleField(sourceField);
+
+        // store the field names
+        coupledParticleFieldsNames.push_back(field.name + accessors::EulerianSourceAccessor::CoupledSourceTermPostfix);
+        coupledFieldsNames.push_back(field.name);
+    }
+
+    // For coupled simulations we also need to store the previously packed solution, same size as the solution
+    const auto& packedSolutionField = GetField(PackedSolution);
+    RegisterParticleField(FieldDescription{PreviousPackedSolution, domain::FieldLocation::AUX, packedSolutionField.components});
 }
 
 void ablate::particles::CoupledParticleSolver::Initialize() {
-    // Call the main particle Initialize
+    // Call the main particle initialize
     ParticleSolver::Initialize();
 
-    // Create a global vector for the mapping
-    if (globalSourceEulerianTerms) {
-        VecDestroy(&globalSourceEulerianTerms) >> utilities::PetscUtilities::checkError;
-    }
-    DMCreateGlobalVector(subDomain->GetDM(), &globalSourceEulerianTerms) >> utilities::PetscUtilities::checkError;
-    VecZeroEntries(globalSourceEulerianTerms);
+    // Get the global vector of the domain we will copy to
+    DMCreateLocalVector(subDomain->GetDM(), &localEulerianSourceVec) >> utilities::PetscUtilities::checkError;
+    VecZeroEntries(localEulerianSourceVec) >> utilities::PetscUtilities::checkError;
 }
 
 void ablate::particles::CoupledParticleSolver::MacroStepParticles(TS macroTS) {
+    // This function is called after the flow/main TS is advanced so all source terms should have already been added to the flow solver, so reset them to zero here.
+    // march over every coupled field
+    for (const auto& coupledParticleFieldName : coupledParticleFieldsNames) {
+        Vec coupledParticleFieldVec;
+        DMSwarmCreateGlobalVectorFromField(GetParticleDM(), coupledParticleFieldName.c_str(), &coupledParticleFieldVec) >> utilities::PetscUtilities::checkError;
+        VecZeroEntries(coupledParticleFieldVec) >> utilities::PetscUtilities::checkError;
+        DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), coupledParticleFieldName.c_str(), &coupledParticleFieldVec) >> utilities::PetscUtilities::checkError;
+    }
+
     // Before the time step make a copy of the packed solution vector
     Vec packedSolutionVec, previousPackedSolutionVec;
     DMSwarmCreateGlobalVectorFromField(GetParticleDM(), PackedSolution, &packedSolutionVec) >> utilities::PetscUtilities::checkError;
     DMSwarmCreateGlobalVectorFromField(GetParticleDM(), PreviousPackedSolution, &previousPackedSolutionVec) >> utilities::PetscUtilities::checkError;
     VecCopy(packedSolutionVec, previousPackedSolutionVec) >> utilities::PetscUtilities::checkError;
-    DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), DMSwarmPICField_coor, &packedSolutionVec) >> utilities::PetscUtilities::checkError;
-    DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), DMSwarmPICField_coor, &previousPackedSolutionVec) >> utilities::PetscUtilities::checkError;
+    DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), PackedSolution, &packedSolutionVec) >> utilities::PetscUtilities::checkError;
+    DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), PreviousPackedSolution, &previousPackedSolutionVec) >> utilities::PetscUtilities::checkError;
 
     // Get the start time
     PetscReal startTime;
@@ -114,16 +180,18 @@ void ablate::particles::CoupledParticleSolver::MacroStepParticles(TS macroTS) {
 
     // compute the source terms for the coupled processes
     // Build the needed data structures
-    accessors::SwarmAccessor swarmAccessorPreStep(cachePointData, swarmDm, fieldsMap, previousPackedSolutionVec);
-    accessors::SwarmAccessor swarmAccessorPostStep(cachePointData, swarmDm, fieldsMap, packedSolutionVec);
-    accessors::EulerianSourceAccessor eulerianSourceAccessor(cachePointData, subDomain, swarmDm);
+    {  // we need the brackets to force the SwarmAccessor to cleanup before calling the DMSwarmDestroyGlobalVectorFromField cleanup
+        accessors::SwarmAccessor swarmAccessorPreStep(cachePointData, swarmDm, fieldsMap, previousPackedSolutionVec);
+        accessors::SwarmAccessor swarmAccessorPostStep(cachePointData, swarmDm, fieldsMap, packedSolutionVec);
+        accessors::EulerianSourceAccessor eulerianSourceAccessor(cachePointData, swarmDm, fieldsMap);
 
-    for (auto& coupledProcess : coupledProcesses) {
-        coupledProcess->ComputeEulerianSource(startTime, endTime, swarmAccessorPreStep, swarmAccessorPostStep, eulerianSourceAccessor);
+        for (auto& coupledProcess : coupledProcesses) {
+            coupledProcess->ComputeEulerianSource(startTime, endTime, swarmAccessorPreStep, swarmAccessorPostStep, eulerianSourceAccessor);
+        }
     }
 
-    DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), DMSwarmPICField_coor, &packedSolutionVec) >> utilities::PetscUtilities::checkError;
-    DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), DMSwarmPICField_coor, &previousPackedSolutionVec) >> utilities::PetscUtilities::checkError;
+    DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), PackedSolution, &packedSolutionVec) >> utilities::PetscUtilities::checkError;
+    DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), PreviousPackedSolution, &previousPackedSolutionVec) >> utilities::PetscUtilities::checkError;
 }
 
 #include "registrar.hpp"
@@ -134,4 +202,5 @@ REGISTER(ablate::solver::Solver, ablate::particles::CoupledParticleSolver, "Coup
          ARG(std::vector<ablate::particles::processes::Process>, "processes", "the processes used to describe the particle source terms"),
          ARG(ablate::particles::initializers::Initializer, "initializer", "the initial particle setup methods"),
          OPT(std::vector<ablate::mathFunctions::FieldFunction>, "fieldInitialization", "the initial particle fields values"),
-         OPT(std::vector<ablate::mathFunctions::FieldFunction>, "exactSolutions", "particle fields (SOL) exact solutions"));
+         OPT(std::vector<ablate::mathFunctions::FieldFunction>, "exactSolutions", "particle fields (SOL) exact solutions"),
+         OPT(std::vector<std::string>, "coupledFields", "list of fields to couple with Eulerian TS.  If empty or not specified all fields are coupled."));
