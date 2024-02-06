@@ -160,16 +160,6 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
 
             // Create the mesh
             // Note that using -dm_view :mesh.tex:ascii_latex -dm_plex_view_scale 10 -dm_plex_view_numbers_depth 1,0,1 will create a mesh, changing numbers_depth as appropriate
-            //
-            // For debugging testing code use the following:
-            //PetscOptionsSetValue(NULL, "-dm_plex_view_scale", "20");
-            //PetscOptionsSetValue(NULL, "-dm_plex_view_numbers_depth", "1,0,1");
-            //PetscViewer viewer;
-            //PetscViewerASCIIOpen(PETSC_COMM_WORLD, "/path/to/file/mesh.tex", &viewer);
-            //PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_LATEX);
-            //DMView(mesh->GetDM(), viewer);
-            //PetscViewerPopFormat(viewer);
-            //PetscViewerDestroy(&viewer);
             auto mesh = std::make_shared<domain::BoxMesh>("mesh",
                                                           std::vector<std::shared_ptr<domain::FieldDescriptor>>{},
                                                           testingParam.meshModifiers,
