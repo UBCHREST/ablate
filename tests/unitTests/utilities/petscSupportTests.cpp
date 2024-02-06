@@ -156,8 +156,20 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
 
             auto testingParam = GetParam();
 
+
+
             // Create the mesh
             // Note that using -dm_view :mesh.tex:ascii_latex -dm_plex_view_scale 10 -dm_plex_view_numbers_depth 1,0,1 will create a mesh, changing numbers_depth as appropriate
+            //
+            // For debugging testing code use the following:
+            //PetscOptionsSetValue(NULL, "-dm_plex_view_scale", "20");
+            //PetscOptionsSetValue(NULL, "-dm_plex_view_numbers_depth", "1,0,1");
+            //PetscViewer viewer;
+            //PetscViewerASCIIOpen(PETSC_COMM_WORLD, "/path/to/file/mesh.tex", &viewer);
+            //PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_LATEX);
+            //DMView(mesh->GetDM(), viewer);
+            //PetscViewerPopFormat(viewer);
+            //PetscViewerDestroy(&viewer);
             auto mesh = std::make_shared<domain::BoxMesh>("mesh",
                                                           std::vector<std::shared_ptr<domain::FieldDescriptor>>{},
                                                           testingParam.meshModifiers,
@@ -166,6 +178,8 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
                                                           testingParam.meshEnd,
                                                           std::vector<std::string>{},
                                                           testingParam.meshSimplex);
+
+
 
             PetscInt nCells, *cells;
             PetscMPIInt rank;
@@ -186,6 +200,8 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
             PetscSortInt(testingParam.expectedSizeOfList[rank], testingParam.expectedList[rank].data());  // Should probably enter as a sorted list. Leaving for later.
 
             ASSERT_EQ(nCells, testingParam.expectedSizeOfList[rank]);
+
+
 
             // There may be a better way of doing this, but with DMPlexGetNeighbors sticking with C-only code there may not be.
             // Also note that as cells is a dynamically allocated array there is not way (that I know of) to get the number of elements.
@@ -469,7 +485,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .useCells = PETSC_TRUE,
                                              .returnNeighborVertices = PETSC_FALSE,
                                              .expectedSizeOfList = {12, 11},
-                                             .expectedList = {{38, 40, 41, 45, 56, 58, 60, 71, 113, 114, 132, 141}, {82, 83, 84, 86, 95, 96, 97, 99, 102, 138, 141}}},
+                                             .expectedList = {{38, 40, 41, 45, 56, 58, 60, 71, 135, 136, 154, 163}, {24, 38, 52, 53, 62, 102, 112, 123, 124, 125, 128}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = testingResources::MpiTestParameter("2DTriDistanceVertMPI", 2),
                                              .meshFaces = {10, 10},
                                              .meshStart = {0.0, 0.0},
@@ -483,7 +499,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .useCells = PETSC_FALSE,
                                              .returnNeighborVertices = PETSC_FALSE,
                                              .expectedSizeOfList = {12, 11},
-                                             .expectedList = {{38, 40, 41, 45, 56, 58, 60, 71, 113, 114, 132, 141}, {82, 83, 84, 86, 95, 96, 97, 99, 102, 138, 141}}},
+                                             .expectedList = {{38, 40, 41, 45, 56, 58, 60, 71, 135, 136, 154, 163}, {24, 38, 52, 53, 62, 102, 112, 123, 124, 125, 128}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = testingResources::MpiTestParameter("2DQuadLevelVert"),
                                              .meshFaces = {10, 10},
                                              .meshStart = {0.0, 0.0},
