@@ -29,7 +29,7 @@ class Accessor {
     /**
      * Keep a vector of destructors to call
      */
-    std::vector<std::function<void()>> destructors;
+    std::vector<std::function<void()>> destructors{};
 
    protected:
     /**
@@ -40,7 +40,7 @@ class Accessor {
     virtual Data<DataType> CreateData(const std::string& fieldName) = 0;
 
    public:
-    explicit Accessor(bool cachePointData) : cachePointData(cachePointData), destructors(cachePointData ? 5 : 0) {}
+    explicit Accessor(bool cachePointData) : cachePointData(cachePointData) {}
 
     virtual ~Accessor() {
         for (auto& function : destructors) {
