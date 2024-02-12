@@ -1,17 +1,17 @@
-#include "sourceCalculator.hpp"
+#include "sourceCalculator2.hpp"
 #include <TChem_ConstantVolumeIgnitionReactor.hpp>
 #include <TChem_Impl_IgnitionZeroD_Problem.hpp>
 #include <algorithm>
 #include "constantVolumeIgnitionReactorTemperatureThreshold.hpp"
-#include "eos/tChem.hpp"
+#include "eos/tChem2.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "ignitionZeroDTemperatureThreshold.hpp"
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/stringUtilities.hpp"
 
-//#include "zerork_cfd_plugin.h"
+#include "zerork_cfd_plugin.h"
 
-void ablate::eos::tChem::SourceCalculator::ChemistryConstraints::Set(const std::shared_ptr<ablate::parameters::Parameters>& options) {
+void ablate::eos::tChem2::SourceCalculator2::ChemistryConstraints::Set(const std::shared_ptr<ablate::parameters::Parameters>& options) {
     if (options) {
         dtMin = options->Get("dtMin", dtMin);
         dtMax = options->Get("dtMax", dtMax);
@@ -30,8 +30,8 @@ void ablate::eos::tChem::SourceCalculator::ChemistryConstraints::Set(const std::
     }
 }
 
-ablate::eos::tChem::SourceCalculator::SourceCalculator(const std::vector<domain::Field>& fields, const std::shared_ptr<TChem> eosIn,
-                                                       ablate::eos::tChem::SourceCalculator::ChemistryConstraints constraints, const ablate::domain::Range& cellRange)
+ablate::eos::tChem2::SourceCalculator2::SourceCalculator2(const std::vector<domain::Field>& fields, const std::shared_ptr<TChem2> eosIn,
+                                                       ablate::eos::tChem2::SourceCalculator2::ChemistryConstraints constraints, const ablate::domain::Range& cellRange)
     : chemistryConstraints(constraints), eos(eosIn), numberSpecies(eosIn->GetSpeciesVariables().size()) {
     // determine the number of required cells
     std::size_t numberCells = cellRange.end - cellRange.start;
@@ -119,8 +119,8 @@ ablate::eos::tChem::SourceCalculator::SourceCalculator(const std::vector<domain:
     densityYiId = densityYiField->id;
 }
 
-void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::Range& cellRange, PetscReal time, PetscReal dt, Vec globFlowVec) {
-    StartEvent("tChem::SourceCalculator::ComputeSource");
+void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain::Range& cellRange, PetscReal time, PetscReal dt, Vec globFlowVec) {
+    StartEvent("tChem2::SourceCalculator::ComputeSource");
     // Get the valid cell range over this region
     auto numberCells = cellRange.end - cellRange.start;
 
@@ -403,7 +403,7 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
     Kokkos::deep_copy(sourceTermsHost, sourceTermsDevice);
     EndEvent();
 }
-void ablate::eos::tChem::SourceCalculator::AddSource(const ablate::domain::Range& cellRange, Vec, Vec locFVec) {
+void ablate::eos::tChem2::SourceCalculator2::AddSource(const ablate::domain::Range& cellRange, Vec, Vec locFVec) {
     StartEvent("tChem::SourceCalculator::AddSource");
     // get access to the fArray
     PetscScalar* fArray;
@@ -439,18 +439,18 @@ void ablate::eos::tChem::SourceCalculator::AddSource(const ablate::domain::Range
     EndEvent();
 }
 
-std::ostream& ablate::eos::tChem::operator<<(std::ostream& os, const ablate::eos::tChem::SourceCalculator::ReactorType& v) {
+std::ostream& ablate::eos::tChem2::operator<<(std::ostream& os, const ablate::eos::tChem2::SourceCalculator2::ReactorType& v) {
     switch (v) {
-        case ablate::eos::tChem::SourceCalculator::ReactorType::ConstantPressure:
+        case ablate::eos::tChem2::SourceCalculator2::ReactorType::ConstantPressure:
             return os << "ConstantPressure";
-        case ablate::eos::tChem::SourceCalculator::ReactorType::ConstantVolume:
+        case ablate::eos::tChem2::SourceCalculator2::ReactorType::ConstantVolume:
             return os << "ConstantVolume";
         default:
             return os;
     }
 }
 
-std::istream& ablate::eos::tChem::operator>>(std::istream& is, ablate::eos::tChem::SourceCalculator::ReactorType& v) {
+std::istream& ablate::eos::tChem2::operator>>(std::istream& is, ablate::eos::tChem2::SourceCalculator2::ReactorType& v) {
     std::string enumString;
     is >> enumString;
 
@@ -458,10 +458,10 @@ std::istream& ablate::eos::tChem::operator>>(std::istream& is, ablate::eos::tChe
     ablate::utilities::StringUtilities::ToLower(enumString);
 
     if (enumString == "constantvolume") {
-        v = ablate::eos::tChem::SourceCalculator::ReactorType::ConstantVolume;
+        v = ablate::eos::tChem2::SourceCalculator2::ReactorType::ConstantVolume;
     } else {
         // default to constant pressure
-        v = ablate::eos::tChem::SourceCalculator::ReactorType::ConstantPressure;
+        v = ablate::eos::tChem2::SourceCalculator2::ReactorType::ConstantPressure;
     }
     return is;
 }

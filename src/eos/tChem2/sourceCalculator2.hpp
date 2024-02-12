@@ -1,21 +1,22 @@
-#ifndef ABLATELIBRARY_TCHEM_SOURCECALCULATOR_HPP
-#define ABLATELIBRARY_TCHEM_SOURCECALCULATOR_HPP
+#ifndef ABLATELIBRARY_TCHEM2_SOURCECALCULATOR_HPP
+#define ABLATELIBRARY_TCHEM2_SOURCECALCULATOR_HPP
 
 #include <TChem_KineticModelGasConstData.hpp>
 #include "eos/chemistryModel.hpp"
+#include "eos/tChem/sourceCalculator.hpp"
 
 namespace tChemLib = TChem;
 
 namespace ablate::eos {
-class TChem;
+class TChem2;
 }
 
-namespace ablate::eos::tChem {
+namespace ablate::eos::tChem2 {
 
 /**
  * public class to to compute the source for each specified node
  */
-class SourceCalculator : public ChemistryModel::SourceCalculator, private utilities::Loggable<SourceCalculator> {
+class SourceCalculator2 : public ChemistryModel::SourceCalculator, private utilities::Loggable<SourceCalculator2> {
    public:
     /**
      * Allow the user of TChem to set the reactor type
@@ -53,7 +54,7 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
      * @param constraints
      * @param cellRange
      */
-    SourceCalculator(const std::vector<domain::Field>& fields, std::shared_ptr<TChem> tChemEos, ChemistryConstraints constraints, const ablate::domain::Range& cellRange);
+    SourceCalculator2(const std::vector<domain::Field>& fields, std::shared_ptr<TChem2> tChemEos, ChemistryConstraints constraints, const ablate::domain::Range& cellRange);
 //    SourceCalculator(const std::vector<domain::Field>& fields, std::shared_ptr<TChem> tChemEos, ChemistryConstraints constraints, const ablate::domain::Range& cellRange);
 
     /**
@@ -78,7 +79,7 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
     /**
      * Hold access to the tchem eos needed to create eos
      */
-    std::shared_ptr<eos::TChem> eos;
+    std::shared_ptr<eos::TChem2> eos;
 
     const size_t numberSpecies;
 
@@ -133,7 +134,7 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
  * @param v
  * @return
  */
-std::ostream& operator<<(std::ostream& os, const SourceCalculator::ReactorType& v);
+std::ostream& operator<<(std::ostream& os, const SourceCalculator2::ReactorType& v);
 
 /**
  * Support function for the TChemBase::ReactorType Enum
@@ -141,7 +142,7 @@ std::ostream& operator<<(std::ostream& os, const SourceCalculator::ReactorType& 
  * @param v
  * @return
  */
-std::istream& operator>>(std::istream& is, SourceCalculator::ReactorType& v);
+std::istream& operator>>(std::istream& is, SourceCalculator2::ReactorType& v);
 
 }  // namespace ablate::eos::tChem
 

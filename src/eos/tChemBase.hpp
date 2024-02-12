@@ -11,6 +11,7 @@
 #include "eos/tChem/sensibleEnthalpy.hpp"
 #include "eos/tChem/sensibleInternalEnergy.hpp"
 #include "eos/tChem/sourceCalculator.hpp"
+#include "eos/tChem2/sourceCalculator2.hpp"
 #include "eos/tChem/speedOfSound.hpp"
 #include "eos/tChem/temperature.hpp"
 #include "monitors/logs/log.hpp"
@@ -25,7 +26,7 @@ namespace tChemLib = TChem;
 class TChemBase : public ChemistryModel {
    protected:
     //! hold a copy of the constrains that can be used for single or batch source calculation
-    tChem::SourceCalculator::ChemistryConstraints constraints;
+    tChem2::SourceCalculator2::ChemistryConstraints constraints;
 
     //! the mechanismFile may be chemkin or yaml based
     const std::filesystem::path mechanismFile;
