@@ -8,12 +8,30 @@
 #include "ignitionZeroDTemperatureThreshold.hpp"
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/stringUtilities.hpp"
-#include <numeric>
 
 #include "zerork_cfd_plugin.h"
 
+void ablate::eos::tChem2::SourceCalculator2::ChemistryConstraints::Set(const std::shared_ptr<ablate::parameters::Parameters>& options) {
+    if (options) {
+        dtMin = options->Get("dtMin", dtMin);
+        dtMax = options->Get("dtMax", dtMax);
+        dtDefault = options->Get("dtDefault", dtDefault);
+        dtEstimateFactor = options->Get("dtEstimateFactor", dtEstimateFactor);
+        relToleranceTime = options->Get("relToleranceTime", relToleranceTime);
+        absToleranceTime = options->Get("absToleranceTime", absToleranceTime);
+        relToleranceNewton = options->Get("relToleranceNewton", relToleranceNewton);
+        absToleranceNewton = options->Get("absToleranceNewton", absToleranceNewton);
+        maxNumNewtonIterations = options->Get("maxNumNewtonIterations", maxNumNewtonIterations);
+        numTimeIterationsPerInterval = options->Get("numTimeIterationsPerInterval", numTimeIterationsPerInterval);
+        jacobianInterval = options->Get("jacobianInterval", jacobianInterval);
+        maxAttempts = options->Get("maxAttempts", maxAttempts);
+        thresholdTemperature = options->Get("thresholdTemperature", thresholdTemperature);
+        reactorType = options->Get("reactorType", ReactorType::ConstantPressure);
+    }
+}
+
 ablate::eos::tChem2::SourceCalculator2::SourceCalculator2(const std::vector<domain::Field>& fields, const std::shared_ptr<TChem2> eosIn,
-                                                          ablate::eos::tChem::SourceCalculator::ChemistryConstraints constraints, const ablate::domain::Range& cellRange)
+                                                       ablate::eos::tChem2::SourceCalculator2::ChemistryConstraints constraints, const ablate::domain::Range& cellRange)
     : chemistryConstraints(constraints), eos(eosIn), numberSpecies(eosIn->GetSpeciesVariables().size()) {
     // determine the number of required cells
     std::size_t numberCells = cellRange.end - cellRange.start;
@@ -53,10 +71,10 @@ ablate::eos::tChem2::SourceCalculator2::SourceCalculator2(const std::vector<doma
     // determine the number of equations
     ordinal_type numberOfEquations;
     switch (chemistryConstraints.reactorType) {
-        case tChem::SourceCalculator::ReactorType::ConstantPressure:
+        case ReactorType::ConstantPressure:
             numberOfEquations = ::tChemLib::Impl::IgnitionZeroD_Problem<real_type, Tines::UseThisDevice<host_exec_space>::type>::getNumberOfTimeODEs(kineticModelGasConstData);
             break;
-        case tChem::SourceCalculator::ReactorType::ConstantVolume:
+        case ReactorType::ConstantVolume:
             numberOfEquations = ::tChemLib::Impl::ConstantVolumeIgnitionReactor_Problem<real_type, Tines::UseThisDevice<host_exec_space>::type>::getNumberOfTimeODEs(kineticModelGasConstData);
             break;
     }
@@ -99,42 +117,6 @@ ablate::eos::tChem2::SourceCalculator2::SourceCalculator2(const std::vector<doma
         throw std::invalid_argument("ablate::eos::tChem::BatchSource requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD Field");
     }
     densityYiId = densityYiField->id;
-
-
-
-
-    int zerork_error_state = 0;
-    zrm_handle = zerork_reactor_init();
-
-
-    //We already parsed in reactor manager no need to have another log
-    // TODO: Avoid parsing twice/having two mechanisms
-    mech = std::make_unique<zerork::mechanism>("MMAReduced.inp", "MMAReduced.dat", cklogfilename);
-//    mech = std::make_unique<zerork::mechanism>("MMA.inp", "thermo_MMA.dat", cklogfilename);
-
-//    zerork::mechanism mech("MMAReduced.inp", "MMAReduced.dat", cklogfilename);
-
-//    zerork_status_t zerom_status = zerork_reactor_set_mechanism_files(eos::TChemBase::reactionFile.c_str(), eos::TChemBase::thermoFile.c_str(), zrm_handle);
-    zerork_status_t zerom_status = zerork_reactor_set_mechanism_files("MMAReduced.inp", "MMAReduced.dat", zrm_handle);
-//    zerork_status_t zerom_status = zerork_reactor_set_mechanism_files("MMA.inp", "thermo_MMA.dat", zrm_handle);
-    if(zerom_status != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
-//    zerork_status_t zerom_status2 = zerork_reactor_set_string_option("mechanism_parsing_log_filename","mech.cklog",zrm_handle);
-    zerork_status_t status_mech = zerork_reactor_load_mechanism(zrm_handle);
-//    if(status_mech != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
-    zerork_status_t status_other = zerork_reactor_set_int_option("constant_volume", 0, zrm_handle);
-    zerork_status_t status_other2 = zerork_reactor_set_int_option("verbosity", 0, zrm_handle);
-    if(status_other != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
-    zerork_reactor_set_int_option("always_solve_temperature", 1, zrm_handle);
-    //status_other = zerork_reactor_read_options_file("zerork.yml",zrm_handle);
-    if(status_other != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
-
-
-    if (zerork_error_state!=0) {
-        throw std::invalid_argument("ablate::eos::TChem2 can only read inp and dat files.");
-    }
-    sourceZeroRKAtI = std::vector<double> (numberCells * (numberOfEquations));
-
-
 }
 
 void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain::Range& cellRange, PetscReal time, PetscReal dt, Vec globFlowVec) {
@@ -204,160 +186,6 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
         internalEnergyRefHost[chemIndex] = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
     });
 
-
-//zerork state load up
-    int nSpc=kineticModelGasConstDataDevice.nSpec;//ps the soot mech has C(s) // Number of Species
-    int nState=nSpc+1;
-    int nSpcStride = nSpc;
-
-    int nReactors = numberCells;
-
-    //Set up reactor initial states
-    int nReactorsAlloc = nReactors;
-    std::vector<double> reactorT(nReactors);
-    std::vector<double> reactorP(nReactors);
-    std::vector<double> density2(nReactors);
-    std::vector<double> sensibleenergy2(nReactors);
-    std::vector<double> velmag2(nReactors);
-    std::vector<double> reactorMassFrac(nReactors*nSpc);
-    std::vector<double> enthapyOfFormation(nSpc);
-    std::vector<double> internalenergies(nReactors*nSpc);
-
-    //load up current state from petsc
-    const double refTemperature = 300.0;
-    for(int k=0; k<nReactors; ++k) {
-        const PetscInt cell = cellRange.points ? cellRange.points[k] : k;
-        const std::size_t chemIndex = k - cellRange.start;
-
-        const PetscScalar* eulerField = nullptr;
-        DMPlexPointLocalFieldRead(solutionDm, cell, eulerId, flowArray, &eulerField) >> utilities::PetscUtilities::checkError;
-        const PetscScalar* flowDensityField = nullptr;
-        DMPlexPointLocalFieldRead(solutionDm, cell, densityYiId, flowArray, &flowDensityField) >> utilities::PetscUtilities::checkError;
-
-
-        // get the current state at I
-        auto density = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHO];
-        auto densityE = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOE];
-        density2[k]=density;
-
-        real_type yiSum = 0.0;
-        for (ordinal_type s = 0; s < nSpc - 1; s++) {
-            reactorMassFrac[k * nSpc + s] = PetscMax(0.0, flowDensityField[k * nSpc + s] / density);
-            reactorMassFrac[k * nSpc + s] = PetscMin(1.0, reactorMassFrac[k * nSpc + s]);
-            yiSum += reactorMassFrac[k + s];
-        }
-        if (yiSum > 1.0) {
-            for (PetscInt s = 0; s < nSpc - 1; s++) {
-                // Limit the bounds
-                reactorMassFrac[k * nSpc + s] /= yiSum;
-            }
-    //        reactorMassFrac[nSpc - 1] = 0.0;
-        } else {
-            reactorMassFrac[k * nSpc + nSpc - 1] = 1.0 - yiSum;
-        }
-
-        // Compute the internal energy from total ener
-        PetscReal speedSquare = 0.0;
-        for (PetscInt d = 0; d < dim; d++) {
-            speedSquare += PetscSqr(eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density);
-        }
-
-        // compute the internal energy needed to compute temperature
-        sensibleenergy2[k]= eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
-
-        double enthalpymix = mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[k*nSpc]);
-
-        sensibleenergy2[k] += enthalpymix;
-
-//        for (int s = 0; s < nSpc; s++) {
-//
-//
-//        }
-
-        double temp = mech->getTemperatureFromEY(sensibleenergy2[k], &reactorMassFrac[k*nSpc], 2000);
-
-        std::vector<double> energytest(nSpc,0);
-//        mech->getIntEnergy_RT(2000, &energytest[0]);
-        double intener = mech->getMassIntEnergyFromTY(2000, &reactorMassFrac[k*nSpc],&energytest[0]);
-
-        double totalenergy = accumulate(energytest.begin(),energytest.end(),0);
-
-        reactorT[k] = temp;
-        reactorP[k] = 101325;
-
-    }
-
-    //    reactorMassFrac[1] = 0.5;
-    //    reactorMassFrac[4] = 0.5;
-    std::vector<double> ys2 = reactorMassFrac;
-
-    std::vector<double> concentrations (nSpc,0.);
-    //get density
-    const PetscScalar* eulerField = nullptr;
-    DMPlexPointLocalFieldRead(solutionDm, 0, eulerId, flowArray, &eulerField) >> utilities::PetscUtilities::checkError;
-    auto density = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHO];
-    mech->getCfromVY(1/density, &reactorMassFrac[0], &concentrations[0]);
-
-//    int numReac = mech->getNumSteps();
-
-//    std::vector<double> netrates (nSpc,0.);
-//    std::vector<double> creationrates (nSpc,0.);
-//    std::vector<double> destructionrates (nSpc,0.);
-//    std::vector<double> kineticrates (numReac,0.);
-
-
-    //mech->getReactionRates(reactorT[0],&concentrations[0],&netrates[0],&creationrates[0],&destructionrates[0],&kineticrates[0]);
-
-    zerork_status_t flag = ZERORK_STATUS_SUCCESS;
-//    flag = zerork_reactor_solve(1, time, dt, nReactors, &reactorT[0], &reactorP[0],
-//                                &reactorMassFrac[0], zrm_handle);
-
-    if(flag != ZERORK_STATUS_SUCCESS) printf("Oo something went wrong during zreork integration...");
-
-    //    std::cout << "zerork time is:" << time <<"\n";
-//    std::cout << "zerork temperature is:" << reactorT[0] <<"\n";
-//    std::cout << "zerork Yox is:" << reactorMassFrac[1]<<"\n";
-//    std::cout << "zerork Yfuel is:" << reactorMassFrac[63]<<"\n";
-
-    for (ordinal_type s = 0; s < nSpc - 1; s++) {
-        std::vector<double> tempvec(nSpc,0.);
-        tempvec[s]=1;
-//        double* a = &tempvec[0];
-        enthapyOfFormation[s] = mech->getMassEnthalpyFromTY(298.15, &tempvec[0]);
-    }
-//
-    //Create source terms
-//    std::vector<double> sourceZeroRKAtI(nReactors * (nState));
-
-
-    sourceZeroRKAtI[0] = 0.0;
-    for(int k=0; k<nReactors; ++k) {
-
-        for (int s = 0; s < nSpc; s++) {
-//            sourceZeroRKAtI[k] += (ys2[k * nSpc + s] - reactorMassFrac[k * nSpc + s]) * enthalpyOfFormationLocal[k + s];
-            sourceZeroRKAtI[k * nSpc] += (ys2[k * nSpc + s] - reactorMassFrac[k * nSpc + s]) * enthapyOfFormation[s];
-        }
-
-        for (int s = 0; s < nSpc; ++s) {
-            // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-            sourceZeroRKAtI[k * nSpc + s + 1] = reactorMassFrac[k * nSpc + s] - ys2[k * nSpc + s];
-        }
-
-        // Now scale everything by density/dt
-        for (int j = 0; j < nState; ++j) {
-            // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-            sourceZeroRKAtI[k * nSpc + j] *= density2[k] / dt;
-        }
-    }
-
-
-
-
-
-
-
-
-
     // copy from host to device
     Kokkos::deep_copy(internalEnergyRefDevice, internalEnergyRefHost);
     Kokkos::deep_copy(stateDevice, stateHost);
@@ -401,22 +229,19 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
 
         // determine the required team size
         switch (chemistryConstraints.reactorType) {
-            case tChem::SourceCalculator::ReactorType::ConstantPressure:
+            case ReactorType::ConstantPressure:
                 chemistryFunctionPolicy.set_scratch_size(
                     1, Kokkos::PerTeam(::tChemLib::Scratch<real_type_1d_view>::shmem_size(::tChemLib::IgnitionZeroD::getWorkSpaceSize(kineticModelGasConstDataDevice))));
                 break;
-            case tChem::SourceCalculator::ReactorType::ConstantVolume:
+            case ReactorType::ConstantVolume:
                 chemistryFunctionPolicy.set_scratch_size(
                     1, Kokkos::PerTeam(::tChemLib::Scratch<real_type_1d_view>::shmem_size(::tChemLib::ConstantVolumeIgnitionReactor::getWorkSpaceSize(solveTla, kineticModelGasConstDataDevice))));
                 break;
         }
 
-
-
-
         // assume a constant pressure zero D reaction for each cell
         switch (chemistryConstraints.reactorType) {
-            case tChem::SourceCalculator::ReactorType::ConstantPressure:
+            case ReactorType::ConstantPressure:
                 if (chemistryConstraints.thresholdTemperature != 0.0) {
                     // If there is a thresholdTemperature, use the modified version of IgnitionZeroDTemperatureThreshold
                     ablate::eos::tChem::IgnitionZeroDTemperatureThreshold::runDeviceBatch(chemistryFunctionPolicy,
@@ -444,7 +269,7 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
                                                             kineticModelGasConstDataDevices);
                 }
                 break;
-            case tChem::SourceCalculator::ReactorType::ConstantVolume:
+            case ReactorType::ConstantVolume:
                 // These arrays are not used when solveTla is false
                 real_type_3d_view state_z;
                 if (chemistryConstraints.thresholdTemperature != 0.0) {
@@ -483,11 +308,6 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
                 break;
         }
 
-
-
-
-
-
         // check the output pressure, if it is zero the integration failed
         auto endStateDeviceLocal = endStateDevice;
         auto nSpecLocal = kineticModelGasConstDataDevice.nSpec;
@@ -524,29 +344,9 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
             Impl::StateVector<real_type_1d_view> stateVector(nSpecLocal, stateAtI);
             const auto ys = stateVector.MassFractions();
 
-//            std::vector<double> ystart(nSpecLocal);
-//            for (int k = 0;k<nSpecLocal;k++){
-//                ystart[k]=ys(k);
-//            }
-//            std::vector<double> ystart = stateVector.MassFractions();
-
             const auto endStateAtI = Kokkos::subview(endStateDeviceLocal, chemIndex, Kokkos::ALL());
             Impl::StateVector<real_type_1d_view> endStateVector(nSpecLocal, endStateAtI);
             const auto ye = endStateVector.MassFractions();
-
-            std::vector<double> yend(nSpecLocal);
-            std::vector<double> ydiff(nSpecLocal);
-            for (int k = 0;k<nSpecLocal;k++){
-                yend[k]=ye(k);
-//                ydiff[k]=ye(k)-ys(k);
-            }
-            double endtemp = endStateVector.Temperature();
-            double endpress = endStateVector.Pressure();
-
-            std::cout << "the time is " << time <<"\n";
-            std::cout << "tchem temperature is:" << endtemp <<"\n";
-            std::cout << "tchem Yox is:" << yend[1] <<"\n";
-            std::cout << "tchem Yfuel is:" << yend[63] <<"\n";
 
             // get the source term at this chemIndex
             const auto sourceTermAtI = Kokkos::subview(sourceTermsDeviceLocal, chemIndex, Kokkos::ALL());
@@ -613,56 +413,26 @@ void ablate::eos::tChem2::SourceCalculator2::AddSource(const ablate::domain::Ran
     DM dm;
     VecGetDM(locFVec, &dm) >> utilities::PetscUtilities::checkError;
 
-    bool usetchemsources = true;
-    auto numberCells = cellRange.end - cellRange.start;
+    // Use a parallel for loop to load up the tChem state
+    Kokkos::parallel_for("stateLoadHost", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(cellRange.start, cellRange.end), [&](const auto i) {
+        // get the host data from the petsc field
+        const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
+        const std::size_t chemIndex = i - cellRange.start;
 
-    if (usetchemsources) {
-        // Use a parallel for loop to load up the tChem state
-        Kokkos::parallel_for("stateLoadHost", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(cellRange.start, cellRange.end), [&](const auto i) {
-            // get the host data from the petsc field
-            const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
-            const std::size_t chemIndex = i - cellRange.start;
+        // Get the current state variables for this cell
+        PetscScalar* eulerSource = nullptr;
+        DMPlexPointLocalFieldRef(dm, cell, eulerId, fArray, &eulerSource) >> utilities::PetscUtilities::checkError;
+        PetscScalar* densityYiSource = nullptr;
+        DMPlexPointLocalFieldRef(dm, cell, densityYiId, fArray, &densityYiSource) >> utilities::PetscUtilities::checkError;
 
-            // Get the current state variables for this cell
-            PetscScalar* eulerSource = nullptr;
-            DMPlexPointLocalFieldRef(dm, cell, eulerId, fArray, &eulerSource) >> utilities::PetscUtilities::checkError;
-            PetscScalar* densityYiSource = nullptr;
-            DMPlexPointLocalFieldRef(dm, cell, densityYiId, fArray, &densityYiSource) >> utilities::PetscUtilities::checkError;
+        // cast the state at i to a state vector
+        const auto sourceAtI = Kokkos::subview(sourceTermsHost, chemIndex, Kokkos::ALL());
 
-            // cast the state at i to a state vector
-            const auto sourceAtI = Kokkos::subview(sourceTermsHost, chemIndex, Kokkos::ALL());
-
-            std::vector <double> sources(numberSpecies+1);
-
-            eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] += sourceAtI[0];
-            sources[0]=sourceAtI(0);
-            for (std::size_t sp = 0; sp < numberSpecies; sp++) {
-                densityYiSource[sp] += sourceAtI(sp + 1);
-                sources[sp+1]=sourceAtI(sp + 1);
-            }
-            double a=1.;
-        });
-    } else{
-
-
-        for (int k = 0 ; k<numberCells;k++) {
-            const PetscInt cell = cellRange.points ? cellRange.points[k] : k;
-            const std::size_t chemIndex = k - cellRange.start;
-
-            // Get the current state variables for this cell
-            PetscScalar* eulerSource = nullptr;
-            DMPlexPointLocalFieldRef(dm, cell, eulerId, fArray, &eulerSource) >> utilities::PetscUtilities::checkError;
-            PetscScalar* densityYiSource = nullptr;
-            DMPlexPointLocalFieldRef(dm, cell, densityYiId, fArray, &densityYiSource) >> utilities::PetscUtilities::checkError;
-
-
-
-            eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] += sourceZeroRKAtI[k * numberSpecies];
-            for (std::size_t sp = 0; sp < numberSpecies; sp++) {
-                densityYiSource[sp] += sourceZeroRKAtI[k * numberSpecies + sp + 1];
-            }
+        eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] += sourceAtI[0];
+        for (std::size_t sp = 0; sp < numberSpecies; sp++) {
+            densityYiSource[sp] += sourceAtI(sp + 1);
         }
-    }
+    });
 
     // cleanup
     VecRestoreArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
