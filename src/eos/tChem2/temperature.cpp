@@ -1,7 +1,7 @@
 #include "temperature.hpp"
 #include "eos/tChem/sensibleInternalEnergyFcn.hpp"
 
-namespace ablate::eos::tChem::impl {
+namespace ablate::eos::tChem2::impl {
 template <typename PolicyType, typename DeviceType>
 void Temperature_TemplateRun(const std::string& profile_name,
                              /// team size setting
@@ -100,16 +100,16 @@ void Temperature_TemplateRun(const std::string& profile_name,
 
 }  // namespace ablate::eos::tChem::impl
 
-[[maybe_unused]] void ablate::eos::tChem::Temperature::runDeviceBatch(typename UseThisTeamPolicy<exec_space>::type& policy, const Temperature::real_type_2d_view_type& state,
+[[maybe_unused]] void ablate::eos::tChem2::Temperature::runDeviceBatch(typename UseThisTeamPolicy<exec_space>::type& policy, const Temperature::real_type_2d_view_type& state,
                                                                       const Temperature::real_type_1d_view_type& internalEnergyRef, const Temperature::real_type_2d_view_type& enthalpyMass,
                                                                       const Temperature::real_type_1d_view_type& enthalpyReference, const Temperature::kinetic_model_type& kmcd) {
-    ablate::eos::tChem::impl::Temperature_TemplateRun("ablate::eos::tChem::Temperature::runDeviceBatch", policy, state, internalEnergyRef, enthalpyMass, enthalpyReference, kmcd);
+    ablate::eos::tChem2::impl::Temperature_TemplateRun("ablate::eos::tChem::Temperature::runDeviceBatch", policy, state, internalEnergyRef, enthalpyMass, enthalpyReference, kmcd);
 }
 
-[[maybe_unused]] void ablate::eos::tChem::Temperature::runHostBatch(const typename UseThisTeamPolicy<host_exec_space>::type& policy,
-                                                                    const ablate::eos::tChem::Temperature::real_type_2d_view_host_type& state,
-                                                                    const ablate::eos::tChem::Temperature::real_type_1d_view_host_type& internalEnergyRef,
+[[maybe_unused]] void ablate::eos::tChem2::Temperature::runHostBatch(const typename UseThisTeamPolicy<host_exec_space>::type& policy,
+                                                                    const ablate::eos::tChem2::Temperature::real_type_2d_view_host_type& state,
+                                                                    const ablate::eos::tChem2::Temperature::real_type_1d_view_host_type& internalEnergyRef,
                                                                     const Temperature::real_type_2d_view_host_type& enthalpyMass, const Temperature::real_type_1d_view_host_type& enthalpyReference,
-                                                                    const ablate::eos::tChem::Temperature::kinetic_model_host_type& kmcd) {
-    ablate::eos::tChem::impl::Temperature_TemplateRun("ablate::eos::tChem::Temperature::runHostBatch", policy, state, internalEnergyRef, enthalpyMass, enthalpyReference, kmcd);
+                                                                    const ablate::eos::tChem2::Temperature::kinetic_model_host_type& kmcd) {
+    ablate::eos::tChem2::impl::Temperature_TemplateRun("ablate::eos::tChem::Temperature::runHostBatch", policy, state, internalEnergyRef, enthalpyMass, enthalpyReference, kmcd);
 }
