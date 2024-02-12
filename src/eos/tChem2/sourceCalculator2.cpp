@@ -11,27 +11,27 @@
 
 #include "zerork_cfd_plugin.h"
 
-void ablate::eos::tChem2::SourceCalculator2::ChemistryConstraints::Set(const std::shared_ptr<ablate::parameters::Parameters>& options) {
-    if (options) {
-        dtMin = options->Get("dtMin", dtMin);
-        dtMax = options->Get("dtMax", dtMax);
-        dtDefault = options->Get("dtDefault", dtDefault);
-        dtEstimateFactor = options->Get("dtEstimateFactor", dtEstimateFactor);
-        relToleranceTime = options->Get("relToleranceTime", relToleranceTime);
-        absToleranceTime = options->Get("absToleranceTime", absToleranceTime);
-        relToleranceNewton = options->Get("relToleranceNewton", relToleranceNewton);
-        absToleranceNewton = options->Get("absToleranceNewton", absToleranceNewton);
-        maxNumNewtonIterations = options->Get("maxNumNewtonIterations", maxNumNewtonIterations);
-        numTimeIterationsPerInterval = options->Get("numTimeIterationsPerInterval", numTimeIterationsPerInterval);
-        jacobianInterval = options->Get("jacobianInterval", jacobianInterval);
-        maxAttempts = options->Get("maxAttempts", maxAttempts);
-        thresholdTemperature = options->Get("thresholdTemperature", thresholdTemperature);
-        reactorType = options->Get("reactorType", ReactorType::ConstantPressure);
-    }
-}
+//void ablate::eos::tChem2::SourceCalculator2::ChemistryConstraints::Set(const std::shared_ptr<ablate::parameters::Parameters>& options) {
+//    if (options) {
+//        dtMin = options->Get("dtMin", dtMin);
+//        dtMax = options->Get("dtMax", dtMax);
+//        dtDefault = options->Get("dtDefault", dtDefault);
+//        dtEstimateFactor = options->Get("dtEstimateFactor", dtEstimateFactor);
+//        relToleranceTime = options->Get("relToleranceTime", relToleranceTime);
+//        absToleranceTime = options->Get("absToleranceTime", absToleranceTime);
+//        relToleranceNewton = options->Get("relToleranceNewton", relToleranceNewton);
+//        absToleranceNewton = options->Get("absToleranceNewton", absToleranceNewton);
+//        maxNumNewtonIterations = options->Get("maxNumNewtonIterations", maxNumNewtonIterations);
+//        numTimeIterationsPerInterval = options->Get("numTimeIterationsPerInterval", numTimeIterationsPerInterval);
+//        jacobianInterval = options->Get("jacobianInterval", jacobianInterval);
+//        maxAttempts = options->Get("maxAttempts", maxAttempts);
+//        thresholdTemperature = options->Get("thresholdTemperature", thresholdTemperature);
+//        reactorType = options->Get("reactorType", ReactorType::ConstantPressure);
+//    }
+//}
 
 ablate::eos::tChem2::SourceCalculator2::SourceCalculator2(const std::vector<domain::Field>& fields, const std::shared_ptr<TChem2> eosIn,
-                                                       ablate::eos::tChem2::SourceCalculator2::ChemistryConstraints constraints, const ablate::domain::Range& cellRange)
+                                                          ablate::eos::tChem::SourceCalculator::ChemistryConstraints constraints, const ablate::domain::Range& cellRange)
     : chemistryConstraints(constraints), eos(eosIn), numberSpecies(eosIn->GetSpeciesVariables().size()) {
     // determine the number of required cells
     std::size_t numberCells = cellRange.end - cellRange.start;
@@ -71,10 +71,10 @@ ablate::eos::tChem2::SourceCalculator2::SourceCalculator2(const std::vector<doma
     // determine the number of equations
     ordinal_type numberOfEquations;
     switch (chemistryConstraints.reactorType) {
-        case ReactorType::ConstantPressure:
+        case tChem::SourceCalculator::ReactorType::ConstantPressure:
             numberOfEquations = ::tChemLib::Impl::IgnitionZeroD_Problem<real_type, Tines::UseThisDevice<host_exec_space>::type>::getNumberOfTimeODEs(kineticModelGasConstData);
             break;
-        case ReactorType::ConstantVolume:
+        case tChem::SourceCalculator::ReactorType::ConstantVolume:
             numberOfEquations = ::tChemLib::Impl::ConstantVolumeIgnitionReactor_Problem<real_type, Tines::UseThisDevice<host_exec_space>::type>::getNumberOfTimeODEs(kineticModelGasConstData);
             break;
     }
@@ -229,11 +229,11 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
 
         // determine the required team size
         switch (chemistryConstraints.reactorType) {
-            case ReactorType::ConstantPressure:
+            case tChem::SourceCalculator::ReactorType::ConstantPressure:
                 chemistryFunctionPolicy.set_scratch_size(
                     1, Kokkos::PerTeam(::tChemLib::Scratch<real_type_1d_view>::shmem_size(::tChemLib::IgnitionZeroD::getWorkSpaceSize(kineticModelGasConstDataDevice))));
                 break;
-            case ReactorType::ConstantVolume:
+            case tChem::SourceCalculator::ReactorType::ConstantVolume:
                 chemistryFunctionPolicy.set_scratch_size(
                     1, Kokkos::PerTeam(::tChemLib::Scratch<real_type_1d_view>::shmem_size(::tChemLib::ConstantVolumeIgnitionReactor::getWorkSpaceSize(solveTla, kineticModelGasConstDataDevice))));
                 break;
@@ -241,7 +241,7 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
 
         // assume a constant pressure zero D reaction for each cell
         switch (chemistryConstraints.reactorType) {
-            case ReactorType::ConstantPressure:
+            case tChem::SourceCalculator::ReactorType::ConstantPressure:
                 if (chemistryConstraints.thresholdTemperature != 0.0) {
                     // If there is a thresholdTemperature, use the modified version of IgnitionZeroDTemperatureThreshold
                     ablate::eos::tChem::IgnitionZeroDTemperatureThreshold::runDeviceBatch(chemistryFunctionPolicy,
@@ -269,7 +269,7 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
                                                             kineticModelGasConstDataDevices);
                 }
                 break;
-            case ReactorType::ConstantVolume:
+            case tChem::SourceCalculator::ReactorType::ConstantVolume:
                 // These arrays are not used when solveTla is false
                 real_type_3d_view state_z;
                 if (chemistryConstraints.thresholdTemperature != 0.0) {
