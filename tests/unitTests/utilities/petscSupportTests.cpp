@@ -5,7 +5,6 @@
 #include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
 #include "mpiTestFixture.hpp"
-#include "petscTestErrorChecker.hpp"
 #include "utilities/petscSupport.hpp"
 #include "utilities/petscUtilities.hpp"
 
@@ -156,8 +155,6 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
 
             auto testingParam = GetParam();
 
-
-
             // Create the mesh
             // Note that using -dm_view :mesh.tex:ascii_latex -dm_plex_view_scale 10 -dm_plex_view_numbers_depth 1,0,1 will create a mesh, changing numbers_depth as appropriate
             auto mesh = std::make_shared<domain::BoxMesh>("mesh",
@@ -168,8 +165,6 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
                                                           testingParam.meshEnd,
                                                           std::vector<std::string>{},
                                                           testingParam.meshSimplex);
-
-
 
             PetscInt nCells, *cells;
             PetscMPIInt rank;
@@ -190,8 +185,6 @@ TEST_P(RBFSupportTestFixture_NeighborCells, ShouldReturnNeighborCells) {
             PetscSortInt(testingParam.expectedSizeOfList[rank], testingParam.expectedList[rank].data());  // Should probably enter as a sorted list. Leaving for later.
 
             ASSERT_EQ(nCells, testingParam.expectedSizeOfList[rank]);
-
-
 
             // There may be a better way of doing this, but with DMPlexGetNeighbors sticking with C-only code there may not be.
             // Also note that as cells is a dynamically allocated array there is not way (that I know of) to get the number of elements.
