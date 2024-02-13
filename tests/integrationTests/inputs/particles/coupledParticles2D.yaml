@@ -51,7 +51,12 @@ timestepper:
         name: alpha
         type: FV
         location: sol
-
+      # specify the extra pressure field for testing coupling
+      - !ablate::domain::FieldDescription
+        name: beta
+        type: FV
+        location: sol
+        components: ["beta0", "beta1"]
   # set the initial conditions of the flow field
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
@@ -64,6 +69,10 @@ timestepper:
     # set the alpha field to zero  
     - fieldName: "alpha"
       field: 0.0
+
+    # set the beta field to zero
+    - fieldName: "beta"
+      field: "0.0, 0.0"
 solvers:
   # the CompressibleFlowSolver is used to just to update the velocity and Yi field, it does not do anything else
   - !ablate::finiteVolume::CompressibleFlowSolver
@@ -73,6 +82,8 @@ solvers:
     monitors:
       - !ablate::monitors::MaxMinAverage
         field: alpha
+      - !ablate::monitors::MaxMinAverage
+        field: beta
 
     # share the existing eos with the compressible flow solver
     eos: *eos
@@ -90,6 +101,7 @@ solvers:
     # only couple the alpha field
     coupledFields:
       - alpha
+      - beta
 
     # all fields except the coordinate must be specified
     fields:
@@ -106,6 +118,10 @@ solvers:
       - !ablate::particles::processes::ArbitraryEulerianSource
         coupledField: alpha
         sourceFunction: 1.0
+      # add an arbitrary source in beta
+      - !ablate::particles::processes::ArbitraryEulerianSource
+        coupledField: beta
+        sourceFunction: "10.0, -10.0"
     # Initialize the specified particle fields
     fieldInitialization:
       - fieldName: ParticleDiameter
