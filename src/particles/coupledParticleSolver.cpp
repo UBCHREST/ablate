@@ -52,14 +52,11 @@ PetscErrorCode ablate::particles::CoupledParticleSolver::PreRHSFunction(TS ts, P
         Vec eulerianFieldSourceVec;
         PetscCall(DMGetGlobalVector(coupledFieldDM, &eulerianFieldSourceVec));
 
-        // This is a little hacky, but we must temporarily set the cell dm in the swarm before the project call each time
-        PetscCall(DMSwarmSetCellDM(swarmDm, coupledFieldDM));
-
         // project from the particle to the subDM vec
         // project the source terms to the global array
         const char* fieldnames[1] = {coupledParticleFieldsNames[f].c_str()};
         Vec fields[1] = {eulerianFieldSourceVec};
-        PetscCall(DMSwarmProjectFields(swarmDm, 1, fieldnames, fields, SCATTER_FORWARD));
+        PetscCall(DMSwarmProjectFields(swarmDm, coupledFieldDM, 1, fieldnames, fields, SCATTER_FORWARD));
 
         // Bring back to the global source vector
         PetscCall(VecISCopy(localEulerianSourceVec, coupledFieldIS, SCATTER_FORWARD, eulerianFieldSourceVec));
@@ -68,9 +65,6 @@ PetscErrorCode ablate::particles::CoupledParticleSolver::PreRHSFunction(TS ts, P
         PetscCall(DMDestroy(&coupledFieldDM));
         PetscCall(ISDestroy(&coupledFieldIS));
     }
-
-    // restore the original cell dm
-    PetscCall(DMSwarmSetCellDM(swarmDm, subDomain->GetDM()));
 
     // Scale the source vector by the current dt so that when integrated the total is the same
     PetscReal flowTimeStep;
