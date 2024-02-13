@@ -78,7 +78,7 @@ class CoupledParticleSolver : public ParticleSolver, public ablate::solver::RHSF
     /**
      * Override the macroStep for particles to enable coupling with the eulerian fields
      */
-    void MacroStepParticles(TS macroTS, bool swarmMigrate = true) override;
+    void MacroStepParticles(TS macroTS, bool swarmMigrate) override;
 
    private:
     //! the processes that add source terms to the particle and domain ts
