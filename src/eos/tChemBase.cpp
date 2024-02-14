@@ -7,7 +7,7 @@
 #include "utilities/kokkosUtilities.hpp"
 #include "utilities/mpiUtilities.hpp"
 
-ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::path mechanismFileIn, const std::shared_ptr<ablate::monitors::logs::Log> &logIn,
+ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::path mechanismFileIn, std::filesystem::path reactionFileIn, std::filesystem::path thermoFileIn, const std::shared_ptr<ablate::monitors::logs::Log> &logIn,
                                   const std::shared_ptr<ablate::parameters::Parameters> &options)
     : ChemistryModel(eosName), mechanismFile(std::move(mechanismFileIn)), log(logIn ? logIn : std::make_shared<ablate::monitors::logs::NullLog>()) {
     // setup/use Kokkos
@@ -27,6 +27,20 @@ ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::p
 
     kineticsModelDataHost = std::make_shared<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<host_exec_space>::type>>(
         tChemLib::createGasKineticModelConstData<typename Tines::UseThisDevice<host_exec_space>::type>(kineticsModel));
+
+
+//    zrm_handle = zerork_reactor_init();
+//    zerork_status_t zerom_status = zerork_reactor_set_mechanism_files(reactionFileIn.c_str(), thermoFileIn.c_str(), zrm_handle);
+    //    zerork_handle zerork_reactor_init();
+    //
+    //    zerork_status_t ZERORK_CFD_PLUGIN_EXPORTS zerork_reactor_read_options_file(const char* options_filename, zerork_handle handle);
+    //
+    //    zerork_status_t ZERORK_CFD_PLUGIN_EXPORTS zerork_reactor_set_mechanism_files(const char* mech_file, const char* therm_file,
+    //                                                                                 zerork_handle handle);
+
+
+
+
 
     // copy the species information
     const auto speciesNamesHost = Kokkos::create_mirror_view(kineticsModelDataDevice->speciesNames);

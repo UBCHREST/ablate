@@ -1,0 +1,80 @@
+# This input runs a zero-dimension ignition delay calculation using the MMA Soot kinetics mechanism.
+
+---
+# metadata for the simulation
+environment:
+  title: _ignitionDelayMMASoot
+  tagDirectory: false
+arguments:
+  petsclimiter_type: none
+# set up the time stepper responsible for marching in time
+timestepper:
+  name: theMainTimeStepper
+  arguments:
+    ts_type: euler
+    ts_max_time: 0.3
+    ts_dt: 1E-4
+  # setup a simple mesh with only a single point
+  domain: !ablate::domain::BoxMesh
+    name: simpleBoxField
+    faces: [ 1 ]
+    lower: [ 0 ]
+    upper: [ 1 ]
+    modifiers:
+      # if using a FVM ghost boundary cells must be added
+      - !ablate::domain::modifiers::GhostBoundaryCells
+    fields:
+      # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
+      # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...) and species mass fractions
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::TChem2  &eos # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked
+          mechFile: MMAReduced.soot.yml
+          reactionFile: MMAReduced.soot.inp
+          thermoFile: MMAReduced.soot.dat
+          options:
+            relToleranceTime: 1.00E-09
+            absToleranceTime: 1.00E-12
+
+  # set the initial conditions of the flow field
+  initialization:
+    # The ablate::finiteVolume::CompressibleFlowFields is a helper class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state:
+        &initState
+        eos: *eos
+        temperature: 1200.0
+        pressure: 101325.0
+        velocity: [ 0.0 ]
+        # the mass fractions must be specified to compute rho, e, etc.
+        other: !ablate::finiteVolume::fieldFunctions::MassFractions
+          # the mass fraction class allows for a subset of mass fractions to be specified.  The rest are assumed zero
+          eos: *eos
+          values:
+            - fieldName: MMETHAC_C5H8O2
+              field: 0.1
+            - fieldName: O2
+              field: 0.9
+
+              
+    # the DensityMassFractions reuses the initState to set the densityMassFractions for all species
+    - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
+      state: *initState
+
+# the basic FiniteVolumeSolver is used with only a single reaction process
+solver: !ablate::finiteVolume::FiniteVolumeSolver
+  id: reactingFlowODE
+  options: { }
+  processes:
+    # without advection/diffusion the Chemistry process is the only one needed
+    - !ablate::finiteVolume::processes::Chemistry
+      eos: *eos
+
+  boundaryConditions: [ ]
+
+  monitors:
+    - !ablate::monitors::IgnitionDelayTemperature
+      eos: *eos
+      location: [ 0.5 ]
+      thresholdTemperature: 1500
+      log: !ablate::monitors::logs::CsvLog
+        name: ignitionDelayTemperature.csv

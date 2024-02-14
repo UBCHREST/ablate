@@ -13,10 +13,10 @@
 #include "zerork_cfd_plugin.h"
 
 ablate::eos::TChem2::TChem2(std::filesystem::path mechanismFileIn, std::filesystem::path reactionFileIn, std::filesystem::path thermoFileIn, std::shared_ptr<ablate::monitors::logs::Log> logIn, const std::shared_ptr<ablate::parameters::Parameters> &options)
-    : TChemBase("TChem2", mechanismFileIn, logIn, options) {}
+    : TChemBase("TChem2", mechanismFileIn,mechanismFileIn,mechanismFileIn, logIn, options) {}
 
 std::shared_ptr<ablate::eos::TChem2::FunctionContext> ablate::eos::TChem2::BuildFunctionContext(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields,
-                                                                                              bool checkDensityYi) const {
+                                                                                                bool checkDensityYi) const {
     // Look for the euler field
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
     if (eulerField == fields.end()) {
@@ -81,14 +81,14 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::TChem2::GetThermodyna
 }
 
 ablate::eos::TChem2::ThermodynamicMassFractionFunction ablate::eos::TChem2::GetThermodynamicMassFractionFunction(ablate::eos::ThermodynamicProperty property,
-                                                                                                               const std::vector<domain::Field> &fields) const {
+                                                                                                                 const std::vector<domain::Field> &fields) const {
     return ThermodynamicMassFractionFunction{.function = std::get<0>(thermodynamicMassFractionFunctions.at(property)),
                                              .context = BuildFunctionContext(property, fields, false),
                                              .propertySize = speciesSizedProperties.count(property) ? (PetscInt)species.size() : 1};
 }
 
 ablate::eos::TChem2::ThermodynamicTemperatureMassFractionFunction ablate::eos::TChem2::GetThermodynamicTemperatureMassFractionFunction(ablate::eos::ThermodynamicProperty property,
-                                                                                                                                     const std::vector<domain::Field> &fields) const {
+                                                                                                                                       const std::vector<domain::Field> &fields) const {
     return ThermodynamicTemperatureMassFractionFunction{.function = std::get<1>(thermodynamicMassFractionFunctions.at(property)),
                                                         .context = BuildFunctionContext(property, fields, false),
                                                         .propertySize = speciesSizedProperties.count(property) ? (PetscInt)species.size() : 1};
@@ -230,7 +230,7 @@ PetscErrorCode ablate::eos::TChem2::InternalSensibleEnergyMassFractionFunction(c
 }
 
 PetscErrorCode ablate::eos::TChem2::InternalSensibleEnergyTemperatureMassFractionFunction(const PetscReal *conserved, const PetscReal *yi, PetscReal temperature, PetscReal *sensibleEnergyTemperature,
-                                                                                         void *ctx) {
+                                                                                          void *ctx) {
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
 
@@ -629,7 +629,7 @@ void ablate::eos::TChem2::FillWorkingVectorFromMassFractions(double density, dou
 }
 
 ablate::eos::EOSFunction ablate::eos::TChem2::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1, ablate::eos::ThermodynamicProperty property2,
-                                                                      std::vector<std::string> otherProperties) const {
+                                                                       std::vector<std::string> otherProperties) const {
     if (otherProperties != std::vector<std::string>{YI}) {
         throw std::invalid_argument("ablate::eos::TChem expects the other properties to be Yi (Species Mass Fractions)");
     }
