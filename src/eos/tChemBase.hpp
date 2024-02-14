@@ -18,6 +18,7 @@
 #include "parameters/parameters.hpp"
 #include "utilities/intErrorChecker.hpp"
 #include "utilities/vectorUtilities.hpp"
+#include "zerork_cfd_plugin.h"
 
 namespace ablate::eos {
 
@@ -30,6 +31,12 @@ class TChemBase : public ChemistryModel {
 
     //! the mechanismFile may be chemkin or yaml based
     const std::filesystem::path mechanismFile;
+
+    const std::filesystem::path reactionFile;
+
+    const std::filesystem::path thermoFile;
+
+
 
     //! an optional log file for tchem echo redirection
     std::shared_ptr<ablate::monitors::logs::Log> log;
@@ -70,9 +77,11 @@ class TChemBase : public ChemistryModel {
      * @param mechFile
      * @param optionalThermoFile
      */
-    explicit TChemBase(const std::string& eosName, std::filesystem::path mechanismFile, const std::shared_ptr<ablate::monitors::logs::Log>& = {},
+    explicit TChemBase(const std::string& eosName, std::filesystem::path mechanismFile, std::filesystem::path reactionFile, std::filesystem::path thermoFile, const std::shared_ptr<ablate::monitors::logs::Log>& = {},
                        const std::shared_ptr<ablate::parameters::Parameters>& options = {});
 
+
+//    zerork_handle zrm_handle;
     /**
      * Returns all elements tracked in this mechanism and their molecular mass
      * @return

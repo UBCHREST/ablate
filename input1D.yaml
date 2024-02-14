@@ -1,0 +1,176 @@
+---
+environment:
+  title: _1DCombustion
+  tagDirectory: false
+arguments: {}
+timestepper:
+  io:
+    interval: 10
+  arguments:
+    ts_type: rk
+    ts_max_time: 0.007
+    ts_max_steps: 5000
+    ts_adapt_type: physicsConstrained
+    ts_adapt_safety: 1.0
+  domain: !ablate::domain::BoxMeshBoundaryCells
+    name: simpleBoxField
+    faces: [50]
+    lower: [ 0.0]
+    upper:
+      - &domainSize
+        0.027686
+    simplex: false
+    options:
+      dm_plex_hash_location: true
+    preModifiers:
+      # distribute the mesh across the mpi rank with ghost cells
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+        ghostCellDepth: 2
+    postModifiers:
+      - !ablate::domain::modifiers::TagLabelInterface
+        # tag the left boundary faces needed to remove the boundary from the interiorFlowRegion
+        leftRegion:
+          name: boundaryCellsLeft
+        rightRegion:
+          name: domain
+        boundaryFaceRegion:
+          name: boundaryFaceLeft
+      - !ablate::domain::modifiers::SubtractLabel
+        # remove the slabBurnerFace from the flowRegion
+        differenceRegion:
+          name: interiorFlowRegion
+        minuendRegion:
+          name: interiorCells
+        subtrahendRegions:
+          - name: boundaryFaceLeft
+        incompleteLabel: true
+      - !ablate::domain::modifiers::GhostBoundaryCells
+          # the DmViewFromOptions should output once with full mesh/dm details
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::TChem2  &eos
+          mechFile: MMAReduced.soot.yml
+          reactionFile: MMAReduced.soot.inp
+          thermoFile: MMAReduced.soot.dat
+          options:
+            relToleranceNewton: 1E-09
+            absToleranceNewton: 1E-12
+            # set a minimum temperature for the chemical kinetics ode integration
+            thresholdTemperature: 560
+        conservedFieldOptions:
+          petscfv_type: leastsquares
+        region:
+          name: domain
+      - !ablate::domain::FieldDescription
+        name: pressure
+        type: FV
+        location: aux
+        region:
+          name: domain
+  initialization:
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state: &flowFieldState
+        eos: *eos
+        temperature: !ablate::mathFunctions::Peak
+            startValues: [300]
+            peakValues: [2800]
+            endValues: [653]
+            peak: 0.0193802
+            end: *domainSize        
+        pressure: 101325.0
+        velocity: "0.0"
+        other: !ablate::finiteVolume::fieldFunctions::MassFractions
+          &massFracs
+          eos: *eos
+          values:
+            - fieldName: O2
+              field: !ablate::mathFunctions::Linear
+                startValues: [0.0]
+                endValues: [1.0]
+                end: *domainSize
+            - fieldName: MMETHAC_C5H8O2
+              field: !ablate::mathFunctions::Linear
+                startValues: [1.0]
+                endValues: [0.0]
+                end: *domainSize
+    - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
+      state: *flowFieldState
+
+solvers:
+  - !ablate::finiteVolume::CompressibleFlowSolver
+    id: flowField
+    region:
+      name: interiorFlowRegion
+    eos: *eos
+    parameters:
+      cfl: 0.3
+    monitors:
+    - !ablate::monitors::TimeStepMonitor
+      interval: 1
+    - !ablate::monitors::PhysicsTimeStep
+      interval: 10    
+    additionalProcesses:
+      - !ablate::finiteVolume::processes::PressureGradientScaling
+        &pgs
+        eos: *eos
+        alphaInit: 5.0
+        maxAlphaAllowed: 10.0
+        domainLength: 0.165354
+        log: !ablate::monitors::logs::StdOut
+      - !ablate::finiteVolume::processes::Chemistry
+        eos: *eos
+    fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
+      pgs: *pgs  
+    transport: &transportModel !ablate::eos::transport::Sutherland
+      eos: *eos  
+  - !ablate::boundarySolver::BoundarySolver
+    id: walls
+    region:
+      name: boundaryCellsRight
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::OpenBoundary
+        referencePressure: 101325.0
+        maxAcousticsLength: *domainSize 
+        reflectFactor: 1.5
+        pgs: *pgs
+        eos: *eos
+  - !ablate::boundarySolver::BoundarySolver
+    id: slab boundary
+    region:
+      name: boundaryCellsLeft
+    fieldBoundary:
+      name: boundaryFaceLeft
+    processes:
+      - !ablate::boundarySolver::physics::Sublimation
+        transportModel: *transportModel
+        eos: *eos
+        massFractions: *massFracs
+        pgs: *pgs
+        radiation: !ablate::radiation::SurfaceRadiation
+          id: surfaceflux
+          region:
+            name: interiorFlowRegion
+          rays: 25
+          properties: !ablate::eos::radiationProperties::Zimmer
+            eos: *eos
+        emissivity: 0.91
+        sublimationModel: !ablate::boundarySolver::physics::subModels::TemperatureSublimation
+            properties:
+                specificHeat: 1270
+                conductivity: 0.25 
+                density:  1190.0 
+                sublimationTemperature: 653
+                latentHeatOfFusion: 1462876.0
+            initialization:  !ablate::mathFunctions::Linear
+                start: 0.0
+                end: 0.005 
+                startValues: [600]
+                endValues: [300]
+            options:
+                dm_plex_box_faces: 50
+                dm_plex_box_upper: 0.005 
+
+   
