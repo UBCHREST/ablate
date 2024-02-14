@@ -3,7 +3,7 @@
 ---
 # metadata for the simulation
 environment:
-  title: _ignitionDelayMMArk
+  title: _ignitionDelayMMASoot
   tagDirectory: false
 arguments:
   petsclimiter_type: none
@@ -12,7 +12,7 @@ timestepper:
   name: theMainTimeStepper
   arguments:
     ts_type: euler
-    ts_max_time: 0.001
+    ts_max_time: 0.3
     ts_dt: 1E-4
   # setup a simple mesh with only a single point
   domain: !ablate::domain::BoxMesh
@@ -27,10 +27,10 @@ timestepper:
       # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
       # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...) and species mass fractions
       - !ablate::finiteVolume::CompressibleFlowFields
-        eos: !ablate::eos::zerorkEOS  &eos # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked
-          #mechFile: MMAReduced.yml
-          reactionFile: MMAReduced.inp
-          thermoFile: MMAReduced.dat
+        eos: !ablate::eos::TChem2  &eos # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked
+          mechFile: MMAReduced.soot.yml
+          reactionFile: MMAReduced.soot.inp
+          thermoFile: MMAReduced.soot.dat
           options:
             relToleranceTime: 1.00E-09
             absToleranceTime: 1.00E-12
@@ -51,9 +51,9 @@ timestepper:
           eos: *eos
           values:
             - fieldName: MMETHAC_C5H8O2
-              field: 0.3
+              field: 0.1
             - fieldName: O2
-              field: 0.7
+              field: 0.9
 
               
     # the DensityMassFractions reuses the initState to set the densityMassFractions for all species
