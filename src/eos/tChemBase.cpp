@@ -28,18 +28,16 @@ ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::p
     kineticsModelDataHost = std::make_shared<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<host_exec_space>::type>>(
         tChemLib::createGasKineticModelConstData<typename Tines::UseThisDevice<host_exec_space>::type>(kineticsModel));
 
-
+//    int zerork_error_state = 0;
 //    zrm_handle = zerork_reactor_init();
 //    zerork_status_t zerom_status = zerork_reactor_set_mechanism_files(reactionFileIn.c_str(), thermoFileIn.c_str(), zrm_handle);
-    //    zerork_handle zerork_reactor_init();
-    //
-    //    zerork_status_t ZERORK_CFD_PLUGIN_EXPORTS zerork_reactor_read_options_file(const char* options_filename, zerork_handle handle);
-    //
-    //    zerork_status_t ZERORK_CFD_PLUGIN_EXPORTS zerork_reactor_set_mechanism_files(const char* mech_file, const char* therm_file,
-    //                                                                                 zerork_handle handle);
-
-
-
+//    if(zerom_status != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+//    zerork_status_t status_mech = zerork_reactor_load_mechanism(zrm_handle);
+//    if(status_mech != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+//
+//    if (zerork_error_state!=0) {
+//        throw std::invalid_argument("ablate::eos::TChem2 could read in the chemkin formated mech files.");
+//    }
 
 
     // copy the species information

@@ -4,6 +4,8 @@
 #include <TChem_KineticModelGasConstData.hpp>
 #include "eos/chemistryModel.hpp"
 #include "eos/tChem/sourceCalculator.hpp"
+#include "zerork_cfd_plugin.h"
+#include "zerork/mechanism.h"
 
 namespace tChemLib = TChem;
 
@@ -24,29 +26,6 @@ class SourceCalculator2 : public ChemistryModel::SourceCalculator, private utili
     enum class ReactorType { ConstantPressure, ConstantVolume };
 
     //! hold a struct that can be used for chemistry constraints
-//    struct ChemistryConstraints {
-//        double dtMin = 1.0E-12;
-//        double dtMax = 1.0E-1;
-//        double dtDefault = 1E-4;
-//        double dtEstimateFactor = 1.5;
-//        double relToleranceTime = 1.0E-4;
-//        double absToleranceTime = 1.0E-8;
-//        double relToleranceNewton = 1.0E-6;
-//        double absToleranceNewton = 1.0E-10;
-//
-//        int maxNumNewtonIterations = 100;
-//        int numTimeIterationsPerInterval = 100000;
-//        int jacobianInterval = 1;
-//        int maxAttempts = 4;
-//
-//        // store the reactor type in the chemistry constrains
-//        ReactorType reactorType = ReactorType::ConstantPressure;
-//
-//        // store an optional threshold temperature.  Only compute the reactions if the temperature is above thresholdTemperature
-//        double thresholdTemperature = 0.0;
-//
-//        void Set(const std::shared_ptr<ablate::parameters::Parameters>&);
-//    };
 
     /**
      * create a batch source for this size specified in cellRange
@@ -73,6 +52,8 @@ class SourceCalculator2 : public ChemistryModel::SourceCalculator, private utili
     void AddSource(const ablate::domain::Range& cellRange, Vec localXVec, Vec localFVec) override;
 
    private:
+
+    zerork_handle zrm_handle;
     //! copy of constraints
 //    ChemistryConstraints chemistryConstraints;
     ablate::eos::tChem::SourceCalculator::ChemistryConstraints chemistryConstraints;
