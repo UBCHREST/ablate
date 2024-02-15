@@ -5,7 +5,6 @@
 #include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
 #include "mpiTestFixture.hpp"
-#include "petscTestErrorChecker.hpp"
 #include "utilities/petscSupport.hpp"
 #include "utilities/petscUtilities.hpp"
 
@@ -469,7 +468,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .useCells = PETSC_TRUE,
                                              .returnNeighborVertices = PETSC_FALSE,
                                              .expectedSizeOfList = {12, 11},
-                                             .expectedList = {{38, 40, 41, 45, 56, 58, 60, 71, 113, 114, 132, 141}, {82, 83, 84, 86, 95, 96, 97, 99, 102, 138, 141}}},
+                                             .expectedList = {{38, 40, 41, 45, 56, 58, 60, 71, 135, 136, 154, 163}, {24, 38, 52, 53, 62, 102, 112, 123, 124, 125, 128}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = testingResources::MpiTestParameter("2DTriDistanceVertMPI", 2),
                                              .meshFaces = {10, 10},
                                              .meshStart = {0.0, 0.0},
@@ -483,7 +482,7 @@ INSTANTIATE_TEST_SUITE_P(
                                              .useCells = PETSC_FALSE,
                                              .returnNeighborVertices = PETSC_FALSE,
                                              .expectedSizeOfList = {12, 11},
-                                             .expectedList = {{38, 40, 41, 45, 56, 58, 60, 71, 113, 114, 132, 141}, {82, 83, 84, 86, 95, 96, 97, 99, 102, 138, 141}}},
+                                             .expectedList = {{38, 40, 41, 45, 56, 58, 60, 71, 135, 136, 154, 163}, {24, 38, 52, 53, 62, 102, 112, 123, 124, 125, 128}}},
         (RBFSupportParameters_NeighborCells){.mpiTestParameter = testingResources::MpiTestParameter("2DQuadLevelVert"),
                                              .meshFaces = {10, 10},
                                              .meshStart = {0.0, 0.0},

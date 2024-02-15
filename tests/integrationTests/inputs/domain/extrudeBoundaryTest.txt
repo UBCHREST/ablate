@@ -12,7 +12,7 @@ Labels:
   interiorCells: 1 strata with value/size (1 (81))
   boundaryCells: 1 strata with value/size (1 (51))
   boundaryRegion: 1 strata with value/size (1 (8))
-Vec Object: label_value 1 MPI process
+Vec Object: interiorCells 1 MPI process
   type: seq
 1.
 1.
@@ -872,7 +872,7 @@ Label 'boundaryRegion':
 [0]: 77 (1)
 [0]: 79 (1)
 [0]: 81 (1)
-Vec Object: label_value 1 MPI process
+Vec Object: interiorCells 1 MPI process
   type: seq
   length=24
 ResultFiles:
