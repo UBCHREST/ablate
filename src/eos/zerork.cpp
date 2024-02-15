@@ -1,4 +1,4 @@
-#include "tChemBase.hpp"
+#include "zerork.hpp"
 #include <TChem_EnthalpyMass.hpp>
 #include <utility>
 #include "eos/tChem/sensibleInternalEnergy.hpp"
@@ -7,9 +7,9 @@
 #include "utilities/kokkosUtilities.hpp"
 #include "utilities/mpiUtilities.hpp"
 
-ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::path mechanismFileIn, std::filesystem::path reactionFileIn, std::filesystem::path thermoFileIn, const std::shared_ptr<ablate::monitors::logs::Log> &logIn,
+ablate::eos::zerork::zerork(const std::string &eosName, std::filesystem::path reactionFileIn, std::filesystem::path thermoFileIn, const std::shared_ptr<ablate::monitors::logs::Log> &logIn,
                                   const std::shared_ptr<ablate::parameters::Parameters> &options)
-    : ChemistryModel(eosName), mechanismFile(std::move(mechanismFileIn)), log(logIn ? logIn : std::make_shared<ablate::monitors::logs::NullLog>()) {
+    : ChemistryModel(eosName), log(logIn ? logIn : std::make_shared<ablate::monitors::logs::NullLog>()) {
     // setup/use Kokkos
     ablate::utilities::KokkosUtilities::Initialize();
 
@@ -28,24 +28,28 @@ ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::p
     kineticsModelDataHost = std::make_shared<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<host_exec_space>::type>>(
         tChemLib::createGasKineticModelConstData<typename Tines::UseThisDevice<host_exec_space>::type>(kineticsModel));
 
-//    int zerork_error_state = 0;
-//    zrm_handle = zerork_reactor_init();
-//    zerork_status_t zerom_status = zerork_reactor_set_mechanism_files(reactionFileIn.c_str(), thermoFileIn.c_str(), zrm_handle);
-//    if(zerom_status != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
-//    zerork_status_t status_mech = zerork_reactor_load_mechanism(zrm_handle);
-//    if(status_mech != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
-//
-//    if (zerork_error_state!=0) {
-//        throw std::invalid_argument("ablate::eos::TChem2 could read in the chemkin formated mech files.");
-//    }
+    const std::vector<std::string> species;
+    struct Parameters {
+        PetscReal gamma;
+        PetscReal rGas;
+        PetscInt numberSpecies;
+    };
+    Parameters parameters{};
 
 
-    // copy the species information
-    const auto speciesNamesHost = Kokkos::create_mirror_view(kineticsModelDataDevice->speciesNames);
-    Kokkos::deep_copy(speciesNamesHost, kineticsModelDataDevice->speciesNames);
-    // resize the species data
-    species.resize(kineticsModelDataDevice->nSpec);
-    auto speciesArray = species.data();
+    int zerork_error_state = 0;
+    zrm_handle = zerork_reactor_init();
+    zerork_status_t zerom_status = zerork_reactor_set_mechanism_files(reactionFileIn.c_str(), thermoFileIn.c_str(), zrm_handle);
+    if(zerom_status != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+    zerork_status_t status_mech = zerork_reactor_load_mechanism(zrm_handle);
+    if(status_mech != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+
+    if (zerork_error_state!=0) {
+        throw std::invalid_argument("ablate::eos::TChem2 could read in the chemkin formated mech files.");
+    }
+
+
+
 
     Kokkos::parallel_for("speciesInit", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(0, kineticsModelDataDevice->nSpec), [&speciesArray, speciesNamesHost](const auto i) {
         speciesArray[i] = std::string(&speciesNamesHost(i, 0));
@@ -88,7 +92,7 @@ ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::p
     constraints.Set(options);
 }
 
-void ablate::eos::TChemBase::View(std::ostream &stream) const {
+void ablate::eos::zerork::View(std::ostream &stream) const {
     stream << "EOS: " << type << std::endl;
     stream << "\tmechFile: " << mechanismFile << std::endl;
     stream << "\tnumberSpecies: " << species.size() << std::endl;

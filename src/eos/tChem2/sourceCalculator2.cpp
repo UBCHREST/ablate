@@ -9,26 +9,8 @@
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/stringUtilities.hpp"
 
-#include "zerork_cfd_plugin.h"
 
-//void ablate::eos::tChem2::SourceCalculator2::ChemistryConstraints::Set(const std::shared_ptr<ablate::parameters::Parameters>& options) {
-//    if (options) {
-//        dtMin = options->Get("dtMin", dtMin);
-//        dtMax = options->Get("dtMax", dtMax);
-//        dtDefault = options->Get("dtDefault", dtDefault);
-//        dtEstimateFactor = options->Get("dtEstimateFactor", dtEstimateFactor);
-//        relToleranceTime = options->Get("relToleranceTime", relToleranceTime);
-//        absToleranceTime = options->Get("absToleranceTime", absToleranceTime);
-//        relToleranceNewton = options->Get("relToleranceNewton", relToleranceNewton);
-//        absToleranceNewton = options->Get("absToleranceNewton", absToleranceNewton);
-//        maxNumNewtonIterations = options->Get("maxNumNewtonIterations", maxNumNewtonIterations);
-//        numTimeIterationsPerInterval = options->Get("numTimeIterationsPerInterval", numTimeIterationsPerInterval);
-//        jacobianInterval = options->Get("jacobianInterval", jacobianInterval);
-//        maxAttempts = options->Get("maxAttempts", maxAttempts);
-//        thresholdTemperature = options->Get("thresholdTemperature", thresholdTemperature);
-//        reactorType = options->Get("reactorType", ReactorType::ConstantPressure);
-//    }
-//}
+#include "zerork_cfd_plugin.h"
 
 ablate::eos::tChem2::SourceCalculator2::SourceCalculator2(const std::vector<domain::Field>& fields, const std::shared_ptr<TChem2> eosIn,
                                                           ablate::eos::tChem::SourceCalculator::ChemistryConstraints constraints, const ablate::domain::Range& cellRange)
@@ -117,6 +99,30 @@ ablate::eos::tChem2::SourceCalculator2::SourceCalculator2(const std::vector<doma
         throw std::invalid_argument("ablate::eos::tChem::BatchSource requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD Field");
     }
     densityYiId = densityYiField->id;
+
+
+
+
+    int zerork_error_state = 0;
+    zrm_handle = zerork_reactor_init();
+//    zerork_status_t zerom_status = zerork_reactor_set_mechanism_files(eos::TChemBase::reactionFile.c_str(), eos::TChemBase::thermoFile.c_str(), zrm_handle);
+    zerork_status_t zerom_status = zerork_reactor_set_mechanism_files("MMAReduced.inp", "MMAReduced.dat", zrm_handle);
+    if(zerom_status != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+    zerork_status_t zerom_status2 = zerork_reactor_set_string_option("mechanism_parsing_log_filename","mech.cklog",zrm_handle);
+    zerork_status_t status_mech = zerork_reactor_load_mechanism(zrm_handle);
+//    if(status_mech != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+    zerork_status_t status_other = zerork_reactor_set_int_option("constant_volume", 1, zrm_handle);
+    if(status_other != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+
+    if (zerork_error_state!=0) {
+        throw std::invalid_argument("ablate::eos::TChem2 can only read inp and dat files.");
+    }
+
+
+
+
+
+
 }
 
 void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain::Range& cellRange, PetscReal time, PetscReal dt, Vec globFlowVec) {
@@ -186,6 +192,46 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
         internalEnergyRefHost[chemIndex] = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
     });
 
+
+//zerork state load up
+    int nSpc=kineticModelGasConstDataDevice.nSpec; // Number of Species
+    int nState=nSpc+1;
+    int nSpcStride = nSpc;
+
+    int nReactors = numberCells;
+
+    //Set up reactor initial states
+    int nReactorsAlloc = nReactors;
+    std::vector<double> reactorT(nReactors);
+    std::vector<double> reactorP(nReactors);
+    std::vector<double> reactorMassFrac(nReactors*nSpc);
+//    std::vector<double> reactorDPDT(nReactors,0.5);
+//    std::vector<double> reactorCost(nReactors);
+//    std::vector<double> reactorGpu(nReactors);
+//    std::vector<double> reactorESRC(nReactors, inputFileDB.e_src());
+//    std::vector<double> reactorYsrc(nReactors*nSpc, inputFileDB.y_src());
+//    std::vector<double> reactorIDT(nReactors,-1.0);
+//    std::vector<int> log_species_indexes(0);
+//    std::vector<std::string> log_species_names = inputFileDB.log_species();
+
+
+
+    for(int k=0; k<nReactors; ++k) {
+
+        double val=0.;
+        for(int j=0;j<nSpc;++j) {
+            reactorMassFrac[k*nSpc+j] = 1/nSpc;
+        }
+
+        reactorT[k] = 1000;
+        reactorP[k] = 101325;
+
+    }
+
+
+
+
+
     // copy from host to device
     Kokkos::deep_copy(internalEnergyRefDevice, internalEnergyRefHost);
     Kokkos::deep_copy(stateDevice, stateHost);
@@ -238,6 +284,9 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
                     1, Kokkos::PerTeam(::tChemLib::Scratch<real_type_1d_view>::shmem_size(::tChemLib::ConstantVolumeIgnitionReactor::getWorkSpaceSize(solveTla, kineticModelGasConstDataDevice))));
                 break;
         }
+
+
+
 
         // assume a constant pressure zero D reaction for each cell
         switch (chemistryConstraints.reactorType) {
@@ -307,6 +356,15 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
 
                 break;
         }
+
+        // Solve for the state with zerork
+        zerork_status_t flag = ZERORK_STATUS_SUCCESS;
+        flag = zerork_reactor_solve(1, 0, 0.001, nReactors, &reactorT[0], &reactorP[0],
+                                    &reactorMassFrac[0], zrm_handle);
+
+        if(flag != ZERORK_STATUS_SUCCESS) printf("Oo something went wrong during zreork integration...");
+
+
 
         // check the output pressure, if it is zero the integration failed
         auto endStateDeviceLocal = endStateDevice;
