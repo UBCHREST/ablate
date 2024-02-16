@@ -119,8 +119,9 @@ ablate::eos::tChem2::SourceCalculator2::SourceCalculator2(const std::vector<doma
     zerork_status_t zerom_status2 = zerork_reactor_set_string_option("mechanism_parsing_log_filename","mech.cklog",zrm_handle);
     zerork_status_t status_mech = zerork_reactor_load_mechanism(zrm_handle);
 //    if(status_mech != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
-    zerork_status_t status_other = zerork_reactor_set_int_option("constant_volume", 1, zrm_handle);
+    zerork_status_t status_other = zerork_reactor_set_int_option("constant_volume", 0, zrm_handle);
     if(status_other != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+
 
     if (zerork_error_state!=0) {
         throw std::invalid_argument("ablate::eos::TChem2 can only read inp and dat files.");
@@ -258,10 +259,14 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
         // compute the internal energy needed to compute temperature
         sensibleenergy2[k]= eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
 
-        for (int s = 0; s < nSpc; s++) {
+        double enthalpymix = mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[k*nSpc]);
 
+        sensibleenergy2[k] += enthalpymix;
 
-        }
+//        for (int s = 0; s < nSpc; s++) {
+//
+//
+//        }
 
         double temp = mech->getTemperatureFromEY(sensibleenergy2[k], &reactorMassFrac[k*nSpc], 2000);
 
@@ -303,7 +308,7 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
 
         for (int s = 0; s < nSpc; s++) {
 //            sourceZeroRKAtI[k] += (ys2[k * nSpc + s] - reactorMassFrac[k * nSpc + s]) * enthalpyOfFormationLocal[k + s];
-            sourceZeroRKAtI[k * nSpc] += (ys2[k * nSpc + s] - reactorMassFrac[k * nSpc + s]) * 0;
+            sourceZeroRKAtI[k * nSpc] += (ys2[k * nSpc + s] - reactorMassFrac[k * nSpc + s]) * enthapyOfFormation[s];
         }
 
         for (int s = 0; s < nSpc; ++s) {
@@ -492,9 +497,23 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
             Impl::StateVector<real_type_1d_view> stateVector(nSpecLocal, stateAtI);
             const auto ys = stateVector.MassFractions();
 
+            std::vector<double> ystart(nSpecLocal);
+            for (int k = 0;k<nSpecLocal;k++){
+                ystart[k]=ys(k);
+            }
+//            std::vector<double> ystart = stateVector.MassFractions();
+
             const auto endStateAtI = Kokkos::subview(endStateDeviceLocal, chemIndex, Kokkos::ALL());
             Impl::StateVector<real_type_1d_view> endStateVector(nSpecLocal, endStateAtI);
             const auto ye = endStateVector.MassFractions();
+
+            std::vector<double> yend(nSpecLocal);
+            std::vector<double> ydiff(nSpecLocal);
+            for (int k = 0;k<nSpecLocal;k++){
+                yend[k]=ye(k);
+                ydiff[k]=ye(k)-ys(k);
+            }
+
 
             // get the source term at this chemIndex
             const auto sourceTermAtI = Kokkos::subview(sourceTermsDeviceLocal, chemIndex, Kokkos::ALL());
@@ -561,26 +580,57 @@ void ablate::eos::tChem2::SourceCalculator2::AddSource(const ablate::domain::Ran
     DM dm;
     VecGetDM(locFVec, &dm) >> utilities::PetscUtilities::checkError;
 
-    // Use a parallel for loop to load up the tChem state
-    Kokkos::parallel_for("stateLoadHost", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(cellRange.start, cellRange.end), [&](const auto i) {
-        // get the host data from the petsc field
-        const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
-        const std::size_t chemIndex = i - cellRange.start;
+    bool usetchemsources = true;
+    auto numberCells = cellRange.end - cellRange.start;
 
-        // Get the current state variables for this cell
-        PetscScalar* eulerSource = nullptr;
-        DMPlexPointLocalFieldRef(dm, cell, eulerId, fArray, &eulerSource) >> utilities::PetscUtilities::checkError;
-        PetscScalar* densityYiSource = nullptr;
-        DMPlexPointLocalFieldRef(dm, cell, densityYiId, fArray, &densityYiSource) >> utilities::PetscUtilities::checkError;
+    if (usetchemsources) {
+        // Use a parallel for loop to load up the tChem state
+        Kokkos::parallel_for("stateLoadHost", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(cellRange.start, cellRange.end), [&](const auto i) {
+            // get the host data from the petsc field
+            const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
+            const std::size_t chemIndex = i - cellRange.start;
 
-        // cast the state at i to a state vector
-        const auto sourceAtI = Kokkos::subview(sourceTermsHost, chemIndex, Kokkos::ALL());
+            // Get the current state variables for this cell
+            PetscScalar* eulerSource = nullptr;
+            DMPlexPointLocalFieldRef(dm, cell, eulerId, fArray, &eulerSource) >> utilities::PetscUtilities::checkError;
+            PetscScalar* densityYiSource = nullptr;
+            DMPlexPointLocalFieldRef(dm, cell, densityYiId, fArray, &densityYiSource) >> utilities::PetscUtilities::checkError;
 
-        eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] += sourceAtI[0];
-        for (std::size_t sp = 0; sp < numberSpecies; sp++) {
-            densityYiSource[sp] += sourceAtI(sp + 1);
+            // cast the state at i to a state vector
+            const auto sourceAtI = Kokkos::subview(sourceTermsHost, chemIndex, Kokkos::ALL());
+
+            std::vector <double> sources(numberSpecies+1);
+
+            eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] += sourceAtI[0];
+            sources[0]=sourceAtI(0);
+            for (std::size_t sp = 0; sp < numberSpecies; sp++) {
+                densityYiSource[sp] += sourceAtI(sp + 1);
+                sources[sp+1]=sourceAtI(sp + 1);
+            }
+            double a=1.;
+        });
+    } else{
+
+
+        for (int k = 0 ; k<numberCells;k++) {
+            const PetscInt cell = cellRange.points ? cellRange.points[k] : k;
+            const std::size_t chemIndex = k - cellRange.start;
+
+            // Get the current state variables for this cell
+            PetscScalar* eulerSource = nullptr;
+            DMPlexPointLocalFieldRef(dm, cell, eulerId, fArray, &eulerSource) >> utilities::PetscUtilities::checkError;
+            PetscScalar* densityYiSource = nullptr;
+            DMPlexPointLocalFieldRef(dm, cell, densityYiId, fArray, &densityYiSource) >> utilities::PetscUtilities::checkError;
+
+            // cast the state at i to a state vector
+            const auto sourceAtI = Kokkos::subview(sourceTermsHost, chemIndex, Kokkos::ALL());
+
+            eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] += sourceAtI[0];
+            for (std::size_t sp = 0; sp < numberSpecies; sp++) {
+                densityYiSource[sp] += sourceAtI(sp + 1);
+            }
         }
-    });
+    }
 
     // cleanup
     VecRestoreArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
