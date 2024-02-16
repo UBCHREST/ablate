@@ -13,7 +13,7 @@ timestepper:
   arguments:
     ts_type: euler
     ts_max_time: 0.3
-    ts_dt: 1E-4
+    ts_dt: 1E-5
   # setup a simple mesh with only a single point
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
@@ -28,9 +28,9 @@ timestepper:
       # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...) and species mass fractions
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: !ablate::eos::TChem2  &eos # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked
-          mechFile: MMAReduced.soot.yml
-          reactionFile: MMAReduced.soot.inp
-          thermoFile: MMAReduced.soot.dat
+          mechFile: MMAReduced.yml
+          reactionFile: MMAReduced.inp
+          thermoFile: MMAReduced.dat
           options:
             relToleranceTime: 1.00E-09
             absToleranceTime: 1.00E-12
@@ -42,7 +42,7 @@ timestepper:
       state:
         &initState
         eos: *eos
-        temperature: 1200.0
+        temperature: 2000.0
         pressure: 101325.0
         velocity: [ 0.0 ]
         # the mass fractions must be specified to compute rho, e, etc.
@@ -75,6 +75,6 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
     - !ablate::monitors::IgnitionDelayTemperature
       eos: *eos
       location: [ 0.5 ]
-      thresholdTemperature: 1500
+      thresholdTemperature: 2500
       log: !ablate::monitors::logs::CsvLog
         name: ignitionDelayTemperature.csv

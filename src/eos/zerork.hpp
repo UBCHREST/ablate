@@ -7,13 +7,13 @@
 #include "TChem_KineticModelData.hpp"
 #include "chemistryModel.hpp"
 #include "eos.hpp"
-#include "eos/tChem/pressure.hpp"
-#include "eos/tChem/sensibleEnthalpy.hpp"
-#include "eos/tChem/sensibleInternalEnergy.hpp"
-#include "eos/tChem/sourceCalculator.hpp"
-#include "eos/tChem2/sourceCalculator2.hpp"
-#include "eos/tChem/speedOfSound.hpp"
-#include "eos/tChem/temperature.hpp"
+#include "eos/zerork/pressure.hpp"
+#include "eos/zerork/sensibleEnthalpy.hpp"
+#include "eos/zerork/sensibleInternalEnergy.hpp"
+#include "eos/zerork/sourceCalculatorZeroRK.hpp"
+#include "eos/zerork/sourceCalculatorZeroRK.hpp"
+#include "eos/zerork/speedOfSound.hpp"
+#include "eos/zerork/temperature.hpp"
 #include "monitors/logs/log.hpp"
 #include "parameters/parameters.hpp"
 #include "utilities/intErrorChecker.hpp"
@@ -308,20 +308,20 @@ class zerork : public ChemistryModel {
     std::map<ThermodynamicProperty, std::tuple<ThermodynamicStaticFunction, ThermodynamicTemperatureStaticFunction, std::function<ordinal_type(ordinal_type)>>> thermodynamicFunctions = {
         {ThermodynamicProperty::Density, {DensityFunction, DensityTemperatureFunction, [](auto) { return 0; }}},
         {ThermodynamicProperty::Pressure,
-         {PressureFunction, PressureTemperatureFunction, ablate::eos::tChem::Temperature::getWorkSpaceSize}} /**note size of temperature because it has a larger scratch space */,
-        {ThermodynamicProperty::Temperature, {TemperatureFunction, TemperatureTemperatureFunction, ablate::eos::tChem::Temperature::getWorkSpaceSize}},
-        {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction, InternalSensibleEnergyTemperatureFunction, ablate::eos::tChem::SensibleInternalEnergy::getWorkSpaceSize}},
-        {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyFunction, SensibleEnthalpyTemperatureFunction, ablate::eos::tChem::SensibleEnthalpy::getWorkSpaceSize}},
+         {PressureFunction, PressureTemperatureFunction, ablate::eos::zerork::Temperature::getWorkSpaceSize}} /**note size of temperature because it has a larger scratch space */,
+        {ThermodynamicProperty::Temperature, {TemperatureFunction, TemperatureTemperatureFunction, ablate::eos::zerork::Temperature::getWorkSpaceSize}},
+        {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction, InternalSensibleEnergyTemperatureFunction, ablate::eos::zerork::SensibleInternalEnergy::getWorkSpaceSize}},
+        {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyFunction, SensibleEnthalpyTemperatureFunction, ablate::eos::zerork::SensibleEnthalpy::getWorkSpaceSize}},
         {ThermodynamicProperty::SpecificHeatConstantVolume, {SpecificHeatConstantVolumeFunction, SpecificHeatConstantVolumeTemperatureFunction, [](auto nSpec) { return nSpec; }}},
         {ThermodynamicProperty::SpecificHeatConstantPressure,
          {SpecificHeatConstantPressureFunction,
           SpecificHeatConstantPressureTemperatureFunction,
-          ablate::eos::tChem::Temperature::getWorkSpaceSize}} /**note size of temperature because it has a larger scratch space */,
-        {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundFunction, SpeedOfSoundTemperatureFunction, ablate::eos::tChem::SpeedOfSound::getWorkSpaceSize}},
+          ablate::eos::zerork::Temperature::getWorkSpaceSize}} /**note size of temperature because it has a larger scratch space */,
+        {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundFunction, SpeedOfSoundTemperatureFunction, ablate::eos::zerork::SpeedOfSound::getWorkSpaceSize}},
         {ThermodynamicProperty::SpeciesSensibleEnthalpy,
          {SpeciesSensibleEnthalpyFunction,
           SpeciesSensibleEnthalpyTemperatureFunction,
-          ablate::eos::tChem::Temperature::getWorkSpaceSize}} /**note size of temperature because it has a larger scratch space */
+          ablate::eos::zerork::Temperature::getWorkSpaceSize}} /**note size of temperature because it has a larger scratch space */
     };
 };
 

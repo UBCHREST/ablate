@@ -1,4 +1,4 @@
-#include "sourceCalculator2.hpp"
+#include "sourceCalculatorZeroRK.hpp"
 #include <TChem_ConstantVolumeIgnitionReactor.hpp>
 #include <TChem_Impl_IgnitionZeroD_Problem.hpp>
 #include <algorithm>
@@ -109,9 +109,7 @@ ablate::eos::tChem2::SourceCalculator2::SourceCalculator2(const std::vector<doma
 
     //We already parsed in reactor manager no need to have another log
     // TODO: Avoid parsing twice/having two mechanisms
-    mech = std::make_unique<zerork::mechanism>("MMAReduced.inp", "MMAReduced.dat", cklogfilename);
-
-//    zerork::mechanism mech("MMAReduced.inp", "MMAReduced.dat", cklogfilename);
+    mech = zerork::mechanism("MMAReduced.inp", "MMAReduced.dat", cklogfilename);
 
 //    zerork_status_t zerom_status = zerork_reactor_set_mechanism_files(eos::TChemBase::reactionFile.c_str(), eos::TChemBase::thermoFile.c_str(), zrm_handle);
     zerork_status_t zerom_status = zerork_reactor_set_mechanism_files("MMAReduced.inp", "MMAReduced.dat", zrm_handle);
@@ -216,7 +214,7 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
     std::vector<double> sensibleenergy2(nReactors);
     std::vector<double> velmag2(nReactors);
     std::vector<double> reactorMassFrac(nReactors*nSpc);
-    std::vector<double> enthapyOfFormation(nSpc);
+
 
     //load up current state from petsc
     const double refTemperature = 300.0;
@@ -237,18 +235,18 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
 
         real_type yiSum = 0.0;
         for (ordinal_type s = 0; s < nSpc - 1; s++) {
-            reactorMassFrac[k * nSpc + s] = PetscMax(0.0, flowDensityField[k * nSpc + s] / density);
-            reactorMassFrac[k * nSpc + s] = PetscMin(1.0, reactorMassFrac[k * nSpc + s]);
+            reactorMassFrac[k + s] = PetscMax(0.0, flowDensityField[k + s] / density);
+            reactorMassFrac[k + s] = PetscMin(1.0, reactorMassFrac[k + s]);
             yiSum += reactorMassFrac[k + s];
         }
         if (yiSum > 1.0) {
             for (PetscInt s = 0; s < nSpc - 1; s++) {
                 // Limit the bounds
-                reactorMassFrac[k * nSpc + s] /= yiSum;
+                reactorMassFrac[k + s] /= yiSum;
             }
     //        reactorMassFrac[nSpc - 1] = 0.0;
         } else {
-            reactorMassFrac[k * nSpc + nSpc - 1] = 1.0 - yiSum;
+            reactorMassFrac[k + nSpc - 1] = 1.0 - yiSum;
         }
 
         // Compute the internal energy from total ener
@@ -260,9 +258,18 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
         // compute the internal energy needed to compute temperature
         sensibleenergy2[k]= eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
 
-        double temp = mech->getTemperatureFromEY(sensibleenergy2[k], &reactorMassFrac[k*nSpc], 1000);
-        reactorT[k] = temp;
-        reactorP[k] = 101325;
+
+
+
+    //        double val=0.;
+    //        for(int j=0;j<nSpc;++j) {
+    //            reactorMassFrac[k*nSpc+j] = 0.;
+    //        }
+
+    //        reactorT[k] = 2000;
+
+//        double temp = mech.getTemperatureFromEY(sensibleenergy2[k], reactorMassFrac[k], 1000)
+//            reactorP[k] = 101325;
 
     }
 
@@ -277,11 +284,7 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
 
     if(flag != ZERORK_STATUS_SUCCESS) printf("Oo something went wrong during zreork integration...");
 
-    for (ordinal_type s = 0; s < nSpc - 1; s++) {
-        std::vector<double> tempvec(nSpc,0.);
-        tempvec[s]=1;
-        enthapyOfFormation[s] = mech->getMassEnthalpyFromTY(298.15, reinterpret_cast<const double*>(&tempvec));
-    }
+
 
     //Create source terms
     std::vector<double> sourceZeroRKAtI(nReactors * (nState));
@@ -291,21 +294,24 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
     for(int k=0; k<nReactors; ++k) {
 
         for (int s = 0; s < nSpc; s++) {
-//            sourceZeroRKAtI[k] += (ys2[k * nSpc + s] - reactorMassFrac[k * nSpc + s]) * enthalpyOfFormationLocal[k + s];
-            sourceZeroRKAtI[k * nSpc] += (ys2[k * nSpc + s] - reactorMassFrac[k * nSpc + s]) * 0;
+//            sourceZeroRKAtI[k] += (ys2[k + s] - reactorMassFrac[k + s]) * enthalpyOfFormationLocal[k + s];
+            sourceZeroRKAtI[k] += (ys2[k + s] - reactorMassFrac[k + s]) * 0;
         }
 
         for (int s = 0; s < nSpc; ++s) {
             // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-            sourceZeroRKAtI[k * nSpc + s + 1] = reactorMassFrac[k * nSpc + s] - ys2[k * nSpc + s];
+            sourceZeroRKAtI[k + s + 1] = reactorMassFrac[k + s] - ys2[k + s];
         }
 
         // Now scale everything by density/dt
         for (int j = 0; j < nState; ++j) {
             // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-            sourceZeroRKAtI[k * nSpc + j] *= density2[k] / dt;
+            sourceZeroRKAtI[k + j] *= density2[k] / dt;
         }
     }
+
+
+
 
 
 

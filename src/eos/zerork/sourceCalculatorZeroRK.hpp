@@ -56,8 +56,7 @@ class SourceCalculator2 : public ChemistryModel::SourceCalculator, private utili
 
     zerork_handle zrm_handle;
     const char* cklogfilename = "mech2.cklog";
-    std::unique_ptr<zerork::mechanism> mech;
-//        zerork::mechanism mech = zerork::mechanism(nullptr, nullptr, cklogfilename);
+    zerork::mechanism mech = zerork::mechanism(nullptr, nullptr, nullptr);
 
     //! copy of constraints
 //    ChemistryConstraints chemistryConstraints;
