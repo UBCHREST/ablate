@@ -8,7 +8,7 @@
 #include "ignitionZeroDTemperatureThreshold.hpp"
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/stringUtilities.hpp"
-
+#include <numeric>
 
 #include "zerork_cfd_plugin.h"
 
@@ -128,9 +128,6 @@ ablate::eos::tChem2::SourceCalculator2::SourceCalculator2(const std::vector<doma
 
 
 
-
-
-
 }
 
 void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain::Range& cellRange, PetscReal time, PetscReal dt, Vec globFlowVec) {
@@ -217,6 +214,7 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
     std::vector<double> velmag2(nReactors);
     std::vector<double> reactorMassFrac(nReactors*nSpc);
     std::vector<double> enthapyOfFormation(nSpc);
+    std::vector<double> internalenergies(nReactors*nSpc);
 
     //load up current state from petsc
     const double refTemperature = 300.0;
@@ -260,7 +258,19 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
         // compute the internal energy needed to compute temperature
         sensibleenergy2[k]= eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
 
-        double temp = mech->getTemperatureFromEY(sensibleenergy2[k], &reactorMassFrac[k*nSpc], 1000);
+        for (int s = 0; s < nSpc; s++) {
+
+
+        }
+
+        double temp = mech->getTemperatureFromEY(sensibleenergy2[k], &reactorMassFrac[k*nSpc], 2000);
+
+        std::vector<double> energytest(nSpc,0);
+//        mech->getIntEnergy_RT(2000, &energytest[0]);
+        double intener = mech->getMassIntEnergyFromTY(2000, &reactorMassFrac[k*nSpc],&energytest[0]);
+
+        double totalenergy = accumulate(energytest.begin(),energytest.end(),0);
+
         reactorT[k] = temp;
         reactorP[k] = 101325;
 
@@ -280,7 +290,8 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
     for (ordinal_type s = 0; s < nSpc - 1; s++) {
         std::vector<double> tempvec(nSpc,0.);
         tempvec[s]=1;
-        enthapyOfFormation[s] = mech->getMassEnthalpyFromTY(298.15, reinterpret_cast<const double*>(&tempvec));
+//        double* a = &tempvec[0];
+        enthapyOfFormation[s] = mech->getMassEnthalpyFromTY(298.15, &tempvec[0]);
     }
 
     //Create source terms
