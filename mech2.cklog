@@ -2,7 +2,7 @@ Zero-RK Chemkin Format Mechanism Parser
      derived from Cantera CKreader 1.0
      see README for license information
 
-Thu Feb 15 15:08:00 2024
+Fri Feb 16 11:49:32 2024
 
         input file:                 MMAReduced.inp
   species database:                 MMAReduced.dat
@@ -2481,4 +2481,4 @@ reaction 263
    rate coeff:  A, n, E = (1.5E+13, 0, 599.9)
 
 
-Success... elapsed CPU time = 0.009176 s
+Success... elapsed CPU time = 0.009346 s
