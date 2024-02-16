@@ -9,7 +9,7 @@ timestepper:
   arguments:
     ts_type: euler
     ts_max_time: 0.3
-    ts_dt: 1E-4
+    ts_dt: 1E-5
   domain: !<!ablate::domain::BoxMesh>
     name: simpleBoxField
     faces: [1]
@@ -20,9 +20,9 @@ timestepper:
     fields:
       - !<!ablate::finiteVolume::CompressibleFlowFields>
         eos: !<!ablate::eos::TChem2> &1
-          mechFile: MMAReduced.soot.yml
-          reactionFile: MMAReduced.soot.inp
-          thermoFile: MMAReduced.soot.dat
+          mechFile: MMAReduced.yml
+          reactionFile: MMAReduced.inp
+          thermoFile: MMAReduced.dat
           options:
             relToleranceTime: 1.00E-09
             absToleranceTime: 1.00E-12
@@ -30,7 +30,7 @@ timestepper:
     - !<!ablate::finiteVolume::fieldFunctions::Euler>
       state: &2
         eos: *1
-        temperature: 1200.0
+        temperature: 2000.0
         pressure: 101325.0
         velocity: [0.0]
         other: !<!ablate::finiteVolume::fieldFunctions::MassFractions>
@@ -53,6 +53,6 @@ solver: !<!ablate::finiteVolume::FiniteVolumeSolver>
     - !<!ablate::monitors::IgnitionDelayTemperature>
       eos: *1
       location: [0.5]
-      thresholdTemperature: 1500
+      thresholdTemperature: 2500
       log: !<!ablate::monitors::logs::CsvLog>
         name: ignitionDelayTemperature.csv
