@@ -6,6 +6,7 @@
 #include "eos/tChem/sourceCalculator.hpp"
 #include "zerork_cfd_plugin.h"
 #include "zerork/mechanism.h"
+#include "zerork/utilities.h"
 
 namespace tChemLib = TChem;
 
@@ -54,6 +55,10 @@ class SourceCalculator2 : public ChemistryModel::SourceCalculator, private utili
    private:
 
     zerork_handle zrm_handle;
+    const char* cklogfilename = "mech2.cklog";
+    std::unique_ptr<zerork::mechanism> mech;
+//        zerork::mechanism mech = zerork::mechanism(nullptr, nullptr, cklogfilename);
+
     //! copy of constraints
 //    ChemistryConstraints chemistryConstraints;
     ablate::eos::tChem::SourceCalculator::ChemistryConstraints chemistryConstraints;
