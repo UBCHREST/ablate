@@ -1,13 +1,19 @@
-#include "convergenceException.hpp"
-#include "validRange.hpp"
+#include "variableChange.hpp"
 
 #include <domain/subDomain.hpp>
 #include <utility>
 
-ablate::solver::criteria::ValidRange::ValidRange(std::string variableName, double lowerBound, double upperBound, std::shared_ptr<ablate::domain::Region> region)
-    : variableName(std::move(variableName)), lowerBound(lowerBound), upperBound(upperBound), region(std::move(region)) {}
+ablate::solver::criteria::VariableChange::VariableChange(std::string variableName, double convergenceTolerance, ablate::utilities::MathUtilities::Norm convergenceNorm,
+                                                         std::shared_ptr<ablate::domain::Region> region)
+    : variableName(std::move(variableName)), convergenceTolerance(convergenceTolerance), convergenceNorm(convergenceNorm), region(std::move(region)) {}
 
-bool ablate::solver::criteria::ValidRange::CheckConvergence(const ablate::domain::Domain& domain, PetscReal time, PetscInt step, const std::shared_ptr<ablate::monitors::logs::Log>& log) {
+ablate::solver::criteria::VariableChange::~VariableChange() {
+    if (previousValues) {
+        VecDestroy(&previousValues) >> ablate::utilities::PetscUtilities::checkError;
+    }
+}
+
+void ablate::solver::criteria::VariableChange::Initialize(const ablate::domain::Domain& domain) {
     // Get the subdomain for this region
     auto subDomain = domain.GetSubDomain(region);
 
@@ -20,28 +26,56 @@ bool ablate::solver::criteria::ValidRange::CheckConvergence(const ablate::domain
     Vec locVec;
     subDomain->GetFieldLocalVector(field, 0.0, &subIs, &locVec, &subDm) >> ablate::utilities::PetscUtilities::checkError;
 
-    // Get the min and max values
-    PetscScalar min, max;
-    VecMin(locVec, nullptr, &min) >> ablate::utilities::PetscUtilities::checkError;
-    VecMax(locVec, nullptr, &max) >> ablate::utilities::PetscUtilities::checkError;
+    // Create a copy of the local vec
+    VecDuplicate(locVec, &previousValues) >> ablate::utilities::PetscUtilities::checkError;
+    // Set the block size as one so that it only produces one norm value
+    VecSetBlockSize(previousValues, 1) >> ablate::utilities::PetscUtilities::checkError;
+
+    // copy over the current values to use as the previous state
+    VecCopy(locVec, previousValues) >> ablate::utilities::PetscUtilities::checkError;
+
+    // restore
+    subDomain->RestoreFieldLocalVector(field, &subIs, &locVec, &subDm) >> ablate::utilities::PetscUtilities::checkError;
+}
+
+bool ablate::solver::criteria::VariableChange::CheckConvergence(const ablate::domain::Domain& domain, PetscReal time, PetscInt step, const std::shared_ptr<ablate::monitors::logs::Log>& log) {
+    // Get the subdomain for this region
+    auto subDomain = domain.GetSubDomain(region);
+
+    // Look up the field
+    const auto& field = subDomain->GetField(variableName);
+
+    // Get the sub vector
+    IS subIs;
+    DM subDm;
+    Vec locVec;
+    subDomain->GetFieldLocalVector(field, 0.0, &subIs, &locVec, &subDm) >> ablate::utilities::PetscUtilities::checkError;
+
+    // Compute the norm
+    PetscReal norm;
+    ablate::utilities::MathUtilities::ComputeNorm(convergenceNorm, locVec, previousValues, &norm) >> ablate::utilities::PetscUtilities::checkError;
+
+    // Create a copy of the local vec
+    VecCopy(locVec, previousValues) >> ablate::utilities::PetscUtilities::checkError;
 
     // restore
     subDomain->RestoreFieldLocalVector(field, &subIs, &locVec, &subDm) >> ablate::utilities::PetscUtilities::checkError;
 
-    // check upper and lower bounds
-    if (max < lowerBound || min > upperBound) {
-        std::string message = max < lowerBound ? variableName + " all values fall below the the lower bound " + std::to_string(lowerBound) + ". Maximum value is " + std::to_string(max)
-                                               : variableName + " all values exceed the the upper bound " + std::to_string(upperBound) + ". Minimum value is " + std::to_string(min);
-        if (log) {
-            log->Printf("%s\n", message.c_str());
+    // Check to see if converged
+    bool converged = norm < convergenceTolerance;
+    if (log) {
+        if (converged) {
+            log->Printf("\tVariableChange %s converged to %g\n", variableName.c_str(), norm);
+        } else {
+            log->Printf("\tVariableChange %s error: %g\n", variableName.c_str(), norm);
         }
-        throw ConvergenceException(message);
     }
 
-    return true;
+    return converged;
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::solver::criteria::ConvergenceCriteria, ablate::solver::criteria::ValidRange, "This class will stop the convergence iterations if the bounds are exceeded",
-         ARG(std::string, "name", "the variable to check"), ARG(double, "lowerBound", "values lower than this will result in an exception"),
-         ARG(double, "upperBound", "values higher than this will result in an exception"), OPT(ablate::domain::Region, "region", "the region to check for a converged variable"));
+REGISTER(ablate::solver::criteria::ConvergenceCriteria, ablate::solver::criteria::VariableChange, "This class checks for a relative change in the specified variable between checks",
+         ARG(std::string, "name", "the variable to check"), ARG(double, "tolerance", "the tolerance to reach to be considered converged"),
+         ENUM(ablate::utilities::MathUtilities::Norm, "norm", "norm type ('l1','l1_norm','l2', 'linf', 'l2_norm')"),
+         OPT(ablate::domain::Region, "region", "the region to check for a converged variable"));
