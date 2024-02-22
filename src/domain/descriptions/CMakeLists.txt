@@ -1,13 +1,13 @@
 target_sources(ablateLibrary
         PRIVATE
         axisymmetric.cpp
-        fixedSpacingAxis.cpp
-        fixedPointsAxis.cpp
+        generatedAxis.cpp
+        specifiedAxis.cpp
 
         PUBLIC
         meshDescription.hpp
         axisymmetric.hpp
         axisDescription.hpp
-        fixedSpacingAxis.hpp
-        fixedPointsAxis.hpp
+        generatedAxis.hpp
+        specifiedAxis.hpp
         )

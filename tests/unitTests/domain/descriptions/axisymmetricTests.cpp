@@ -1,6 +1,6 @@
 #include <fstream>
 #include "domain/descriptions/axisymmetric.hpp"
-#include "domain/descriptions/fixedSpacingAxis.hpp"
+#include "domain/descriptions/generatedAxis.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 
@@ -102,7 +102,7 @@ INSTANTIATE_TEST_SUITE_P(
     testing::Values(
         // 1 slice, 1 shell
         AxisymmetricMeshDescriptionParameters{
-            .description = std::make_shared<ablate::domain::descriptions::Axisymmetric>(std::make_shared<ablate::domain::descriptions::FixedSpacingAxis>(std::vector<PetscReal>{0.0, 0.0, 0.0}, 0.5, 2),
+            .description = std::make_shared<ablate::domain::descriptions::Axisymmetric>(std::make_shared<ablate::domain::descriptions::GeneratedAxis>(std::vector<PetscReal>{0.0, 0.0, 0.0}, 0.5, 2),
                                                                                         ablate::mathFunctions::Create(1.0), 8, 1),
             .expectedMeshDimension = 3,
             .expectedNumberCells = 8,
@@ -116,7 +116,7 @@ INSTANTIATE_TEST_SUITE_P(
                                    {std::make_shared<ablate::domain::Region>("upperCap"), {{1, 16, 17}, {1, 17, 10}}}}},
         // 2 slices, 1 shell
         AxisymmetricMeshDescriptionParameters{
-            .description = std::make_shared<ablate::domain::descriptions::Axisymmetric>(std::make_shared<ablate::domain::descriptions::FixedSpacingAxis>(std::vector<PetscReal>{0.0, 0.0, 0.0}, 0.5, 3),
+            .description = std::make_shared<ablate::domain::descriptions::Axisymmetric>(std::make_shared<ablate::domain::descriptions::GeneratedAxis>(std::vector<PetscReal>{0.0, 0.0, 0.0}, 0.5, 3),
                                                                                         ablate::mathFunctions::Create(1.0), 8, 1),
             .expectedMeshDimension = 3,
             .expectedNumberCells = 16,
@@ -138,7 +138,7 @@ INSTANTIATE_TEST_SUITE_P(
                                    {std::make_shared<ablate::domain::Region>("upperCap"), {{2, 19, 20}, {2, 19, 26}}}}},
         // 1 slice, 2 shells
         AxisymmetricMeshDescriptionParameters{
-            .description = std::make_shared<ablate::domain::descriptions::Axisymmetric>(std::make_shared<ablate::domain::descriptions::FixedSpacingAxis>(std::vector<PetscReal>{0.0, 0.0, 0.0}, 0.5, 2),
+            .description = std::make_shared<ablate::domain::descriptions::Axisymmetric>(std::make_shared<ablate::domain::descriptions::GeneratedAxis>(std::vector<PetscReal>{0.0, 0.0, 0.0}, 0.5, 2),
                                                                                         ablate::mathFunctions::Create(1.0), 8, 2),
             .expectedMeshDimension = 3,
             .expectedNumberCells = 16,
@@ -161,7 +161,7 @@ INSTANTIATE_TEST_SUITE_P(
                                    {std::make_shared<ablate::domain::Region>("upperCap"), {{1, 10, 11}, {1, 17, 10}, {10, 26, 11, 27}, {10, 26, 17, 33}}}}},
         // 2 slice, 2 shells
         AxisymmetricMeshDescriptionParameters{
-            .description = std::make_shared<ablate::domain::descriptions::Axisymmetric>(std::make_shared<ablate::domain::descriptions::FixedSpacingAxis>(std::vector<PetscReal>{0.0, 0.0, 0.0}, 1.0, 3),
+            .description = std::make_shared<ablate::domain::descriptions::Axisymmetric>(std::make_shared<ablate::domain::descriptions::GeneratedAxis>(std::vector<PetscReal>{0.0, 0.0, 0.0}, 1.0, 3),
                                                                                         ablate::mathFunctions::Create(1.0), 8, 2),
             .expectedMeshDimension = 3,
             .expectedNumberCells = 32,
@@ -203,7 +203,7 @@ INSTANTIATE_TEST_SUITE_P(
                                    {std::make_shared<ablate::domain::Region>("upperCap"), {{2, 19, 20}, {2, 19, 26}, {26, 50, 43, 19}}}}},
         // 2 slice, 2 shells, variable radius
         AxisymmetricMeshDescriptionParameters{
-            .description = std::make_shared<ablate::domain::descriptions::Axisymmetric>(std::make_shared<ablate::domain::descriptions::FixedSpacingAxis>(std::vector<PetscReal>{0.0, 0.0, 0.0}, 2.0, 3),
+            .description = std::make_shared<ablate::domain::descriptions::Axisymmetric>(std::make_shared<ablate::domain::descriptions::GeneratedAxis>(std::vector<PetscReal>{0.0, 0.0, 0.0}, 2.0, 3),
                                                                                         ablate::mathFunctions::Create(".1*z+ 0.5"), 8, 2),
             .expectedMeshDimension = 3,
             .expectedNumberCells = 32,

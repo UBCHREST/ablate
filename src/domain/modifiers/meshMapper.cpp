@@ -88,14 +88,6 @@ void ablate::domain::modifiers::MeshMapper::Modify(const std::vector<double>& in
     mappingFunction->Eval(in.data(), (int)in.size(), 0.0, out);
 }
 
-void ablate::domain::modifiers::MeshMapper::Modify(PetscInt size, PetscReal* coord) const {
-    std::vector<PetscReal> out(size);
-    mappingFunction->Eval(coord, (int)size, 0.0, out);
-
-    // copy back to out
-    std::copy(out.begin(), out.end(), coord);
-}
-
 #include "registrar.hpp"
 REGISTER_PASS_THROUGH(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::MeshMapper, "Maps the x,y,z coordinate of the domain mesh by the given function.",
                       ablate::mathFunctions::MathFunction);

@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_FIXEDPOINTSAXIS_HPP
-#define ABLATELIBRARY_FIXEDPOINTSAXIS_HPP
+#ifndef ABLATELIBRARY_SPECIFIEDAXIS_HPP
+#define ABLATELIBRARY_SPECIFIEDAXIS_HPP
 
 #include <array>
 #include <memory>
@@ -12,7 +12,7 @@ namespace ablate::domain::descriptions {
 /**
  * Describes a simple strait line along the z axis with specified offsets
  */
-class FixedPointsAxis : public ablate::domain::descriptions::AxisDescription {
+class SpecifiedAxis : public ablate::domain::descriptions::AxisDescription {
    private:
     //! Store the start and end location of the mesh
     const std::array<PetscReal, 3> startLocation;
@@ -29,7 +29,7 @@ class FixedPointsAxis : public ablate::domain::descriptions::AxisDescription {
      * @param nodeOffsets z offsets from the start location
      * @param startLocation optional start location (default is {0, 0, 0})
      */
-    explicit FixedPointsAxis(const std::vector<PetscReal>& nodeOffsets, const std::vector<PetscReal>& startLocation = {});
+    explicit SpecifiedAxis(const std::vector<PetscReal>& nodeOffsets, const std::vector<PetscReal>& startLocation = {});
 
     /**
      * Total number of nodes/vertices in the entire mesh
@@ -44,4 +44,4 @@ class FixedPointsAxis : public ablate::domain::descriptions::AxisDescription {
     void SetCoordinate(PetscInt node, PetscReal coordinate[3]) const override;
 };
 }  // namespace ablate::domain::descriptions
-#endif  // ABLATELIBRARY_FIXEDPOINTSAXIS_HPP
+#endif  // ABLATELIBRARY_SPECIFIEDAXIS_HPP

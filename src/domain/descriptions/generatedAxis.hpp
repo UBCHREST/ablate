@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_FIXEDSPACINGAXIS_HPP
-#define ABLATELIBRARY_FIXEDSPACINGAXIS_HPP
+#ifndef ABLATELIBRARY_GENERATEDAXIS_HPP
+#define ABLATELIBRARY_GENERATEDAXIS_HPP
 
 #include <array>
 #include <memory>
@@ -12,7 +12,7 @@ namespace ablate::domain::descriptions {
 /**
  * Describes a simple strait line along the z axis
  */
-class FixedSpacingAxis : public ablate::domain::descriptions::AxisDescription {
+class GeneratedAxis : public ablate::domain::descriptions::AxisDescription {
    private:
     //! Store the start and end location of the mesh
     const std::array<PetscReal, 3> startLocation;
@@ -30,7 +30,7 @@ class FixedSpacingAxis : public ablate::domain::descriptions::AxisDescription {
      * @param length the length of the domain starting at the start coordinate
      * @param numberNodes the number of nodes along the axis
      */
-    FixedSpacingAxis(const std::vector<PetscReal>& startLocation, PetscReal length, PetscInt numberNodes);
+    GeneratedAxis(const std::vector<PetscReal>& startLocation, PetscReal length, PetscInt numberNodes);
 
     /**
      * Total number of nodes/vertices in the entire mesh
