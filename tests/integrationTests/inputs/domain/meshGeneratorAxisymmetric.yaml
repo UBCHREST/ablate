@@ -27,11 +27,13 @@ timestepper:
     name: exampleAxisymmetricMesh
     # specify the axisymmetric mesh description
     description: !ablate::domain::descriptions::Axisymmetric
-      start: [0.0, 0.0, 0.0]
-      length: 2.0
+      axis:
+        start: [0.0, 0.0, 0.0]
+        length: 2.0
+        nodes: 41 # one more node than slice
+
       radius: ".1*z*z+ 0.5"
       numberWedges: 20
-      numberSlices: 40
       numberShells: 10
 
     # setup some dummy fields
