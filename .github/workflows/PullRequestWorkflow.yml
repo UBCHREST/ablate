@@ -52,7 +52,7 @@ jobs:
         run: echo "VERSION=$(docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} cmake --build --preset=ablate-print-version 2>&1 | head -n 1 )" >> $GITHUB_ENV
 
       - name: Checking the version number for the repo
-        uses: mukunku/tag-exists-action@v1.4.0
+        uses: mukunku/tag-exists-action@v1.6.0
         id: checkVersionNumber
         with:
           tag: 'v${{env.VERSION}}'
@@ -72,7 +72,7 @@ jobs:
       # check to see if any of the regression tests have changed
       - name: Get changed files in the regression test folder
         id: check-regression-test-files
-        uses: tj-actions/changed-files@v35
+        uses: tj-actions/changed-files@v42
         with:
           files: tests/regressionTests/**
 
@@ -109,7 +109,7 @@ jobs:
       - name: 'Upload the ablate.dev Artifact'
         # right now this can only run on github hosted machines
         if: ${{ matrix.arch.runson == 'ubuntu-latest' }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ablate.dev.${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}.zip
           path: ablate.dev.${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}.zip

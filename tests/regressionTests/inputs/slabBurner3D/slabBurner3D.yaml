@@ -11,7 +11,7 @@ test:
   # a unique test name for this integration tests
   name: slabBurner3D
   # run on multiple mpi ranks
-  ranks: 4
+  ranks: 2
   # create a list of asserts to compare
   assert:
     # create a default assert that compares the log file

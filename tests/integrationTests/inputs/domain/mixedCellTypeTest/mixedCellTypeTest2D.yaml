@@ -8,7 +8,7 @@ test:
   ranks: 1
   # compare the generated xmf file with the expected
   assert: !testingResources::asserts::TextFileAssert
-    expected: "inputs/machinery/mixedCellTypeTest/domain.xmf"
+    expected: "inputs/domain/mixedCellTypeTest/domain.xmf"
     actual: "domain.xmf"
 
 # metadata for the simulation

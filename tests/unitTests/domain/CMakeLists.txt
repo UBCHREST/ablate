@@ -12,3 +12,4 @@ target_sources(ablateUnitTestLibrary
 
 add_subdirectory(modifiers)
 add_subdirectory(RBF)
+add_subdirectory(descriptions)

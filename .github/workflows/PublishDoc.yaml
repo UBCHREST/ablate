@@ -26,7 +26,7 @@ jobs:
     steps:
       # checkout the latest commit of the code
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # setup docker image of ablate
       - name: Set up Docker Buildx
@@ -48,7 +48,7 @@ jobs:
 
       # now build the pages with the standard Build with Jekyll actions
       - name: Setup Pages
-        uses: actions/configure-pages@v2
+        uses: actions/configure-pages@v3
       - name: Build with Jekyll
         uses: actions/jekyll-build-pages@v1
         with:
@@ -69,4 +69,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v2
