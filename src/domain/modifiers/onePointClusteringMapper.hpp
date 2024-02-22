@@ -47,7 +47,7 @@ class OnePointClusteringMapper : public MeshMapper {
      * Provide name of modifier for debug/output
      * @return
      */
-    std::string ToString() const override;
+    [[nodiscard]] std::string ToString() const override;
 
    private:
     static PetscErrorCode MappingFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);

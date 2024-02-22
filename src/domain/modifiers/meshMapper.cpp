@@ -1,8 +1,10 @@
 #include "meshMapper.hpp"
 #include <petsc/private/dmpleximpl.h>
+
+#include <utility>
 #include "utilities/petscUtilities.hpp"
 
-ablate::domain::modifiers::MeshMapper::MeshMapper(std::shared_ptr<ablate::mathFunctions::MathFunction> mappingFunction) : mappingFunction(mappingFunction) {}
+ablate::domain::modifiers::MeshMapper::MeshMapper(std::shared_ptr<ablate::mathFunctions::MathFunction> mappingFunction) : mappingFunction(std::move(mappingFunction)) {}
 
 void ablate::domain::modifiers::MeshMapper::Modify(DM& dm) {
     // check for a coordinate space
@@ -75,14 +77,23 @@ void ablate::domain::modifiers::MeshMapper::Modify(DM& dm) {
         fieldContexts[0] = petscCtx;
         DMProjectFunctionLocal(cdm, 0.0, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, lCoords) >> utilities::PetscUtilities::checkError;
 
-        cdm->coordinates[0].field = NULL;
+        cdm->coordinates[0].field = nullptr;
         DMRestoreLocalVector(cdm, &tmpCoords);
         DMSetCoordinatesLocal(dm, lCoords);
     }
 }
+
 void ablate::domain::modifiers::MeshMapper::Modify(const std::vector<double>& in, std::vector<double>& out) const {
     out.resize(in.size());
     mappingFunction->Eval(in.data(), (int)in.size(), 0.0, out);
+}
+
+void ablate::domain::modifiers::MeshMapper::Modify(PetscInt size, PetscReal* coord) const {
+    std::vector<PetscReal> out(size);
+    mappingFunction->Eval(coord, (int)size, 0.0, out);
+
+    // copy back to out
+    std::copy(out.begin(), out.end(), coord);
 }
 
 #include "registrar.hpp"

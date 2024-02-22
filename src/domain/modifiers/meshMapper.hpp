@@ -30,10 +30,17 @@ class MeshMapper : public Modifier {
     void Modify(const std::vector<double>& in, std::vector<double>& out) const;
 
     /**
+     * This modifies a single point in memory
+     * @param size the size of the vector
+     * @param coord the coordinate to modify
+     */
+    void Modify(PetscInt size, PetscReal* coord) const;
+
+    /**
      * Provide name of modifier for debug/output
      * @return
      */
-    std::string ToString() const override { return "ablate::domain::modifiers::MeshMapper"; }
+    [[nodiscard]] std::string ToString() const override { return "ablate::domain::modifiers::MeshMapper"; }
 };
 
 }  // namespace ablate::domain::modifiers
