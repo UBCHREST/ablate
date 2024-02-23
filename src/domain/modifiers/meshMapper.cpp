@@ -84,7 +84,7 @@ void ablate::domain::modifiers::MeshMapper::Modify(DM& dm) {
         if (mappingRegion) {
             DMLabel label;
             PetscInt labelValue;
-            mappingRegion->GetLabel(cdm, label, labelValue);
+            mappingRegion->GetLabel(dm, label, labelValue);
 
             // project the coordinates in the mapping region
             DMProjectFunctionLabelLocal(cdm, 0.0, label, 1 /*numIds*/, &labelValue, 0, nullptr, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, lCoords) >>
@@ -108,3 +108,6 @@ void ablate::domain::modifiers::MeshMapper::Modify(const std::vector<double>& in
 #include "registrar.hpp"
 REGISTER_PASS_THROUGH(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::MeshMapper, "Maps the x,y,z coordinate of the domain mesh by the given function.",
                       ablate::mathFunctions::MathFunction);
+
+REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::MeshMapperWithRegion, "Maps the x,y,z coordinate of the domain mesh by the given function within a specified region.",
+         ARG(ablate::mathFunctions::MathFunction, "function", "The function to apply to the coordinates"), ARG(ablate::domain::Region, "region", "The region to apply the mapping function"));

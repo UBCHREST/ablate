@@ -2,6 +2,7 @@
 #define ABLATELIBRARY_MESHMAPPER_HPP
 
 #include <memory>
+#include <utility>
 #include "domain/region.hpp"
 #include "mathFunctions/mathFunction.hpp"
 #include "modifier.hpp"
@@ -41,6 +42,15 @@ class MeshMapper : public Modifier {
      * @return
      */
     [[nodiscard]] std::string ToString() const override { return "ablate::domain::modifiers::MeshMapper"; }
+};
+
+/**
+ * Add a simple class to allow specifying a region with the registrar
+ */
+class MeshMapperWithRegion : public MeshMapper {
+   public:
+    explicit MeshMapperWithRegion(std::shared_ptr<ablate::mathFunctions::MathFunction> mappingFunction, std::shared_ptr<ablate::domain::Region> mappingRegion)
+        : MeshMapper(std::move(mappingFunction), mappingRegion) {}
 };
 
 }  // namespace ablate::domain::modifiers
