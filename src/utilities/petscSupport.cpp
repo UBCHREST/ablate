@@ -1,6 +1,6 @@
 #include "petscSupport.hpp"
 #include <petsc/private/vecimpl.h>
-#include <petscdm.h> // For DMPolytopeTypeGetNumVertices
+#include <petscdm.h>  // For DMPolytopeTypeGetNumVertices
 
 /**
  * Return the cell containing the location xyz
@@ -45,9 +45,6 @@ PetscErrorCode DMPlexGetContainingCell(DM dm, const PetscScalar *xyz, PetscInt *
 
     PetscFunctionReturn(PETSC_SUCCESS);
 }
-
-
-
 
 /**
  * Return the cell with a centroid of xyz
@@ -253,15 +250,15 @@ static PetscErrorCode DMPlexGetNeighborVertices_Internal(DM dm, PetscReal x0[3],
 }
 
 PetscErrorCode DMPlexRestoreNeighbors(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useCells, PetscBool returnNeighborVertices, PetscInt *nCells,
-                                  PetscInt **cells) {
-  PetscFunctionBegin;
-  if (nCells) *nCells = 0;
-  PetscCall(DMRestoreWorkArray(dm, 0, MPIU_INT, cells));
-  PetscFunctionReturn(PETSC_SUCCESS);
+                                      PetscInt **cells) {
+    PetscFunctionBegin;
+    if (nCells) *nCells = 0;
+    PetscCall(DMRestoreWorkArray(dm, 0, MPIU_INT, cells));
+    PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-PetscErrorCode DMPlexGetNeighbors(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useCells, PetscBool returnNeighborVertices, PetscInt *nCells, PetscInt **cells) {
-
+PetscErrorCode DMPlexGetNeighbors(DM dm, PetscInt p, PetscInt maxLevels, PetscReal maxDist, PetscInt numberCells, PetscBool useCells, PetscBool returnNeighborVertices, PetscInt *nCells,
+                                  PetscInt **cells) {
     const PetscInt maxLevelListSize = 100000;
     const PetscInt maxListSize = 100000;
     PetscInt numNew, nLevelList[2];
@@ -1133,19 +1130,15 @@ PetscErrorCode DMPlexCellGradFromVertex(DM dm, const PetscInt c, Vec data, Petsc
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-
-
-
 // This isn't the most accurate as the face center may not lie along the vector connecting two adjacent cells
 PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscInt fID, PetscInt offset, PetscScalar g[]) {
-
     PetscFunctionBegin;
 
-    PetscInt       cStart, cEnd;
+    PetscInt cStart, cEnd;
     PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));  // Range of cells
     PetscCheck(c >= cStart && c < cEnd, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "DMPlexCellToCellGrad must have a valid cell as input.");
 
-    PetscInt       dim;
+    PetscInt dim;
     PetscCall(DMGetDimension(dm, &dim));
     PetscCheck(dim > 1 && dim < 4, PETSC_COMM_SELF, PETSC_ERR_SUP, "DMPlexCellToCellGrad does not support a DM of dimension %" PetscInt_FMT, dim);
 
@@ -1153,7 +1146,7 @@ PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscIn
     PetscCall(VecGetArrayRead(data, &dataArray));
 
     // Get all faces of the cell
-    PetscInt       nFaces;
+    PetscInt nFaces;
     const PetscInt *faces;
     PetscCall(DMPlexGetConeSize(dm, c, &nFaces));
     PetscCall(DMPlexGetCone(dm, c, &faces));
@@ -1161,37 +1154,36 @@ PetscErrorCode DMPlexCellGradFromCell(DM dm, const PetscInt c, Vec data, PetscIn
     for (PetscInt d = 0; d < dim; ++d) g[d] = 0.0;
 
     for (PetscInt f = 0; f < nFaces; ++f) {
+        // Compute the face center location and the outward surface area normal
+        PetscReal S[dim], centroid[dim];
+        PetscCall(DMPlexFaceCentroidOutwardAreaNormal(dm, c, faces[f], centroid, S));
 
-      // Compute the face center location and the outward surface area normal
-      PetscReal S[dim], centroid[dim];
-      PetscCall(DMPlexFaceCentroidOutwardAreaNormal(dm, c, faces[f], centroid, S));
+        // The cells sharing this face
+        PetscInt nSharedCells;
+        const PetscInt *sharedCells;
+        PetscCall(DMPlexGetSupportSize(dm, faces[f], &nSharedCells));
+        PetscCall(DMPlexGetSupport(dm, faces[f], &sharedCells));
+        PetscCheck(nSharedCells < 3, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "More than two cells are sharing a face.");
 
-      // The cells sharing this face
-      PetscInt       nSharedCells;
-      const PetscInt *sharedCells;
-      PetscCall(DMPlexGetSupportSize(dm, faces[f], &nSharedCells));
-      PetscCall(DMPlexGetSupport(dm, faces[f], &sharedCells));
-      PetscCheck(nSharedCells < 3, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "More than two cells are sharing a face.");
+        PetscReal vAve = 0.0, vSum = 0.0;
+        for (PetscInt j = 0; j < nSharedCells; ++j) {
+            PetscInt sc = sharedCells[j];
 
-      PetscReal vAve = 0.0, vSum = 0.0;
-      for (PetscInt j = 0; j < nSharedCells; ++j) {
-        PetscInt sc = sharedCells[j];
+            PetscReal x[dim];
+            PetscCall(DMPlexComputeCellGeometryFVM(dm, sc, NULL, x, NULL));  // Center of the candidate cell.
 
-        PetscReal x[dim];
-        PetscCall(DMPlexComputeCellGeometryFVM(dm, sc, NULL, x, NULL));  // Center of the candidate cell.
+            PetscReal dist = 0.0;
+            for (PetscInt d = 0; d < dim; ++d) dist += PetscSqr(x[d] - centroid[d]);
+            dist = PetscSqrtReal(dist);
 
-        PetscReal dist = 0.0;
-        for (PetscInt d = 0; d < dim; ++d) dist += PetscSqr(x[d] - centroid[d]);
-        dist = PetscSqrtReal(dist);
+            PetscReal *val;
+            PetscCall(xDMPlexPointLocalRead(dm, sc, fID, dataArray, &val));
 
-        PetscReal *val;
-        PetscCall(xDMPlexPointLocalRead(dm, sc, fID, dataArray, &val));
+            vAve += val[offset] * dist;
+            vSum += dist;
+        }
 
-        vAve += val[offset]*dist;
-        vSum += dist;
-      }
-
-      for (PetscInt d = 0; d < dim; ++d) g[d] += vAve*S[d]/vSum;
+        for (PetscInt d = 0; d < dim; ++d) g[d] += vAve * S[d] / vSum;
     }
 
     // Center of the cell
