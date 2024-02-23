@@ -4,7 +4,8 @@
 #include <utility>
 #include "utilities/petscUtilities.hpp"
 
-ablate::domain::modifiers::MeshMapper::MeshMapper(std::shared_ptr<ablate::mathFunctions::MathFunction> mappingFunction) : mappingFunction(std::move(mappingFunction)) {}
+ablate::domain::modifiers::MeshMapper::MeshMapper(std::shared_ptr<ablate::mathFunctions::MathFunction> mappingFunction, std::shared_ptr<ablate::domain::Region> mappingRegion)
+    : mappingFunction(std::move(mappingFunction)), mappingRegion(std::move(mappingRegion)) {}
 
 void ablate::domain::modifiers::MeshMapper::Modify(DM& dm) {
     // check for a coordinate space
@@ -40,16 +41,19 @@ void ablate::domain::modifiers::MeshMapper::Modify(DM& dm) {
         PetscReal xyz[3];
 
         for (PetscInt v = vStart; v < vEnd; ++v) {
-            PetscInt off;
-            PetscSectionGetOffset(coordsSection, v, &off);
+            // check if this vertex is in the mapping region (if specified)
+            if (domain::Region::InRegion(mappingRegion, dm, v)) {
+                PetscInt off;
+                PetscSectionGetOffset(coordsSection, v, &off);
 
-            // extract the initial x, y, z values
-            for (PetscInt d = 0; d < coordinateDim; ++d) {
-                xyz[d] = coordsArray[off + d];
+                // extract the initial x, y, z values
+                for (PetscInt d = 0; d < coordinateDim; ++d) {
+                    xyz[d] = coordsArray[off + d];
+                }
+
+                // call the mapping function
+                petscFunction(coordinateDim, 0.0, xyz, coordinateDim, coordsArray + off, petscCtx) >> utilities::PetscUtilities::checkError;
             }
-
-            // call the mapping function
-            petscFunction(coordinateDim, 0.0, xyz, coordinateDim, coordsArray + off, petscCtx) >> utilities::PetscUtilities::checkError;
         }
         VecRestoreArray(localCoordsVector, &coordsArray) >> utilities::PetscUtilities::checkError;
         DMSetCoordinatesLocal(dm, localCoordsVector) >> utilities::PetscUtilities::checkError;
@@ -75,7 +79,20 @@ void ablate::domain::modifiers::MeshMapper::Modify(DM& dm) {
         std::vector<void*> fieldContexts(numberFields, nullptr);
         fieldFunctionsPts[0] = petscFunction;
         fieldContexts[0] = petscCtx;
-        DMProjectFunctionLocal(cdm, 0.0, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, lCoords) >> utilities::PetscUtilities::checkError;
+
+        // Call a different function depending on if there is a specific mapping region
+        if (mappingRegion) {
+            DMLabel label;
+            PetscInt labelValue;
+            mappingRegion->GetLabel(cdm, label, labelValue);
+
+            // project the coordinates in the mapping region
+            DMProjectFunctionLabelLocal(cdm, 0.0, label, 1 /*numIds*/, &labelValue, 0, nullptr, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, lCoords) >>
+                utilities::PetscUtilities::checkError;
+        } else {
+            // apply it everywhere
+            DMProjectFunctionLocal(cdm, 0.0, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, lCoords) >> utilities::PetscUtilities::checkError;
+        }
 
         cdm->coordinates[0].field = nullptr;
         DMRestoreLocalVector(cdm, &tmpCoords);

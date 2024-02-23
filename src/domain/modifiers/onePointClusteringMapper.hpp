@@ -40,8 +40,9 @@ class OnePointClusteringMapper : public MeshMapper {
      * @param end The end of the domain in direction
      * @param beta The clustering factor
      * @param location The location to perform the clustering in direction
+     * @param mappingRegion optional region to apply this mapper.  Default is everywhere
      */
-    explicit OnePointClusteringMapper(int direction, double start, double end, double beta, double location);
+    explicit OnePointClusteringMapper(int direction, double start, double end, double beta, double location, std::shared_ptr<ablate::domain::Region> mappingRegion = {});
 
     /**
      * Provide name of modifier for debug/output

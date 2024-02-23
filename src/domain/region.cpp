@@ -24,6 +24,11 @@ void ablate::domain::Region::GetLabel(const std::shared_ptr<Region>& region, DM 
     }
 }
 
+void ablate::domain::Region::GetLabel(DM dm, DMLabel& regionLabel, PetscInt& regionValue) {
+    DMGetLabel(dm, GetName().c_str(), &regionLabel) >> utilities::PetscUtilities::checkError;
+    regionValue = GetValue();
+}
+
 void ablate::domain::Region::CheckForLabel(DM dm) const {
     DMLabel label = nullptr;
     DMGetLabel(dm, GetName().c_str(), &label) >> utilities::PetscUtilities::checkError;

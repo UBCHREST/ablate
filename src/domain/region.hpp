@@ -42,7 +42,22 @@ class Region {
      */
     void CreateLabel(DM dm, DMLabel& regionLabel, PetscInt& regionValue) const;
 
+    /**
+     * static call to get a label from an optional region
+     * @param region
+     * @param dm
+     * @param regionLabel
+     * @param regionValue
+     */
     static void GetLabel(const std::shared_ptr<Region>& region, DM dm, DMLabel& regionLabel, PetscInt& regionValue);
+
+    /**
+     * call to get a label from an a region
+     * @param dm
+     * @param regionLabel
+     * @param regionValue
+     */
+    void GetLabel(DM dm, DMLabel& regionLabel, PetscInt& regionValue);
 
     /**
      * static call to see if a point is in region/or null
