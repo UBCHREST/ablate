@@ -95,6 +95,9 @@ class CoupledParticleSolver : public ParticleSolver, public ablate::solver::RHSF
 
     //! store the local vector for the cellDM source terms.  This is constant during a time step
     Vec localEulerianSourceVec{};
+
+    //! store a local vector the same size as the localEulerianSourceVec so we can include volume/mass scaling
+    Vec localEulerianVolumeFactor{};
 };
 
 }  // namespace ablate::particles
