@@ -26,6 +26,9 @@ ablate::particles::CoupledParticleSolver::~CoupledParticleSolver() {
     if (localEulerianSourceVec) {
         VecDestroy(&localEulerianSourceVec) >> utilities::PetscUtilities::checkError;
     }
+    if (localEulerianVolumeFactor) {
+        VecDestroy(&localEulerianVolumeFactor) >> utilities::PetscUtilities::checkError;
+    }
 }
 
 /**
@@ -71,6 +74,9 @@ PetscErrorCode ablate::particles::CoupledParticleSolver::PreRHSFunction(TS ts, P
     PetscCall(TSGetTimeStep(ts, &flowTimeStep));
     PetscCall(VecScale(localEulerianSourceVec, 1.0 / flowTimeStep));
 
+    // Scale each source term by the volume of the cell because the project is
+    //   M_f u_f = M_p u_p and the M_f includes the volume of the cell
+    PetscCall(VecPointwiseMult(localEulerianSourceVec, localEulerianSourceVec, localEulerianVolumeFactor));
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -134,6 +140,45 @@ void ablate::particles::CoupledParticleSolver::Initialize() {
     // Get the global vector of the domain we will copy to
     DMCreateLocalVector(subDomain->GetDM(), &localEulerianSourceVec) >> utilities::PetscUtilities::checkError;
     VecZeroEntries(localEulerianSourceVec) >> utilities::PetscUtilities::checkError;
+
+    // duplicate the vec for localEulerianVolumeFactor
+    VecDuplicate(localEulerianSourceVec, &localEulerianVolumeFactor) >> utilities::PetscUtilities::checkError;
+    VecSet(localEulerianVolumeFactor, 1.0);
+
+    // for FVM fields/meshes march over each cell
+    ablate::domain::Range cellRange;
+    GetCellRange(cellRange);
+
+    // Get the Array from the localEulerianVolumeFactor
+    PetscScalar* localEulerianVolumeFactorArray;
+    VecGetArray(localEulerianVolumeFactor, &localEulerianVolumeFactorArray) >> utilities::PetscUtilities::checkError;
+
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+        auto cell = cellRange.GetPoint(c);
+
+        // Compute the volume
+        PetscReal vol;
+        DMPlexComputeCellGeometryFVM(subDomain->GetDM(), c, &vol, nullptr, nullptr) >> utilities::PetscUtilities::checkError;
+
+        // march over each source field
+        for (const auto& field : subDomain->GetFields()) {
+            if (field.type == domain::FieldType::FVM) {
+                // Get each of the stencil pts
+                PetscScalar* localEVF;
+                DMPlexPointLocalFieldRef(subDomain->GetDM(), cell, field.id, localEulerianVolumeFactorArray, &localEVF) >> utilities::PetscUtilities::checkError;
+
+                if (localEVF) {
+                    for (PetscInt n = 0; n < field.numberComponents; ++n) {
+                        localEVF[n] = vol;
+                    }
+                }
+            }
+        }
+    }
+
+    // Cleanup
+    VecRestoreArray(localEulerianVolumeFactor, &localEulerianVolumeFactorArray);
+    RestoreRange(cellRange);
 }
 
 void ablate::particles::CoupledParticleSolver::MacroStepParticles(TS macroTS, bool swarmMigrate) {
