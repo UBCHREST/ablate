@@ -12,8 +12,8 @@ timestepper:
   name: theMainTimeStepper
   arguments:
     ts_type: euler
-    ts_max_time: 0.005
-    ts_dt: 1E-6
+    ts_max_time: 0.001
+    ts_dt: 1E-4
   # setup a simple mesh with only a single point
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField

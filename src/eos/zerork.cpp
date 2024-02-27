@@ -1,7 +1,6 @@
 #include "zerork.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "monitors/logs/nullLog.hpp"
-#include "utilities/kokkosUtilities.hpp"
 #include "utilities/mpiUtilities.hpp"
 
 ablate::eos::zerorkEOS::zerorkEOS(const std::filesystem::path reactionFileIn,const std::filesystem::path thermoFileIn,
@@ -30,30 +29,6 @@ ablate::eos::zerorkEOS::zerorkEOS(const std::filesystem::path reactionFileIn,con
     // TODO: Avoid parsing twice/having two mechanisms
     //Create object that holds kinetic data
     mech = std::make_shared<zerork::mechanism>(reactionFileIn.c_str(), thermoFileIn.c_str(), cklogfilename);
-//
-//    int zerork_error_state = 0;
-//    zrm_handle = zerork_reactor_init();
-//
-//    // load in mechanism for the plugin
-//    zerork_status_t zerom_status = zerork_reactor_set_mechanism_files(reactionFileIn.c_str(), thermoFileIn.c_str(), zrm_handle);
-//    if(zerom_status != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
-//
-//    zerork_status_t status_mech = zerork_reactor_load_mechanism(zrm_handle);
-//    if(status_mech != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
-//
-//    zerork_status_t status_other = zerork_reactor_set_int_option("constant_volume", 0, zrm_handle);
-//    if(status_other != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
-//
-//    zerork_status_t status_other2 = zerork_reactor_set_int_option("verbosity", 0, zrm_handle);
-//    if(status_other != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
-//
-//    zerork_reactor_set_int_option("always_solve_temperature", 1, zrm_handle);
-//    if(status_other != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
-//
-//    if (zerork_error_state!=0) {
-//        throw std::invalid_argument("ablate::eos::zerork couldnt initialize, something is wrong...");
-//    }
-
 
     nSpc = mech->getNumSpecies();
     //species;
@@ -72,11 +47,7 @@ ablate::eos::zerorkEOS::zerorkEOS(const std::filesystem::path reactionFileIn,con
 void ablate::eos::zerorkEOS::View(std::ostream &stream) const {
     stream << "EOS: " << type << std::endl;
     stream << "\tnumberSpecies: " << species.size() << std::endl;
-//    tChemLib::exec_space().print_configuration(stream, true);
-//    tChemLib::host_exec_space().print_configuration(stream, true);
 }
-
-
 
 std::shared_ptr<ablate::eos::zerorkEOS::FunctionContext> ablate::eos::zerorkEOS::BuildFunctionContext(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields,
                                                                                                 bool checkDensityYi) const {
@@ -93,11 +64,9 @@ std::shared_ptr<ablate::eos::zerorkEOS::FunctionContext> ablate::eos::zerorkEOS:
         }
     }
 
-
     return std::make_shared<FunctionContext>(FunctionContext{.dim = eulerField->numberComponents - 2,
                                                              .eulerOffset = eulerField->offset,
                                                              .densityYiOffset = checkDensityYi ? densityYiField->offset : -1,
-
                                                              .mech = mech,
                                                              .nSpc = nSpc,
                                                              });
