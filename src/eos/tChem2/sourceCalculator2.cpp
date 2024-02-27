@@ -613,7 +613,7 @@ void ablate::eos::tChem2::SourceCalculator2::AddSource(const ablate::domain::Ran
     DM dm;
     VecGetDM(locFVec, &dm) >> utilities::PetscUtilities::checkError;
 
-    bool usetchemsources = false;
+    bool usetchemsources = true;
     auto numberCells = cellRange.end - cellRange.start;
 
     if (usetchemsources) {

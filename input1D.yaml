@@ -14,7 +14,7 @@ timestepper:
     ts_adapt_safety: 1.0
   domain: !ablate::domain::BoxMeshBoundaryCells
     name: simpleBoxField
-    faces: [50]
+    faces: [5]
     lower: [ 0.0]
     upper:
       - &domainSize
@@ -48,15 +48,15 @@ timestepper:
           # the DmViewFromOptions should output once with full mesh/dm details
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
-        eos: !ablate::eos::TChem2  &eos
-          mechFile: MMAReduced.soot.yml
-          reactionFile: MMAReduced.soot.inp
-          thermoFile: MMAReduced.soot.dat
+        eos: !ablate::eos::zerorkEOS  &eos
+          #mechFile: MMAReduced.soot.yml
+          reactionFile: MMAReduced.inp
+          thermoFile: MMAReduced.dat
           options:
             relToleranceNewton: 1E-09
             absToleranceNewton: 1E-12
             # set a minimum temperature for the chemical kinetics ode integration
-            thresholdTemperature: 560
+            #thresholdTemperature: 560
         conservedFieldOptions:
           petscfv_type: leastsquares
         region:

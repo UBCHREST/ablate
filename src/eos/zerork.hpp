@@ -7,12 +7,7 @@
 #include "chemistryModel.hpp"
 #include <math.h>
 #include "eos.hpp"
-//#include "eos/zerork/pressure.hpp"
-//#include "eos/zerork/sensibleEnthalpy.hpp"
-//#include "eos/zerork/sensibleInternalEnergy.hpp"
 #include "eos/zerork/sourceCalculatorZeroRK.hpp"
-//#include "eos/zerork/speedOfSound.hpp"
-//#include "eos/zerork/temperature.hpp"
 #include "monitors/logs/log.hpp"
 #include "parameters/parameters.hpp"
 #include "utilities/intErrorChecker.hpp"
@@ -22,7 +17,6 @@
 #include "zerork/utilities.h"
 
 namespace ablate::eos {
-
 
 class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<ablate::eos::zerorkEOS>{
    protected:
@@ -38,12 +32,8 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
         PetscInt numberSpecies;
     };
 
-    //create the zerorkEOS plugin:
-//    zerork_handle zrm_handle;
-
     //kinetic and elemental data
     const char* cklogfilename = "mech.cklog";
-//    std::shared_ptr<zerork::mechanism> mech;
 
     //! an optional log file for tchem echo redirection
 //    std::shared_ptr<ablate::monitors::logs::Log> log;
@@ -51,7 +41,6 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
     std::vector<double> stateVector;
 
    public:
-
 
     /**
      * The tChem EOS can utilize either a mechanical & thermo file using the Chemkin file format for a modern yaml file.
