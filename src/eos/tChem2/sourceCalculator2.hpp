@@ -52,6 +52,8 @@ class SourceCalculator2 : public ChemistryModel::SourceCalculator, private utili
      */
     void AddSource(const ablate::domain::Range& cellRange, Vec localXVec, Vec localFVec) override;
 
+
+    std::vector<double> sourceZeroRKAtI;
    private:
 
     zerork_handle zrm_handle;

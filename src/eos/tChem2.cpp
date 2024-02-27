@@ -47,6 +47,8 @@ std::shared_ptr<ablate::eos::TChem2::FunctionContext> ablate::eos::TChem2::Build
     auto policy = tChemLib::UseThisTeamPolicy<tChemLib::host_exec_space>::type(batchSize, Kokkos::AUTO());
     policy.set_scratch_size(1, Kokkos::PerTeam((int)per_team_scratch_cp));
 
+//    std::unique_ptr<zerork::mechanism> mech2 = ablate::eos::TChemBase.mech
+
     return std::make_shared<FunctionContext>(FunctionContext{.dim = eulerField->numberComponents - 2,
                                                              .eulerOffset = eulerField->offset,
                                                              .densityYiOffset = checkDensityYi ? densityYiField->offset : -1,
