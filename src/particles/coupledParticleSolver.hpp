@@ -98,6 +98,9 @@ class CoupledParticleSolver : public ParticleSolver, public ablate::solver::RHSF
 
     //! store a local vector the same size as the localEulerianSourceVec so we can include volume/mass scaling
     Vec localEulerianVolumeFactor{};
+
+    //! private function to compute/update the source terms used by the flowfield
+    void ComputeEulerianSource(PetscReal startTime, PetscReal endTime);
 };
 
 }  // namespace ablate::particles
