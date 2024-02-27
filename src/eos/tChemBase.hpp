@@ -36,7 +36,8 @@ class TChemBase : public ChemistryModel {
 //
 //    const std::filesystem::path thermoFile;
 
-
+    const char* cklogfilename = "mech2.cklog";
+    std::unique_ptr<zerork::mechanism> mech;
 
     //! an optional log file for tchem echo redirection
     std::shared_ptr<ablate::monitors::logs::Log> log;

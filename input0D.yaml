@@ -3,7 +3,7 @@
 ---
 # metadata for the simulation
 environment:
-  title: _ignitionDelayMMASoot
+  title: _ignitionDelayMMArk
   tagDirectory: false
 arguments:
   petsclimiter_type: none
@@ -12,8 +12,8 @@ timestepper:
   name: theMainTimeStepper
   arguments:
     ts_type: euler
-    ts_max_time: 0.3
-    ts_dt: 1E-5
+    ts_max_time: 0.005
+    ts_dt: 1E-6
   # setup a simple mesh with only a single point
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
@@ -27,8 +27,8 @@ timestepper:
       # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
       # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...) and species mass fractions
       - !ablate::finiteVolume::CompressibleFlowFields
-        eos: !ablate::eos::TChem2  &eos # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked
-          mechFile: MMAReduced.yml
+        eos: !ablate::eos::zerorkEOS  &eos # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked
+          #mechFile: MMAReduced.yml
           reactionFile: MMAReduced.inp
           thermoFile: MMAReduced.dat
           options:
@@ -42,7 +42,7 @@ timestepper:
       state:
         &initState
         eos: *eos
-        temperature: 2000.0
+        temperature: 1200.0
         pressure: 101325.0
         velocity: [ 0.0 ]
         # the mass fractions must be specified to compute rho, e, etc.
@@ -51,9 +51,9 @@ timestepper:
           eos: *eos
           values:
             - fieldName: MMETHAC_C5H8O2
-              field: 0.1
+              field: 0.3
             - fieldName: O2
-              field: 0.9
+              field: 0.7
 
               
     # the DensityMassFractions reuses the initState to set the densityMassFractions for all species
@@ -75,6 +75,6 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
     - !ablate::monitors::IgnitionDelayTemperature
       eos: *eos
       location: [ 0.5 ]
-      thresholdTemperature: 2500
+      thresholdTemperature: 1500
       log: !ablate::monitors::logs::CsvLog
         name: ignitionDelayTemperature.csv

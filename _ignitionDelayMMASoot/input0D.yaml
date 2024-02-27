@@ -9,7 +9,7 @@ timestepper:
   arguments:
     ts_type: euler
     ts_max_time: 0.3
-    ts_dt: 1E-5
+    ts_dt: 1E-6
   domain: !<!ablate::domain::BoxMesh>
     name: simpleBoxField
     faces: [1]
@@ -30,7 +30,7 @@ timestepper:
     - !<!ablate::finiteVolume::fieldFunctions::Euler>
       state: &2
         eos: *1
-        temperature: 2000.0
+        temperature: 1200.0
         pressure: 101325.0
         velocity: [0.0]
         other: !<!ablate::finiteVolume::fieldFunctions::MassFractions>
@@ -53,6 +53,6 @@ solver: !<!ablate::finiteVolume::FiniteVolumeSolver>
     - !<!ablate::monitors::IgnitionDelayTemperature>
       eos: *1
       location: [0.5]
-      thresholdTemperature: 2500
+      thresholdTemperature: 1500
       log: !<!ablate::monitors::logs::CsvLog>
         name: ignitionDelayTemperature.csv
