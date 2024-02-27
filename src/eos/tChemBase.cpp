@@ -7,7 +7,7 @@
 #include "utilities/kokkosUtilities.hpp"
 #include "utilities/mpiUtilities.hpp"
 
-ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::path mechanismFileIn, const std::shared_ptr<ablate::monitors::logs::Log> &logIn,
+ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::path mechanismFileIn, std::filesystem::path reactionFileIn, std::filesystem::path thermoFileIn, const std::shared_ptr<ablate::monitors::logs::Log> &logIn,
                                   const std::shared_ptr<ablate::parameters::Parameters> &options)
     : ChemistryModel(eosName), mechanismFile(std::move(mechanismFileIn)), log(logIn ? logIn : std::make_shared<ablate::monitors::logs::NullLog>()) {
     // setup/use Kokkos
