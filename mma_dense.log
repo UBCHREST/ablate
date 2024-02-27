@@ -1,0 +1,2 @@
+#solve_number  reactors_solved            n_cpu     n_cpu_notemp            n_gpu     n_gpu_notemp     n_gpu_groups      n_steps_avg  n_steps_avg_cpu  n_steps_avg_gpu     max_time_cpu     max_time_gpu    step_time_cpu    step_time_gpu   avg_time_total   max_time_total
+            1                1                1                0                0                0                0             1810             1810                0        0.0511019                0      2.82331e-05                0        0.0511019        0.0511019

@@ -38,7 +38,7 @@ ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::p
 //    if (zerork_error_state!=0) {
 //        throw std::invalid_argument("ablate::eos::TChem2 could read in the chemkin formated mech files.");
 //    }
-
+    mech = std::make_unique<zerork::mechanism>("MMAReduced.inp", "MMAReduced.dat", cklogfilename);
 
     // copy the species information
     const auto speciesNamesHost = Kokkos::create_mirror_view(kineticsModelDataDevice->speciesNames);
