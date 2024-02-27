@@ -210,6 +210,18 @@ void ablate::particles::CoupledParticleSolver::MacroStepParticles(TS macroTS, bo
     PetscReal endTime;
     TSGetTime(particleTs, &endTime) >> utilities::PetscUtilities::checkError;
 
+    // Update the source terms
+    ComputeEulerianSource(startTime, endTime);
+
+    // Migrate any particles that have moved now that we have done the other calculations
+    if (swarmMigrate) {
+        SwarmMigrate();
+    }
+}
+
+void ablate::particles::CoupledParticleSolver::ComputeEulerianSource(PetscReal startTime, PetscReal endTime) {
+    Vec packedSolutionVec, previousPackedSolutionVec;
+
     // extract the vectors again
     DMSwarmCreateGlobalVectorFromField(GetParticleDM(), PackedSolution, &packedSolutionVec) >> utilities::PetscUtilities::checkError;
     DMSwarmCreateGlobalVectorFromField(GetParticleDM(), PreviousPackedSolution, &previousPackedSolutionVec) >> utilities::PetscUtilities::checkError;
@@ -231,11 +243,6 @@ void ablate::particles::CoupledParticleSolver::MacroStepParticles(TS macroTS, bo
 
     DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), PackedSolution, &packedSolutionVec) >> utilities::PetscUtilities::checkError;
     DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), PreviousPackedSolution, &previousPackedSolutionVec) >> utilities::PetscUtilities::checkError;
-
-    // Migrate any particles that have moved now that we have done the other calculations
-    if (swarmMigrate) {
-        SwarmMigrate();
-    }
 }
 
 #include "registrar.hpp"
