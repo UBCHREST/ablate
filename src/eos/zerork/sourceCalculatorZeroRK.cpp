@@ -101,7 +101,7 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
     // get the current state from petsc
 
     for(int i=cellRange.start; i<cellRange.end; ++i) {
-        const PetscInt cell = cellRange.points ? cellRange.points[i] : i; // TODO change cell indexing, 0 is boundary
+        const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
         const std::size_t k = i - cellRange.start;
 
         const PetscScalar* eulerField = nullptr;
