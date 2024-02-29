@@ -79,7 +79,7 @@ timestepper:
       # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: !ablate::eos::TChem  &eos
-          mechFile: MMAReduced.soot.yml
+          mechFile: /usr/workspace/kolosret/CLionprojects/ablate/MMAReduced.soot.yml
           options:
             # set a minimum temperature for the chemical kinetics ode integration
             thresholdTemperature: 560                        
@@ -165,11 +165,6 @@ solvers:
         interval: !ablate::io::interval::DelayInterval
           interval: 25
           minimumSimulationTime: .01 #about 1 flow
-      - !ablate::monitors::MixtureFractionMonitor
-        mixtureFractionCalculator: !ablate::monitors::MixtureFractionCalculator
-          eos: *eos
-          massFractionsFuel: *fuelMassFrac
-          massFractionsOxidizer: *oxMassFrac
       - !ablate::monitors::PhysicsTimeStep
         interval: 25          
           
@@ -261,18 +256,6 @@ solvers:
         pgs: *pgs
         eos: *eos
         massFractions: *fuelMassFrac
-        radiationInterval: 25
-        radiation: !ablate::radiation::SurfaceRadiation
-          id: surfaceflux
-          region:
-            name: flowRegion
-          rays: 25
-          properties: !ablate::eos::radiationProperties::Sum
-            - !ablate::eos::radiationProperties::Zimmer
-              eos: *eos
-            - !ablate::eos::radiationProperties::SootMeanProperties
-              eos: *eos
-        emissivity: 0.9
         sublimationModel: !ablate::boundarySolver::physics::subModels::ArrheniusSublimation
             properties:
                 specificHeat: 1270
@@ -290,22 +273,5 @@ solvers:
             options:
                 dm_plex_box_faces: 20
                 dm_plex_box_upper: 0.005
-    monitors:
-      # the boundary solver monitor is used to record regression rate and heat flux to the surface
-      - !ablate::monitors::BoundarySolverMonitor   
 
-  - !ablate::radiation::VolumeRadiation
-    id: radiationSolver
-    region:
-      name: flowRegion
-    interval: 25
-    radiation: !ablate::radiation::Radiation
-      id: volRad
-      region:
-        name: flowRegion
-      rays: 5
-      properties: !ablate::eos::radiationProperties::Sum
-        - !ablate::eos::radiationProperties::Zimmer
-          eos: *eos
-        - !ablate::eos::radiationProperties::SootMeanProperties
-          eos: *eos
+

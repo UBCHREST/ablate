@@ -8,7 +8,7 @@ target_sources(ablateLibrary
         twoPhase.cpp
         tChemSoot.cpp
         tChemBase.cpp
-        tChem2.cpp
+        #tChem2.cpp
         zerork.cpp
 
         PUBLIC
@@ -21,13 +21,13 @@ target_sources(ablateLibrary
         twoPhase.hpp
         tChemSoot.hpp
         tChemBase.hpp
-        tChem2.hpp
+        #tChem2.hpp
         zerork.hpp
         )
 
 add_subdirectory(transport)
 add_subdirectory(tChem)
-add_subdirectory(tChem2)
+#add_subdirectory(tChem2)
 add_subdirectory(radiationProperties)
 add_subdirectory(tChemSoot)
 add_subdirectory(chemTab)

@@ -6,7 +6,16 @@
 #include "utilities/stringUtilities.hpp"
 
 
-
+void ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints::Set(const std::shared_ptr<ablate::parameters::Parameters>& options) {
+    if (options) {
+        verbose = options->Get("verbose", verbose);
+        sparseJacobian = options->Get("sparseJacobian", sparseJacobian);
+        relTolerance = options->Get("relTolerance", relTolerance);
+        absTolerance = options->Get("absTolerance", absTolerance);
+        thresholdTemperature = options->Get("thresholdTemperature", thresholdTemperature);
+        reactorType = options->Get("reactorType", ReactorType::ConstantPressure);
+    }
+}
 
 ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<domain::Field>& fields, const std::shared_ptr<zerorkEOS> eosIn,
                                                           ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints constraints, const ablate::domain::Range& cellRange)
@@ -16,18 +25,18 @@ ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<dom
     std::size_t numberCells = cellRange.end - cellRange.start;
 
     // determine the source vector size
-    sourceZeroRKAtI = std::vector<double> (numberCells * (eosIn->mech->getNumSpecies()));
+    sourceZeroRKAtI = std::vector<double> (numberCells * (eosIn->mech->getNumSpecies()+1));
 
     // Look for the euler field
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto& field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
     if (eulerField == fields.end()) {
-        throw std::invalid_argument("ablate::eos::tChem::BatchSource requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
+        throw std::invalid_argument("ablate::eos::zerorkEOS::BatchSource requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
     }
     eulerId = eulerField->id;
 
     auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto& field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
     if (densityYiField == fields.end()) {
-        throw std::invalid_argument("ablate::eos::tChem::BatchSource requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD Field");
+        throw std::invalid_argument("ablate::eos::zerorkEOS::BatchSource requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD Field");
     }
     densityYiId = densityYiField->id;
 
@@ -56,7 +65,7 @@ ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<dom
 }
 
 void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domain::Range& cellRange, PetscReal time, PetscReal dt, Vec globFlowVec) {
-    StartEvent("tChem2::SourceCalculator::ComputeSource");
+    StartEvent("zerorkEOS::SourceCalculator::ComputeSource");
     // Get the valid cell range over this region
     auto numberCells = cellRange.end - cellRange.start;
 
@@ -90,9 +99,10 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
     std::vector<double> enthalpyOfFormation(nSpc);
 
     // get the current state from petsc
-    for(int k=0; k<nReactors; ++k) {
-        const PetscInt cell = cellRange.points ? cellRange.points[k] : k;
-        const std::size_t chemIndex = k - cellRange.start;
+
+    for(int i=cellRange.start; i<cellRange.end; ++i) {
+        const PetscInt cell = cellRange.points ? cellRange.points[i] : i; // TODO change cell indexing, 0 is boundary
+        const std::size_t k = i - cellRange.start;
 
         const PetscScalar* eulerField = nullptr;
         DMPlexPointLocalFieldRead(solutionDm, cell, eulerId, flowArray, &eulerField) >> utilities::PetscUtilities::checkError;
@@ -116,7 +126,7 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
             }
             reactorMassFrac[k * nSpc + nSpc - 1] = 0.0;
         } else {
-            reactorMassFrac[k + nSpc - 1] = 1.0 - yiSum;
+            reactorMassFrac[k * nSpc + nSpc - 1] = 1.0 - yiSum;
         }
 
         // Compute the internal energy from total energy
@@ -128,7 +138,6 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
         // compute the internal energy needed to compute temperature
         sensibleenergy[k]= eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
 
-        std::vector<double> enthalpyOfFormationLocal(nSpc,0.);
         double enthalpymix = eos->mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[k*nSpc]);
 
         sensibleenergy[k] += enthalpymix;
@@ -136,7 +145,8 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
         reactorT[k] = eos->mech->getTemperatureFromEY(sensibleenergy[k], &reactorMassFrac[k*nSpc], 2000);
 
         // TODO change this so it is the right pressure!!!!
-        reactorP[k] = eos->mech->getPressureFromTVY(reactorT[k],1/density2[k],&reactorMassFrac[k*nSpc]);
+        reactorP[k] = eos->mech->getPressureFromTVY(reactorT[k],1/density,&reactorMassFrac[k*nSpc]);
+
     }
 
     //mass fraction before the reactor
@@ -146,7 +156,7 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
     flag = zerork_reactor_solve(1, time, dt, nReactors, &reactorT[0], &reactorP[0],
                                 &reactorMassFrac[0], zrm_handle);
 
-    if(flag != ZERORK_STATUS_SUCCESS) printf("Oo something went wrong during zreork integration...");
+    if(flag != ZERORK_STATUS_SUCCESS) printf("Oo something went wrong during zerork integration...");
     // TODO try to print the state for debugging if the integration fails
 
 //        std::cout << "zerork time is:" << time <<"\n";
@@ -154,8 +164,8 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
 //        std::cout << "zerork Yox is:" << reactorMassFrac[1]<<"\n";
 //        std::cout << "zerork Yfuel is:" << reactorMassFrac[63]<<"\n";
 
-    // TODO make sure the the whole vector is 0;
-    sourceZeroRKAtI[0] = 0.0;
+    // Set all the sources to 0
+    sourceZeroRKAtI.assign(nState*nReactors,0);
 
     for (int s = 0; s < nSpc - 1; s++) {
         std::vector<double> tempvec(nSpc,0.);
@@ -163,27 +173,27 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
         enthalpyOfFormation[s] = eos->mech->getMassEnthalpyFromTY(298.15, &tempvec[0]);
     }
 
-    for(int k=0; k<nReactors; ++k) {
+    for(int i=0; i<nReactors; ++i) {
 
         for (int s = 0; s < nSpc; s++) {
-            sourceZeroRKAtI[k * nSpc] += (ys[k * nSpc + s] - reactorMassFrac[k * nSpc + s]) * enthalpyOfFormation[s];
+            sourceZeroRKAtI[i * nState] += (ys[i * nSpc + s] - reactorMassFrac[i * nSpc + s]) * enthalpyOfFormation[s];
         }
 
         for (int s = 0; s < nSpc; ++s) {
             // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-            sourceZeroRKAtI[k * nSpc + s + 1] = reactorMassFrac[k * nSpc + s] - ys[k * nSpc + s];
+            sourceZeroRKAtI[i * nState + s + 1] = reactorMassFrac[i * nSpc + s] - ys[i * nSpc + s];
         }
 
         // Now scale everything by density/dt
         for (int j = 0; j < nState; ++j) {
             // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-            sourceZeroRKAtI[k * nSpc + j] *= density2[k] / dt;
+            sourceZeroRKAtI[i * nState + j] *= density2[i] / dt;
         }
     }
     EndEvent();
 }
 void ablate::eos::zerorkeos::SourceCalculator::AddSource(const ablate::domain::Range& cellRange, Vec, Vec locFVec) {
-    StartEvent("zerork::SourceCalculator::AddSource");
+    StartEvent("zerorkEOS::SourceCalculator::AddSource");
     // get access to the fArray
     PetscScalar* fArray;
     VecGetArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
@@ -193,9 +203,11 @@ void ablate::eos::zerorkeos::SourceCalculator::AddSource(const ablate::domain::R
     VecGetDM(locFVec, &dm) >> utilities::PetscUtilities::checkError;
     auto numberCells = cellRange.end - cellRange.start;
 
-    for (int k = 0 ; k<numberCells;k++) {
-        const PetscInt cell = cellRange.points ? cellRange.points[k] : k;
-        const std::size_t chemIndex = k - cellRange.start;
+    int nSpc=eos->mech->getNumSpecies();
+    int nState = nSpc+1;
+    for(int i=cellRange.start; i<cellRange.end; ++i) {
+        const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
+        const std::size_t k = i - cellRange.start;
 
         // Get the current state variables for this cell
         PetscScalar* eulerSource = nullptr;
@@ -203,9 +215,9 @@ void ablate::eos::zerorkeos::SourceCalculator::AddSource(const ablate::domain::R
         PetscScalar* densityYiSource = nullptr;
         DMPlexPointLocalFieldRef(dm, cell, densityYiId, fArray, &densityYiSource) >> utilities::PetscUtilities::checkError;
 
-        eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] += sourceZeroRKAtI[k * numberSpecies];
+        eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] += sourceZeroRKAtI[k * nState];
         for (std::size_t sp = 0; sp < numberSpecies; sp++) {
-            densityYiSource[sp] += sourceZeroRKAtI[k * numberSpecies + sp + 1];
+            densityYiSource[sp] += sourceZeroRKAtI[k * nState + sp + 1];
         }
     }
 

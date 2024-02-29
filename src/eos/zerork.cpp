@@ -37,7 +37,7 @@ ablate::eos::zerorkEOS::zerorkEOS(const std::filesystem::path reactionFileIn,con
         species.push_back(std::string(species_name_c));
     }
     // set the chemistry constraints
-//    constraints.Set(options);
+    constraints.Set(options);
 
 }
 
@@ -627,7 +627,7 @@ void ablate::eos::zerorkEOS::FillreactorMassFracVectorFromMassFractions(int nSpc
 ablate::eos::EOSFunction ablate::eos::zerorkEOS::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1, ablate::eos::ThermodynamicProperty property2,
                                                                        std::vector<std::string> otherProperties) const {
     if (otherProperties != std::vector<std::string>{YI}) {
-        throw std::invalid_argument("ablate::eos::TChem expects the other properties to be Yi (Species Mass Fractions)");
+        throw std::invalid_argument("ablate::eos::zerorkEOS expects the other properties to be Yi (Species Mass Fractions)");
     }
 
     if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field) {
@@ -710,7 +710,7 @@ ablate::eos::EOSFunction ablate::eos::zerorkEOS::GetFieldFunctionFunction(const 
             }
         }
 
-        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::TChem.");
+        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for the eos.");
     } else if (finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD == field) {
         if ((property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) ||
             (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature)) {
@@ -779,7 +779,7 @@ std::map<std::string, double> ablate::eos::zerorkEOS::GetElementInformation() co
 
     // TODO find a way to output elemnt information from zerork
     // Dont use zerork witht he mixture fraction generator for now
-
+    throw std::invalid_argument("mixture fraction calculation not supported in zerork for now...");
     return elementInfo;
 }
 
@@ -789,6 +789,8 @@ std::map<std::string, std::map<std::string, int>> ablate::eos::zerorkEOS::GetSpe
 
     // TODO find a way to output elemnt information from zerork
     // Dont use zerork witht he mixture fraction generator for now
+
+    throw std::invalid_argument("mixture fraction calculation not supported in zerork for now...");
     return speciesElementInfo;
 }
 
@@ -816,5 +818,5 @@ REGISTER(ablate::eos::ChemistryModel, ablate::eos::zerorkEOS, "zerork ideal gas 
          ARG(std::filesystem::path, "reactionFile", "chemkin formated reaction files"),
          ARG(std::filesystem::path, "thermoFile", "chemkin formated thermodynamic file"),
          OPT(ablate::parameters::Parameters, "options",
-             "time stepping options (dtMin, dtMax, dtDefault, dtEstimateFactor, relToleranceTime, relToleranceTime, absToleranceTime, relToleranceNewton, absToleranceNewton, maxNumNewtonIterations, "
-             "numTimeIterationsPerInterval, jacobianInterval, maxAttempts, thresholdTemperature)"));
+             "time stepping options (reactorType, sparseJacobian, relTolerance, absTolerance, verbose, thresholdTemperature)"
+             ));

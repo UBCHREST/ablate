@@ -3,10 +3,10 @@
 #include "utilities/petscUtilities.hpp"
 
 ablate::finiteVolume::processes::Soot::Soot(const std::shared_ptr<eos::EOS>& eosIn, const std::shared_ptr<parameters::Parameters>& options, double thresholdTemperature)
-    : eos(std::dynamic_pointer_cast<eos::TChem>(eosIn)), thresholdTemperature(thresholdTemperature) {
+    : eos(std::dynamic_pointer_cast<eos::ChemistryModel>(eosIn)), thresholdTemperature(thresholdTemperature) {
     // make sure that the eos is set
-    if (!std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
-        throw std::invalid_argument("ablate::finiteVolume::processes::Soot only accepts EOS of type eos::TChem");
+    if (!std::dynamic_pointer_cast<eos::ChemistryModel>(eosIn)) {
+        throw std::invalid_argument("ablate::finiteVolume::processes::Soot only accepts EOS of type eos::chemistrymodel");
     }
 
     // Set the options if provided
@@ -397,6 +397,6 @@ PetscErrorCode ablate::finiteVolume::processes::Soot::SinglePointSootChemistryRH
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::Soot, "Soot only reactions", ARG(ablate::eos::EOS, "eos", "the tChem eos"),
+REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::Soot, "Soot only reactions", ARG(ablate::eos::EOS, "eos", "chemistrymodel eos"),
          OPT(ablate::parameters::Parameters, "options", "any PETSc options for the chemistry ts"),
          OPT(double, "thresholdTemperature", "set a minimum temperature for the chemical kinetics ode integration"));

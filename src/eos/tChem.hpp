@@ -40,14 +40,14 @@ class TChem : public TChemBase, public std::enable_shared_from_this<ablate::eos:
     /**
      * a temperature thermodynamic function specific to TChem that takes yi from the arguments instead of conserved
      */
-    struct ThermodynamicTemperatureMassFractionFunction {
-        //! function to be called
-        PetscErrorCode (*function)(const PetscReal conserved[], const PetscReal yi[], PetscReal T, PetscReal* property, void* ctx) = nullptr;
-        //! optional context to pass into the function
-        std::shared_ptr<void> context = nullptr;
-        //! the property size being set
-        PetscInt propertySize = 1;
-    };
+//    struct ThermodynamicTemperatureMassFractionFunction {
+//        //! function to be called
+//        PetscErrorCode (*function)(const PetscReal conserved[], const PetscReal yi[], PetscReal T, PetscReal* property, void* ctx) = nullptr;
+//        //! optional context to pass into the function
+//        std::shared_ptr<void> context = nullptr;
+//        //! the property size being set
+//        PetscInt propertySize = 1;
+//    };
 
    public:
     /**
@@ -87,7 +87,7 @@ class TChem : public TChemBase, public std::enable_shared_from_this<ablate::eos:
      * @param fields
      * @return
      */
-    [[nodiscard]] ThermodynamicTemperatureMassFractionFunction GetThermodynamicTemperatureMassFractionFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const;
+    [[nodiscard]] ThermodynamicTemperatureMassFractionFunction GetThermodynamicTemperatureMassFractionFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
 
     /**
      * Single function to produce fieldFunction function for any two properties, velocity, and species mass fractions.  These calls can be slower and should be used for init/output only

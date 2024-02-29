@@ -538,7 +538,7 @@ void ablate::eos::tChem2::SourceCalculator2::ComputeSource(const ablate::domain:
             std::vector<double> ydiff(nSpecLocal);
             for (int k = 0;k<nSpecLocal;k++){
                 yend[k]=ye(k);
-//                ydiff[k]=ye(k)-ys(k);
+                ydiff[k]=ye(k)-ys(k);
             }
             double endtemp = endStateVector.Temperature();
             double endpress = endStateVector.Pressure();

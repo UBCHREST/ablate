@@ -103,7 +103,7 @@ class TChemBase : public ChemistryModel {
      * the MW of each species
      * @return
      */
-    [[nodiscard]] virtual std::map<std::string, double> GetSpeciesMolecularMass() const = 0;
+//    [[nodiscard]] virtual std::map<std::string, double> GetSpeciesMolecularMass() const = 0;
 
     /**
      * Print the details of this eos
@@ -139,7 +139,7 @@ class TChemBase : public ChemistryModel {
      * @param species
      * @return
      */
-    inline double GetEnthalpyOfFormation(std::string_view speciesName) const {
+    inline double GetEnthalpyOfFormation(std::string_view speciesName) const override {
         auto it = std::find_if(species.begin(), species.end(), [speciesName](const auto& component) { return component == speciesName; });
         // If element was found
         if (it != species.end()) {

@@ -4,8 +4,8 @@ environment:
   tagDirectory: false
 arguments: {}
 timestepper:
-  io:
-    interval: 10
+  io: !ablate::io::Hdf5MultiFileSerializer
+    interval: 0
   arguments:
     ts_type: rk
     ts_max_time: 0.007

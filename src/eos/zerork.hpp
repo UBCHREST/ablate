@@ -35,15 +35,12 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
     //kinetic and elemental data
     const char* cklogfilename = "mech.cklog";
 
-    //! an optional log file for tchem echo redirection
-//    std::shared_ptr<ablate::monitors::logs::Log> log;
-
     std::vector<double> stateVector;
 
    public:
 
     /**
-     * The tChem EOS can utilize either a mechanical & thermo file using the Chemkin file format for a modern yaml file.
+     * Zerork only takes in chemkin formated reaction files and thermodynamic files.
      * @param mechFile
      * @param optionalThermoFile
      */
@@ -71,23 +68,13 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
      * the MW of each species
      * @return
      */
-    [[nodiscard]] std::map<std::string, double> GetSpeciesMolecularMass() const;
+    [[nodiscard]] std::map<std::string, double> GetSpeciesMolecularMass() const override;
 
     /**
      * Print the details of this eos
      * @param stream
      */
     void View(std::ostream& stream) const override;
-
-    /**
-     * return reference to kinetic data for other users
-     */
-//    tChemLib::KineticModelData& GetKineticModelData() { return kineticsModel; }
-
-    /**
-     * Get the  reference enthalpy per species
-     */
-//    real_type_1d_view GetEnthalpyOfFormation() { return enthalpyReferenceDevice; };
 
     /**
      * Species supported by this EOS
@@ -111,11 +98,10 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
 
    protected:
     /**
-     * only allow modern input files
+     * only allow chemkin input files
      */
-//    static const inline std::array<std::string, 1> validChemkinFileExtensions = {".yaml"};
-    static const inline std::array<std::string, 2> validThermoFileExtensions = {".dat",".log"};
 
+    static const inline std::array<std::string, 2> validThermoFileExtensions = {".dat",".log"};
 //    static const std::string validChemkinFileExtensions = ".inp";
 
 
@@ -133,7 +119,6 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
     // Private static helper functions
     inline const static double TREF = 298.15;
 
-
     struct ThermodynamicMassFractionFunction {
         //! function to be called
         PetscErrorCode (*function)(const PetscReal conserved[], const PetscReal yi[], PetscReal* property, void* ctx) = nullptr;
@@ -143,17 +128,6 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
         PetscInt propertySize = 1;
     };
 
-    /**
-     * a temperature thermodynamic function specific to TChem that takes yi from the arguments instead of conserved
-     */
-    struct ThermodynamicTemperatureMassFractionFunction {
-        //! function to be called
-        PetscErrorCode (*function)(const PetscReal conserved[], const PetscReal yi[], PetscReal T, PetscReal* property, void* ctx) = nullptr;
-        //! optional context to pass into the function
-        std::shared_ptr<void> context = nullptr;
-        //! the property size being set
-        PetscInt propertySize = 1;
-    };
 
    public:
 
@@ -181,7 +155,7 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
      * @param fields
      * @return
      */
-    [[nodiscard]] ThermodynamicTemperatureMassFractionFunction GetThermodynamicTemperatureMassFractionFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const;
+    [[nodiscard]] ThermodynamicTemperatureMassFractionFunction GetThermodynamicTemperatureMassFractionFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
 
     /**
      * Single function to produce fieldFunction function for any two properties, velocity, and species mass fractions.  These calls can be slower and should be used for init/output only
@@ -289,10 +263,6 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
     static PetscErrorCode SpeedOfSoundTemperatureMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode SpeciesSensibleEnthalpyTemperatureMassFractionFunction(const PetscReal conserved[], const PetscReal yi[], PetscReal T, PetscReal* property, void* ctx);
     /** @} */
-
-    /**
-     * template function to call base tChem function
-     */
 
     /**
      * Store a map of functions functions for quick lookup
