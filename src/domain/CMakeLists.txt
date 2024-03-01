@@ -41,6 +41,9 @@ target_sources(ablateLibrary
         hdf5Initializer.hpp
         initializerList.hpp
         meshGenerator.hpp
+        fieldAccessor.hpp
+        constFieldAccessor.hpp
+        accessor.hpp
 )
 
 add_subdirectory(modifiers)
