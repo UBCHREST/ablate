@@ -33,14 +33,15 @@ class TwoPointClusteringMapper : public MeshMapper {
      * @param beta The clustering factor
      * @param location The location to cluster center
      * @param offset The location to perform the clustering in direction
+     * @param mappingRegion optional region to apply this mapper.  Default is everywhere
      */
-    explicit TwoPointClusteringMapper(int direction, double start, double end, double beta, double location, double offset);
+    explicit TwoPointClusteringMapper(int direction, double start, double end, double beta, double location, double offset, std::shared_ptr<ablate::domain::Region> mappingRegion = {});
 
     /**
      * Provide name of modifier for debug/output
      * @return
      */
-    std::string ToString() const override;
+    [[nodiscard]] std::string ToString() const override;
 
    private:
     static PetscErrorCode MappingFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);

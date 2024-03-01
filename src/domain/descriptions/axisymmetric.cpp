@@ -3,13 +3,12 @@
 #include <utility>
 #include "utilities/vectorUtilities.hpp"
 
-ablate::domain::descriptions::Axisymmetric::Axisymmetric(const std::vector<PetscReal> &startLocation, PetscReal length, std::shared_ptr<ablate::mathFunctions::MathFunction> radiusFunction,
-                                                         PetscInt numberWedges, PetscInt numberSlices, PetscInt numberShells)
-    : startLocation(utilities::VectorUtilities::ToArray<PetscReal, 3>(startLocation)),
-      length(length),
+ablate::domain::descriptions::Axisymmetric::Axisymmetric(std::shared_ptr<ablate::domain::descriptions::AxisDescription> axis, std::shared_ptr<ablate::mathFunctions::MathFunction> radiusFunction,
+                                                         PetscInt numberWedges, PetscInt numberShells)
+    : axisDescription(std::move(axis)),
       radiusFunction(std::move(radiusFunction)),
       numberWedges(numberWedges),
-      numberSlices(numberSlices),
+      numberSlices(axisDescription->GetNumberVertices() - 1),
       numberShells(numberShells),
       numberCellsPerSlice(numberWedges * numberShells),
       numberCellsPerShell(numberWedges * numberSlices),
@@ -84,11 +83,6 @@ void ablate::domain::descriptions::Axisymmetric::BuildTopology(PetscInt cell, Pe
     }
 }
 void ablate::domain::descriptions::Axisymmetric::SetCoordinate(PetscInt node, PetscReal *coordinate) const {
-    // start the coordinate at the start location
-    coordinate[0] = startLocation[0];
-    coordinate[1] = startLocation[1];
-    coordinate[2] = startLocation[2];
-
     // determine where this node is, there is a special case for the 0 node shell or center
     PetscInt nodeShell, nodeSlice, nodeRotationIndex;
     if (node < numberCenterVertices) {
@@ -101,10 +95,8 @@ void ablate::domain::descriptions::Axisymmetric::SetCoordinate(PetscInt node, Pe
         nodeRotationIndex = (node - numberCenterVertices) % numberWedges;
     }
 
-    // offset along z
-    auto delta = length / numberSlices;
-    auto offset = delta * nodeSlice;
-    coordinate[2] += offset;
+    // Get the coordinate along the axis.
+    axisDescription->SetCoordinate(nodeSlice, coordinate);
 
     // compute the maximum radius at this coordinate
     auto radius = radiusFunction->Eval(coordinate, 3, NAN);
@@ -165,6 +157,6 @@ std::shared_ptr<ablate::domain::Region> ablate::domain::descriptions::Axisymmetr
 
 #include "registrar.hpp"
 REGISTER(ablate::domain::descriptions::MeshDescription, ablate::domain::descriptions::Axisymmetric, "The Axisymmetric MeshDescription is used to create an axisymmetric mesh around the z axis",
-         ARG(std::vector<double>, "start", "the start coordinate of the mesh, must be 3D"), ARG(double, "length", "the length of the domain starting at the start coordinate"),
+         ARG(ablate::domain::descriptions::AxisDescription, "axis", "describes the nodes along the z axis"),
          ARG(ablate::mathFunctions::MathFunction, "radius", "a radius function that describes the radius as a function of z"), ARG(int, "numberWedges", "wedges/pie slices in the circle"),
-         ARG(int, "numberSlices", "slicing of the cylinder along the z axis"), ARG(int, "numberShells", "slicing of the cylinder along the radius"));
+         ARG(int, "numberShells", "slicing of the cylinder along the radius"));
