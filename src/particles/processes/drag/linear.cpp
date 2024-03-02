@@ -17,7 +17,7 @@ void ablate::particles::processes::drag::Linear::ComputeDragForce(const PetscInt
     for (int n = 0; n < dim; n++) {
         dragForce[n] = dragForcePrefactor * (partVel[n] - flowVel[n]);
     }
-};
+}
 
 #include "registrar.hpp"
 REGISTER_WITHOUT_ARGUMENTS(ablate::particles::processes::drag::DragModel, ablate::particles::processes::drag::Linear, "Computes drag according to Stokes' law.");

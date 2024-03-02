@@ -44,7 +44,7 @@ class EulerianAccessor : public Accessor<const PetscReal> {
     /**
      * Get the number of dimensions
      */
-    inline PetscInt GetDimensions() const { return subDomain->GetDimensions(); }
+    [[nodiscard]] inline PetscInt GetDimensions() const { return subDomain->GetDimensions(); }
 };
 }  // namespace ablate::particles::accessors
-#endif  // ABLATELIBRARY_SWARMDATA_HPP
+#endif  // ABLATELIBRARY_EULERIANDATA_HPP

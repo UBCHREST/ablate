@@ -21,7 +21,7 @@ class ParticleSolver : public solver::Solver, public io::Serializable {
     //! These coordinates are part of the solution vector
     inline static const char ParticleCoordinates[] = "coordinates";
 
-   private:
+   protected:
     //!  particle dm, this is a swarm
     DM swarmDm = nullptr;
 
@@ -99,11 +99,6 @@ class ParticleSolver : public solver::Solver, public io::Serializable {
     void Initialize() override;
 
     /**
-     * Function to be be called after each flow time step
-     */
-    void MacroStepParticles(TS macroTS);
-
-    /**
      * return access to the particle dm
      * @return the swamParticle dm
      */
@@ -126,7 +121,7 @@ class ParticleSolver : public solver::Solver, public io::Serializable {
      * only required function, returns the id of the object.  Should be unique for the simulation
      * @return
      */
-    const std::string& GetId() const override { return GetSolverId(); }
+    [[nodiscard]] const std::string& GetId() const override { return GetSolverId(); }
 
     /**
      * shared function to view all particles;
@@ -146,7 +141,12 @@ class ParticleSolver : public solver::Solver, public io::Serializable {
      */
     PetscErrorCode Restore(PetscViewer viewer, PetscInt steps, PetscReal time) override;
 
-   private:
+   protected:
+    /**
+     * Function to be be called after each flow time step
+     */
+    virtual void MacroStepParticles(TS macroTS, bool swarmMigrate);
+
     /**
      * The register fields adds the field to the swarm
      * @param fieldDescriptor

@@ -6,11 +6,11 @@
 ablate::particles::accessors::EulerianAccessor::EulerianAccessor(bool cachePointData, std::shared_ptr<ablate::domain::SubDomain> subDomain, SwarmAccessor& swarm, PetscReal currentTime)
     : Accessor(cachePointData), subDomain(std::move(subDomain)), currentTime(currentTime), np(swarm.GetNumberParticles()) {
     // Resize and copy over the coordinates
-    auto coodinatesField = swarm.GetData(ablate::particles::ParticleSolver::ParticleCoordinates);
+    auto coordinatesField = swarm.GetData(ablate::particles::ParticleSolver::ParticleCoordinates);
 
     // Size up and copy the coordinates
-    coordinates.resize(np * coodinatesField.numberComponents);
-    coodinatesField.CopyAll(coordinates.data(), np);
+    coordinates.resize(np * coordinatesField.numberComponents);
+    coordinatesField.CopyAll(coordinates.data(), np);
 }
 
 ablate::particles::accessors::ConstPointData ablate::particles::accessors::EulerianAccessor::CreateData(const std::string& fieldName) {

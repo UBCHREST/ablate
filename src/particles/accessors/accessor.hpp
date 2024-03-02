@@ -29,7 +29,7 @@ class Accessor {
     /**
      * Keep a vector of destructors to call
      */
-    std::vector<std::function<void()>> destructors;
+    std::vector<std::function<void()>> destructors{};
 
    protected:
     /**
@@ -40,7 +40,7 @@ class Accessor {
     virtual Data<DataType> CreateData(const std::string& fieldName) = 0;
 
    public:
-    explicit Accessor(bool cachePointData) : cachePointData(cachePointData), destructors(cachePointData ? 5 : 0) {}
+    explicit Accessor(bool cachePointData) : cachePointData(cachePointData) {}
 
     virtual ~Accessor() {
         for (auto& function : destructors) {
@@ -62,11 +62,10 @@ class Accessor {
      */
     inline Data<DataType> GetData(const std::string& fieldName) {
         if (cachePointData) {
-            if (dataCache.count(fieldName)) {
+            if (!dataCache.count(fieldName)) {
                 dataCache[fieldName] = CreateData(fieldName);
             }
             return dataCache.at(fieldName);
-
         } else {
             return CreateData(fieldName);
         }
@@ -84,4 +83,4 @@ class Accessor {
     Accessor(const Accessor&) = delete;
 };
 }  // namespace ablate::particles::accessors
-#endif  // ABLATELIBRARY_SWARMACCESSOR_HPP
+#endif  // ABLATELIBRARY_PARTICLEACCESSOR_HPP

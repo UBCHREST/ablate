@@ -23,7 +23,7 @@ class SwarmAccessor : public Accessor<const PetscReal> {
     Vec solutionVec;
 
     //! the array for the solution values
-    const PetscScalar* solutionValues;
+    const PetscScalar* solutionValues{};
 
    public:
     SwarmAccessor(bool cachePointData, const DM& swarmDm, const std::map<std::string, Field>& fieldsMap, Vec solutionVec)
@@ -35,14 +35,19 @@ class SwarmAccessor : public Accessor<const PetscReal> {
     ~SwarmAccessor() override { VecRestoreArrayRead(solutionVec, &solutionValues) >> utilities::PetscUtilities::checkError; }
 
     /**
-     * Returns the local size of the particlesdestination
+     * Returns the local size of the particles destination
      * @return
      */
-    inline PetscInt GetNumberParticles() const {
+    [[nodiscard]] inline PetscInt GetNumberParticles() const {
         PetscInt size;
         DMSwarmGetLocalSize(swarmDm, &size) >> utilities::PetscUtilities::checkError;
         return size;
     }
+
+    /**
+     * prevent copy of this class
+     */
+    SwarmAccessor(const SwarmAccessor&) = delete;
 
    protected:
     /**
@@ -53,7 +58,7 @@ class SwarmAccessor : public Accessor<const PetscReal> {
     ConstPointData CreateData(const std::string& fieldName) override {
         const auto& field = fieldsMap.at(fieldName);
         if (field.location == domain::FieldLocation::SOL) {
-            return ConstPointData(solutionValues, field);
+            return {solutionValues, field};
         } else {
             // get the field from the dm
             PetscScalar* values;
@@ -65,14 +70,9 @@ class SwarmAccessor : public Accessor<const PetscReal> {
                 DMSwarmRestoreField(swarmDm, name.c_str(), nullptr, nullptr, (void**)&values) >> utilities::PetscUtilities::checkError;
             });
 
-            return ConstPointData(values, field);
+            return {values, field};
         }
     }
-
-    /**
-     * prevent copy of this class
-     */
-    SwarmAccessor(const SwarmAccessor&) = delete;
 };
 }  // namespace ablate::particles::accessors
 #endif  // ABLATELIBRARY_SWARMACCESSOR_HPP

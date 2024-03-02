@@ -67,7 +67,7 @@ class Solver {
      * Get the sub domain used in this solver
      * @return
      */
-    inline const ablate::domain::SubDomain& GetSubDomain() const noexcept { return *subDomain; }
+    [[nodiscard]] inline const ablate::domain::SubDomain& GetSubDomain() const noexcept { return *subDomain; }
 
     /**
      * Get the region used to define this solver

@@ -26,7 +26,7 @@ class Inertial : public Process {
      * @param parameters input parameters for the velocity field
      * @param eulerianVelocityField optional field where eulerian velocity is defined (default "velocity")
      */
-    explicit Inertial(std::shared_ptr<parameters::Parameters> parameters, const std::string& eulerianVelocityField = {});
+    explicit Inertial(const std::shared_ptr<parameters::Parameters>& parameters, const std::string& eulerianVelocityField = {});
 
     /**
      * computes the source terms to integrate the particle location with the flow velocity with drag

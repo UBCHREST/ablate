@@ -161,7 +161,7 @@ void ablate::particles::ParticleSolver::Initialize() {
     TSSetRHSFunction(particleTs, nullptr, ComputeParticleRHS, this) >> utilities::PetscUtilities::checkError;
 
     // link the solution with the flowTS
-    RegisterPostStep([this](TS flowTs, ablate::solver::Solver &) { this->MacroStepParticles(flowTs); });
+    RegisterPostStep([this](TS flowTs, ablate::solver::Solver &) { MacroStepParticles(flowTs, true); });
 }
 
 void ablate::particles::ParticleSolver::RegisterParticleField(const FieldDescription &fieldDescription) {
@@ -357,6 +357,7 @@ void ablate::particles::ParticleSolver::ProjectFunction(const std::shared_ptr<ma
     DMSwarmRestoreField(swarmDm, DMSwarmPICField_coor, nullptr, nullptr, (void **)&positionData);
     RestoreField(field, &fieldData);
 }
+
 void ablate::particles::ParticleSolver::SwarmMigrate() {
     // current number of local/global particles
     PetscInt numberLocal;
@@ -386,7 +387,7 @@ void ablate::particles::ParticleSolver::SwarmMigrate() {
     dmChanged = dmChangedAll > 0;
 }
 
-void ablate::particles::ParticleSolver::MacroStepParticles(TS macroTS) {
+void ablate::particles::ParticleSolver::MacroStepParticles(TS macroTS, bool swarmMigrate) {
     // if the dm has changed size (new particles, particles moved between ranks, particles deleted) reset the ts
     if (dmChanged) {
         TSReset(particleTs) >> utilities::PetscUtilities::checkError;
@@ -428,8 +429,11 @@ void ablate::particles::ParticleSolver::MacroStepParticles(TS macroTS) {
     CoordinatesFromSolutionVector();
 
     // Migrate any particles that have moved
-    SwarmMigrate();
+    if (swarmMigrate) {
+        SwarmMigrate();
+    }
 }
+
 void ablate::particles::ParticleSolver::CoordinatesToSolutionVector() {
     // Get the local number of particles
     PetscInt np;

@@ -5,7 +5,6 @@
 namespace ablate::solver {
 
 class RHSFunction {
-   private:
    public:
     /**
      * Called to compute the RHS source term.

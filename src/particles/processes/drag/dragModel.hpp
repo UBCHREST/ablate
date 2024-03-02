@@ -7,8 +7,7 @@ namespace ablate::particles::processes::drag {
 
 class DragModel {
    public:
-    virtual void ComputeDragForce(const PetscInt dim, const PetscReal *partVel, const PetscReal *flowVel, const PetscReal muF, const PetscReal rhoF, const PetscReal partDiam,
-                                  PetscReal *dragForce) = 0;
+    virtual void ComputeDragForce(PetscInt dim, const PetscReal *partVel, const PetscReal *flowVel, PetscReal muF, PetscReal rhoF, PetscReal partDiam, PetscReal *dragForce) = 0;
 
     virtual ~DragModel() = default;
 };

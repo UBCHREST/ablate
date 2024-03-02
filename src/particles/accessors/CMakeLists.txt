@@ -8,4 +8,5 @@ target_sources(ablateLibrary
         swarmAccessor.hpp
         rhsAccessor.hpp
         eulerianAccessor.hpp
+        eulerianSourceAccessor.hpp
         )
