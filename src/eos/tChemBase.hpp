@@ -18,7 +18,6 @@
 #include "parameters/parameters.hpp"
 #include "utilities/intErrorChecker.hpp"
 #include "utilities/vectorUtilities.hpp"
-#include "zerork_cfd_plugin.h"
 
 namespace ablate::eos {
 
@@ -31,13 +30,6 @@ class TChemBase : public ChemistryModel {
 
     //! the mechanismFile may be chemkin or yaml based
     const std::filesystem::path mechanismFile;
-
-//    const std::filesystem::path reactionFile;
-//
-//    const std::filesystem::path thermoFile;
-
-    const char* cklogfilename = "mech2.cklog";
-    std::unique_ptr<zerork::mechanism> mech;
 
     //! an optional log file for tchem echo redirection
     std::shared_ptr<ablate::monitors::logs::Log> log;
@@ -76,13 +68,12 @@ class TChemBase : public ChemistryModel {
     static const std::filesystem::path reactionFile;
 
     const std::filesystem::path thermoFile;
-//    zerork_handle zrm_handle;
     /**
      * The tChem EOS can utilize either a mechanical & thermo file using the Chemkin file format for a modern yaml file.
      * @param mechFile
      * @param optionalThermoFile
      */
-    explicit TChemBase(const std::string& eosName, std::filesystem::path mechanismFile, std::filesystem::path reactionFile, std::filesystem::path thermoFile, const std::shared_ptr<ablate::monitors::logs::Log>& = {},
+    explicit TChemBase(const std::string& eosName, std::filesystem::path mechanismFile, const std::shared_ptr<ablate::monitors::logs::Log>& = {},
                        const std::shared_ptr<ablate::parameters::Parameters>& options = {});
 
 

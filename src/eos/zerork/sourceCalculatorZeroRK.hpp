@@ -26,14 +26,17 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
 
     //! hold a struct that can be used for chemistry constraints
     struct ChemistryConstraints {
-        double relTolerance = 1.0E-4;
-        double absTolerance = 1.0E-8;
+        double relTolerance = 1.0E-8;
+        double absTolerance = 1.0E-18;
 
         // zerork output state
-        bool verbose = false;
+        int verbose = 0;
 
         // For large mechanisms(~Nspec>100) it is recommended to use a sparse math jacobian
         bool sparseJacobian = false;
+
+        //timing log information
+        bool timinglog = false;
 
         // store the reactor type in the chemistry constrains
         ReactorType reactorType = ReactorType::ConstantVolume;

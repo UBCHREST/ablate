@@ -26,7 +26,7 @@ void ablate::eos::tChem::SourceCalculator::ChemistryConstraints::Set(const std::
         jacobianInterval = options->Get("jacobianInterval", jacobianInterval);
         maxAttempts = options->Get("maxAttempts", maxAttempts);
         thresholdTemperature = options->Get("thresholdTemperature", thresholdTemperature);
-        reactorType = options->Get("reactorType", ReactorType::ConstantPressure);
+        reactorType = options->Get("reactorType", ReactorType::ConstantVolume);
     }
 }
 
