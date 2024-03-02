@@ -1,7 +1,6 @@
 #include <numeric>
 #include "domain/boxMesh.hpp"
-#include "domain/constFieldAccessor.hpp"
-#include "domain/fieldAccessor.hpp"
+#include "domain/subDomain.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "petscTestFixture.hpp"
