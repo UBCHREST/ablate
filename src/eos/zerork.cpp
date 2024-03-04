@@ -818,5 +818,5 @@ REGISTER(ablate::eos::ChemistryModel, ablate::eos::zerorkEOS, "zerork ideal gas 
          ARG(std::filesystem::path, "reactionFile", "chemkin formated reaction files"),
          ARG(std::filesystem::path, "thermoFile", "chemkin formated thermodynamic file"),
          OPT(ablate::parameters::Parameters, "options",
-             "time stepping options (reactorType, sparseJacobian, relTolerance, absTolerance, verbose, thresholdTemperature, timingLog, stepLimiter)"
+             "time stepping options (reactorType, sparseJacobian, relTolerance, absTolerance, verbose, thresholdTemperature, timingLog, stepLimiter, loadBalance)"
              ));

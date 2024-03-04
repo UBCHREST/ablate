@@ -15,6 +15,7 @@ void ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints::Set(const s
         absTolerance = options->Get("absTolerance", absTolerance);
         thresholdTemperature = options->Get("thresholdTemperature", thresholdTemperature);
         stepLimiter = options->Get("stepLimiter", stepLimiter);
+        loadBalance = options->Get("loadBalance",loadBalance);
         reactorType = options->Get("reactorType", ReactorType::ConstantVolume);
     }
 }
@@ -54,6 +55,9 @@ ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<dom
     //verbose 0 is no output, max level is 4
     zerork_status_t status_verbose = zerork_reactor_set_int_option("verbosity", chemistryConstraints.verbose, zrm_handle);
     if(status_verbose != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+
+    zerork_status_t status_loadbalance = zerork_reactor_set_int_option("load_balance_mem", chemistryConstraints.loadBalance, zrm_handle);
+    if(status_loadbalance != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
     // Set tolerances
     zerork_status_t status_abstol = zerork_reactor_set_double_option("abs_tol", chemistryConstraints.absTolerance, zrm_handle);

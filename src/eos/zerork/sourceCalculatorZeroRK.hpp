@@ -37,6 +37,9 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
         // zerork output state
         int verbose = 0;
 
+        //load balancing
+        int loadBalance = 1;
+
         // For large mechanisms(~Nspec>100) it is recommended to use a sparse math jacobian
         bool sparseJacobian = false;
 
