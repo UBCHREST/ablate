@@ -9,11 +9,12 @@
 void ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints::Set(const std::shared_ptr<ablate::parameters::Parameters>& options) {
     if (options) {
         verbose = options->Get("verbose", verbose);
-        timinglog = options->Get("timinglog", timinglog);
+        timinglog = options->Get("timingLog", timinglog);
         sparseJacobian = options->Get("sparseJacobian", sparseJacobian);
         relTolerance = options->Get("relTolerance", relTolerance);
         absTolerance = options->Get("absTolerance", absTolerance);
         thresholdTemperature = options->Get("thresholdTemperature", thresholdTemperature);
+        stepLimiter = options->Get("stepLimiter", stepLimiter);
         reactorType = options->Get("reactorType", ReactorType::ConstantVolume);
     }
 }
@@ -76,7 +77,7 @@ ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<dom
     if(status_alwaysSolveTemp != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
     // Kinetic rate limiter
-    zerork_status_t status_steplimiter = zerork_reactor_set_double_option("step_limiterssdafda", 1E18, zrm_handle);
+    zerork_status_t status_steplimiter = zerork_reactor_set_double_option("step_limiter", chemistryConstraints.stepLimiter, zrm_handle);
     if(status_steplimiter != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
     if (chemistryConstraints.timinglog) {
@@ -205,8 +206,23 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
     flag = zerork_reactor_solve(1, time, dt, nReactorsEval, &reactorTEval[0], &reactorPEval[0],
                                 &reactorMassFracEval[0], zrm_handle);
 
-    if(flag != ZERORK_STATUS_SUCCESS) printf("Oo something went wrong during zerork integration...");
-    // TODO try to print the state for debugging if the integration fails
+    if(flag != ZERORK_STATUS_SUCCESS) {
+        std::stringstream warningMessage;
+        warningMessage<<"Oo something went wrong during zerork integration..." << "\n";
+        warningMessage << "Warning: Could not integrate chemistry on rank " << rank  << "\n";
+        warningMessage << "time: " << std::setprecision(16) << time << "\n";
+        warningMessage << "dt: " << std::setprecision(16) << dt << "\n";
+
+        // Check for temperature to see which reactor i sus
+        for (int s = 0; s < nReactors; ++s) {
+            if (reactorEval[s]==1) {
+                warningMessage << "Temperature after integration is: " << reactorTEval[s] << " for reactor " << s <<"\n";
+            }
+        }
+        warningMessage << "Possible solution for numerical stiffness could be decreasing the stepLimiter"  << "\n";
+
+    }
+
 
 //        std::cout << "zerork time is:" << time <<"\n";
 //        std::cout << "zerork temperature is:" << reactorTEval[0] <<"\n";

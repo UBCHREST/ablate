@@ -29,6 +29,11 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
         double relTolerance = 1.0E-8;
         double absTolerance = 1.0E-18;
 
+        // set the limiter on chemical rates of progress,
+        // for 1D flames set it to a value btw 1e18 and 1e20,
+        // 1e16 starts changing the flameshape
+        double stepLimiter = 1.0E200;
+
         // zerork output state
         int verbose = 0;
 
