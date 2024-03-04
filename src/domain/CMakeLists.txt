@@ -44,6 +44,7 @@ target_sources(ablateLibrary
         fieldAccessor.hpp
         constFieldAccessor.hpp
         accessor.hpp
+        constAccessor.hpp
 )
 
 add_subdirectory(modifiers)
