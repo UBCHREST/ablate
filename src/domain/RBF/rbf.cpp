@@ -1,5 +1,6 @@
 #include "rbf.hpp"
 #include <petsc/private/dmpleximpl.h>
+#include "utilities/petscSupport.hpp"
 
 using namespace ablate::domain::rbf;
 
@@ -139,7 +140,7 @@ void RBF::Matrix(const PetscInt c) {
     const DM dm = RBF::subDomain->GetSubDM();
 
     // Get the list of neighbor cells
-    DMPlexGetNeighbors(dm, c, -1, -1.0, RBF::minNumberCells, RBF::useCells, RBF::returnNeighborVertices, &nCells, &list) >> utilities::PetscUtilities::checkError;
+    DMPlexGetNeighbors(dm, c, -1, -1.0, RBF::minNumberCells, RBF::useCells, (PetscBool)(RBF::returnNeighborVertices), &nCells, &list) >> utilities::PetscUtilities::checkError;
 
     if (numPoly >= nCells) {
         throw std::invalid_argument("Number of surrounding cells, " + std::to_string(nCells) + ", can not support a requested polynomial order of " + std::to_string(p) + " which requires " +
@@ -225,22 +226,55 @@ void RBF::Matrix(const PetscInt c) {
     }
 
     MatDenseRestoreArrayWrite(A, &vals) >> utilities::PetscUtilities::checkError;
-    MatViewFromOptions(A, NULL, "-ablate::domain::rbf::RBF::A_view") >> utilities::PetscUtilities::checkError;
+//    MatViewFromOptions(A, NULL, "-ablate::domain::rbf::RBF::A_view") >> utilities::PetscUtilities::checkError;
 
     // Factor the matrix
-    MatLUFactor(A, NULL, NULL, NULL) >> utilities::PetscUtilities::checkError;
+
+Mat F;
+try {
+    MatFactorInfo info;
+    MatFactorInfoInitialize(&info) >> utilities::PetscUtilities::checkError;
+
+    MatGetFactor(A, MATSOLVERPETSC, MAT_FACTOR_QR, &F) >> utilities::PetscUtilities::checkError;
+    MatQRFactorSymbolic(F, A, NULL, &info) >> utilities::PetscUtilities::checkError;
+    MatQRFactorNumeric(F, A, &info) >> utilities::PetscUtilities::checkError;
+
+//    MatGetFactor(A, MATSOLVERPETSC, MAT_FACTOR_LU, &F) >> utilities::PetscUtilities::checkError;
+//    info.shifttype = (PetscReal)MAT_SHIFT_POSITIVE_DEFINITE;
+//    info.shiftamount = 0.1;
+//    MatLUFactorSymbolic(F, A, NULL, NULL, &info) >> utilities::PetscUtilities::checkError;
+//    MatLUFactorNumeric(F, A, &info) >> utilities::PetscUtilities::checkError;
+
+    MatDestroy(&A) >> utilities::PetscUtilities::checkError;
+}
+catch (const std::exception& e) {
+  MatViewFromOptions(A, NULL, "-ablate::domain::rbf::RBF::A_view") >> utilities::PetscUtilities::checkError;
+  int rank;
+  MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+  printf("Rank: %d\n", rank);
+  printf("Cell: %" PetscInt_FMT"d\n", c);
+  printf("\n");
+  for (PetscInt i = 0 ; i < nCells; ++i) {
+    for(PetscInt d = 0 ; d < dim; ++d) {
+      printf("%+.10f\t", x[i*dim + d]);
+    }
+    printf("\n");
+  }
+  exit(0);
+}
+//    MatLUFactor(A, NULL, NULL, NULL) >> utilities::PetscUtilities::checkError;
 
     PetscFree(xp) >> utilities::PetscUtilities::checkError;
 
     // Assign output
-    RBF::RBFMatrix[c] = A;
+    RBF::RBFMatrix[c] = F;
     RBF::stencilXLocs[c] = x;
     RBF::nStencil[c] = nCells;
     PetscMalloc1(nCells, &(RBF::stencilList[c])) >> utilities::PetscUtilities::checkError;
     PetscArraycpy(RBF::stencilList[c], list, nCells) >> utilities::PetscUtilities::checkError;
 
     // Return the work arrays
-    DMPlexRestoreNeighbors(dm, c, -1, -1.0, RBF::minNumberCells, RBF::useCells, RBF::returnNeighborVertices, &nCells, &list) >> utilities::PetscUtilities::checkError;
+    DMPlexRestoreNeighbors(dm, c, -1, -1.0, RBF::minNumberCells, RBF::useCells, (PetscBool)(RBF::returnNeighborVertices), &nCells, &list) >> utilities::PetscUtilities::checkError;
 }
 
 /************ Begin Derivative Code **********************/
@@ -264,9 +298,9 @@ void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt
 }
 
 /**
- * Set derivatives, defaulting to using vertices
+ * Set derivatives, defaulting to using common vertices
  */
-void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]) { RBF::SetDerivatives(numDer, dx, dy, dz, PETSC_FALSE); }
+void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]) { RBF::SetDerivatives(numDer, dx, dy, dz, PETSC_TRUE); }
 
 // Compute the RBF weights at the cell center of p using a cell-list
 // c - The center cell in cellRange ordering
@@ -389,17 +423,16 @@ void RBF::SetupDerivativeStencils() {
 PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz) {
     RBF::CheckField(field);
 
-    return RBF::EvalDer(field, RBF::subDomain->GetVec(*field), c, dx, dy, dz);
+    return RBF::EvalDer(RBF::subDomain->GetFieldDM(*field), RBF::subDomain->GetVec(*field), field->id, c, dx, dy, dz);
 }
 
-PetscReal RBF::EvalDer(const ablate::domain::Field *field, Vec vec, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz) {
+PetscReal RBF::EvalDer(DM dm, Vec vec, const PetscInt fid, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz) {
+
     PetscReal *wt = nullptr;
     PetscScalar val = 0.0, *f;
     const PetscScalar *array;
     PetscInt nCells = -1, *lst = nullptr;
     PetscInt derID = -1, numDer = RBF::nDer;
-    DM dm = RBF::subDomain->GetFieldDM(*field);
-    const PetscInt fid = field->id;
 
     PetscBool hasKey;
     PetscInt derKey = RBF::derivativeKey(dx, dy, dz);
@@ -436,14 +469,25 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, Vec vec, PetscInt c, 
 
 /************ Begin Interpolation Code **********************/
 
-PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]) {
-    RBF::CheckField(field);
+//PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]) {
 
-    return RBF::Interpolate(field, RBF::subDomain->GetVec(*field), xEval);
-}
+//}
 
 PetscReal RBF::Interpolate(const ablate::domain::Field *field, Vec f, PetscReal xEval[3]) {
-    PetscInt i, c, nCells, *lst;
+  DM dm = RBF::subDomain->GetFieldDM(*field);
+
+  PetscInt c;
+  DMPlexGetContainingCell(dm, xEval, &c) >> utilities::PetscUtilities::checkError;
+  if (c < 0) {
+    throw std::runtime_error("ablate::domain::RBF::Interpolate could not determine the location of (" + std::to_string(xEval[0]) + ", " + std::to_string(xEval[1]) + ", " +
+                                 std::to_string(xEval[2]) + ").");
+  }
+
+  return RBF::Interpolate(field, f, c, xEval);
+}
+
+PetscReal RBF::Interpolate(const ablate::domain::Field *field, Vec f, const PetscInt c, PetscReal xEval[3]) {
+    PetscInt i, nCells, *lst;
     PetscScalar *vals, *v;
     const PetscScalar *fvals;
     PetscReal *x, x0[3];
@@ -452,12 +496,7 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, Vec f, PetscReal 
     DM dm = RBF::subDomain->GetFieldDM(*field);
     const PetscInt fid = field->id;
 
-    DMPlexGetContainingCell(dm, xEval, &c) >> utilities::PetscUtilities::checkError;
-
-    if (c < 0) {
-        throw std::runtime_error("ablate::domain::RBF::Interpolate could not determine the location of (" + std::to_string(xEval[0]) + ", " + std::to_string(xEval[1]) + ", " +
-                                 std::to_string(xEval[2]) + ").");
-    }
+    RBF::CheckField(field);
 
     if (RBF::RBFMatrix[c] == nullptr) {
         RBF::Matrix(c);
@@ -559,9 +598,21 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, Vec f, PetscReal 
 /************ End Interpolation Code **********************/
 
 /************ Constructor, Setup, and Initialization Code **********************/
-RBF::RBF(int polyOrder, bool hasDerivatives, bool hasInterpolation) : polyOrder(polyOrder), hasDerivatives(hasDerivatives), hasInterpolation(hasInterpolation) {}
+RBF::RBF(int polyOrder, bool hasDerivatives, bool hasInterpolation, bool returnNeighborVertices)
+    : polyOrder(polyOrder), returnNeighborVertices(returnNeighborVertices), hasDerivatives(hasDerivatives), hasInterpolation(hasInterpolation) {}
 
 RBF::~RBF() {
+    RBF::FreeStencilData();
+
+    if (dxyz) {
+        PetscFree(dxyz);
+    }
+    if (hash) {
+        PetscHMapIDestroy(&hash);
+    }
+}
+
+void RBF::FreeStencilData() {
     if ((RBF::cEnd - RBF::cStart) > 0) {
         for (PetscInt c = RBF::cStart; c < RBF::cEnd; ++c) {
             PetscFree(RBF::stencilList[c]);
@@ -569,13 +620,13 @@ RBF::~RBF() {
             PetscFree(RBF::stencilWeights[c]);
             PetscFree(RBF::stencilXLocs[c]);
         }
+        RBF::cellList += cStart;
+        RBF::nStencil += cStart;
+        RBF::stencilList += cStart;
+        RBF::RBFMatrix += cStart;
+        RBF::stencilXLocs += cStart;
+        RBF::stencilWeights += cStart;
         PetscFree6(RBF::cellList, RBF::nStencil, RBF::stencilList, RBF::RBFMatrix, RBF::stencilXLocs, RBF::stencilWeights) >> utilities::PetscUtilities::checkError;
-    }
-    if (dxyz) {
-        PetscFree(dxyz);
-    }
-    if (hash) {
-        PetscHMapIDestroy(&hash);
     }
 }
 
@@ -669,24 +720,21 @@ void RBF::Setup(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) {
             dz[numDer++] = 2;
         }
 
-        SetDerivatives(numDer, dx, dy, dz);
+        SetDerivatives(numDer, dx, dy, dz, PETSC_TRUE);
     }
 }
 
-void RBF::Initialize(ablate::domain::Range cellRange) {
-    // If this is called due to a grid change then release the old memory. In this case cEnd - cStart will be greater than zero.
-    if ((RBF::cEnd - RBF::cStart) > 0) {
-        for (PetscInt c = RBF::cStart; c < RBF::cEnd; ++c) {
-            PetscFree(RBF::stencilList[c]);
-            if (RBF::RBFMatrix[c]) MatDestroy(&(RBF::RBFMatrix[c]));
-            PetscFree(RBF::stencilWeights[c]);
-            PetscFree(RBF::stencilXLocs[c]);
-        }
-        PetscFree6(RBF::cellList, RBF::nStencil, RBF::stencilList, RBF::RBFMatrix, RBF::stencilXLocs, RBF::stencilWeights) >> utilities::PetscUtilities::checkError;
-    }
+void RBF::Initialize() {
+    ablate::domain::Range range;
 
-    RBF::cStart = cellRange.start;
-    RBF::cEnd = cellRange.end;
+    // Grab the range of cells from the subDomain
+    RBF::subDomain->GetCellRange(nullptr, range);
+
+    // If this is called due to a grid change then release the old memory. In this case cEnd - cStart will be greater than zero.
+    RBF::FreeStencilData();
+
+    RBF::cStart = range.start;
+    RBF::cEnd = range.end;
 
     // Both interpolation and derivatives need the list of points
     PetscInt nCells = RBF::cEnd - RBF::cStart;
@@ -702,7 +750,7 @@ void RBF::Initialize(ablate::domain::Range cellRange) {
     RBF::stencilWeights -= cStart;
 
     for (PetscInt c = cStart; c < cEnd; ++c) {
-        RBF::cellList[c] = cellRange.GetPoint(c);
+        RBF::cellList[c] = range.GetPoint(c);
 
         RBF::nStencil[c] = -1;
         RBF::stencilList[c] = nullptr;
@@ -711,4 +759,6 @@ void RBF::Initialize(ablate::domain::Range cellRange) {
         RBF::stencilXLocs[c] = nullptr;
         RBF::stencilWeights[c] = nullptr;
     }
+
+    subDomain->RestoreRange(range);
 }

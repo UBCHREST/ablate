@@ -4,7 +4,6 @@
 #include <petsc/private/hashmapi.h>
 #include "domain/range.hpp"  // For domain::Range
 #include "domain/subDomain.hpp"
-#include "utilities/petscSupport.hpp"
 
 #define __RBF_DEFAULT_POLYORDER 3
 
@@ -20,7 +19,7 @@ class RBF {
     PetscInt nPoly = -1;                             // The number of polynomial components to include
     PetscInt minNumberCells = -1;                    // Minimum number of cells-vertices needed to compute the RBF
     PetscBool useCells = PETSC_FALSE;                // Use vertices or edges/faces when computing neighbor cells/vertices
-    PetscBool returnNeighborVertices = PETSC_FALSE;  // If it is true, it returns neighbor vertices, else it returns neighbor cells
+    const bool returnNeighborVertices;     // If it is true formulates the RBF based on vertices surrounding a cell, otherwise will use cells surrounding a cell
 
     // Information from the subDomain cell range
     PetscInt cStart = 0, cEnd = 0;  // The cell range
@@ -50,18 +49,20 @@ class RBF {
 
     void CheckField(const ablate::domain::Field *field);  // Checks whether the field is SOL or AUX
 
+    void FreeStencilData();
+
    protected:
     PetscReal DistanceSquared(PetscInt dim, PetscReal x[], PetscReal y[]);
     PetscReal DistanceSquared(PetscInt dim, PetscReal x[]);
     void Loc3D(PetscInt dim, PetscReal xIn[], PetscReal x[3]);
 
    public:
-    explicit RBF(int polyOrder = 4, bool hasDerivatives = true, bool hasInterpolation = true);
+    explicit RBF(int polyOrder = 4, bool hasDerivatives = true, bool hasInterpolation = true, bool returnNeighborVertices = false);
 
     virtual ~RBF();
 
     /** SubDomain Register and Setup **/
-    void Initialize(ablate::domain::Range cellRange);
+    void Initialize();
     void Setup(std::shared_ptr<ablate::domain::SubDomain> subDomain);
 
     // Derivative stuff
@@ -95,14 +96,25 @@ class RBF {
 
     /**
      * Return the derivative of a field at a given location
-     * @param field - The field to take the derivative of
-     * @param f - The local vector containing the data
+     * @param dm - The mesh
+     * @param vec - Vector containing the data
+     * @param fid - Field id.
      * @param c - The location in ablate::domain::Range
      * @param dx, dy, dz - The derivative
      */
-    PetscReal EvalDer(const ablate::domain::Field *field, Vec f, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz);  // Evaluate a derivative
+    PetscReal EvalDer(DM dm, Vec vec, const PetscInt fid, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz);  // Evaluate a derivative
 
     // Interpolation stuff
+
+    /**
+     * Return the interpolation of a field at a given location
+     * @param field - The field to interpolate
+     * @param f - The local vector containing the data
+     * @param c - Cell containing the evaluation point
+     * @param xEval - The location where to perform the interpolation
+     */
+    PetscReal Interpolate(const ablate::domain::Field *field, Vec f, const PetscInt c, PetscReal xEval[3]);
+
     /**
      * Return the interpolation of a field at a given location
      * @param field - The field to interpolate
@@ -116,7 +128,7 @@ class RBF {
      * @param field - The field to interpolate
      * @param xEval - The location where to perform the interpolation
      */
-    PetscReal Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]);
+    [[nodiscard]] inline PetscReal Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]) { return RBF::Interpolate(field, RBF::subDomain->GetVec(*field), xEval); }
 
     // These will be overwritten in the derived classes
     /**
@@ -139,6 +151,11 @@ class RBF {
      * The RBF kernel type
      */
     virtual std::string_view type() const = 0;
+
+    /**
+     *
+    */
+    inline PetscInt GetDimensions() { return RBF::subDomain->GetDimensions(); }
 };
 
 }  // namespace ablate::domain::rbf
