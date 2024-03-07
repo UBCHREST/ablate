@@ -238,11 +238,11 @@ void RBF::Matrix(const PetscInt c) {
     MatQRFactorSymbolic(F, A, NULL, &info) >> utilities::PetscUtilities::checkError;
     MatQRFactorNumeric(F, A, &info) >> utilities::PetscUtilities::checkError;
 
-//    MatGetFactor(A, MATSOLVERPETSC, MAT_FACTOR_LU, &F) >> utilities::PetscUtilities::checkError;
-//    info.shifttype = (PetscReal)MAT_SHIFT_POSITIVE_DEFINITE;
-//    info.shiftamount = 0.1;
-//    MatLUFactorSymbolic(F, A, NULL, NULL, &info) >> utilities::PetscUtilities::checkError;
-//    MatLUFactorNumeric(F, A, &info) >> utilities::PetscUtilities::checkError;
+    //    MatGetFactor(A, MATSOLVERPETSC, MAT_FACTOR_LU, &F) >> utilities::PetscUtilities::checkError;
+    //    info.shifttype = (PetscReal)MAT_SHIFT_POSITIVE_DEFINITE;
+    //    info.shiftamount = 0.1;
+    //    MatLUFactorSymbolic(F, A, NULL, NULL, &info) >> utilities::PetscUtilities::checkError;
+    //    MatLUFactorNumeric(F, A, &info) >> utilities::PetscUtilities::checkError;
 
     MatDestroy(&A) >> utilities::PetscUtilities::checkError;
 
@@ -409,7 +409,6 @@ PetscReal RBF::EvalDer(const ablate::domain::Field *field, PetscInt c, PetscInt 
 }
 
 PetscReal RBF::EvalDer(DM dm, Vec vec, const PetscInt fid, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz) {
-
     PetscReal *wt = nullptr;
     PetscScalar val = 0.0, *f;
     const PetscScalar *array;
@@ -451,16 +450,16 @@ PetscReal RBF::EvalDer(DM dm, Vec vec, const PetscInt fid, PetscInt c, PetscInt 
 
 /************ Begin Interpolation Code **********************/
 PetscReal RBF::Interpolate(const ablate::domain::Field *field, Vec f, PetscReal xEval[3]) {
-  DM dm = RBF::subDomain->GetFieldDM(*field);
+    DM dm = RBF::subDomain->GetFieldDM(*field);
 
-  PetscInt c;
-  DMPlexGetContainingCell(dm, xEval, &c) >> utilities::PetscUtilities::checkError;
-  if (c < 0) {
-    throw std::runtime_error("ablate::domain::RBF::Interpolate could not determine the location of (" + std::to_string(xEval[0]) + ", " + std::to_string(xEval[1]) + ", " +
+    PetscInt c;
+    DMPlexGetContainingCell(dm, xEval, &c) >> utilities::PetscUtilities::checkError;
+    if (c < 0) {
+        throw std::runtime_error("ablate::domain::RBF::Interpolate could not determine the location of (" + std::to_string(xEval[0]) + ", " + std::to_string(xEval[1]) + ", " +
                                  std::to_string(xEval[2]) + ").");
-  }
+    }
 
-  return RBF::Interpolate(field, f, c, xEval);
+    return RBF::Interpolate(field, f, c, xEval);
 }
 
 PetscReal RBF::Interpolate(const ablate::domain::Field *field, Vec f, const PetscInt c, PetscReal xEval[3]) {
