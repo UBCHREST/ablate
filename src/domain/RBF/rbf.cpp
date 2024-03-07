@@ -226,12 +226,11 @@ void RBF::Matrix(const PetscInt c) {
     }
 
     MatDenseRestoreArrayWrite(A, &vals) >> utilities::PetscUtilities::checkError;
-//    MatViewFromOptions(A, NULL, "-ablate::domain::rbf::RBF::A_view") >> utilities::PetscUtilities::checkError;
+    MatViewFromOptions(A, NULL, "-ablate::domain::rbf::RBF::A_view") >> utilities::PetscUtilities::checkError;
 
     // Factor the matrix
+    Mat F;
 
-Mat F;
-try {
     MatFactorInfo info;
     MatFactorInfoInitialize(&info) >> utilities::PetscUtilities::checkError;
 
@@ -246,23 +245,6 @@ try {
 //    MatLUFactorNumeric(F, A, &info) >> utilities::PetscUtilities::checkError;
 
     MatDestroy(&A) >> utilities::PetscUtilities::checkError;
-}
-catch (const std::exception& e) {
-  MatViewFromOptions(A, NULL, "-ablate::domain::rbf::RBF::A_view") >> utilities::PetscUtilities::checkError;
-  int rank;
-  MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-  printf("Rank: %d\n", rank);
-  printf("Cell: %" PetscInt_FMT"d\n", c);
-  printf("\n");
-  for (PetscInt i = 0 ; i < nCells; ++i) {
-    for(PetscInt d = 0 ; d < dim; ++d) {
-      printf("%+.10f\t", x[i*dim + d]);
-    }
-    printf("\n");
-  }
-  exit(0);
-}
-//    MatLUFactor(A, NULL, NULL, NULL) >> utilities::PetscUtilities::checkError;
 
     PetscFree(xp) >> utilities::PetscUtilities::checkError;
 
@@ -468,11 +450,6 @@ PetscReal RBF::EvalDer(DM dm, Vec vec, const PetscInt fid, PetscInt c, PetscInt 
 /************ End Derivative Code **********************/
 
 /************ Begin Interpolation Code **********************/
-
-//PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3]) {
-
-//}
-
 PetscReal RBF::Interpolate(const ablate::domain::Field *field, Vec f, PetscReal xEval[3]) {
   DM dm = RBF::subDomain->GetFieldDM(*field);
 
@@ -517,8 +494,6 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, Vec f, const Pets
     VecGetArray(rhs, &vals) >> utilities::PetscUtilities::checkError;
 
     for (i = 0; i < nCells; ++i) {
-        // DMPlexPointLocalFieldRead isn't behaving like I would expect. If I don't make f a pointer then it just returns zero.
-        //    Additionally, it looks like it allows for the editing of the value.
         if (fid >= 0) {
             DMPlexPointLocalFieldRead(dm, lst[i], fid, fvals, &v) >> utilities::PetscUtilities::checkError;
         } else {
