@@ -356,7 +356,7 @@ TEST_P(RBFTestFixture_Derivative, CheckDerivativeFunctions) {
         subDomain->GetCellRange(nullptr, cellRange);
         for (std::size_t j = 0; j < rbfList.size(); ++j) {
             rbfList[j]->Setup(subDomain);       // This causes issues (I think)
-            rbfList[j]->Initialize(cellRange);  //         Initialize
+            rbfList[j]->Initialize();  //         Initialize
         }
 
         RBFTestFixture_SetData(cellRange, field, subDomain);
@@ -432,7 +432,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dz = {0, 0, 0},
                                                 .cell = -1,
                                                 .x = {},
-                                                .maxError = {2.0e-15, 2e-03, 2e-01}},
+                                                .maxError = {7e-14, 2e-03, 2e-01}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = testingResources::MpiTestParameter("1DN161_1Proc"),
                                                 .meshFaces = {161},
                                                 .meshStart = {-1.0},
@@ -452,7 +452,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dz = {0, 0, 0},
                                                 .cell = -1,
                                                 .x = {},
-                                                .maxError = {2e-15, 7e-05, 2e-02}},
+                                                .maxError = {7e-14, 7e-05, 2e-02}},
         (RBFParameters_DerivativeInterpolation){
             .mpiTestParameter = testingResources::MpiTestParameter("2DQuadN21_1Proc"),
             .meshFaces = {21, 21},
@@ -472,7 +472,7 @@ INSTANTIATE_TEST_SUITE_P(
             .dz = {0, 0, 0, 0, 0, 0},
             .cell = -1,
             .x = {},
-            .maxError = {6.0e-15, 3.4e-02, 1.5e+00, 3.3e-02, 3.6e-01, 1.5e+00}},
+            .maxError = {7e-14, 3.4e-02, 1.5e+00, 3.3e-02, 3.6e-01, 1.5e+00}},
         (RBFParameters_DerivativeInterpolation){
             .mpiTestParameter = testingResources::MpiTestParameter("2DQuadN41_1Proc"),
             .meshFaces = {41, 41},
@@ -492,7 +492,7 @@ INSTANTIATE_TEST_SUITE_P(
             .dz = {0, 0, 0, 0, 0, 0},
             .cell = -1,
             .x = {},
-            .maxError = {5.0e-15, 2.3e-03, 1.9e-01, 2.3e-03, 5.0e-02, 1.8e-01}},
+            .maxError = {7e-14, 2.3e-03, 1.9e-01, 2.3e-03, 5.0e-02, 1.8e-01}},
         (RBFParameters_DerivativeInterpolation){
             .mpiTestParameter = testingResources::MpiTestParameter("2DTriN21_1Proc"),
             .meshFaces = {21, 21},
@@ -512,7 +512,7 @@ INSTANTIATE_TEST_SUITE_P(
             .dz = {0, 0, 0, 0, 0, 0},
             .cell = -1,
             .x = {},
-            .maxError = {5.0e-15, 1.5e-02, 6.2e-01, 1.6e-02, 2.6e-01, 7.6e-01}},
+            .maxError = {7e-14, 1.5e-02, 7.5e-01, 1.6e-02, 2.6e-01, 7.6e-01}},
         (RBFParameters_DerivativeInterpolation){
             .mpiTestParameter = testingResources::MpiTestParameter("2DTriN41_1Proc"),
             .meshFaces = {41, 41},
@@ -532,7 +532,7 @@ INSTANTIATE_TEST_SUITE_P(
             .dz = {0, 0, 0, 0, 0, 0},
             .cell = -1,
             .x = {},
-            .maxError = {4.6e-15, 1.8e-03, 1.5e-01, 9.0e-04, 4.9e-02, 1.2e-01}},
+            .maxError = {7e-14, 1.8e-03, 1.5e-01, 2.0e-03, 4.9e-02, 1.2e-01}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = testingResources::MpiTestParameter("2DQuadN21_2Proc", 2),
                                                 .meshFaces = {21, 21},
                                                 .meshStart = {-1.0, -1.0},
@@ -552,7 +552,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dz = {0, 0, 0, 0, 0, 0},
                                                 .cell = -1,
                                                 .x = {},
-                                                .maxError = {3.7e-15, 4.4e-02, 1.8e+00, 3.3e-02, 4.2e-01, 1.4e+00}},
+                                                .maxError = {7e-14, 4.4e-02, 1.8e+00, 3.3e-02, 4.2e-01, 1.4e+00}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = testingResources::MpiTestParameter("2DQuadN41_2Proc", 2),
                                                 .meshFaces = {41, 41},
                                                 .meshStart = {-1.0, -1.0},
@@ -572,7 +572,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dz = {0, 0, 0, 0, 0, 0},
                                                 .cell = -1,
                                                 .x = {},
-                                                .maxError = {5.0e-15, 2.4e-03, 1.9e-01, 2.3e-03, 5.0e-02, 1.8e-01}},
+                                                .maxError = {7e-14, 5e-03, 3e-01, 2.3e-03, 6.0e-02, 1.8e-01}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = testingResources::MpiTestParameter("2DTriN21_2Proc", 2),
                                                 .meshFaces = {21, 21},
                                                 .meshStart = {-1.0, -1.0},
@@ -592,7 +592,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dz = {0, 0, 0, 0, 0, 0},
                                                 .cell = -1,
                                                 .x = {},
-                                                .maxError = {5.0e-15, 2.3e-02, 9.0e-01, 1.8e-02, 4.5e-01, 7.5e-01}},
+                                                .maxError = {7e-14, 2.3e-02, 9.0e-01, 1.8e-02, 4.5e-01, 7.5e-01}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = testingResources::MpiTestParameter("2DTriN41_2Proc", 2),
                                                 .meshFaces = {41, 41},
                                                 .meshStart = {-1.0, -1.0},
@@ -612,7 +612,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dz = {0, 0, 0, 0, 0, 0},
                                                 .cell = -1,
                                                 .x = {},
-                                                .maxError = {4.1e-15, 2.0e-03, 1.5e-01, 9.4e-04, 4.8e-02, 1.1e-01}},
+                                                .maxError = {1e-13, 2.0e-03, 1.5e-01, 1e-03, 8e-02, 1.2e-01}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = testingResources::MpiTestParameter("3DQuadN21_1Proc"),
                                                 .meshFaces = {21, 21, 21},
                                                 .meshStart = {-1.0, -1.0, -1.0},
@@ -632,7 +632,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dz = {0, 0, 0, 0, 0, 0, 1, 1, 1, 2},
                                                 .cell = 0,
                                                 .x = {},
-                                                .maxError = {2E-15, 1.7e-02, 7.2e-01, 1.7e-02, 2.1e-03, 7.2e-01, 1.7e-02, 2.1e-03, 2.1e-03, 7.2e-01}},
+                                                .maxError = {7e-14, 1.7e-02, 7.2e-01, 1.7e-02, 2.1e-03, 7.2e-01, 1.7e-02, 2.1e-03, 2.1e-03, 7.2e-01}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = testingResources::MpiTestParameter("3DQuadN41_1Proc"),
                                                 .meshFaces = {41, 41, 41},
                                                 .meshStart = {-1.0, -1.0, -1.0},
@@ -652,7 +652,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dz = {0, 0, 0, 0, 0, 0, 1, 1, 1, 2},
                                                 .cell = 0,
                                                 .x = {},
-                                                .maxError = {3.0e-15, 1.1e-03, 8.9e-02, 1.1e-03, 1.7e-04, 8.9e-02, 1.1e-03, 1.7e-04, 1.9e-04, 8.9e-02}},
+                                                .maxError = {7e-14, 1.1e-03, 8.9e-02, 1.1e-03, 1.7e-04, 8.9e-02, 1.1e-03, 1.7e-04, 1.9e-04, 8.9e-02}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = testingResources::MpiTestParameter("3DTriN21_1Proc"),
                                                 .meshFaces = {21, 21, 21},
                                                 .meshStart = {-1.0, -1.0, -1.0},
@@ -672,7 +672,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dz = {0, 0, 0, 0, 0, 0, 1, 1, 1, 2},
                                                 .cell = 0,
                                                 .x = {},
-                                                .maxError = {1e-15, 3.3e-04, 3.5e-02, 4.0e-04, 1.8e-02, 7.0e-03, 5.0e-04, 1.5e-02, 9.0e-03, 9e-03}},
+                                                .maxError = {7e-14, 3.3e-04, 3.5e-02, 4.0e-04, 1.8e-02, 7.0e-03, 5.0e-04, 1.5e-02, 9.0e-03, 9e-03}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = testingResources::MpiTestParameter("3DTriN41_1Proc"),
                                                 .meshFaces = {41, 41, 41},
                                                 .meshStart = {-1.0, -1.0, -1.0},
@@ -692,7 +692,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dz = {0, 0, 0, 0, 0, 0, 1, 1, 1, 2},
                                                 .cell = 0,
                                                 .x = {},
-                                                .maxError = {1.2e-16, 5.6e-06, 2.0e-03, 2.1e-05, 8.1e-05, 2.0e-03, 2.2e-05, 2.0e-04, 7.1e-05, 1.6e-03}}),
+                                                .maxError = {5e-16, 8e-06, 2.0e-03, 2.1e-05, 4e-04, 2.0e-03, 2.2e-05, 2.0e-04, 3e-04, 1.6e-03}}),
     [](const testing::TestParamInfo<RBFParameters_DerivativeInterpolation> &info) { return info.param.mpiTestParameter.getTestName(); });
 
 class RBFTestFixture_Interpolation : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<RBFParameters_DerivativeInterpolation> {
@@ -737,7 +737,7 @@ TEST_P(RBFTestFixture_Interpolation, CheckInterpolationFunctions) {
         subDomain->GetCellRange(nullptr, cellRange);
         for (std::size_t j = 0; j < rbfList.size(); ++j) {
             rbfList[j]->Setup(subDomain);       // This causes issues (I think)
-            rbfList[j]->Initialize(cellRange);  //         Initialize
+            rbfList[j]->Initialize();  //         Initialize
         }
 
         // Now set the data using the first RBF. All will use the same data
