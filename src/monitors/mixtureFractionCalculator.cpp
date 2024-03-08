@@ -3,9 +3,9 @@
 
 ablate::monitors::MixtureFractionCalculator::MixtureFractionCalculator(const std::shared_ptr<ablate::eos::EOS>& eosIn, std::map<std::string, double> massFractionsFuel,
                                                                        std::map<std::string, double> massFractionsOxidizer, const std::vector<std::string>& trackingElementsIn)
-    : eos(std::dynamic_pointer_cast<eos::TChemBase>(eosIn)), trackingElements(trackingElementsIn.empty() ? std::vector<std::string>{"C", "H"} : trackingElementsIn) {
+    : eos(std::dynamic_pointer_cast<eos::ChemistryModel>(eosIn)), trackingElements(trackingElementsIn.empty() ? std::vector<std::string>{"C", "H"} : trackingElementsIn) {
     // make sure that the eos is set
-    if (!std::dynamic_pointer_cast<eos::TChemBase>(eosIn)) {
+    if (!std::dynamic_pointer_cast<eos::ChemistryModel>(eosIn)) {
         throw std::invalid_argument("ablate::chemistry::MixtureFractionCalculator only accepts EOS of type eos::TChem");
     }
 
@@ -56,9 +56,11 @@ ablate::monitors::MixtureFractionCalculator::MixtureFractionCalculator(const std
     zMixCoefficients.resize(species.size(), 0.0);
     for (std::size_t s = 0; s < species.size(); s++) {
         const auto& speciesName = species[s];
-        const auto& speciesElement = speciesElementInformation[speciesName];
+        // for zerork speciesElement only contains elements that are present in the species
+        auto& speciesElement = speciesElementInformation[speciesName];
         for (const auto& element : trackingElements) {
-            zMixCoefficients[s] += speciesElement.at(element) * elementInformation[element] / speciesMolecularMass[speciesName];
+            // default return value is 0 if key is not found in element
+            zMixCoefficients[s] += speciesElement[element] * elementInformation[element] / speciesMolecularMass[speciesName];
         }
     }
     // Compute reference values

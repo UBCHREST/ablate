@@ -1,6 +1,5 @@
 #include "zerork.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
-#include "monitors/logs/nullLog.hpp"
 #include "utilities/mpiUtilities.hpp"
 
 ablate::eos::zerorkEOS::zerorkEOS(const std::filesystem::path reactionFileIn,const std::filesystem::path thermoFileIn,
@@ -365,7 +364,7 @@ PetscErrorCode ablate::eos::zerorkEOS::SpeedOfSoundTemperatureFunction(const Pet
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     int numSpc = functionContext->nSpc;
-    // Fill the working array
+
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
 
     // Fill the working array
@@ -397,7 +396,7 @@ PetscErrorCode ablate::eos::zerorkEOS::SpeedOfSoundTemperatureMassFractionFuncti
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     int numSpc = functionContext->nSpc;
-    // Fill the working array
+
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
 
     // Fill the working array
@@ -429,7 +428,7 @@ PetscErrorCode ablate::eos::zerorkEOS::SpecificHeatConstantPressureTemperatureFu
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     int numSpc = functionContext->nSpc;
-    // Fill the working array
+
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
 
     // Fill the working array
@@ -456,7 +455,7 @@ PetscErrorCode ablate::eos::zerorkEOS::SpecificHeatConstantPressureTemperatureMa
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     int numSpc = functionContext->nSpc;
-    // Fill the working array
+
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
 
     // Fill the working array
@@ -774,24 +773,11 @@ ablate::eos::EOSFunction ablate::eos::zerorkEOS::GetFieldFunctionFunction(const 
 }
 
 std::map<std::string, double> ablate::eos::zerorkEOS::GetElementInformation() const {
-    // Create the map
-    std::map<std::string, double> elementInfo;
-
-    // TODO find a way to output elemnt information from zerork
-    // Dont use zerork witht he mixture fraction generator for now
-    throw std::invalid_argument("mixture fraction calculation not supported in zerork for now...");
-    return elementInfo;
+    return mech->getElementInfo();
 }
 
 std::map<std::string, std::map<std::string, int>> ablate::eos::zerorkEOS::GetSpeciesElementalInformation() const {
-
-    std::map<std::string, std::map<std::string, int>> speciesElementInfo;
-
-    // TODO find a way to output elemnt information from zerork
-    // Dont use zerork witht he mixture fraction generator for now
-
-    throw std::invalid_argument("mixture fraction calculation not supported in zerork for now...");
-    return speciesElementInfo;
+    return mech->getSpeciesElementInfo();
 }
 
 std::map<std::string, double> ablate::eos::zerorkEOS::GetSpeciesMolecularMass() const {
@@ -805,7 +791,6 @@ std::map<std::string, double> ablate::eos::zerorkEOS::GetSpeciesMolecularMass() 
         // TODO test this
         mw[species[sp]] = sMass[(int)sp];
     }
-
     return mw;
 }
 

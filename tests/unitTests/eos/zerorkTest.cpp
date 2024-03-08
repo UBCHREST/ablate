@@ -1,7 +1,6 @@
 #include <numeric>
 #include "domain/boxMesh.hpp"
 #include "domain/dynamicRange.hpp"
-#include "domain/mockField.hpp"
 #include "eos/zerork.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
@@ -58,11 +57,11 @@ struct zeroRKCreateAndViewParameters {
     std::string expectedViewStart;
 };
 
-class TChemCreateAndViewFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemCreateAndViewParameters> {};
+class zerorkCreateAndViewFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<zeroRKCreateAndViewParameters> {};
 
-TEST_P(TChemCreateAndViewFixture, ShouldCreateAndView) {
+TEST_P(zerorkCreateAndViewFixture, ShouldCreateAndView) {
     // arrange
-    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().reactionFile);
 
     std::stringstream outputStream;
 
@@ -78,10 +77,11 @@ TEST_P(TChemCreateAndViewFixture, ShouldCreateAndView) {
     ASSERT_TRUE(startsWith) << "Should start with expected string. ";
 }
 
-INSTANTIATE_TEST_SUITE_P(TChemTests, TChemCreateAndViewFixture,
-                         testing::Values((TChemCreateAndViewParameters){.mechFile = "inputs/eos/gri30.yaml",
+INSTANTIATE_TEST_SUITE_P(TChemTests, zerorkCreateAndViewFixture,
+                         testing::Values((zeroRKCreateAndViewParameters){.reactionFile = "inputs/eos/gri30.inp",
+                                                                         .thermoFile = "inputs/eos/gri30.dat",
                                                                         .expectedViewStart = "EOS: TChem\n\tmechFile: \"inputs/eos/gri30.yaml\"\n\tnumberSpecies: 53\n"}),
-                         [](const testing::TestParamInfo<TChemCreateAndViewParameters>& info) { return testingResources::PetscTestFixture::SanitizeTestName(info.param.mechFile.string()); });
+                         [](const testing::TestParamInfo<zeroRKCreateAndViewParameters>& info) { return testingResources::PetscTestFixture::SanitizeTestName(info.param.reactionFile.string()); });
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///// EOS Get Species Tests
@@ -95,7 +95,7 @@ class TChemGetSpeciesFixture : public testingResources::PetscTestFixture, public
 
 TEST_P(TChemGetSpeciesFixture, ShouldGetCorrectSpecies) {
     // arrange
-    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
 
     // act
     auto species = eos->GetSpeciesVariables();
@@ -131,7 +131,7 @@ class TCThermodynamicPropertyTestFixture : public testingResources::PetscTestFix
 
 TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputeProperty) {
     // arrange
-    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().mechFile);
 
     // get the test params
     const auto& params = GetParam();

@@ -57,6 +57,10 @@ class ChemistryModel : public eos::EOS {
 
     [[nodiscard]] virtual std::map<std::string, double> GetSpeciesMolecularMass() const = 0;
 
+    [[nodiscard]] virtual std::map<std::string, double> GetElementInformation() const = 0;
+
+    [[nodiscard]] virtual std::map<std::string, std::map<std::string, int>> GetSpeciesElementalInformation() const = 0;
+
     /**
      * a temperature thermodynamic function specific to
      */

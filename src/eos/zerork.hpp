@@ -5,7 +5,6 @@
 #include <map>
 #include <memory>
 #include "chemistryModel.hpp"
-#include <math.h>
 #include "eos.hpp"
 #include "eos/zerork/sourceCalculatorZeroRK.hpp"
 #include "monitors/logs/log.hpp"
@@ -32,7 +31,7 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
         PetscInt numberSpecies;
     };
 
-    //kinetic and elemental data
+    //kinetic and elemental data parsing file
     const char* cklogfilename = "mech.cklog";
 
     std::vector<double> stateVector;
@@ -56,13 +55,13 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
      * Returns all elements tracked in this mechanism and their molecular mass
      * @return
      */
-    [[nodiscard]] std::map<std::string, double> GetElementInformation() const;
+    [[nodiscard]] std::map<std::string, double> GetElementInformation() const override;
 
     /**
      * no. of atoms of each element in each species
      * @return
      */
-    [[nodiscard]] std::map<std::string, std::map<std::string, int>> GetSpeciesElementalInformation() const;
+    [[nodiscard]] std::map<std::string, std::map<std::string, int>> GetSpeciesElementalInformation() const override;
 
     /**
      * the MW of each species

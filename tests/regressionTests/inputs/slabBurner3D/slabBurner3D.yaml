@@ -9,7 +9,7 @@
 ---
 test:
   # a unique test name for this integration tests
-  name: slabBurner3D
+  name: slabBurner3DTchem
   # run on multiple mpi ranks
   ranks: 2
   # create a list of asserts to compare

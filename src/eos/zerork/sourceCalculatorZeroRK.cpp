@@ -56,8 +56,10 @@ ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<dom
     zerork_status_t status_verbose = zerork_reactor_set_int_option("verbosity", chemistryConstraints.verbose, zrm_handle);
     if(status_verbose != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
-    zerork_status_t status_loadbalance = zerork_reactor_set_int_option("load_balance_mem", chemistryConstraints.loadBalance, zrm_handle);
-    if(status_loadbalance != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+    // load balancing is always on rebuild zerork with load_balance = 0 in
+    // /zero-rk/repo/applications/cfd_plugin/zerork_reactor_manager.cpp to turn it of ...
+//    zerork_status_t status_loadbalance = zerork_reactor_set_int_option("load_balance", chemistryConstraints.loadBalance, zrm_handle);
+//    if(status_loadbalance != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
     // Set tolerances
     zerork_status_t status_abstol = zerork_reactor_set_double_option("abs_tol", chemistryConstraints.absTolerance, zrm_handle);
@@ -137,7 +139,7 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
     std::vector<double> enthalpyOfFormation(nSpc);
     std::vector<int> reactorEval(nReactors,0);
 
-    //Set up the vectors that are actually evaluated with the temperature treshhold
+    //Set up the vectors that are actually evaluated with the temperature threshold
     std::vector<double> reactorTEval(nReactors);
     std::vector<double> reactorPEval(nReactors);
     std::vector<double> reactorMassFracEval(nReactors*nSpc);
@@ -224,14 +226,8 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
             }
         }
         warningMessage << "Possible solution for numerical stiffness could be decreasing the stepLimiter"  << "\n";
-
+        std::cout << warningMessage.str() << std::endl;
     }
-
-
-//        std::cout << "zerork time is:" << time <<"\n";
-//        std::cout << "zerork temperature is:" << reactorTEval[0] <<"\n";
-//        std::cout << "zerork Ycarbon is:" << reactorMassFracEval[0]<<"\n";
-//        std::cout << "zerork Yfuel is:" << reactorMassFrac[63]<<"\n";
 
     // Set all the sources to 0
     sourceZeroRKAtI.assign(nState*nReactors,0);

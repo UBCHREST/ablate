@@ -9,7 +9,7 @@
 ---
 test:
   # a unique test name for this integration tests
-  name: slabBurner2DTchem
+  name: slabBurner2DZerork
   # run on multiple mpi ranks
   ranks: 2
   # create a list of asserts to compare
@@ -95,9 +95,11 @@ timestepper:
       # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
       - !ablate::finiteVolume::CompressibleFlowFields
         # The soot equation of state is an extension of the tChem eos with support for a simple soot model
-        eos: !ablate::eos::TChem  &eos
-          mechFile: MMAReduced.soot.yml
+        eos: &eos !ablate::eos::zerorkEOS # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked
+          reactionFile: ../mechanisms/MMAReduced.soot.inp
+          thermoFile: ../mechanisms/MMAReduced.soot.dat
           options:
+            reactorType: ReactorType::ConstantPressure #zerork deafult is constant volume
             # set a minimum temperature for the chemical kinetics ode integration
             thresholdTemperature: 560
         # use a higher order field for the conserved field transport options

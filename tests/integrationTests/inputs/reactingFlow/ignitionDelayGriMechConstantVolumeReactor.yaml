@@ -3,7 +3,7 @@
 ---
 test:
   # a unique test name for this integration tests
-  name: ignitionDelayGriMechConstantVolumeReactor
+  name: ignitionDelayGriMechConstantVolumeReactorTchem
   # create a list of asserts to compare
   asserts:
     - !testingResources::asserts::TextFileAssert
