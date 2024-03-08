@@ -422,7 +422,7 @@ PetscReal RBF::EvalDer(DM dm, Vec vec, const PetscInt fid, PetscInt c, PetscInt 
     PetscHMapIGet(RBF::hash, derKey, &derID);
 
     // If the stencil hasn't been setup yet do so
-    if ( RBF::stencilWeights[c] == nullptr ) {
+    if (RBF::stencilWeights[c] == nullptr) {
         RBF::SetupDerivativeStencils(c);
     }
 
