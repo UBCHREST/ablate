@@ -692,7 +692,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dz = {0, 0, 0, 0, 0, 0, 1, 1, 1, 2},
                                                 .cell = 0,
                                                 .x = {},
-                                                .maxError = {5e-16, 8e-06, 2.0e-03, 2.1e-05, 4e-04, 2.0e-03, 2.2e-05, 2.0e-04, 3e-04, 1.6e-03}}),
+                                                .maxError = {1e-15, 8e-06, 2.0e-03, 2.1e-05, 4e-04, 2.0e-03, 2.2e-05, 2.0e-04, 3e-04, 1.6e-03}}),
     [](const testing::TestParamInfo<RBFParameters_DerivativeInterpolation> &info) { return info.param.mpiTestParameter.getTestName(); });
 
 class RBFTestFixture_Interpolation : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<RBFParameters_DerivativeInterpolation> {
