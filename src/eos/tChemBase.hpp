@@ -11,7 +11,6 @@
 #include "eos/tChem/sensibleEnthalpy.hpp"
 #include "eos/tChem/sensibleInternalEnergy.hpp"
 #include "eos/tChem/sourceCalculator.hpp"
-#include "eos/tChem2/sourceCalculator2.hpp"
 #include "eos/tChem/speedOfSound.hpp"
 #include "eos/tChem/temperature.hpp"
 #include "monitors/logs/log.hpp"
@@ -82,13 +81,13 @@ class TChemBase : public ChemistryModel {
      * Returns all elements tracked in this mechanism and their molecular mass
      * @return
      */
-    [[nodiscard]] virtual std::map<std::string, double> GetElementInformation() const = 0;
+//    [[nodiscard]] virtual std::map<std::string, double> GetElementInformation() const = 0;
 
     /**
      * no. of atoms of each element in each species
      * @return
      */
-    [[nodiscard]] virtual std::map<std::string, std::map<std::string, int>> GetSpeciesElementalInformation() const = 0;
+//    [[nodiscard]] virtual std::map<std::string, std::map<std::string, int>> GetSpeciesElementalInformation() const = 0;
 
     /**
      * the MW of each species
