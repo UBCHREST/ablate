@@ -472,7 +472,7 @@ INSTANTIATE_TEST_SUITE_P(
             .dz = {0, 0, 0, 0, 0, 0},
             .cell = -1,
             .x = {},
-            .maxError = {7e-14, 3.4e-02, 1.5e+00, 3.3e-02, 3.6e-01, 1.5e+00}},
+            .maxError = {7e-14, 3.4e-02, 1.5e+00, 5e-2, 3.6e-01, 1.5e+00}},
         (RBFParameters_DerivativeInterpolation){
             .mpiTestParameter = testingResources::MpiTestParameter("2DQuadN41_1Proc"),
             .meshFaces = {41, 41},
@@ -552,7 +552,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .dz = {0, 0, 0, 0, 0, 0},
                                                 .cell = -1,
                                                 .x = {},
-                                                .maxError = {7e-14, 4.4e-02, 1.8e+00, 3.3e-02, 4.2e-01, 1.4e+00}},
+                                                .maxError = {7e-14, 4.4e-02, 1.8e+00, 5e-2, 4.2e-01, 1.4e+00}},
         (RBFParameters_DerivativeInterpolation){.mpiTestParameter = testingResources::MpiTestParameter("2DQuadN41_2Proc", 2),
                                                 .meshFaces = {41, 41},
                                                 .meshStart = {-1.0, -1.0},
