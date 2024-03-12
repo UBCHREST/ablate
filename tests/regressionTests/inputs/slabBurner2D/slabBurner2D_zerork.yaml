@@ -19,7 +19,7 @@ test:
 
 # metadata for the simulation
 environment:
-  title: _slabBurner2D
+  title: _slabBurner2DZerork
   tagDirectory: false
 # global arguments that can be used by petsc
 arguments:
@@ -96,8 +96,8 @@ timestepper:
       - !ablate::finiteVolume::CompressibleFlowFields
         # The soot equation of state is an extension of the tChem eos with support for a simple soot model
         eos: &eos !ablate::eos::zerorkEOS # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked
-          reactionFile: ../mechanisms/MMAReduced.soot.inp
-          thermoFile: ../mechanisms/MMAReduced.soot.dat
+          reactionFile: MMAReduced.soot.inp
+          thermoFile: MMAReduced.soot.dat
           options:
             reactorType: ReactorType::ConstantPressure #zerork deafult is constant volume
             # set a minimum temperature for the chemical kinetics ode integration
