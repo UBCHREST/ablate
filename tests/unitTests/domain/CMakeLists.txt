@@ -5,6 +5,7 @@ target_sources(ablateUnitTestLibrary
         dynamicRangeTests.cpp
         reverseRangeTests.cpp
         hdf5InitializerTests.cpp
+        fieldAccessorTests.cpp
 
         PUBLIC
         mockField.hpp
