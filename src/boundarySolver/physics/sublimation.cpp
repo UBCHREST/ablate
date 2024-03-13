@@ -1,5 +1,6 @@
 #include "sublimation.hpp"
 #include <utility>
+#include "domain/constAccessor.hpp"
 #include "domain/dynamicRange.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "io/interval/fixedInterval.hpp"
@@ -377,25 +378,13 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationPreRHS(B
 
 void ablate::boundarySolver::physics::Sublimation::UpdateSpecies(TS ts, ablate::solver::Solver &solver) {
     // Get the density and densityYi field info
-    const auto &eulerFieldInfo = solver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD);
-    const auto &densityYiFieldInfo = solver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD);
-    const auto &yiFieldInfo = solver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::YI_FIELD);
-
-    // Get the solution vec and dm
-    auto dm = solver.GetSubDomain().GetDM();
-    auto solVec = solver.GetSubDomain().GetSolutionVector();
-    auto auxDm = solver.GetSubDomain().GetAuxDM();
-    auto auxVec = solver.GetSubDomain().GetAuxVector();
+    auto eulerFieldAccessor = solver.GetSubDomain().GetConstSolutionAccessor(finiteVolume::CompressibleFlowFields::EULER_FIELD);
+    auto densityYiAccessor = solver.GetSubDomain().GetSolutionAccessor(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD);
+    auto yiFieldAccessor = solver.GetSubDomain().GetAuxAccessor(finiteVolume::CompressibleFlowFields::YI_FIELD);
 
     // get the time from the ts
     PetscReal time;
     TSGetTime(ts, &time) >> utilities::PetscUtilities::checkError;
-
-    // Get the array vector
-    PetscScalar *solutionArray;
-    VecGetArray(solVec, &solutionArray) >> utilities::PetscUtilities::checkError;
-    PetscScalar *auxArray;
-    VecGetArray(auxVec, &auxArray) >> utilities::PetscUtilities::checkError;
 
     // March over each cell in this domain
     ablate::domain::Range cellRange;
@@ -404,43 +393,35 @@ void ablate::boundarySolver::physics::Sublimation::UpdateSpecies(TS ts, ablate::
 
     // Get the cell geom vec
     Vec cellGeomVec;
-    const PetscScalar *cellGeomArray;
-    DM cellGeomDm;
-    DMPlexGetDataFVM(dm, nullptr, &cellGeomVec, nullptr, nullptr) >> utilities::PetscUtilities::checkError;
-    VecGetDM(cellGeomVec, &cellGeomDm) >> utilities::PetscUtilities::checkError;
-    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
+    DMPlexGetDataFVM(solver.GetSubDomain().GetDM(), nullptr, &cellGeomVec, nullptr, nullptr) >> utilities::PetscUtilities::checkError;
+
+    // create an accessor the cell data
+    domain::ConstAccessor<PetscFVCellGeom> cellGeomAccessor(cellGeomVec);
 
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
         PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
         // Get the euler and density field
-        const PetscScalar *euler = nullptr;
-        DMPlexPointGlobalFieldRead(dm, cell, eulerFieldInfo.id, solutionArray, &euler) >> utilities::PetscUtilities::checkError;
-        PetscScalar *densityYi;
-        DMPlexPointGlobalFieldRef(dm, cell, densityYiFieldInfo.id, solutionArray, &densityYi) >> utilities::PetscUtilities::checkError;
-        PetscScalar *yi;
-        DMPlexPointLocalFieldRead(auxDm, cell, yiFieldInfo.id, auxArray, &yi) >> utilities::PetscUtilities::checkError;
-        PetscFVCellGeom *cellGeom;
-        DMPlexPointLocalRead(cellGeomDm, cell, cellGeomArray, &cellGeom) >> utilities::PetscUtilities::checkError;
+        const PetscScalar *euler = eulerFieldAccessor[cell];
+        PetscScalar *densityYi = densityYiAccessor[cell];
+        PetscScalar *yi = yiFieldAccessor[cell];
+        const PetscFVCellGeom *cellGeom = cellGeomAccessor[cell];
 
         // compute the mass fractions on the boundary
-        massFractionsFunction(dim, time, cellGeom->centroid, yiFieldInfo.numberComponents, yi, massFractionsContext);
+        massFractionsFunction(dim, time, cellGeom->centroid, yiFieldAccessor.GetField().numberComponents, yi, massFractionsContext);
 
         // Only update if in the global vector
         if (euler) {
             // Get density
             const PetscScalar density = euler[finiteVolume::CompressibleFlowFields::RHO];
 
-            for (PetscInt sp = 0; sp < densityYiFieldInfo.numberComponents; sp++) {
+            for (PetscInt sp = 0; sp < densityYiAccessor.GetField().numberComponents; sp++) {
                 densityYi[sp] = yi[sp] * density;
             }
         }
     }
 
     // cleanup
-    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
-    VecRestoreArray(auxVec, &auxArray) >> utilities::PetscUtilities::checkError;
-    VecRestoreArray(solVec, &solutionArray) >> utilities::PetscUtilities::checkError;
     solver.RestoreRange(cellRange);
 }
 
