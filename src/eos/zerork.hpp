@@ -21,15 +21,15 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
    protected:
 
     //! hold a copy of the constrains that can be used for single or batch source calculation
-    zerorkeos::SourceCalculator::ChemistryConstraints constraints;
+
 
     std::vector<std::string> species;
 
     int nSpc;
 
-    struct constraints {
-        PetscInt numberSpecies;
-    };
+//    struct constraints {
+//        PetscInt numberSpecies;
+//    };
 
     //kinetic and elemental data parsing file
     const char* cklogfilename = "mech.cklog";
@@ -37,7 +37,7 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
     std::vector<double> stateVector;
 
    public:
-
+    zerorkeos::SourceCalculator::ChemistryConstraints constraints;
     /**
      * Zerork only takes in chemkin formated reaction files and thermodynamic files.
      * @param mechFile

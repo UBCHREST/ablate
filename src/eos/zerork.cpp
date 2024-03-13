@@ -6,29 +6,22 @@ ablate::eos::zerorkEOS::zerorkEOS(const std::filesystem::path reactionFileIn,con
                                   const std::shared_ptr<ablate::parameters::Parameters> &options)
     : ChemistryModel("zerorkEOS"),reactionFile(reactionFileIn),thermoFile(thermoFileIn)  {
 
-    // TODO make sure that petcs reals are doubles
 
     // check the extension, only accept modern yaml input files
     if (reactionFileIn.extension() != ".inp" ){
-        throw std::invalid_argument("ablate::eos::zerorkEOS takes only chemkin formated files.");
+        throw std::invalid_argument("ablate::eos::zerorkEOS takes only chemkin formated files."
+            "Make sure either full path is given or file is in directory");
     }
     if (std::find(validThermoFileExtensions.begin(), validThermoFileExtensions.end(), thermoFileIn.extension()) == validThermoFileExtensions.end()) {
-        throw std::invalid_argument("ablate::eos::zerorkEOS thermo file missing or not formated as .dat.");
+        throw std::invalid_argument("ablate::eos::zerorkEOS thermo file missing or not formated as .dat. "
+            "Make sure either full path is given or file is in directory");
+
     }
-//    reactionFile = reactionFileIn;
-//    thermoFile = thermoFileIn;
 
-    struct Parameters {
-        PetscReal gamma;
-        PetscReal rGas;
-        PetscInt numberSpecies;
-    };
-    Parameters parameters{};
-
-    // TODO: Avoid parsing twice/having two mechanisms
     //Create object that holds kinetic data
-    mech = std::make_shared<zerork::mechanism>(reactionFileIn.c_str(), thermoFileIn.c_str(), cklogfilename);
+    mech = std::make_shared<zerork::mechanism>(std::filesystem::absolute(reactionFileIn).c_str(), std::filesystem::absolute(thermoFileIn).c_str(), cklogfilename);
 
+    nSpc = mech->getNumSpecies();
     nSpc = mech->getNumSpecies();
     //species;
     for(int i=0; i<nSpc; ++i) {
@@ -229,9 +222,6 @@ PetscErrorCode ablate::eos::zerorkEOS::InternalSensibleEnergyTemperatureMassFrac
     int numSpc = functionContext->nSpc;
 
     // Fill the working array
-    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
-
-    // Fill the working array
     std::vector<double> reactorMassFrac(numSpc,0.);
     FillreactorMassFracVectorFromMassFractions(numSpc,yi,reactorMassFrac);
 
@@ -336,8 +326,6 @@ PetscErrorCode ablate::eos::zerorkEOS::SensibleEnthalpyTemperatureMassFractionFu
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     int numSpc = functionContext->nSpc;
-    // Fill the working array
-    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
 
     // Fill the working array
     std::vector<double> reactorMassFrac(numSpc,0.);
@@ -397,8 +385,6 @@ PetscErrorCode ablate::eos::zerorkEOS::SpeedOfSoundTemperatureMassFractionFuncti
     auto functionContext = (FunctionContext *)ctx;
     int numSpc = functionContext->nSpc;
 
-    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
-
     // Fill the working array
     std::vector<double> reactorMassFrac(numSpc,0.);
     FillreactorMassFracVectorFromMassFractions(numSpc,yi,reactorMassFrac);
@@ -456,7 +442,7 @@ PetscErrorCode ablate::eos::zerorkEOS::SpecificHeatConstantPressureTemperatureMa
     auto functionContext = (FunctionContext *)ctx;
     int numSpc = functionContext->nSpc;
 
-    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+//    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
 
     // Fill the working array
     std::vector<double> reactorMassFrac(numSpc,0.);
@@ -507,8 +493,6 @@ PetscErrorCode ablate::eos::zerorkEOS::SpecificHeatConstantVolumeTemperatureMass
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     int numSpc = functionContext->nSpc;
-    // Fill the working array
-    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
 
     // Fill the working array
     std::vector<double> reactorMassFrac(numSpc,0.);
@@ -542,8 +526,8 @@ PetscErrorCode ablate::eos::zerorkEOS::SpeciesSensibleEnthalpyTemperatureFunctio
 
     std::vector<double> enthalpySpecies(numSpc,0.);
     std::vector<double> enthalpySpeciesFormation(numSpc,0.);
-    double enthalpyMix = functionContext->mech->getMassEnthalpyFromTY(temperature, &reactorMassFrac[0],&enthalpySpecies[0]);
-    double enthalpyMixFormation = functionContext->mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[0],&enthalpySpeciesFormation[0]);
+    functionContext->mech->getMassEnthalpyFromTY(temperature, &reactorMassFrac[0],&enthalpySpecies[0]);
+    functionContext->mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[0],&enthalpySpeciesFormation[0]);
 
     //calculate the species sensible enthalpy
     for (int k=0;k<numSpc;k++){
@@ -566,16 +550,13 @@ PetscErrorCode ablate::eos::zerorkEOS::SpeciesSensibleEnthalpyTemperatureMassFra
     int numSpc = functionContext->nSpc;
 
     // Fill the working array
-    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
-
-    // Fill the working array
     std::vector<double> reactorMassFrac(numSpc,0.);
     FillreactorMassFracVectorFromMassFractions(numSpc,yi,reactorMassFrac);
 
     std::vector<double> enthalpySpecies(numSpc,0.);
     std::vector<double> enthalpySpeciesFormation(numSpc,0.);
-    double enthalpyMix = functionContext->mech->getMassEnthalpyFromTY(temperature, &reactorMassFrac[0],&enthalpySpecies[0]);
-    double enthalpyMixFormation = functionContext->mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[0],&enthalpySpeciesFormation[0]);
+    functionContext->mech->getMassEnthalpyFromTY(temperature, &reactorMassFrac[0],&enthalpySpecies[0]);
+    functionContext->mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[0],&enthalpySpeciesFormation[0]);
 
     //calculate the species sensible enthalpy
     for (int k=0;k<numSpc;k++){

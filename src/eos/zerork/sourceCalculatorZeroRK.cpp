@@ -56,10 +56,9 @@ ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<dom
     zerork_status_t status_verbose = zerork_reactor_set_int_option("verbosity", chemistryConstraints.verbose, zrm_handle);
     if(status_verbose != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
-    // load balancing is always on rebuild zerork with load_balance = 0 in
-    // /zero-rk/repo/applications/cfd_plugin/zerork_reactor_manager.cpp to turn it of ...
-//    zerork_status_t status_loadbalance = zerork_reactor_set_int_option("load_balance", chemistryConstraints.loadBalance, zrm_handle);
-//    if(status_loadbalance != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+    // set to  0 to turn it off
+    zerork_status_t status_loadbalance = zerork_reactor_set_int_option("load_balance", chemistryConstraints.loadBalance, zrm_handle);
+    if(status_loadbalance != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
     // Set tolerances
     zerork_status_t status_abstol = zerork_reactor_set_double_option("abs_tol", chemistryConstraints.absTolerance, zrm_handle);
@@ -238,16 +237,16 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
         enthalpyOfFormation[s] = eos->mech->getMassEnthalpyFromTY(298.15, &tempvec[0]);
     }
 
-    // Recompute density for constant pressure reactors
-    if(chemistryConstraints.reactorType==ReactorType::ConstantPressure){
-        int q=0;
-        for (int i=0;i<nReactors;i++){
-            if (reactorEval[i]==1){
-                density2[i]=eos->mech->getDensityFromTPY(reactorTEval[q], reactorPEval[q],&reactorMassFracEval[q]);
-                q+=1;
-            }
-        }
-    }
+//    // Recompute density for constant pressure reactors
+//    if(chemistryConstraints.reactorType==ReactorType::ConstantPressure){
+//        int q=0;
+//        for (int i=0;i<nReactors;i++){
+//            if (reactorEval[i]==1){
+//                density2[i]=eos->mech->getDensityFromTPY(reactorTEval[q], reactorPEval[q],&reactorMassFracEval[q]);
+//                q+=1;
+//            }
+//        }
+//    }
 
     int q=0;
     for(int i=0; i<nReactors; ++i) {
@@ -286,7 +285,6 @@ void ablate::eos::zerorkeos::SourceCalculator::AddSource(const ablate::domain::R
     // Get the solution dm
     DM dm;
     VecGetDM(locFVec, &dm) >> utilities::PetscUtilities::checkError;
-    auto numberCells = cellRange.end - cellRange.start;
 
     int nSpc=eos->mech->getNumSpecies();
     int nState = nSpc+1;
@@ -331,9 +329,13 @@ std::istream& ablate::eos::zerorkeos::operator>>(std::istream& is, ablate::eos::
 
     if (enumString == "constantvolume") {
         v = ablate::eos::zerorkeos::SourceCalculator::ReactorType::ConstantVolume;
-    } else {
+    } else if(enumString == "constantpressure") {
         // default to constant pressure
         v = ablate::eos::zerorkeos::SourceCalculator::ReactorType::ConstantPressure;
+    } else{
+        throw std::invalid_argument(" reactorType is specified with an unknown reactor type. \n"
+            "Acceptable reactor types: ConstantPressure, ConstantVolume. \n"
+            " Default is Contstant volume");
     }
     return is;
 }

@@ -6,8 +6,6 @@
 #include "zerork/mechanism.h"
 #include "zerork/utilities.h"
 
-#include "zerork_cfd_plugin.h"
-
 namespace ablate::eos {
 class zerorkEOS;
 }
@@ -22,7 +20,7 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
     /**
      * Allow the user to set the reactor type
      */
-    enum class ReactorType { ConstantPressure, ConstantVolume };
+    enum class ReactorType { ConstantVolume , ConstantPressure};
 
     //! hold a struct that can be used for chemistry constraints
     struct ChemistryConstraints {

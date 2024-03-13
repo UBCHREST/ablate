@@ -15,7 +15,7 @@ test:
 
 # metadata for the simulation
 environment:
-  title: _ignitionDelayGriMechConstantVolumeReactor
+  title: _ignitionDelayGriMechConstantVolumeReactorZerork
   tagDirectory: false
 arguments: 
   petsclimiter_type: none

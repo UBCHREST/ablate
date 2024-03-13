@@ -8,7 +8,7 @@ test:
   assert: "inputs/reactingFlow/sampleDiffusionFlame.txt"
 
 environment:
-  title: _1DSampleDiffusionFlame
+  title: _1DSampleDiffusionFlameZerork
   tagDirectory: false
 arguments: {}
 timestepper:
@@ -55,7 +55,7 @@ timestepper:
           reactionFile: ../mechanisms/gri30.inp
           thermoFile: ../mechanisms/gri30.dat
           options:
-            reactorType: ReactorType::ConstantPressure #zerork deafult is constant volume
+            reactorType: ConstantPressure #zerork deafult is constant volume
             # set a minimum temperature for the chemical kinetics ode integration
             thresholdTemperature: 560
         conservedFieldOptions:

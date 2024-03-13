@@ -99,7 +99,7 @@ timestepper:
           reactionFile: MMAReduced.soot.inp
           thermoFile: MMAReduced.soot.dat
           options:
-            reactorType: ReactorType::ConstantPressure #zerork deafult is constant volume
+            reactorType: ConstantPressure #zerork deafult is constant volume
             # set a minimum temperature for the chemical kinetics ode integration
             thresholdTemperature: 560
         # use a higher order field for the conserved field transport options

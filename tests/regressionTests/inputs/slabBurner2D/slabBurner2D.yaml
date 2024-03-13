@@ -19,7 +19,7 @@ test:
 
 # metadata for the simulation
 environment:
-  title: _slabBurner2D
+  title: _slabBurner2DTchem
   tagDirectory: false
 # global arguments that can be used by petsc
 arguments:
@@ -301,7 +301,7 @@ solvers:
 
   # The slab boundary id used to couple the flow and heat/mass transfer from the fuel
   - !ablate::boundarySolver::BoundarySolver
-    id: slab boundary
+    id: slabboundary
     region:
       name: slab
     fieldBoundary:

@@ -11,7 +11,7 @@ test:
 
 # metadata for the simulation
 environment:
-  title: _ignitionDelayMMASootProcess
+  title: _ignitionDelayMMASootProcessTchem
   tagDirectory: false
 arguments:
   petsclimiter_type: none

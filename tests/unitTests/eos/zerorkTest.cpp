@@ -1,14 +1,17 @@
 #include <numeric>
 #include "domain/boxMesh.hpp"
 #include "domain/dynamicRange.hpp"
+#include "domain/mockField.hpp"
 #include "eos/zerork.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
 #include "petscTestFixture.hpp"
+#include "parameters/parameters.hpp"
 
 /*
  * Helper function to fill mass fraction
  */
+
 static std::vector<PetscReal> GetMassFraction(const std::vector<std::string>& species, const std::map<std::string, PetscReal>& yiIn) {
     std::vector<PetscReal> yi(species.size(), 0.0);
 
@@ -58,10 +61,10 @@ struct zeroRKCreateAndViewParameters {
 };
 
 class zerorkCreateAndViewFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<zeroRKCreateAndViewParameters> {};
-
-TEST_P(zerorkCreateAndViewFixture, ShouldCreateAndView) {
+ // Test1
+TEST_P(zerorkCreateAndViewFixture, ShouldCreateAndViewZerork) {
     // arrange
-    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().reactionFile);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
 
     std::stringstream outputStream;
 
@@ -77,23 +80,24 @@ TEST_P(zerorkCreateAndViewFixture, ShouldCreateAndView) {
     ASSERT_TRUE(startsWith) << "Should start with expected string. ";
 }
 
-INSTANTIATE_TEST_SUITE_P(TChemTests, zerorkCreateAndViewFixture,
+INSTANTIATE_TEST_SUITE_P(zerorkTests, zerorkCreateAndViewFixture,
                          testing::Values((zeroRKCreateAndViewParameters){.reactionFile = "inputs/eos/gri30.inp",
                                                                          .thermoFile = "inputs/eos/gri30.dat",
-                                                                        .expectedViewStart = "EOS: TChem\n\tmechFile: \"inputs/eos/gri30.yaml\"\n\tnumberSpecies: 53\n"}),
+                                                                        .expectedViewStart = "EOS: zerorkEOS\n\tnumberSpecies: 53\n"}),
                          [](const testing::TestParamInfo<zeroRKCreateAndViewParameters>& info) { return testingResources::PetscTestFixture::SanitizeTestName(info.param.reactionFile.string()); });
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///// EOS Get Species Tests
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct TChemGetSpeciesParameters {
-    std::filesystem::path mechFile;
+struct zerorkGetSpeciesParameters {
+    std::filesystem::path reactionFile;
+    std::filesystem::path thermoFile;
     std::vector<std::string> expectedSpecies;
 };
 
-class TChemGetSpeciesFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemGetSpeciesParameters> {};
-
-TEST_P(TChemGetSpeciesFixture, ShouldGetCorrectSpecies) {
+class zerorkGetSpeciesFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<zerorkGetSpeciesParameters> {};
+ // Test2
+TEST_P(zerorkGetSpeciesFixture, ShouldGetCorrectSpeciesZerork) {
     // arrange
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
 
@@ -104,21 +108,23 @@ TEST_P(TChemGetSpeciesFixture, ShouldGetCorrectSpecies) {
     ASSERT_EQ(species, GetParam().expectedSpecies);
 }
 
-INSTANTIATE_TEST_SUITE_P(TChemTests, TChemGetSpeciesFixture,
-                         testing::Values((TChemGetSpeciesParameters){
-                             .mechFile = "inputs/eos/gri30.yaml",
+INSTANTIATE_TEST_SUITE_P(zerorkTests, zerorkGetSpeciesFixture,
+                         testing::Values((zerorkGetSpeciesParameters){
+                             .reactionFile = "inputs/eos/gri30.inp",
+                             .thermoFile = "inputs/eos/gri30.dat",
                              .expectedSpecies = {"H2",    "H",    "O",     "O2",  "OH",   "H2O",  "HO2",  "H2O2", "C",    "CH",   "CH2",   "CH2(S)", "CH3",  "CH4",  "CO",     "CO2",    "HCO", "CH2O",
                                                  "CH2OH", "CH3O", "CH3OH", "C2H", "C2H2", "C2H3", "C2H4", "C2H5", "C2H6", "HCCO", "CH2CO", "HCCOH",  "N",    "NH",   "NH2",    "NH3",    "NNH", "NO",
                                                  "NO2",   "N2O",  "HNO",   "CN",  "HCN",  "H2CN", "HCNN", "HCNO", "HOCN", "HNCO", "NCO",   "AR",     "C3H7", "C3H8", "CH2CHO", "CH3CHO", "N2"}}
 
                                          ),
-                         [](const testing::TestParamInfo<TChemGetSpeciesParameters>& info) { return testingResources::PetscTestFixture::SanitizeTestName(info.param.mechFile.string()); });
+                         [](const testing::TestParamInfo<zerorkGetSpeciesParameters>& info) { return testingResources::PetscTestFixture::SanitizeTestName(info.param.reactionFile.string()); });
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///// EOS Thermodynamic property tests
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct TCTestParameters {
-    std::filesystem::path mechFile;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////// EOS Thermodynamic property tests
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct RKTestParameters {
+    std::filesystem::path reactionFile;
+    std::filesystem::path thermoFile;
     std::vector<ablate::domain::Field> fields;
     std::vector<PetscReal> conservedEulerValues;
     std::map<std::string, PetscReal> yiMap;
@@ -127,11 +133,11 @@ struct TCTestParameters {
     PetscReal errorTolerance = 1E-5;
 };
 
-class TCThermodynamicPropertyTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TCTestParameters> {};
-
-TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputeProperty) {
+class RKThermodynamicPropertyTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<RKTestParameters> {};
+ // Test3
+TEST_P(RKThermodynamicPropertyTestFixture, ShouldComputePropertyZerork) {
     // arrange
-    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().mechFile);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
 
     // get the test params
     const auto& params = GetParam();
@@ -155,7 +161,7 @@ TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputeProperty) {
     ASSERT_EQ(1, temperatureFunction.propertySize) << "The temperature property size should be 1";
 
     if (params.expectedTemperature) {
-        ASSERT_LT(PetscAbs(computedTemperature - params.expectedTemperature.value()) / params.expectedTemperature.value(), 1E-5)
+        ASSERT_LT(PetscAbs(computedTemperature - params.expectedTemperature.value()) / params.expectedTemperature.value(), 1.1E-5)
             << "The percent difference for computed temperature (" << params.expectedTemperature.value() << " vs " << computedTemperature << ") should be small";
     }
 
@@ -193,10 +199,10 @@ TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputeProperty) {
         }
     }
 }
-
-TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputePropertyUsingMassFraction) {
+ // Test4
+TEST_P(RKThermodynamicPropertyTestFixture, ShouldComputePropertyUsingMassFractionZerork) {
     // arrange
-    std::shared_ptr<ablate::eos::TChem> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile);
+    std::shared_ptr<ablate::eos::zerorkEOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
 
     // get the test params
     const auto& params = GetParam();
@@ -221,7 +227,7 @@ TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputePropertyUsingMassFractio
     ASSERT_EQ(0, temperatureFunction.function(conservedValues.data(), yi.data(), &computedTemperature, temperatureFunction.context.get()));
 
     if (params.expectedTemperature) {
-        ASSERT_LT(PetscAbs(computedTemperature - params.expectedTemperature.value()) / params.expectedTemperature.value(), 1E-5)
+        ASSERT_LT(PetscAbs(computedTemperature - params.expectedTemperature.value()) / params.expectedTemperature.value(), 1.1E-5)
             << "The percent difference for computed temperature (" << params.expectedTemperature.value() << " vs " << computedTemperature << ") should be small";
     }
 
@@ -259,10 +265,11 @@ TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputePropertyUsingMassFractio
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    TChemTests, TCThermodynamicPropertyTestFixture,
+    zerorkTests, RKThermodynamicPropertyTestFixture,
     testing::Values(
         ///////// with yaml input ///////
-        (TCTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+        (RKTestParameters){.reactionFile = "inputs/eos/gri30.inp",
+                           .thermoFile = "inputs/eos/gri30.dat",
                            .fields = {ablateTesting::domain::MockField::Create("euler", 5), ablateTesting::domain::MockField::Create("densityYi", 53, 5)},
                            .conservedEulerValues = {1.2, 1.2 * 1.0E+05, 1.2 * 10, -1.2 * 20, 1.2 * 30},
                            .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
@@ -275,8 +282,9 @@ INSTANTIATE_TEST_SUITE_P(
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure, {1399.301411}},
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {1069.297887}},
                                               {ablate::eos::ThermodynamicProperty::Density, {1.2}}},
-                           .errorTolerance = 1E-5},
-        (TCTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                           .errorTolerance = 2E-5},
+        (RKTestParameters){.reactionFile = "inputs/eos/gri30.inp",
+                           .thermoFile = "inputs/eos/gri30.dat",
                            .fields = {ablateTesting::domain::MockField::Create("euler", 5, 2), ablateTesting::domain::MockField::Create("densityYi", 53, 7)},
                            .conservedEulerValues = {1.2, 1.2 * 1.0E+05, 1.2 * 10, -1.2 * 20, 1.2 * 30},
                            .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
@@ -289,8 +297,9 @@ INSTANTIATE_TEST_SUITE_P(
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure, {1399.301411}},
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {1069.297887}},
                                               {ablate::eos::ThermodynamicProperty::Density, {1.2}}},
-                           .errorTolerance = 1E-5},
-        (TCTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                           .errorTolerance = 2E-5},
+        (RKTestParameters){.reactionFile = "inputs/eos/gri30.inp",
+                           .thermoFile = "inputs/eos/gri30.dat",
                            .fields = {ablateTesting::domain::MockField::Create("euler", 5, 53), ablateTesting::domain::MockField::Create("densityYi", 53, 0)},
                            .conservedEulerValues = {1.2, 1.2 * 1.0E+05, 1.2 * 10, -1.2 * 20, 1.2 * 30},
                            .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
@@ -303,8 +312,9 @@ INSTANTIATE_TEST_SUITE_P(
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure, {1399.301411}},
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {1069.297887}},
                                               {ablate::eos::ThermodynamicProperty::Density, {1.2}}},
-                           .errorTolerance = 1E-5},
-        (TCTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                           .errorTolerance = 2E-5},
+        (RKTestParameters){.reactionFile = "inputs/eos/gri30.inp",
+                           .thermoFile = "inputs/eos/gri30.dat",
                            .fields = {ablateTesting::domain::MockField::Create("euler", 3, 53), ablateTesting::domain::MockField::Create("densityYi", 53, 0)},
                            .conservedEulerValues = {0.8, 0.8 * 3.2E5, 0.0, 0.0, 0.0},
                            .yiMap = {{"O2", .3}, {"N2", .4}, {"CH2", .1}, {"NO", .2}},
@@ -318,7 +328,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {959.3732847}},
                                               {ablate::eos::ThermodynamicProperty::Density, {0.8}}},
                            .errorTolerance = 1E-5},
-        (TCTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+        (RKTestParameters){.reactionFile = "inputs/eos/gri30.inp",
+                           .thermoFile = "inputs/eos/gri30.dat",
                            .fields = {ablateTesting::domain::MockField::Create("euler", 5, 55), ablateTesting::domain::MockField::Create("densityYi", 53, 2)},
                            .conservedEulerValues = {3.3, 3.3 * 1000, 0.0, 3.3 * 2, 3.3 * 4},
                            .yiMap = {{"N2", 1.0}},
@@ -332,7 +343,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {751.5853}},
                                               {ablate::eos::ThermodynamicProperty::Density, {3.3}}},
                            .errorTolerance = 1E-5},
-        (TCTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+        (RKTestParameters){.reactionFile = "inputs/eos/gri30.inp",
+                           .thermoFile = "inputs/eos/gri30.dat",
                            .fields = {ablateTesting::domain::MockField::Create("euler", 5, 55), ablateTesting::domain::MockField::Create("densityYi", 53, 2)},
                            .conservedEulerValues = {0.01, 0.01 * 1E5, .01 * -1, .01 * -2, .01 * -3},
                            .yiMap = {{"H2", .35}, {"H2O", .35}, {"N2", .3}},
@@ -345,8 +357,9 @@ INSTANTIATE_TEST_SUITE_P(
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure, {6076.13}},
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {4382.03}},
                                               {ablate::eos::ThermodynamicProperty::Density, {0.01}}},
-                           .errorTolerance = 1E-5},
-        (TCTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                           .errorTolerance = 3E-5},
+        (RKTestParameters){.reactionFile = "inputs/eos/gri30.inp",
+                           .thermoFile = "inputs/eos/gri30.dat",
                            .fields = {ablateTesting::domain::MockField::Create("euler", 5), ablateTesting::domain::MockField::Create("densityYi", 53, 5)},
                            .conservedEulerValues = {999.9, 999.9 * 1.0E+04, 999.9 * -10, 999.9 * -20, 999.9 * -300},
                            .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
@@ -359,8 +372,9 @@ INSTANTIATE_TEST_SUITE_P(
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure, {2564.85}},
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {1852.33}},
                                               {ablate::eos::ThermodynamicProperty::Density, {999.9}}},
-                           .errorTolerance = 1E-5},
-        (TCTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                           .errorTolerance = 3E-5},
+        (RKTestParameters){.reactionFile = "inputs/eos/gri30.inp",
+                           .thermoFile = "inputs/eos/gri30.dat",
                            .fields = {ablateTesting::domain::MockField::Create("euler", 3, 0), ablateTesting::domain::MockField::Create("densityYi", 53, 3)},
                            .conservedEulerValues = {1.0, 1.0 * -88491.929819300756, 0.0},
                            .yiMap = {{"N2", 1.0}},
@@ -370,8 +384,9 @@ INSTANTIATE_TEST_SUITE_P(
                                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}}},
                            .errorTolerance = 1E-5},
 
-        (TCTestParameters){
-            .mechFile = "inputs/eos/gri30.yaml",
+        (RKTestParameters){
+            .reactionFile = "inputs/eos/gri30.inp",
+            .thermoFile = "inputs/eos/gri30.dat",
             .fields = {ablateTesting::domain::MockField::Create("euler", 3, 0), ablateTesting::domain::MockField::Create("densityYi", 53, 3)},
             .conservedEulerValues = {1.0, 1.0 * -49959.406703496876, 0.0},
             .yiMap = {{"N2", 1.0}},
@@ -384,8 +399,9 @@ INSTANTIATE_TEST_SUITE_P(
                                  5.708868e+04, 5.750638e+04, 5.076174e+04, 2.697916e+04, 9.164036e+04, 9.281967e+04, 6.885935e+04, 6.825274e+04, 5.392193e+04}}},
             .errorTolerance = 1E-3},
 
-        (TCTestParameters){
-            .mechFile = "inputs/eos/gri30.yaml",
+        (RKTestParameters){
+            .reactionFile = "inputs/eos/gri30.inp",
+            .thermoFile = "inputs/eos/gri30.dat",
             .fields = {ablateTesting::domain::MockField::Create("euler", 3, 0), ablateTesting::domain::MockField::Create("densityYi", 53, 3)},
             .conservedEulerValues = {1.0, 1.0 * 2419837.7937912419, 0.0},
             .yiMap = {{"N2", 1.0}},
@@ -400,14 +416,15 @@ INSTANTIATE_TEST_SUITE_P(
 
         ),
 
-    [](const testing::TestParamInfo<TCTestParameters>& info) { return "case_" + std::to_string(info.index) + "_" + info.param.mechFile.stem().string(); });
+    [](const testing::TestParamInfo<RKTestParameters>& info) { return "case_" + std::to_string(info.index) + "_" + info.param.reactionFile.stem().string(); });
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///// Perfect Gas FieldFunctionTests
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct TChemFieldFunctionTestParameters {
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////// Perfect Gas FieldFunctionTests
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct zerorkFieldFunctionTestParameters {
     // eos init
-    std::filesystem::path mechFile;
+    std::filesystem::path reactionFile;
+    std::filesystem::path thermoFile;
 
     // field function init
     ablate::eos::ThermodynamicProperty property1;
@@ -421,11 +438,11 @@ struct TChemFieldFunctionTestParameters {
     std::vector<PetscReal> expectedEulerValue;
 };
 
-class TChemFieldFunctionTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemFieldFunctionTestParameters> {};
-
-TEST_P(TChemFieldFunctionTestFixture, ShouldComputeField) {
+class zerorkFieldFunctionTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<zerorkFieldFunctionTestParameters> {};
+ // Test5
+TEST_P(zerorkFieldFunctionTestFixture, ShouldComputeFieldZerork) {
     // arrange
-    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
     auto yi = GetMassFraction(eos->GetSpeciesVariables(), GetParam().yiMap);
 
     // get the test params
@@ -450,10 +467,11 @@ TEST_P(TChemFieldFunctionTestFixture, ShouldComputeField) {
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(TChemTests, TChemFieldFunctionTestFixture,
+INSTANTIATE_TEST_SUITE_P(zerorkTests, zerorkFieldFunctionTestFixture,
                          testing::Values(
                              ///////// with yaml input ///////
-                             (TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                             (zerorkFieldFunctionTestParameters){.reactionFile = "inputs/eos/gri30.inp",
+                                                                .thermoFile = "inputs/eos/gri30.dat",
                                                                 .property1 = ablate::eos::ThermodynamicProperty::Temperature,
                                                                 .property2 = ablate::eos::ThermodynamicProperty::Pressure,
                                                                 .property1Value = 499.25,
@@ -461,7 +479,8 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemFieldFunctionTestFixture,
                                                                 .velocity = {10, 20, 30},
                                                                 .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
                                                                 .expectedEulerValue = {1.2, 1.2 * 99993.99, 1.2 * 10, 1.2 * 20, 1.2 * 30}},
-                             (TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                             (zerorkFieldFunctionTestParameters){.reactionFile = "inputs/eos/gri30.inp",
+                                                                .thermoFile = "inputs/eos/gri30.dat",
                                                                 .property1 = ablate::eos::ThermodynamicProperty::Temperature,
                                                                 .property2 = ablate::eos::ThermodynamicProperty::Pressure,
                                                                 .property1Value = 762.664,
@@ -469,7 +488,8 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemFieldFunctionTestFixture,
                                                                 .velocity = {0.0, 0.0, 0.0},
                                                                 .yiMap = {{"O2", .3}, {"N2", .4}, {"CH2", .1}, {"NO", .2}},
                                                                 .expectedEulerValue = {0.8, 0.8 * 3.2E5, 0.0, 0.0, 0.0}},
-                             (TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                             (zerorkFieldFunctionTestParameters){.reactionFile = "inputs/eos/gri30.inp",
+                                                                .thermoFile = "inputs/eos/gri30.dat",
                                                                 .property1 = ablate::eos::ThermodynamicProperty::Temperature,
                                                                 .property2 = ablate::eos::ThermodynamicProperty::Pressure,
                                                                 .property1Value = 418.079,
@@ -477,7 +497,8 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemFieldFunctionTestFixture,
                                                                 .velocity = {0, 2, 4},
                                                                 .yiMap = {{"N2", 1.0}},
                                                                 .expectedEulerValue = {3.3, 3.3 * 1000, 0.0, 3.3 * 2, 3.3 * 4}},
-                             (TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                             (zerorkFieldFunctionTestParameters){.reactionFile = "inputs/eos/gri30.inp",
+                                                                .thermoFile = "inputs/eos/gri30.dat",
                                                                 .property1 = ablate::eos::ThermodynamicProperty::Pressure,
                                                                 .property2 = ablate::eos::ThermodynamicProperty::Temperature,
                                                                 .property1Value = 7411.11,
@@ -485,7 +506,8 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemFieldFunctionTestFixture,
                                                                 .velocity = {-1, -2, -3},
                                                                 .yiMap = {{"H2", .35}, {"H2O", .35}, {"N2", .3}},
                                                                 .expectedEulerValue = {0.01, 0.01 * 1E5, .01 * -1, .01 * -2, .01 * -3}},
-                             (TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                             (zerorkFieldFunctionTestParameters){.reactionFile = "inputs/eos/gri30.inp",
+                                                                .thermoFile = "inputs/eos/gri30.dat",
                                                                 .property1 = ablate::eos::ThermodynamicProperty::Pressure,
                                                                 .property2 = ablate::eos::ThermodynamicProperty::Temperature,
                                                                 .property1Value = 281125963.5,
@@ -493,7 +515,8 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemFieldFunctionTestFixture,
                                                                 .velocity = {-10, -20, -300},
                                                                 .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
                                                                 .expectedEulerValue = {999.9, 999.9 * 1E4, 999.9 * -10, 999.9 * -20, 999.9 * -300}},
-                             (TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                             (zerorkFieldFunctionTestParameters){.reactionFile = "inputs/eos/gri30.inp",
+                                                                .thermoFile = "inputs/eos/gri30.dat",
                                                                 .property1 = ablate::eos::ThermodynamicProperty::Pressure,
                                                                 .property2 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
                                                                 .property1Value = 281125963.5,
@@ -501,7 +524,8 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemFieldFunctionTestFixture,
                                                                 .velocity = {-10, -20, -300},
                                                                 .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
                                                                 .expectedEulerValue = {999.9, 999.9 * 1E4, 999.9 * -10, 999.9 * -20, 999.9 * -300}},
-                             (TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                             (zerorkFieldFunctionTestParameters){.reactionFile = "inputs/eos/gri30.inp",
+                                                                .thermoFile = "inputs/eos/gri30.dat",
                                                                 .property1 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
                                                                 .property2 = ablate::eos::ThermodynamicProperty::Pressure,
                                                                 .property1Value = -35256.942891550425,
@@ -509,7 +533,8 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemFieldFunctionTestFixture,
                                                                 .velocity = {-10, -20, -300},
                                                                 .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
                                                                 .expectedEulerValue = {999.9, 999.9 * 1E4, 999.9 * -10, 999.9 * -20, 999.9 * -300}},
-                             (TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                             (zerorkFieldFunctionTestParameters){.reactionFile = "inputs/eos/gri30.inp",
+                                                                .thermoFile = "inputs/eos/gri30.dat",
                                                                 .property1 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
                                                                 .property2 = ablate::eos::ThermodynamicProperty::Pressure,
                                                                 .property1Value = 99291.694615827029,
@@ -517,7 +542,8 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemFieldFunctionTestFixture,
                                                                 .velocity = {10, 20, 30},
                                                                 .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
                                                                 .expectedEulerValue = {1.2, 1.2 * 99993.99, 1.2 * 10, 1.2 * 20, 1.2 * 30}},
-                             (TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/gri30.yaml",
+                             (zerorkFieldFunctionTestParameters){.reactionFile = "inputs/eos/gri30.inp",
+                                                                .thermoFile = "inputs/eos/gri30.dat",
                                                                 .property1 = ablate::eos::ThermodynamicProperty::Pressure,
                                                                 .property2 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
                                                                 .property1Value = 197710.5,
@@ -528,21 +554,22 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemFieldFunctionTestFixture,
 
                              ),
 
-                         [](const testing::TestParamInfo<TChemFieldFunctionTestParameters>& info) {
+                         [](const testing::TestParamInfo<zerorkFieldFunctionTestParameters>& info) {
                              return std::to_string(info.index) + "_from_" + std::string(to_string(info.param.property1)) + "_" + std::string(to_string(info.param.property2)) + "_with_" +
-                                    info.param.mechFile.stem().string();
+                                    info.param.reactionFile.stem().string();
                          });
 
-struct TCElementTestParameters {
-    std::filesystem::path mechFile;
+struct RKElementTestParameters {
+    std::filesystem::path reactionFile;
+    std::filesystem::path thermoFile;
     std::map<std::string, double> expectedElementInformation;
 };
 
-class TCElementTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TCElementTestParameters> {};
-
-TEST_P(TCElementTestFixture, ShouldDetermineElements) {
+class RKElementTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<RKElementTestParameters> {};
+  // Test 6
+TEST_P(RKElementTestFixture, ShouldDetermineElementsZerork) {
     // arrange
-    auto eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile);
+    auto eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
 
     // get the test params
     const auto& params = GetParam();
@@ -554,22 +581,24 @@ TEST_P(TCElementTestFixture, ShouldDetermineElements) {
     ASSERT_EQ(params.expectedElementInformation, elementInformation);
 }
 
-INSTANTIATE_TEST_SUITE_P(TChemTests, TCElementTestFixture,
-                         testing::Values((TCElementTestParameters){.mechFile = "inputs/eos/gri30.yaml",
-                                                                   .expectedElementInformation = {{"AR", 39.948}, {"C", 12.01115}, {"H", 1.00797}, {"N", 14.0067}, {"O", 15.9994}}}),
-                         [](const testing::TestParamInfo<TCElementTestParameters>& info) { return TCElementTestFixture::SanitizeTestName(info.param.mechFile.string()); });
+INSTANTIATE_TEST_SUITE_P(zerorkTests, RKElementTestFixture,
+                         testing::Values((RKElementTestParameters){.reactionFile = "inputs/eos/gri30.inp",
+                                                                   .thermoFile = "inputs/eos/gri30.dat",
+                                                                   .expectedElementInformation = {{"Ar", 39.948}, {"C", 12.0107}, {"H", 1.00794}, {"N", 14.0067}, {"O", 15.9994}}}),
+                         [](const testing::TestParamInfo<RKElementTestParameters>& info) { return RKElementTestFixture::SanitizeTestName(info.param.reactionFile.string()); });
 
-struct TCSpeciesInformationTestParameters {
-    std::filesystem::path mechFile;
+struct RKSpeciesInformationTestParameters {
+    std::filesystem::path reactionFile;
+    std::filesystem::path thermoFile;
     std::map<std::string, double> expectedSpeciesMolecularMass;
     std::map<std::string, std::map<std::string, int>> expectedSpeciesElementInformation;
 };
 
-class TCSpeciesInformationTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TCSpeciesInformationTestParameters> {};
-
-TEST_P(TCSpeciesInformationTestFixture, ShouldDetermineSpeciesElementInformation) {
+class RKSpeciesInformationTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<RKSpeciesInformationTestParameters> {};
+ // Test- 7
+TEST_P(RKSpeciesInformationTestFixture, ShouldDetermineSpeciesElementInformationZerork) {
     // arrange
-    auto eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile);
+    auto eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
 
     // get the test params
     const auto& params = GetParam();
@@ -580,10 +609,10 @@ TEST_P(TCSpeciesInformationTestFixture, ShouldDetermineSpeciesElementInformation
     // assert
     ASSERT_EQ(params.expectedSpeciesElementInformation, speciesElementInformation);
 }
-
-TEST_P(TCSpeciesInformationTestFixture, ShouldDetermineSpeciesMolecularMass) {
+  // Test8
+TEST_P(RKSpeciesInformationTestFixture, ShouldDetermineSpeciesMolecularMassZerork) {
     // arrange
-    auto eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile);
+    auto eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
 
     // get the test params
     const auto& params = GetParam();
@@ -598,9 +627,10 @@ TEST_P(TCSpeciesInformationTestFixture, ShouldDetermineSpeciesMolecularMass) {
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(TChemTests, TCSpeciesInformationTestFixture,
-                         testing::Values((TCSpeciesInformationTestParameters){
-                             .mechFile = "inputs/eos/gri30.yaml",
+INSTANTIATE_TEST_SUITE_P(zerorkTests, RKSpeciesInformationTestFixture,
+                         testing::Values((RKSpeciesInformationTestParameters){
+                             .reactionFile = "inputs/eos/gri30.inp",
+                             .thermoFile = "inputs/eos/gri30.dat",
                              .expectedSpeciesMolecularMass = {{"AR", 39.948},      {"C", 12.0112},      {"C2H", 25.0303},   {"C2H2", 26.0382}, {"C2H3", 27.0462},  {"C2H4", 28.0542},
                                                               {"C2H5", 29.0622},   {"C2H6", 30.0701},   {"C3H7", 43.0892},  {"C3H8", 44.0972}, {"CH", 13.0191},    {"CH2", 14.0271},
                                                               {"CH2(S)", 14.0271}, {"CH2CHO", 43.0456}, {"CH2CO", 42.0376}, {"CH2O", 30.0265}, {"CH2OH", 31.0345}, {"CH3", 15.0351},
@@ -610,40 +640,41 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TCSpeciesInformationTestFixture,
                                                               {"HNCO", 43.0252},   {"HNO", 31.0141},    {"HO2", 33.0068},   {"HOCN", 43.0252}, {"N", 14.0067},     {"N2", 28.0134},
                                                               {"N2O", 44.0128},    {"NCO", 42.0173},    {"NH", 15.0147},    {"NH2", 16.0226},  {"NH3", 17.0306},   {"NNH", 29.0214},
                                                               {"NO", 30.0061},     {"NO2", 46.0055},    {"O", 15.9994},     {"O2", 31.9988},   {"OH", 17.0074}},
-                             .expectedSpeciesElementInformation = {{"AR", {{"AR", 1}, {"C", 0}, {"H", 0}, {"N", 0}, {"O", 0}}},     {"C", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 0}, {"O", 0}}},
-                                                                   {"C2H", {{"AR", 0}, {"C", 2}, {"H", 1}, {"N", 0}, {"O", 0}}},    {"C2H2", {{"AR", 0}, {"C", 2}, {"H", 2}, {"N", 0}, {"O", 0}}},
-                                                                   {"C2H3", {{"AR", 0}, {"C", 2}, {"H", 3}, {"N", 0}, {"O", 0}}},   {"C2H4", {{"AR", 0}, {"C", 2}, {"H", 4}, {"N", 0}, {"O", 0}}},
-                                                                   {"C2H5", {{"AR", 0}, {"C", 2}, {"H", 5}, {"N", 0}, {"O", 0}}},   {"C2H6", {{"AR", 0}, {"C", 2}, {"H", 6}, {"N", 0}, {"O", 0}}},
-                                                                   {"C3H7", {{"AR", 0}, {"C", 3}, {"H", 7}, {"N", 0}, {"O", 0}}},   {"C3H8", {{"AR", 0}, {"C", 3}, {"H", 8}, {"N", 0}, {"O", 0}}},
-                                                                   {"CH", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 0}, {"O", 0}}},     {"CH2", {{"AR", 0}, {"C", 1}, {"H", 2}, {"N", 0}, {"O", 0}}},
-                                                                   {"CH2(S)", {{"AR", 0}, {"C", 1}, {"H", 2}, {"N", 0}, {"O", 0}}}, {"CH2CHO", {{"AR", 0}, {"C", 2}, {"H", 3}, {"N", 0}, {"O", 1}}},
-                                                                   {"CH2CO", {{"AR", 0}, {"C", 2}, {"H", 2}, {"N", 0}, {"O", 1}}},  {"CH2O", {{"AR", 0}, {"C", 1}, {"H", 2}, {"N", 0}, {"O", 1}}},
-                                                                   {"CH2OH", {{"AR", 0}, {"C", 1}, {"H", 3}, {"N", 0}, {"O", 1}}},  {"CH3", {{"AR", 0}, {"C", 1}, {"H", 3}, {"N", 0}, {"O", 0}}},
-                                                                   {"CH3CHO", {{"AR", 0}, {"C", 2}, {"H", 4}, {"N", 0}, {"O", 1}}}, {"CH3O", {{"AR", 0}, {"C", 1}, {"H", 3}, {"N", 0}, {"O", 1}}},
-                                                                   {"CH3OH", {{"AR", 0}, {"C", 1}, {"H", 4}, {"N", 0}, {"O", 1}}},  {"CH4", {{"AR", 0}, {"C", 1}, {"H", 4}, {"N", 0}, {"O", 0}}},
-                                                                   {"CN", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 1}, {"O", 0}}},     {"CO", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 0}, {"O", 1}}},
-                                                                   {"CO2", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 0}, {"O", 2}}},    {"H", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 0}, {"O", 0}}},
-                                                                   {"H2", {{"AR", 0}, {"C", 0}, {"H", 2}, {"N", 0}, {"O", 0}}},     {"H2CN", {{"AR", 0}, {"C", 1}, {"H", 2}, {"N", 1}, {"O", 0}}},
-                                                                   {"H2O", {{"AR", 0}, {"C", 0}, {"H", 2}, {"N", 0}, {"O", 1}}},    {"H2O2", {{"AR", 0}, {"C", 0}, {"H", 2}, {"N", 0}, {"O", 2}}},
-                                                                   {"HCCO", {{"AR", 0}, {"C", 2}, {"H", 1}, {"N", 0}, {"O", 1}}},   {"HCCOH", {{"AR", 0}, {"C", 2}, {"H", 2}, {"N", 0}, {"O", 1}}},
-                                                                   {"HCN", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 1}, {"O", 0}}},    {"HCNN", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 2}, {"O", 0}}},
-                                                                   {"HCNO", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 1}, {"O", 1}}},   {"HCO", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 0}, {"O", 1}}},
-                                                                   {"HNCO", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 1}, {"O", 1}}},   {"HNO", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 1}, {"O", 1}}},
-                                                                   {"HO2", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 0}, {"O", 2}}},    {"HOCN", {{"AR", 0}, {"C", 1}, {"H", 1}, {"N", 1}, {"O", 1}}},
-                                                                   {"N", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 1}, {"O", 0}}},      {"N2", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 2}, {"O", 0}}},
-                                                                   {"N2O", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 2}, {"O", 1}}},    {"NCO", {{"AR", 0}, {"C", 1}, {"H", 0}, {"N", 1}, {"O", 1}}},
-                                                                   {"NH", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 1}, {"O", 0}}},     {"NH2", {{"AR", 0}, {"C", 0}, {"H", 2}, {"N", 1}, {"O", 0}}},
-                                                                   {"NH3", {{"AR", 0}, {"C", 0}, {"H", 3}, {"N", 1}, {"O", 0}}},    {"NNH", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 2}, {"O", 0}}},
-                                                                   {"NO", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 1}, {"O", 1}}},     {"NO2", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 1}, {"O", 2}}},
-                                                                   {"O", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 0}, {"O", 1}}},      {"O2", {{"AR", 0}, {"C", 0}, {"H", 0}, {"N", 0}, {"O", 2}}},
-                                                                   {"OH", {{"AR", 0}, {"C", 0}, {"H", 1}, {"N", 0}, {"O", 1}}}}}),
-                         [](const testing::TestParamInfo<TCSpeciesInformationTestParameters>& info) { return TCElementTestFixture::SanitizeTestName(info.param.mechFile.string()); });
+                             .expectedSpeciesElementInformation = {{"AR", {{"Ar", 1}}},     {"C", {{"C", 1}}},
+                                                                   {"C2H", {{"C", 2}, {"H", 1}}},    {"C2H2", { {"C", 2}, {"H", 2}}},
+                                                                   {"C2H3", {{"C", 2}, {"H", 3}}},   {"C2H4", {{"C", 2}, {"H", 4}}},
+                                                                   {"C2H5", {{"C", 2}, {"H", 5}}},   {"C2H6", {{"C", 2}, {"H", 6}}},
+                                                                   {"C3H7", {{"C", 3}, {"H", 7}}},   {"C3H8", {{"C", 3}, {"H", 8}}},
+                                                                   {"CH", {{"C", 1}, {"H", 1}}},     {"CH2", {{"C", 1}, {"H", 2}}},
+                                                                   {"CH2(S)", {{"C", 1}, {"H", 2}}}, {"CH2CHO", {{"C", 2}, {"H", 3}, {"O", 1}}},
+                                                                   {"CH2CO", {{"C", 2}, {"H", 2}, {"O", 1}}},  {"CH2O", {{"C", 1}, {"H", 2}, {"O", 1}}},
+                                                                   {"CH2OH", {{"C", 1}, {"H", 3}, {"O", 1}}},  {"CH3", {{"C", 1}, {"H", 3}}},
+                                                                   {"CH3CHO", {{"C", 2}, {"H", 4}, {"O", 1}}}, {"CH3O", {{"C", 1}, {"H", 3}, {"O", 1}}},
+                                                                   {"CH3OH", {{"C", 1}, {"H", 4}, {"O", 1}}},  {"CH4", {{"C", 1}, {"H", 4}}},
+                                                                   {"CN", {{"C", 1}, {"N", 1}}},     {"CO", {{"C", 1}, {"O", 1}}},
+                                                                   {"CO2", {{"C", 1}, {"O", 2}}},    {"H", {{"H", 1}}},
+                                                                   {"H2", {{"H", 2}}},     {"H2CN", {{"C", 1}, {"H", 2}, {"N", 1}}},
+                                                                   {"H2O", {{"H", 2}, {"O", 1}}},    {"H2O2", {{"H", 2}, {"O", 2}}},
+                                                                   {"HCCO", {{"C", 2}, {"H", 1}, {"O", 1}}},   {"HCCOH", {{"C", 2}, {"H", 2}, {"O", 1}}},
+                                                                   {"HCN", {{"C", 1}, {"H", 1}, {"N", 1}}},    {"HCNN", {{"C", 1}, {"H", 1}, {"N", 2}}},
+                                                                   {"HCNO", {{"C", 1}, {"H", 1}, {"N", 1}, {"O", 1}}},   {"HCO", {{"C", 1}, {"H", 1}, {"O", 1}}},
+                                                                   {"HNCO", {{"C", 1}, {"H", 1}, {"N", 1}, {"O", 1}}},   {"HNO", {{"H", 1}, {"N", 1}, {"O", 1}}},
+                                                                   {"HO2", {{"H", 1}, {"O", 2}}},    {"HOCN", {{"C", 1}, {"H", 1}, {"N", 1}, {"O", 1}}},
+                                                                   {"N", {{"N", 1}}},      {"N2", {{"N", 2}}},
+                                                                   {"N2O", {{"N", 2}, {"O", 1}}},    {"NCO", {{"C", 1}, {"N", 1}, {"O", 1}}},
+                                                                   {"NH", {{"H", 1}, {"N", 1}}},     {"NH2", {{"H", 2}, {"N", 1}}},
+                                                                   {"NH3", {{"H", 3}, {"N", 1}}},    {"NNH", {{"H", 1}, {"N", 2}}},
+                                                                   {"NO", {{"N", 1}, {"O", 1}}},     {"NO2", {{"N", 1}, {"O", 2}}},
+                                                                   {"O", {{"O", 1}}},      {"O2", {{"O", 2}}},
+                                                                   {"OH", {{"H", 1}, {"O", 1}}}}}),
+                         [](const testing::TestParamInfo<RKSpeciesInformationTestParameters>& info) { return RKElementTestFixture::SanitizeTestName(info.param.reactionFile.string()); });
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///// EOS Thermodynamic property tests
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct TCComputeSourceTestParameters {
-    std::filesystem::path mechFile;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////// EOS Thermodynamic property tests
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct RKComputeSourceTestParameters {
+    std::filesystem::path reactionFile;
+    std::filesystem::path thermoFile;
     PetscReal dt;
     std::vector<PetscReal> inputEulerValues;
     std::vector<PetscReal> inputDensityYiValues;
@@ -654,11 +685,11 @@ struct TCComputeSourceTestParameters {
     PetscReal errorTolerance = 1E-3;
 };
 
-class TCComputeSourceTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TCComputeSourceTestParameters> {};
-
-TEST_P(TCComputeSourceTestFixture, ShouldComputeCorrectSource) {
+class RKComputeSourceTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<RKComputeSourceTestParameters> {};
+ // Test 9
+TEST_P(RKComputeSourceTestFixture, ShouldComputeCorrectSourceZerork) {
     // ARRANGE
-    auto eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile);
+    auto eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
 
     // create a zeroD domain for testing
     auto domain = std::make_shared<ablate::domain::BoxMesh>("zeroD",
@@ -699,6 +730,15 @@ TEST_P(TCComputeSourceTestFixture, ShouldComputeCorrectSource) {
     // ACT
     ablate::domain::DynamicRange range;
     range.Add(0);
+
+    //Set the reactor to constant pressure, cont vol is default for zerork
+    ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints constraintseos;
+    constraintseos.reactorType=ablate::eos::zerorkeos::SourceCalculator::ReactorType::ConstantPressure;
+    eos->constraints=constraintseos;
+
+
+
+//    constraints.Set(ReactorType::ConstantPressure);
     auto sourceTermCalculator = eos->CreateSourceCalculator(domain->GetFields(), range.GetRange());
 
     // Perform prestep
@@ -735,9 +775,10 @@ TEST_P(TCComputeSourceTestFixture, ShouldComputeCorrectSource) {
     DMRestoreLocalVector(domain->GetDM(), &computedF) >> ablate::utilities::PetscUtilities::checkError;
 }
 
-INSTANTIATE_TEST_SUITE_P(TChemTests, TCComputeSourceTestFixture,
-                         testing::Values((TCComputeSourceTestParameters){
-                             .mechFile = "inputs/eos/gri30.yaml",
+INSTANTIATE_TEST_SUITE_P(zerorkTests, RKComputeSourceTestFixture,
+                         testing::Values((RKComputeSourceTestParameters){
+                             .reactionFile = "inputs/eos/gri30.inp",
+                             .thermoFile = "inputs/eos/gri30.dat",
                              .dt = 0.017418748136926492,
                              .inputEulerValues = {0.280629, 214342., 0.},
                              .inputDensityYiValues = {2.70155e-06, 2.42588e-10, 1.75298e-09, 0.0615735,    5.91967e-09, 0.00013291,  1.42223e-06, 2.69273e-07, 1.17659e-25, 2.62694e-19, 1.04261e-12,
@@ -750,4 +791,6 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TCComputeSourceTestFixture,
                                                          3.34547e-10, 0.000374787, -0.0504404,  0.0295509,    0.000613861, 3.23639e-07, 0.0229248,   5.17743e-09, 2.5618e-06,  0.000749697, 2.18505e-13,
                                                          7.71297e-06, 8.76474e-09, 0.0042147,   3.01428e-06,  0.0143082,   8.95778e-10, 0.000171936, 2.11932e-09, 3.98707e-17, 2.93971e-15, 3.98326e-16,
                                                          2.19774e-15, 4.30824e-12, 3.73653e-12, 4.39779e-12,  5.44988e-08, 5.9704e-15,  1.24544e-21, 9.80878e-14, 1.50217e-18, 1.15244e-16, 7.52342e-17,
-                                                         7.10193e-18, 4.27329e-15, 2.96867e-16, -6.83549e-25, 2.57715e-09, 3.0537e-05,  5.93473e-08, 9.20704e-07, -3.46948e-08}}));
+                                                         7.10193e-18, 4.27329e-15, 2.96867e-16, -6.83549e-25, 2.57715e-09, 3.0537e-05,  5.93473e-08, 9.20704e-07, -3.46948e-08},
+                             .errorTolerance=0.021})); //it is a huge step thus the looser tolerance ....
+

@@ -6,7 +6,7 @@ test:
   assert: "inputs/reactingFlow/simpleReactingFlow.txt"
 
 environment:
-  title: _simpleReactingFlow
+  title: _simpleReactingFlowTchem
   tagDirectory: false
 arguments: 
   dm_plex_separate_marker: ""
