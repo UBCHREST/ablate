@@ -54,7 +54,6 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
      * @param cellRange
      */
     SourceCalculator(const std::vector<domain::Field>& fields, std::shared_ptr<TChem> tChemEos, ChemistryConstraints constraints, const ablate::domain::Range& cellRange);
-//    SourceCalculator(const std::vector<domain::Field>& fields, std::shared_ptr<TChem> tChemEos, ChemistryConstraints constraints, const ablate::domain::Range& cellRange);
 
     /**
      * The compute source can be used as a prestep allowing the add source to be used at each stage without reevaluating
@@ -79,7 +78,6 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
      * Hold access to the tchem eos needed to create eos
      */
     std::shared_ptr<eos::TChem> eos;
-
     const size_t numberSpecies;
 
     //! the id for the required euler field

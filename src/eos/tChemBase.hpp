@@ -64,9 +64,6 @@ class TChemBase : public ChemistryModel {
     real_type_1d_view_host enthalpyReferenceHost;
 
    public:
-    static const std::filesystem::path reactionFile;
-
-    const std::filesystem::path thermoFile;
     /**
      * The tChem EOS can utilize either a mechanical & thermo file using the Chemkin file format for a modern yaml file.
      * @param mechFile
@@ -74,8 +71,6 @@ class TChemBase : public ChemistryModel {
      */
     explicit TChemBase(const std::string& eosName, std::filesystem::path mechanismFile, const std::shared_ptr<ablate::monitors::logs::Log>& = {},
                        const std::shared_ptr<ablate::parameters::Parameters>& options = {});
-
-
 
     /**
      * Returns all elements tracked in this mechanism and their molecular mass

@@ -9,8 +9,6 @@
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/stringUtilities.hpp"
 
-//#include "zerork_cfd_plugin.h"
-
 void ablate::eos::tChem::SourceCalculator::ChemistryConstraints::Set(const std::shared_ptr<ablate::parameters::Parameters>& options) {
     if (options) {
         dtMin = options->Get("dtMin", dtMin);
@@ -190,7 +188,6 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
     Kokkos::deep_copy(internalEnergyRefDevice, internalEnergyRefHost);
     Kokkos::deep_copy(stateDevice, stateHost);
 
-
     // setup the enthalpy, temperature, pressure, chemistry function policies
     auto temperatureFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(::tChemLib::exec_space(), numberCells, Kokkos::AUTO());
     temperatureFunctionPolicy.set_scratch_size(
@@ -205,12 +202,6 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
 
     // Compute the pressure into the state field in the device
     ablate::eos::tChem::Pressure::runDeviceBatch(pressureFunctionPolicy, stateDevice, kineticModelGasConstDataDevice);
-
-//    for (int k=0;k<5;k++) {
-//        for (int i = 0; i < 70; i++) {
-//            std::cout <<"cell " << k << "position " << i << "is " << stateDevice(k, i) << "\n";
-//        }
-//    }
 
     auto timeAdvanceDeviceLocal = timeAdvanceDevice;
     auto dtViewDeviceLocal = dtViewDevice;
@@ -341,8 +332,6 @@ void ablate::eos::tChem::SourceCalculator::ComputeSource(const ablate::domain::R
     auto cellRangeStartLocal = cellRange.start;
     // Use a parallel for computing the source term
     auto enthalpyOfFormationLocal = eos->GetEnthalpyOfFormation();
-                std::vector<double> yend(nSpecLocal*5);
-                std::vector<double> ydiff(nSpecLocal*5);
     Kokkos::parallel_for(
         "sourceTermCompute", Kokkos::RangePolicy<typename tChemLib::exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const ordinal_type& i) {
             // get the host data from the petsc field

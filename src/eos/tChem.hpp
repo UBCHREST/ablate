@@ -40,14 +40,7 @@ class TChem : public TChemBase, public std::enable_shared_from_this<ablate::eos:
     /**
      * a temperature thermodynamic function specific to TChem that takes yi from the arguments instead of conserved
      */
-//    struct ThermodynamicTemperatureMassFractionFunction {
-//        //! function to be called
-//        PetscErrorCode (*function)(const PetscReal conserved[], const PetscReal yi[], PetscReal T, PetscReal* property, void* ctx) = nullptr;
-//        //! optional context to pass into the function
-//        std::shared_ptr<void> context = nullptr;
-//        //! the property size being set
-//        PetscInt propertySize = 1;
-//    };
+
 
    public:
     /**

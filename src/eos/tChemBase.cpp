@@ -32,7 +32,6 @@ ablate::eos::TChemBase::TChemBase(const std::string &eosName, std::filesystem::p
     const auto speciesNamesHost = Kokkos::create_mirror_view(kineticsModelDataDevice->speciesNames);
     Kokkos::deep_copy(speciesNamesHost, kineticsModelDataDevice->speciesNames);
     // resize the species data
-
     species.resize(kineticsModelDataDevice->nSpec);
     auto speciesArray = species.data();
 
