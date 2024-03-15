@@ -40,6 +40,7 @@ include(config/findCppParser.cmake)
 include(config/findMuParser.cmake)
 include(config/findXdmfGenerator.cmake)
 include(config/findTChem.cmake)
+include(config/findZerork.cmake)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 include(config/findOpenCascade.cmake)
@@ -52,9 +53,9 @@ find_package(HDF5 REQUIRED)
 #check for zerork
 #find_library(ZERORK_LIBRARY zerork_cfd_plugin PATHS $ENV{ZERORK_DIR}/lib REQUIRED)
 
-add_library(zerork INTERFACE IMPORTED GLOBAL)
-target_include_directories(zerork INTERFACE "$ENV{ZERORK_DIR}/include")
-target_link_libraries(zerork INTERFACE "$ENV{ZERORK_DIR}/lib/libzerork_cfd_plugin.so")
+#add_library(zerork INTERFACE IMPORTED GLOBAL)
+#target_include_directories(zerork INTERFACE "$ENV{ZERORK_DIR}/include")
+#target_link_libraries(zerork INTERFACE "$ENV{ZERORK_DIR}/lib/libzerork_cfd_plugin.so")
 
 
 # specify in the required libaries
@@ -71,7 +72,7 @@ target_link_libraries(ablateLibrary
         Threads::Threads
         nlohmann_json::nlohmann_json
         ${HDF5_LIBRARIES}
-        zerork
+        zerork_cfd_plugin
         PRIVATE
         chrestCompilerFlags)
 

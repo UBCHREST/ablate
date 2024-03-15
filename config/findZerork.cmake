@@ -1,79 +1,17 @@
-# check to see if the Tines_DIR was specified, if not build
-if (Tines::tines)
-    message(STATUS "Found Tines::tines target")
-elseif (NOT (DEFINED Tines_DIR|CACHE{Tines_DIR}|ENV{Tines_DIR}))
-    message(STATUS "Tines_DIR not set.  Downloading and building Tines...")
 
-    # tines expects the yaml-cpp target to be at yaml
-    add_library(yaml ALIAS yaml-cpp)
-    set(TINES_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
-    set(TINES_DENSE_LINEAR_ALGEBRA_WARNING OFF CACHE BOOL "" FORCE)
-    set(TINES_CUDA_WARNING OFF CACHE BOOL "" FORCE)
-    set(TINES_SUNDIALS_WARNING OFF CACHE BOOL "" FORCE)
+# check to see if the ZERORK_DIR was specified, if not build
+if (NOT (DEFINED ENV{ZERORK_DIR}))
+    message(STATUS "ZERORK_DIR not set.  Downloading and building zerork...")
 
-    FetchContent_Declare(tines
-            GIT_REPOSITORY https://github.com/UBCHREST/Tines.git
-            GIT_TAG mcgurn/numerical-jac-fix
-            SOURCE_SUBDIR src
+    FetchContent_Declare(zerork
+            GIT_REPOSITORY https://github.com/LLNL/zero-rk.git
+            GIT_TAG dabf3257c1598104099b08048d95099200fc795f
             )
-    FetchContent_MakeAvailable(tines)
+    FetchContent_MakeAvailable(zerork)
 
-    # prevent error checks on included header files
-    set_include_directories_as_system(tines)
+    set_include_directories_as_system(zerork)
 
-    # make sure it is in the right name space
-    if (TARGET tines)
-        add_library(Tines::tines ALIAS tines)
-    endif ()
-
-    # add tines
-    install(TARGETS tines
-            EXPORT ablateTargets
-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-            PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-            )
-    # check for openblas
-    if (OPENBLAS_INSTALL_PATH)
-        install(TARGETS openblas
-                EXPORT ablateTargets
-                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-                INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-                )
-    endif ()
-
-elseif ()
-    find_package(Tines REQUIRED)
-endif ()
-
-# check to see if the TChem_DIR was specified, if not build
-if (NOT (DEFINED TChem_DIR|CACHE{TChem_DIR}|ENV{TChem_DIR}))
-    message(STATUS "TChem_DIR not set.  Downloading and building TChem...")
-    set(TCHEM_ENABLE_MAIN OFF CACHE BOOL "" FORCE)
-    set(TCHEM_ENABLE_EXAMPLE OFF CACHE BOOL "" FORCE)
-    set(TCHEM_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
-    set(TCHEM_ENABLE_PYTHON OFF CACHE BOOL "" FORCE)
-
-    FetchContent_Declare(tchem
-            GIT_REPOSITORY https://github.com/sandialabs/TChem.git
-            GIT_TAG bc7e9d7aafb75bc48439c683861703750b695c58
-            SOURCE_SUBDIR src
-            )
-    FetchContent_MakeAvailable(tchem)
-
-    # prevent error checks on included header files
-    set_include_directories_as_system(tchem)
-
-    # make sure it is in the right name space
-    if (TARGET tchem)
-        add_library(TChem::tchem ALIAS tchem)
-    endif ()
-
-    install(TARGETS tchem
+    install(TARGETS zerork_cfd_plugin ckconverter zerork_vectormath zerorkutilities zerork spify
             EXPORT ablateTargets
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -81,7 +19,20 @@ if (NOT (DEFINED TChem_DIR|CACHE{TChem_DIR}|ENV{TChem_DIR}))
             INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
             )
 
+
+elseif (DEFINED ENV{ZERORK_DIR})
+    message(STATUS "Found ZERORK_DIR, using prebuilt zerork")
+
+
+    add_library(zerork INTERFACE IMPORTED GLOBAL)
+    target_include_directories(zerork INTERFACE "$ENV{ZERORK_DIR}/include")
+    target_link_libraries(zerork INTERFACE "$ENV{ZERORK_DIR}/lib/libzerork_cfd_plugin.so")
+
+    if (TARGET zerork)
+        add_library(zerork_cfd_plugin ALIAS zerork)
+    endif ()
+
 elseif ()
-    find_package(TChem REQUIRED)
+    find_package(zerork REQUIRED)
 endif ()
 
