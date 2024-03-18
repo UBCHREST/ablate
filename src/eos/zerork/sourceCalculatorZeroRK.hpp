@@ -32,11 +32,17 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
         // 1e16 starts changing the flameshape
         double stepLimiter = 1.0E200;
 
+        // use cvode or SEULEX
+        int useSEULEX = 0;
+
         // zerork output state
         int verbose = 0;
 
         //load balancing
         int loadBalance = 1;
+
+        //iterative jacobian, recommended to be set to 0 whenever dense is selected
+        int iterative = 0;
 
         // For large mechanisms(~Nspec>100) it is recommended to use a sparse math jacobian
         bool sparseJacobian = false;

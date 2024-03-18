@@ -16,6 +16,8 @@ void ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints::Set(const s
         thresholdTemperature = options->Get("thresholdTemperature", thresholdTemperature);
         stepLimiter = options->Get("stepLimiter", stepLimiter);
         loadBalance = options->Get("loadBalance",loadBalance);
+        useSEULEX = options->Get("useSEULEX",useSEULEX);
+        iterative = options->Get("iterative",iterative);
         reactorType = options->Get("reactorType", ReactorType::ConstantVolume);
     }
 }
@@ -51,6 +53,9 @@ ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<dom
 
     zerork_status_t status_mech = zerork_reactor_load_mechanism(zrm_handle);
     if(status_mech != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+
+    zerork_status_t status_cvode = zerork_reactor_set_int_option("integrator", chemistryConstraints.useSEULEX, zrm_handle);
+    if(status_cvode != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
     //verbose 0 is no output, max level is 4
     zerork_status_t status_verbose = zerork_reactor_set_int_option("verbosity", chemistryConstraints.verbose, zrm_handle);
@@ -93,9 +98,11 @@ ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<dom
     if (!chemistryConstraints.sparseJacobian) {
         zerork_status_t status_sparse = zerork_reactor_set_int_option("dense", 1, zrm_handle);
         if (status_sparse != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
-        zerork_status_t status_iterative = zerork_reactor_set_int_option("iterative", 0, zrm_handle);
-        if (status_iterative != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+//        zerork_status_t status_iterative = zerork_reactor_set_int_option("iterative", 0, zrm_handle);
+//        if (status_iterative != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
     }
+    zerork_status_t status_iterative = zerork_reactor_set_int_option("iterative", chemistryConstraints.iterative, zrm_handle);
+    if (status_iterative != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
     if (zerork_error_state!=0) {
         throw std::invalid_argument("ablate::eos::zerork couldnt initialize, something is wrong...");
