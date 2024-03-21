@@ -213,11 +213,11 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
     std::vector<double> ys = reactorMassFracEval;
 
     auto nReactorsEval = std::reduce(reactorEval.begin(), reactorEval.end());
-
+    StartEvent("zerorkEOS::SourceCalculator::ComputeSource::ReactorSolve");
     zerork_status_t flag = ZERORK_STATUS_SUCCESS;
     flag = zerork_reactor_solve(1, time, dt, nReactorsEval, &reactorTEval[0], &reactorPEval[0],
                                 &reactorMassFracEval[0], zrm_handle);
-
+    EndEvent();
     if(flag != ZERORK_STATUS_SUCCESS) {
         std::stringstream warningMessage;
         warningMessage<<"Oo something went wrong during zerork integration..." << "\n";
