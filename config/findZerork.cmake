@@ -5,13 +5,13 @@ if (NOT (DEFINED ENV{ZERORK_DIR}))
 
     FetchContent_Declare(zerork
             GIT_REPOSITORY https://github.com/LLNL/zero-rk.git
-            GIT_TAG dabf3257c1598104099b08048d95099200fc795f
+            GIT_TAG 4a9db5b2feb8c9f337f36176966f2ce656b6f726
             )
     FetchContent_MakeAvailable(zerork)
 
     set_include_directories_as_system(zerork)
 
-    install(TARGETS zerork_cfd_plugin ckconverter zerork_vectormath zerorkutilities zerork spify
+    install(TARGETS zerork_cfd_plugin zerork_vectormath ckconverter zerorkutilities zerork spify
             EXPORT ablateTargets
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -24,13 +24,13 @@ elseif (DEFINED ENV{ZERORK_DIR})
     message(STATUS "Found ZERORK_DIR, using prebuilt zerork")
 
 
-    add_library(zerork INTERFACE IMPORTED GLOBAL)
-    target_include_directories(zerork INTERFACE "$ENV{ZERORK_DIR}/include")
-    target_link_libraries(zerork INTERFACE "$ENV{ZERORK_DIR}/lib/libzerork_cfd_plugin.so")
+    add_library(zerork_cfd_plugin INTERFACE IMPORTED GLOBAL)
+    target_include_directories(zerork_cfd_plugin INTERFACE "$ENV{ZERORK_DIR}/include")
+    target_link_libraries(zerork_cfd_plugin INTERFACE "$ENV{ZERORK_DIR}/lib/libzerork_cfd_plugin.so")
 
-    if (TARGET zerork)
-        add_library(zerork_cfd_plugin ALIAS zerork)
-    endif ()
+
+#    add_library(zerork_cfd_plugin ALIAS zerork)
+
 
 elseif ()
     find_package(zerork REQUIRED)
