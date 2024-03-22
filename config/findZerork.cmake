@@ -5,7 +5,7 @@ if (NOT (DEFINED ENV{ZERORK_DIR}))
 
     FetchContent_Declare(zerork
             GIT_REPOSITORY https://github.com/LLNL/zero-rk.git
-            GIT_TAG 4a9db5b2feb8c9f337f36176966f2ce656b6f726
+            GIT_TAG 71befd3f6ff6f49a66e07b82659b88d2bc1beb8c
             )
     FetchContent_MakeAvailable(zerork)
 
