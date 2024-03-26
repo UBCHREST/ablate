@@ -18,6 +18,7 @@ void ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints::Set(const s
         loadBalance = options->Get("loadBalance",loadBalance);
         useSEULEX = options->Get("useSEULEX",useSEULEX);
         iterative = options->Get("iterative",iterative);
+        gpu = options->Get("gpu",gpu);
         reactorType = options->Get("reactorType", ReactorType::ConstantVolume);
     }
 }
@@ -89,6 +90,10 @@ ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<dom
     // Kinetic rate limiter
     zerork_status_t status_steplimiter = zerork_reactor_set_double_option("step_limiter", chemistryConstraints.stepLimiter, zrm_handle);
     if(status_steplimiter != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+
+    // Kinetic rate limiter
+    zerork_status_t status_gpu = zerork_reactor_set_int_option("gpu", chemistryConstraints.gpu, zrm_handle);
+    if(status_gpu != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
     if (chemistryConstraints.timinglog) {
         zerork_reactor_set_string_option("reactor_timing_log_filename", "timing.log", zrm_handle);
