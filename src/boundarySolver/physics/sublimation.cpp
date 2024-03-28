@@ -13,7 +13,7 @@ ablate::boundarySolver::physics::Sublimation::Sublimation(std::shared_ptr<subMod
                                                           std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux,
                                                           std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling, bool diffusionFlame,
                                                           std::shared_ptr<ablate::radiation::SurfaceRadiation> radiationIn, const std::shared_ptr<io::interval::Interval> &intervalIn,
-                                                          double emissivityIn)
+                                                          const std::shared_ptr<ablate::parameters::Parameters> &parametersIn)
     : transportModel(std::move(transportModel)),
       eos(std::move(eos)),
       additionalHeatFlux(std::move(additionalHeatFlux)),
@@ -24,7 +24,8 @@ ablate::boundarySolver::physics::Sublimation::Sublimation(std::shared_ptr<subMod
       pressureGradientScaling(std::move(pressureGradientScaling)),
       radiation(std::move(radiationIn)),
       radiationInterval((intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>())),
-      emissivity(emissivityIn == 0 ? 1.0 : emissivityIn),
+      emissivity(parametersIn ? parametersIn->Get<PetscReal>("emissivity", 1.) : 1.),
+      absorptivity((parametersIn && parametersIn->GetString("absorptivity")) ? parametersIn->Get<PetscReal>("absorptivity", -1.) : emissivity),
       sublimationModel(std::move(sublimationModel)) {}
 
 void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
@@ -165,7 +166,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     // Use the solution from the radiation solve.
     PetscReal radIntensity = 0;
     if (sublimation->radiation) {
-        sublimation->radiation->GetSurfaceIntensity(&radIntensity, fg->faceId, boundaryTemperature, sublimation->emissivity);
+        sublimation->radiation->GetSurfaceIntensity(&radIntensity, fg->faceId, boundaryTemperature, sublimation->emissivity, sublimation->absorptivity);
     }
 
     // compute the heat flux. Add the radiation heat flux for this face intensity if the radiation solver exists
@@ -313,7 +314,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationOutputFu
 
     PetscReal radIntensity = 0;
     if (sublimation->radiation) {
-        sublimation->radiation->GetSurfaceIntensity(&radIntensity, fg->faceId, boundaryTemperature, sublimation->emissivity);
+        sublimation->radiation->GetSurfaceIntensity(&radIntensity, fg->faceId, boundaryTemperature, sublimation->emissivity, sublimation->absorptivity);
     }
 
     // compute the heat flux
@@ -455,7 +456,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::UpdateBoundaryHeatT
     // Use the solution from the radiation solve.
     PetscReal radIntensity = 0;
     if (sublimation->radiation) {
-        sublimation->radiation->GetSurfaceIntensity(&radIntensity, fg->faceId, boundaryTemperature, sublimation->emissivity);
+        sublimation->radiation->GetSurfaceIntensity(&radIntensity, fg->faceId, boundaryTemperature, sublimation->emissivity, sublimation->absorptivity);
     }
 
     // compute the heat flux. Add the radiation heat flux for this face intensity if the radiation solver exists
@@ -487,4 +488,5 @@ REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::physic
          OPT(ablate::finiteVolume::processes::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"),
          OPT(bool, "diffusionFlame", "disables contribution to the momentum equation. Should be true when advection is not solved. (Default is false)"),
          OPT(ablate::radiation::SurfaceRadiation, "radiation", "radiation instance for the sublimation solver to calculate heat flux"),
-         OPT(ablate::io::interval::Interval, "radiationInterval", "number of time steps between the radiation solves"), OPT(double, "emissivity", "radiation property of the fuel surface"));
+         OPT(ablate::io::interval::Interval, "radiationInterval", "number of time steps between the radiation solves"),
+         OPT(ablate::parameters::Parameters, "parameters", "emissivity and absorptivity parameters for the sublimation energy balance"));

@@ -21,7 +21,7 @@ class OrthogonalRadiation : public ablate::radiation::SurfaceRadiation {
      */
     static inline std::string GetClassType() { return "OrthogonalRadiation"; }
 
-    inline void GetSurfaceIntensity(PetscReal* intensityReturn, PetscInt faceId, PetscReal temperature, PetscReal emissivity = 1.0) override {
+    inline void GetSurfaceIntensity(PetscReal* intensityReturn, PetscInt faceId, PetscReal temperature, PetscReal emissivity = 1.0, PetscReal absorptivity = 1.0) override {
         for (int i = 0; i < (int)absorptivityFunction.propertySize; ++i) {  // Compute the losses
             PetscReal netIntensity = evaluatedGains[absorptivityFunction.propertySize * indexLookup.GetAbsoluteIndex(faceId) + i];
             intensityReturn[i] = abs(netIntensity) > ablate::utilities::Constants::large ? ablate::utilities::Constants::large * PetscSignReal(netIntensity) : netIntensity;

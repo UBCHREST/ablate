@@ -339,7 +339,8 @@ solvers:
               eos: *eos
             - !ablate::eos::radiationProperties::SootMeanProperties
               eos: *eos
-        emissivity: 0.9
+        parameters:
+          emissivity: 0.9
 
     monitors:
       # the boundary solver monitor is used to record regression rate and heat flux to the surface

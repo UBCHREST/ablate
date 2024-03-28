@@ -26,7 +26,7 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
     domain::Region::GetLabel(radiationFluxRegion, solverIn->GetSubDomain().GetDM(), radiationFluxRegionLabel, regionValue);
 
     // Now create a sub dm with only the faces
-    DMPlexFilter(solverIn->GetSubDomain().GetDM(), radiationFluxRegionLabel, regionValue, &fluxDm) >> utilities::PetscUtilities::checkError;
+    DMPlexFilter(solverIn->GetSubDomain().GetDM(), radiationFluxRegionLabel, regionValue, PETSC_FALSE, PETSC_FALSE, NULL, &fluxDm) >> utilities::PetscUtilities::checkError;
 
     /** Add each of the output components on each face in the fluxDm
      * the number of components should be equal to the number of ray tracers plus any ratio outputs?
@@ -180,7 +180,7 @@ PetscErrorCode ablate::monitors::RadiationFlux::Save(PetscViewer viewer, PetscIn
                      * Get the intensity calculated out of the ray tracer. Write it to the appropriate location in the face DM.
                      */
                     PetscReal wavelengths[radiation[rayTracerIndex]->GetAbsorptionFunction().propertySize];
-                    radiation[rayTracerIndex]->GetSurfaceIntensity(wavelengths, boundaryPt, 0, 1);
+                    radiation[rayTracerIndex]->GetSurfaceIntensity(wavelengths, boundaryPt, 0, 1, 1);
                     if (log) log->Printf("%i:", c);
                     for (int wavelengthIndex = 0; wavelengthIndex < radiation[rayTracerIndex]->GetAbsorptionFunction().propertySize; ++wavelengthIndex) {
                         globalFaceData[radiation[rayTracerIndex]->GetAbsorptionFunction().propertySize * rayTracerIndex + wavelengthIndex] = wavelengths[wavelengthIndex];
