@@ -52,9 +52,6 @@ ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<dom
     zerork_status_t zerom_status = zerork_reactor_set_mechanism_files(eos->reactionFile.c_str(), eos->thermoFile.c_str(), zrm_handle);
     if(zerom_status != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
-    zerork_status_t status_mech = zerork_reactor_load_mechanism(zrm_handle);
-    if(status_mech != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
-
     zerork_status_t status_cvode = zerork_reactor_set_int_option("integrator", chemistryConstraints.useSEULEX, zrm_handle);
     if(status_cvode != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
@@ -103,11 +100,12 @@ ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<dom
     if (!chemistryConstraints.sparseJacobian) {
         zerork_status_t status_sparse = zerork_reactor_set_int_option("dense", 1, zrm_handle);
         if (status_sparse != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
-//        zerork_status_t status_iterative = zerork_reactor_set_int_option("iterative", 0, zrm_handle);
-//        if (status_iterative != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
     }
     zerork_status_t status_iterative = zerork_reactor_set_int_option("iterative", chemistryConstraints.iterative, zrm_handle);
     if (status_iterative != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+
+    zerork_status_t status_mech = zerork_reactor_load_mechanism(zrm_handle); //make sure this call is after gpu setup
+    if(status_mech != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
     if (zerork_error_state!=0) {
         throw std::invalid_argument("ablate::eos::zerork couldnt initialize, something is wrong...");

@@ -464,7 +464,7 @@ std::istream& ablate::eos::tChem::operator>>(std::istream& is, ablate::eos::tChe
         throw std::invalid_argument(
             " reactorType is specified with an unknown reactor type. \n"
             "Acceptable reactor types: ConstantPressure, ConstantVolume. \n"
-            " Default is Contstant volume");
+            " Default is ContstantPressure");
     }
     return is;
 }

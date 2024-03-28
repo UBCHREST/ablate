@@ -28,11 +28,5 @@ elseif (DEFINED ENV{ZERORK_DIR})
     target_include_directories(zerork_cfd_plugin INTERFACE "$ENV{ZERORK_DIR}/include")
     target_link_libraries(zerork_cfd_plugin INTERFACE "$ENV{ZERORK_DIR}/lib/libzerork_cfd_plugin.so")
 
-
-#    add_library(zerork_cfd_plugin ALIAS zerork)
-
-
-elseif ()
-    find_package(zerork REQUIRED)
 endif ()
 

@@ -72,23 +72,6 @@ class TChemBase : public ChemistryModel {
     explicit TChemBase(const std::string& eosName, std::filesystem::path mechanismFile, const std::shared_ptr<ablate::monitors::logs::Log>& = {},
                        const std::shared_ptr<ablate::parameters::Parameters>& options = {});
 
-    /**
-     * Returns all elements tracked in this mechanism and their molecular mass
-     * @return
-     */
-//    [[nodiscard]] virtual std::map<std::string, double> GetElementInformation() const = 0;
-
-    /**
-     * no. of atoms of each element in each species
-     * @return
-     */
-//    [[nodiscard]] virtual std::map<std::string, std::map<std::string, int>> GetSpeciesElementalInformation() const = 0;
-
-    /**
-     * the MW of each species
-     * @return
-     */
-//    [[nodiscard]] virtual std::map<std::string, double> GetSpeciesMolecularMass() const = 0;
 
     /**
      * Print the details of this eos

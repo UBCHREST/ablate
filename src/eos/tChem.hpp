@@ -37,11 +37,6 @@ class TChem : public TChemBase, public std::enable_shared_from_this<ablate::eos:
         PetscInt propertySize = 1;
     };
 
-    /**
-     * a temperature thermodynamic function specific to TChem that takes yi from the arguments instead of conserved
-     */
-
-
    public:
     /**
      * The tChem EOS can utilize either a mechanical & thermo file using the Chemkin file format for a modern yaml file.

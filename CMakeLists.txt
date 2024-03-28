@@ -50,14 +50,6 @@ include(config/findSLEPc.cmake)
 include(config/printVersion.cmake)
 find_package(HDF5 REQUIRED)
 
-#check for zerork
-#find_library(ZERORK_LIBRARY zerork_cfd_plugin PATHS $ENV{ZERORK_DIR}/lib REQUIRED)
-
-#add_library(zerork INTERFACE IMPORTED GLOBAL)
-#target_include_directories(zerork INTERFACE "$ENV{ZERORK_DIR}/include")
-#target_link_libraries(zerork INTERFACE "$ENV{ZERORK_DIR}/lib/libzerork_cfd_plugin.so")
-
-
 # specify in the required libaries
 target_link_libraries(ablateLibrary
         PUBLIC
@@ -75,9 +67,6 @@ target_link_libraries(ablateLibrary
         zerork_cfd_plugin
         PRIVATE
         chrestCompilerFlags)
-
-
-
 
 # depending upon the build, we may need to add blas
 find_package(BLAS)
