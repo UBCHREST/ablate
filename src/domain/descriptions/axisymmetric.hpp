@@ -77,8 +77,8 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
      * @param numberWedges wedges/pie slices in the circle
      * @param numberShells slicing of the cylinder along the radius
      */
-    Axisymmetric(std::shared_ptr<ablate::domain::descriptions::AxisDescription> axis, std::shared_ptr<ablate::mathFunctions::MathFunction> radiusFunction, PetscInt numberWedges,
-                 PetscInt numberShells, std::shared_ptr<ablate::mathFunctions::MathFunction> boundaryFunction);
+    Axisymmetric(std::shared_ptr<ablate::domain::descriptions::AxisDescription> axis, std::shared_ptr<ablate::mathFunctions::MathFunction> radiusFunction, PetscInt numberWedges, PetscInt numberShells,
+                 std::shared_ptr<ablate::mathFunctions::MathFunction> boundaryFunction);
 
     /**
      * The overall assumed dimension of the mesh

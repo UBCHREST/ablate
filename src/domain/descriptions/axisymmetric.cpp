@@ -121,8 +121,8 @@ std::shared_ptr<ablate::domain::Region> ablate::domain::descriptions::Axisymmetr
 
     // compute the outer shell start
     auto outerShellStart = numberCenterVertices + numberVerticesPerShell * (numberShells - 1);
-    //Coordinate used to track the z location
-    auto* coordinate = new PetscReal[]{0.0,0.0,0.0};
+    // Coordinate used to track the z location
+    auto *coordinate = new PetscReal[]{0.0, 0.0, 0.0};
     PetscReal Zavg = 0.0;
     for (const auto &node : face) {
         // check if we are on the outer shell
@@ -144,17 +144,17 @@ std::shared_ptr<ablate::domain::Region> ablate::domain::descriptions::Axisymmetr
         if (nodeSlice != numberSlices) {
             onUpperEndCap = false;
         }
-        axisDescription->SetCoordinate(nodeSlice,coordinate);
+        axisDescription->SetCoordinate(nodeSlice, coordinate);
         Zavg += coordinate[2];
     }
     // determine what region to return
     if (onOuterShell) {
-        if(!boundaryFunction){
+        if (!boundaryFunction) {
             return shellBoundary;
-        }else{
+        } else {
             Zavg /= face.size();
             coordinate[2] = Zavg;
-            auto val = boundaryFunction->Eval(coordinate,3,NAN);
+            auto val = boundaryFunction->Eval(coordinate, 3, NAN);
             return std::make_shared<ablate::domain::Region>("outerShell", int(val));
         }
     } else if (onLowerEndCap) {
@@ -171,4 +171,4 @@ REGISTER(ablate::domain::descriptions::MeshDescription, ablate::domain::descript
          ARG(ablate::domain::descriptions::AxisDescription, "axis", "describes the nodes along the z axis"),
          ARG(ablate::mathFunctions::MathFunction, "radius", "a radius function that describes the radius as a function of z"), ARG(int, "numberWedges", "wedges/pie slices in the circle"),
          ARG(int, "numberShells", "slicing of the cylinder along the radius"),
-         OPT(ablate::mathFunctions::MathFunction, "outerBoundaryFunction", "Function to tag different outer shell boundary regions" ));
+         OPT(ablate::mathFunctions::MathFunction, "outerBoundaryFunction", "Function to tag different outer shell boundary regions"));
