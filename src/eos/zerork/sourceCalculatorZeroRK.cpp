@@ -5,7 +5,6 @@
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/stringUtilities.hpp"
 
-
 void ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints::Set(const std::shared_ptr<ablate::parameters::Parameters>& options) {
     if (options) {
         verbose = options->Get("verbose", verbose);
@@ -15,23 +14,22 @@ void ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints::Set(const s
         absTolerance = options->Get("absTolerance", absTolerance);
         thresholdTemperature = options->Get("thresholdTemperature", thresholdTemperature);
         stepLimiter = options->Get("stepLimiter", stepLimiter);
-        loadBalance = options->Get("loadBalance",loadBalance);
-        useSEULEX = options->Get("useSEULEX",useSEULEX);
-        iterative = options->Get("iterative",iterative);
-        gpu = options->Get("gpu",gpu);
+        loadBalance = options->Get("loadBalance", loadBalance);
+        useSEULEX = options->Get("useSEULEX", useSEULEX);
+        iterative = options->Get("iterative", iterative);
+        gpu = options->Get("gpu", gpu);
         reactorType = options->Get("reactorType", ReactorType::ConstantVolume);
     }
 }
 
 ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<domain::Field>& fields, const std::shared_ptr<zerorkEOS> eosIn,
-                                                          ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints constraints, const ablate::domain::Range& cellRange)
+                                                           ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints constraints, const ablate::domain::Range& cellRange)
     : chemistryConstraints(constraints), eos(eosIn), numberSpecies(eosIn->GetSpeciesVariables().size()) {
-
     // determine the number of required cells
     std::size_t numberCells = cellRange.end - cellRange.start;
 
     // determine the source vector size
-    sourceZeroRKAtI = std::vector<double> (numberCells * (eosIn->mech->getNumSpecies()+1));
+    sourceZeroRKAtI = std::vector<double>(numberCells * (eosIn->mech->getNumSpecies() + 1));
 
     // Look for the euler field
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto& field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
@@ -50,24 +48,24 @@ ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<dom
     zrm_handle = zerork_reactor_init();
     // load in mechanism for the plugin
     zerork_status_t zerom_status = zerork_reactor_set_mechanism_files(eos->reactionFile.c_str(), eos->thermoFile.c_str(), zrm_handle);
-    if(zerom_status != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+    if (zerom_status != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
     zerork_status_t status_cvode = zerork_reactor_set_int_option("integrator", chemistryConstraints.useSEULEX, zrm_handle);
-    if(status_cvode != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+    if (status_cvode != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
-    //verbose 0 is no output, max level is 4
+    // verbose 0 is no output, max level is 4
     zerork_status_t status_verbose = zerork_reactor_set_int_option("verbosity", chemistryConstraints.verbose, zrm_handle);
-    if(status_verbose != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+    if (status_verbose != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
     // set to  0 to turn it off
     zerork_status_t status_loadbalance = zerork_reactor_set_int_option("load_balance", chemistryConstraints.loadBalance, zrm_handle);
-    if(status_loadbalance != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+    if (status_loadbalance != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
     // Set tolerances
     zerork_status_t status_abstol = zerork_reactor_set_double_option("abs_tol", chemistryConstraints.absTolerance, zrm_handle);
-    if(status_abstol != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+    if (status_abstol != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
     zerork_status_t status_reltol = zerork_reactor_set_double_option("rel_tol", chemistryConstraints.relTolerance, zrm_handle);
-    if(status_reltol != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+    if (status_reltol != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
     switch (chemistryConstraints.reactorType) {
         case ReactorType::ConstantVolume: {
@@ -82,15 +80,15 @@ ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<dom
         }
     }
     zerork_status_t status_alwaysSolveTemp = zerork_reactor_set_int_option("always_solve_temperature", 1, zrm_handle);
-    if(status_alwaysSolveTemp != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+    if (status_alwaysSolveTemp != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
     // Kinetic rate limiter
     zerork_status_t status_steplimiter = zerork_reactor_set_double_option("step_limiter", chemistryConstraints.stepLimiter, zrm_handle);
-    if(status_steplimiter != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+    if (status_steplimiter != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
     // Kinetic rate limiter
     zerork_status_t status_gpu = zerork_reactor_set_int_option("gpu", chemistryConstraints.gpu, zrm_handle);
-    if(status_gpu != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+    if (status_gpu != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
     if (chemistryConstraints.timinglog) {
         zerork_reactor_set_string_option("reactor_timing_log_filename", "timing.log", zrm_handle);
@@ -104,13 +102,12 @@ ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<dom
     zerork_status_t status_iterative = zerork_reactor_set_int_option("iterative", chemistryConstraints.iterative, zrm_handle);
     if (status_iterative != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
-    zerork_status_t status_mech = zerork_reactor_load_mechanism(zrm_handle); //make sure this call is after gpu setup
-    if(status_mech != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+    zerork_status_t status_mech = zerork_reactor_load_mechanism(zrm_handle);  // make sure this call is after gpu setup
+    if (status_mech != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
-    if (zerork_error_state!=0) {
+    if (zerork_error_state != 0) {
         throw std::invalid_argument("ablate::eos::zerork couldnt initialize, something is wrong...");
     }
-
 }
 
 void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domain::Range& cellRange, PetscReal time, PetscReal dt, Vec globFlowVec) {
@@ -133,29 +130,29 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
     PetscInt dim;
     DMGetDimension(solutionDm, &dim) >> utilities::PetscUtilities::checkError;
 
-    //zerork state load up
-    int nSpc=eos->mech->getNumSpecies(); //Number of Species
-    int nState=nSpc+1;
+    // zerork state load up
+    int nSpc = eos->mech->getNumSpecies();  // Number of Species
+    int nState = nSpc + 1;
     int nReactors = numberCells;
 
-    //Set up reactor initial states
+    // Set up reactor initial states
     std::vector<double> reactorT(nReactors);
     std::vector<double> reactorP(nReactors);
     std::vector<double> density2(nReactors);
     std::vector<double> sensibleenergy(nReactors);
     std::vector<double> velmag2(nReactors);
-    std::vector<double> reactorMassFrac(nReactors*nSpc);
+    std::vector<double> reactorMassFrac(nReactors * nSpc);
     std::vector<double> enthalpyOfFormation(nSpc);
-    std::vector<int> reactorEval(nReactors,0);
+    std::vector<int> reactorEval(nReactors, 0);
 
-    //Set up the vectors that are actually evaluated with the temperature threshold
+    // Set up the vectors that are actually evaluated with the temperature threshold
     std::vector<double> reactorTEval(nReactors);
     std::vector<double> reactorPEval(nReactors);
-    std::vector<double> reactorMassFracEval(nReactors*nSpc);
+    std::vector<double> reactorMassFracEval(nReactors * nSpc);
 
     // get the current state from petsc
-    int p=0;
-    for(int i=cellRange.start; i<cellRange.end; ++i) {
+    int p = 0;
+    for (int i = cellRange.start; i < cellRange.end; ++i) {
         const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
         const std::size_t k = i - cellRange.start;
 
@@ -166,7 +163,7 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
 
         // get the current state at I
         auto density = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHO];
-        density2[k]=density;
+        density2[k] = density;
 
         double yiSum = 0.0;
         for (int s = 0; s < nSpc - 1; s++) {
@@ -191,89 +188,89 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
         }
 
         // compute the internal energy needed to compute temperature
-        sensibleenergy[k]= eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
+        sensibleenergy[k] = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
 
-        double enthalpymix = eos->mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[k*nSpc]);
+        double enthalpymix = eos->mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[k * nSpc]);
 
         sensibleenergy[k] += enthalpymix;
 
-        reactorT[k] = eos->mech->getTemperatureFromEY(sensibleenergy[k], &reactorMassFrac[k*nSpc], 2000);
-        reactorP[k] = eos->mech->getPressureFromTVY(reactorT[k],1/density,&reactorMassFrac[k*nSpc]);
+        reactorT[k] = eos->mech->getTemperatureFromEY(sensibleenergy[k], &reactorMassFrac[k * nSpc], 2000);
+        reactorP[k] = eos->mech->getPressureFromTVY(reactorT[k], 1 / density, &reactorMassFrac[k * nSpc]);
 
         // Set up the vector that is actually being solved
-        if (reactorT[k]>chemistryConstraints.thresholdTemperature){
-            reactorEval[k]=1;
-            reactorTEval[p]=reactorT[k];
-            reactorPEval[p]=reactorP[k];
+        if (reactorT[k] > chemistryConstraints.thresholdTemperature) {
+            reactorEval[k] = 1;
+            reactorTEval[p] = reactorT[k];
+            reactorPEval[p] = reactorP[k];
             for (int s = 0; s < nSpc; s++) {
-                reactorMassFracEval[p*nSpc+s]=reactorMassFrac[k*nSpc+s];
+                reactorMassFracEval[p * nSpc + s] = reactorMassFrac[k * nSpc + s];
             }
-            p+=1;
+            p += 1;
         }
     }
 
-    //mass fraction before the reactor
+    // mass fraction before the reactor
     std::vector<double> ys = reactorMassFracEval;
 
     auto nReactorsEval = std::reduce(reactorEval.begin(), reactorEval.end());
     zerork_status_t flag = ZERORK_STATUS_SUCCESS;
-    flag = zerork_reactor_solve(1, time, dt, nReactorsEval, &reactorTEval[0], &reactorPEval[0],
-                                &reactorMassFracEval[0], zrm_handle);
+    flag = zerork_reactor_solve(1, time, dt, nReactorsEval, &reactorTEval[0], &reactorPEval[0], &reactorMassFracEval[0], zrm_handle);
 
-    if(flag != ZERORK_STATUS_SUCCESS) {
+    if (flag != ZERORK_STATUS_SUCCESS) {
         std::stringstream warningMessage;
-        warningMessage<<"Oo something went wrong during zerork integration..." << "\n";
-        warningMessage << "Warning: Could not integrate chemistry on rank " << rank  << "\n";
+        warningMessage << "Oo something went wrong during zerork integration..."
+                       << "\n";
+        warningMessage << "Warning: Could not integrate chemistry on rank " << rank << "\n";
         warningMessage << "time: " << std::setprecision(16) << time << "\n";
         warningMessage << "dt: " << std::setprecision(16) << dt << "\n";
 
         // Check for temperature to see which reactor i sus
         for (int s = 0; s < nReactors; ++s) {
-            if (reactorEval[s]==1) {
-                warningMessage << "Temperature after integration is: " << reactorTEval[s] << " for reactor " << s <<"\n";
+            if (reactorEval[s] == 1) {
+                warningMessage << "Temperature after integration is: " << reactorTEval[s] << " for reactor " << s << "\n";
             }
         }
-        warningMessage << "Possible solution for numerical stiffness could be decreasing the stepLimiter"  << "\n";
+        warningMessage << "Possible solution for numerical stiffness could be decreasing the stepLimiter"
+                       << "\n";
         std::cout << warningMessage.str() << std::endl;
     }
 
     // Set all the sources to 0
-    sourceZeroRKAtI.assign(nState*nReactors,0);
+    sourceZeroRKAtI.assign(nState * nReactors, 0);
 
     for (int s = 0; s < nSpc - 1; s++) {
-        std::vector<double> tempvec(nSpc,0.);
-        tempvec[s]=1;
+        std::vector<double> tempvec(nSpc, 0.);
+        tempvec[s] = 1;
         enthalpyOfFormation[s] = eos->mech->getMassEnthalpyFromTY(298.15, &tempvec[0]);
     }
 
-//    // Recompute density for constant pressure reactors
-//    if(chemistryConstraints.reactorType==ReactorType::ConstantPressure){
-//        int q=0;
-//        for (int i=0;i<nReactors;i++){
-//            if (reactorEval[i]==1){
-//                density2[i]=eos->mech->getDensityFromTPY(reactorTEval[q], reactorPEval[q],&reactorMassFracEval[q]);
-//                q+=1;
-//            }
-//        }
-//    }
+    //    // Recompute density for constant pressure reactors
+    //    if(chemistryConstraints.reactorType==ReactorType::ConstantPressure){
+    //        int q=0;
+    //        for (int i=0;i<nReactors;i++){
+    //            if (reactorEval[i]==1){
+    //                density2[i]=eos->mech->getDensityFromTPY(reactorTEval[q], reactorPEval[q],&reactorMassFracEval[q]);
+    //                q+=1;
+    //            }
+    //        }
+    //    }
 
-    int q=0;
-    for(int i=0; i<nReactors; ++i) {
-
-        if (reactorEval[i]!=1) {
+    int q = 0;
+    for (int i = 0; i < nReactors; ++i) {
+        if (reactorEval[i] != 1) {
             for (int j = 0; j < nState; ++j) {
                 // Set sourceterms to 0 if the reactor was evaluated
                 sourceZeroRKAtI[i * nState + j] = 0;
             }
-            q+=1;
-        }else{
+            q += 1;
+        } else {
             for (int s = 0; s < nSpc; s++) {
-                sourceZeroRKAtI[i * nState] += (ys[(i-q) * nSpc + s] - reactorMassFracEval[(i-q) * nSpc + s]) * enthalpyOfFormation[s];
+                sourceZeroRKAtI[i * nState] += (ys[(i - q) * nSpc + s] - reactorMassFracEval[(i - q) * nSpc + s]) * enthalpyOfFormation[s];
             }
 
             for (int s = 0; s < nSpc; ++s) {
                 // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-                sourceZeroRKAtI[i * nState + s + 1] = reactorMassFracEval[(i-q) * nSpc + s] - ys[(i-q) * nSpc + s];
+                sourceZeroRKAtI[i * nState + s + 1] = reactorMassFracEval[(i - q) * nSpc + s] - ys[(i - q) * nSpc + s];
             }
 
             // Now scale everything by density/dt
@@ -295,9 +292,9 @@ void ablate::eos::zerorkeos::SourceCalculator::AddSource(const ablate::domain::R
     DM dm;
     VecGetDM(locFVec, &dm) >> utilities::PetscUtilities::checkError;
 
-    int nSpc=eos->mech->getNumSpecies();
-    int nState = nSpc+1;
-    for(int i=cellRange.start; i<cellRange.end; ++i) {
+    int nSpc = eos->mech->getNumSpecies();
+    int nState = nSpc + 1;
+    for (int i = cellRange.start; i < cellRange.end; ++i) {
         const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
         const std::size_t k = i - cellRange.start;
 
@@ -338,11 +335,12 @@ std::istream& ablate::eos::zerorkeos::operator>>(std::istream& is, ablate::eos::
 
     if (enumString == "constantvolume") {
         v = ablate::eos::zerorkeos::SourceCalculator::ReactorType::ConstantVolume;
-    } else if(enumString == "constantpressure") {
+    } else if (enumString == "constantpressure") {
         // default to constant pressure
         v = ablate::eos::zerorkeos::SourceCalculator::ReactorType::ConstantPressure;
-    } else{
-        throw std::invalid_argument(" reactorType is specified with an unknown reactor type. \n"
+    } else {
+        throw std::invalid_argument(
+            " reactorType is specified with an unknown reactor type. \n"
             "Acceptable reactor types: ConstantPressure, ConstantVolume. \n"
             " Default is Contstant volume");
     }

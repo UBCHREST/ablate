@@ -457,7 +457,7 @@ std::istream& ablate::eos::tChem::operator>>(std::istream& is, ablate::eos::tChe
 
     if (enumString == "constantvolume") {
         v = ablate::eos::tChem::SourceCalculator::ReactorType::ConstantVolume;
-    } else if(enumString == "constantpressure") {
+    } else if (enumString == "constantpressure") {
         // default to constant pressure
         v = ablate::eos::tChem::SourceCalculator::ReactorType::ConstantPressure;
     } else {

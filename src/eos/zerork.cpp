@@ -2,39 +2,33 @@
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/mpiUtilities.hpp"
 
-ablate::eos::zerorkEOS::zerorkEOS(const std::filesystem::path reactionFileIn,const std::filesystem::path thermoFileIn,
-                                  const std::shared_ptr<ablate::parameters::Parameters> &options)
-    : ChemistryModel("zerorkEOS"),reactionFile(reactionFileIn),thermoFile(thermoFileIn)  {
-
-
+ablate::eos::zerorkEOS::zerorkEOS(const std::filesystem::path reactionFileIn, const std::filesystem::path thermoFileIn, const std::shared_ptr<ablate::parameters::Parameters> &options)
+    : ChemistryModel("zerorkEOS"), reactionFile(reactionFileIn), thermoFile(thermoFileIn) {
     // check the extension, only accept modern yaml input files
-    if (reactionFileIn.extension() != ".inp" ){
-        throw std::invalid_argument("ablate::eos::zerorkEOS takes only chemkin formated files."
+    if (reactionFileIn.extension() != ".inp") {
+        throw std::invalid_argument(
+            "ablate::eos::zerorkEOS takes only chemkin formated files."
             "Make sure either full path is given or file is in directory");
     }
     if (std::find(validThermoFileExtensions.begin(), validThermoFileExtensions.end(), thermoFileIn.extension()) == validThermoFileExtensions.end()) {
-        throw std::invalid_argument("ablate::eos::zerorkEOS thermo file missing or not formated as .dat. "
+        throw std::invalid_argument(
+            "ablate::eos::zerorkEOS thermo file missing or not formated as .dat. "
             "Make sure either full path is given or file is in directory");
-
     }
 
-    //Create object that holds kinetic data
+    // Create object that holds kinetic data
     mech = std::make_shared<zerork::mechanism>(std::filesystem::absolute(reactionFileIn).c_str(), std::filesystem::absolute(thermoFileIn).c_str(), cklogfilename);
 
     nSpc = mech->getNumSpecies();
     nSpc = mech->getNumSpecies();
-    //species;
-    for(int i=0; i<nSpc; ++i) {
-        const char* species_name_c = mech->getSpeciesName(i);
+    // species;
+    for (int i = 0; i < nSpc; ++i) {
+        const char *species_name_c = mech->getSpeciesName(i);
         species.push_back(std::string(species_name_c));
     }
     // set the chemistry constraints
     constraints.Set(options);
-
 }
-
-
-
 
 void ablate::eos::zerorkEOS::View(std::ostream &stream) const {
     stream << "EOS: " << type << std::endl;
@@ -42,7 +36,7 @@ void ablate::eos::zerorkEOS::View(std::ostream &stream) const {
 }
 
 std::shared_ptr<ablate::eos::zerorkEOS::FunctionContext> ablate::eos::zerorkEOS::BuildFunctionContext(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields,
-                                                                                                bool checkDensityYi) const {
+                                                                                                      bool checkDensityYi) const {
     // Look for the euler field
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
     if (eulerField == fields.end()) {
@@ -56,13 +50,13 @@ std::shared_ptr<ablate::eos::zerorkEOS::FunctionContext> ablate::eos::zerorkEOS:
         }
     }
 
-    return std::make_shared<FunctionContext>(FunctionContext{.dim = eulerField->numberComponents - 2,
-                                                             .eulerOffset = eulerField->offset,
-                                                             .densityYiOffset = checkDensityYi ? densityYiField->offset : -1,
-                                                             .mech = mech,
-                                                             .nSpc = nSpc,
-                                                             });
-
+    return std::make_shared<FunctionContext>(FunctionContext{
+        .dim = eulerField->numberComponents - 2,
+        .eulerOffset = eulerField->offset,
+        .densityYiOffset = checkDensityYi ? densityYiField->offset : -1,
+        .mech = mech,
+        .nSpc = nSpc,
+    });
 }
 
 ablate::eos::ThermodynamicFunction ablate::eos::zerorkEOS::GetThermodynamicFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
@@ -78,14 +72,14 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::zerorkEOS::GetThermod
 }
 
 ablate::eos::zerorkEOS::ThermodynamicMassFractionFunction ablate::eos::zerorkEOS::GetThermodynamicMassFractionFunction(ablate::eos::ThermodynamicProperty property,
-                                                                                                                 const std::vector<domain::Field> &fields) const {
+                                                                                                                       const std::vector<domain::Field> &fields) const {
     return ThermodynamicMassFractionFunction{.function = std::get<0>(thermodynamicMassFractionFunctions.at(property)),
                                              .context = BuildFunctionContext(property, fields, false),
                                              .propertySize = speciesSizedProperties.count(property) ? (PetscInt)species.size() : 1};
 }
 
 ablate::eos::zerorkEOS::ThermodynamicTemperatureMassFractionFunction ablate::eos::zerorkEOS::GetThermodynamicTemperatureMassFractionFunction(ablate::eos::ThermodynamicProperty property,
-                                                                                                                                       const std::vector<domain::Field> &fields) const {
+                                                                                                                                             const std::vector<domain::Field> &fields) const {
     return ThermodynamicTemperatureMassFractionFunction{.function = std::get<1>(thermodynamicMassFractionFunctions.at(property)),
                                                         .context = BuildFunctionContext(property, fields, false),
                                                         .propertySize = speciesSizedProperties.count(property) ? (PetscInt)species.size() : 1};
@@ -120,18 +114,18 @@ PetscErrorCode ablate::eos::zerorkEOS::TemperatureFunction(const PetscReal *cons
 PetscErrorCode ablate::eos::zerorkEOS::TemperatureTemperatureFunction(const PetscReal *conserved, PetscReal temperatureGuess, PetscReal *temperature, void *ctx) {
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
-    int numSpc = functionContext->nSpc; //number of species
+    int numSpc = functionContext->nSpc;  // number of species
 
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
     PetscReal speedSquare = 0.0;
-    //get kinetic energy
+    // get kinetic energy
     for (PetscInt d = 0; d < functionContext->dim; d++) {
         speedSquare += PetscSqr(conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density);
     }
 
-    //get and normalize Yi from densityYi
-    std::vector<double> reactorMassFrac(numSpc,0.);
-    FillreactorMassFracVectorFromDensityMassFractions(numSpc,density,conserved + functionContext->densityYiOffset,reactorMassFrac);
+    // get and normalize Yi from densityYi
+    std::vector<double> reactorMassFrac(numSpc, 0.);
+    FillreactorMassFracVectorFromDensityMassFractions(numSpc, density, conserved + functionContext->densityYiOffset, reactorMassFrac);
 
     // compute the internal energy needed to compute temperature from the sensible enthalpy
     double sensibleenergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
@@ -151,18 +145,18 @@ PetscErrorCode ablate::eos::zerorkEOS::TemperatureMassFractionFunction(const Pet
 PetscErrorCode ablate::eos::zerorkEOS::TemperatureTemperatureMassFractionFunction(const PetscReal *conserved, const PetscReal *yi, PetscReal temperatureGuess, PetscReal *temperature, void *ctx) {
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
-    int numSpc = functionContext->nSpc; //number of species
+    int numSpc = functionContext->nSpc;  // number of species
 
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
     PetscReal speedSquare = 0.0;
-    //get kinetic energy
+    // get kinetic energy
     for (PetscInt d = 0; d < functionContext->dim; d++) {
         speedSquare += PetscSqr(conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density);
     }
 
-    //normalize Yi
-    std::vector<double> reactorMassFrac(numSpc,0.);
-    FillreactorMassFracVectorFromMassFractions(numSpc,yi,reactorMassFrac);
+    // normalize Yi
+    std::vector<double> reactorMassFrac(numSpc, 0.);
+    FillreactorMassFracVectorFromMassFractions(numSpc, yi, reactorMassFrac);
 
     // compute the internal energy needed to compute temperature from the sensible enthalpy
     double sensibleenergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
@@ -198,8 +192,8 @@ PetscErrorCode ablate::eos::zerorkEOS::InternalSensibleEnergyTemperatureFunction
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
 
     // Fill the working array
-    std::vector<double> reactorMassFrac(numSpc,0.);
-    FillreactorMassFracVectorFromDensityMassFractions(numSpc,density,conserved + functionContext->densityYiOffset,reactorMassFrac);
+    std::vector<double> reactorMassFrac(numSpc, 0.);
+    FillreactorMassFracVectorFromDensityMassFractions(numSpc, density, conserved + functionContext->densityYiOffset, reactorMassFrac);
 
     double energyMix = functionContext->mech->getMassIntEnergyFromTY(temperature, &reactorMassFrac[0]);
     double enthalpyMixFormation = functionContext->mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[0]);
@@ -215,15 +209,15 @@ PetscErrorCode ablate::eos::zerorkEOS::InternalSensibleEnergyMassFractionFunctio
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::eos::zerorkEOS::InternalSensibleEnergyTemperatureMassFractionFunction(const PetscReal *conserved, const PetscReal *yi, PetscReal temperature, PetscReal *sensibleEnergyTemperature,
-                                                                                          void *ctx) {
+PetscErrorCode ablate::eos::zerorkEOS::InternalSensibleEnergyTemperatureMassFractionFunction(const PetscReal *conserved, const PetscReal *yi, PetscReal temperature,
+                                                                                             PetscReal *sensibleEnergyTemperature, void *ctx) {
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     int numSpc = functionContext->nSpc;
 
     // Fill the working array
-    std::vector<double> reactorMassFrac(numSpc,0.);
-    FillreactorMassFracVectorFromMassFractions(numSpc,yi,reactorMassFrac);
+    std::vector<double> reactorMassFrac(numSpc, 0.);
+    FillreactorMassFracVectorFromMassFractions(numSpc, yi, reactorMassFrac);
 
     double energyMix = functionContext->mech->getMassIntEnergyFromTY(temperature, &reactorMassFrac[0]);
     double enthalpyMixFormation = functionContext->mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[0]);
@@ -249,11 +243,11 @@ PetscErrorCode ablate::eos::zerorkEOS::PressureTemperatureFunction(const PetscRe
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
 
     // Fill the working array
-    std::vector<double> reactorMassFrac(numSpc,0.);
-    FillreactorMassFracVectorFromDensityMassFractions(numSpc,density,conserved + functionContext->densityYiOffset,reactorMassFrac);
+    std::vector<double> reactorMassFrac(numSpc, 0.);
+    FillreactorMassFracVectorFromDensityMassFractions(numSpc, density, conserved + functionContext->densityYiOffset, reactorMassFrac);
 
     // compute the pressure
-    double pressure_temp = functionContext->mech->getPressureFromTVY(temperature,1/density,&reactorMassFrac[0]);
+    double pressure_temp = functionContext->mech->getPressureFromTVY(temperature, 1 / density, &reactorMassFrac[0]);
     // copy back the results
     *pressure = pressure_temp;
 
@@ -276,11 +270,11 @@ PetscErrorCode ablate::eos::zerorkEOS::PressureTemperatureMassFractionFunction(c
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
 
     // Fill the working array
-    std::vector<double> reactorMassFrac(numSpc,0.);
-    FillreactorMassFracVectorFromMassFractions(numSpc,yi,reactorMassFrac);
+    std::vector<double> reactorMassFrac(numSpc, 0.);
+    FillreactorMassFracVectorFromMassFractions(numSpc, yi, reactorMassFrac);
 
     // compute the pressure
-    double pressure_temp = functionContext->mech->getPressureFromTVY(temperature,1/density,&reactorMassFrac[0]);
+    double pressure_temp = functionContext->mech->getPressureFromTVY(temperature, 1 / density, &reactorMassFrac[0]);
     // copy back the results
     *pressure = pressure_temp;
 
@@ -303,14 +297,13 @@ PetscErrorCode ablate::eos::zerorkEOS::SensibleEnthalpyTemperatureFunction(const
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
 
     // Fill the working array
-    std::vector<double> reactorMassFrac(numSpc,0.);
-    FillreactorMassFracVectorFromDensityMassFractions(numSpc,density,conserved + functionContext->densityYiOffset,reactorMassFrac);
+    std::vector<double> reactorMassFrac(numSpc, 0.);
+    FillreactorMassFracVectorFromDensityMassFractions(numSpc, density, conserved + functionContext->densityYiOffset, reactorMassFrac);
 
     double enthalpyMix = functionContext->mech->getMassEnthalpyFromTY(temperature, &reactorMassFrac[0]);
     double enthalpyMixFormation = functionContext->mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[0]);
 
-
-    *sensibleEnthalpy = enthalpyMix-enthalpyMixFormation;
+    *sensibleEnthalpy = enthalpyMix - enthalpyMixFormation;
 
     PetscFunctionReturn(0);
 }
@@ -328,14 +321,13 @@ PetscErrorCode ablate::eos::zerorkEOS::SensibleEnthalpyTemperatureMassFractionFu
     int numSpc = functionContext->nSpc;
 
     // Fill the working array
-    std::vector<double> reactorMassFrac(numSpc,0.);
-    FillreactorMassFracVectorFromMassFractions(numSpc,yi,reactorMassFrac);
+    std::vector<double> reactorMassFrac(numSpc, 0.);
+    FillreactorMassFracVectorFromMassFractions(numSpc, yi, reactorMassFrac);
 
     double enthalpyMix = functionContext->mech->getMassEnthalpyFromTY(temperature, &reactorMassFrac[0]);
     double enthalpyMixFormation = functionContext->mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[0]);
 
-
-    *sensibleEnthalpy = enthalpyMix-enthalpyMixFormation;
+    *sensibleEnthalpy = enthalpyMix - enthalpyMixFormation;
 
     PetscFunctionReturn(0);
 }
@@ -356,14 +348,14 @@ PetscErrorCode ablate::eos::zerorkEOS::SpeedOfSoundTemperatureFunction(const Pet
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
 
     // Fill the working array
-    std::vector<double> reactorMassFrac(numSpc,0.);
-    FillreactorMassFracVectorFromDensityMassFractions(numSpc,density,conserved + functionContext->densityYiOffset,reactorMassFrac);
+    std::vector<double> reactorMassFrac(numSpc, 0.);
+    FillreactorMassFracVectorFromDensityMassFractions(numSpc, density, conserved + functionContext->densityYiOffset, reactorMassFrac);
 
-    //get specific heats
-    double cp = functionContext->mech->getMassCpFromTY(temperature,&reactorMassFrac[0]);
-    double cv = functionContext->mech->getMassCvFromTY(temperature,&reactorMassFrac[0]);
+    // get specific heats
+    double cp = functionContext->mech->getMassCpFromTY(temperature, &reactorMassFrac[0]);
+    double cv = functionContext->mech->getMassCvFromTY(temperature, &reactorMassFrac[0]);
 
-    double R = cp-cv;
+    double R = cp - cv;
     double gamma = cp / cv;
     double speedtemp = sqrt(gamma * R * temperature);
 
@@ -386,14 +378,14 @@ PetscErrorCode ablate::eos::zerorkEOS::SpeedOfSoundTemperatureMassFractionFuncti
     int numSpc = functionContext->nSpc;
 
     // Fill the working array
-    std::vector<double> reactorMassFrac(numSpc,0.);
-    FillreactorMassFracVectorFromMassFractions(numSpc,yi,reactorMassFrac);
+    std::vector<double> reactorMassFrac(numSpc, 0.);
+    FillreactorMassFracVectorFromMassFractions(numSpc, yi, reactorMassFrac);
 
-    //get specific heats
-    double cp = functionContext->mech->getMassCpFromTY(temperature,&reactorMassFrac[0]);
-    double cv = functionContext->mech->getMassCvFromTY(temperature,&reactorMassFrac[0]);
+    // get specific heats
+    double cp = functionContext->mech->getMassCpFromTY(temperature, &reactorMassFrac[0]);
+    double cv = functionContext->mech->getMassCvFromTY(temperature, &reactorMassFrac[0]);
 
-    double R = cp-cv;
+    double R = cp - cv;
     double gamma = cp / cv;
     double speedtemp = sqrt(gamma * R * temperature);
 
@@ -418,11 +410,11 @@ PetscErrorCode ablate::eos::zerorkEOS::SpecificHeatConstantPressureTemperatureFu
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
 
     // Fill the working array
-    std::vector<double> reactorMassFrac(numSpc,0.);
-    FillreactorMassFracVectorFromDensityMassFractions(numSpc,density,conserved + functionContext->densityYiOffset,reactorMassFrac);
+    std::vector<double> reactorMassFrac(numSpc, 0.);
+    FillreactorMassFracVectorFromDensityMassFractions(numSpc, density, conserved + functionContext->densityYiOffset, reactorMassFrac);
 
-    //get specific heats
-    double cp_temp = functionContext->mech->getMassCpFromTY(temperature,&reactorMassFrac[0]);
+    // get specific heats
+    double cp_temp = functionContext->mech->getMassCpFromTY(temperature, &reactorMassFrac[0]);
 
     *cp = cp_temp;
 
@@ -442,14 +434,14 @@ PetscErrorCode ablate::eos::zerorkEOS::SpecificHeatConstantPressureTemperatureMa
     auto functionContext = (FunctionContext *)ctx;
     int numSpc = functionContext->nSpc;
 
-//    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    //    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
 
     // Fill the working array
-    std::vector<double> reactorMassFrac(numSpc,0.);
-    FillreactorMassFracVectorFromMassFractions(numSpc,yi,reactorMassFrac);
+    std::vector<double> reactorMassFrac(numSpc, 0.);
+    FillreactorMassFracVectorFromMassFractions(numSpc, yi, reactorMassFrac);
 
-    //get specific heats
-    double cp_temp = functionContext->mech->getMassCpFromTY(temperature,&reactorMassFrac[0]);
+    // get specific heats
+    double cp_temp = functionContext->mech->getMassCpFromTY(temperature, &reactorMassFrac[0]);
 
     *cp = cp_temp;
 
@@ -471,11 +463,11 @@ PetscErrorCode ablate::eos::zerorkEOS::SpecificHeatConstantVolumeTemperatureFunc
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
 
     // Fill the working array
-    std::vector<double> reactorMassFrac(numSpc,0.);
-    FillreactorMassFracVectorFromDensityMassFractions(numSpc,density,conserved + functionContext->densityYiOffset,reactorMassFrac);
+    std::vector<double> reactorMassFrac(numSpc, 0.);
+    FillreactorMassFracVectorFromDensityMassFractions(numSpc, density, conserved + functionContext->densityYiOffset, reactorMassFrac);
 
-    //get specific heats
-    double cv_temp = functionContext->mech->getMassCvFromTY(temperature,&reactorMassFrac[0]);
+    // get specific heats
+    double cv_temp = functionContext->mech->getMassCvFromTY(temperature, &reactorMassFrac[0]);
 
     *cv = cv_temp;
 
@@ -495,11 +487,11 @@ PetscErrorCode ablate::eos::zerorkEOS::SpecificHeatConstantVolumeTemperatureMass
     int numSpc = functionContext->nSpc;
 
     // Fill the working array
-    std::vector<double> reactorMassFrac(numSpc,0.);
-    FillreactorMassFracVectorFromMassFractions(numSpc,yi,reactorMassFrac);
+    std::vector<double> reactorMassFrac(numSpc, 0.);
+    FillreactorMassFracVectorFromMassFractions(numSpc, yi, reactorMassFrac);
 
-    //get specific heats
-    double cv_temp = functionContext->mech->getMassCvFromTY(temperature,&reactorMassFrac[0]);
+    // get specific heats
+    double cv_temp = functionContext->mech->getMassCvFromTY(temperature, &reactorMassFrac[0]);
 
     *cv = cv_temp;
 
@@ -521,17 +513,17 @@ PetscErrorCode ablate::eos::zerorkEOS::SpeciesSensibleEnthalpyTemperatureFunctio
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
 
     // Fill the working array
-    std::vector<double> reactorMassFrac(numSpc,0.);
-    FillreactorMassFracVectorFromDensityMassFractions(numSpc,density,conserved + functionContext->densityYiOffset,reactorMassFrac);
+    std::vector<double> reactorMassFrac(numSpc, 0.);
+    FillreactorMassFracVectorFromDensityMassFractions(numSpc, density, conserved + functionContext->densityYiOffset, reactorMassFrac);
 
-    std::vector<double> enthalpySpecies(numSpc,0.);
-    std::vector<double> enthalpySpeciesFormation(numSpc,0.);
-    functionContext->mech->getMassEnthalpyFromTY(temperature, &reactorMassFrac[0],&enthalpySpecies[0]);
-    functionContext->mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[0],&enthalpySpeciesFormation[0]);
+    std::vector<double> enthalpySpecies(numSpc, 0.);
+    std::vector<double> enthalpySpeciesFormation(numSpc, 0.);
+    functionContext->mech->getMassEnthalpyFromTY(temperature, &reactorMassFrac[0], &enthalpySpecies[0]);
+    functionContext->mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[0], &enthalpySpeciesFormation[0]);
 
-    //calculate the species sensible enthalpy
-    for (int k=0;k<numSpc;k++){
-        hi[k]=enthalpySpecies[k]-enthalpySpeciesFormation[k];
+    // calculate the species sensible enthalpy
+    for (int k = 0; k < numSpc; k++) {
+        hi[k] = enthalpySpecies[k] - enthalpySpeciesFormation[k];
     }
 
     PetscFunctionReturn(0);
@@ -550,24 +542,23 @@ PetscErrorCode ablate::eos::zerorkEOS::SpeciesSensibleEnthalpyTemperatureMassFra
     int numSpc = functionContext->nSpc;
 
     // Fill the working array
-    std::vector<double> reactorMassFrac(numSpc,0.);
-    FillreactorMassFracVectorFromMassFractions(numSpc,yi,reactorMassFrac);
+    std::vector<double> reactorMassFrac(numSpc, 0.);
+    FillreactorMassFracVectorFromMassFractions(numSpc, yi, reactorMassFrac);
 
-    std::vector<double> enthalpySpecies(numSpc,0.);
-    std::vector<double> enthalpySpeciesFormation(numSpc,0.);
-    functionContext->mech->getMassEnthalpyFromTY(temperature, &reactorMassFrac[0],&enthalpySpecies[0]);
-    functionContext->mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[0],&enthalpySpeciesFormation[0]);
+    std::vector<double> enthalpySpecies(numSpc, 0.);
+    std::vector<double> enthalpySpeciesFormation(numSpc, 0.);
+    functionContext->mech->getMassEnthalpyFromTY(temperature, &reactorMassFrac[0], &enthalpySpecies[0]);
+    functionContext->mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[0], &enthalpySpeciesFormation[0]);
 
-    //calculate the species sensible enthalpy
-    for (int k=0;k<numSpc;k++){
-        hi[k]=enthalpySpecies[k]-enthalpySpeciesFormation[k];
+    // calculate the species sensible enthalpy
+    for (int k = 0; k < numSpc; k++) {
+        hi[k] = enthalpySpecies[k] - enthalpySpeciesFormation[k];
     }
 
     PetscFunctionReturn(0);
 }
 
-void ablate::eos::zerorkEOS::FillreactorMassFracVectorFromDensityMassFractions(int nSpc, double density, const double *densityYi, std::vector<double>& reactorMassFrac) {
-
+void ablate::eos::zerorkEOS::FillreactorMassFracVectorFromDensityMassFractions(int nSpc, double density, const double *densityYi, std::vector<double> &reactorMassFrac) {
     double yiSum = 0.0;
     for (int s = 0; s < nSpc - 1; s++) {
         reactorMassFrac[s] = PetscMax(0.0, densityYi[s] / density);
@@ -585,11 +576,11 @@ void ablate::eos::zerorkEOS::FillreactorMassFracVectorFromDensityMassFractions(i
     }
 }
 
-void ablate::eos::zerorkEOS::FillreactorMassFracVectorFromMassFractions(int nSpc, const double *Yi, std::vector<double>& reactorMassFrac) {
+void ablate::eos::zerorkEOS::FillreactorMassFracVectorFromMassFractions(int nSpc, const double *Yi, std::vector<double> &reactorMassFrac) {
     double yiSum = 0.0;
     for (int s = 0; s < nSpc - 1; s++) {
         reactorMassFrac[s] = 1.;
-        reactorMassFrac[s] = PetscMax(0.0, Yi[s] );
+        reactorMassFrac[s] = PetscMax(0.0, Yi[s]);
         reactorMassFrac[s] = PetscMin(1.0, reactorMassFrac[s]);
         yiSum += reactorMassFrac[s];
     }
@@ -605,7 +596,7 @@ void ablate::eos::zerorkEOS::FillreactorMassFracVectorFromMassFractions(int nSpc
 }
 
 ablate::eos::EOSFunction ablate::eos::zerorkEOS::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1, ablate::eos::ThermodynamicProperty property2,
-                                                                       std::vector<std::string> otherProperties) const {
+                                                                          std::vector<std::string> otherProperties) const {
     if (otherProperties != std::vector<std::string>{YI}) {
         throw std::invalid_argument("ablate::eos::zerorkEOS expects the other properties to be Yi (Species Mass Fractions)");
     }
@@ -613,20 +604,17 @@ ablate::eos::EOSFunction ablate::eos::zerorkEOS::GetFieldFunctionFunction(const 
     if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field) {
         if ((property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) ||
             (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature)) {
-
             auto tp = [=](PetscReal temperature, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
-
-                std::vector<double> reactorMassFrac(nSpc,0.);
-                FillreactorMassFracVectorFromMassFractions(nSpc,yi,reactorMassFrac);
+                std::vector<double> reactorMassFrac(nSpc, 0.);
+                FillreactorMassFracVectorFromMassFractions(nSpc, yi, reactorMassFrac);
 
                 // compute pressure p = rho*R*T
-                PetscReal density = mech->getDensityFromTPY(temperature,pressure,&reactorMassFrac[0]);
-
+                PetscReal density = mech->getDensityFromTPY(temperature, pressure, &reactorMassFrac[0]);
 
                 double energyMix = mech->getMassIntEnergyFromTY(temperature, &reactorMassFrac[0]);
                 double enthalpyMixFormation = mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[0]);
 
-                double sensibleInternalEnergy = energyMix-enthalpyMixFormation;
+                double sensibleInternalEnergy = energyMix - enthalpyMixFormation;
 
                 // convert to total sensibleEnergy
                 PetscReal kineticEnergy = 0;
@@ -640,8 +628,6 @@ ablate::eos::EOSFunction ablate::eos::zerorkEOS::GetFieldFunctionFunction(const 
                 for (PetscInt d = 0; d < dim; d++) {
                     conserved[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = density * velocity[d];
                 }
-
-
             };
             if (property1 == ThermodynamicProperty::Temperature) {
                 return tp;
@@ -653,27 +639,23 @@ ablate::eos::EOSFunction ablate::eos::zerorkEOS::GetFieldFunctionFunction(const 
         }
         if ((property1 == ThermodynamicProperty::InternalSensibleEnergy && property2 == ThermodynamicProperty::Pressure) ||
             (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::InternalSensibleEnergy)) {
-
             auto iep = [=](PetscReal sensibleInternalEnergy, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
-
-
-                std::vector<double> reactorMassFrac(nSpc,0.);
-                FillreactorMassFracVectorFromMassFractions(nSpc,yi,reactorMassFrac);
+                std::vector<double> reactorMassFrac(nSpc, 0.);
+                FillreactorMassFracVectorFromMassFractions(nSpc, yi, reactorMassFrac);
 
                 double enthalpyMixFormation = mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[0]);
 
                 double internalEnergy = sensibleInternalEnergy + enthalpyMixFormation;
-                double temperature = mech->getTemperatureFromEY(internalEnergy,&reactorMassFrac[0],300);
+                double temperature = mech->getTemperatureFromEY(internalEnergy, &reactorMassFrac[0], 300);
 
-                PetscReal density = mech->getDensityFromTPY(temperature,pressure,&reactorMassFrac[0]);
+                PetscReal density = mech->getDensityFromTPY(temperature, pressure, &reactorMassFrac[0]);
 
-                //calculate kinetic energy
+                // calculate kinetic energy
                 PetscReal kineticEnergy = 0;
                 for (PetscInt d = 0; d < dim; d++) {
                     kineticEnergy += PetscSqr(velocity[d]);
                 }
                 kineticEnergy *= 0.5;
-
 
                 conserved[ablate::finiteVolume::CompressibleFlowFields::RHO] = density;
                 conserved[ablate::finiteVolume::CompressibleFlowFields::RHOE] = density * (kineticEnergy + sensibleInternalEnergy);
@@ -694,17 +676,14 @@ ablate::eos::EOSFunction ablate::eos::zerorkEOS::GetFieldFunctionFunction(const 
     } else if (finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD == field) {
         if ((property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) ||
             (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature)) {
-
-
             auto densityYiFromTP = [=](PetscReal temperature, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
-
-                std::vector<double> reactorMassFrac(nSpc,0.);
-                FillreactorMassFracVectorFromMassFractions(nSpc,yi,reactorMassFrac);
+                std::vector<double> reactorMassFrac(nSpc, 0.);
+                FillreactorMassFracVectorFromMassFractions(nSpc, yi, reactorMassFrac);
 
                 // compute pressure p = rho*R*T
-                PetscReal density = mech->getDensityFromTPY(temperature,pressure,&reactorMassFrac[0]);
+                PetscReal density = mech->getDensityFromTPY(temperature, pressure, &reactorMassFrac[0]);
 
-                for (int i=0;i<nSpc;i++){
+                for (int i = 0; i < nSpc; i++) {
                     conserved[i] = density * yi[i];
                 }
             };
@@ -719,21 +698,19 @@ ablate::eos::EOSFunction ablate::eos::zerorkEOS::GetFieldFunctionFunction(const 
 
         } else if ((property1 == ThermodynamicProperty::InternalSensibleEnergy && property2 == ThermodynamicProperty::Pressure) ||
                    (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::InternalSensibleEnergy)) {
-
-
             auto densityYiFromIeP = [=](PetscReal sensibleInternalEnergy, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
                 // fill most of the host
-                std::vector<double> reactorMassFrac(nSpc,0.);
-                FillreactorMassFracVectorFromMassFractions(nSpc,yi,reactorMassFrac);
+                std::vector<double> reactorMassFrac(nSpc, 0.);
+                FillreactorMassFracVectorFromMassFractions(nSpc, yi, reactorMassFrac);
 
                 double enthalpyMixFormation = mech->getMassEnthalpyFromTY(298.15, &reactorMassFrac[0]);
 
                 double internalEnergy = sensibleInternalEnergy + enthalpyMixFormation;
-                double temperature = mech->getTemperatureFromEY(internalEnergy,&reactorMassFrac[0],300);
+                double temperature = mech->getTemperatureFromEY(internalEnergy, &reactorMassFrac[0], 300);
 
-                PetscReal density = mech->getDensityFromTPY(temperature,pressure,&reactorMassFrac[0]);
+                PetscReal density = mech->getDensityFromTPY(temperature, pressure, &reactorMassFrac[0]);
 
-                for (int i=0;i<nSpc;i++){
+                for (int i = 0; i < nSpc; i++) {
                     conserved[i] = density * yi[i];
                 }
             };
@@ -753,17 +730,13 @@ ablate::eos::EOSFunction ablate::eos::zerorkEOS::GetFieldFunctionFunction(const 
     }
 }
 
-std::map<std::string, double> ablate::eos::zerorkEOS::GetElementInformation() const {
-    return mech->getElementInfo();
-}
+std::map<std::string, double> ablate::eos::zerorkEOS::GetElementInformation() const { return mech->getElementInfo(); }
 
-std::map<std::string, std::map<std::string, int>> ablate::eos::zerorkEOS::GetSpeciesElementalInformation() const {
-    return mech->getSpeciesElementInfo();
-}
+std::map<std::string, std::map<std::string, int>> ablate::eos::zerorkEOS::GetSpeciesElementalInformation() const { return mech->getSpeciesElementInfo(); }
 
 std::map<std::string, double> ablate::eos::zerorkEOS::GetSpeciesMolecularMass() const {
     // march over each species
-//    auto sMass = kineticsModel.sMass_.view_host();
+    //    auto sMass = kineticsModel.sMass_.view_host();
     std::vector<double> sMass(nSpc);
     mech->getMolWtSpc(&sMass[0]);
 
@@ -780,9 +753,7 @@ std::shared_ptr<ablate::eos::ChemistryModel::SourceCalculator> ablate::eos::zero
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::eos::ChemistryModel, ablate::eos::zerorkEOS, "zerork ideal gas eos",
-         ARG(std::filesystem::path, "reactionFile", "chemkin formated reaction files"),
+REGISTER(ablate::eos::ChemistryModel, ablate::eos::zerorkEOS, "zerork ideal gas eos", ARG(std::filesystem::path, "reactionFile", "chemkin formated reaction files"),
          ARG(std::filesystem::path, "thermoFile", "chemkin formated thermodynamic file"),
          OPT(ablate::parameters::Parameters, "options",
-             "time stepping options (reactorType, sparseJacobian, relTolerance, absTolerance, verbose, thresholdTemperature, timingLog, stepLimiter, loadBalance, useSEULEX)"
-             ));
+             "time stepping options (reactorType, sparseJacobian, relTolerance, absTolerance, verbose, thresholdTemperature, timingLog, stepLimiter, loadBalance, useSEULEX)"));

@@ -2,9 +2,9 @@
 #define ABLATELIBRARY_ZERORK_SOURCECALCULATOR_HPP
 
 #include "eos/chemistryModel.hpp"
-#include "zerork_cfd_plugin.h"
 #include "zerork/mechanism.h"
 #include "zerork/utilities.h"
+#include "zerork_cfd_plugin.h"
 
 namespace ablate::eos {
 class zerorkEOS;
@@ -20,7 +20,7 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
     /**
      * Allow the user to set the reactor type
      */
-    enum class ReactorType { ConstantVolume , ConstantPressure};
+    enum class ReactorType { ConstantVolume, ConstantPressure };
 
     //! hold a struct that can be used for chemistry constraints
     struct ChemistryConstraints {
@@ -38,19 +38,19 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
         // zerork output state
         int verbose = 0;
 
-        //load balancing
+        // load balancing
         int loadBalance = 1;
 
-        //load balancing
+        // load balancing
         int gpu = 0;
 
-        //iterative solution for approximate jacobian recommended to be set to 0 whenever dense is selected
+        // iterative solution for approximate jacobian recommended to be set to 0 whenever dense is selected
         int iterative = 0;
 
         // For large mechanisms(~Nspec>100) it is recommended to use a sparse math jacobian
         bool sparseJacobian = false;
 
-        //timing log information
+        // timing log information
         bool timinglog = false;
 
         // store the reactor type in the chemistry constrains
@@ -67,7 +67,8 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
      * @param constraints
      * @param cellRange
      */
-    SourceCalculator(const std::vector<domain::Field>& fields, std::shared_ptr<zerorkEOS> zerorkEos, ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints constraints, const ablate::domain::Range& cellRange);
+    SourceCalculator(const std::vector<domain::Field>& fields, std::shared_ptr<zerorkEOS> zerorkEos, ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints constraints,
+                     const ablate::domain::Range& cellRange);
 
     /**
      * The compute source can be used as a prestep allowing the add source to be used at each stage without reevaluating
@@ -96,9 +97,6 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
 
     //! the id for the required densityYi field
     PetscInt densityYiId;
-
-
-
 };
 
 /**
@@ -117,6 +115,6 @@ std::ostream& operator<<(std::ostream& os, const SourceCalculator::ReactorType& 
  */
 std::istream& operator>>(std::istream& is, SourceCalculator::ReactorType& v);
 
-}  // namespace
+}  // namespace ablate::eos::zerorkeos
 
 #endif  // ABLATELIBRARY_BATCHSOURCE_HPP

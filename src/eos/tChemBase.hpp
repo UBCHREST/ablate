@@ -72,7 +72,6 @@ class TChemBase : public ChemistryModel {
     explicit TChemBase(const std::string& eosName, std::filesystem::path mechanismFile, const std::shared_ptr<ablate::monitors::logs::Log>& = {},
                        const std::shared_ptr<ablate::parameters::Parameters>& options = {});
 
-
     /**
      * Print the details of this eos
      * @param stream

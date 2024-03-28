@@ -5,8 +5,8 @@
 #include "eos/zerork.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
-#include "petscTestFixture.hpp"
 #include "parameters/parameters.hpp"
+#include "petscTestFixture.hpp"
 
 /*
  * Helper function to fill mass fraction
@@ -61,10 +61,10 @@ struct zeroRKCreateAndViewParameters {
 };
 
 class zerorkCreateAndViewFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<zeroRKCreateAndViewParameters> {};
- // Test1
+// Test1
 TEST_P(zerorkCreateAndViewFixture, ShouldCreateAndViewZerork) {
     // arrange
-    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile, GetParam().thermoFile);
 
     std::stringstream outputStream;
 
@@ -81,9 +81,8 @@ TEST_P(zerorkCreateAndViewFixture, ShouldCreateAndViewZerork) {
 }
 
 INSTANTIATE_TEST_SUITE_P(zerorkTests, zerorkCreateAndViewFixture,
-                         testing::Values((zeroRKCreateAndViewParameters){.reactionFile = "inputs/eos/gri30.inp",
-                                                                         .thermoFile = "inputs/eos/gri30.dat",
-                                                                        .expectedViewStart = "EOS: zerorkEOS\n\tnumberSpecies: 53\n"}),
+                         testing::Values((zeroRKCreateAndViewParameters){
+                             .reactionFile = "inputs/eos/gri30.inp", .thermoFile = "inputs/eos/gri30.dat", .expectedViewStart = "EOS: zerorkEOS\n\tnumberSpecies: 53\n"}),
                          [](const testing::TestParamInfo<zeroRKCreateAndViewParameters>& info) { return testingResources::PetscTestFixture::SanitizeTestName(info.param.reactionFile.string()); });
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -96,10 +95,10 @@ struct zerorkGetSpeciesParameters {
 };
 
 class zerorkGetSpeciesFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<zerorkGetSpeciesParameters> {};
- // Test2
+// Test2
 TEST_P(zerorkGetSpeciesFixture, ShouldGetCorrectSpeciesZerork) {
     // arrange
-    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile, GetParam().thermoFile);
 
     // act
     auto species = eos->GetSpeciesVariables();
@@ -134,10 +133,10 @@ struct RKTestParameters {
 };
 
 class RKThermodynamicPropertyTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<RKTestParameters> {};
- // Test3
+// Test3
 TEST_P(RKThermodynamicPropertyTestFixture, ShouldComputePropertyZerork) {
     // arrange
-    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile, GetParam().thermoFile);
 
     // get the test params
     const auto& params = GetParam();
@@ -199,10 +198,10 @@ TEST_P(RKThermodynamicPropertyTestFixture, ShouldComputePropertyZerork) {
         }
     }
 }
- // Test4
+// Test4
 TEST_P(RKThermodynamicPropertyTestFixture, ShouldComputePropertyUsingMassFractionZerork) {
     // arrange
-    std::shared_ptr<ablate::eos::zerorkEOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
+    std::shared_ptr<ablate::eos::zerorkEOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile, GetParam().thermoFile);
 
     // get the test params
     const auto& params = GetParam();
@@ -439,10 +438,10 @@ struct zerorkFieldFunctionTestParameters {
 };
 
 class zerorkFieldFunctionTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<zerorkFieldFunctionTestParameters> {};
- // Test5
+// Test5
 TEST_P(zerorkFieldFunctionTestFixture, ShouldComputeFieldZerork) {
     // arrange
-    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile, GetParam().thermoFile);
     auto yi = GetMassFraction(eos->GetSpeciesVariables(), GetParam().yiMap);
 
     // get the test params
@@ -471,86 +470,86 @@ INSTANTIATE_TEST_SUITE_P(zerorkTests, zerorkFieldFunctionTestFixture,
                          testing::Values(
                              ///////// with yaml input ///////
                              (zerorkFieldFunctionTestParameters){.reactionFile = "inputs/eos/gri30.inp",
-                                                                .thermoFile = "inputs/eos/gri30.dat",
-                                                                .property1 = ablate::eos::ThermodynamicProperty::Temperature,
-                                                                .property2 = ablate::eos::ThermodynamicProperty::Pressure,
-                                                                .property1Value = 499.25,
-                                                                .property2Value = 197710.5,
-                                                                .velocity = {10, 20, 30},
-                                                                .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
-                                                                .expectedEulerValue = {1.2, 1.2 * 99993.99, 1.2 * 10, 1.2 * 20, 1.2 * 30}},
+                                                                 .thermoFile = "inputs/eos/gri30.dat",
+                                                                 .property1 = ablate::eos::ThermodynamicProperty::Temperature,
+                                                                 .property2 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                 .property1Value = 499.25,
+                                                                 .property2Value = 197710.5,
+                                                                 .velocity = {10, 20, 30},
+                                                                 .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
+                                                                 .expectedEulerValue = {1.2, 1.2 * 99993.99, 1.2 * 10, 1.2 * 20, 1.2 * 30}},
                              (zerorkFieldFunctionTestParameters){.reactionFile = "inputs/eos/gri30.inp",
-                                                                .thermoFile = "inputs/eos/gri30.dat",
-                                                                .property1 = ablate::eos::ThermodynamicProperty::Temperature,
-                                                                .property2 = ablate::eos::ThermodynamicProperty::Pressure,
-                                                                .property1Value = 762.664,
-                                                                .property2Value = 189973.54,
-                                                                .velocity = {0.0, 0.0, 0.0},
-                                                                .yiMap = {{"O2", .3}, {"N2", .4}, {"CH2", .1}, {"NO", .2}},
-                                                                .expectedEulerValue = {0.8, 0.8 * 3.2E5, 0.0, 0.0, 0.0}},
+                                                                 .thermoFile = "inputs/eos/gri30.dat",
+                                                                 .property1 = ablate::eos::ThermodynamicProperty::Temperature,
+                                                                 .property2 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                 .property1Value = 762.664,
+                                                                 .property2Value = 189973.54,
+                                                                 .velocity = {0.0, 0.0, 0.0},
+                                                                 .yiMap = {{"O2", .3}, {"N2", .4}, {"CH2", .1}, {"NO", .2}},
+                                                                 .expectedEulerValue = {0.8, 0.8 * 3.2E5, 0.0, 0.0, 0.0}},
                              (zerorkFieldFunctionTestParameters){.reactionFile = "inputs/eos/gri30.inp",
-                                                                .thermoFile = "inputs/eos/gri30.dat",
-                                                                .property1 = ablate::eos::ThermodynamicProperty::Temperature,
-                                                                .property2 = ablate::eos::ThermodynamicProperty::Pressure,
-                                                                .property1Value = 418.079,
-                                                                .property2Value = 409488.10,
-                                                                .velocity = {0, 2, 4},
-                                                                .yiMap = {{"N2", 1.0}},
-                                                                .expectedEulerValue = {3.3, 3.3 * 1000, 0.0, 3.3 * 2, 3.3 * 4}},
+                                                                 .thermoFile = "inputs/eos/gri30.dat",
+                                                                 .property1 = ablate::eos::ThermodynamicProperty::Temperature,
+                                                                 .property2 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                 .property1Value = 418.079,
+                                                                 .property2Value = 409488.10,
+                                                                 .velocity = {0, 2, 4},
+                                                                 .yiMap = {{"N2", 1.0}},
+                                                                 .expectedEulerValue = {3.3, 3.3 * 1000, 0.0, 3.3 * 2, 3.3 * 4}},
                              (zerorkFieldFunctionTestParameters){.reactionFile = "inputs/eos/gri30.inp",
-                                                                .thermoFile = "inputs/eos/gri30.dat",
-                                                                .property1 = ablate::eos::ThermodynamicProperty::Pressure,
-                                                                .property2 = ablate::eos::ThermodynamicProperty::Temperature,
-                                                                .property1Value = 7411.11,
-                                                                .property2Value = 437.46,
-                                                                .velocity = {-1, -2, -3},
-                                                                .yiMap = {{"H2", .35}, {"H2O", .35}, {"N2", .3}},
-                                                                .expectedEulerValue = {0.01, 0.01 * 1E5, .01 * -1, .01 * -2, .01 * -3}},
+                                                                 .thermoFile = "inputs/eos/gri30.dat",
+                                                                 .property1 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                 .property2 = ablate::eos::ThermodynamicProperty::Temperature,
+                                                                 .property1Value = 7411.11,
+                                                                 .property2Value = 437.46,
+                                                                 .velocity = {-1, -2, -3},
+                                                                 .yiMap = {{"H2", .35}, {"H2O", .35}, {"N2", .3}},
+                                                                 .expectedEulerValue = {0.01, 0.01 * 1E5, .01 * -1, .01 * -2, .01 * -3}},
                              (zerorkFieldFunctionTestParameters){.reactionFile = "inputs/eos/gri30.inp",
-                                                                .thermoFile = "inputs/eos/gri30.dat",
-                                                                .property1 = ablate::eos::ThermodynamicProperty::Pressure,
-                                                                .property2 = ablate::eos::ThermodynamicProperty::Temperature,
-                                                                .property1Value = 281125963.5,
-                                                                .property2Value = 394.59,
-                                                                .velocity = {-10, -20, -300},
-                                                                .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
-                                                                .expectedEulerValue = {999.9, 999.9 * 1E4, 999.9 * -10, 999.9 * -20, 999.9 * -300}},
+                                                                 .thermoFile = "inputs/eos/gri30.dat",
+                                                                 .property1 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                 .property2 = ablate::eos::ThermodynamicProperty::Temperature,
+                                                                 .property1Value = 281125963.5,
+                                                                 .property2Value = 394.59,
+                                                                 .velocity = {-10, -20, -300},
+                                                                 .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
+                                                                 .expectedEulerValue = {999.9, 999.9 * 1E4, 999.9 * -10, 999.9 * -20, 999.9 * -300}},
                              (zerorkFieldFunctionTestParameters){.reactionFile = "inputs/eos/gri30.inp",
-                                                                .thermoFile = "inputs/eos/gri30.dat",
-                                                                .property1 = ablate::eos::ThermodynamicProperty::Pressure,
-                                                                .property2 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
-                                                                .property1Value = 281125963.5,
-                                                                .property2Value = -35256.942891550425,
-                                                                .velocity = {-10, -20, -300},
-                                                                .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
-                                                                .expectedEulerValue = {999.9, 999.9 * 1E4, 999.9 * -10, 999.9 * -20, 999.9 * -300}},
+                                                                 .thermoFile = "inputs/eos/gri30.dat",
+                                                                 .property1 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                 .property2 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
+                                                                 .property1Value = 281125963.5,
+                                                                 .property2Value = -35256.942891550425,
+                                                                 .velocity = {-10, -20, -300},
+                                                                 .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
+                                                                 .expectedEulerValue = {999.9, 999.9 * 1E4, 999.9 * -10, 999.9 * -20, 999.9 * -300}},
                              (zerorkFieldFunctionTestParameters){.reactionFile = "inputs/eos/gri30.inp",
-                                                                .thermoFile = "inputs/eos/gri30.dat",
-                                                                .property1 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
-                                                                .property2 = ablate::eos::ThermodynamicProperty::Pressure,
-                                                                .property1Value = -35256.942891550425,
-                                                                .property2Value = 281125963.5,
-                                                                .velocity = {-10, -20, -300},
-                                                                .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
-                                                                .expectedEulerValue = {999.9, 999.9 * 1E4, 999.9 * -10, 999.9 * -20, 999.9 * -300}},
+                                                                 .thermoFile = "inputs/eos/gri30.dat",
+                                                                 .property1 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
+                                                                 .property2 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                 .property1Value = -35256.942891550425,
+                                                                 .property2Value = 281125963.5,
+                                                                 .velocity = {-10, -20, -300},
+                                                                 .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
+                                                                 .expectedEulerValue = {999.9, 999.9 * 1E4, 999.9 * -10, 999.9 * -20, 999.9 * -300}},
                              (zerorkFieldFunctionTestParameters){.reactionFile = "inputs/eos/gri30.inp",
-                                                                .thermoFile = "inputs/eos/gri30.dat",
-                                                                .property1 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
-                                                                .property2 = ablate::eos::ThermodynamicProperty::Pressure,
-                                                                .property1Value = 99291.694615827029,
-                                                                .property2Value = 197710.5,
-                                                                .velocity = {10, 20, 30},
-                                                                .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
-                                                                .expectedEulerValue = {1.2, 1.2 * 99993.99, 1.2 * 10, 1.2 * 20, 1.2 * 30}},
+                                                                 .thermoFile = "inputs/eos/gri30.dat",
+                                                                 .property1 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
+                                                                 .property2 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                 .property1Value = 99291.694615827029,
+                                                                 .property2Value = 197710.5,
+                                                                 .velocity = {10, 20, 30},
+                                                                 .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
+                                                                 .expectedEulerValue = {1.2, 1.2 * 99993.99, 1.2 * 10, 1.2 * 20, 1.2 * 30}},
                              (zerorkFieldFunctionTestParameters){.reactionFile = "inputs/eos/gri30.inp",
-                                                                .thermoFile = "inputs/eos/gri30.dat",
-                                                                .property1 = ablate::eos::ThermodynamicProperty::Pressure,
-                                                                .property2 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
-                                                                .property1Value = 197710.5,
-                                                                .property2Value = 99291.694615827029,
-                                                                .velocity = {10, 20, 30},
-                                                                .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
-                                                                .expectedEulerValue = {1.2, 1.2 * 99993.99, 1.2 * 10, 1.2 * 20, 1.2 * 30}}
+                                                                 .thermoFile = "inputs/eos/gri30.dat",
+                                                                 .property1 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                 .property2 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
+                                                                 .property1Value = 197710.5,
+                                                                 .property2Value = 99291.694615827029,
+                                                                 .velocity = {10, 20, 30},
+                                                                 .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
+                                                                 .expectedEulerValue = {1.2, 1.2 * 99993.99, 1.2 * 10, 1.2 * 20, 1.2 * 30}}
 
                              ),
 
@@ -566,10 +565,10 @@ struct RKElementTestParameters {
 };
 
 class RKElementTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<RKElementTestParameters> {};
-  // Test 6
+// Test 6
 TEST_P(RKElementTestFixture, ShouldDetermineElementsZerork) {
     // arrange
-    auto eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
+    auto eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile, GetParam().thermoFile);
 
     // get the test params
     const auto& params = GetParam();
@@ -595,10 +594,10 @@ struct RKSpeciesInformationTestParameters {
 };
 
 class RKSpeciesInformationTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<RKSpeciesInformationTestParameters> {};
- // Test- 7
+// Test- 7
 TEST_P(RKSpeciesInformationTestFixture, ShouldDetermineSpeciesElementInformationZerork) {
     // arrange
-    auto eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
+    auto eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile, GetParam().thermoFile);
 
     // get the test params
     const auto& params = GetParam();
@@ -609,10 +608,10 @@ TEST_P(RKSpeciesInformationTestFixture, ShouldDetermineSpeciesElementInformation
     // assert
     ASSERT_EQ(params.expectedSpeciesElementInformation, speciesElementInformation);
 }
-  // Test8
+// Test8
 TEST_P(RKSpeciesInformationTestFixture, ShouldDetermineSpeciesMolecularMassZerork) {
     // arrange
-    auto eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
+    auto eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile, GetParam().thermoFile);
 
     // get the test params
     const auto& params = GetParam();
@@ -640,32 +639,58 @@ INSTANTIATE_TEST_SUITE_P(zerorkTests, RKSpeciesInformationTestFixture,
                                                               {"HNCO", 43.0252},   {"HNO", 31.0141},    {"HO2", 33.0068},   {"HOCN", 43.0252}, {"N", 14.0067},     {"N2", 28.0134},
                                                               {"N2O", 44.0128},    {"NCO", 42.0173},    {"NH", 15.0147},    {"NH2", 16.0226},  {"NH3", 17.0306},   {"NNH", 29.0214},
                                                               {"NO", 30.0061},     {"NO2", 46.0055},    {"O", 15.9994},     {"O2", 31.9988},   {"OH", 17.0074}},
-                             .expectedSpeciesElementInformation = {{"AR", {{"Ar", 1}}},     {"C", {{"C", 1}}},
-                                                                   {"C2H", {{"C", 2}, {"H", 1}}},    {"C2H2", { {"C", 2}, {"H", 2}}},
-                                                                   {"C2H3", {{"C", 2}, {"H", 3}}},   {"C2H4", {{"C", 2}, {"H", 4}}},
-                                                                   {"C2H5", {{"C", 2}, {"H", 5}}},   {"C2H6", {{"C", 2}, {"H", 6}}},
-                                                                   {"C3H7", {{"C", 3}, {"H", 7}}},   {"C3H8", {{"C", 3}, {"H", 8}}},
-                                                                   {"CH", {{"C", 1}, {"H", 1}}},     {"CH2", {{"C", 1}, {"H", 2}}},
-                                                                   {"CH2(S)", {{"C", 1}, {"H", 2}}}, {"CH2CHO", {{"C", 2}, {"H", 3}, {"O", 1}}},
-                                                                   {"CH2CO", {{"C", 2}, {"H", 2}, {"O", 1}}},  {"CH2O", {{"C", 1}, {"H", 2}, {"O", 1}}},
-                                                                   {"CH2OH", {{"C", 1}, {"H", 3}, {"O", 1}}},  {"CH3", {{"C", 1}, {"H", 3}}},
-                                                                   {"CH3CHO", {{"C", 2}, {"H", 4}, {"O", 1}}}, {"CH3O", {{"C", 1}, {"H", 3}, {"O", 1}}},
-                                                                   {"CH3OH", {{"C", 1}, {"H", 4}, {"O", 1}}},  {"CH4", {{"C", 1}, {"H", 4}}},
-                                                                   {"CN", {{"C", 1}, {"N", 1}}},     {"CO", {{"C", 1}, {"O", 1}}},
-                                                                   {"CO2", {{"C", 1}, {"O", 2}}},    {"H", {{"H", 1}}},
-                                                                   {"H2", {{"H", 2}}},     {"H2CN", {{"C", 1}, {"H", 2}, {"N", 1}}},
-                                                                   {"H2O", {{"H", 2}, {"O", 1}}},    {"H2O2", {{"H", 2}, {"O", 2}}},
-                                                                   {"HCCO", {{"C", 2}, {"H", 1}, {"O", 1}}},   {"HCCOH", {{"C", 2}, {"H", 2}, {"O", 1}}},
-                                                                   {"HCN", {{"C", 1}, {"H", 1}, {"N", 1}}},    {"HCNN", {{"C", 1}, {"H", 1}, {"N", 2}}},
-                                                                   {"HCNO", {{"C", 1}, {"H", 1}, {"N", 1}, {"O", 1}}},   {"HCO", {{"C", 1}, {"H", 1}, {"O", 1}}},
-                                                                   {"HNCO", {{"C", 1}, {"H", 1}, {"N", 1}, {"O", 1}}},   {"HNO", {{"H", 1}, {"N", 1}, {"O", 1}}},
-                                                                   {"HO2", {{"H", 1}, {"O", 2}}},    {"HOCN", {{"C", 1}, {"H", 1}, {"N", 1}, {"O", 1}}},
-                                                                   {"N", {{"N", 1}}},      {"N2", {{"N", 2}}},
-                                                                   {"N2O", {{"N", 2}, {"O", 1}}},    {"NCO", {{"C", 1}, {"N", 1}, {"O", 1}}},
-                                                                   {"NH", {{"H", 1}, {"N", 1}}},     {"NH2", {{"H", 2}, {"N", 1}}},
-                                                                   {"NH3", {{"H", 3}, {"N", 1}}},    {"NNH", {{"H", 1}, {"N", 2}}},
-                                                                   {"NO", {{"N", 1}, {"O", 1}}},     {"NO2", {{"N", 1}, {"O", 2}}},
-                                                                   {"O", {{"O", 1}}},      {"O2", {{"O", 2}}},
+                             .expectedSpeciesElementInformation = {{"AR", {{"Ar", 1}}},
+                                                                   {"C", {{"C", 1}}},
+                                                                   {"C2H", {{"C", 2}, {"H", 1}}},
+                                                                   {"C2H2", {{"C", 2}, {"H", 2}}},
+                                                                   {"C2H3", {{"C", 2}, {"H", 3}}},
+                                                                   {"C2H4", {{"C", 2}, {"H", 4}}},
+                                                                   {"C2H5", {{"C", 2}, {"H", 5}}},
+                                                                   {"C2H6", {{"C", 2}, {"H", 6}}},
+                                                                   {"C3H7", {{"C", 3}, {"H", 7}}},
+                                                                   {"C3H8", {{"C", 3}, {"H", 8}}},
+                                                                   {"CH", {{"C", 1}, {"H", 1}}},
+                                                                   {"CH2", {{"C", 1}, {"H", 2}}},
+                                                                   {"CH2(S)", {{"C", 1}, {"H", 2}}},
+                                                                   {"CH2CHO", {{"C", 2}, {"H", 3}, {"O", 1}}},
+                                                                   {"CH2CO", {{"C", 2}, {"H", 2}, {"O", 1}}},
+                                                                   {"CH2O", {{"C", 1}, {"H", 2}, {"O", 1}}},
+                                                                   {"CH2OH", {{"C", 1}, {"H", 3}, {"O", 1}}},
+                                                                   {"CH3", {{"C", 1}, {"H", 3}}},
+                                                                   {"CH3CHO", {{"C", 2}, {"H", 4}, {"O", 1}}},
+                                                                   {"CH3O", {{"C", 1}, {"H", 3}, {"O", 1}}},
+                                                                   {"CH3OH", {{"C", 1}, {"H", 4}, {"O", 1}}},
+                                                                   {"CH4", {{"C", 1}, {"H", 4}}},
+                                                                   {"CN", {{"C", 1}, {"N", 1}}},
+                                                                   {"CO", {{"C", 1}, {"O", 1}}},
+                                                                   {"CO2", {{"C", 1}, {"O", 2}}},
+                                                                   {"H", {{"H", 1}}},
+                                                                   {"H2", {{"H", 2}}},
+                                                                   {"H2CN", {{"C", 1}, {"H", 2}, {"N", 1}}},
+                                                                   {"H2O", {{"H", 2}, {"O", 1}}},
+                                                                   {"H2O2", {{"H", 2}, {"O", 2}}},
+                                                                   {"HCCO", {{"C", 2}, {"H", 1}, {"O", 1}}},
+                                                                   {"HCCOH", {{"C", 2}, {"H", 2}, {"O", 1}}},
+                                                                   {"HCN", {{"C", 1}, {"H", 1}, {"N", 1}}},
+                                                                   {"HCNN", {{"C", 1}, {"H", 1}, {"N", 2}}},
+                                                                   {"HCNO", {{"C", 1}, {"H", 1}, {"N", 1}, {"O", 1}}},
+                                                                   {"HCO", {{"C", 1}, {"H", 1}, {"O", 1}}},
+                                                                   {"HNCO", {{"C", 1}, {"H", 1}, {"N", 1}, {"O", 1}}},
+                                                                   {"HNO", {{"H", 1}, {"N", 1}, {"O", 1}}},
+                                                                   {"HO2", {{"H", 1}, {"O", 2}}},
+                                                                   {"HOCN", {{"C", 1}, {"H", 1}, {"N", 1}, {"O", 1}}},
+                                                                   {"N", {{"N", 1}}},
+                                                                   {"N2", {{"N", 2}}},
+                                                                   {"N2O", {{"N", 2}, {"O", 1}}},
+                                                                   {"NCO", {{"C", 1}, {"N", 1}, {"O", 1}}},
+                                                                   {"NH", {{"H", 1}, {"N", 1}}},
+                                                                   {"NH2", {{"H", 2}, {"N", 1}}},
+                                                                   {"NH3", {{"H", 3}, {"N", 1}}},
+                                                                   {"NNH", {{"H", 1}, {"N", 2}}},
+                                                                   {"NO", {{"N", 1}, {"O", 1}}},
+                                                                   {"NO2", {{"N", 1}, {"O", 2}}},
+                                                                   {"O", {{"O", 1}}},
+                                                                   {"O2", {{"O", 2}}},
                                                                    {"OH", {{"H", 1}, {"O", 1}}}}}),
                          [](const testing::TestParamInfo<RKSpeciesInformationTestParameters>& info) { return RKElementTestFixture::SanitizeTestName(info.param.reactionFile.string()); });
 
@@ -686,10 +711,10 @@ struct RKComputeSourceTestParameters {
 };
 
 class RKComputeSourceTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<RKComputeSourceTestParameters> {};
- // Test 9
+// Test 9
 TEST_P(RKComputeSourceTestFixture, ShouldComputeCorrectSourceZerork) {
     // ARRANGE
-    auto eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile,GetParam().thermoFile);
+    auto eos = std::make_shared<ablate::eos::zerorkEOS>(GetParam().reactionFile, GetParam().thermoFile);
 
     // create a zeroD domain for testing
     auto domain = std::make_shared<ablate::domain::BoxMesh>("zeroD",
@@ -731,14 +756,12 @@ TEST_P(RKComputeSourceTestFixture, ShouldComputeCorrectSourceZerork) {
     ablate::domain::DynamicRange range;
     range.Add(0);
 
-    //Set the reactor to constant pressure, cont vol is default for zerork
+    // Set the reactor to constant pressure, cont vol is default for zerork
     ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints constraintseos;
-    constraintseos.reactorType=ablate::eos::zerorkeos::SourceCalculator::ReactorType::ConstantPressure;
-    eos->constraints=constraintseos;
+    constraintseos.reactorType = ablate::eos::zerorkeos::SourceCalculator::ReactorType::ConstantPressure;
+    eos->constraints = constraintseos;
 
-
-
-//    constraints.Set(ReactorType::ConstantPressure);
+    //    constraints.Set(ReactorType::ConstantPressure);
     auto sourceTermCalculator = eos->CreateSourceCalculator(domain->GetFields(), range.GetRange());
 
     // Perform prestep
@@ -792,5 +815,4 @@ INSTANTIATE_TEST_SUITE_P(zerorkTests, RKComputeSourceTestFixture,
                                                          7.71297e-06, 8.76474e-09, 0.0042147,   3.01428e-06,  0.0143082,   8.95778e-10, 0.000171936, 2.11932e-09, 3.98707e-17, 2.93971e-15, 3.98326e-16,
                                                          2.19774e-15, 4.30824e-12, 3.73653e-12, 4.39779e-12,  5.44988e-08, 5.9704e-15,  1.24544e-21, 9.80878e-14, 1.50217e-18, 1.15244e-16, 7.52342e-17,
                                                          7.10193e-18, 4.27329e-15, 2.96867e-16, -6.83549e-25, 2.57715e-09, 3.0537e-05,  5.93473e-08, 9.20704e-07, -3.46948e-08},
-                             .errorTolerance=0.021})); //it is a huge step thus the looser tolerance ....
-
+                             .errorTolerance = 0.021}));  // it is a huge step thus the looser tolerance ....

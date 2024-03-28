@@ -264,21 +264,13 @@ class ChemTab : public ChemistryModel {
         throw std::runtime_error(errorMessage);
     }
 
-    [[nodiscard]] ThermodynamicTemperatureMassFractionFunction GetThermodynamicTemperatureMassFractionFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override{
+    [[nodiscard]] ThermodynamicTemperatureMassFractionFunction GetThermodynamicTemperatureMassFractionFunction(ThermodynamicProperty property,
+                                                                                                               const std::vector<domain::Field>& fields) const override {
         throw std::runtime_error(errorMessage);
     }
-    [[nodiscard]] std::map<std::string, double> GetSpeciesMolecularMass() const override{
-
-        throw std::runtime_error(errorMessage);
-    }
-    [[nodiscard]] std::map<std::string, std::map<std::string, int>> GetSpeciesElementalInformation() const override{
-
-        throw std::runtime_error(errorMessage);
-    }
-    [[nodiscard]] std::map<std::string, double> GetElementInformation() const override{
-
-        throw std::runtime_error(errorMessage);
-    }
+    [[nodiscard]] std::map<std::string, double> GetSpeciesMolecularMass() const override { throw std::runtime_error(errorMessage); }
+    [[nodiscard]] std::map<std::string, std::map<std::string, int>> GetSpeciesElementalInformation() const override { throw std::runtime_error(errorMessage); }
+    [[nodiscard]] std::map<std::string, double> GetElementInformation() const override { throw std::runtime_error(errorMessage); }
 
     void ChemistrySource(PetscReal density, const PetscReal densityProgressVariable[], PetscReal* densityEnergySource, PetscReal* progressVariableSource) const {
         throw std::runtime_error(errorMessage);

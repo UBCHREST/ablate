@@ -53,7 +53,7 @@ class ChemistryModel : public eos::EOS {
      */
     virtual std::vector<std::tuple<ablate::solver::CellSolver::SolutionFieldUpdateFunction, void*, std::vector<std::string>>> GetSolutionFieldUpdates() { return {}; }
 
-    virtual inline double GetEnthalpyOfFormation(std::string_view speciesName) const {return {};};
+    virtual inline double GetEnthalpyOfFormation(std::string_view speciesName) const { return {}; };
 
     [[nodiscard]] virtual std::map<std::string, double> GetSpeciesMolecularMass() const = 0;
 
@@ -73,7 +73,9 @@ class ChemistryModel : public eos::EOS {
         PetscInt propertySize = 1;
     };
 
-    [[nodiscard]] virtual ThermodynamicTemperatureMassFractionFunction GetThermodynamicTemperatureMassFractionFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const {return {};};
+    [[nodiscard]] virtual ThermodynamicTemperatureMassFractionFunction GetThermodynamicTemperatureMassFractionFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const {
+        return {};
+    };
 };
 }  // namespace ablate::eos
 
