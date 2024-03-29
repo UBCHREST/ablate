@@ -24,8 +24,8 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
 
     //! hold a struct that can be used for chemistry constraints
     struct ChemistryConstraints {
-        double relTolerance = 1.0E-8;
-        double absTolerance = 1.0E-18;
+        double relTolerance = 1.0E-6;
+        double absTolerance = 1.0E-10;
 
         // set the limiter on chemical rates of progress,
         // for 1D flames set it to a value btw 1e18 and 1e20,
@@ -48,7 +48,7 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
         int iterative = 0;
 
         // For large mechanisms(~Nspec>100) it is recommended to use a sparse math jacobian
-        bool sparseJacobian = false;
+        bool  = false;
 
         // timing log information
         bool timinglog = false;
