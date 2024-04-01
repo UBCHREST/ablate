@@ -122,7 +122,7 @@ std::shared_ptr<ablate::domain::Region> ablate::domain::descriptions::Axisymmetr
     // compute the outer shell start
     auto outerShellStart = numberCenterVertices + numberVerticesPerShell * (numberShells - 1);
     // Coordinate used to track the z location
-    auto *coordinate = new PetscReal[]{0.0, 0.0, 0.0};
+    PetscReal coordinate[3] = {0.0, 0.0, 0.0};
     PetscReal Zavg = 0.0;
     for (const auto &node : face) {
         // check if we are on the outer shell
