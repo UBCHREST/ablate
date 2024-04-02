@@ -11,18 +11,27 @@
 #include "parameters/parameters.hpp"
 #include "utilities/intErrorChecker.hpp"
 #include "utilities/vectorUtilities.hpp"
+#include "zerork_cfd_plugin.h"
 #include "zerork/mechanism.h"
 #include "zerork/utilities.h"
-#include "zerork_cfd_plugin.h"
 
 namespace ablate::eos {
 
-class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<ablate::eos::zerorkEOS> {
+class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<ablate::eos::zerorkEOS>{
    protected:
+
+    //! hold a copy of the constrains that can be used for single or batch source calculation
+
+
     std::vector<std::string> species;
+
     int nSpc;
 
-    // kinetic and elemental data parsing file
+//    struct constraints {
+//        PetscInt numberSpecies;
+//    };
+
+    //kinetic and elemental data parsing file
     const char* cklogfilename = "mech.cklog";
 
     std::vector<double> stateVector;
@@ -34,7 +43,8 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
      * @param mechFile
      * @param optionalThermoFile
      */
-    explicit zerorkEOS(std::filesystem::path reactionFile, std::filesystem::path thermoFile, const std::shared_ptr<ablate::parameters::Parameters>& options = {});
+    explicit zerorkEOS(std::filesystem::path reactionFile, std::filesystem::path thermoFile,
+                       const std::shared_ptr<ablate::parameters::Parameters>& options = {});
 
     std::shared_ptr<zerork::mechanism> mech;
 
@@ -84,13 +94,15 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
      * @return
      */
 
+
    protected:
     /**
      * only allow chemkin input files
      */
 
-    static const inline std::array<std::string, 2> validThermoFileExtensions = {".dat", ".log"};
-    //    static const std::string validChemkinFileExtensions = ".inp";
+    static const inline std::array<std::string, 2> validThermoFileExtensions = {".dat",".log"};
+//    static const std::string validChemkinFileExtensions = ".inp";
+
 
     struct FunctionContext {
         // memory access locations for fields
@@ -115,7 +127,9 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
         PetscInt propertySize = 1;
     };
 
+
    public:
+
     [[nodiscard]] ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
 
     /**
@@ -150,6 +164,7 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
      */
     [[nodiscard]] EOSFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2,
                                                        std::vector<std::string> otherProperties) const override;
+
 
     /**
      * Function to create the batch source specific to the provided cell range
@@ -254,32 +269,45 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
     using ThermodynamicStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal* property, void* ctx);
     using ThermodynamicTemperatureStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
     std::map<ThermodynamicProperty, std::tuple<ThermodynamicStaticFunction, ThermodynamicTemperatureStaticFunction>> thermodynamicFunctions = {
-        {ThermodynamicProperty::Pressure, {PressureFunction, PressureTemperatureFunction}},
+        {ThermodynamicProperty::Density, {DensityFunction, DensityTemperatureFunction}},
+        {ThermodynamicProperty::Pressure,
+         {PressureFunction, PressureTemperatureFunction}},
         {ThermodynamicProperty::Temperature, {TemperatureFunction, TemperatureTemperatureFunction}},
         {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction, InternalSensibleEnergyTemperatureFunction}},
         {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyFunction, SensibleEnthalpyTemperatureFunction}},
         {ThermodynamicProperty::SpecificHeatConstantVolume, {SpecificHeatConstantVolumeFunction, SpecificHeatConstantVolumeTemperatureFunction}},
-        {ThermodynamicProperty::SpecificHeatConstantPressure, {SpecificHeatConstantPressureFunction, SpecificHeatConstantPressureTemperatureFunction}},
+        {ThermodynamicProperty::SpecificHeatConstantPressure,
+         {SpecificHeatConstantPressureFunction,
+          SpecificHeatConstantPressureTemperatureFunction}},
         {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundFunction, SpeedOfSoundTemperatureFunction}},
         {ThermodynamicProperty::SpeciesSensibleEnthalpy,
-         {SpeciesSensibleEnthalpyFunction, SpeciesSensibleEnthalpyTemperatureFunction}} /**note size of temperature because it has a larger scratch space */
+         {SpeciesSensibleEnthalpyFunction,
+          SpeciesSensibleEnthalpyTemperatureFunction}} /**note size of temperature because it has a larger scratch space */
     };
+
 
     using ThermodynamicStaticMassFractionFunction = PetscErrorCode (*)(const PetscReal conserved[], const PetscReal yi[], PetscReal* property, void* ctx);
     using ThermodynamicTemperatureStaticMassFractionFunction = PetscErrorCode (*)(const PetscReal conserved[], const PetscReal yi[], PetscReal temperature, PetscReal* property, void* ctx);
-    std::map<ThermodynamicProperty, std::tuple<ThermodynamicStaticMassFractionFunction, ThermodynamicTemperatureStaticMassFractionFunction>> thermodynamicMassFractionFunctions = {
-        {ThermodynamicProperty::Density, {DensityMassFractionFunction, DensityTemperatureMassFractionFunction}},
-        {ThermodynamicProperty::Pressure, {PressureMassFractionFunction, PressureTemperatureMassFractionFunction}} /**note size of temperature because it has a larger scratch space */,
-        {ThermodynamicProperty::Temperature, {TemperatureMassFractionFunction, TemperatureTemperatureMassFractionFunction}},
-        {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyMassFractionFunction, InternalSensibleEnergyTemperatureMassFractionFunction}},
-        {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyMassFractionFunction, SensibleEnthalpyTemperatureMassFractionFunction}},
-        {ThermodynamicProperty::SpecificHeatConstantVolume, {SpecificHeatConstantVolumeMassFractionFunction, SpecificHeatConstantVolumeTemperatureMassFractionFunction}},
-        {ThermodynamicProperty::SpecificHeatConstantPressure,
-         {SpecificHeatConstantPressureMassFractionFunction, SpecificHeatConstantPressureTemperatureMassFractionFunction}} /**note size of temperature because it has a larger scratch space */,
-        {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundMassFractionFunction, SpeedOfSoundTemperatureMassFractionFunction}},
-        {ThermodynamicProperty::SpeciesSensibleEnthalpy,
-         {SpeciesSensibleEnthalpyMassFractionFunction, SpeciesSensibleEnthalpyTemperatureMassFractionFunction}} /**note size of temperature because it has a larger scratch space */
-    };
+    std::map<ThermodynamicProperty, std::tuple<ThermodynamicStaticMassFractionFunction, ThermodynamicTemperatureStaticMassFractionFunction>>
+        thermodynamicMassFractionFunctions = {
+            {ThermodynamicProperty::Density, {DensityMassFractionFunction, DensityTemperatureMassFractionFunction}},
+            {ThermodynamicProperty::Pressure,
+             {PressureMassFractionFunction,
+              PressureTemperatureMassFractionFunction}} /**note size of temperature because it has a larger scratch space */,
+            {ThermodynamicProperty::Temperature, {TemperatureMassFractionFunction, TemperatureTemperatureMassFractionFunction}},
+            {ThermodynamicProperty::InternalSensibleEnergy,
+             {InternalSensibleEnergyMassFractionFunction, InternalSensibleEnergyTemperatureMassFractionFunction}},
+            {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyMassFractionFunction, SensibleEnthalpyTemperatureMassFractionFunction}},
+            {ThermodynamicProperty::SpecificHeatConstantVolume,
+             {SpecificHeatConstantVolumeMassFractionFunction, SpecificHeatConstantVolumeTemperatureMassFractionFunction}},
+            {ThermodynamicProperty::SpecificHeatConstantPressure,
+             {SpecificHeatConstantPressureMassFractionFunction,
+              SpecificHeatConstantPressureTemperatureMassFractionFunction}} /**note size of temperature because it has a larger scratch space */,
+            {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundMassFractionFunction, SpeedOfSoundTemperatureMassFractionFunction}},
+            {ThermodynamicProperty::SpeciesSensibleEnthalpy,
+             {SpeciesSensibleEnthalpyMassFractionFunction,
+              SpeciesSensibleEnthalpyTemperatureMassFractionFunction}} /**note size of temperature because it has a larger scratch space */
+        };
 
     /**
      * Store a list of properties that are sized by species, everything is assumed to be size one
@@ -291,14 +319,14 @@ class zerorkEOS : public ChemistryModel, public std::enable_shared_from_this<abl
      * @param numSpec
      * @param yi
      */
-    static void FillreactorMassFracVectorFromDensityMassFractions(int nSpc, double density, const double* densityYi, std::vector<double>& reactorYi);
+    static void FillreactorMassFracVectorFromDensityMassFractions(int nSpc,double density, const double* densityYi, std::vector<double>& reactorYi);
 
     /**
      * Fill the working vector from yi
      * @param numSpec
      * @param yi
      */
-    static void FillreactorMassFracVectorFromMassFractions(int nSpc, const double* Yi, std::vector<double>& reactorYi);
+    static void FillreactorMassFracVectorFromMassFractions(int nSpc,const double* Yi, std::vector<double>& reactorYi);
 };
 
 }  // namespace ablate::eos
