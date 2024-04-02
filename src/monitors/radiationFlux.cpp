@@ -26,7 +26,7 @@ void ablate::monitors::RadiationFlux::Register(std::shared_ptr<solver::Solver> s
     domain::Region::GetLabel(radiationFluxRegion, solverIn->GetSubDomain().GetDM(), radiationFluxRegionLabel, regionValue);
 
     // Now create a sub dm with only the faces
-    DMPlexFilter(solverIn->GetSubDomain().GetDM(), radiationFluxRegionLabel, regionValue, &fluxDm) >> utilities::PetscUtilities::checkError;
+    DMPlexFilter(solverIn->GetSubDomain().GetDM(), radiationFluxRegionLabel, regionValue, PETSC_FALSE, PETSC_FALSE, NULL, &fluxDm) >> utilities::PetscUtilities::checkError;
 
     /** Add each of the output components on each face in the fluxDm
      * the number of components should be equal to the number of ray tracers plus any ratio outputs?

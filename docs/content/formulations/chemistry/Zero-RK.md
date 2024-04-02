@@ -34,7 +34,7 @@ Examples of specifying zerorkEOS with different default options and possible opt
           stepLimiter: 1.0E200          
           
           # integer options
-          loadBalance: 1 # [0 or 1]
+          loadBalance: 1 # [0 or 1 or 2] 1 is based on #of reactors 2 is based on time
           verbose: 0 # [0 or 1 or 2 or 3 or 4]
           gpu: 0 # [0 or 1]
           itterative: 0 # [0 or 1]
