@@ -303,7 +303,7 @@ solvers:
 
   # The slab boundary id used to couple the flow and heat/mass transfer from the fuel
   - !ablate::boundarySolver::BoundarySolver
-    id: slab boundary
+    id: slabboundary
     region:
       name: slab
     fieldBoundary:

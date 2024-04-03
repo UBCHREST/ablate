@@ -6,6 +6,9 @@ nav_order: 3
 grand_parent: Formulations
 ---
 
+![ZeroRK Logo](zerork_image.png "ZeroRk logo")
+
+
 Ideal gas thermal properties and reactions kinetics are modeled using the [Zero-RK](https://github.com/LLNL/zero-rk) tool kit. 
 The input files needs to be using the Chemkin formated files, one .inp file containing the reaction and one .dat file containing thermodynamic properties.
 The mech.log file provides useful information when parsing of the mechanism file is not successful.
