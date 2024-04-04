@@ -7,10 +7,10 @@ test:
   # create a list of asserts to compare
   asserts:
     - !testingResources::asserts::TextFileAssert
-      expected: "inputs/reactingFlow/ignitionDelayGriMechConstantVolumeReactor.PeakYi.txt"
+      expected: "inputs/reactingFlow/ignitionDelayGriMechConstantVolumeReactor.PeakYi.zerork.txt"
       actual: "ignitionDelayPeakYi.txt"
     - !testingResources::asserts::TextFileAssert
-      expected: "inputs/reactingFlow/ignitionDelayGriMechConstantVolumeReactor.Temperature.txt"
+      expected: "inputs/reactingFlow/ignitionDelayGriMechConstantVolumeReactor.Temperature.zerork.txt"
       actual: "ignitionDelayTemperature.csv"
 
 # metadata for the simulation

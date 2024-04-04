@@ -3,7 +3,7 @@ test:
   # a unique test name for this integration tests
   name: simpleReactingFlowZerork
   # create a default assert that compares the log file
-  assert: "inputs/reactingFlow/simpleReactingFlow.txt"
+  assert: "inputs/reactingFlow/simpleReactingFlow.zerork.txt"
 
 environment:
   title: _simpleReactingFlowZerork

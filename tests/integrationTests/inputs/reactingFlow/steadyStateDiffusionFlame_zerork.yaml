@@ -5,7 +5,7 @@ test:
   # a unique test name for this integration tests
   name: steadyStateDiffusionFlameZerork
   # create a default assert that compares the log file
-  assert: "inputs/reactingFlow/steadyStateDiffusionFlame.txt"
+  assert: "inputs/reactingFlow/steadyStateDiffusionFlame.zerork.txt"
 
 environment:
   title: _steadyStateDiffusionFlameZerork

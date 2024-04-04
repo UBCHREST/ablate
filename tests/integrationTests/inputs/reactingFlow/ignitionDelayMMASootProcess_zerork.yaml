@@ -6,7 +6,7 @@ test:
   name: ignitionDelayMMASootProcessZerork
   # create a default assert that compares the log file
   assert: !testingResources::asserts::TextFileAssert
-    expected: "inputs/reactingFlow/ignitionDelayMMASootProcess.Temperature.txt"
+    expected: "inputs/reactingFlow/ignitionDelayMMASootProcess.Temperature.zerork.txt"
     actual: "ignitionDelayTemperature.csv"
 
 # metadata for the simulation
@@ -38,7 +38,7 @@ timestepper:
           reactionFile: ../mechanisms/MMAReduced.soot.inp
           thermoFile: ../mechanisms/MMAReduced.soot.dat
           options:
-            reactorType: ReactorType::ConstantPressure #zerork deafult is constant volume
+            reactorType: ConstantPressure #zerork deafult is constant volume
 
       - !ablate::finiteVolume::ExtraVariable
         name: "Progress"

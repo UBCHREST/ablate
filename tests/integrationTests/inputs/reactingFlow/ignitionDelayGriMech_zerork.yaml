@@ -7,10 +7,10 @@ test:
   # create a list of asserts to compare
   asserts:
     - !testingResources::asserts::TextFileAssert
-      expected: "inputs/reactingFlow/ignitionDelayGriMech.PeakYi.txt"
+      expected: "inputs/reactingFlow/ignitionDelayGriMech.PeakYi.zerork.txt"
       actual: "ignitionDelayPeakYi.txt"
     - !testingResources::asserts::TextFileAssert
-      expected: "inputs/reactingFlow/ignitionDelayGriMech.Temperature.txt"
+      expected: "inputs/reactingFlow/ignitionDelayGriMech.Temperature.zerork.txt"
       actual: "ignitionDelayTemperature.csv"
 
 # metadata for the simulation
@@ -43,7 +43,7 @@ timestepper:
           reactionFile: ../mechanisms/gri30.inp
           thermoFile: ../mechanisms/gri30.dat
           options:
-            reactorType: ReactorType::ConstantPressure #zerork deafult is constant volume
+            reactorType: ConstantPressure #zerork deafult is constant volume
 
   # set the initial conditions of the flow field
   initialization:
