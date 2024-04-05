@@ -44,6 +44,9 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
         // load balancing
         int gpu = 0;
 
+        // CVODE balancing
+        int maxiteration = 10000;
+
         // iterative solution for approximate jacobian recommended to be set to 0 whenever dense is selected
         int iterative = 0;
 

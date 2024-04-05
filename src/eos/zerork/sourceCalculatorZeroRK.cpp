@@ -4,6 +4,7 @@
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/stringUtilities.hpp"
+#include <math.h>
 
 void ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints::Set(const std::shared_ptr<ablate::parameters::Parameters>& options) {
     if (options) {
@@ -18,6 +19,7 @@ void ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints::Set(const s
         useSEULEX = options->Get("useSEULEX", useSEULEX);
         iterative = options->Get("iterative", iterative);
         gpu = options->Get("gpu", gpu);
+        maxiteration = options->Get("maxiteration", maxiteration);
         reactorType = options->Get("reactorType", ReactorType::ConstantVolume);
     }
 }
@@ -102,8 +104,16 @@ ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<dom
     zerork_status_t status_iterative = zerork_reactor_set_int_option("iterative", chemistryConstraints.iterative, zrm_handle);
     if (status_iterative != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
+    zerork_status_t status_maxsteps = zerork_reactor_set_int_option("max_steps", 10, zrm_handle);
+    if (status_maxsteps != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+
+//    zerork_status_t dump = zerork_reactor_set_int_option("dump_reactors", 1, zrm_handle);
+//    if (dump != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+
     zerork_status_t status_mech = zerork_reactor_load_mechanism(zrm_handle);  // make sure this call is after gpu setup
     if (status_mech != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+
+
 
     if (zerork_error_state != 0) {
         throw std::invalid_argument("ablate::eos::zerork couldnt initialize, something is wrong...");
@@ -212,27 +222,48 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
     // mass fraction before the reactor
     std::vector<double> ys = reactorMassFracEval;
 
+    //back up the temeprature and pressure in case we need to integrate again... for now...
+    std::vector<double> Tbackup=reactorTEval;
+    std::vector<double> Pbackup=reactorPEval;
+    std::vector<double> Ybackup=reactorMassFracEval;
+
     auto nReactorsEval = std::reduce(reactorEval.begin(), reactorEval.end());
     zerork_status_t flag = ZERORK_STATUS_SUCCESS;
     flag = zerork_reactor_solve(1, time, dt, nReactorsEval, &reactorTEval[0], &reactorPEval[0], &reactorMassFracEval[0], zrm_handle);
 
     if (flag != ZERORK_STATUS_SUCCESS) {
         std::stringstream warningMessage;
-        warningMessage << "Oo something went wrong during zerork integration..."
-                       << "\n";
         warningMessage << "Warning: Could not integrate chemistry on rank " << rank << "\n";
-        warningMessage << "time: " << std::setprecision(16) << time << "\n";
-        warningMessage << "dt: " << std::setprecision(16) << dt << "\n";
+        warningMessage << "Current time is: " << std::setprecision(16) << time << "\n";
+        warningMessage << "Requested timestep: " << std::setprecision(16) << dt << "\n";
+        std::cout << warningMessage.str() << std::endl;
 
-        // Check for temperature to see which reactor i sus
-        for (int s = 0; s < nReactors; ++s) {
-            if (reactorEval[s] == 1) {
-                warningMessage << "Temperature after integration is: " << reactorTEval[s] << " for reactor " << s << "\n";
+        int ii=0;
+        //Retrying the step
+        while (flag != ZERORK_STATUS_SUCCESS) {
+            ++ii;
+            std::cout << "Tightening tolerances."<< "\n";
+            zerork_reactor_set_double_option("abs_tol", chemistryConstraints.absTolerance*pow(0.01,ii), zrm_handle);
+            zerork_reactor_set_double_option("rel_tol", chemistryConstraints.relTolerance*pow(0.01,ii), zrm_handle);
+            flag = zerork_reactor_solve(2, time, dt, nReactorsEval, &Tbackup[0], &Pbackup[0], &Ybackup[0], zrm_handle);
+            if (ii==5) {
+                break;
             }
         }
-        warningMessage << "Possible solution for numerical stiffness could be decreasing the stepLimiter"
-                       << "\n";
-        std::cout << warningMessage.str() << std::endl;
+        if (flag != ZERORK_STATUS_SUCCESS) {
+            std::cout << "Warning: Could not integrate chemistry after reducing the tolerances. " << "\n";
+            throw std::runtime_error("ablate::eos::zerorkEOS::Computesource zerork couldn't integrate the simulation.");
+        }
+
+        //reset original tolerances
+        zerork_reactor_set_double_option("abs_tol", chemistryConstraints.absTolerance, zrm_handle);
+        zerork_reactor_set_double_option("rel_tol", chemistryConstraints.relTolerance, zrm_handle);
+
+        //Set the reactors to the new values
+        reactorTEval = Tbackup;
+        reactorPEval = Pbackup;
+        reactorMassFracEval = Ybackup;
+
     }
 
     // Set all the sources to 0
@@ -245,6 +276,7 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
     }
 
     //    // Recompute density for constant pressure reactors
+    //    // Should be done but doesn't work with current coupling
     //    if(chemistryConstraints.reactorType==ReactorType::ConstantPressure){
     //        int q=0;
     //        for (int i=0;i<nReactors;i++){
