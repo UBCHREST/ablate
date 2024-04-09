@@ -54,6 +54,9 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
     //! store the number of tri prism cells to simplify the logic
     const PetscInt numberTriPrismCells;
 
+    //! function used to describe a different boundary regions on the outer shell boundary
+    const std::shared_ptr<ablate::mathFunctions::MathFunction> boundaryFunction;
+
     //! precompute the region identifier for the boundary
     const static inline std::shared_ptr<ablate::domain::Region> shellBoundary = std::make_shared<ablate::domain::Region>("outerShell");
     const static inline std::shared_ptr<ablate::domain::Region> lowerCapBoundary = std::make_shared<ablate::domain::Region>("lowerCap");
@@ -74,8 +77,8 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
      * @param numberWedges wedges/pie slices in the circle
      * @param numberShells slicing of the cylinder along the radius
      */
-    Axisymmetric(std::shared_ptr<ablate::domain::descriptions::AxisDescription> axis, std::shared_ptr<ablate::mathFunctions::MathFunction> radiusFunction, PetscInt numberWedges,
-                 PetscInt numberShells);
+    Axisymmetric(std::shared_ptr<ablate::domain::descriptions::AxisDescription> axis, std::shared_ptr<ablate::mathFunctions::MathFunction> radiusFunction, PetscInt numberWedges, PetscInt numberShells,
+                 std::shared_ptr<ablate::mathFunctions::MathFunction> boundaryFunction);
 
     /**
      * The overall assumed dimension of the mesh
