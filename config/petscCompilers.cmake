@@ -46,6 +46,22 @@ if (NOT DEFINED CMAKE_CXX_COMPILER)
     message(STATUS "Using found PETSc c++ Compiler/Flags: ${PETSC_CXX_COMPILER} ${PETSC_FLAGS_OUT}\n")
 endif ()
 
+
+# Check if a Fortran compiler is explicitly stated
+if (NOT DEFINED CMAKE_Fortran_COMPILER)
+    # Set the compilers based upon the PETSc package
+    pkg_get_variable(PETSC_Fortran_COMPILER PETSc fcompiler)
+    set(CMAKE_Fortran_COMPILER ${PETSC_Fortran_COMPILER})
+
+    pkg_get_variable(PETSC_Fortran_FLAGS PETSc fflags_extra)
+    configure_flags("${PETSC_Fortran_FLAGS}" PETSC_FLAGS_OUT)
+
+    set(CMAKE_Fortran_FLAGS_INIT ${PETSC_FLAGS_OUT})
+
+    message(STATUS "Using found PETSc Fortran Compiler/Flags: ${CMAKE_Fortran_COMPILER} ${PETSC_FLAGS_OUT}\n")
+endif ()
+
+
 # Check if a CUDA compiler is explicitly stated
 if (NOT DEFINED CMAKE_CUDA_COMPILER)
     # Set the compilers based upon the PETSc package
