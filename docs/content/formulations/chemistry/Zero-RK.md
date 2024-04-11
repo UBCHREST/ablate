@@ -41,12 +41,15 @@ Examples of specifying zerorkEOS with different default options and possible opt
           verbose: 0 # [0 or 1 or 2 or 3 or 4]
           gpu: 0 # [0 or 1]
           itterative: 0 # [0 or 1]
-          useSeulex: 0 # [0 or 1]  default is CVODE     
+          useSeulex: 0 # [0 or 1]  default is CVODE    
+          maxiterations: 5000 # same as zerork
+          errorhandle: 0 # 0 continues simulation without sources for bad cells, 1 tightens tolerance
           
           # boolean options:
           sparseJacobian: false #default is dense
           timingLog: false
-
+          dumpreactor: false # failing reactor state dump into file
+          
           # Reactor types:
           reactorType: ConstantVolume # [ConstantPressure or ConstantVolume]
 

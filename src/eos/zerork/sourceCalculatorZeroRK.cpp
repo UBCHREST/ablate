@@ -1,10 +1,10 @@
 #include "sourceCalculatorZeroRK.hpp"
+#include <math.h>
 #include <algorithm>
 #include "eos/zerork.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/mpiUtilities.hpp"
 #include "utilities/stringUtilities.hpp"
-#include <math.h>
 
 void ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints::Set(const std::shared_ptr<ablate::parameters::Parameters>& options) {
     if (options) {
@@ -14,18 +14,15 @@ void ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints::Set(const s
         relTolerance = options->Get("relTolerance", relTolerance);
         absTolerance = options->Get("absTolerance", absTolerance);
         thresholdTemperature = options->Get("thresholdTemperature", thresholdTemperature);
-        stepLimiter = options->Get("stepLimiter", stepLimiter);
+        stepLimiter = options->Get("steplimiter", stepLimiter);
         loadBalance = options->Get("loadBalance", loadBalance);
         useSEULEX = options->Get("useSEULEX", useSEULEX);
         iterative = options->Get("iterative", iterative);
         gpu = options->Get("gpu", gpu);
         maxiteration = options->Get("maxiteration", maxiteration);
         reactorType = options->Get("reactorType", ReactorType::ConstantVolume);
-        errorhandle = options->Get("errorhandle",errorhandle);
-
-#ifdef USE_MPI
-    haveMPI=true;
-#endif
+        errorhandle = options->Get("errorhandle", errorhandle);
+        dumpreactor = options->Get("dumpreactor", dumpreactor);
     }
 }
 
@@ -112,8 +109,10 @@ ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<dom
     zerork_status_t status_maxsteps = zerork_reactor_set_int_option("max_steps", 10, zrm_handle);
     if (status_maxsteps != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
-//    zerork_status_t dump = zerork_reactor_set_int_option("dump_reactors", 1, zrm_handle);
-//    if (dump != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+    if (chemistryConstraints.dumpreactor) {
+        zerork_status_t dump = zerork_reactor_set_int_option("dump_reactors", 1, zrm_handle);
+        if (dump != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+    }
 
     zerork_status_t status_mech = zerork_reactor_load_mechanism(zrm_handle);  // make sure this call is after gpu setup
     if (status_mech != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
@@ -121,9 +120,6 @@ ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<dom
     if (zerork_error_state != 0) {
         throw std::invalid_argument("ablate::eos::zerork couldnt initialize, something is wrong...");
     }
-
-
-
 }
 
 void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domain::Range& cellRange, PetscReal time, PetscReal dt, Vec globFlowVec) {
@@ -225,172 +221,102 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
         }
     }
 
-    if(chemistryConstraints.haveMPI){
-        std::cout << "STUFF    STUFF";
-    }
-
-    bool calcSourceterms=false;
-
-
-    // mass fraction before the reactor
+    // save Yi for source terms
     std::vector<double> ys = reactorMassFracEval;
 
-    if (chemistryConstraints.errorhandle==0) {
-        // This case try to integrate if it fails, throw an error.
-        try {
-            auto nReactorsEval = std::reduce(reactorEval.begin(), reactorEval.end());
-            zerork_status_t flag = ZERORK_STATUS_SUCCESS;
-            flag = zerork_reactor_solve(1, time, dt, nReactorsEval, &reactorTEval[0], &reactorPEval[0], &reactorMassFracEval[0], zrm_handle);
+    // Solve for all the reactors, this calls zerork_cfd_plugin.cpp, zerork_reactor_manager.cpp
+    auto nReactorsEval = std::reduce(reactorEval.begin(), reactorEval.end());
+    zerork_status_t flag = ZERORK_STATUS_SUCCESS;
+    flag = zerork_reactor_solve(1, time, dt, nReactorsEval, &reactorTEval[0], &reactorPEval[0], &reactorMassFracEval[0], zrm_handle);
 
-            if (flag != ZERORK_STATUS_SUCCESS) {
-                throw std::runtime_error("ablate::eos::zerorkEOS::Computesource zerork couldn't integrate the chemistry, considertightening the tolerances or restart with errorhandle: 2.");
-            }
-        }catch(const runtime_error& e){
-            exit(1);
-        }
-
-    }else if(chemistryConstraints.errorhandle==1){
-        //In this case try to integrate and if it fails create 0 source terms
-
-        auto nReactorsEval = std::reduce(reactorEval.begin(), reactorEval.end());
-        zerork_status_t flag = ZERORK_STATUS_SUCCESS;
-        flag = zerork_reactor_solve(1, time, dt, nReactorsEval, &reactorTEval[0], &reactorPEval[0], &reactorMassFracEval[0], zrm_handle);
-
-        if (flag != ZERORK_STATUS_SUCCESS) {
-            std::cout << "Integration failed 0 source terms are used for rank "<< rank << "\n";
-        }
-        else{
-            std::cout << "Integration successful for rank "<< rank << "\n";
-        }
-
-    }else if(chemistryConstraints.errorhandle==2){
-        //In this case try to integrate and if you fail reduce the tolerances and integrate again on all ranks...
-        calcSourceterms=true;
-
-        //back up the state
-        std::vector<double> Tbackup=reactorTEval;
-        std::vector<double> Pbackup=reactorPEval;
-        std::vector<double> Ybackup=reactorMassFracEval;
-
-        // Solve the reactors
-        auto nReactorsEval = std::reduce(reactorEval.begin(), reactorEval.end());
-        zerork_status_t flag = ZERORK_STATUS_SUCCESS;
-        flag = zerork_reactor_solve(1, time, dt, nReactorsEval, &reactorTEval[0], &reactorPEval[0], &reactorMassFracEval[0], zrm_handle);
-
-        // Determine if it was successful everywhere
-        int nranks_ = 1;
-        MPI_Comm_size(MPI_COMM_WORLD,&(nranks_));
-        int zerorklocalout = 0;
-        std::vector<int> zerorkallout(nranks_,0);
-
-        if (flag != ZERORK_STATUS_SUCCESS) {
-            zerorklocalout = -1;
-        }
-
-        //We need to communicate to every rank to redo chemistry
-        MPI_Allgather(&zerorklocalout,1,MPI_INT,
-                      &zerorkallout[0],1,MPI_INT,MPI_COMM_WORLD);
-
-        auto min = std::min_element(zerorkallout.begin(), zerorkallout.end());
-        cout << "Minimum Element is:" << *min;
-        std::min_element(std::begin(zerorkallout), std::end(zerorkallout));
-
-        if (flag != ZERORK_STATUS_SUCCESS) {
-            std::stringstream warningMessage;
-            warningMessage << "Warning: Could not integrate chemistry on rank " << rank << "\n";
-            warningMessage << "Current time is: " << std::setprecision(16) << time << "\n";
-            warningMessage << "Requested timestep: " << std::setprecision(16) << dt << "\n";
-            std::cout << warningMessage.str() << std::endl;
-
+    if (flag != ZERORK_STATUS_SUCCESS) {
+        std::cout << "Integration failed 0 source terms are used for rank "
+                  << "\n";
+        if (chemistryConstraints.errorhandle == 0) {
+            std::cout << "The simulation continues with 0 chemical source for the failing cells."
+                      << "\n";
+        } else if (chemistryConstraints.errorhandle == 1) {
             int ii = 0;
-            // Retrying the step
-            while (flag != ZERORK_STATUS_SUCCESS) {
-                ++ii;
-                std::cout << "Tightening tolerances."
-                          << "\n";
-                zerork_reactor_set_double_option("abs_tol", chemistryConstraints.absTolerance * pow(0.01, ii), zrm_handle);
-                zerork_reactor_set_double_option("rel_tol", chemistryConstraints.relTolerance * pow(0.5, ii), zrm_handle);
-                flag = zerork_reactor_solve(2, time, dt, nReactorsEval, &Tbackup[0], &Pbackup[0], &Ybackup[0], zrm_handle);
-                // If tigethening the
-                if (ii == 5) {
-                    break;
+            // For now try to manually decrease the tolerances and recalculate every rank!
+            // Zerork in the future will have the ability to reintegrate only the failed ranks
+            try {
+                while (flag != ZERORK_STATUS_SUCCESS) {
+                    ++ii;
+                    std::cout << "Tightening tolerances."
+                              << "\n";
+                    zerork_reactor_set_double_option("abs_tol", chemistryConstraints.absTolerance * pow(0.01, ii), zrm_handle);
+                    flag = zerork_reactor_solve(2, time, dt, nReactorsEval, &reactorTEval[0], &reactorPEval[0], &reactorMassFracEval[0], zrm_handle);
+                    // If tigethening the
+                    if (ii == 5) {
+                        break;
+                    }
+                    if (flag != ZERORK_STATUS_SUCCESS) {
+                        std::cout << "Warning: Could not integrate chemistry after reducing the tolerances multiple times."
+                                  << "\n";
+                        std::cout << "Consider reducing the timestep or using steplimiter option "
+                                  << "\n";
+                        throw std::runtime_error("ablate::eos::zerorkEOS::Computesource zerork couldn't integrate the simulation.");
+                    }
                 }
+            } catch (const runtime_error& e) {
+                exit(1);
             }
-            if (flag != ZERORK_STATUS_SUCCESS) {
-                std::cout << "Warning: Could not integrate chemistry after reducing the tolerances multiple times."
-                          << "\n";
-                std::cout << "Consider reducing the timestep and using steplimiter option "
-                          << "\n";
-                throw std::runtime_error("ablate::eos::zerorkEOS::Computesource zerork couldn't integrate the simulation.");
-            }
-
-            // reset original tolerances
-            zerork_reactor_set_double_option("abs_tol", chemistryConstraints.absTolerance, zrm_handle);
-            zerork_reactor_set_double_option("rel_tol", chemistryConstraints.relTolerance, zrm_handle);
-
-            // Set the reactors to the new values
-            reactorTEval = Tbackup;
-            reactorPEval = Pbackup;
-            reactorMassFracEval = Ybackup;
         }
     }
 
-
-
-    std::cout << "start calculating sourceterms "<< rank << "\n";
     // Set all the sources to 0
     sourceZeroRKAtI.assign(nState * nReactors, 0);
-    if (calcSourceterms) {
-        for (int s = 0; s < nSpc - 1; s++) {
-            std::vector<double> tempvec(nSpc, 0.);
-            tempvec[s] = 1;
-            enthalpyOfFormation[s] = eos->mech->getMassEnthalpyFromTY(298.15, &tempvec[0]);
-        }
 
-        //    // Recompute density for constant pressure reactors
-        //    // Should be done but doesn't work with current coupling
-        //    if(chemistryConstraints.reactorType==ReactorType::ConstantPressure){
-        //        int q=0;
-        //        for (int i=0;i<nReactors;i++){
-        //            if (reactorEval[i]==1){
-        //                density2[i]=eos->mech->getDensityFromTPY(reactorTEval[q], reactorPEval[q],&reactorMassFracEval[q]);
-        //                q+=1;
-        //            }
-        //        }
-        //    }
+    for (int s = 0; s < nSpc - 1; s++) {
+        std::vector<double> tempvec(nSpc, 0.);
+        tempvec[s] = 1;
+        enthalpyOfFormation[s] = eos->mech->getMassEnthalpyFromTY(298.15, &tempvec[0]);
+    }
 
-        int q = 0;
-        for (int i = 0; i < nReactors; ++i) {
-            if (reactorEval[i] != 1) {
-                for (int j = 0; j < nState; ++j) {
-                    // Set sourceterms to 0 if the reactor was evaluated
-                    sourceZeroRKAtI[i * nState + j] = 0;
-                }
-                q += 1;
-            } else {
-                for (int s = 0; s < nSpc; s++) {
-                    sourceZeroRKAtI[i * nState] += (ys[(i - q) * nSpc + s] - reactorMassFracEval[(i - q) * nSpc + s]) * enthalpyOfFormation[s];
-                }
+    // Here we should recompute density for constant pressure reactors for tighter coupling
+    // however this can get to unexpected non-physical results.
+    // Think about using source terms for density for different coupling...
+    //    if(chemistryConstraints.reactorType==ReactorType::ConstantPressure){
+    //        int q=0;
+    //        for (int i=0;i<nReactors;i++){
+    //            if (reactorEval[i]==1){
+    //                density2[i]=eos->mech->getDensityFromTPY(reactorTEval[q], reactorPEval[q],&reactorMassFracEval[q]);
+    //                q+=1;
+    //            }
+    //        }
+    //    }
 
-                for (int s = 0; s < nSpc; ++s) {
-                    // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-                    sourceZeroRKAtI[i * nState + s + 1] = reactorMassFracEval[(i - q) * nSpc + s] - ys[(i - q) * nSpc + s];
-                }
+    int q = 0;
+    for (int i = 0; i < nReactors; ++i) {
+        if (reactorEval[i] != 1) {
+            for (int j = 0; j < nState; ++j) {
+                // Set sourceterms to 0 if the reactor was evaluated
+                sourceZeroRKAtI[i * nState + j] = 0;
+            }
+            q += 1;
+        } else {
+            for (int s = 0; s < nSpc; s++) {
+                sourceZeroRKAtI[i * nState] += (ys[(i - q) * nSpc + s] - reactorMassFracEval[(i - q) * nSpc + s]) * enthalpyOfFormation[s];
+            }
 
-                // Now scale everything by density/dt
-                for (int j = 0; j < nState; ++j) {
-                    // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-                    sourceZeroRKAtI[i * nState + j] *= density2[i] / dt;
-                }
+            for (int s = 0; s < nSpc; ++s) {
+                // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
+                sourceZeroRKAtI[i * nState + s + 1] = reactorMassFracEval[(i - q) * nSpc + s] - ys[(i - q) * nSpc + s];
+            }
+
+            // Now scale everything by density/dt
+            for (int j = 0; j < nState; ++j) {
+                // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
+                sourceZeroRKAtI[i * nState + j] *= density2[i] / dt;
             }
         }
     }
     EndEvent();
-    std::cout << "finish calculating sourceterms "<< rank << "\n";
 }
 void ablate::eos::zerorkeos::SourceCalculator::AddSource(const ablate::domain::Range& cellRange, Vec, Vec locFVec) {
     StartEvent("zerorkEOS::SourceCalculator::AddSource");
-    std::cout << "start adding sourceterms " << "\n";
+    std::cout << "start adding sourceterms "
+              << "\n";
     // get access to the fArray
     PetscScalar* fArray;
     VecGetArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;

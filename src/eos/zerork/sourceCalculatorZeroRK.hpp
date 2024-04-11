@@ -44,8 +44,8 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
         // load balancing
         int gpu = 0;
 
-        // CVODE balancing
-        int maxiteration = 10000;
+        // max iterations for cvode
+        int maxiteration = 5000;
 
         // iterative solution for approximate jacobian recommended to be set to 0 whenever dense is selected
         int iterative = 0;
@@ -61,6 +61,10 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
 
         // store an optional threshold temperature.  Only compute the reactions if the temperature is above thresholdTemperature
         double thresholdTemperature = 0.0;
+
+        int errorhandle = 0;
+
+        bool dumpreactor = false;
 
         void Set(const std::shared_ptr<ablate::parameters::Parameters>&);
     };
