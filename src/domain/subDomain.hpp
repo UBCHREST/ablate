@@ -6,7 +6,9 @@
 #include <mathFunctions/fieldFunction.hpp>
 #include <memory>
 #include <string>
+#include "constFieldAccessor.hpp"
 #include "domain.hpp"
+#include "fieldAccessor.hpp"
 #include "fieldDescription.hpp"
 #include "io/serializable.hpp"
 #include "range.hpp"
@@ -196,6 +198,82 @@ class SubDomain : public io::Serializable {
     }
 
     /**
+     * Returns the accessor for the specified solution field by name
+     * @param field
+     * @return
+     */
+    [[nodiscard]] inline auto GetSolutionAccessor(const Field& field) const {
+        if (field.location != FieldLocation::SOL) {
+            throw std::invalid_argument("ablate::domain::SubDomain::GetSolutionAccessor requires a Solution Field");
+        }
+        return FieldAccessor<PetscScalar, false>(GetSolutionVector(), field, GetDM());
+    }
+
+    /**
+     * Returns the accessor for the specified solution field by name
+     * @param field
+     * @return
+     */
+    [[nodiscard]] inline auto GetConstSolutionAccessor(const Field& field) const {
+        if (field.location != FieldLocation::SOL) {
+            throw std::invalid_argument("ablate::domain::SubDomain::GetSolutionAccessor requires a Solution Field");
+        }
+        return ConstFieldAccessor<PetscScalar, false>(GetSolutionVector(), field, GetDM());
+    }
+
+    /**
+     * Returns the accessor for the specified aux field
+     * @param field
+     * @return
+     */
+    [[nodiscard]] inline auto GetAuxAccessor(const Field& field) const {
+        if (field.location != FieldLocation::AUX) {
+            throw std::invalid_argument("ablate::domain::SubDomain::GetSolutionAccessor requires a Aux Field");
+        }
+        return FieldAccessor<PetscScalar>(GetAuxVector(), field, GetAuxDM());
+    }
+
+    /**
+     * Returns the accessor for the specified aux field
+     * @param field
+     * @return
+     */
+    [[nodiscard]] inline auto GetConstAuxAccessor(const Field& field) const {
+        if (field.location != FieldLocation::AUX) {
+            throw std::invalid_argument("ablate::domain::SubDomain::GetSolutionAccessor requires a Aux Field");
+        }
+        return ConstFieldAccessor<PetscScalar>(GetAuxVector(), field, GetAuxDM());
+    }
+
+    /**
+     * Returns the accessor for the specified solution field
+     * @param field
+     * @return
+     */
+    [[nodiscard]] inline auto GetSolutionAccessor(const std::string& fieldName) const { return GetSolutionAccessor(GetField(fieldName)); }
+
+    /**
+     * Returns the accessor for the specified solution field
+     * @param field
+     * @return
+     */
+    [[nodiscard]] inline auto GetConstSolutionAccessor(const std::string& fieldName) const { return GetConstSolutionAccessor(GetField(fieldName)); }
+
+    /**
+     * Returns the accessor for the specified aux field
+     * @param field
+     * @return
+     */
+    [[nodiscard]] inline auto GetAuxAccessor(const std::string& fieldName) { return GetAuxAccessor(GetField(fieldName)); }
+
+    /**
+     * Returns the accessor for the specified aux field
+     * @param field
+     * @return
+     */
+    [[nodiscard]] inline auto GetConstAuxAccessor(const std::string& fieldName) { return GetAuxAccessor(GetField(fieldName)); }
+
+    /**
      * Determine if the field is available as either a sol or aux field
      * @param fieldName
      * @return
@@ -206,14 +284,14 @@ class SubDomain : public io::Serializable {
      * Determine if the provided region lives inside of subdomain region
      * @return
      */
-    bool InRegion(const domain::Region&) const;
+    [[nodiscard]] bool InRegion(const domain::Region&) const;
 
     /**
      * determines if this point is in this region as defined by the label and labelID
      * @param point
      * @return
      */
-    inline bool InRegion(PetscInt point) const {
+    [[nodiscard]] inline bool InRegion(PetscInt point) const {
         if (!label) {
             return true;
         }
@@ -257,7 +335,7 @@ class SubDomain : public io::Serializable {
      * Returns raw access to the global dm
      * @return
      */
-    inline DM& GetDM() const noexcept { return domain.GetDM(); }
+    [[nodiscard]] inline DM& GetDM() const noexcept { return domain.GetDM(); }
 
     /**
      * Returns the dm describing the aux fields living in this subdomain.  The dm is defined across
@@ -413,21 +491,21 @@ class SubDomain : public io::Serializable {
      * @param depth
      * @param range
      */
-    void GetRange(const std::shared_ptr<ablate::domain::Region> region, PetscInt depth, ablate::domain::Range& range) const { ablate::domain::GetRange(this->GetDM(), region, depth, range); }
+    void GetRange(const std::shared_ptr<ablate::domain::Region>& region, PetscInt depth, ablate::domain::Range& range) const { ablate::domain::GetRange(this->GetDM(), region, depth, range); }
 
     /**
      * Return the range of cells in the subDomain and region.
      * @param region
      * @param cellRange
      */
-    void GetCellRange(const std::shared_ptr<ablate::domain::Region> region, ablate::domain::Range& cellRange) const { ablate::domain::GetCellRange(this->GetDM(), region, cellRange); }
+    void GetCellRange(const std::shared_ptr<ablate::domain::Region>& region, ablate::domain::Range& cellRange) const { ablate::domain::GetCellRange(this->GetDM(), region, cellRange); }
 
     /**
      * Return the range of faces/edges in the subDomain and region.
      * @param region
      * @param cellRange
      */
-    void GetFaceRange(const std::shared_ptr<ablate::domain::Region> region, ablate::domain::Range& faceRange) const { ablate::domain::GetFaceRange(this->GetDM(), region, faceRange); }
+    void GetFaceRange(const std::shared_ptr<ablate::domain::Region>& region, ablate::domain::Range& faceRange) const { ablate::domain::GetFaceRange(this->GetDM(), region, faceRange); }
 
     /**
      * Restore the range of cells in the subDomain and region.

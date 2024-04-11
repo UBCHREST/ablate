@@ -21,4 +21,4 @@ class Process {
 
 }  // namespace ablate::particles::processes
 
-#endif  // ABLATELIBRARY_PROCESS_HPP
+#endif  // ABLATELIBRARY_PARTICLE_PROCESS_HPP

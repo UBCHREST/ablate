@@ -1,8 +1,11 @@
 #include "onePointClusteringMapper.hpp"
+
+#include <utility>
 #include "mathFunctions/functionFactory.hpp"
 
-ablate::domain::modifiers::OnePointClusteringMapper::OnePointClusteringMapper(int direction, double startIn, double end, double beta, double locationIn)
-    : ablate::domain::modifiers::MeshMapper(mathFunctions::Create(MappingFunction, this)),
+ablate::domain::modifiers::OnePointClusteringMapper::OnePointClusteringMapper(int direction, double startIn, double end, double beta, double locationIn,
+                                                                              std::shared_ptr<ablate::domain::Region> mappingRegion)
+    : ablate::domain::modifiers::MeshMapper(mathFunctions::Create(MappingFunction, this), std::move(mappingRegion)),
       direction(direction),
       start(startIn),
       size(PetscAbsReal(end - startIn)),
@@ -48,4 +51,5 @@ REGISTER(
     "Forth Edition\" Engineering education system (2000). $$x'=D \\left [ 1+\\frac{sinh[\\beta(x-A))]}{sinh(\\beta A)} \\right ]$$ where $$ A=\\frac{1}{2 \\beta}ln \\left [  \\frac{1+(e^\\beta - "
     "1)(D/H)}{1+(e^{-\\beta} - 1)(D/H)} \\right ] $$, $$ D = $$cluster location, and  $$\\beta = $$ cluster factor",
     ARG(int, "direction", "The direction (0, 1, 2) to perform the mapping"), ARG(double, "start", "The start of the domain in direction"), ARG(double, "end", "The end of the domain in direction"),
-    ARG(double, "beta", "The clustering factor (0 -> infinity, where infinity is more clustering)"), ARG(double, "location", "The location to perform the clustering in direction"));
+    ARG(double, "beta", "The clustering factor (0 -> infinity, where infinity is more clustering)"), ARG(double, "location", "The location to perform the clustering in direction"),
+    OPT(ablate::domain::Region, "region", "optional region to apply this mapper (Default is everywhere)"));

@@ -40,14 +40,15 @@ class OnePointClusteringMapper : public MeshMapper {
      * @param end The end of the domain in direction
      * @param beta The clustering factor
      * @param location The location to perform the clustering in direction
+     * @param mappingRegion optional region to apply this mapper.  Default is everywhere
      */
-    explicit OnePointClusteringMapper(int direction, double start, double end, double beta, double location);
+    explicit OnePointClusteringMapper(int direction, double start, double end, double beta, double location, std::shared_ptr<ablate::domain::Region> mappingRegion = {});
 
     /**
      * Provide name of modifier for debug/output
      * @return
      */
-    std::string ToString() const override;
+    [[nodiscard]] std::string ToString() const override;
 
    private:
     static PetscErrorCode MappingFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);

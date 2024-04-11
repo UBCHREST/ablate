@@ -1,9 +1,12 @@
 #include "twoPointClusteringMapper.hpp"
+
+#include <utility>
 #include "mathFunctions/functionFactory.hpp"
 #include "utilities/constants.hpp"
 
-ablate::domain::modifiers::TwoPointClusteringMapper::TwoPointClusteringMapper(int direction, double startIn, double end, double beta, double locationIn, double offset)
-    : ablate::domain::modifiers::MeshMapper(mathFunctions::Create(MappingFunction, this)),
+ablate::domain::modifiers::TwoPointClusteringMapper::TwoPointClusteringMapper(int direction, double startIn, double end, double beta, double locationIn, double offset,
+                                                                              std::shared_ptr<ablate::domain::Region> mappingRegion)
+    : ablate::domain::modifiers::MeshMapper(mathFunctions::Create(MappingFunction, this), std::move(mappingRegion)),
       direction(direction),
       start(startIn),
       size(PetscAbsReal(end - startIn)),
@@ -58,4 +61,5 @@ REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::TwoPoin
          "Forth Edition\" Engineering education system (2000).",
          ARG(int, "direction", "The direction (0, 1, 2) to perform the mapping"), ARG(double, "start", "The start of the domain in direction"),
          ARG(double, "end", "The end of the domain in direction"), ARG(double, "beta", "The clustering factor (0 -> infinity, where infinity is more clustering)"),
-         ARG(double, "location", "The location to cluster center"), ARG(double, "offset", "The offset from the location center to perform the clustering"));
+         ARG(double, "location", "The location to cluster center"), ARG(double, "offset", "The offset from the location center to perform the clustering"),
+         OPT(ablate::domain::Region, "region", "optional region to apply this mapper (Default is everywhere)"));

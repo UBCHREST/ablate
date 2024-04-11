@@ -283,16 +283,8 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::DiffusionEVFluxVari
 
 void ablate::finiteVolume::processes::EVTransport::BoundExtraVariables(TS ts, ablate::solver::Solver &solver, const std::string &field) {
     // Get the density and densityYi field info
-    const auto &eulerFieldInfo = solver.GetSubDomain().GetField(CompressibleFlowFields::EULER_FIELD);
-    const auto &densityEvFieldInfo = solver.GetSubDomain().GetField(field);
-
-    // Get the solution vec and dm
-    auto dm = solver.GetSubDomain().GetDM();
-    auto solVec = solver.GetSubDomain().GetSolutionVector();
-
-    // Get the array vector
-    PetscScalar *solutionArray;
-    VecGetArray(solVec, &solutionArray) >> utilities::PetscUtilities::checkError;
+    auto eulerAccessor = solver.GetSubDomain().GetConstSolutionAccessor(CompressibleFlowFields::EULER_FIELD);
+    auto densityEvAccessor = solver.GetSubDomain().GetSolutionAccessor(field);
 
     // March over each cell in this domain
     ablate::domain::Range cellRange;
@@ -302,17 +294,14 @@ void ablate::finiteVolume::processes::EVTransport::BoundExtraVariables(TS ts, ab
         PetscInt cell = cellRange.GetPoint(c);
 
         // Get the euler and density field
-        const PetscScalar *euler = nullptr;
-        DMPlexPointGlobalFieldRead(dm, cell, eulerFieldInfo.id, solutionArray, &euler) >> utilities::PetscUtilities::checkError;
-        PetscScalar *densityEv;
-        DMPlexPointGlobalFieldRef(dm, cell, densityEvFieldInfo.id, solutionArray, &densityEv) >> utilities::PetscUtilities::checkError;
-
+        auto euler = eulerAccessor[cell];
+        auto densityEv = densityEvAccessor[cell];
         // Only update if in the global vector
         if (euler) {
             // Get density
             const PetscScalar density = euler[CompressibleFlowFields::RHO];
 
-            for (PetscInt sp = 0; sp < densityEvFieldInfo.numberComponents; sp++) {
+            for (PetscInt sp = 0; sp < densityEvAccessor.GetField().numberComponents; sp++) {
                 // Limit the bounds
                 PetscScalar ev = densityEv[sp] / density;
                 ev = PetscMax(0.0, ev);
@@ -324,22 +313,13 @@ void ablate::finiteVolume::processes::EVTransport::BoundExtraVariables(TS ts, ab
     }
 
     // cleanup
-    VecRestoreArray(solVec, &solutionArray) >> utilities::PetscUtilities::checkError;
     solver.RestoreRange(cellRange);
 }
 
 void ablate::finiteVolume::processes::EVTransport::BoundExtraVariablesMinusOneToOne(TS ts, ablate::solver::Solver &solver, const std::string &field) {
     // Get the density and densityYi field info
-    const auto &eulerFieldInfo = solver.GetSubDomain().GetField(CompressibleFlowFields::EULER_FIELD);
-    const auto &densityEvFieldInfo = solver.GetSubDomain().GetField(field);
-
-    // Get the solution vec and dm
-    auto dm = solver.GetSubDomain().GetDM();
-    auto solVec = solver.GetSubDomain().GetSolutionVector();
-
-    // Get the array vector
-    PetscScalar *solutionArray;
-    VecGetArray(solVec, &solutionArray) >> utilities::PetscUtilities::checkError;
+    auto eulerAccessor = solver.GetSubDomain().GetConstSolutionAccessor(CompressibleFlowFields::EULER_FIELD);
+    auto densityEvAccessor = solver.GetSubDomain().GetSolutionAccessor(field);
 
     // March over each cell in this domain
     ablate::domain::Range cellRange;
@@ -349,17 +329,15 @@ void ablate::finiteVolume::processes::EVTransport::BoundExtraVariablesMinusOneTo
         PetscInt cell = cellRange.GetPoint(c);
 
         // Get the euler and density field
-        const PetscScalar *euler = nullptr;
-        DMPlexPointGlobalFieldRead(dm, cell, eulerFieldInfo.id, solutionArray, &euler) >> utilities::PetscUtilities::checkError;
-        PetscScalar *densityEv;
-        DMPlexPointGlobalFieldRef(dm, cell, densityEvFieldInfo.id, solutionArray, &densityEv) >> utilities::PetscUtilities::checkError;
+        auto euler = eulerAccessor[cell];
+        auto densityEv = densityEvAccessor[cell];
 
         // Only update if in the global vector
         if (euler) {
             // Get density
             const PetscScalar density = euler[CompressibleFlowFields::RHO];
 
-            for (PetscInt sp = 0; sp < densityEvFieldInfo.numberComponents; sp++) {
+            for (PetscInt sp = 0; sp < densityEvAccessor.GetField().numberComponents; sp++) {
                 // Limit the bounds
                 PetscScalar ev = densityEv[sp] / density;
                 ev = PetscMax(-1.0, ev);
@@ -371,21 +349,12 @@ void ablate::finiteVolume::processes::EVTransport::BoundExtraVariablesMinusOneTo
     }
 
     // cleanup
-    VecRestoreArray(solVec, &solutionArray) >> utilities::PetscUtilities::checkError;
     solver.RestoreRange(cellRange);
 }
 
 void ablate::finiteVolume::processes::EVTransport::PositiveExtraVariables(TS ts, ablate::solver::Solver &solver, const std::string &field) {
     // Get the density and densityYi field info
-    const auto &densityEvFieldInfo = solver.GetSubDomain().GetField(field);
-
-    // Get the solution vec and dm
-    auto dm = solver.GetSubDomain().GetDM();
-    auto solVec = solver.GetSubDomain().GetSolutionVector();
-
-    // Get the array vector
-    PetscScalar *solutionArray;
-    VecGetArray(solVec, &solutionArray) >> utilities::PetscUtilities::checkError;
+    auto densityEvAccessor = solver.GetSubDomain().GetSolutionAccessor(field);
 
     // March over each cell in this domain
     ablate::domain::Range cellRange;
@@ -394,12 +363,10 @@ void ablate::finiteVolume::processes::EVTransport::PositiveExtraVariables(TS ts,
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
         PetscInt cell = cellRange.GetPoint(c);
 
-        PetscScalar *densityEv;
-        DMPlexPointGlobalFieldRef(dm, cell, densityEvFieldInfo.id, solutionArray, &densityEv) >> utilities::PetscUtilities::checkError;
-
+        auto densityEv = densityEvAccessor[cell];
         // Only update if in the global vector
         if (densityEv) {
-            for (PetscInt sp = 0; sp < densityEvFieldInfo.numberComponents; sp++) {
+            for (PetscInt sp = 0; sp < densityEvAccessor.GetField().numberComponents; sp++) {
                 // Limit the bounds
                 densityEv[sp] = PetscMax(0.0, densityEv[sp]);
             }
@@ -407,7 +374,6 @@ void ablate::finiteVolume::processes::EVTransport::PositiveExtraVariables(TS ts,
     }
 
     // cleanup
-    VecRestoreArray(solVec, &solutionArray) >> utilities::PetscUtilities::checkError;
     solver.RestoreRange(cellRange);
 }
 

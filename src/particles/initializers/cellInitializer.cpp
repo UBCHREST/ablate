@@ -4,7 +4,7 @@
 ablate::particles::initializers::CellInitializer::CellInitializer(int particlesPerCellPerDim) : particlesPerCell(particlesPerCellPerDim) {}
 
 void ablate::particles::initializers::CellInitializer::Initialize(ablate::domain::SubDomain &flow, DM particleDm) {
-    PetscInt particlesPerCellLocal = (PetscInt)this->particlesPerCell;
+    auto particlesPerCellLocal = (PetscInt)this->particlesPerCell;
 
     PetscInt cStart, cEnd;
     DMPlexGetHeightStratum(flow.GetDM(), 0, &cStart, &cEnd) >> utilities::PetscUtilities::checkError;
@@ -12,7 +12,7 @@ void ablate::particles::initializers::CellInitializer::Initialize(ablate::domain
 
     // set the cell ids
     PetscInt *cellid;
-    DMSwarmGetField(particleDm, DMSwarmPICField_cellid, NULL, NULL, (void **)&cellid) >> utilities::PetscUtilities::checkError;
+    DMSwarmGetField(particleDm, DMSwarmPICField_cellid, nullptr, nullptr, (void **)&cellid) >> utilities::PetscUtilities::checkError;
     for (PetscInt c = cStart; c < cEnd; ++c) {
         for (PetscInt p = 0; p < particlesPerCellLocal; ++p) {
             const PetscInt n = c * particlesPerCellLocal + p;
@@ -20,7 +20,7 @@ void ablate::particles::initializers::CellInitializer::Initialize(ablate::domain
         }
     }
 
-    DMSwarmRestoreField(particleDm, DMSwarmPICField_cellid, NULL, NULL, (void **)&cellid) >> utilities::PetscUtilities::checkError;
+    DMSwarmRestoreField(particleDm, DMSwarmPICField_cellid, nullptr, nullptr, (void **)&cellid) >> utilities::PetscUtilities::checkError;
     DMSwarmSetPointCoordinatesRandom(particleDm, particlesPerCellLocal) >> utilities::PetscUtilities::checkError;
 }
 

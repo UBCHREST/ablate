@@ -4,6 +4,7 @@
 #include <array>
 #include <memory>
 #include <vector>
+#include "axisDescription.hpp"
 #include "mathFunctions/mathFunction.hpp"
 #include "meshDescription.hpp"
 
@@ -14,9 +15,8 @@ namespace ablate::domain::descriptions {
  */
 class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
    private:
-    //! Store the start and end location of the mesh
-    const std::array<PetscReal, 3> startLocation;
-    const PetscReal length;  // this is in z
+    //! Store the start, end, and nodes in the axis of the mesh
+    const std::shared_ptr<ablate::domain::descriptions::AxisDescription> axisDescription;
 
     //! function used to describe a single return value (radius) as a functino of z
     const std::shared_ptr<ablate::mathFunctions::MathFunction> radiusFunction;
@@ -54,6 +54,9 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
     //! store the number of tri prism cells to simplify the logic
     const PetscInt numberTriPrismCells;
 
+    //! function used to describe a different boundary regions on the outer shell boundary
+    const std::shared_ptr<ablate::mathFunctions::MathFunction> boundaryFunction;
+
     //! precompute the region identifier for the boundary
     const static inline std::shared_ptr<ablate::domain::Region> shellBoundary = std::make_shared<ablate::domain::Region>("outerShell");
     const static inline std::shared_ptr<ablate::domain::Region> lowerCapBoundary = std::make_shared<ablate::domain::Region>("lowerCap");
@@ -64,20 +67,18 @@ class Axisymmetric : public ablate::domain::descriptions::MeshDescription {
      * @param in
      * @return
      */
-    inline PetscInt CellReverser(PetscInt in) const { return numberCells - in - 1; }
+    [[nodiscard]] inline PetscInt CellReverser(PetscInt in) const { return numberCells - in - 1; }
 
    public:
     /**
      * generate and precompute a bunch of the required parameters
-     * @param startLocation the start coordinate of the mesh, must be 3D
-     * @param length the length of the domain starting at the start coordinate
+     * @param axis describes the mesh along the z axis, must be 3D
      * @param radiusFunction a radius function that describes the radius as a function of z
      * @param numberWedges wedges/pie slices in the circle
-     * @param numberSlices slicing of the cylinder along the z axis
      * @param numberShells slicing of the cylinder along the radius
      */
-    Axisymmetric(const std::vector<PetscReal>& startLocation, PetscReal length, std::shared_ptr<ablate::mathFunctions::MathFunction> radiusFunction, PetscInt numberWedges, PetscInt numberSlices,
-                 PetscInt numberShells);
+    Axisymmetric(std::shared_ptr<ablate::domain::descriptions::AxisDescription> axis, std::shared_ptr<ablate::mathFunctions::MathFunction> radiusFunction, PetscInt numberWedges, PetscInt numberShells,
+                 std::shared_ptr<ablate::mathFunctions::MathFunction> boundaryFunction);
 
     /**
      * The overall assumed dimension of the mesh

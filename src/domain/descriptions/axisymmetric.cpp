@@ -3,13 +3,12 @@
 #include <utility>
 #include "utilities/vectorUtilities.hpp"
 
-ablate::domain::descriptions::Axisymmetric::Axisymmetric(const std::vector<PetscReal> &startLocation, PetscReal length, std::shared_ptr<ablate::mathFunctions::MathFunction> radiusFunction,
-                                                         PetscInt numberWedges, PetscInt numberSlices, PetscInt numberShells)
-    : startLocation(utilities::VectorUtilities::ToArray<PetscReal, 3>(startLocation)),
-      length(length),
+ablate::domain::descriptions::Axisymmetric::Axisymmetric(std::shared_ptr<ablate::domain::descriptions::AxisDescription> axis, std::shared_ptr<ablate::mathFunctions::MathFunction> radiusFunction,
+                                                         PetscInt numberWedges, PetscInt numberShells, std::shared_ptr<ablate::mathFunctions::MathFunction> boundaryFunction)
+    : axisDescription(std::move(axis)),
       radiusFunction(std::move(radiusFunction)),
       numberWedges(numberWedges),
-      numberSlices(numberSlices),
+      numberSlices(axisDescription->GetNumberVertices() - 1),
       numberShells(numberShells),
       numberCellsPerSlice(numberWedges * numberShells),
       numberCellsPerShell(numberWedges * numberSlices),
@@ -17,7 +16,8 @@ ablate::domain::descriptions::Axisymmetric::Axisymmetric(const std::vector<Petsc
       numberCenterVertices(numberSlices + 1),
       numberCells(numberCellsPerSlice * numberSlices),
       numberVertices(numberVerticesPerShell * numberShells + numberCenterVertices),
-      numberTriPrismCells(numberWedges * numberSlices) {
+      numberTriPrismCells(numberWedges * numberSlices),
+      boundaryFunction(std::move(boundaryFunction)) {
     // make sure there are at least 4 wedges and one slice
     if (numberWedges < 3 || numberSlices < 1 || numberShells < 1) {
         throw std::invalid_argument("Axisymmetric requires at least 3 wedges, 1 slice, and 1 shell.");
@@ -84,11 +84,6 @@ void ablate::domain::descriptions::Axisymmetric::BuildTopology(PetscInt cell, Pe
     }
 }
 void ablate::domain::descriptions::Axisymmetric::SetCoordinate(PetscInt node, PetscReal *coordinate) const {
-    // start the coordinate at the start location
-    coordinate[0] = startLocation[0];
-    coordinate[1] = startLocation[1];
-    coordinate[2] = startLocation[2];
-
     // determine where this node is, there is a special case for the 0 node shell or center
     PetscInt nodeShell, nodeSlice, nodeRotationIndex;
     if (node < numberCenterVertices) {
@@ -101,10 +96,8 @@ void ablate::domain::descriptions::Axisymmetric::SetCoordinate(PetscInt node, Pe
         nodeRotationIndex = (node - numberCenterVertices) % numberWedges;
     }
 
-    // offset along z
-    auto delta = length / numberSlices;
-    auto offset = delta * nodeSlice;
-    coordinate[2] += offset;
+    // Get the coordinate along the axis.
+    axisDescription->SetCoordinate(nodeSlice, coordinate);
 
     // compute the maximum radius at this coordinate
     auto radius = radiusFunction->Eval(coordinate, 3, NAN);
@@ -128,7 +121,9 @@ std::shared_ptr<ablate::domain::Region> ablate::domain::descriptions::Axisymmetr
 
     // compute the outer shell start
     auto outerShellStart = numberCenterVertices + numberVerticesPerShell * (numberShells - 1);
-
+    // Coordinate used to track the z location
+    PetscReal coordinate[3] = {0.0, 0.0, 0.0};
+    PetscReal Zavg = 0.0;
     for (const auto &node : face) {
         // check if we are on the outer shell
         if (node < outerShellStart) {
@@ -149,11 +144,19 @@ std::shared_ptr<ablate::domain::Region> ablate::domain::descriptions::Axisymmetr
         if (nodeSlice != numberSlices) {
             onUpperEndCap = false;
         }
+        axisDescription->SetCoordinate(nodeSlice, coordinate);
+        Zavg += coordinate[2];
     }
-
     // determine what region to return
     if (onOuterShell) {
-        return shellBoundary;
+        if (!boundaryFunction) {
+            return shellBoundary;
+        } else {
+            Zavg /= face.size();
+            coordinate[2] = Zavg;
+            auto val = boundaryFunction->Eval(coordinate, 3, NAN);
+            return std::make_shared<ablate::domain::Region>("outerShell", int(val));
+        }
     } else if (onLowerEndCap) {
         return lowerCapBoundary;
     } else if (onUpperEndCap) {
@@ -165,6 +168,7 @@ std::shared_ptr<ablate::domain::Region> ablate::domain::descriptions::Axisymmetr
 
 #include "registrar.hpp"
 REGISTER(ablate::domain::descriptions::MeshDescription, ablate::domain::descriptions::Axisymmetric, "The Axisymmetric MeshDescription is used to create an axisymmetric mesh around the z axis",
-         ARG(std::vector<double>, "start", "the start coordinate of the mesh, must be 3D"), ARG(double, "length", "the length of the domain starting at the start coordinate"),
+         ARG(ablate::domain::descriptions::AxisDescription, "axis", "describes the nodes along the z axis"),
          ARG(ablate::mathFunctions::MathFunction, "radius", "a radius function that describes the radius as a function of z"), ARG(int, "numberWedges", "wedges/pie slices in the circle"),
-         ARG(int, "numberSlices", "slicing of the cylinder along the z axis"), ARG(int, "numberShells", "slicing of the cylinder along the radius"));
+         ARG(int, "numberShells", "slicing of the cylinder along the radius"),
+         OPT(ablate::mathFunctions::MathFunction, "outerBoundaryFunction", "Function to tag different outer shell boundary regions"));
