@@ -1,6 +1,6 @@
 
 # check to see if the ZERORK_DIR was specified, if not build
-if (NOT (DEFINED ENV{ZERORK_DIRz}))
+if (NOT (DEFINED ENV{ZERORK_DIR}))
     message(STATUS "ZERORK_DIR not set.  Downloading and building zerork...")
 
 
