@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.18.4)
 include(config/petscCompilers.cmake)
 
 # Set the project details
-project(ablateLibrary VERSION 0.12.24)
+project(ablateLibrary VERSION 0.12.31)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED IMPORTED_TARGET GLOBAL PETSc)
@@ -64,7 +64,7 @@ target_link_libraries(ablateLibrary
         Threads::Threads
         nlohmann_json::nlohmann_json
         ${HDF5_LIBRARIES}
-        zerork_cfd_plugin
+        ZERORK::zerork_cfd_plugin
         PRIVATE
         chrestCompilerFlags)
 
@@ -76,7 +76,12 @@ if (BLAS_FOUND)
             BLAS::BLAS)
 endif ()
 
+if($ENV{ABLATE_GPU} STREQUAL "ROCM")
+    target_link_directories(ablateLibrary
+            PUBLIC
+            $ENV{ROCM_PATH}/lib)
 
+endif ()
 # Set the ablate library requirements
 set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
 set_property(TARGET ablateLibrary PROPERTY CMAKE_CXX_STANDARD_REQUIRED ON)
