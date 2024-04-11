@@ -76,11 +76,13 @@ if (BLAS_FOUND)
             BLAS::BLAS)
 endif ()
 
-if($ENV{ABLATE_GPU} STREQUAL "ROCM")
-    target_link_directories(ablateLibrary
-            PUBLIC
-            $ENV{ROCM_PATH}/lib)
-
+#set ROCm libraries
+if(DEFINED ENV{ABLATE_GPU})
+    if($ENV{ABLATE_GPU} STREQUAL "ROCM")
+        target_link_directories(ablateLibrary
+                PUBLIC
+                $ENV{ROCM_PATH}/lib)
+    endif ()
 endif ()
 # Set the ablate library requirements
 set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
