@@ -10,7 +10,7 @@ if (NOT (DEFINED ENV{ZERORK_DIR}))
 
         FetchContent_Declare(zerork
             GIT_REPOSITORY https://github.com/LLNL/zero-rk.git
-            GIT_TAG 71befd3f6ff6f49a66e07b82659b88d2bc1beb8c  #git main branch for both cpu and CUDA
+            GIT_TAG 3cf4001ed06f05aa6c98b78230e253a89545ddda  #git main branch for both cpu and CUDA
             )
         FetchContent_MakeAvailable(zerork)
 
@@ -32,7 +32,7 @@ if (NOT (DEFINED ENV{ZERORK_DIR}))
 
         FetchContent_Declare(zerork
                 GIT_REPOSITORY https://github.com/LLNL/zero-rk.git
-                GIT_TAG 71befd3f6ff6f49a66e07b82659b88d2bc1beb8c  #git main branch for both cpu and CUDA
+                GIT_TAG e972680adbbcb8deb4cfbe8bea8832a8c4124c7c  #git main branch for both cpu and CUDA
         )
         FetchContent_MakeAvailable(zerork)
 
