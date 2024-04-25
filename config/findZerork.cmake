@@ -22,7 +22,11 @@ if (NOT (DEFINED ENV{ZERORK_DIR}))
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
             INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-            )
+    )
+
+
+        # exclude some of the zero rk builds by default that are not needed and causing issues on macOS
+        set_target_properties(zerork_flame_api zerork_flame_api_tester.x zerork_flame_api_mpi zerork_flame_api_tester_mpi.x premixed_steady_flame_solver.x premixed_steady_flame_solver_mpi.x PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
 
         add_library(ZERORK::zerork_cfd_plugin ALIAS zerork_cfd_plugin)
 
