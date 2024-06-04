@@ -315,8 +315,7 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
 }
 void ablate::eos::zerorkeos::SourceCalculator::AddSource(const ablate::domain::Range& cellRange, Vec, Vec locFVec) {
     StartEvent("zerorkEOS::SourceCalculator::AddSource");
-    std::cout << "start adding sourceterms "
-              << "\n";
+
     // get access to the fArray
     PetscScalar* fArray;
     VecGetArray(locFVec, &fArray) >> utilities::PetscUtilities::checkError;
