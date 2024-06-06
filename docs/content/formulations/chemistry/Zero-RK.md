@@ -34,7 +34,9 @@ Examples of specifying zerorkEOS with different default options and possible opt
           relTolerance: 1.0E-6
           absTolerance: 1.0E-10
           thresholdTemperature: 0 # use 560 for reduced PMMA mechanism
-          stepLimiter: 1.0E200          
+          stepLimiter: 1.0E200
+          cvode_retry_absolute_tolerance_adjustment: 0.1 # factor by which the tolerances are multiplied in case the reactor breaks
+          cvode_retry_relative_tolerance_adjustment: 0.1 # factor by which the tolerances are multiplied in case the reactor breaks
           
           # integer options
           loadBalance: 1 # [0 or 1 or 2] 1 is based on #of reactors 2 is based on time
@@ -42,8 +44,10 @@ Examples of specifying zerorkEOS with different default options and possible opt
           gpu: 0 # [0 or 1]
           itterative: 0 # [0 or 1]
           useSeulex: 0 # [0 or 1]  default is CVODE    
-          maxiterations: 5000 # same as zerork
+          max_steps: 10000 # maximum number of internal CVODE steps
           errorhandle: 0 # 0 continues simulation without sources for bad cells, 1 tightens tolerance
+          dumpfailed: 0; # 1 dumps the failing rectors
+          cvode_num_retries: 5; #how many times cvode tightens the tolerance in case the reactor fails
           
           # boolean options:
           sparseJacobian: false #default is dense

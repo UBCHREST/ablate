@@ -45,7 +45,19 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
         int gpu = 0;
 
         // max iterations for cvode
-        int maxiteration = 5000;
+        int dumpfailed = 0;
+
+        // max iterations for cvode
+        int maxiteration = 10000;
+
+        // max iterations for cvode
+        int cvode_num_retries = 5;
+
+        // max iterations for cvode
+        double cvode_retry_absolute_tolerance_adjustment = 0.1;
+
+        // max iterations for cvode
+        double cvode_retry_relative_tolerance_adjustment = 0.1;
 
         // iterative solution for approximate jacobian recommended to be set to 0 whenever dense is selected
         int iterative = 0;

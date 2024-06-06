@@ -19,10 +19,14 @@ void ablate::eos::zerorkeos::SourceCalculator::ChemistryConstraints::Set(const s
         useSEULEX = options->Get("useSEULEX", useSEULEX);
         iterative = options->Get("iterative", iterative);
         gpu = options->Get("gpu", gpu);
-        maxiteration = options->Get("maxiteration", maxiteration);
+        maxiteration = options->Get("max_steps", maxiteration);
         reactorType = options->Get("reactorType", ReactorType::ConstantVolume);
         errorhandle = options->Get("errorhandle", errorhandle);
         dumpreactor = options->Get("dumpreactor", dumpreactor);
+        dumpfailed = options->Get("dumpfailed", dumpfailed);
+        cvode_num_retries = options->Get("cvode_num_retries", cvode_num_retries);
+        cvode_retry_absolute_tolerance_adjustment = options->Get("cvode_retry_absolute_tolerance_adjustment", cvode_retry_absolute_tolerance_adjustment);
+        cvode_retry_relative_tolerance_adjustment = options->Get("cvode_retry_relative_tolerance_adjustment", cvode_retry_relative_tolerance_adjustment);
     }
 }
 
@@ -106,13 +110,25 @@ ablate::eos::zerorkeos::SourceCalculator::SourceCalculator(const std::vector<dom
     zerork_status_t status_iterative = zerork_reactor_set_int_option("iterative", chemistryConstraints.iterative, zrm_handle);
     if (status_iterative != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
-    zerork_status_t status_maxsteps = zerork_reactor_set_int_option("max_steps", 10, zrm_handle);
+    zerork_status_t status_maxsteps = zerork_reactor_set_int_option("max_steps", chemistryConstraints.maxiteration, zrm_handle);
     if (status_maxsteps != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+
+    zerork_status_t status_numerrors = zerork_reactor_set_int_option("cvode_num_retries", chemistryConstraints.cvode_num_retries, zrm_handle);
+    if (status_numerrors != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+
+    zerork_status_t status_abserroradjust = zerork_reactor_set_double_option("cvode_retry_absolute_tolerance_adjustment", chemistryConstraints.cvode_retry_absolute_tolerance_adjustment, zrm_handle);
+    if (status_abserroradjust != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
+
+    zerork_status_t status_relerroradjust = zerork_reactor_set_double_option("cvode_retry_relative_tolerance_adjustment", chemistryConstraints.cvode_retry_relative_tolerance_adjustment, zrm_handle);
+    if (status_relerroradjust != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
     if (chemistryConstraints.dumpreactor) {
         zerork_status_t dump = zerork_reactor_set_int_option("dump_reactors", 1, zrm_handle);
         if (dump != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
     }
+
+    zerork_status_t status_dumpfailedreactor = zerork_reactor_set_int_option("dump_failed_reactors", chemistryConstraints.dumpfailed, zrm_handle);
+    if (status_dumpfailedreactor != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
 
     zerork_status_t status_mech = zerork_reactor_load_mechanism(zrm_handle);  // make sure this call is after gpu setup
     if (status_mech != ZERORK_STATUS_SUCCESS) zerork_error_state += 1;
