@@ -1,0 +1,10 @@
+Timestep: 0000 time = (.*) dt = (.*)<expects> ~ <1E-5
+Timestep: 0010 time = (.*) dt = (.*)<expects> ~ <1E-5
+Timestep: 0020 time = (.*) dt = (.*)<expects> ~ <1E-5
+Timestep: 0030 time = (.*) dt = (.*)<expects> ~ <1E-5
+Timestep: 0040 time = (.*) dt = (.*)<expects> ~ <1E-5
+Timestep: 0050 time = (.*) dt = (.*)<expects> ~ <1E-5
+ResultFiles:
+flowField.0.curve
+flowField.25.curve
+flowField.50.curve

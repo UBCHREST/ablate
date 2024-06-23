@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.18.4)
 include(config/petscCompilers.cmake)
 
 # Set the project details
-project(ablateLibrary VERSION 0.12.30)
+project(ablateLibrary VERSION 0.12.31)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED IMPORTED_TARGET GLOBAL PETSc)
@@ -35,16 +35,17 @@ add_subdirectory(src)
 include(config/cmakeFunctions.cmake)
 include(config/findKokkos.cmake)
 include(config/findYamlCpp.cmake)
+include(config/findChrestCompilerFlags.cmake)
 include(config/findCppParser.cmake)
 include(config/findMuParser.cmake)
 include(config/findXdmfGenerator.cmake)
 include(config/findTChem.cmake)
+include(config/findZerork.cmake)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 include(config/findOpenCascade.cmake)
 include(config/findJson.cmake)
 include(config/findTensorFlow.cmake)
-include(config/findChrestCompilerFlags.cmake)
 include(config/findSLEPc.cmake)
 include(config/printVersion.cmake)
 find_package(HDF5 REQUIRED)
@@ -63,6 +64,7 @@ target_link_libraries(ablateLibrary
         Threads::Threads
         nlohmann_json::nlohmann_json
         ${HDF5_LIBRARIES}
+        ZERORK::zerork_cfd_plugin
         PRIVATE
         chrestCompilerFlags)
 
@@ -74,7 +76,14 @@ if (BLAS_FOUND)
             BLAS::BLAS)
 endif ()
 
-
+#set ROCm libraries
+if(DEFINED ENV{ABLATE_GPU})
+    if($ENV{ABLATE_GPU} STREQUAL "ROCM")
+        target_link_directories(ablateLibrary
+                PUBLIC
+                $ENV{ROCM_PATH}/lib)
+    endif ()
+endif ()
 # Set the ablate library requirements
 set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
 set_property(TARGET ablateLibrary PROPERTY CMAKE_CXX_STANDARD_REQUIRED ON)

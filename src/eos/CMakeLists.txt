@@ -8,6 +8,7 @@ target_sources(ablateLibrary
         twoPhase.cpp
         tChemSoot.cpp
         tChemBase.cpp
+        zerork.cpp
 
         PUBLIC
         eos.hpp
@@ -19,6 +20,7 @@ target_sources(ablateLibrary
         twoPhase.hpp
         tChemSoot.hpp
         tChemBase.hpp
+        zerork.hpp
         )
 
 add_subdirectory(transport)
@@ -26,3 +28,4 @@ add_subdirectory(tChem)
 add_subdirectory(radiationProperties)
 add_subdirectory(tChemSoot)
 add_subdirectory(chemTab)
+add_subdirectory(zerork)

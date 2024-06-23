@@ -24,7 +24,7 @@ class Soot : public Process {
     PetscOptions petscOptions = nullptr;
 
     // the eos used to species the species and compute properties
-    std::shared_ptr<eos::TChem> eos;
+    std::shared_ptr<eos::ChemistryModel> eos;
 
     // store the default dtInit
     inline const static PetscReal dtInitDefault = 1E-6;
@@ -66,10 +66,10 @@ class Soot : public Process {
         std::vector<PetscReal> speciesSensibleEnthalpyScratch;
 
         // Hold the function for SpecificHeatConstantVolume
-        ablate::eos::TChem::ThermodynamicTemperatureMassFractionFunction specificHeatConstantVolumeFunction;
+        ablate::eos::ChemistryModel::ThermodynamicTemperatureMassFractionFunction specificHeatConstantVolumeFunction;
 
         // Hold the function for speciesSensibleEnthalpyFunction
-        eos::TChem::ThermodynamicTemperatureMassFractionFunction speciesSensibleEnthalpyFunction;
+        eos::ChemistryModel::ThermodynamicTemperatureMassFractionFunction speciesSensibleEnthalpyFunction;
 
         // Precompute the species/T/Ndd offset in the solution vector
         std::array<PetscInt, TotalEquations> speciesOffset;

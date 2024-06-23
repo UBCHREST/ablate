@@ -1,12 +1,12 @@
 ---
 test:
   # a unique test name for this integration tests
-  name: simpleReactingFlowTchem
+  name: simpleReactingFlowZerork
   # create a default assert that compares the log file
-  assert: "inputs/reactingFlow/simpleReactingFlow.txt"
+  assert: "inputs/reactingFlow/simpleReactingFlow.zerork.txt"
 
 environment:
-  title: _simpleReactingFlowTchem
+  title: _simpleReactingFlowZerork
   tagDirectory: false
 arguments: 
   dm_plex_separate_marker: ""
@@ -32,8 +32,11 @@ timestepper:
       - !ablate::domain::modifiers::DistributeWithGhostCells
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
-        eos: &eos !ablate::eos::TChem
-          mechFile: ../mechanisms/gri30.yml
+        eos: !ablate::eos::zerorkEOS  &eos
+          reactionFile: ../mechanisms/gri30.inp
+          thermoFile: ../mechanisms/gri30.dat
+          options:
+            reactorType: ConstantPressure #zerork deafult is constant volume
   initialization:
     - &eulerField
       fieldName: "euler" #for euler all components are in a single field

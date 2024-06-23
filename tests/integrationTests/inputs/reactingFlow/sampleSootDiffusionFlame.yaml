@@ -8,7 +8,7 @@ test:
   assert: "inputs/reactingFlow/sampleSootDiffusionFlame.txt"
 
 environment:
-  title: _1DSampleSootDiffusionFlame
+  title: _1DSampleSootDiffusionFlameTchem
   tagDirectory: false
 arguments: { }
 timestepper:

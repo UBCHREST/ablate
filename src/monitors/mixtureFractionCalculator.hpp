@@ -18,7 +18,7 @@ namespace ablate::monitors {
 class MixtureFractionCalculator {
    private:
     //! the reference equation of state
-    const std::shared_ptr<ablate::eos::TChemBase> eos;
+    const std::shared_ptr<ablate::eos::ChemistryModel> eos;
 
     //! the elements used to element list of the elements you want to track that are in the fuel (defaults to C/H)
     const std::vector<std::string> trackingElements;
@@ -77,7 +77,7 @@ class MixtureFractionCalculator {
      * Return accesses the base eos
      * @return
      */
-    std::shared_ptr<ablate::eos::TChemBase> GetEos() { return eos; }
+    std::shared_ptr<ablate::eos::ChemistryModel> GetEos() { return eos; }
 };
 
 }  // namespace ablate::monitors

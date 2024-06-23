@@ -73,24 +73,6 @@ class TChemBase : public ChemistryModel {
                        const std::shared_ptr<ablate::parameters::Parameters>& options = {});
 
     /**
-     * Returns all elements tracked in this mechanism and their molecular mass
-     * @return
-     */
-    [[nodiscard]] virtual std::map<std::string, double> GetElementInformation() const = 0;
-
-    /**
-     * no. of atoms of each element in each species
-     * @return
-     */
-    [[nodiscard]] virtual std::map<std::string, std::map<std::string, int>> GetSpeciesElementalInformation() const = 0;
-
-    /**
-     * the MW of each species
-     * @return
-     */
-    [[nodiscard]] virtual std::map<std::string, double> GetSpeciesMolecularMass() const = 0;
-
-    /**
      * Print the details of this eos
      * @param stream
      */
@@ -124,7 +106,7 @@ class TChemBase : public ChemistryModel {
      * @param species
      * @return
      */
-    inline double GetEnthalpyOfFormation(std::string_view speciesName) const {
+    inline double GetEnthalpyOfFormation(std::string_view speciesName) const override {
         auto it = std::find_if(species.begin(), species.end(), [speciesName](const auto& component) { return component == speciesName; });
         // If element was found
         if (it != species.end()) {

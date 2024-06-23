@@ -3,12 +3,12 @@
 ---
 test:
   # a unique test name for this integration tests
-  name: sampleDiffusionFlameTchem
+  name: sampleDiffusionFlameZerork
   # create a default assert that compares the log file
-  assert: "inputs/reactingFlow/sampleDiffusionFlame.txt"
+  assert: "inputs/reactingFlow/sampleDiffusionFlame.zerork.txt"
 
 environment:
-  title: _1DSampleDiffusionFlameTchem
+  title: _1DSampleDiffusionFlameZerork
   tagDirectory: false
 arguments: {}
 timestepper:
@@ -51,9 +51,11 @@ timestepper:
           # the DmViewFromOptions should output once with full mesh/dm details
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
-        eos: !ablate::eos::TChem  &eos
-          mechFile: ../mechanisms/gri30.yml
+        eos: !ablate::eos::zerorkEOS  &eos
+          reactionFile: ../mechanisms/gri30.inp
+          thermoFile: ../mechanisms/gri30.dat
           options:
+            reactorType: ConstantPressure #zerork deafult is constant volume
             # set a minimum temperature for the chemical kinetics ode integration
             thresholdTemperature: 560
         conservedFieldOptions:

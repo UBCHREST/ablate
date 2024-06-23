@@ -7,6 +7,7 @@ target_sources(ablateUnitTestLibrary
         chemTabTests.cpp
         twoPhaseTests.cpp
         tChemSootTests.cpp
+        zerorkTest.cpp
         )
 
 add_subdirectory(transport)

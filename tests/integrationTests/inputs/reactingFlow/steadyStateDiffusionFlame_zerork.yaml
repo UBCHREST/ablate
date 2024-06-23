@@ -3,12 +3,12 @@
 ---
 test:
   # a unique test name for this integration tests
-  name: steadyStateDiffusionFlameTchem
+  name: steadyStateDiffusionFlameZerork
   # create a default assert that compares the log file
-  assert: "inputs/reactingFlow/steadyStateDiffusionFlame.txt"
+  assert: "inputs/reactingFlow/steadyStateDiffusionFlame.zerork.txt"
 
 environment:
-  title: _steadyStateDiffusionFlameTchem
+  title: _steadyStateDiffusionFlameZerork
   tagDirectory: false
 arguments: { }
 # Create a stead state stepper.  The Stead State Stepper marches the solution in time until a set of criteria is met
@@ -60,9 +60,11 @@ timestepper: !ablate::solver::SteadyStateStepper
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
         # create an ideal gas eos using the tchem library
-        eos: !ablate::eos::TChem  &eos
-          mechFile: ../mechanisms/gri30.yml
+        eos: !ablate::eos::zerorkEOS  &eos
+          reactionFile: ../mechanisms/gri30.inp
+          thermoFile: ../mechanisms/gri30.dat
           options:
+            reactorType: ConstantPressure #zerork deafult is constant volume
             # set a minimum temperature for the chemical kinetics ode integration
             thresholdTemperature: 560
         conservedFieldOptions:
