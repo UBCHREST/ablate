@@ -55,12 +55,11 @@ class ChemistryModel : public eos::EOS {
 
     virtual inline double GetEnthalpyOfFormation(std::string_view speciesName) const { return {}; };
 
-    [[nodiscard]] virtual std::map<std::string, double> GetSpeciesMolecularMass() const = 0;
+    [[nodiscard]] virtual std::map<std::string, double> GetSpeciesMolecularMass() const { return {};};
 
-    [[nodiscard]] virtual std::map<std::string, double> GetElementInformation() const = 0;
+    [[nodiscard]] virtual std::map<std::string, double> GetElementInformation() const { return {};};
 
-    [[nodiscard]] virtual std::map<std::string, std::map<std::string, int>> GetSpeciesElementalInformation() const = 0;
-
+    [[nodiscard]] virtual std::map<std::string, std::map<std::string, int>> GetSpeciesElementalInformation() const { return {};};
     /**
      * a temperature thermodynamic function specific to
      */
