@@ -3,7 +3,7 @@
 ---
 test:
   # a unique test name for this integration tests
-  name: ignitionDelayMMASootProcess
+  name: ignitionDelayMMASootProcessTchem
   # create a default assert that compares the log file
   assert: !testingResources::asserts::TextFileAssert
     expected: "inputs/reactingFlow/ignitionDelayMMASootProcess.Temperature.txt"
@@ -11,7 +11,7 @@ test:
 
 # metadata for the simulation
 environment:
-  title: _ignitionDelayMMASootProcess
+  title: _ignitionDelayMMASootProcessTchem
   tagDirectory: false
 arguments:
   petsclimiter_type: none
@@ -19,8 +19,8 @@ arguments:
 timestepper:
   arguments:
     ts_type: euler
-    ts_max_time: 0.06
-    ts_dt: 1E-4
+    ts_max_time: 0.005
+    ts_dt: 1E-5
   # setup a simple mesh with only a single point
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField

@@ -1,0 +1,30 @@
+Timestep: 0000 time = 0        dt = 1e-06
+Timestep: 0001 time = 1e-06    dt = 1e-06
+Timestep: 0002 time = 2e-06    dt = 1e-06
+Timestep: 0003 time = 3e-06    dt = 1e-06
+Timestep: 0004 time = 4e-06    dt = 1e-06
+Timestep: 0005 time = 5e-06    dt = 1e-06
+Timestep: 0006 time = 6e-06    dt = 1e-06
+Timestep: 0007 time = 7e-06    dt = 1e-06
+Timestep: 0008 time = 8e-06    dt = 1e-06
+Timestep: 0009 time = 9e-06    dt = 1e-06
+Timestep: 0010 time = 1e-05    dt = 1e-06
+Timestep: 0011 time = 1.1e-05  dt = 1e-06
+Timestep: 0012 time = 1.2e-05  dt = 1e-06
+Timestep: 0013 time = 1.3e-05  dt = 1e-06
+Timestep: 0014 time = 1.4e-05  dt = 1e-06
+Timestep: 0015 time = 1.5e-05  dt = 1e-06
+Timestep: 0016 time = 1.6e-05  dt = 1e-06
+Timestep: 0017 time = 1.7e-05  dt = 1e-06
+Timestep: 0018 time = 1.8e-05  dt = 1e-06
+Timestep: 0019 time = 1.9e-05  dt = 1e-06
+Timestep: 0020 time = 2e-05    dt = 1e-06
+Timestep: 0021 time = 2.1e-05  dt = 1e-06
+Timestep: 0022 time = 2.2e-05  dt = 1e-06
+Timestep: 0023 time = 2.3e-05  dt = 1e-06
+Timestep: 0024 time = 2.4e-05  dt = 1e-06
+Timestep: 0025 time = 2.5e-05  dt = 1e-06
+ResultFiles:
+domain.hdf5
+domain.xmf
+restart.rst
