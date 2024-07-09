@@ -124,7 +124,9 @@ void testingResources::asserts::FileAssert::CompareFile(const std::filesystem::p
                                                              << expectedLine << " of file " << expectedFileName;
                     } break;
                     case 'r': {
-                        // the value is near percent difference < 0.05 implemented for ignition delay calculations using zerork
+                        // Slightly larger tolerance of less than < 0.5 percent
+                        // This zerork tests are implementing this assert when comparing to tchem results
+                        // This error is acceptable because of different ODE integrators, especially over longer time steps
                         auto percentDifference = std::abs((std::stod(actualValueString) - expectedValue) / expectedValue);
                         ASSERT_LT(percentDifference, 0.005) << " the percent difference of (" << expectedValue << ", " << std::stod(actualValueString) << ") should be less than 1E-3 on line "
                                                             << expectedLine << " of file " << expectedFileName;
