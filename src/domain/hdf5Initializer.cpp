@@ -43,7 +43,7 @@ ablate::domain::Hdf5Initializer::Hdf5Mesh::Hdf5Mesh(const std::filesystem::path&
 }
 ablate::domain::Hdf5Initializer::Hdf5Mesh::~Hdf5Mesh() {
     // close the viewer
-    PetscOptionsRestoreViewer(&petscViewer) >> utilities::PetscUtilities::checkError;
+    PetscViewerDestroy(&petscViewer) >> utilities::PetscUtilities::checkError;
 
     // free the memory with the mesh
     DMDestroy(&dm) >> utilities::PetscUtilities::checkError;
