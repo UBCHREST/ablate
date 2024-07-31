@@ -16,8 +16,8 @@ class Soot : public Process {
     //! Parameters for Nucleation and Surface Growth Pre Exponentials
     [[maybe_unused]] inline static double nucPreExponential = 1000;
     [[maybe_unused]] inline static double surfPreExponential = 700;
-   private:
 
+   private:
     // create a separate dm to hold the sources
     DM sourceDm = nullptr;
     // create a separate vec to hold the sources
@@ -189,7 +189,8 @@ class Soot : public Process {
     }
 
    public:
-    explicit Soot(const std::shared_ptr<eos::EOS> &eos, const std::shared_ptr<parameters::Parameters> &options = {}, double thresholdTemperature = {}, double surfaceGrowthPreExp = {}, double nucleationPreExp = {});
+    explicit Soot(const std::shared_ptr<eos::EOS> &eos, const std::shared_ptr<parameters::Parameters> &options = {}, double thresholdTemperature = {}, double surfaceGrowthPreExp = {},
+                  double nucleationPreExp = {});
 
     ~Soot() override;
 

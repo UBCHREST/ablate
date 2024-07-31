@@ -221,7 +221,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
     VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> utilities::PetscUtilities::checkError;
     VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
 
-    //call updateAuxFields In case these are needed before first preRHS call
+    // call updateAuxFields In case these are needed before first preRHS call
     Vec locXVec;
     DMGetLocalVector(subDomain->GetDM(), &locXVec) >> utilities::PetscUtilities::checkError;
     DMGlobalToLocalBegin(subDomain->GetDM(), subDomain->GetSolutionVector(), INSERT_VALUES, locXVec) >> utilities::PetscUtilities::checkError;

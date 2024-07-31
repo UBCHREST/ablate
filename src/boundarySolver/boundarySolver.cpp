@@ -306,7 +306,7 @@ void ablate::boundarySolver::BoundarySolver::Initialize() {
         process->Initialize(*this);
     }
 
-    //call updateAuxFields In case these are needed before first preRHS call
+    // call updateAuxFields In case these are needed before first preRHS call
     Vec locXVec;
     DMGetLocalVector(subDomain->GetDM(), &locXVec) >> utilities::PetscUtilities::checkError;
     DMGlobalToLocalBegin(subDomain->GetDM(), subDomain->GetSolutionVector(), INSERT_VALUES, locXVec) >> utilities::PetscUtilities::checkError;
