@@ -2,7 +2,7 @@
 ---
 test:
   # a unique test name for this integration tests
-  name: tracerParticles3D
+  name: inertialParticles2D
   # create a default assert that compares the log file
   assert: "inputs/particles/inertialParticles2D.txt"
 
@@ -10,102 +10,134 @@ test:
 environment:
   title: _2DInertialParticlesInCompressibleFlow
   tagDirectory: false
-arguments: { }
+arguments:
+  # ask petsc to label the boundary values
+  dm_plex_separate_marker: ""
 # set up the time stepper responsible for marching in time
 timestepper:
   name: theMainTimeStepper
   # io controls how often the results are saved to a file for visualization and restart
-  io: # by default the ablate::io::Hdf5Serializer serializer is used
-    interval: 0
-  # time stepper specific input arguments.  By default, the time stepper will use TSADAPTBASIC
+  io:
+    interval: 0 # results are saved at every 0 steps.  In real simulations this should be much larger.
   arguments:
     ts_type: rk
-    ts_adapt_type: physics # overwrite and set the time step based upon the CFL constraint
+    ts_max_time: 1.5
     ts_max_steps: 20
-    ts_adapt_safety: 1.0
-  # sets a single box domain with periodic boundary conditions
+    ts_dt: 1.0E-5
+    ts_adapt_safety: 0.9
+    ts_adapt_type: physicsConstrained
+
+  # Create a simple box mesh to start
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
     faces: [ 6, 6 ]
-    lower: [ 0, 0 ]
-    upper: [ 1, 1 ]
-    boundary: [ "PERIODIC", "PERIODIC" ]
+    lower: [ 0.0, 0.0 ]
+    upper: [ 1.0 , 1.0 ]
     simplex: false
     # pass in these options to petsc when setting up the domain.  Using an option list here prevents command line arguments from being seen.
     options:
-      dm_refine: 1
+      dm_distribute: true # turn off default dm_distribute so that we can extrude label first
+      dm_distribute_overlap: 0
     modifiers:
+      # extrude all boundaries
+      - !ablate::domain::modifiers::ExtrudeLabel
+        # use the labels defined by the dm_plex_separate_marker option
+        regions:
+          - name: marker
+            value: 1 # this is the bottom boundary value
+          - name: marker
+            value: 2 # this is the right boundary value
+          - name: marker
+            value: 3 # this is the top boundary value
+          - name: marker
+            value: 4 # this is the left boundary value
+        # define a region for the new interface between the originalRegion and extrudedRegion
+        boundaryRegion:
+          name: boundaryFaces
+        # for all cells/faces/points that were in the original mesh before extrusion
+        originalRegion:
+          name: interiorCells
+        # for all cells/faces/points that were extruded.  This does include overlap faces that are in the boundaryRegion, originalRegion, and extrudedRegion regions
+        extrudedRegion:
+          name: boundaryCells
+
       # if using mpi, this modifier distributes cells
       - !ablate::domain::modifiers::DistributeWithGhostCells
-      # if using a FVM ghost boundary cells must be added
-      - !ablate::domain::modifiers::GhostBoundaryCells
+        ghostCellDepth: 2
+
     fields:
-      # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
-      # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: !ablate::eos::PerfectGas &eos
           parameters:
             gamma: 1.4
             Rgas: 287.0
-        conservedFieldOptions:
-          # use a leastsquares interpolant for cell based calculations with the default petsc limiter
-          petscfv_type: leastsquares
-
-      # specify the extra pressure field for output
-      - !ablate::domain::FieldDescription
-        name: pressure
-        type: FV
-        location: aux # the pressure field is computed as part of decode and NOT integrated in time directly
+      # by adding a pressure field the code will compute and output pressure
+      - name: pressure
+        location: AUX
+        type: FVM
   # set the initial conditions of the flow field
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       state:
+        &flowFieldState
         eos: *eos
         pressure: 101325.0
-        temperature: 300.0
+        temperature: 300
         velocity: "100*x*x, 200*y*y"
 
 solvers:
-  # the CompressibleFlowSolver is used to solve the flow
+  # The compressible flow solver will solve the compressible flow equations over the interiorCells
   - !ablate::finiteVolume::CompressibleFlowSolver
-    id: vortexFlowField
+    id: FlowField
+    # only apply this solver to the flowRegion, area without faces
+    region:
+      name: interiorCells
+    additionalProcesses:
+      - !ablate::finiteVolume::processes::PressureGradientScaling
+        &pgs
+        eos: *eos
+        alphaInit: 100.0
+        maxAlphaAllowed: 100.0
+        domainLength: 0.165354
+
 
     # a flux calculator must be specified to so solver for advection
-    fluxCalculator: !ablate::finiteVolume::fluxCalculator::Ausm
+    fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
+      pgs: *pgs
 
-    # the cfl is used to compute the physics time step
+    # cfl is used to compute the physics time step
     parameters:
       cfl: 0.5
 
-    # no output monitors for the flow solver
-    monitors: []
-      # share the existing eos with the compressible flow solver
-    eos: *eos
+    # the default transport object assumes constant values for k, mu, diff
+    transport:
+      &transportModel
+      k: .2
+      mu: .1
+      diff: 1E-4
 
-  # use a particle solver with a inertial process
+    # share the existing eos with the compressible flow solver
+    eos: *eos
+    monitors: []
+
   - !ablate::particles::ParticleSolver
     id: flowParticles
-    # Petsc options used for the timestepper
-    options:
-      ts_dt: 0.005
-    # initial particle locations
     initializer: !ablate::particles::initializers::BoxInitializer
       lower: [ 0.3,0.3 ]
-      upper: [ 0.7,0.3 ]
-      particlesPerDim: 9
+      upper: [ 0.7,0.7 ]
+      particlesPerDim: 3
 
     # all fields except the coordinate must be specified
     fields:
       - name: ParticleVelocity
         location: SOL # Solution means that it is part of the time stepping in the particle solver
-        components: [u, v]
+        components: [ u, v ]
       - name: ParticleDiameter
         location: AUX
       - name: ParticleDensity
         location: AUX
     # processes used to add source terms for the particle solver
     processes:
-      # The Inertial particles is limited to using constant values for the fluid information
       - !ablate::particles::processes::Inertial
         parameters:
           fluidDensity: 1.0
@@ -119,7 +151,6 @@ solvers:
         field: 90.0
       - fieldName: ParticleVelocity
         field: "0.0, 0.0"
-    # Monitor particle statistics
     monitors:
       - !ablate::monitors::ParticleCount
       - !ablate::monitors::ParticleAverage

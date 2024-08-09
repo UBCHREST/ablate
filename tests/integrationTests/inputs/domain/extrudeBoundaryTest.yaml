@@ -52,7 +52,7 @@ timestepper:
         # for all cells/faces/points that were extruded.  This does include overlap faces that are in the boundaryRegion, originalRegion, and extrudedRegion regions
         extrudedRegion:
           name: boundaryCells
-      # the DmViewFromOptions "modifier" does not modify the dm but outputs. See [PetscOptionsGetViewer](https://petsc.org/release/docs/manualpages/Viewer/PetscOptionsGetViewer.html) for more details
+      # the DmViewFromOptions "modifier" does not modify the dm but outputs. See [PetscOptionsCreateViewer](https://petsc.org/release/docs/manualpages/Viewer/PetscOptionsCreateViewer.html) for more details
       - !ablate::monitors::DmViewFromOptions
         options: ascii
       - !ablate::monitors::DmViewFromOptions

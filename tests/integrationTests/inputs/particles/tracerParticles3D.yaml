@@ -1,7 +1,7 @@
 ---
 test:
   # a unique test name for this integration tests
-  name: inertialParticles2D
+  name: tracerParticles3D
   # create a default assert that compares the log file
   assert: "inputs/particles/tracerParticles3D.txt"
 

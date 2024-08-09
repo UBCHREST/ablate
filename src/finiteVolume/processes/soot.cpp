@@ -2,8 +2,16 @@
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/petscUtilities.hpp"
 
-ablate::finiteVolume::processes::Soot::Soot(const std::shared_ptr<eos::EOS>& eosIn, const std::shared_ptr<parameters::Parameters>& options, double thresholdTemperature)
+ablate::finiteVolume::processes::Soot::Soot(const std::shared_ptr<eos::EOS>& eosIn, const std::shared_ptr<parameters::Parameters>& options, double thresholdTemperature,
+                                            double surfaceGrowthPreExponential, double nucleationPreExponential)
     : eos(std::dynamic_pointer_cast<eos::ChemistryModel>(eosIn)), thresholdTemperature(thresholdTemperature) {
+    if (surfaceGrowthPreExponential) {
+        surfPreExponential = surfaceGrowthPreExponential;
+    }
+    if (nucleationPreExponential) {
+        nucPreExponential = nucleationPreExponential;
+    }
+
     // make sure that the eos is set
     if (!std::dynamic_pointer_cast<eos::ChemistryModel>(eosIn)) {
         throw std::invalid_argument("ablate::finiteVolume::processes::Soot only accepts EOS of type eos::chemistrymodel");
@@ -399,4 +407,5 @@ PetscErrorCode ablate::finiteVolume::processes::Soot::SinglePointSootChemistryRH
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::Soot, "Soot only reactions", ARG(ablate::eos::EOS, "eos", "chemistrymodel eos"),
          OPT(ablate::parameters::Parameters, "options", "any PETSc options for the chemistry ts"),
-         OPT(double, "thresholdTemperature", "set a minimum temperature for the chemical kinetics ode integration"));
+         OPT(double, "thresholdTemperature", "set a minimum temperature for the chemical kinetics ode integration"),
+         OPT(double, "surfaceGrowthPreExponential", "set the surface growth pre exponential factor"), OPT(double, "nucleationPreExponential", "set the nucleation pre exponential factor"));

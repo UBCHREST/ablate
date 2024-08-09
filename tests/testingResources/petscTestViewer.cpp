@@ -17,7 +17,7 @@ testingResources::PetscTestViewer::~PetscTestViewer() {
     file = NULL;
 
     // and destroy the viewer
-    PetscOptionsRestoreViewer(&viewer);
+    PetscViewerDestroy(&viewer);
 }
 std::string testingResources::PetscTestViewer::GetString() {
     // build a string stream to hold the file
