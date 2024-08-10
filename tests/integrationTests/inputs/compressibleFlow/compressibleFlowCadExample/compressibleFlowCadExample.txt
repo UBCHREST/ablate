@@ -2,8 +2,8 @@
   STEP Reader Info: Using metre
 MinMaxAvg velocity for timestep 0000:
 	min: [ 0,  0,  0]
-	max: [ 0,  0,  0]
-	avg: [ 0,  0,  0]
+	max: [ 0,  0, 100]
+	avg: [ 0,  0, 10.3]
 PGS: (.*) \(alpha\), (.*) \(maxMach\), (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.3 n0.7 ~
 MinMaxAvg velocity for timestep 0001:
 	min: \[(.*), (.*), (.*)\]<expects> ~ ~ >-1
