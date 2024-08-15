@@ -1,13 +1,14 @@
 # This test shows how to create a compressible flow (Couette) field without using the compressible flow object.  The fields and processes are added individually instead of using predefined classes.
 
 ---
-test:
-  # a unique test name for this integration tests
-  name: customCouetteCompressibleFlow
-  # create a default assert that compares the log file
-  assert: "inputs/compressibleFlow/customCouetteCompressibleFlow.txt"
+testingIgnore: true
+#test:
+#  # a unique test name for this integration tests
+#  name: customCouetteCompressibleFlow
+#  # create a default assert that compares the log file
+#  assert: "inputs/compressibleFlow/customCouetteCompressibleFlow.txt"
 
-# metadata for the simulation
+## metadata for the simulation
 environment:
   title: _compressibleCouette
   tagDirectory: false

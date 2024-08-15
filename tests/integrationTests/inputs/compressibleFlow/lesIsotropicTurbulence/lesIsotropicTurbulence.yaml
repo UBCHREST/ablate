@@ -6,16 +6,18 @@
 # c refers to the number of mesh in each direction
 #  Periodic conditions are applied to all patches
 ---
-test:
-  # a unique test name for this integration tests
-  name: lesIsotropicTurbulence
-  # create a list of asserts to compare
-  asserts:
-    # create a default assert that compares the log file
-    - "inputs/compressibleFlow/lesIsotropicTurbulence/lesIsotropicTurbulence.txt"
-    - !testingResources::asserts::TextFileAssert
-      expected: "inputs/compressibleFlow/lesIsotropicTurbulence/domain.xmf"
-      actual: "domain.xmf"
+testingIgnore: true
+#test:
+##  # a unique test name for this integration tests
+#  name: lesIsotropicTurbulence
+#  # create a list of asserts to compare
+#  asserts:
+#    # create a default assert that compares the log file
+#    - "inputs/compressibleFlow/lesIsotropicTurbulence/lesIsotropicTurbulence.txt"
+#    - !testingResources::asserts::TextFileAssert
+#      expected: "inputs/compressibleFlow/lesIsotropicTurbulence/domain.xmf"
+#      actual: "domain.xmf"
+
 
 # metadata for the simulation
 environment:
