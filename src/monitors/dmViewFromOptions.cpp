@@ -46,14 +46,14 @@ PetscErrorCode ablate::monitors::DmViewFromOptions::DMViewFromOptions(DM dm) {
     PetscBool flg;
     PetscViewerFormat format;
 
-    PetscCall(PetscOptionsGetViewer(PetscObjectComm((PetscObject)dm), petscOptions, nullptr, optionName.c_str(), &viewer, &format, &flg));
+    PetscCall(PetscOptionsCreateViewer(PetscObjectComm((PetscObject)dm), petscOptions, nullptr, optionName.c_str(), &viewer, &format, &flg));
 
     if (flg) {
         PetscCall(PetscViewerPushFormat(viewer, format));
         PetscCall(PetscObjectView((PetscObject)dm, viewer));
         PetscCall(PetscViewerFlush(viewer));
         PetscCall(PetscViewerPopFormat(viewer));
-        PetscCall(PetscOptionsRestoreViewer(&viewer));
+        PetscCall(PetscViewerDestroy(&viewer));
     }
 
     PetscFunctionReturn(0);
@@ -100,12 +100,12 @@ std::istream& ablate::monitors::operator>>(std::istream& is, ablate::monitors::D
 
 #include "registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::DmViewFromOptions,
-         "replicates the [DMViewFromOptions](https://petsc.org/release/docs/manualpages/Viewer/PetscOptionsGetViewer.html) function in PETSC",
+         "replicates the [DMViewFromOptions](https://petsc.org/release/docs/manualpages/Viewer/PetscOptionsCreateViewer.html) function in PETSC",
          ENUM(ablate::monitors::DmViewFromOptions::Scope, "scope", "determines if DMViewFromOptions is called initially (initial) or every time step (monitor)"),
          OPT(std::string, "options", "if provided these options are used for the DMView call, otherwise global options is used"),
          OPT(std::string, "optionName", "if provided the optionsName is used for DMViewFromOptions.  Needed if using global options."));
 
 REGISTER(ablate::domain::modifiers::Modifier, ablate::monitors::DmViewFromOptions,
-         "replicates the [DMViewFromOptions](https://petsc.org/release/docs/manualpages/Viewer/PetscOptionsGetViewer.html) function in PETSC",
+         "replicates the [DMViewFromOptions](https://petsc.org/release/docs/manualpages/Viewer/PetscOptionsCreateViewer.html) function in PETSC",
          OPT(std::string, "options", "if provided these options are used for the DMView call, otherwise global options is used"),
          OPT(std::string, "optionName", "if provided the optionsName is used for DMViewFromOptions.  Needed if using global options."));

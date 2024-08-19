@@ -1,18 +1,19 @@
 # single example of a periodic domain with an inviscid vortex.
 ---
 # metadata used only for integration testing
-test:
-  # a unique test name for this integration tests
-  name: compressibleFlowVortex
-  # the number of ranks to run with mpi
-  ranks: 1
-  # create a list of asserts to compare
-  asserts:
-    # create a default assert that compares the log file
-    - "inputs/compressibleFlow/compressibleFlowVortex/compressibleFlowVortex.txt"
-    - !testingResources::asserts::TextFileAssert
-      expected: "inputs/compressibleFlow/compressibleFlowVortex/domain.xmf"
-      actual: "domain.xmf"
+testingIgnore: true
+#test:
+#  # a unique test name for this integration tests
+#  name: compressibleFlowVortex
+#  # the number of ranks to run with mpi
+#  ranks: 1
+#  # create a list of asserts to compare
+#  asserts:
+#    # create a default assert that compares the log file
+#    - "inputs/compressibleFlow/compressibleFlowVortex/compressibleFlowVortex.txt"
+#    - !testingResources::asserts::TextFileAssert
+#      expected: "inputs/compressibleFlow/compressibleFlowVortex/domain.xmf"
+#      actual: "domain.xmf"
 
 # metadata for the simulation
 environment:

@@ -13,6 +13,9 @@ class Soot : public Process {
     [[maybe_unused]] inline const static double solidCarbonDensity = 2000;
     //! Scaling term for Ndd going into the Tines ODE Solver
     [[maybe_unused]] inline static double NddScaling = 1e20;
+    //! Parameters for Nucleation and Surface Growth Pre Exponentials
+    [[maybe_unused]] inline static double nucPreExponential = 1000;
+    [[maybe_unused]] inline static double surfPreExponential = 700;
 
    private:
     // create a separate dm to hold the sources
@@ -150,12 +153,12 @@ class Soot : public Process {
 
     template <typename real>
     static inline real calculateNucleationReactionRate(real T, real C2H2Conc, real fv) {
-        return 1000. * std::exp(-16103. / T) * C2H2Conc * (1 - fv);
+        return nucPreExponential * std::exp(-16103. / T) * C2H2Conc * (1 - fv);
     }
 
     template <typename real>
     static inline real calculateSurfaceGrowthReactionRate(real T, real C2H2Conc, real SA_V) {
-        return 700. * std::exp(-10064. / T) * C2H2Conc * std::sqrt(SA_V);
+        return surfPreExponential * std::exp(-10064. / T) * C2H2Conc * std::sqrt(SA_V);
     }
 
     template <typename real>
@@ -186,7 +189,8 @@ class Soot : public Process {
     }
 
    public:
-    explicit Soot(const std::shared_ptr<eos::EOS> &eos, const std::shared_ptr<parameters::Parameters> &options = {}, double thresholdTemperature = {});
+    explicit Soot(const std::shared_ptr<eos::EOS> &eos, const std::shared_ptr<parameters::Parameters> &options = {}, double thresholdTemperature = {}, double surfaceGrowthPreExp = {},
+                  double nucleationPreExp = {});
 
     ~Soot() override;
 

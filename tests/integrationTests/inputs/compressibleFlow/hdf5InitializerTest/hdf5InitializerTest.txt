@@ -4,9 +4,9 @@ MinMaxAvg euler for timestep 0000:
 	max: \[(.*), (.*), (.*), (.*)\]<expects> n1.49 n3.23e+05 n94.2 n1.31
 	avg: \[(.*), (.*), (.*), (.*)\]<expects> n1.23 n2.69e+05 n17.5 n0.00634
 MinMaxAvg Yi for timestep 0000:
-	min: [ 0,  0,  0]
-	max: [ 0,  0,  0]
-	avg: [ 0,  0,  0]
+	min: [0.2,  0,  0]
+	max: [ 1, 0.3, 0.5]
+	avg: \[(.*), (.*), (.*)\]<expects> n0.251 n0.281 n0.468
 Timestep: 0001 time = 1e-10    dt = 1e-09
 MinMaxAvg euler for timestep 0001:
 	min: \[(.*), (.*), (.*), (.*)\]<expects> n1.18 n2.53e+05 z n-1.31

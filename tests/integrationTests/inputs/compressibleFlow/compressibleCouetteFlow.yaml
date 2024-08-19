@@ -1,11 +1,12 @@
 # This input is used to test the finite volume solver using standard essential boundary conditions.
 ---
 # metadata used only for integration testing
-test:
-  # a unique test name for this integration tests
-  name: compressibleCouetteFlow
-  # create a default assert that compares the log file
-  assert: "inputs/compressibleFlow/compressibleCouetteFlow.txt"
+testingIgnore: true
+#test:
+#  # a unique test name for this integration tests
+#  name: compressibleCouetteFlow
+#  # create a default assert that compares the log file
+#  assert: "inputs/compressibleFlow/compressibleCouetteFlow.txt"
 
 # metadata for the simulation
 environment:

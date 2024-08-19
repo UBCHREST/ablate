@@ -305,6 +305,14 @@ void ablate::boundarySolver::BoundarySolver::Initialize() {
     for (auto& process : boundaryProcesses) {
         process->Initialize(*this);
     }
+
+    // call updateAuxFields In case these are needed before first preRHS call
+    Vec locXVec;
+    DMGetLocalVector(subDomain->GetDM(), &locXVec) >> utilities::PetscUtilities::checkError;
+    DMGlobalToLocalBegin(subDomain->GetDM(), subDomain->GetSolutionVector(), INSERT_VALUES, locXVec) >> utilities::PetscUtilities::checkError;
+    DMGlobalToLocalEnd(subDomain->GetDM(), subDomain->GetSolutionVector(), INSERT_VALUES, locXVec) >> utilities::PetscUtilities::checkError;
+    UpdateAuxFields(NAN, locXVec, subDomain->GetAuxVector());
+    DMRestoreLocalVector(subDomain->GetDM(), &locXVec) >> utilities::PetscUtilities::checkError;
 }
 
 void ablate::boundarySolver::BoundarySolver::RegisterFunction(ablate::boundarySolver::BoundarySolver::BoundarySourceFunction function, void* context, const std::vector<std::string>& sourceFields,
