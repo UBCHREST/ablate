@@ -12,7 +12,7 @@ Labels:
   interiorCells: 1 strata with value/size (1 (1155))
   boundaryCells: 1 strata with value/size (1 (387))
   boundaryFaces: 1 strata with value/size (1 (64))
-  ghost: 2 strata with value/size (2 (24), 1 (50))
+  ghost: 2 strata with value/size (1 (50), 2 (24))
   flowRegion: 1 strata with value/size (1 (1100))
 Timestep: 0000 time = (.*) dt = (.*)<expects> z          n1e-10
 Timestep: 0001 time = (.*) dt = (.*)<expects> n1e-10     n1e-09
