@@ -9,6 +9,14 @@
 
 ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer(std::shared_ptr<ablate::io::interval::Interval> interval, const std::shared_ptr<parameters::Parameters>& options)
     : interval(std::move(interval)), rootOutputDirectory(environment::RunEnvironment::Get().GetOutputDirectory()) {
+    // New petsc HDF5 Data Storage as of 09/23/24, for now we will default to the legacy version until I understand more of the different
+    // outputting version available and how they mesh with ablate
+    {
+        PetscBool hdf5VersionFound;
+        PetscOptionsHasName(nullptr, nullptr, "-dm_plex_view_hdf5_storage_version", &hdf5VersionFound);
+        if (!hdf5VersionFound) PetscOptionsSetValue(nullptr, "-dm_plex_view_hdf5_storage_version", "1.1.0");
+    }
+
     // Load the metadata from the file is available, otherwise set to 0
     auto restartFilePath = rootOutputDirectory / "restart.rst";
 
