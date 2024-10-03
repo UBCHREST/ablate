@@ -4,6 +4,7 @@
 #include "finiteVolume/processes/evTransport.hpp"
 #include "finiteVolume/processes/navierStokesTransport.hpp"
 #include "finiteVolume/processes/speciesTransport.hpp"
+#include "finiteVolume/processes/CompactCompressibleTransport.hpp"
 #include "utilities/vectorUtilities.hpp"
 
 ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
@@ -12,8 +13,11 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                                                                      const std::shared_ptr<fluxCalculator::FluxCalculator>& fluxCalculatorIn,
                                                                      std::vector<std::shared_ptr<processes::Process>> additionalProcesses,
                                                                      std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                                     const std::shared_ptr<eos::transport::TransportModel>& evTransport)
-    : FiniteVolumeSolver(std::move(solverId), std::move(region), std::move(options),
+                                                                     const std::shared_ptr<eos::transport::TransportModel>& evTransport, PetscInt compact)
+    : FiniteVolumeSolver(std::move(solverId), std::move(region), std::move(options), compact ?
+                         utilities::VectorUtilities::Merge( {std::make_shared<ablate::finiteVolume::processes::CompactCompressibleTransport>(
+                                 parameters, eosIn, fluxCalculatorIn, transport, utilities::VectorUtilities::Find<ablate::finiteVolume::processes::PressureGradientScaling>(additionalProcesses) )
+                         }, additionalProcesses) :
                          utilities::VectorUtilities::Merge(
                              {
                                  // create assumed processes for compressible flow
@@ -30,8 +34,8 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                                                                      const std::shared_ptr<eos::transport::TransportModel>& transport,
                                                                      const std::shared_ptr<fluxCalculator::FluxCalculator>& fluxCalculatorIn,
                                                                      std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                                     const std::shared_ptr<eos::transport::TransportModel>& evTransport)
-    : CompressibleFlowSolver(std::move(solverId), std::move(region), std::move(options), eosIn, parameters, transport, fluxCalculatorIn, {}, std::move(boundaryConditions), evTransport) {}
+                                                                     const std::shared_ptr<eos::transport::TransportModel>& evTransport, PetscInt compact)
+    : CompressibleFlowSolver(std::move(solverId), std::move(region), std::move(options), eosIn, parameters, transport, fluxCalculatorIn, {}, std::move(boundaryConditions), evTransport, compact) {}
 
 #include "registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::finiteVolume::CompressibleFlowSolver, "compressible finite volume flow", ARG(std::string, "id", "the name of the flow field"),
@@ -41,4 +45,5 @@ REGISTER(ablate::solver::Solver, ablate::finiteVolume::CompressibleFlowSolver, "
          OPT(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculators (defaults to none)"),
          OPT(std::vector<ablate::finiteVolume::processes::Process>, "additionalProcesses", "any additional processes besides euler/yi/ev transport"),
          OPT(std::vector<ablate::finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
-         OPT(ablate::eos::transport::TransportModel, "evTransport", "when provided, this model will be used for ev transport instead of default"));
+         OPT(ablate::eos::transport::TransportModel, "evTransport", "when provided, this model will be used for ev transport instead of default"),
+         OPT(PetscInt, "compact", ""));

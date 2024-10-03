@@ -8,7 +8,7 @@
 #include "domain/subDomain.hpp"
 namespace ablate::finiteVolume {
 
-class CellInterpolant {
+class CellInterpolant : private utilities::Loggable<CellInterpolant>{
    public:
     /**
      * Function assumes that the left/right solution and aux variables are discontinuous across the interface
