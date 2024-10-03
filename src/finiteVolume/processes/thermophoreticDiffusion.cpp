@@ -9,17 +9,17 @@ ablate::finiteVolume::processes::ThermophoreticDiffusion::ThermophoreticDiffusio
 void ablate::finiteVolume::processes::ThermophoreticDiffusion::Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) {
     flow.RegisterRHSFunction(ThermophoreticDiffusionEnergyFlux,
                              &viscosityTemperatureFunction,
-                             CompressibleFlowFields::EULER_FIELD,
+                             {CompressibleFlowFields::EULER_FIELD},
                              {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD, CompressibleFlowFields::DENSITY_PROGRESS_FIELD},
                              {CompressibleFlowFields::TEMPERATURE_FIELD});
     flow.RegisterRHSFunction(ThermophoreticDiffusionVariableFlux,
                              &viscosityTemperatureFunction,
-                             CompressibleFlowFields::DENSITY_YI_FIELD,
+                             {CompressibleFlowFields::DENSITY_YI_FIELD},
                              {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
                              {CompressibleFlowFields::TEMPERATURE_FIELD});
     flow.RegisterRHSFunction(ThermophoreticDiffusionVariableFlux,
                              &viscosityTemperatureFunction,
-                             CompressibleFlowFields::DENSITY_PROGRESS_FIELD,
+                             {CompressibleFlowFields::DENSITY_PROGRESS_FIELD},
                              {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_PROGRESS_FIELD},
                              {CompressibleFlowFields::TEMPERATURE_FIELD});
 

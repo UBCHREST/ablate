@@ -35,7 +35,9 @@ ablate::finiteVolume::processes::NavierStokesTransport::NavierStokesTransport(co
 void ablate::finiteVolume::processes::NavierStokesTransport::Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) {
     // Register the euler source terms
     if (fluxCalculator) {
-        flow.RegisterRHSFunction(AdvectionFlux, &advectionData, CompressibleFlowFields::EULER_FIELD, {CompressibleFlowFields::EULER_FIELD}, {});
+        //I don't know why we wouldn't push through the old temperature fields, maybe slower for perfect gas/idealized gas's but when there is a temperature iterative method this should be better
+        //If it is worse for perfect gas's, going to need to add in an option switch -klb
+        flow.RegisterRHSFunction(AdvectionFlux, &advectionData, {CompressibleFlowFields::EULER_FIELD}, {CompressibleFlowFields::EULER_FIELD}, {CompressibleFlowFields::TEMPERATURE_FIELD});
 
         // PetscErrorCode PetscOptionsGetBool(PetscOptions options,const char pre[],const char name[],PetscBool *ivalue,PetscBool *set)
         flow.RegisterComputeTimeStepFunction(ComputeCflTimeStep, &timeStepData, "cfl");
@@ -56,7 +58,7 @@ void ablate::finiteVolume::processes::NavierStokesTransport::Setup(ablate::finit
             // Register the euler diffusion source terms
             flow.RegisterRHSFunction(DiffusionFlux,
                                      &diffusionData,
-                                     CompressibleFlowFields::EULER_FIELD,
+                                     {CompressibleFlowFields::EULER_FIELD},
                                      {CompressibleFlowFields::EULER_FIELD},
                                      {CompressibleFlowFields::TEMPERATURE_FIELD, CompressibleFlowFields::VELOCITY_FIELD});
         }
@@ -255,6 +257,7 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeCflTimeSte
             PetscReal rho = euler[CompressibleFlowFields::RHO];
 
             // Get the speed of sound from the eos
+            //TODO:: Replace this with a better temperature guess (see compute conduction Time Step below)
             PetscReal temperature;
             advectionData->computeTemperature.function(conserved, &temperature, advectionData->computeTemperature.context.get()) >> utilities::PetscUtilities::checkError;
             PetscReal a;

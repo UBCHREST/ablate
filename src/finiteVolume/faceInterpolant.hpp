@@ -85,7 +85,7 @@ class FaceInterpolant {
         ContinuousFluxFunction function;
         void* context;
 
-        PetscInt field;
+        std::vector<PetscInt> updateFields;
         std::vector<PetscInt> inputFields;
         std::vector<PetscInt> auxFields;
     };

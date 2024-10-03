@@ -290,13 +290,16 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
     PetscFunctionReturn(0);
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(CellInterpolant::DiscontinuousFluxFunction function, void* context, const std::string& field,
-                                                                   const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields) {
-    // map the field, inputFields, and auxFields to locations
-    auto& fieldId = subDomain->GetField(field);
 
-    // Create the FVMRHS Function
-    CellInterpolant::DiscontinuousFluxFunctionDescription functionDescription{.function = function, .context = context, .field = fieldId.id};
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(CellInterpolant::DiscontinuousFluxFunction function, void* context, const std::vector<std::string>& fields,
+                                                                   const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields) {
+    CellInterpolant::DiscontinuousFluxFunctionDescription functionDescription{.function = function, .context = context};
+
+    // map the field, inputFields, and auxFields to locations
+    for (auto& field : fields){
+        auto& fieldId = subDomain->GetField(field);
+        functionDescription.updateFields.push_back(fieldId.id);
+    }
 
     for (auto& inputField : inputFields) {
         auto& inputFieldId = subDomain->GetField(inputField);
@@ -311,13 +314,18 @@ void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(CellInterpola
     discontinuousFluxFunctionDescriptions.push_back(functionDescription);
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(ablate::finiteVolume::FaceInterpolant::ContinuousFluxFunction function, void* context, const std::string& field,
+
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(ablate::finiteVolume::FaceInterpolant::ContinuousFluxFunction function, void* context, const std::vector<std::string>& updateFields,
                                                                    const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields) {
     // map the field, inputFields, and auxFields to locations
-    auto& fieldId = subDomain->GetField(field);
+    FaceInterpolant::ContinuousFluxFunctionDescription functionDescription{.function = function, .context = context};
+    for (auto& field: updateFields) {
+        auto& fieldId = subDomain->GetField(field);
+        functionDescription.updateFields.push_back(fieldId.id);
+    }
 
     // Create the FVMRHS Function
-    FaceInterpolant::ContinuousFluxFunctionDescription functionDescription{.function = function, .context = context, .field = fieldId.id};
+
 
     for (auto& inputField : inputFields) {
         auto& inputFieldId = subDomain->GetField(inputField);

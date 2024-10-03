@@ -39,7 +39,7 @@ void ablate::finiteVolume::processes::EVTransport::Setup(ablate::finiteVolume::F
             advectionData.computeSpeedOfSound = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SpeedOfSound, flow.GetSubDomain().GetFields());
             advectionData.computePressure = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Pressure, flow.GetSubDomain().GetFields());
 
-            flow.RegisterRHSFunction(AdvectionFlux, &advectionData, evConservedField.name, {CompressibleFlowFields::EULER_FIELD, evConservedField.name}, {});
+            flow.RegisterRHSFunction(AdvectionFlux, &advectionData, {evConservedField.name}, {CompressibleFlowFields::EULER_FIELD, evConservedField.name}, {});
         }
 
         if (transportModel) {
@@ -49,9 +49,9 @@ void ablate::finiteVolume::processes::EVTransport::Setup(ablate::finiteVolume::F
 
             if (diffusionData.diffFunction.function) {
                 if (diffusionData.diffFunction.propertySize == 1) {
-                    flow.RegisterRHSFunction(DiffusionEVFlux, &diffusionData, evConservedField.name, {CompressibleFlowFields::EULER_FIELD}, {nonConserved});
+                    flow.RegisterRHSFunction(DiffusionEVFlux, &diffusionData, {evConservedField.name}, {CompressibleFlowFields::EULER_FIELD}, {nonConserved,CompressibleFlowFields::TEMPERATURE_FIELD});
                 } else if (diffusionData.diffFunction.propertySize == diffusionData.numberEV) {
-                    flow.RegisterRHSFunction(DiffusionEVFluxVariableDiffusionCoefficient, &diffusionData, evConservedField.name, {CompressibleFlowFields::EULER_FIELD}, {nonConserved});
+                    flow.RegisterRHSFunction(DiffusionEVFluxVariableDiffusionCoefficient, &diffusionData, {evConservedField.name}, {CompressibleFlowFields::EULER_FIELD}, {nonConserved});
                 } else {
                     throw std::invalid_argument("The diffusion property size must be 1 or number of ev in ablate::finiteVolume::processes::EVTransport.");
                 }
@@ -231,7 +231,7 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::DiffusionEVFlux(Pet
 
     // get the current density from euler
     const PetscReal density = field[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
-
+//    const PetscReal temperature = aux[aOff[1]]; //Temperature is second aux in
     // compute diff
     PetscReal diff = 0.0;
     flowParameters->diffFunction.function(field, &diff, flowParameters->diffFunction.context.get());
@@ -263,7 +263,7 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::DiffusionEVFluxVari
 
     // get the current density from euler
     const PetscReal density = field[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
-
+//    const PetscReal temperature = aux[aOff[1]]; //Temperature is second aux in
     // compute diff
     flowParameters->diffFunction.function(field, flowParameters->evDiffusionCoefficient.data(), flowParameters->diffFunction.context.get());
 

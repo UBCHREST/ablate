@@ -314,8 +314,8 @@ void ablate::finiteVolume::FaceInterpolant::ComputeRHS(PetscReal time, Vec locXV
     ablate::domain::Region::GetLabel(solverRegion, subDomain->GetDM(), regionLabel, regionValue);
 
     // Precompute the offsets to pass into the rhsFluxFunctionDescriptions
-    std::vector<PetscInt> fluxComponentSize(rhsFunctions.size());
-    std::vector<PetscInt> fluxId(rhsFunctions.size());
+    std::vector<std::vector<PetscInt>> fluxComponentSize(rhsFunctions.size());
+    std::vector<std::vector<PetscInt>> fluxId(rhsFunctions.size());
     std::vector<std::vector<PetscInt>> uOff(rhsFunctions.size());
     std::vector<std::vector<PetscInt>> aOff(rhsFunctions.size());
     std::vector<std::vector<PetscInt>> uOff_x(rhsFunctions.size());
@@ -328,9 +328,11 @@ void ablate::finiteVolume::FaceInterpolant::ComputeRHS(PetscReal time, Vec locXV
     PetscDSGetComponentDerivativeOffsets(subDomain->GetDiscreteSystem(), &uGradOffTotal) >> utilities::PetscUtilities::checkError;
 
     for (std::size_t fun = 0; fun < rhsFunctions.size(); fun++) {
-        const auto& field = subDomain->GetField(rhsFunctions[fun].field);
-        fluxComponentSize[fun] = field.numberComponents;
-        fluxId[fun] = field.id;
+        for (std::size_t f = 0; f < rhsFunctions[fun].updateFields.size(); f++) {
+            const auto& field = subDomain->GetField(rhsFunctions[fun].updateFields[f]);
+            fluxComponentSize[fun].push_back(field.numberComponents);
+            fluxId[fun].push_back(field.id);
+        }
         for (std::size_t f = 0; f < rhsFunctions[fun].inputFields.size(); f++) {
             uOff[fun].push_back(uOffTotal[rhsFunctions[fun].inputFields[f]]);
             uOff_x[fun].push_back(uGradOffTotal[rhsFunctions[fun].inputFields[f]]);
@@ -402,30 +404,31 @@ void ablate::finiteVolume::FaceInterpolant::ComputeRHS(PetscReal time, Vec locXV
                                                 flux.data(),
                                                 rhsFluxFunctionDescription.context) >>
                 utilities::PetscUtilities::checkError;
+            for (std::size_t updateFieldIdx = 0; updateFieldIdx < rhsFunctions[fun].updateFields.size(); updateFieldIdx++) {
+                // add the flux back to the cell
+                PetscScalar *fL = nullptr, *fR = nullptr;
+                PetscInt cellLabelValue = regionValue;
+                DMLabelGetValue(ghostLabel, faceCells[0], &ghost) >> utilities::PetscUtilities::checkError;
+                if (regionLabel) {
+                    DMLabelGetValue(regionLabel, faceCells[0], &cellLabelValue) >> utilities::PetscUtilities::checkError;
+                }
+                if (ghost <= 0 && regionValue == cellLabelValue) {
+                    DMPlexPointLocalFieldRef(dm, faceCells[0], rhsFunctions[fun].updateFields[updateFieldIdx], locFArray, &fL) >> utilities::PetscUtilities::checkError;
+                }
 
-            // add the flux back to the cell
-            PetscScalar *fL = nullptr, *fR = nullptr;
-            PetscInt cellLabelValue = regionValue;
-            DMLabelGetValue(ghostLabel, faceCells[0], &ghost) >> utilities::PetscUtilities::checkError;
-            if (regionLabel) {
-                DMLabelGetValue(regionLabel, faceCells[0], &cellLabelValue) >> utilities::PetscUtilities::checkError;
-            }
-            if (ghost <= 0 && regionValue == cellLabelValue) {
-                DMPlexPointLocalFieldRef(dm, faceCells[0], rhsFunctions[fun].field, locFArray, &fL) >> utilities::PetscUtilities::checkError;
-            }
+                cellLabelValue = regionValue;
+                DMLabelGetValue(ghostLabel, faceCells[1], &ghost) >> utilities::PetscUtilities::checkError;
+                if (regionLabel) {
+                    DMLabelGetValue(regionLabel, faceCells[1], &cellLabelValue) >> utilities::PetscUtilities::checkError;
+                }
+                if (ghost <= 0 && regionValue == cellLabelValue) {
+                    DMPlexPointLocalFieldRef(dm, faceCells[1], rhsFunctions[fun].updateFields[updateFieldIdx], locFArray, &fR) >> utilities::PetscUtilities::checkError;
+                }
 
-            cellLabelValue = regionValue;
-            DMLabelGetValue(ghostLabel, faceCells[1], &ghost) >> utilities::PetscUtilities::checkError;
-            if (regionLabel) {
-                DMLabelGetValue(regionLabel, faceCells[1], &cellLabelValue) >> utilities::PetscUtilities::checkError;
-            }
-            if (ghost <= 0 && regionValue == cellLabelValue) {
-                DMPlexPointLocalFieldRef(dm, faceCells[1], rhsFunctions[fun].field, locFArray, &fR) >> utilities::PetscUtilities::checkError;
-            }
-
-            for (PetscInt d = 0; d < fluxComponentSize[fun]; ++d) {
-                if (fL) fL[d] -= flux[d] / cgL->volume;
-                if (fR) fR[d] += flux[d] / cgR->volume;
+                for (PetscInt d = 0; d < fluxComponentSize[fun][updateFieldIdx]; ++d) {
+                    if (fL) fL[d] -= flux[d] / cgL->volume;
+                    if (fR) fR[d] += flux[d] / cgR->volume;
+                }
             }
         }
     }

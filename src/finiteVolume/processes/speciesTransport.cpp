@@ -35,7 +35,7 @@ ablate::finiteVolume::processes::SpeciesTransport::SpeciesTransport(std::shared_
 void ablate::finiteVolume::processes::SpeciesTransport::Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) {
     if (!eos->GetSpeciesVariables().empty()) {
         if (fluxCalculator) {
-            flow.RegisterRHSFunction(AdvectionFlux, &advectionData, CompressibleFlowFields::DENSITY_YI_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD}, {});
+            flow.RegisterRHSFunction(AdvectionFlux, &advectionData, {CompressibleFlowFields::DENSITY_YI_FIELD}, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD}, {CompressibleFlowFields::TEMPERATURE_FIELD});
             advectionData.computeTemperature = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature, flow.GetSubDomain().GetFields());
             advectionData.computeInternalEnergy = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::InternalSensibleEnergy, flow.GetSubDomain().GetFields());
             advectionData.computeSpeedOfSound = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SpeedOfSound, flow.GetSubDomain().GetFields());
@@ -49,23 +49,23 @@ void ablate::finiteVolume::processes::SpeciesTransport::Setup(ablate::finiteVolu
                 if (diffusionData.diffFunction.propertySize == 1) {
                     flow.RegisterRHSFunction(DiffusionEnergyFlux,
                                              &diffusionData,
-                                             CompressibleFlowFields::EULER_FIELD,
+                                             {CompressibleFlowFields::EULER_FIELD},
                                              {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
                                              {CompressibleFlowFields::YI_FIELD, CompressibleFlowFields::TEMPERATURE_FIELD});
                     flow.RegisterRHSFunction(DiffusionSpeciesFlux,
                                              &diffusionData,
-                                             CompressibleFlowFields::DENSITY_YI_FIELD,
+                                             {CompressibleFlowFields::DENSITY_YI_FIELD},
                                              {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
                                              {CompressibleFlowFields::YI_FIELD, CompressibleFlowFields::TEMPERATURE_FIELD});
                 } else if (diffusionData.diffFunction.propertySize == numberSpecies) {
                     flow.RegisterRHSFunction(DiffusionEnergyFluxVariableDiffusionCoefficient,
                                              &diffusionData,
-                                             CompressibleFlowFields::EULER_FIELD,
+                                             {CompressibleFlowFields::EULER_FIELD},
                                              {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
                                              {CompressibleFlowFields::YI_FIELD, CompressibleFlowFields::TEMPERATURE_FIELD});
                     flow.RegisterRHSFunction(DiffusionSpeciesFluxVariableDiffusionCoefficient,
                                              &diffusionData,
-                                             CompressibleFlowFields::DENSITY_YI_FIELD,
+                                             {CompressibleFlowFields::DENSITY_YI_FIELD},
                                              {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
                                              {CompressibleFlowFields::YI_FIELD, CompressibleFlowFields::TEMPERATURE_FIELD});
                 } else {
