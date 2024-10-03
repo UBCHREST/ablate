@@ -19,7 +19,7 @@ class SpeciesTransport : public FlowProcess {
         PetscInt numberSpecies;
 
         // EOS function calls
-        eos::ThermodynamicFunction computeTemperature;
+        eos::ThermodynamicTemperatureFunction computeTemperature;
         eos::ThermodynamicTemperatureFunction computeInternalEnergy;
         eos::ThermodynamicTemperatureFunction computeSpeedOfSound;
         eos::ThermodynamicTemperatureFunction computePressure;
