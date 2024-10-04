@@ -4,7 +4,7 @@
 #include "finiteVolume/processes/evTransport.hpp"
 #include "finiteVolume/processes/navierStokesTransport.hpp"
 #include "finiteVolume/processes/speciesTransport.hpp"
-#include "finiteVolume/processes/CompactCompressibleTransport.hpp"
+#include "finiteVolume/processes/compactCompressibleTransport.hpp"
 #include "utilities/vectorUtilities.hpp"
 
 ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,

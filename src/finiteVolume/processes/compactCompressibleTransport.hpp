@@ -114,6 +114,75 @@ public:
     static PetscErrorCode AdvectionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscScalar fieldL[], const PetscScalar fieldR[], const PetscInt aOff[],
                                         const PetscScalar auxL[], const PetscScalar auxR[], PetscScalar* flux, void* ctx);
 
+
+    /**
+     * This Computes the diffusion flux for euler rhoE, rhoVel
+     * u = {"euler", "densityYi"}
+     * a = {"temperature", "velocity"}
+     * ctx = FlowData_CompressibleFlow
+     * @return
+     */
+    static PetscErrorCode DiffusionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
+                                        const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
+
+     /**
+     * This computes the energy transfer for species diffusion flux for rhoE
+     * f = "euler"
+     * u = {"euler", "densityYi"}
+     * a = {"yi"}
+     * ctx = SpeciesDiffusionData
+     * @return
+     */
+    static PetscErrorCode DiffusionEnergyFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
+                                              const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
+
+    /**
+     * This computes the energy transfer for species diffusion flux for rhoE for variable diffusion coefficient
+     * f = "euler"
+     * u = {"euler", "densityYi"}
+     * a = {"yi"}
+     * ctx = SpeciesDiffusionData
+     * @return
+     */
+    static PetscErrorCode DiffusionEnergyFluxVariableDiffusionCoefficient(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[],
+                                                                          const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
+                                                                          const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
+
+    /**
+     * This computes the species transfer for species diffusion flux
+     * f = "densityYi"
+     * u = {"euler"}
+     * a = {"yi", "T"}
+     * ctx = SpeciesDiffusionData
+     * @return
+     */
+    static PetscErrorCode DiffusionSpeciesFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
+                                               const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
+
+    /**
+     * This computes the species transfer for species diffusion flux for variable diffusion coefficient
+     * f = "densityYi"
+     * u = {"euler"}
+     * a = {"yi", "T"}
+     * ctx = SpeciesDiffusionData
+     * @return
+     */
+    static PetscErrorCode DiffusionSpeciesFluxVariableDiffusionCoefficient(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[],
+                                                                           const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
+                                                                           const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
+
+
+
+
+    // static function to compute time step for euler advection
+    static double ComputeCflTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
+    // static function to compute the conduction based time step
+    static double ComputeViscousDiffusionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
+    // static function to compute the conduction based time step
+    static double ComputeConductionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
+    // static function to compute the conduction based time step
+    static double ComputeViscousSpeciesDiffusionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
+
 };
 
 } //end namespace
