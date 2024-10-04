@@ -174,7 +174,7 @@ PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleTransport::Ad
         densityL = fieldL[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
         PetscReal temperatureL;
 
-        PetscCall(advectionData->computeTemperature.function(fieldL, auxL[aOff[0]]*.66+.34*auxR[aOff[0]], &temperatureL, advectionData->computeTemperature.context.get()));
+        PetscCall(advectionData->computeTemperature.function(fieldL, auxL[aOff[0]]*.67+.33*auxR[aOff[0]], &temperatureL, advectionData->computeTemperature.context.get()));
 
         // Get the velocity in this direction
         normalVelocityL = 0.0;
@@ -198,7 +198,7 @@ PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleTransport::Ad
         densityR = fieldR[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
         PetscReal temperatureR;
 
-        PetscCall(advectionData->computeTemperature.function(fieldR, auxR[aOff[0]]*.66+.34*auxL[aOff[0]], &temperatureR, advectionData->computeTemperature.context.get()));
+        PetscCall(advectionData->computeTemperature.function(fieldR, auxR[aOff[0]]*.67+.33*auxL[aOff[0]], &temperatureR, advectionData->computeTemperature.context.get()));
 
         // Get the velocity in this direction
         normalVelocityR = 0.0;
