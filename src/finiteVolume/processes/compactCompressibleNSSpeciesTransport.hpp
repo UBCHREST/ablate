@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_COMPACTCOMPRESSIBLETRANSPORT_H
-#define ABLATELIBRARY_COMPACTCOMPRESSIBLETRANSPORT_H
+#ifndef ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESTRANSPORT_H
+#define ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESTRANSPORT_H
 
 #include <petsc.h>
 #include "eos/transport/transportModel.hpp"
@@ -9,7 +9,7 @@
 
 namespace ablate::finiteVolume::processes {
 
-class CompactCompressibleTransport : public FlowProcess {
+class CompactCompressibleNSSpeciesTransport : public FlowProcess {
 private:
     // store ctx needed for function advection function that is passed into Petsc
     struct AdvectionData {
@@ -95,7 +95,7 @@ private:
     eos::ThermodynamicFunction computePressureFunction;
 
 public:
-    explicit CompactCompressibleTransport(const std::shared_ptr<parameters::Parameters>& parameters, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn={},
+    explicit CompactCompressibleNSSpeciesTransport(const std::shared_ptr<parameters::Parameters>& parameters, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn={},
                                           std::shared_ptr<eos::transport::TransportModel> baseTransport = {}, std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> = {});
     /**
      * public function to link this process with the flow
@@ -186,4 +186,4 @@ public:
 
 } //end namespace
 
-#endif //ABLATELIBRARY_COMPACTCOMPRESSIBLETRANSPORT_H
+#endif //ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESTRANSPORT_H

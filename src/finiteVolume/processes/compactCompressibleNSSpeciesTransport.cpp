@@ -1,4 +1,4 @@
-#include "compactCompressibleTransport.hpp"
+#include "compactCompressibleNSSpeciesTransport.hpp"
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/fluxCalculator/ausm.hpp"
@@ -9,7 +9,7 @@
 #include "utilities/mathUtilities.hpp"
 #include "utilities/petscUtilities.hpp"
 
-ablate::finiteVolume::processes::CompactCompressibleTransport::CompactCompressibleTransport(
+ablate::finiteVolume::processes::CompactCompressibleNSSpeciesTransport::CompactCompressibleNSSpeciesTransport(
         const std::shared_ptr<parameters::Parameters> &parametersIn, std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn,
         std::shared_ptr<eos::transport::TransportModel> baseTransport, std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> pgs)
         : advectionData(), fluxCalculator(fluxCalcIn), eos(std::move(eosIn)),transportModel(std::move(baseTransport)) {
@@ -42,7 +42,7 @@ ablate::finiteVolume::processes::CompactCompressibleTransport::CompactCompressib
     }
 }
 
-void ablate::finiteVolume::processes::CompactCompressibleTransport::Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) {
+void ablate::finiteVolume::processes::CompactCompressibleNSSpeciesTransport::Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) {
     // Register the euler,eulerYi, and species source terms
     if (fluxCalculator) {
         //I don't know why we wouldn't push through the old temperature fields, maybe slower for perfect gas/idealized gas's but when there is a temperature iterative method this should be better
@@ -146,7 +146,7 @@ void ablate::finiteVolume::processes::CompactCompressibleTransport::Setup(ablate
     flow.RegisterPostEvaluate(ablate::finiteVolume::processes::SpeciesTransport::NormalizeSpecies);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleTransport::AdvectionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt* uOff, const PetscScalar* fieldL,
+PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesTransport::AdvectionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt* uOff, const PetscScalar* fieldL,
                                                                                      const PetscScalar* fieldR, const PetscInt* aOff, const PetscScalar* auxL, const PetscScalar* auxR,
                                                                                      PetscScalar* flux, void* ctx) {
     PetscFunctionBeginUser;
@@ -260,7 +260,7 @@ PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleTransport::Ad
 }
 
 
-double ablate::finiteVolume::processes::CompactCompressibleTransport::ComputeCflTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx) {
+double ablate::finiteVolume::processes::CompactCompressibleNSSpeciesTransport::ComputeCflTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx) {
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> utilities::PetscUtilities::checkError;
@@ -338,7 +338,7 @@ double ablate::finiteVolume::processes::CompactCompressibleTransport::ComputeCfl
     return dtMin;
 }
 
-double ablate::finiteVolume::processes::CompactCompressibleTransport::ComputeConductionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx) {
+double ablate::finiteVolume::processes::CompactCompressibleNSSpeciesTransport::ComputeConductionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx) {
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> utilities::PetscUtilities::checkError;
@@ -424,7 +424,7 @@ double ablate::finiteVolume::processes::CompactCompressibleTransport::ComputeCon
     return dtMin;
 }
 
-double ablate::finiteVolume::processes::CompactCompressibleTransport::ComputeViscousDiffusionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx) {
+double ablate::finiteVolume::processes::CompactCompressibleNSSpeciesTransport::ComputeViscousDiffusionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx) {
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> utilities::PetscUtilities::checkError;
@@ -504,7 +504,7 @@ double ablate::finiteVolume::processes::CompactCompressibleTransport::ComputeVis
     flow.RestoreRange(cellRange);
     return dtMin;
 }
-double ablate::finiteVolume::processes::CompactCompressibleTransport::ComputeViscousSpeciesDiffusionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver &flow, void *ctx) {
+double ablate::finiteVolume::processes::CompactCompressibleNSSpeciesTransport::ComputeViscousSpeciesDiffusionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver &flow, void *ctx) {
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> utilities::PetscUtilities::checkError;
@@ -572,7 +572,7 @@ double ablate::finiteVolume::processes::CompactCompressibleTransport::ComputeVis
     return dtMin;
 }
 
-PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleTransport::DiffusionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[],
+PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesTransport::DiffusionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[],
                                                                                      const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
                                                                                      const PetscScalar gradAux[], PetscScalar flux[], void* ctx) {
     PetscFunctionBeginUser;
@@ -628,7 +628,7 @@ PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleTransport::Di
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleTransport::DiffusionEnergyFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[],
+PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesTransport::DiffusionEnergyFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[],
                                                                                       const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[],
                                                                                       const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
     PetscFunctionBeginUser;
@@ -670,7 +670,7 @@ PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleTransport::Di
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleTransport::DiffusionEnergyFluxVariableDiffusionCoefficient(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[],
+PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesTransport::DiffusionEnergyFluxVariableDiffusionCoefficient(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[],
                                                                                                                   const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
                                                                                                                   const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
                                                                                                                   const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
@@ -712,7 +712,7 @@ PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleTransport::Di
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleTransport::DiffusionSpeciesFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[],
+PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesTransport::DiffusionSpeciesFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[],
                                                                                        const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[],
                                                                                        const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
     PetscFunctionBeginUser;
@@ -746,7 +746,7 @@ PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleTransport::Di
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleTransport::DiffusionSpeciesFluxVariableDiffusionCoefficient(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[],
+PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesTransport::DiffusionSpeciesFluxVariableDiffusionCoefficient(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[],
                                                                                                                    const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
                                                                                                                    const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
                                                                                                                    const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {

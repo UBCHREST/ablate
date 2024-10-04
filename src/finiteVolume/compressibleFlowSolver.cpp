@@ -1,10 +1,10 @@
 #include "compressibleFlowSolver.hpp"
 #include <utility>
 #include "compressibleFlowFields.hpp"
+#include "finiteVolume/processes/compactCompressibleNSSpeciesTransport.hpp"
 #include "finiteVolume/processes/evTransport.hpp"
 #include "finiteVolume/processes/navierStokesTransport.hpp"
 #include "finiteVolume/processes/speciesTransport.hpp"
-#include "finiteVolume/processes/compactCompressibleTransport.hpp"
 #include "utilities/vectorUtilities.hpp"
 
 ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
@@ -15,7 +15,7 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                                                                      std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                                      const std::shared_ptr<eos::transport::TransportModel>& evTransport, PetscInt compact)
     : FiniteVolumeSolver(std::move(solverId), std::move(region), std::move(options), compact ?
-                         utilities::VectorUtilities::Merge( {std::make_shared<ablate::finiteVolume::processes::CompactCompressibleTransport>(
+                         utilities::VectorUtilities::Merge( {std::make_shared<ablate::finiteVolume::processes::CompactCompressibleNSSpeciesTransport>(
                                  parameters, eosIn, fluxCalculatorIn, transport, utilities::VectorUtilities::Find<ablate::finiteVolume::processes::PressureGradientScaling>(additionalProcesses) )
                          }, additionalProcesses) :
                          utilities::VectorUtilities::Merge(
