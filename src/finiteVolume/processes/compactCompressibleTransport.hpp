@@ -50,14 +50,6 @@ private:
     };
     DiffusionData diffusionData;
 
-    const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculator;
-    const std::shared_ptr<eos::EOS> eos;
-    const std::shared_ptr<eos::transport::TransportModel> transportModel;
-
-
-    eos::ThermodynamicTemperatureFunction computeTemperatureFunction;
-    eos::ThermodynamicFunction computePressureFunction;
-
     // Store the required ctx for time stepping
     struct CflTimeStepData {
         /* thermal conductivity*/
@@ -94,6 +86,13 @@ private:
 
     };
     DiffusionTimeStepData diffusionTimeStepData;
+
+    const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculator;
+    const std::shared_ptr<eos::EOS> eos;
+    const std::shared_ptr<eos::transport::TransportModel> transportModel;
+
+    eos::ThermodynamicTemperatureFunction computeTemperatureFunction;
+    eos::ThermodynamicFunction computePressureFunction;
 
 public:
     explicit CompactCompressibleTransport(const std::shared_ptr<parameters::Parameters>& parameters, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn={},

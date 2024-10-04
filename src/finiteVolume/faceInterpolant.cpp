@@ -389,7 +389,7 @@ void ablate::finiteVolume::FaceInterpolant::ComputeRHS(PetscReal time, Vec locXV
         // March over each source function
         for (std::size_t fun = 0; fun < rhsFunctions.size(); fun++) {
             PetscArrayzero(flux.data(), totDim) >> utilities::PetscUtilities::checkError;
-
+            PetscInt fluxOffset = 0; //Flux offset for the function ( Currently calculated by just adding the number of components of the previous fields)
             const auto& rhsFluxFunctionDescription = rhsFunctions[fun];
             rhsFluxFunctionDescription.function(dim,
                                                 fg,
@@ -426,9 +426,10 @@ void ablate::finiteVolume::FaceInterpolant::ComputeRHS(PetscReal time, Vec locXV
                 }
 
                 for (PetscInt d = 0; d < fluxComponentSize[fun][updateFieldIdx]; ++d) {
-                    if (fL) fL[d] -= flux[d] / cgL->volume;
-                    if (fR) fR[d] += flux[d] / cgR->volume;
+                    if (fL) fL[d] -= flux[d+fluxOffset] / cgL->volume;
+                    if (fR) fR[d] += flux[d+fluxOffset] / cgR->volume;
                 }
+                fluxOffset += fluxComponentSize[fun][updateFieldIdx];
             }
         }
     }

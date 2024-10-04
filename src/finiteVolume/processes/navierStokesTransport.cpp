@@ -104,7 +104,7 @@ PetscErrorCode ablate::finiteVolume::processes::NavierStokesTransport::Advection
     auto eulerAdvectionData = (AdvectionData*)ctx;
 
     const int EULER_FIELD = 0;
-//    const int TEMP_FIELD = 0;
+    const int TEMP_FIELD = 0;
 
     // Compute the norm
     PetscReal norm[3];
@@ -124,8 +124,7 @@ PetscErrorCode ablate::finiteVolume::processes::NavierStokesTransport::Advection
         densityL = fieldL[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
         PetscReal temperatureL;
 
-//        PetscCall(eulerAdvectionData->computeTemperature.function(fieldL, auxL[aOff[TEMP_FIELD]]*.67 + .33*auxR[aOff[TEMP_FIELD]],  &temperatureL, eulerAdvectionData->computeTemperature.context.get()));
-        PetscCall(eulerAdvectionData->computeTemperature.function(fieldL, 300,  &temperatureL, eulerAdvectionData->computeTemperature.context.get()));
+        PetscCall(eulerAdvectionData->computeTemperature.function(fieldL, auxL[aOff[TEMP_FIELD]]*.67 + .33*auxR[aOff[TEMP_FIELD]],  &temperatureL, eulerAdvectionData->computeTemperature.context.get()));
 
         // Get the velocity in this direction
         normalVelocityL = 0.0;
@@ -150,8 +149,7 @@ PetscErrorCode ablate::finiteVolume::processes::NavierStokesTransport::Advection
         densityR = fieldR[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
         PetscReal temperatureR;
 
-//        PetscCall(eulerAdvectionData->computeTemperature.function(fieldR, auxL[aOff[TEMP_FIELD]]*.33 + .67*auxR[aOff[TEMP_FIELD]], &temperatureR, eulerAdvectionData->computeTemperature.context.get()));
-        PetscCall(eulerAdvectionData->computeTemperature.function(fieldR, 300, &temperatureR, eulerAdvectionData->computeTemperature.context.get()));
+        PetscCall(eulerAdvectionData->computeTemperature.function(fieldR, auxL[aOff[TEMP_FIELD]]*.33 + .67*auxR[aOff[TEMP_FIELD]], &temperatureR, eulerAdvectionData->computeTemperature.context.get()));
 
         // Get the velocity in this direction
         normalVelocityR = 0.0;

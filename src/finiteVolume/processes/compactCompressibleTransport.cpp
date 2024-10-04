@@ -14,6 +14,7 @@ ablate::finiteVolume::processes::CompactCompressibleTransport::CompactCompressib
         std::shared_ptr<eos::transport::TransportModel> baseTransport, std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> pgs)
         : advectionData(), fluxCalculator(fluxCalcIn), eos(std::move(eosIn)),transportModel(std::move(baseTransport)) {
     auto parameters = ablate::parameters::EmptyParameters::Check(parametersIn);
+
     if(fluxCalculator) {
         // cfl
         advectionData.cfl = parameters->Get<PetscReal>("cfl", 0.5);
@@ -21,10 +22,13 @@ ablate::finiteVolume::processes::CompactCompressibleTransport::CompactCompressib
         // extract the difference function from fluxDifferencer object
         advectionData.fluxCalculatorFunction = fluxCalculator->GetFluxCalculatorFunction();
         advectionData.fluxCalculatorCtx = fluxCalculator->GetFluxCalculatorContext();
+
+        advectionData.numberSpecies = (PetscInt)eos->GetSpeciesVariables().size();
     }
-    advectionData.numberSpecies = (PetscInt)eos->GetSpeciesVariables().size();
+
     timeStepData.advectionData = &advectionData;
     timeStepData.pgs = std::move(pgs);
+
     if(transportModel) {
         // Add in the time stepping
         diffusionTimeStepData.conductionStabilityFactor = parameters->Get<PetscReal>("conductionStabilityFactor", 0.0);
@@ -108,6 +112,7 @@ void ablate::finiteVolume::processes::CompactCompressibleTransport::Setup(ablate
             diffusionTimeStepData.muFunction = diffusionData.muFunction;
             diffusionTimeStepData.specificHeat = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SpecificHeatConstantVolume, flow.GetSubDomain().GetFields());
             diffusionTimeStepData.density = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Density, flow.GetSubDomain().GetFields());
+
             diffusionTimeStepData.numberSpecies = eos->GetSpeciesVariables().size();
 
             if (diffusionTimeStepData.conductionStabilityFactor > 0) {
@@ -136,11 +141,9 @@ void ablate::finiteVolume::processes::CompactCompressibleTransport::Setup(ablate
         computePressureFunction = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Pressure, flow.GetSubDomain().GetFields());
         flow.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::NavierStokesTransport::UpdateAuxPressureField, &computePressureFunction, std::vector<std::string>{CompressibleFlowFields::PRESSURE_FIELD}, {});
     }
-    if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::YI_FIELD)) {
-        flow.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::SpeciesTransport::UpdateAuxMassFractionField, &advectionData.numberSpecies, {CompressibleFlowFields::YI_FIELD}, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});
-        // clean up the species
-        flow.RegisterPostEvaluate(ablate::finiteVolume::processes::SpeciesTransport::NormalizeSpecies);
-    }
+    flow.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::SpeciesTransport::UpdateAuxMassFractionField, &advectionData.numberSpecies, std::vector<std::string>{CompressibleFlowFields::YI_FIELD}, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});
+    // clean up the species
+    flow.RegisterPostEvaluate(ablate::finiteVolume::processes::SpeciesTransport::NormalizeSpecies);
 }
 
 PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleTransport::AdvectionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt* uOff, const PetscScalar* fieldL,
@@ -170,9 +173,9 @@ PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleTransport::Ad
     {
         densityL = fieldL[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
         PetscReal temperatureL;
-        //grab Temperature from aux field somehow and use that here, probably just auxL[0] and auxR[0] //I want to see how different tempL and it's calculated temperature are
-        // If the same perfect, get rid of this step -klb
+
         PetscCall(advectionData->computeTemperature.function(fieldL, auxL[aOff[0]]*.66+.34*auxR[aOff[0]], &temperatureL, advectionData->computeTemperature.context.get()));
+
         // Get the velocity in this direction
         normalVelocityL = 0.0;
         for (PetscInt d = 0; d < dim; d++) {

@@ -579,8 +579,10 @@ void ablate::finiteVolume::CellInterpolant::ComputeFluxSourceTerms(DM dm, PetscD
             DMPlexPointLocalRead(dmAux, faceCells[0], auxArray, &auxL) >> utilities::PetscUtilities::checkError;
             DMPlexPointLocalRead(dmAux, faceCells[1], auxArray, &auxR) >> utilities::PetscUtilities::checkError;
         }
+
         // March over each source function
         for (std::size_t fun = 0; fun < rhsFunctions.size(); fun++) {
+            PetscInt fluxOffset = 0; //Flux offset for the function ( Currently calculated by just adding the number of components of the previous fields)
             PetscArrayzero(flux, totDim) >> utilities::PetscUtilities::checkError;
             const auto& rhsFluxFunctionDescription = rhsFunctions[fun];
             rhsFluxFunctionDescription.function(dim, fg, uOff[fun].data(), uL, uR, aOff[fun].data(), auxL, auxR, flux, rhsFluxFunctionDescription.context) >> utilities::PetscUtilities::checkError;
@@ -605,10 +607,11 @@ void ablate::finiteVolume::CellInterpolant::ComputeFluxSourceTerms(DM dm, PetscD
                     DMPlexPointLocalFieldRef(dm, faceCells[1], fluxId[fun][updateFieldIdx], locFArray, &fR) >> utilities::PetscUtilities::checkError;
                 }
 
-                for (PetscInt d = 0; d < fluxComponentSize[fun][updateFieldIdx]; ++d) {
-                    if (fL) fL[d] -= flux[d] / cgL->volume;
-                    if (fR) fR[d] += flux[d] / cgR->volume;
+                for (PetscInt d = 0; d < (fluxComponentSize[fun][updateFieldIdx]); ++d) {
+                    if (fL) fL[d] -= flux[fluxOffset+d] / cgL->volume;
+                    if (fR) fR[d] += flux[fluxOffset+d] / cgR->volume;
                 }
+                fluxOffset += fluxComponentSize[fun][updateFieldIdx];
             }
         }
     }
