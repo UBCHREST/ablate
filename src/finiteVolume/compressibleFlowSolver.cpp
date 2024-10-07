@@ -13,7 +13,7 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                                                                      const std::shared_ptr<fluxCalculator::FluxCalculator>& fluxCalculatorIn,
                                                                      std::vector<std::shared_ptr<processes::Process>> additionalProcesses,
                                                                      std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                                     const std::shared_ptr<eos::transport::TransportModel>& evTransport, PetscInt compact)
+                                                                     const std::shared_ptr<eos::transport::TransportModel>& evTransport, int compact)
     : FiniteVolumeSolver(std::move(solverId), std::move(region), std::move(options), compact ?
                          utilities::VectorUtilities::Merge( {std::make_shared<ablate::finiteVolume::processes::CompactCompressibleNSSpeciesTransport>(
                                  parameters, eosIn, fluxCalculatorIn, transport, utilities::VectorUtilities::Find<ablate::finiteVolume::processes::PressureGradientScaling>(additionalProcesses) )
@@ -34,7 +34,7 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                                                                      const std::shared_ptr<eos::transport::TransportModel>& transport,
                                                                      const std::shared_ptr<fluxCalculator::FluxCalculator>& fluxCalculatorIn,
                                                                      std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                                     const std::shared_ptr<eos::transport::TransportModel>& evTransport, PetscInt compact)
+                                                                     const std::shared_ptr<eos::transport::TransportModel>& evTransport, int compact)
     : CompressibleFlowSolver(std::move(solverId), std::move(region), std::move(options), eosIn, parameters, transport, fluxCalculatorIn, {}, std::move(boundaryConditions), evTransport, compact) {}
 
 #include "registrar.hpp"
@@ -46,4 +46,4 @@ REGISTER(ablate::solver::Solver, ablate::finiteVolume::CompressibleFlowSolver, "
          OPT(std::vector<ablate::finiteVolume::processes::Process>, "additionalProcesses", "any additional processes besides euler/yi/ev transport"),
          OPT(std::vector<ablate::finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
          OPT(ablate::eos::transport::TransportModel, "evTransport", "when provided, this model will be used for ev transport instead of default"),
-         OPT(PetscInt, "compact", ""));
+         OPT(int, "compact", ""));
