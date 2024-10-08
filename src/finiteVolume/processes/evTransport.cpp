@@ -149,6 +149,7 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::AdvectionFlux(Petsc
     const int EULER_FIELD = 0;
     const int DENSITY_EV_FIELD = 1;
 
+
     // Decode the left and right states
     PetscReal densityL;
     PetscReal normalVelocityL;

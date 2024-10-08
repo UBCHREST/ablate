@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESTRANSPORT_H
-#define ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESTRANSPORT_H
+#ifndef ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESNDDTRANSPORT_H
+#define ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESNDDTRANSPORT_H
 
 #include <petsc.h>
 #include "eos/transport/transportModel.hpp"
@@ -9,7 +9,7 @@
 
 namespace ablate::finiteVolume::processes {
 
-class CompactCompressibleNSSpeciesTransport : public FlowProcess {
+class CompactCompressibleNSSpeciesNDDTransport : public FlowProcess {
 private:
     // store ctx needed for function advection function that is passed into Petsc
     struct AdvectionData {
@@ -18,6 +18,7 @@ private:
 
         /* number of gas species and extra species */
         PetscInt numberSpecies;
+        PetscInt numberEV;
 
         // EOS function calls (For Temperature it's better to just use the TemperatureTemperature function so we can guess Temperature from t
         eos::ThermodynamicTemperatureFunction computeTemperature;
@@ -36,14 +37,20 @@ private:
         eos::ThermodynamicTemperatureFunction kFunction;
         eos::ThermodynamicTemperatureFunction muFunction;
         eos::ThermodynamicTemperatureFunction diffFunction;
-        /* number of gas species */
+        eos::ThermodynamicTemperatureFunction evDiffFunction;
+
+        /* number of gas species and progress variables (NDD) */
         PetscInt numberSpecies;
+        PetscInt numberEV;
+
         /* functions to compute species enthalpy */
         eos::ThermodynamicTemperatureFunction computeSpeciesSensibleEnthalpyFunction;
         /* store a scratch space for speciesSpeciesSensibleEnthalpy */
         std::vector<PetscReal> speciesSpeciesSensibleEnthalpy;
         /* store an optional scratch space for individual species diffusion */
         std::vector<PetscReal> speciesDiffusionCoefficient;
+        /* store a scratch space for evDiffusionCoefficient */
+        std::vector<PetscReal> evDiffusionCoefficient;
     };
     DiffusionData diffusionData;
 
@@ -62,6 +69,7 @@ private:
         PetscInt numberSpecies;
         /* store an optional scratch space for individual species diffusion */
         std::vector<PetscReal> speciesDiffusionCoefficient;
+        PetscReal NDDDiffusionCoefficient;
 
         //! stability factor for condition time step. 0 (default) does not compute factor
         PetscReal diffusiveStabilityFactor;
@@ -87,13 +95,14 @@ private:
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculator;
     const std::shared_ptr<eos::EOS> eos;
     const std::shared_ptr<eos::transport::TransportModel> transportModel;
+    const std::shared_ptr<eos::transport::TransportModel> NDDTransportModel;
 
     eos::ThermodynamicTemperatureFunction computeTemperatureFunction;
     eos::ThermodynamicFunction computePressureFunction;
 
 public:
-    explicit CompactCompressibleNSSpeciesTransport(const std::shared_ptr<parameters::Parameters>& parameters, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn={},
-                                          std::shared_ptr<eos::transport::TransportModel> baseTransport = {}, std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> = {});
+    explicit CompactCompressibleNSSpeciesNDDTransport(const std::shared_ptr<parameters::Parameters>& parameters, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn={},
+                                          std::shared_ptr<eos::transport::TransportModel> baseTransport = {}, std::shared_ptr<eos::transport::TransportModel> evTransport = {}, std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> = {});
     /**
      * public function to link this process with the flow
      * @param flow
@@ -166,6 +175,28 @@ public:
     static PetscErrorCode DiffusionSpeciesFluxVariableDiffusionCoefficient(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[],
                                                                            const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
                                                                            const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
+    /**
+     * This computes the species transfer for species diffusion flux
+     * f = "densityYi"
+     * u = {"euler"}
+     * a = {"yi", "T"}
+     * ctx = SpeciesDiffusionData
+     * @return
+     */
+    static PetscErrorCode DiffusionEVFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
+                                          const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
+
+    /**
+     * This computes the species transfer for species diffusion flux for variable diffusion coefficient
+     * f = "densityYi"
+     * u = {"euler"}
+     * a = {"yi", "T"}
+     * ctx = SpeciesDiffusionData
+     * @return
+     */
+    static PetscErrorCode DiffusionEVFluxVariableDiffusionCoefficient(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[],
+                                                                      const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[],
+                                                                      PetscScalar flux[], void* ctx);
 
 
 
@@ -183,4 +214,4 @@ public:
 
 } //end namespace
 
-#endif //ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESTRANSPORT_H
+#endif //ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESNDDTRANSPORT_H
