@@ -559,7 +559,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             PetscInt nx1D = initialNx * PetscPowRealInt(2, l);
             PetscInt nx[] = {nx1D, nx1D, nx1D};
             DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
-            DMPlexCreateBoxMesh(PETSC_COMM_WORLD, constants.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
+            DMPlexCreateBoxMesh(PETSC_COMM_WORLD, constants.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, 0, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
             // Setup the flow data
             auto eos = std::make_shared<ablate::eos::PerfectGas>(

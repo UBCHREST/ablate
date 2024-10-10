@@ -146,7 +146,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
             PetscReal end[] = {testingParam.initialConditions.length};
             PetscInt nx[] = {testingParam.nx};
             DMBoundaryType bcType[] = {DM_BOUNDARY_NONE};
-            DMPlexCreateBoxMesh(PETSC_COMM_WORLD, 1, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
+            DMPlexCreateBoxMesh(PETSC_COMM_WORLD, 1, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, 0, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
             auto eos = std::make_shared<ablate::eos::PerfectGas>(
                 std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(testingParam.initialConditions.gamma)}}));
