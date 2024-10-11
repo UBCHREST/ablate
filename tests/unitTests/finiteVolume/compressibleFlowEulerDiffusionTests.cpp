@@ -179,7 +179,7 @@ TEST_P(CompressibleFlowEulerDiffusionTestFixture, ShouldConvergeToExactSolution)
             PetscInt nx1D = initialNx * PetscPowRealInt(2, l);
             PetscInt nx[] = {nx1D};
             DMBoundaryType bcType[] = {DM_BOUNDARY_NONE};
-            DMPlexCreateBoxMesh(PETSC_COMM_WORLD, parameters.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
+            DMPlexCreateBoxMesh(PETSC_COMM_WORLD, parameters.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, 0, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
             // define the fields based upon a compressible flow
             auto eos = std::make_shared<ablate::eos::PerfectGas>(
