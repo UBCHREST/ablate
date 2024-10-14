@@ -38,7 +38,8 @@ jobs:
     needs: [ get-timestamp ]
     strategy:
       matrix:
-        arch: [ { runson: ARM64, id: -arm64 }, { runson: ubuntu-latest, id: -amd64 } ]
+        arch: [ { runson: ubuntu-latest, id: -amd64 } ]
+        #arch: [ { runson: ARM64, id: -arm64 }, { runson: ubuntu-latest, id: -amd64 } ]
         compiler: [ { id: -gcc }, { id: -clang } ]
         indices: [ { index64bit: 0, id: "" },  { index64bit: 1, id: "-index64" } ]
         include:
@@ -87,7 +88,8 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        arch: [ { runson: ARM64, id: -arm64 }, { runson: ubuntu-latest, id: -amd64 } ]
+        arch: [ { runson: ubuntu-latest, id: -amd64 } ]
+        #arch: [ { runson: ARM64, id: -arm64 }, { runson: ubuntu-latest, id: -amd64 } ]
         compiler: [ { id: -gcc }, {  id: -clang } ]
         indices: [ { index64bit: 0, id: "" },  { index64bit: 1, id: "-index64" } ]
         include:
