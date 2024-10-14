@@ -42,7 +42,6 @@ void ablate::domain::MeshGenerator::ReplaceDm(DM& originalDm, DM& replaceDm) {
         DMSetSparseLocalize(cdm, sparseLocalize) >> utilities::PetscUtilities::checkError;
         DMLocalizeCoordinates(replaceDm) >> utilities::PetscUtilities::checkError;
 
-
         DMDestroy(&originalDm) >> utilities::PetscUtilities::checkError;
         originalDm = replaceDm;
     }

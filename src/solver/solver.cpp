@@ -10,7 +10,6 @@ ablate::solver::Solver::Solver(std::string solverId, std::shared_ptr<domain::Reg
         PetscOptionsCreate(&petscOptions) >> utilities::PetscUtilities::checkError;
         options->Fill(petscOptions);
     }
-
 }
 
 ablate::solver::Solver::~Solver() {
@@ -19,50 +18,45 @@ ablate::solver::Solver::~Solver() {
     }
 }
 
-void ablate::solver::Solver::Register(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) {
-  subDomain = std::move(subDomainIn);
-
-}
+void ablate::solver::Solver::Register(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) { subDomain = std::move(subDomainIn); }
 
 void ablate::solver::Solver::SetupCellRangeWithoutGhost() {
+    // Get the original range
+    ablate::domain::Range cellRange;
+    GetCellRange(cellRange);
 
-  // Get the original range
-  ablate::domain::Range cellRange;
-  GetCellRange(cellRange);
+    // create a new label
+    auto dm = subDomain->GetDM();
+    DMCreateLabel(dm, regionMinusGhost->GetName().c_str()) >> utilities::PetscUtilities::checkError;
+    DMLabel regionMinusGhostLabel;
+    PetscInt regionMinusGhostValue;
+    domain::Region::GetLabel(regionMinusGhost, dm, regionMinusGhostLabel, regionMinusGhostValue);
 
-  // create a new label
-  auto dm = subDomain->GetDM();
-  DMCreateLabel(dm, regionMinusGhost->GetName().c_str()) >> utilities::PetscUtilities::checkError;
-  DMLabel regionMinusGhostLabel;
-  PetscInt regionMinusGhostValue;
-  domain::Region::GetLabel(regionMinusGhost, dm, regionMinusGhostLabel, regionMinusGhostValue);
+    // Get the ghost cell label
+    DMLabel ghostLabel;
+    DMGetLabel(dm, "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
 
-  // Get the ghost cell label
-  DMLabel ghostLabel;
-  DMGetLabel(dm, "ghost", &ghostLabel) >> utilities::PetscUtilities::checkError;
+    // check if it is an exterior boundary cell ghost
+    PetscInt boundaryCellStart;
+    DMPlexGetCellTypeStratum(dm, DM_POLYTOPE_FV_GHOST, &boundaryCellStart, nullptr) >> utilities::PetscUtilities::checkError;
 
-  // check if it is an exterior boundary cell ghost
-  PetscInt boundaryCellStart;
-  DMPlexGetCellTypeStratum(dm, DM_POLYTOPE_FV_GHOST, &boundaryCellStart, nullptr) >> utilities::PetscUtilities::checkError;
+    // march over every cell
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+        PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
-  // march over every cell
-  for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
-      PetscInt cell = cellRange.points ? cellRange.points[c] : c;
+        // check if it is boundary ghost
+        PetscInt isGhost = -1;
+        if (ghostLabel) {
+            DMLabelGetValue(ghostLabel, cell, &isGhost) >> utilities::PetscUtilities::checkError;
+        }
 
-      // check if it is boundary ghost
-      PetscInt isGhost = -1;
-      if (ghostLabel) {
-          DMLabelGetValue(ghostLabel, cell, &isGhost) >> utilities::PetscUtilities::checkError;
-      }
-
-      PetscInt owned;
-      DMPlexGetPointGlobal(dm, cell, &owned, nullptr) >> utilities::PetscUtilities::checkError;
-      if (owned >= 0 && isGhost < 0 && (boundaryCellStart < 0 || cell < boundaryCellStart)) {
-          DMLabelSetValue(regionMinusGhostLabel, cell, regionMinusGhostValue);
-      }
-  }
-  RestoreRange(cellRange);
-
+        PetscInt owned;
+        DMPlexGetPointGlobal(dm, cell, &owned, nullptr) >> utilities::PetscUtilities::checkError;
+        if (owned >= 0 && isGhost < 0 && (boundaryCellStart < 0 || cell < boundaryCellStart)) {
+            DMLabelSetValue(regionMinusGhostLabel, cell, regionMinusGhostValue);
+        }
+    }
+    RestoreRange(cellRange);
 }
 
 void ablate::solver::Solver::PreStage(TS ts, PetscReal stagetime) {
@@ -92,7 +86,7 @@ static PetscErrorCode zero(PetscInt dim, PetscReal time, const PetscReal x[], Pe
     return 0;
 }
 
-void ablate::solver::Solver::GetCellRangeWithoutGhost(ablate::domain::Range& cellRange) const {
+void ablate::solver::Solver::GetCellRangeWithoutGhost(ablate::domain::Range &cellRange) const {
     // Get the point range
     DMLabel regionMinusGhostLabel;
     PetscInt regionMinusGhostValue;

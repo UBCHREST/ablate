@@ -163,11 +163,8 @@ void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_
     // Setup the label to extract cell ranges without FVM ghosts.
     // This needs to be done after CreateSubDomainStructures so that the local section has been created
     for (auto& solver : solvers) {
-      solver->SetupCellRangeWithoutGhost();
+        solver->SetupCellRangeWithoutGhost();
     }
-
-
-
 
     // set all values to nan to allow for a output check
     if (initializations) {
