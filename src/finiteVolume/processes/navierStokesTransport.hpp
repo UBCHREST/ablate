@@ -38,14 +38,14 @@ class NavierStokesTransport : public FlowProcess {
         eos::ThermodynamicTemperatureFunction muFunction;
     };
 
-   // static function to compute time step for euler advection
-   static double ComputeCflTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
+    // static function to compute time step for euler advection
+    static double ComputeCflTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
     // static function to compute the conduction based time step
     static double ComputeViscousDiffusionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
     // static function to compute the conduction based time step
     static double ComputeConductionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
 
-private:
+   private:
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculator;
     const std::shared_ptr<eos::EOS> eos;
     const std::shared_ptr<eos::transport::TransportModel> transportModel;
@@ -88,7 +88,7 @@ private:
     };
     DiffusionTimeStepData diffusionTimeStepData;
 
-    public:
+   public:
     /**
      * Function to compute the temperature field. This function assumes that the input values will be {"euler", "densityYi"}
      */

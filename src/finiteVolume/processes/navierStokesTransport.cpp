@@ -35,8 +35,8 @@ ablate::finiteVolume::processes::NavierStokesTransport::NavierStokesTransport(co
 void ablate::finiteVolume::processes::NavierStokesTransport::Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) {
     // Register the euler source terms
     if (fluxCalculator) {
-        //I don't know why we wouldn't push through the old temperature fields, maybe slower for perfect gas/idealized gas's but when there is a temperature iterative method this should be better
-        //If it is worse for perfect gas's, going to need to add in an option switch -klb
+        // I don't know why we wouldn't push through the old temperature fields, maybe slower for perfect gas/idealized gas's but when there is a temperature iterative method this should be better
+        // If it is worse for perfect gas's, going to need to add in an option switch -klb
         flow.RegisterRHSFunction(AdvectionFlux, &advectionData, {CompressibleFlowFields::EULER_FIELD}, {CompressibleFlowFields::EULER_FIELD}, {CompressibleFlowFields::TEMPERATURE_FIELD});
 
         // PetscErrorCode PetscOptionsGetBool(PetscOptions options,const char pre[],const char name[],PetscBool *ivalue,PetscBool *set)
@@ -124,7 +124,8 @@ PetscErrorCode ablate::finiteVolume::processes::NavierStokesTransport::Advection
         densityL = fieldL[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
         PetscReal temperatureL;
 
-        PetscCall(eulerAdvectionData->computeTemperature.function(fieldL, auxL[aOff[TEMP_FIELD]]*.67 + .33*auxR[aOff[TEMP_FIELD]],  &temperatureL, eulerAdvectionData->computeTemperature.context.get()));
+        PetscCall(
+            eulerAdvectionData->computeTemperature.function(fieldL, auxL[aOff[TEMP_FIELD]] * .67 + .33 * auxR[aOff[TEMP_FIELD]], &temperatureL, eulerAdvectionData->computeTemperature.context.get()));
 
         // Get the velocity in this direction
         normalVelocityL = 0.0;
@@ -149,7 +150,8 @@ PetscErrorCode ablate::finiteVolume::processes::NavierStokesTransport::Advection
         densityR = fieldR[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
         PetscReal temperatureR;
 
-        PetscCall(eulerAdvectionData->computeTemperature.function(fieldR, auxL[aOff[TEMP_FIELD]]*.33 + .67*auxR[aOff[TEMP_FIELD]], &temperatureR, eulerAdvectionData->computeTemperature.context.get()));
+        PetscCall(
+            eulerAdvectionData->computeTemperature.function(fieldR, auxL[aOff[TEMP_FIELD]] * .33 + .67 * auxR[aOff[TEMP_FIELD]], &temperatureR, eulerAdvectionData->computeTemperature.context.get()));
 
         // Get the velocity in this direction
         normalVelocityR = 0.0;
@@ -258,7 +260,7 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeCflTimeSte
             PetscReal rho = euler[CompressibleFlowFields::RHO];
 
             // Get the speed of sound from the eos
-            //TODO:: Replace this with a better temperature guess (see compute conduction Time Step below)
+            // TODO:: Replace this with a better temperature guess (see compute conduction Time Step below)
             PetscReal temperature;
             advectionData->computeTemperature.function(conserved, 300, &temperature, advectionData->computeTemperature.context.get()) >> utilities::PetscUtilities::checkError;
             PetscReal a;

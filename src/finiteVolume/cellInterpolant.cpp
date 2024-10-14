@@ -574,7 +574,7 @@ void ablate::finiteVolume::CellInterpolant::ComputeFluxSourceTerms(DM dm, PetscD
 
         // March over each source function
         for (std::size_t fun = 0; fun < rhsFunctions.size(); fun++) {
-            PetscInt fluxOffset = 0; //Flux offset for the function ( Currently calculated by just adding the number of components of the previous fields)
+            PetscInt fluxOffset = 0;  // Flux offset for the function ( Currently calculated by just adding the number of components of the previous fields)
             PetscArrayzero(flux, totDim) >> utilities::PetscUtilities::checkError;
             const auto& rhsFluxFunctionDescription = rhsFunctions[fun];
             rhsFluxFunctionDescription.function(dim, fg, uOff[fun].data(), uL, uR, aOff[fun].data(), auxL, auxR, flux, rhsFluxFunctionDescription.context) >> utilities::PetscUtilities::checkError;
@@ -587,7 +587,7 @@ void ablate::finiteVolume::CellInterpolant::ComputeFluxSourceTerms(DM dm, PetscD
                     DMLabelGetValue(regionLabel, faceCells[0], &cellLabelValue) >> utilities::PetscUtilities::checkError;
                 }
                 if (ghost <= 0 && regionValue == cellLabelValue) {
-                        DMPlexPointLocalFieldRef(dm, faceCells[0], fluxId[fun][updateFieldIdx], locFArray, &fL) >> utilities::PetscUtilities::checkError;
+                    DMPlexPointLocalFieldRef(dm, faceCells[0], fluxId[fun][updateFieldIdx], locFArray, &fL) >> utilities::PetscUtilities::checkError;
                 }
 
                 cellLabelValue = regionValue;
@@ -600,8 +600,8 @@ void ablate::finiteVolume::CellInterpolant::ComputeFluxSourceTerms(DM dm, PetscD
                 }
 
                 for (PetscInt d = 0; d < (fluxComponentSize[fun][updateFieldIdx]); ++d) {
-                    if (fL) fL[d] -= flux[fluxOffset+d] / cgL->volume;
-                    if (fR) fR[d] += flux[fluxOffset+d] / cgR->volume;
+                    if (fL) fL[d] -= flux[fluxOffset + d] / cgL->volume;
+                    if (fR) fR[d] += flux[fluxOffset + d] / cgR->volume;
                 }
                 fluxOffset += fluxComponentSize[fun][updateFieldIdx];
             }

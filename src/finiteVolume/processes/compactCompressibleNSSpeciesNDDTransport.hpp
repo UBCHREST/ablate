@@ -10,10 +10,10 @@
 namespace ablate::finiteVolume::processes {
 
 class CompactCompressibleNSSpeciesNDDTransport : public FlowProcess {
-private:
+   private:
     // store ctx needed for function advection function that is passed into Petsc
     struct AdvectionData {
-        //flow CFL
+        // flow CFL
         PetscReal cfl;
 
         /* number of gas species and extra species */
@@ -63,7 +63,7 @@ private:
     };
     CflTimeStepData timeStepData;
 
-        //! methods and functions to compute diffusion based time stepping
+    //! methods and functions to compute diffusion based time stepping
     struct DiffusionTimeStepData {
         /* number of gas species */
         PetscInt numberSpecies;
@@ -80,7 +80,7 @@ private:
 
         /* diffusivity */
         eos::ThermodynamicTemperatureFunction diffFunction;
-            /* thermal conductivity*/
+        /* thermal conductivity*/
         eos::ThermodynamicTemperatureFunction kFunction;
         /* dynamic viscosity*/
         eos::ThermodynamicTemperatureFunction muFunction;
@@ -88,7 +88,6 @@ private:
         eos::ThermodynamicTemperatureFunction specificHeat;
         /* density */
         eos::ThermodynamicTemperatureFunction density;
-
     };
     DiffusionTimeStepData diffusionTimeStepData;
 
@@ -100,16 +99,17 @@ private:
     eos::ThermodynamicTemperatureFunction computeTemperatureFunction;
     eos::ThermodynamicFunction computePressureFunction;
 
-public:
-    explicit CompactCompressibleNSSpeciesNDDTransport(const std::shared_ptr<parameters::Parameters>& parameters, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn={},
-                                          std::shared_ptr<eos::transport::TransportModel> baseTransport = {}, std::shared_ptr<eos::transport::TransportModel> evTransport = {}, std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> = {});
+   public:
+    explicit CompactCompressibleNSSpeciesNDDTransport(const std::shared_ptr<parameters::Parameters>& parameters, std::shared_ptr<eos::EOS> eos,
+                                                      std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {}, std::shared_ptr<eos::transport::TransportModel> baseTransport = {},
+                                                      std::shared_ptr<eos::transport::TransportModel> evTransport = {}, std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> = {});
     /**
      * public function to link this process with the flow
      * @param flow
      */
     void Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) override;
 
-   /**
+    /**
      * This Computes the Advective Flow for rho, rhoE, and rhoVel, rhoYi, and rhoEV.
      * u = {"euler"} or {"euler", "densityYi"} if species are tracked
      * a = {}
@@ -118,7 +118,6 @@ public:
      */
     static PetscErrorCode AdvectionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscScalar fieldL[], const PetscScalar fieldR[], const PetscInt aOff[],
                                         const PetscScalar auxL[], const PetscScalar auxR[], PetscScalar* flux, void* ctx);
-
 
     /**
      * This Computes the diffusion flux for euler rhoE, rhoVel
@@ -130,7 +129,7 @@ public:
     static PetscErrorCode DiffusionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
                                         const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
 
-     /**
+    /**
      * This computes the energy transfer for species diffusion flux for rhoE
      * f = "euler"
      * u = {"euler", "densityYi"}
@@ -198,9 +197,6 @@ public:
                                                                       const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[],
                                                                       PetscScalar flux[], void* ctx);
 
-
-
-
     // static function to compute time step for euler advection
     static double ComputeCflTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
     // static function to compute the conduction based time step
@@ -209,9 +205,8 @@ public:
     static double ComputeConductionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
     // static function to compute the conduction based time step
     static double ComputeViscousSpeciesDiffusionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
-
 };
 
-} //end namespace
+}  // namespace ablate::finiteVolume::processes
 
-#endif //ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESNDDTRANSPORT_H
+#endif  // ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESNDDTRANSPORT_H

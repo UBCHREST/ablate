@@ -44,7 +44,8 @@ TEST_P(NavierStokesTransportFluxTestFixture, ShouldComputeCorrectFlux) {
     PetscInt uOff[1] = {0};
     PetscInt aOff[1] = {0};
     PetscReal TempGuess[1] = {300};
-    ablate::finiteVolume::processes::NavierStokesTransport::AdvectionFlux(params.area.size(), &faceGeom, uOff, &params.xLeft[0], &params.xRight[0], aOff, TempGuess, TempGuess, &computedFlux[0], &eulerFlowData);
+    ablate::finiteVolume::processes::NavierStokesTransport::AdvectionFlux(
+        params.area.size(), &faceGeom, uOff, &params.xLeft[0], &params.xRight[0], aOff, TempGuess, TempGuess, &computedFlux[0], &eulerFlowData);
 
     // assert
     for (std::size_t i = 0; i < params.expectedFlux.size(); i++) {
