@@ -206,15 +206,6 @@ class FiniteVolumeSolver : public solver::CellSolver,
     PetscErrorCode Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 
     /**
-     * Get the cellIS and range over valid cells in this region without ghost cells (boundary or mpi)
-     * @param cellIS
-     * @param pStart
-     * @param pEnd
-     * @param points
-     */
-    void GetCellRangeWithoutGhostOld(ablate::domain::Range& faceRange) const;
-
-    /**
      * Returns first instance of process of type specifed
      * @tparam T
      * @return
