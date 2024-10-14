@@ -436,7 +436,7 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::Restore(PetscViewer vie
     PetscFunctionReturn(0);
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::GetCellRangeWithoutGhost(ablate::domain::Range& faceRange) const {
+void ablate::finiteVolume::FiniteVolumeSolver::GetCellRangeWithoutGhostOld(ablate::domain::Range& faceRange) const {
     // Get the point range
     DMLabel solverRegionMinusGhostLabel;
     PetscInt solverRegionMinusGhostValue;

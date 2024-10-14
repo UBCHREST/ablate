@@ -58,6 +58,10 @@ class Solver {
     /*** Set up mesh dependent initialization, this may be called multiple times if the mesh changes **/
     virtual void Initialize() = 0;
 
+    /** Label all ghost cells so that the range can be returned without them. **/
+    void SetupCellRangeWithoutGhost();
+
+
     /** string id for this solver **/
     [[nodiscard]] inline const std::string& GetSolverId() const { return solverId; }
 

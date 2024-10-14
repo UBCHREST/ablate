@@ -22,8 +22,10 @@ ablate::solver::Solver::~Solver() {
 void ablate::solver::Solver::Register(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) {
   subDomain = std::move(subDomainIn);
 
+}
 
-  // get the cell is for the solver minus ghost cell
+void ablate::solver::Solver::SetupCellRangeWithoutGhost() {
+
   // Get the original range
   ablate::domain::Range cellRange;
   GetCellRange(cellRange);
@@ -60,8 +62,6 @@ void ablate::solver::Solver::Register(std::shared_ptr<ablate::domain::SubDomain>
       }
   }
   RestoreRange(cellRange);
-
-
 
 }
 
