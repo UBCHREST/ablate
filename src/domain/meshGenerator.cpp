@@ -29,6 +29,19 @@ void ablate::domain::MeshGenerator::ReplaceDm(DM& originalDm, DM& replaceDm) {
         PetscObjectSetOptions((PetscObject)replaceDm, options) >> utilities::PetscUtilities::checkError;
         ((DM_Plex*)(replaceDm)->data)->useHashLocation = ((DM_Plex*)originalDm->data)->useHashLocation;
 
+        // Fix the periodic localization here until it's fixed in PETSc
+        DM cdm;
+        PetscInt localizationHeight;
+        PetscBool sparseLocalize;
+        DMGetCoordinateDM(originalDm, &cdm) >> utilities::PetscUtilities::checkError;
+        DMPlexGetMaxProjectionHeight(cdm, &localizationHeight) >> utilities::PetscUtilities::checkError;
+        DMGetSparseLocalize(cdm, &sparseLocalize) >> utilities::PetscUtilities::checkError;
+
+        DMGetCoordinateDM(replaceDm, &cdm) >> utilities::PetscUtilities::checkError;
+        DMPlexSetMaxProjectionHeight(cdm, localizationHeight) >> utilities::PetscUtilities::checkError;
+        DMSetSparseLocalize(cdm, sparseLocalize) >> utilities::PetscUtilities::checkError;
+        DMLocalizeCoordinates(replaceDm) >> utilities::PetscUtilities::checkError;
+
         DMDestroy(&originalDm) >> utilities::PetscUtilities::checkError;
         originalDm = replaceDm;
     }

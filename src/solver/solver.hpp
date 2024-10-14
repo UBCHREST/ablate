@@ -28,6 +28,9 @@ class Solver {
     // The region of this solver.
     const std::shared_ptr<domain::Region> region;
 
+    // The region excluding any FVM ghost cells at boundaries
+    const std::shared_ptr<domain::Region> regionMinusGhost;
+
    protected:
     // an optional petscOptions that is used for this solver
     PetscOptions petscOptions;
@@ -53,6 +56,9 @@ class Solver {
 
     /*** Set up mesh dependent initialization, this may be called multiple times if the mesh changes **/
     virtual void Initialize() = 0;
+
+    /** Label all ghost cells so that the range can be returned without them. **/
+    void SetupCellRangeWithoutGhost();
 
     /** string id for this solver **/
     [[nodiscard]] inline const std::string& GetSolverId() const { return solverId; }
@@ -123,6 +129,13 @@ class Solver {
      * @param range
      */
     void GetRange(PetscInt depth, ablate::domain::Range& range) const { this->subDomain->GetRange(this->GetRegion(), depth, range); }
+
+    /**
+     * Get the range of cells defined for this solver without any FVM ghost (boundary) cells
+     * @param depth
+     * @param range
+     */
+    void GetCellRangeWithoutGhost(ablate::domain::Range& cellRange) const;
 
     /**
      * Restores the is and range - This needs to be removed and replaced with subDomain->RestoreRange

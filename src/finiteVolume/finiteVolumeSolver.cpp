@@ -436,24 +436,6 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::Restore(PetscViewer vie
     PetscFunctionReturn(0);
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::GetCellRangeWithoutGhost(ablate::domain::Range& faceRange) const {
-    // Get the point range
-    DMLabel solverRegionMinusGhostLabel;
-    PetscInt solverRegionMinusGhostValue;
-    domain::Region::GetLabel(solverRegionMinusGhost, GetSubDomain().GetDM(), solverRegionMinusGhostLabel, solverRegionMinusGhostValue);
-
-    DMLabelGetStratumIS(solverRegionMinusGhostLabel, solverRegionMinusGhostValue, &faceRange.is) >> utilities::PetscUtilities::checkError;
-    if (faceRange.is == nullptr) {
-        // There are no points in this region, so skip
-        faceRange.start = 0;
-        faceRange.end = 0;
-        faceRange.points = nullptr;
-    } else {
-        // Get the range
-        ISGetPointRange(faceRange.is, &faceRange.start, &faceRange.end, &faceRange.points) >> utilities::PetscUtilities::checkError;
-    }
-}
-
 PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeBoundary(PetscReal time, Vec locX, Vec locX_t) {
     PetscFunctionBeginUser;
     auto dm = subDomain->GetDM();
