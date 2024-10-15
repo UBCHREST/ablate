@@ -52,7 +52,7 @@ void ablate::finiteVolume::processes::EVTransport::Setup(ablate::finiteVolume::F
                     flow.RegisterRHSFunction(
                         DiffusionEVFlux, &diffusionData, {evConservedField.name}, {CompressibleFlowFields::EULER_FIELD}, {nonConserved, CompressibleFlowFields::TEMPERATURE_FIELD});
                 } else if (diffusionData.diffFunction.propertySize == diffusionData.numberEV) {
-                    flow.RegisterRHSFunction(DiffusionEVFluxVariableDiffusionCoefficient, &diffusionData, {evConservedField.name}, {CompressibleFlowFields::EULER_FIELD}, {nonConserved});
+                    flow.RegisterRHSFunction(DiffusionEVFluxVariableDiffusionCoefficient, &diffusionData, {evConservedField.name}, {CompressibleFlowFields::EULER_FIELD}, {nonConserved, CompressibleFlowFields::TEMPERATURE_FIELD});
                 } else {
                     throw std::invalid_argument("The diffusion property size must be 1 or number of ev in ablate::finiteVolume::processes::EVTransport.");
                 }
