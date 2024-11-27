@@ -24,8 +24,8 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
 
     //! hold a struct that can be used for chemistry constraints
     struct ChemistryConstraints {
-        double relTolerance = 1.0E-6;
-        double absTolerance = 1.0E-10;
+        double relTolerance = 1.0E-8;
+        double absTolerance = 1.0E-12;
 
         // set the limiter on chemical rates of progress,
         // for 1D flames set it to a value btw 1e18 and 1e20,
@@ -39,7 +39,7 @@ class SourceCalculator : public ChemistryModel::SourceCalculator, private utilit
         int verbose = 0;
 
         // load balancing
-        int loadBalance = 1;
+        int loadBalance = 2;  // default to time based load balancing
 
         // load balancing
         int gpu = 0;
