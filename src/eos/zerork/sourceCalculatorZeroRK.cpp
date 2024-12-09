@@ -246,33 +246,42 @@ void ablate::eos::zerorkeos::SourceCalculator::ComputeSource(const ablate::domai
     flag = zerork_reactor_solve(1, time, dt, nReactorsEval, &reactorTEval[0], &reactorPEval[0], &reactorMassFracEval[0], zrm_handle);
 
     if (flag != ZERORK_STATUS_SUCCESS) {
-        std::cout << "Integration failed 0 source terms are used for rank "
+        std::cout << "Integration failed on some of the ranks, even after reducing tolerances in ZeroRK."
                   << "\n";
-        if (chemistryConstraints.errorhandle == 0) {
-            std::cout << "The simulation continues with 0 chemical source for the failing cells."
-                      << "\n";
-        } else if (chemistryConstraints.errorhandle == 1) {
+        if (chemistryConstraints.errorhandle == 1) {
             int ii = 0;
             // For now try to manually decrease the tolerances and recalculate every rank!
-            // Zerork in the future will have the ability to reintegrate only the failed ranks
-            try {
-                while (flag != ZERORK_STATUS_SUCCESS) {
-                    ++ii;
-                    std::cout << "Tightening tolerances."
+            // Zerork already reduced the tolerances
+            while (flag != ZERORK_STATUS_SUCCESS) {
+                ++ii;
+                std::cout << "Manually tightening tolerances further."
+                          << "\n";
+                zerork_reactor_set_double_option(
+                    "abs_tol", chemistryConstraints.absTolerance * pow(chemistryConstraints.cvode_retry_absolute_tolerance_adjustment, ii * chemistryConstraints.cvode_num_retries), zrm_handle);
+                flag = zerork_reactor_solve(2, time, dt, nReactorsEval, &reactorTEval[0], &reactorPEval[0], &reactorMassFracEval[0], zrm_handle);
+                // Try tightening the tolerances
+                if (ii == 2) {
+                    std::cout << "At this point the tolerances are probably too tight."
+                              << "\n"
+                              << "Consider dumping the state, by setting dumpfailed = 1 in the input file and try to understand why is it failing."
                               << "\n";
-                    zerork_reactor_set_double_option("abs_tol", chemistryConstraints.absTolerance * pow(0.01, ii), zrm_handle);
-                    flag = zerork_reactor_solve(2, time, dt, nReactorsEval, &reactorTEval[0], &reactorPEval[0], &reactorMassFracEval[0], zrm_handle);
-                    // If tigethening the
-                    if (ii == 5) {
-                        break;
-                    }
-                    if (flag != ZERORK_STATUS_SUCCESS) {
-                        std::cout << "Warning: Could not integrate chemistry after reducing the tolerances multiple times."
-                                  << "\n";
-                        std::cout << "Consider reducing the timestep or using steplimiter option "
-                                  << "\n";
-                        throw std::runtime_error("ablate::eos::zerorkEOS::Computesource zerork couldn't integrate the simulation.");
-                    }
+                    break;
+                }
+            }
+            // Integration error usually only occur for certain specific states, which will hopefully be advected away for the next step...
+            // Resetting the tolerances to the original inputs
+            zerork_reactor_set_double_option("abs_tol", chemistryConstraints.absTolerance, zrm_handle);
+            zerork_reactor_set_double_option("rel_tol", chemistryConstraints.relTolerance, zrm_handle);
+        }
+        if (chemistryConstraints.errorhandle == 2) {
+            try {
+                // For errorhandle 2 stop the simualtion
+                if (flag != ZERORK_STATUS_SUCCESS) {
+                    std::cout << "Warning: Could not integrate chemistry after reducing the tolerances multiple times."
+                              << "\n";
+                    std::cout << "Option 2 was selected for error handling, the simulations exits now. "
+                              << "\n";
+                    throw std::runtime_error("ablate::eos::zerorkEOS::Computesource zerork couldn't integrate the simulation.");
                 }
             } catch (const runtime_error& e) {
                 exit(1);
