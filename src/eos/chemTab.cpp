@@ -157,7 +157,7 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(PetscReal density, const 
 
 // Verified to work 11/7/23
 // NOTE: id arg is to index a potentially batched outputValues argument
-void ablate::eos::ChemTab::extractModelOutputsAtPoint(const PetscReal density, PetscReal *densityEnergySource, PetscReal *densityProgressVariableSource, PetscReal *densityMassFractions,
+void ablate::eos::ChemTab::ExtractModelOutputsAtPoint(const PetscReal density, PetscReal *densityEnergySource, PetscReal *densityProgressVariableSource, PetscReal *densityMassFractions,
                                                       const std::array<TF_Tensor *, 2> &outputValues, size_t id) const {
     // store physical variables (e.g. souener & mass fractions)
     float *outputArray;                                                                        // Dwyer: as counterintuitive as it may be static dependents come second, it did pass its tests!
@@ -237,7 +237,7 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(const PetscReal density[]
 
     // reiterate the same extraction process for each member of the batch
     for (size_t i = 0; i < batch_size; i++) {
-        extractModelOutputsAtPoint(density[i], safe_id(densityEnergySource, i), safe_id(densityProgressVariableSource, i), safe_id(densityMassFractions, i), outputValues, i);
+        ExtractModelOutputsAtPoint(density[i], safe_id(densityEnergySource, i), safe_id(densityProgressVariableSource, i), safe_id(densityMassFractions, i), outputValues, i);
     }
 
     // free allocated vectors
@@ -248,19 +248,6 @@ void ablate::eos::ChemTab::ChemTabModelComputeFunction(const PetscReal density[]
         TF_DeleteTensor(t);
     }
 }
-
-// void ablate::eos::ChemTab::ChemTabModelComputeFunction(const PetscReal density[], const PetscReal*const*const densityProgressVariables,
-//                                                        PetscReal** densityEnergySource, PetscReal** densityProgressVariableSource,
-//                                                        PetscReal** densityMassFractions, size_t n) const {
-//     // for now we are implementing batch in the same way that single calls happened
-//     // but testing that this works prepares the api for the real thing!
-//     for (size_t i=0; i<n; i++) {
-//         ChemTabModelComputeFunction(density[i], densityProgressVariables[i],
-//                                     safe_id(densityEnergySource, i),
-//                                     safe_id(densityProgressVariableSource, i),
-//                                     safe_id(densityMassFractions, i));
-//     }
-// }
 
 void ablate::eos::ChemTab::ComputeMassFractions(std::vector<PetscReal> &progressVariables, std::vector<PetscReal> &massFractions, PetscReal density) const {
     if (progressVariables.size() != progressVariablesNames.size()) {
