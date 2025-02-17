@@ -293,7 +293,7 @@ bool ablate::domain::Domain::CheckFieldValues(Vec globSourceVector) {
 
         // get the global section
         PetscSection sourceSection;
-        DMGetSection(sourceDM, &sourceSection) >> utilities::PetscUtilities::checkError;
+        DMGetLocalSection(sourceDM, &sourceSection) >> utilities::PetscUtilities::checkError;
 
         for (PetscInt p = pStart; p < pEnd; ++p) {
             const PetscScalar* sourceAtP = nullptr;
