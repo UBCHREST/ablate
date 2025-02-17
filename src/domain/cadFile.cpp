@@ -60,7 +60,7 @@ DM ablate::domain::CadFile::ReadDMFromCadFile(const std::string& name, const std
     DMPlexSetRefinementUniform(dm, PETSC_TRUE) >> utilities::PetscUtilities::checkError;
 
     // inflate the mesh
-    DMPlexInflateToGeomModel(dm) >> utilities::PetscUtilities::checkError;
+    DMPlexInflateToGeomModel(dm,PETSC_TRUE) >> utilities::PetscUtilities::checkError;
     return dm;
 }
 
