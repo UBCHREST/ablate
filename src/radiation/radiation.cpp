@@ -70,14 +70,23 @@ void ablate::radiation::Radiation::Setup(const ablate::domain::Range& cellRange,
         utilities::PetscUtilities::checkError;  //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
 
     /** Declare some information associated with the field declarations */
+    DMSwarmCellDM cellDm; //!< Swarm cell DM
     PetscReal* coord;                   //!< Pointer to the coordinate field information
-    PetscInt* index;                    //!< Pointer to the cell index information
+    const char* cellid, **coordFields; //!< Swarm cellId, and coordinate fields
+    PetscInt Nfc; //!< Number of coordinate fields
+    PetscInt* swarm_index;                    //!< Pointer to the cell index information
     struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifier;      //!< Pointer to the ray identifier information
 
+    /** Get the swarm cell DM, cell Id and coordinate fields */
+    DMSwarmGetCellDMActive(radSearch, &cellDm) >> utilities::PetscUtilities::checkError;
+    DMSwarmCellDMGetCellID(cellDm, &cellid) >> utilities::PetscUtilities::checkError;
+    DMSwarmCellDMGetCoordinateFields(cellDm, &Nfc, &coordFields);
+    if (!(Nfc == 1)) throw std::runtime_error("NFc shouldn't be 1 i don't think");
+
     /** Get the fields associated with the particle swarm so that they can be modified */
-    DMSwarmGetField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
-    DMSwarmGetField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+    DMSwarmGetField(radSearch, coordFields[0], nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
+    DMSwarmGetField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
     DMSwarmGetField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifier) >> utilities::PetscUtilities::checkError;
     DMSwarmGetField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> utilities::PetscUtilities::checkError;
 
@@ -138,8 +147,8 @@ void ablate::radiation::Radiation::Setup(const ablate::domain::Range& cellRange,
     }
 
     /** Restore the fields associated with the particles */
-    DMSwarmRestoreField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
-    DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+    DMSwarmRestoreField(radSearch, coordFields[0], nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
+    DMSwarmRestoreField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
     DMSwarmRestoreField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifier) >> utilities::PetscUtilities::checkError;
     DMSwarmRestoreField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> utilities::PetscUtilities::checkError;
 
@@ -177,10 +186,19 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
     VecGetArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
 
     /** Exact some information associated with the field declarations from the swarm*/
-    PetscReal* coord;  //!< Pointer to the coordinate field information
-    PetscInt* index;
+    DMSwarmCellDM cellDm; //!< Swarm cell DM
+    PetscReal* coord;                   //!< Pointer to the coordinate field information
+    const char* cellid, **coordFields; //!< Swarm cellId, and coordinate fields
+    PetscInt Nfc; //!< Number of coordinate fields
+    PetscInt* swarm_index;
     struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifier;      //!< Pointer to the ray identifier information
+
+    /** Get the swarm cell DM, cell Id and coordinate fields */
+    DMSwarmGetCellDMActive(radSearch, &cellDm) >> utilities::PetscUtilities::checkError;
+    DMSwarmCellDMGetCellID(cellDm, &cellid) >> utilities::PetscUtilities::checkError;
+    DMSwarmCellDMGetCoordinateFields(cellDm, &Nfc, &coordFields);
+    if (!(Nfc == 1)) throw std::runtime_error("NFc shouldn't be 1 i don't think");
 
     /** ***********************************************************************************************************************************************
      * Now that the particles have been created, they can be iterated over and each marched one step in space. The global indices of the local
@@ -203,8 +221,8 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
 
         /** Get all of the ray information from the particle
          * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
-        DMSwarmGetField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
-        DMSwarmGetField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+        DMSwarmGetField(radSearch, coordFields[0], nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
+        DMSwarmGetField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
         DMSwarmGetField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifier) >> utilities::PetscUtilities::checkError;
         DMSwarmGetField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> utilities::PetscUtilities::checkError;
 
@@ -223,23 +241,23 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
              * Condition for one dimensional domains to avoid infinite rays perpendicular to the x-axis
              * If the domain is 1D and the x-direction of the particle is zero then delete the particle here
              * */
-            if ((!(domain::Region::InRegion(region, subDomain.GetDM(), index[ipart]))) || ((dim == 1) && (abs(virtualcoord[ipart].xdir) < 0.0000001))) {
+            if ((!(domain::Region::InRegion(region, subDomain.GetDM(), swarm_index[ipart]))) || ((dim == 1) && (abs(virtualcoord[ipart].xdir) < 0.0000001))) {
                 //! If the boundary has been reached by this ray, then add a boundary condition segment to the ray.
                 auto& ray = raySegments[identifier[ipart].remoteRayId];
                 auto& raySegment = ray.emplace_back();
-                SetBoundary(raySegment, index[ipart], identifier[ipart]);
+                SetBoundary(raySegment, swarm_index[ipart], identifier[ipart]);
 
                 //! Delete the search particle associated with the ray
-                DMSwarmRestoreField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
-                DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+                DMSwarmRestoreField(radSearch, coordFields[0], nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
+                DMSwarmRestoreField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
                 DMSwarmRestoreField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifier) >> utilities::PetscUtilities::checkError;
                 DMSwarmRestoreField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> utilities::PetscUtilities::checkError;
 
                 DMSwarmRemovePointAtIndex(radSearch, ipart);  //!< Delete the particle!
                 DMSwarmGetLocalSize(radSearch, &npoints);
 
-                DMSwarmGetField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
-                DMSwarmGetField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+                DMSwarmGetField(radSearch, coordFields[0], nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
+                DMSwarmGetField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
                 DMSwarmGetField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifier) >> utilities::PetscUtilities::checkError;
                 DMSwarmGetField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> utilities::PetscUtilities::checkError;
                 ipart--;  //!< Check the point replacing the one that was deleted
@@ -263,8 +281,8 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
             }
         }
         /** Restore the fields associated with the particles after all of the particles have been stepped */
-        DMSwarmRestoreField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
-        DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+        DMSwarmRestoreField(radSearch, coordFields[0], nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
+        DMSwarmRestoreField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
         DMSwarmRestoreField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifier) >> utilities::PetscUtilities::checkError;
         DMSwarmRestoreField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> utilities::PetscUtilities::checkError;
 
@@ -404,17 +422,23 @@ void ablate::radiation::Radiation::IdentifyNewRaysOnRank(ablate::domain::SubDoma
     MPI_Comm_rank(subDomain.GetComm(), &rank);
 
     /** Declare some information associated with the field declarations */
-    PetscInt* index;
+    DMSwarmCellDM cellDm; //!< Swarm cell DM
+    const char* cellid; //!< Swarm cellId
+    PetscInt* swarm_index;
     struct Identifier* identifiers;  //!< Pointer to the ray identifier information
+
+     /** Get the swarm cell DM, and cell Id */
+    DMSwarmGetCellDMActive(radSearch, &cellDm) >> utilities::PetscUtilities::checkError;
+    DMSwarmCellDMGetCellID(cellDm, &cellid) >> utilities::PetscUtilities::checkError;
 
     /** Get all of the ray information from the particle
      * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
     DMSwarmGetField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifiers) >> utilities::PetscUtilities::checkError;
-    DMSwarmGetField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+    DMSwarmGetField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
 
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         /** Check that the particle is in a valid region */
-        if (index[ipart] >= 0) {
+        if (swarm_index[ipart] >= 0) {
             auto& identifier = identifiers[ipart];
             // If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory and record its index
             if (identifier.remoteRank != rank) {
@@ -447,7 +471,7 @@ void ablate::radiation::Radiation::IdentifyNewRaysOnRank(ablate::domain::SubDoma
         }
     }
     DMSwarmRestoreField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifiers) >> utilities::PetscUtilities::checkError;
-    DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+    DMSwarmRestoreField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
 }
 
 void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDomain, DM faceDM, const PetscScalar* faceGeomArray, DM radReturn, PetscInt npoints,
@@ -459,19 +483,25 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
     MPI_Comm_rank(subDomain.GetComm(), &rank);
 
     /** Declare some information associated with the field declarations */
-    PetscInt* index;
+    DMSwarmCellDM cellDm; //!< Swarm cell DM
+    const char* cellid; //!< Swarm cellId
+    PetscInt* swarm_index;
     struct Virtualcoord* virtualcoords;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifiers;      //!< Pointer to the ray identifier information
+
+     /** Get the swarm cell DM, cell Id and coordinate fields */
+    DMSwarmGetCellDMActive(radSearch, &cellDm) >> utilities::PetscUtilities::checkError;
+    DMSwarmCellDMGetCellID(cellDm, &cellid) >> utilities::PetscUtilities::checkError;
 
     /** Get all of the ray information from the particle
      * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
     DMSwarmGetField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifiers) >> utilities::PetscUtilities::checkError;
     DMSwarmGetField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoords) >> utilities::PetscUtilities::checkError;
-    DMSwarmGetField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+    DMSwarmGetField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
 
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         /** Check that the particle is in a valid region */
-        if (index[ipart] >= 0 && subDomain.InRegion(index[ipart])) {
+        if (swarm_index[ipart] >= 0 && subDomain.InRegion(swarm_index[ipart])) {
             auto& identifier = identifiers[ipart];
             // Exact the ray to reduce lookup
             auto& ray = raySegments[identifier.remoteRayId];
@@ -487,7 +517,7 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
              * Because the ray comes from the origin, all of the cell indexes are naturally ordered from the center out
              * */
             auto& raySegment = ray.emplace_back();
-            raySegment.cell = index[ipart];
+            raySegment.cell = swarm_index[ipart];
 
             /** Step 2: Acquire the intersection of the particle search line with the segment or face. In the case if a two dimensional mesh, the virtual coordinate in the z direction will
              * need to be solved for because the three dimensional line will not have a literal intersection with the segment of the cell. The third coordinate can be solved for in this case.
@@ -496,8 +526,8 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
             /** March over each face on this cell in order to check them for the one which intersects this ray next */
             PetscInt numberFaces;
             const PetscInt* cellFaces;
-            DMPlexGetConeSize(subDomain.GetDM(), index[ipart], &numberFaces) >> utilities::PetscUtilities::checkError;
-            DMPlexGetCone(subDomain.GetDM(), index[ipart], &cellFaces) >> utilities::PetscUtilities::checkError;  //!< Get the face geometry associated with the current cell
+            DMPlexGetConeSize(subDomain.GetDM(), swarm_index[ipart], &numberFaces) >> utilities::PetscUtilities::checkError;
+            DMPlexGetCone(subDomain.GetDM(), swarm_index[ipart], &cellFaces) >> utilities::PetscUtilities::checkError;  //!< Get the face geometry associated with the current cell
 
             /** Check every face for intersection with the segment.
              * The segment with the shortest path length for intersection will be the one that physically intercepts with the cell face and not with the nonphysical plane beyond the face.
@@ -530,7 +560,7 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
     }
     DMSwarmRestoreField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifiers) >> utilities::PetscUtilities::checkError;
     DMSwarmRestoreField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoords) >> utilities::PetscUtilities::checkError;
-    DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+    DMSwarmRestoreField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
 }
 
 void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Field temperatureField, Vec auxVec) {
@@ -654,14 +684,24 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
 }
 
 void ablate::radiation::Radiation::DeleteOutOfBounds(ablate::domain::SubDomain& subDomain) {
-    PetscReal* coord;
-    PetscInt* index;                    //!< Pointer to the coordinate field information
+    /** Declare some information associated with the field declarations */
+    DMSwarmCellDM cellDm; //!< Swarm cell DM
+    PetscReal* coord;                   //!< Pointer to the coordinate field information
+    const char* cellid, **coordFields; //!< Swarm cellId, and coordinate fields
+    PetscInt Nfc; //!< Number of coordinate fields
+    PetscInt* swarm_index;                    //!< Pointer to the coordinate field information
     struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifier;      //!< Pointer to the ray identifier information
 
+     /** Get the swarm cell DM, cell Id and coordinate fields */
+    DMSwarmGetCellDMActive(radSearch, &cellDm) >> utilities::PetscUtilities::checkError;
+    DMSwarmCellDMGetCellID(cellDm, &cellid) >> utilities::PetscUtilities::checkError;
+    DMSwarmCellDMGetCoordinateFields(cellDm, &Nfc, &coordFields);
+    if (!(Nfc == 1)) throw std::runtime_error("NFc shouldn't be 1 i don't think");
+    
     /** Get the fields associated with the particle swarm so that they can be modified */
-    DMSwarmGetField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
-    DMSwarmGetField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+    DMSwarmGetField(radSearch, coordFields[0], nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
+    DMSwarmGetField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
     DMSwarmGetField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifier) >> utilities::PetscUtilities::checkError;
     DMSwarmGetField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> utilities::PetscUtilities::checkError;
 
@@ -673,17 +713,17 @@ void ablate::radiation::Radiation::DeleteOutOfBounds(ablate::domain::SubDomain& 
     /**  */
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         //!< If the particles that were just created are sitting in the boundary cell of the face that they belong to, delete them
-        if (!(region->InRegion(region, subDomain.GetDM(), index[ipart]))) {  //!< If the particle location index and boundary cell index are the same, then they should be deleted
-            DMSwarmRestoreField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
-            DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+        if (!(region->InRegion(region, subDomain.GetDM(), swarm_index[ipart]))) {  //!< If the particle location index and boundary cell index are the same, then they should be deleted
+            DMSwarmRestoreField(radSearch, coordFields[0], nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
+            DMSwarmRestoreField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
             DMSwarmRestoreField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifier) >> utilities::PetscUtilities::checkError;
             DMSwarmRestoreField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> utilities::PetscUtilities::checkError;
 
             DMSwarmRemovePointAtIndex(radSearch, ipart);  //!< Delete the particle!
             DMSwarmGetLocalSize(radSearch, &npoints);
 
-            DMSwarmGetField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
-            DMSwarmGetField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+            DMSwarmGetField(radSearch, coordFields[0], nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
+            DMSwarmGetField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
             DMSwarmGetField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifier) >> utilities::PetscUtilities::checkError;
             DMSwarmGetField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> utilities::PetscUtilities::checkError;
             ipart--;  //!< Check the point replacing the one that was deleted
@@ -691,8 +731,8 @@ void ablate::radiation::Radiation::DeleteOutOfBounds(ablate::domain::SubDomain& 
     }
 
     /** Restore the fields associated with the particles */
-    DMSwarmRestoreField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
-    DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+    DMSwarmRestoreField(radSearch, coordFields[0], nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
+    DMSwarmRestoreField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
     DMSwarmRestoreField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifier) >> utilities::PetscUtilities::checkError;
     DMSwarmRestoreField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> utilities::PetscUtilities::checkError;
 }
