@@ -3,58 +3,58 @@
 MinMaxAvg velocity for timestep 0000:
 	min: [ 0,  0,  0]
 	max: [ 0,  0, 100]
-	avg: [ 0,  0, 10.3]
-PGS: (.*) \(alpha\), (.*) \(maxMach\), (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.3 n0.7 ~
+	avg: [ 0,  0, 12.3]
+PGS: 2.43032 (alpha), 0.288028 (maxMach),  0.7 (maxMach'), 0. (maxDeltaP)
 MinMaxAvg velocity for timestep 0001:
-	min: \[(.*), (.*), (.*)\]<expects> ~ ~ >-1
-	max: \[(.*), (.*), (.*)\]<expects> ~ ~ n100
-	avg: \[(.*), (.*), (.*)\]<expects> ~ ~ ~
-PGS: (.*) \(alpha\), (.*) \(maxMach\), (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.3 n0.7 ~
+	min: [-0.000702, -0.00105, -3.09e-07]
+	max: [0.000724, 0.00108, 100]
+	avg: [4.76e-08, -3.9e-08, 12.3]
+PGS: 2.43032 (alpha), 0.288028 (maxMach),  0.7 (maxMach'), 0.742298 (maxDeltaP)
 MinMaxAvg velocity for timestep 0002:
-	min: \[(.*), (.*), (.*)\]<expects> ~ ~ >-1
-	max: \[(.*), (.*), (.*)\]<expects> ~ ~ n100
-	avg: \[(.*), (.*), (.*)\]<expects> ~ ~ ~
-PGS: (.*) \(alpha\), (.*) \(maxMach\), (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.3 n0.7 ~
+	min: [-0.00771, -0.0116, -3.24e-06]
+	max: [0.00796, 0.0119, 100]
+	avg: [5.22e-07, -4.3e-07, 12.3]
+PGS: 2.43032 (alpha), 0.288028 (maxMach),  0.7 (maxMach'), 8.16099 (maxDeltaP)
 MinMaxAvg velocity for timestep 0003:
-	min: \[(.*), (.*), (.*)\]<expects> ~ ~ >-1
-	max: \[(.*), (.*), (.*)\]<expects> ~ ~ n100
-	avg: \[(.*), (.*), (.*)\]<expects> ~ ~ ~
-PGS: (.*) \(alpha\), (.*) \(maxMach\), (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.3 n0.7 ~
+	min: [-0.0776, -0.116, -2.75e-05]
+	max: [0.0799, 0.119, 100]
+	avg: [5.18e-06, -4.34e-06, 12.3]
+PGS: 2.43032 (alpha), 0.288028 (maxMach),  0.7 (maxMach'), 81.9202 (maxDeltaP)
 MinMaxAvg velocity for timestep 0004:
-	min: \[(.*), (.*), (.*)\]<expects> ~ ~ >-1
-	max: \[(.*), (.*), (.*)\]<expects> ~ ~ n100
-	avg: \[(.*), (.*), (.*)\]<expects> ~ ~ ~
-PGS: (.*) \(alpha\), (.*) \(maxMach\), (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.3 n0.7 ~
+	min: [-0.748, -1.11, -0.00152]
+	max: [0.765, 1.09, 100]
+	avg: [4.35e-05, -4.39e-05, 12.3]
+PGS: 2.43027 (alpha), 0.288034 (maxMach),  0.7 (maxMach'), 778.058 (maxDeltaP)
 MinMaxAvg velocity for timestep 0005:
-	min: \[(.*), (.*), (.*)\]<expects> ~ ~ >-1
-	max: \[(.*), (.*), (.*)\]<expects> ~ ~ n100
-	avg: \[(.*), (.*), (.*)\]<expects> ~ ~ ~
-PGS: (.*) \(alpha\), (.*) \(maxMach\), (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.3 n0.7 ~
+	min: [-2, -2.89, -0.0123]
+	max: [2.01, 2.63, 100]
+	avg: [7.92e-05, -0.00013, 12.3]
+PGS: 2.42991 (alpha), 0.288076 (maxMach),  0.7 (maxMach'), 2006.08 (maxDeltaP)
 MinMaxAvg velocity for timestep 0006:
-	min: \[(.*), (.*), (.*)\]<expects> ~ ~ >-1
-	max: \[(.*), (.*), (.*)\]<expects> ~ ~ n100
-	avg: \[(.*), (.*), (.*)\]<expects> ~ ~ ~
-PGS: (.*) \(alpha\), (.*) \(maxMach\), (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.3 n0.7 ~
+	min: [-3.31, -4.68, -0.0378]
+	max: [3.27, 4.3, 100]
+	avg: [5.44e-05, -0.000246, 12.3]
+PGS: 2.42905 (alpha), 0.288179 (maxMach),  0.7 (maxMach'), 3183. (maxDeltaP)
 MinMaxAvg velocity for timestep 0007:
-	min: \[(.*), (.*), (.*)\]<expects> ~ ~ >-1
-	max: \[(.*), (.*), (.*)\]<expects> ~ ~ n100
-	avg: \[(.*), (.*), (.*)\]<expects> ~ ~ ~
-PGS: (.*) \(alpha\), (.*) \(maxMach\), (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.3 n0.7 ~
+	min: [-4.63, -6.36, -0.0833]
+	max: [4.47, 5.91, 100]
+	avg: [-5.75e-05, -0.000403, 12.3]
+PGS: 2.4275 (alpha), 0.288363 (maxMach),  0.7 (maxMach'), 4195.89 (maxDeltaP)
 MinMaxAvg velocity for timestep 0008:
-	min: \[(.*), (.*), (.*)\]<expects> ~ ~ >-1
-	max: \[(.*), (.*), (.*)\]<expects> ~ ~ n100
-	avg: \[(.*), (.*), (.*)\]<expects> ~ ~ ~
-PGS: (.*) \(alpha\), (.*) \(maxMach\), (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.3 n0.7 ~
+	min: [-5.89, -7.87, -0.154]
+	max: [5.54, 7.34, 100]
+	avg: [-0.00028, -0.000611, 12.3]
+PGS: 2.42508 (alpha), 0.28865 (maxMach),  0.7 (maxMach'), 4939.27 (maxDeltaP)
 MinMaxAvg velocity for timestep 0009:
-	min: \[(.*), (.*), (.*)\]<expects> ~ ~ >-1
-	max: \[(.*), (.*), (.*)\]<expects> ~ ~ n100
-	avg: \[(.*), (.*), (.*)\]<expects> ~ ~ ~
-PGS: (.*) \(alpha\), (.*) \(maxMach\), (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.3 n0.7 ~
+	min: [-7.06, -9.11, -0.251]
+	max: [6.42, 8.51, 100]
+	avg: [-0.000627, -0.000873, 12.4]
+PGS: 2.42173 (alpha), 0.289049 (maxMach),  0.7 (maxMach'), 5951.59 (maxDeltaP)
 MinMaxAvg velocity for timestep 0010:
-	min: \[(.*), (.*), (.*)\]<expects> ~ ~ >-1
-	max: \[(.*), (.*), (.*)\]<expects> ~ ~ n100
-	avg: \[(.*), (.*), (.*)\]<expects> ~ ~ ~
- EGADS Info: 45 Objects, 62 Reference in Use (of 107) at Close!
+	min: [-8.17, -10.3, -0.373]
+	max: [7.07, 9.35, 101]
+	avg: [-0.00109, -0.00118, 12.4]
+ EGADS Info: 0 Objects, 0 Reference in Use (of 107) at Close!
 ResultFiles:
 domain.hdf5
 domain.xmf
