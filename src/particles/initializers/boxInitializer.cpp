@@ -56,9 +56,7 @@ void ablate::particles::initializers::BoxInitializer::Initialize(ablate::domain:
     DMSwarmGetCellDMActive(particleDm, &cellDm) >> utilities::PetscUtilities::checkError;
     DMSwarmCellDMGetCellID(cellDm, &cellid) >> utilities::PetscUtilities::checkError;
     DMSwarmCellDMGetCoordinateFields(cellDm, &Nfc, &coordFields);
-    if (!(Nfc == 1)) throw std::runtime_error("NFc shouldn't be 1 i don't think");
     DMSwarmGetField(particleDm, coordFields[0], NULL, NULL, (void **)&coords) >> utilities::PetscUtilities::checkError;
-//    DMSwarmGetField(particleDm, DMSwarmPICField_coor, nullptr, nullptr, (void **)&coords) >> utilities::PetscUtilities::checkError;
 
     if (rank == 0) {
         switch (dim) {
@@ -94,15 +92,12 @@ void ablate::particles::initializers::BoxInitializer::Initialize(ablate::domain:
         }
     }
     DMSwarmRestoreField(particleDm, coordFields[0], NULL, NULL, (void **)&coords) >> utilities::PetscUtilities::checkError;
-//    DMSwarmRestoreField(particleDm, DMSwarmPICField_coor, nullptr, nullptr, (void **)&coords) >> utilities::PetscUtilities::checkError;
 
     DMSwarmGetField(particleDm, cellid, NULL, NULL, (void **)&swarm_cellid) >> utilities::PetscUtilities::checkError;
-//    DMSwarmGetField(particleDm, DMSwarmPICField_cellid, nullptr, nullptr, (void **)&cellid) >> utilities::PetscUtilities::checkError;
     for (PetscInt p = 0; p < Np; ++p) {
         swarm_cellid[p] = 0;
     }
     DMSwarmRestoreField(particleDm, cellid, NULL, NULL, (void **)&swarm_cellid) >> utilities::PetscUtilities::checkError;
-//    DMSwarmRestoreField(particleDm, DMSwarmPICField_cellid, nullptr, nullptr, (void **)&cellid) >> utilities::PetscUtilities::checkError;
     DMSwarmMigrate(particleDm, PETSC_TRUE) >> utilities::PetscUtilities::checkError;
 }
 

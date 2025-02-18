@@ -70,11 +70,11 @@ void ablate::radiation::Radiation::Setup(const ablate::domain::Range& cellRange,
         utilities::PetscUtilities::checkError;  //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
 
     /** Declare some information associated with the field declarations */
-    DMSwarmCellDM cellDm; //!< Swarm cell DM
+    DMSwarmCellDM cellDm;               //!< Swarm cell DM
     PetscReal* coord;                   //!< Pointer to the coordinate field information
-    const char* cellid, **coordFields; //!< Swarm cellId, and coordinate fields
-    PetscInt Nfc; //!< Number of coordinate fields
-    PetscInt* swarm_index;                    //!< Pointer to the cell index information
+    const char *cellid, **coordFields;  //!< Swarm cellId, and coordinate fields
+    PetscInt Nfc;                       //!< Number of coordinate fields
+    PetscInt* swarm_index;              //!< Pointer to the cell index information
     struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifier;      //!< Pointer to the ray identifier information
 
@@ -82,7 +82,6 @@ void ablate::radiation::Radiation::Setup(const ablate::domain::Range& cellRange,
     DMSwarmGetCellDMActive(radSearch, &cellDm) >> utilities::PetscUtilities::checkError;
     DMSwarmCellDMGetCellID(cellDm, &cellid) >> utilities::PetscUtilities::checkError;
     DMSwarmCellDMGetCoordinateFields(cellDm, &Nfc, &coordFields);
-    if (!(Nfc == 1)) throw std::runtime_error("NFc shouldn't be 1 i don't think");
 
     /** Get the fields associated with the particle swarm so that they can be modified */
     DMSwarmGetField(radSearch, coordFields[0], nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
@@ -186,10 +185,10 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
     VecGetArrayRead(faceGeomVec, &faceGeomArray) >> utilities::PetscUtilities::checkError;
 
     /** Exact some information associated with the field declarations from the swarm*/
-    DMSwarmCellDM cellDm; //!< Swarm cell DM
+    DMSwarmCellDM cellDm;               //!< Swarm cell DM
     PetscReal* coord;                   //!< Pointer to the coordinate field information
-    const char* cellid, **coordFields; //!< Swarm cellId, and coordinate fields
-    PetscInt Nfc; //!< Number of coordinate fields
+    const char *cellid, **coordFields;  //!< Swarm cellId, and coordinate fields
+    PetscInt Nfc;                       //!< Number of coordinate fields
     PetscInt* swarm_index;
     struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifier;      //!< Pointer to the ray identifier information
@@ -198,7 +197,6 @@ void ablate::radiation::Radiation::Initialize(const ablate::domain::Range& cellR
     DMSwarmGetCellDMActive(radSearch, &cellDm) >> utilities::PetscUtilities::checkError;
     DMSwarmCellDMGetCellID(cellDm, &cellid) >> utilities::PetscUtilities::checkError;
     DMSwarmCellDMGetCoordinateFields(cellDm, &Nfc, &coordFields);
-    if (!(Nfc == 1)) throw std::runtime_error("NFc shouldn't be 1 i don't think");
 
     /** ***********************************************************************************************************************************************
      * Now that the particles have been created, they can be iterated over and each marched one step in space. The global indices of the local
@@ -422,12 +420,12 @@ void ablate::radiation::Radiation::IdentifyNewRaysOnRank(ablate::domain::SubDoma
     MPI_Comm_rank(subDomain.GetComm(), &rank);
 
     /** Declare some information associated with the field declarations */
-    DMSwarmCellDM cellDm; //!< Swarm cell DM
-    const char* cellid; //!< Swarm cellId
+    DMSwarmCellDM cellDm;  //!< Swarm cell DM
+    const char* cellid;    //!< Swarm cellId
     PetscInt* swarm_index;
     struct Identifier* identifiers;  //!< Pointer to the ray identifier information
 
-     /** Get the swarm cell DM, and cell Id */
+    /** Get the swarm cell DM, and cell Id */
     DMSwarmGetCellDMActive(radSearch, &cellDm) >> utilities::PetscUtilities::checkError;
     DMSwarmCellDMGetCellID(cellDm, &cellid) >> utilities::PetscUtilities::checkError;
 
@@ -483,13 +481,13 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
     MPI_Comm_rank(subDomain.GetComm(), &rank);
 
     /** Declare some information associated with the field declarations */
-    DMSwarmCellDM cellDm; //!< Swarm cell DM
-    const char* cellid; //!< Swarm cellId
+    DMSwarmCellDM cellDm;  //!< Swarm cell DM
+    const char* cellid;    //!< Swarm cellId
     PetscInt* swarm_index;
     struct Virtualcoord* virtualcoords;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifiers;      //!< Pointer to the ray identifier information
 
-     /** Get the swarm cell DM, cell Id and coordinate fields */
+    /** Get the swarm cell DM, cell Id and coordinate fields */
     DMSwarmGetCellDMActive(radSearch, &cellDm) >> utilities::PetscUtilities::checkError;
     DMSwarmCellDMGetCellID(cellDm, &cellid) >> utilities::PetscUtilities::checkError;
 
@@ -685,20 +683,18 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
 
 void ablate::radiation::Radiation::DeleteOutOfBounds(ablate::domain::SubDomain& subDomain) {
     /** Declare some information associated with the field declarations */
-    DMSwarmCellDM cellDm; //!< Swarm cell DM
+    DMSwarmCellDM cellDm;               //!< Swarm cell DM
     PetscReal* coord;                   //!< Pointer to the coordinate field information
-    const char* cellid, **coordFields; //!< Swarm cellId, and coordinate fields
-    PetscInt Nfc; //!< Number of coordinate fields
-    PetscInt* swarm_index;                    //!< Pointer to the coordinate field information
+    const char *cellid, **coordFields;  //!< Swarm cellId, and coordinate fields
+    PetscInt Nfc;                       //!< Number of coordinate fields
+    PetscInt* swarm_index;              //!< Pointer to the coordinate field information
     struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifier;      //!< Pointer to the ray identifier information
 
-     /** Get the swarm cell DM, cell Id and coordinate fields */
+    /** Get the swarm cell DM, cell Id and coordinate fields */
     DMSwarmGetCellDMActive(radSearch, &cellDm) >> utilities::PetscUtilities::checkError;
     DMSwarmCellDMGetCellID(cellDm, &cellid) >> utilities::PetscUtilities::checkError;
     DMSwarmCellDMGetCoordinateFields(cellDm, &Nfc, &coordFields);
-    if (!(Nfc == 1)) throw std::runtime_error("NFc shouldn't be 1 i don't think");
-    
     /** Get the fields associated with the particle swarm so that they can be modified */
     DMSwarmGetField(radSearch, coordFields[0], nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
     DMSwarmGetField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;

@@ -19,8 +19,8 @@ void ablate::radiation::RaySharingRadiation::IdentifyNewRaysOnRank(ablate::domai
     MPI_Comm_rank(subDomain.GetComm(), &rank);
 
     /** Declare some information associated with the field declarations */
-    DMSwarmCellDM cellDm; //!< Swarm cell DM
-    const char* cellid; //!< Swarm cellId
+    DMSwarmCellDM cellDm;  //!< Swarm cell DM
+    const char* cellid;    //!< Swarm cellId
     PetscInt* swarm_index;
     struct Identifier* identifiers;     //!< Pointer to the ray identifier information
     struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
@@ -89,13 +89,13 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
     MPI_Comm_rank(subDomain.GetComm(), &rank);
 
     /** Declare some information associated with the field declarations */
-    DMSwarmCellDM cellDm; //!< Swarm cell DM
+    DMSwarmCellDM cellDm;  //!< Swarm cell DM
     const char* cellid;
     PetscInt* swarm_index;
     struct Virtualcoord* virtualcoords;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifiers;      //!< Pointer to the ray identifier information
 
-     /** Get the swarm cell DM, and cell Id*/
+    /** Get the swarm cell DM, and cell Id*/
     DMSwarmGetCellDMActive(radSearch, &cellDm) >> utilities::PetscUtilities::checkError;
     DMSwarmCellDMGetCellID(cellDm, &cellid) >> utilities::PetscUtilities::checkError;
 

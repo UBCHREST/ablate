@@ -35,6 +35,36 @@
       }
     },
     {
+      "name": "OptMainPetsc",
+      "displayName": "CLion Opt Config",
+      "description": "Default build for ABLATE in CLion",
+      "binaryDir": "${sourceDir}/cmake-build-MainPetsc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "COMPILE_MPI_COMMAND": "$env{PETSC_DIR}/arch-ablate-opt/bin/mpirun"
+      },
+      "environment": {
+        "PETSC_DIR": "/home/klbud/Software/PetscUpdating/petsc",
+        "PETSC_ARCH": "arch-ablate-opt",
+        "PKG_CONFIG_PATH": "$env{PETSC_DIR}/arch-ablate-opt/lib/pkgconfig:$penv{PKG_CONFIG_PATH}"
+      }
+    },
+    {
+      "name": "OptFluentPetsc",
+      "displayName": "CLion Opt Config",
+      "description": "Default build for ABLATE in CLion",
+      "binaryDir": "${sourceDir}/cmake-build-FluentPetsc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "COMPILE_MPI_COMMAND": "$env{PETSC_DIR}/arch-ablate-opt/bin/mpirun"
+      },
+      "environment": {
+        "PETSC_DIR": "/home/klbud/Software/PetscUpdating/petscW",
+        "PETSC_ARCH": "arch-ablate-opt",
+        "PKG_CONFIG_PATH": "$env{PETSC_DIR}/arch-ablate-opt/lib/pkgconfig:$penv{PKG_CONFIG_PATH}"
+      }
+    },
+    {
       "name": "local-ablate-opt-info",
       "displayName": "CLion RelWithDebugInfo Config",
       "description": "Default build for ABLATE in CLion",

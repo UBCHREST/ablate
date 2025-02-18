@@ -63,19 +63,18 @@ void ablate::radiation::OrthogonalRadiation::Setup(const ablate::domain::Range& 
         utilities::PetscUtilities::checkError;  //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
 
     /** Declare some information associated with the field declarations */
-    DMSwarmCellDM cellDm; //!< Swarm cell DM
+    DMSwarmCellDM cellDm;               //!< Swarm cell DM
     PetscReal* coord;                   //!< Pointer to the coordinate field information
-    const char* cellid, **coordFields; //!< Swarm cellId, and coordinate fields
-    PetscInt Nfc; //!< Number of coordinate fields
-    PetscInt* swarm_index;                    //!< Pointer to the cell index information
+    const char *cellid, **coordFields;  //!< Swarm cellId, and coordinate fields
+    PetscInt Nfc;                       //!< Number of coordinate fields
+    PetscInt* swarm_index;              //!< Pointer to the cell index information
     struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifier;      //!< Pointer to the ray identifier information
 
-     /** Get the swarm cell DM, cell Id and coordinate fields */
+    /** Get the swarm cell DM, cell Id and coordinate fields */
     DMSwarmGetCellDMActive(radSearch, &cellDm) >> utilities::PetscUtilities::checkError;
     DMSwarmCellDMGetCellID(cellDm, &cellid) >> utilities::PetscUtilities::checkError;
     DMSwarmCellDMGetCoordinateFields(cellDm, &Nfc, &coordFields);
-    if (!(Nfc == 1)) throw std::runtime_error("NFc shouldn't be 1 i don't think");
 
     /** Get the fields associated with the particle swarm so that they can be modified */
     DMSwarmGetField(radSearch, coordFields[0], nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;

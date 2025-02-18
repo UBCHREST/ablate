@@ -115,13 +115,11 @@ void ablate::particles::ParticleSolver::Setup() {
 }
 
 void ablate::particles::ParticleSolver::Initialize() {
-     // associate the swarm with the cell dm
+    // associate the swarm with the cell dm
     DMSwarmSetCellDM(swarmDm, subDomain->GetDM()) >> utilities::PetscUtilities::checkError;
 
     // before setting up the flow finalize the fields
     DMSwarmFinalizeFieldRegister(swarmDm) >> utilities::PetscUtilities::checkError;
-
-
 
     // name the particle domain
     PetscObjectSetOptions((PetscObject)swarmDm, petscOptions) >> utilities::PetscUtilities::checkError;
