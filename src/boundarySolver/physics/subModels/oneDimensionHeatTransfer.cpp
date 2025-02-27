@@ -95,7 +95,7 @@ ablate::boundarySolver::physics::subModels::OneDimensionHeatTransfer::OneDimensi
 
         // get the global section
         PetscSection section;
-        DMGetSection(subModelDm, &section) >> utilities::PetscUtilities::checkError;
+        DMGetLocalSection(subModelDm, &section) >> utilities::PetscUtilities::checkError;
 
         // Determine the BC Node
         for (PetscInt p = pStart; p < pEnd; ++p) {

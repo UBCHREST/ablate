@@ -19,19 +19,24 @@ void ablate::radiation::RaySharingRadiation::IdentifyNewRaysOnRank(ablate::domai
     MPI_Comm_rank(subDomain.GetComm(), &rank);
 
     /** Declare some information associated with the field declarations */
-    PetscInt* index;
+    DMSwarmCellDM cellDm;  //!< Swarm cell DM
+    const char* cellid;    //!< Swarm cellId
+    PetscInt* swarm_index;
     struct Identifier* identifiers;     //!< Pointer to the ray identifier information
     struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
 
+    /** Get the swarm cell DM, and cell Id */
+    DMSwarmGetCellDMActive(radSearch, &cellDm) >> utilities::PetscUtilities::checkError;
+    DMSwarmCellDMGetCellID(cellDm, &cellid) >> utilities::PetscUtilities::checkError;
     /** Get all of the ray information from the particle
      * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
     DMSwarmGetField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifiers) >> utilities::PetscUtilities::checkError;
-    DMSwarmGetField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+    DMSwarmGetField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
     DMSwarmGetField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> utilities::PetscUtilities::checkError;
 
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         /** Check that the particle is in a valid region */
-        if (index[ipart] >= 0) {
+        if (swarm_index[ipart] >= 0) {
             auto& identifier = identifiers[ipart];
             // If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory and record its index
             if (identifier.remoteRank != rank) {
@@ -46,7 +51,7 @@ void ablate::radiation::RaySharingRadiation::IdentifyNewRaysOnRank(ablate::domai
                 identifier.remoteRank = rank;
                 // set the remoteRayId to be the next one in the way
                 identifier.remoteRayId =
-                    ((PetscInt)indexLookup.GetAbsoluteIndex(index[ipart]) * raysPerCell) + (ntheta * nPhi) + nphi;  //! Should be set to (absoluteCellIndex * raysPerCell + angleNumber)
+                    ((PetscInt)indexLookup.GetAbsoluteIndex(swarm_index[ipart]) * raysPerCell) + (ntheta * nPhi) + nphi;  //! Should be set to (absoluteCellIndex * raysPerCell + angleNumber)
                 // bump the nSegment
                 identifier.nSegment++;
 
@@ -71,7 +76,7 @@ void ablate::radiation::RaySharingRadiation::IdentifyNewRaysOnRank(ablate::domai
         }
     }
     DMSwarmRestoreField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifiers) >> utilities::PetscUtilities::checkError;
-    DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+    DMSwarmRestoreField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
     DMSwarmRestoreField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> utilities::PetscUtilities::checkError;
 }
 
@@ -84,19 +89,25 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
     MPI_Comm_rank(subDomain.GetComm(), &rank);
 
     /** Declare some information associated with the field declarations */
-    PetscInt* index;
+    DMSwarmCellDM cellDm;  //!< Swarm cell DM
+    const char* cellid;
+    PetscInt* swarm_index;
     struct Virtualcoord* virtualcoords;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifiers;      //!< Pointer to the ray identifier information
+
+    /** Get the swarm cell DM, and cell Id*/
+    DMSwarmGetCellDMActive(radSearch, &cellDm) >> utilities::PetscUtilities::checkError;
+    DMSwarmCellDMGetCellID(cellDm, &cellid) >> utilities::PetscUtilities::checkError;
 
     /** Get all of the ray information from the particle
      * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
     DMSwarmGetField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifiers) >> utilities::PetscUtilities::checkError;
     DMSwarmGetField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoords) >> utilities::PetscUtilities::checkError;
-    DMSwarmGetField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+    DMSwarmGetField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
 
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         /** Check that the particle is in a valid region */
-        if (index[ipart] >= 0 && subDomain.InRegion(index[ipart])) {
+        if (swarm_index[ipart] >= 0 && subDomain.InRegion(swarm_index[ipart])) {
             auto& identifier = identifiers[ipart];
             // Exact the ray to reduce lookup
             auto& ray = raySegments[identifier.remoteRayId];
@@ -115,8 +126,8 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
             /** March over each face on this cell in order to check them for the one which intersects this ray next */
             PetscInt numberFaces;
             const PetscInt* cellFaces;
-            DMPlexGetConeSize(subDomain.GetDM(), index[ipart], &numberFaces) >> utilities::PetscUtilities::checkError;
-            DMPlexGetCone(subDomain.GetDM(), index[ipart], &cellFaces) >> utilities::PetscUtilities::checkError;  //!< Get the face geometry associated with the current cell
+            DMPlexGetConeSize(subDomain.GetDM(), swarm_index[ipart], &numberFaces) >> utilities::PetscUtilities::checkError;
+            DMPlexGetCone(subDomain.GetDM(), swarm_index[ipart], &cellFaces) >> utilities::PetscUtilities::checkError;  //!< Get the face geometry associated with the current cell
 
             /** Check every face for intersection with the segment.
              * The segment with the shortest path length for intersection will be the one that physically intercepts with the cell face and not with the nonphysical plane beyond the face.
@@ -151,7 +162,7 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
                                                   * immediately registered. Because the ray comes from the origin, all of the cell indexes are naturally ordered from the center out
                                                   * */
                 auto& raySegment = ray.emplace_back();
-                raySegment.cell = index[ipart];
+                raySegment.cell = swarm_index[ipart];
                 raySegment.pathLength = virtualcoords[ipart].hhere;
             }
         } else {
@@ -160,7 +171,7 @@ void ablate::radiation::RaySharingRadiation::ParticleStep(ablate::domain::SubDom
     }
     DMSwarmRestoreField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifiers) >> utilities::PetscUtilities::checkError;
     DMSwarmRestoreField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoords) >> utilities::PetscUtilities::checkError;
-    DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+    DMSwarmRestoreField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
 }
 
 #include "registrar.hpp"

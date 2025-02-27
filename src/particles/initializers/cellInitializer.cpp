@@ -11,16 +11,20 @@ void ablate::particles::initializers::CellInitializer::Initialize(ablate::domain
     DMSwarmSetLocalSizes(particleDm, (cEnd - cStart) * particlesPerCellLocal, 0) >> utilities::PetscUtilities::checkError;
 
     // set the cell ids
-    PetscInt *cellid;
-    DMSwarmGetField(particleDm, DMSwarmPICField_cellid, nullptr, nullptr, (void **)&cellid) >> utilities::PetscUtilities::checkError;
+    DMSwarmCellDM celldm;
+    const char *cellid;
+    PetscInt *swarm_cellid;
+    DMSwarmGetCellDMActive(particleDm, &celldm) >> utilities::PetscUtilities::checkError;
+    DMSwarmCellDMGetCellID(celldm, &cellid) >> utilities::PetscUtilities::checkError;
+
+    DMSwarmGetField(particleDm, cellid, NULL, NULL, (void **)&swarm_cellid) >> utilities::PetscUtilities::checkError;
     for (PetscInt c = cStart; c < cEnd; ++c) {
         for (PetscInt p = 0; p < particlesPerCellLocal; ++p) {
             const PetscInt n = c * particlesPerCellLocal + p;
-            cellid[n] = c;
+            swarm_cellid[n] = c;
         }
     }
-
-    DMSwarmRestoreField(particleDm, DMSwarmPICField_cellid, nullptr, nullptr, (void **)&cellid) >> utilities::PetscUtilities::checkError;
+    DMSwarmRestoreField(particleDm, cellid, nullptr, nullptr, (void **)&swarm_cellid) >> utilities::PetscUtilities::checkError;
     DMSwarmSetPointCoordinatesRandom(particleDm, particlesPerCellLocal) >> utilities::PetscUtilities::checkError;
 }
 

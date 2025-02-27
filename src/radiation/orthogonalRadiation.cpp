@@ -63,14 +63,22 @@ void ablate::radiation::OrthogonalRadiation::Setup(const ablate::domain::Range& 
         utilities::PetscUtilities::checkError;  //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
 
     /** Declare some information associated with the field declarations */
+    DMSwarmCellDM cellDm;               //!< Swarm cell DM
     PetscReal* coord;                   //!< Pointer to the coordinate field information
-    PetscInt* index;                    //!< Pointer to the cell index information
+    const char *cellid, **coordFields;  //!< Swarm cellId, and coordinate fields
+    PetscInt Nfc;                       //!< Number of coordinate fields
+    PetscInt* swarm_index;              //!< Pointer to the cell index information
     struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifier;      //!< Pointer to the ray identifier information
 
+    /** Get the swarm cell DM, cell Id and coordinate fields */
+    DMSwarmGetCellDMActive(radSearch, &cellDm) >> utilities::PetscUtilities::checkError;
+    DMSwarmCellDMGetCellID(cellDm, &cellid) >> utilities::PetscUtilities::checkError;
+    DMSwarmCellDMGetCoordinateFields(cellDm, &Nfc, &coordFields);
+
     /** Get the fields associated with the particle swarm so that they can be modified */
-    DMSwarmGetField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
-    DMSwarmGetField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+    DMSwarmGetField(radSearch, coordFields[0], nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
+    DMSwarmGetField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
     DMSwarmGetField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifier) >> utilities::PetscUtilities::checkError;
     DMSwarmGetField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> utilities::PetscUtilities::checkError;
 
@@ -125,8 +133,8 @@ void ablate::radiation::OrthogonalRadiation::Setup(const ablate::domain::Range& 
     }
 
     /** Restore the fields associated with the particles */
-    DMSwarmRestoreField(radSearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
-    DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> utilities::PetscUtilities::checkError;
+    DMSwarmRestoreField(radSearch, coordFields[0], nullptr, nullptr, (void**)&coord) >> utilities::PetscUtilities::checkError;
+    DMSwarmRestoreField(radSearch, cellid, nullptr, nullptr, (void**)&swarm_index) >> utilities::PetscUtilities::checkError;
     DMSwarmRestoreField(radSearch, IdentifierField, nullptr, nullptr, (void**)&identifier) >> utilities::PetscUtilities::checkError;
     DMSwarmRestoreField(radSearch, VirtualCoordField, nullptr, nullptr, (void**)&virtualcoord) >> utilities::PetscUtilities::checkError;
 
