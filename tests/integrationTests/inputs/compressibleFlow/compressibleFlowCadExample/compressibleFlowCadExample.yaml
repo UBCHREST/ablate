@@ -3,7 +3,7 @@
 # .stp file.  When exporting the mesh, select Meter from the "Units for export of STEP" in preferences
 # to ensure the mesh is in SI units.
 ---
-#testingIgnore: true
+testingIgnore: true
 #test:
 #  # a unique test name for this integration tests
 #  name: compressibleFlowCadExample
