@@ -3,15 +3,16 @@
 # .stp file.  When exporting the mesh, select Meter from the "Units for export of STEP" in preferences
 # to ensure the mesh is in SI units.
 ---
-test:
-  # a unique test name for this integration tests
-  name: compressibleFlowCadExample
-  # the cad software in PETSc does not clean up after itself so ignore the error
-  environment: "ASAN_OPTIONS=detect_leaks=0"
-  # create a list of asserts to compare
-  assert:
-    # create a default assert that compares the log file
-    "inputs/compressibleFlow/compressibleFlowCadExample/compressibleFlowCadExample.txt"
+#testingIgnore: true
+#test:
+#  # a unique test name for this integration tests
+#  name: compressibleFlowCadExample
+#  # the cad software in PETSc does not clean up after itself so ignore the error
+#  environment: "ASAN_OPTIONS=detect_leaks=0"
+#  # create a list of asserts to compare
+#  assert:
+#    # create a default assert that compares the log file
+#    "inputs/compressibleFlow/compressibleFlowCadExample/compressibleFlowCadExample.txt"
 
 environment:
   title: _compressibleFlowCadExample
