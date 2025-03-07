@@ -17,7 +17,7 @@ target_sources(ablateLibrary
         surfaceForce.cpp
         soot.cpp
         compactCompressibleNSSpeciesTransport.cpp
-        compactCompressibleNSSpeciesNDDTransport.cpp
+        compactCompressibleNSSpeciesSingleProgressTransport.cpp
 
         PUBLIC
         process.hpp
@@ -38,5 +38,5 @@ target_sources(ablateLibrary
         surfaceForce.hpp
         soot.hpp
         compactCompressibleNSSpeciesTransport.hpp
-        compactCompressibleNSSpeciesNDDTransport.hpp
+        compactCompressibleNSSpeciesSingleProgressTransport.hpp
         )

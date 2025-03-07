@@ -1,7 +1,7 @@
 #include "compressibleFlowSolver.hpp"
 #include <utility>
 #include "compressibleFlowFields.hpp"
-#include "finiteVolume/processes/compactCompressibleNSSpeciesNDDTransport.hpp"
+#include "finiteVolume/processes/compactCompressibleNSSpeciesSingleProgressTransport.hpp"
 #include "finiteVolume/processes/compactCompressibleNSSpeciesTransport.hpp"
 #include "finiteVolume/processes/evTransport.hpp"
 #include "finiteVolume/processes/navierStokesTransport.hpp"
@@ -28,7 +28,7 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                                                                            utilities::VectorUtilities::Find<ablate::finiteVolume::processes::PressureGradientScaling>(additionalProcesses)),
                                                                        std::make_shared<ablate::finiteVolume::processes::EVTransport>(eosIn, fluxCalculatorIn, evTransport ? evTransport : transport)},
                                                                       additionalProcesses)
-                                  : utilities::VectorUtilities::Merge({std::make_shared<ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport>(
+                                  : utilities::VectorUtilities::Merge({std::make_shared<ablate::finiteVolume::processes::CompactCompressibleNSSpeciesSingleProgressTransport>(
                                                                           parameters, eosIn, fluxCalculatorIn, transport, evTransport ? evTransport : transport,
                                                                           utilities::VectorUtilities::Find<ablate::finiteVolume::processes::PressureGradientScaling>(additionalProcesses))},
                                                                       additionalProcesses))

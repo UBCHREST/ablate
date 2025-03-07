@@ -1,4 +1,4 @@
-#include "compactCompressibleNSSpeciesNDDTransport.hpp"
+#include "compactCompressibleNSSpeciesSingleProgressTransport.hpp"
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/fluxCalculator/ausm.hpp"
@@ -10,13 +10,11 @@
 #include "utilities/mathUtilities.hpp"
 #include "utilities/petscUtilities.hpp"
 
-ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::CompactCompressibleNSSpeciesNDDTransport(const std::shared_ptr<parameters::Parameters> &parametersIn,
-                                                                                                                    std::shared_ptr<eos::EOS> eosIn,
-                                                                                                                    std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn,
-                                                                                                                    std::shared_ptr<eos::transport::TransportModel> baseTransport,
-                                                                                                                    std::shared_ptr<eos::transport::TransportModel> evTransport,
-                                                                                                                    std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> pgs)
-    : advectionData(), fluxCalculator(fluxCalcIn), eos(std::move(eosIn)), transportModel(std::move(baseTransport)), NDDTransportModel(std::move(evTransport)) {
+ablate::finiteVolume::processes::CompactCompressibleNSSpeciesSingleProgressTransport::CompactCompressibleNSSpeciesSingleProgressTransport(
+    const std::shared_ptr<parameters::Parameters> &parametersIn, std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn,
+    std::shared_ptr<eos::transport::TransportModel> baseTransport, std::shared_ptr<eos::transport::TransportModel> evTransport,
+    std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> pgs)
+    : advectionData(), fluxCalculator(fluxCalcIn), eos(std::move(eosIn)), transportModel(std::move(baseTransport)), SingleProgressTransportModel(std::move(evTransport)) {
     auto parameters = ablate::parameters::EmptyParameters::Check(parametersIn);
 
     if (fluxCalculator) {
@@ -41,20 +39,23 @@ ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::Compa
         diffusionTimeStepData.speciesDiffusionCoefficient.resize(eos->GetSpeciesVariables().size());
 
         diffusionData.numberSpecies = (PetscInt)eos->GetSpeciesVariables().size();
+        diffusionData.numberEV = 1;
         diffusionData.speciesSpeciesSensibleEnthalpy.resize(eos->GetSpeciesVariables().size());
         diffusionData.speciesDiffusionCoefficient.resize(eos->GetSpeciesVariables().size());
     }
 }
 
-void ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) {
-    // loop over convserved EV's and pull out NDD, if it's not there error out or ignore it?
+void ablate::finiteVolume::processes::CompactCompressibleNSSpeciesSingleProgressTransport::Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) {
+    // loop over convserved EV's and pull out SingleProgress, if there's someething there other than it, error out.
     const auto &evConservedFields = flow.GetSubDomain().GetFields(domain::FieldLocation::SOL, CompressibleFlowFields::EV_TAG);
     for (auto &evConservedField : evConservedFields) {
-        if (evConservedField.name != CompressibleFlowFields::DENSITY_PROGRESS_FIELD) continue;
+        if (evConservedField.name != CompressibleFlowFields::DENSITY_PROGRESS_FIELD) {
+            throw std::invalid_argument("The ablate::finiteVolume::processes::CompactCompressibleNSSpeciesSingleProgressTransport process expects only the progress extra variable.");
+        }
         // set up the progress Extra Variables and the euler/species transport
         auto nonConservedName = evConservedField.name.substr(CompressibleFlowFields::CONSERVED.length());  // non Conserved form just removes density prefix
         if (!flow.GetSubDomain().ContainsField(nonConservedName)) {
-            throw std::invalid_argument("The ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport process expects the conserved (" + evConservedField.name +
+            throw std::invalid_argument("The ablate::finiteVolume::processes::CompactCompressibleNSSpeciesSingleProgressTransport process expects the conserved (" + evConservedField.name +
                                         ") and non-conserved (" + nonConservedName + ") extra variables to be in the flow.");
         }
         // Register the euler,eulerYi, and species source terms
@@ -84,6 +85,26 @@ void ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::
             diffusionData.kFunction = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Conductivity, flow.GetSubDomain().GetFields());
             diffusionData.diffFunction = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Diffusivity, flow.GetSubDomain().GetFields());
             diffusionData.computeSpeciesSensibleEnthalpyFunction = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SpeciesSensibleEnthalpy, flow.GetSubDomain().GetFields());
+            if (SingleProgressTransportModel) {
+                diffusionData.numberEV = evConservedField.numberComponents;
+                diffusionData.evDiffusionCoefficient.resize(diffusionData.numberEV);
+                diffusionData.evDiffFunction = SingleProgressTransportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Diffusivity, flow.GetSubDomain().GetFields());
+                // ExtraVariable
+                if (diffusionData.evDiffFunction.function) {
+                    if (diffusionData.evDiffFunction.propertySize == 1) {
+                        flow.RegisterRHSFunction(
+                            DiffusionEVFlux, &diffusionData, {evConservedField.name}, {CompressibleFlowFields::EULER_FIELD}, {nonConservedName, CompressibleFlowFields::TEMPERATURE_FIELD});
+                    } else if (diffusionData.evDiffFunction.propertySize == diffusionData.numberEV) {
+                        flow.RegisterRHSFunction(DiffusionEVFluxVariableDiffusionCoefficient,
+                                                 &diffusionData,
+                                                 {evConservedField.name},
+                                                 {CompressibleFlowFields::EULER_FIELD},
+                                                 {nonConservedName, CompressibleFlowFields::TEMPERATURE_FIELD});
+                    } else
+                        throw std::invalid_argument(
+                            "The ev diffusion property size must be 1 or number of ev in ablate::finiteVolume::processes::CompatcCompressibleNSSpeciesSingleProgressTransport!");
+                }
+            }
 
             /* For now we will do 3 different diffusive flux calls just since it doesn't seem like their splitting costs too much time in redundant calculations */
             if (diffusionData.muFunction.function || diffusionData.kFunction.function) {
@@ -108,7 +129,7 @@ void ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::
                                              {CompressibleFlowFields::DENSITY_YI_FIELD},
                                              {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
                                              {CompressibleFlowFields::YI_FIELD, CompressibleFlowFields::TEMPERATURE_FIELD});
-                } else if (diffusionData.diffFunction.propertySize == advectionData.numberSpecies) {
+                } else if (diffusionData.diffFunction.propertySize == diffusionData.numberSpecies) {
                     flow.RegisterRHSFunction(DiffusionEnergyFluxVariableDiffusionCoefficient,
                                              &diffusionData,
                                              {CompressibleFlowFields::EULER_FIELD},
@@ -144,22 +165,6 @@ void ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::
                 diffusionTimeStepData.numberSpecies = diffusionData.numberSpecies;
                 diffusionTimeStepData.diffFunction = diffusionData.diffFunction;
                 flow.RegisterComputeTimeStepFunction(ComputeViscousSpeciesDiffusionTimeStep, &diffusionTimeStepData, "spec");
-            }
-        }
-
-        if (NDDTransportModel) {
-            diffusionData.numberEV = evConservedField.numberComponents;
-            diffusionData.evDiffusionCoefficient.resize(diffusionData.numberEV);
-            diffusionData.evDiffFunction = NDDTransportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Diffusivity, flow.GetSubDomain().GetFields());
-            // ExtraVariable
-            if (diffusionData.evDiffFunction.function) {
-                if (diffusionData.evDiffFunction.propertySize == 1) {
-                    flow.RegisterRHSFunction(
-                        DiffusionEVFlux, &diffusionData, {evConservedField.name}, {CompressibleFlowFields::EULER_FIELD}, {nonConservedName, CompressibleFlowFields::TEMPERATURE_FIELD});
-                } else if (diffusionData.evDiffFunction.propertySize == diffusionData.numberEV) {
-                    flow.RegisterRHSFunction(DiffusionEVFluxVariableDiffusionCoefficient, &diffusionData, {evConservedField.name}, {CompressibleFlowFields::EULER_FIELD}, {nonConservedName, CompressibleFlowFields::TEMPERATURE_FIELD});
-                } else
-                    throw std::invalid_argument("The ev diffusion property size must be 1 or number of ev in ablate::finiteVolume::processes::CompatcCompressibleNSSpeciesNDDTransport!");
             }
         }
 
@@ -223,9 +228,9 @@ void ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::
     }  // End EV loop
 }
 
-PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::AdvectionFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscScalar *fieldL,
-                                                                                                        const PetscScalar *fieldR, const PetscInt *aOff, const PetscScalar *auxL,
-                                                                                                        const PetscScalar *auxR, PetscScalar *flux, void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesSingleProgressTransport::AdvectionFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff,
+                                                                                                                   const PetscScalar *fieldL, const PetscScalar *fieldR, const PetscInt *aOff,
+                                                                                                                   const PetscScalar *auxL, const PetscScalar *auxR, PetscScalar *flux, void *ctx) {
     PetscFunctionBeginUser;
 
     auto advectionData = (AdvectionData *)ctx;
@@ -342,7 +347,7 @@ PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDT
     PetscFunctionReturn(0);
 }
 
-double ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::ComputeCflTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver &flow, void *ctx) {
+double ablate::finiteVolume::processes::CompactCompressibleNSSpeciesSingleProgressTransport::ComputeCflTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver &flow, void *ctx) {
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> utilities::PetscUtilities::checkError;
@@ -420,7 +425,7 @@ double ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport
     return dtMin;
 }
 
-double ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::ComputeConductionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver &flow, void *ctx) {
+double ablate::finiteVolume::processes::CompactCompressibleNSSpeciesSingleProgressTransport::ComputeConductionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver &flow, void *ctx) {
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> utilities::PetscUtilities::checkError;
@@ -506,7 +511,7 @@ double ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport
     return dtMin;
 }
 
-double ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::ComputeViscousDiffusionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver &flow, void *ctx) {
+double ablate::finiteVolume::processes::CompactCompressibleNSSpeciesSingleProgressTransport::ComputeViscousDiffusionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver &flow, void *ctx) {
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> utilities::PetscUtilities::checkError;
@@ -586,7 +591,7 @@ double ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport
     flow.RestoreRange(cellRange);
     return dtMin;
 }
-double ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::ComputeViscousSpeciesDiffusionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver &flow, void *ctx) {
+double ablate::finiteVolume::processes::CompactCompressibleNSSpeciesSingleProgressTransport::ComputeViscousSpeciesDiffusionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver &flow, void *ctx) {
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> utilities::PetscUtilities::checkError;
@@ -654,10 +659,10 @@ double ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport
     return dtMin;
 }
 
-PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::DiffusionFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[],
-                                                                                                        const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[],
-                                                                                                        const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[],
-                                                                                                        PetscScalar flux[], void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesSingleProgressTransport::DiffusionFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[],
+                                                                                                                   const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
+                                                                                                                   const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
+                                                                                                                   const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int T = 0;
@@ -711,10 +716,10 @@ PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDT
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::DiffusionEnergyFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[],
-                                                                                                              const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[],
-                                                                                                              const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[],
-                                                                                                              PetscScalar flux[], void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesSingleProgressTransport::DiffusionEnergyFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[],
+                                                                                                                         const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
+                                                                                                                         const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
+                                                                                                                         const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int yi = 0;
@@ -754,7 +759,7 @@ PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDT
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::DiffusionEnergyFluxVariableDiffusionCoefficient(
+PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesSingleProgressTransport::DiffusionEnergyFluxVariableDiffusionCoefficient(
     PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[],
     const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
     PetscFunctionBeginUser;
@@ -795,10 +800,10 @@ PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDT
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::DiffusionSpeciesFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[],
-                                                                                                               const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[],
-                                                                                                               const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[],
-                                                                                                               PetscScalar flux[], void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesSingleProgressTransport::DiffusionSpeciesFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[],
+                                                                                                                          const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
+                                                                                                                          const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
+                                                                                                                          const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int yi = 0;
@@ -830,7 +835,7 @@ PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDT
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::DiffusionSpeciesFluxVariableDiffusionCoefficient(
+PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesSingleProgressTransport::DiffusionSpeciesFluxVariableDiffusionCoefficient(
     PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[],
     const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
     PetscFunctionBeginUser;
@@ -862,10 +867,10 @@ PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDT
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::DiffusionEVFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[],
-                                                                                                          const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[],
-                                                                                                          const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[],
-                                                                                                          PetscScalar flux[], void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesSingleProgressTransport::DiffusionEVFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[],
+                                                                                                                     const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
+                                                                                                                     const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
+                                                                                                                     const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int EULER_FIELD = 0;
@@ -878,7 +883,7 @@ PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDT
     const PetscReal temperature = aux[aOff[1]];  // Temperature is second aux in
     // compute diff
     PetscReal diff = 0.0;
-    flowParameters->diffFunction.function(field, temperature, &diff, flowParameters->diffFunction.context.get());
+    flowParameters->evDiffFunction.function(field, temperature, &diff, flowParameters->evDiffFunction.context.get());
 
     // species equations
     for (PetscInt ev = 0; ev < flowParameters->numberEV; ++ev) {
@@ -894,11 +899,9 @@ PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDT
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesNDDTransport::DiffusionEVFluxVariableDiffusionCoefficient(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[],
-                                                                                                                                      const PetscInt uOff_x[], const PetscScalar field[],
-                                                                                                                                      const PetscScalar grad[], const PetscInt aOff[],
-                                                                                                                                      const PetscInt aOff_x[], const PetscScalar aux[],
-                                                                                                                                      const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::CompactCompressibleNSSpeciesSingleProgressTransport::DiffusionEVFluxVariableDiffusionCoefficient(
+    PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[],
+    const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int EULER_FIELD = 0;

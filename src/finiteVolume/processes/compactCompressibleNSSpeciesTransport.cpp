@@ -95,7 +95,7 @@ void ablate::finiteVolume::processes::CompactCompressibleNSSpeciesTransport::Set
                                          {CompressibleFlowFields::DENSITY_YI_FIELD},
                                          {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
                                          {CompressibleFlowFields::YI_FIELD, CompressibleFlowFields::TEMPERATURE_FIELD});
-            } else if (diffusionData.diffFunction.propertySize == advectionData.numberSpecies) {
+            } else if (diffusionData.diffFunction.propertySize == diffusionData.numberSpecies) {
                 flow.RegisterRHSFunction(DiffusionEnergyFluxVariableDiffusionCoefficient,
                                          &diffusionData,
                                          {CompressibleFlowFields::EULER_FIELD},

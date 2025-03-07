@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESNDDTRANSPORT_H
-#define ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESNDDTRANSPORT_H
+#ifndef ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESSingleProgressTRANSPORT_H
+#define ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESSingleProgressTRANSPORT_H
 
 #include <petsc.h>
 #include "eos/transport/transportModel.hpp"
@@ -9,7 +9,7 @@
 
 namespace ablate::finiteVolume::processes {
 
-class CompactCompressibleNSSpeciesNDDTransport : public FlowProcess {
+class CompactCompressibleNSSpeciesSingleProgressTransport : public FlowProcess {
    private:
     // store ctx needed for function advection function that is passed into Petsc
     struct AdvectionData {
@@ -39,7 +39,7 @@ class CompactCompressibleNSSpeciesNDDTransport : public FlowProcess {
         eos::ThermodynamicTemperatureFunction diffFunction;
         eos::ThermodynamicTemperatureFunction evDiffFunction;
 
-        /* number of gas species and progress variables (NDD) */
+        /* number of gas species and components in the SingleProgress */
         PetscInt numberSpecies;
         PetscInt numberEV;
 
@@ -69,7 +69,7 @@ class CompactCompressibleNSSpeciesNDDTransport : public FlowProcess {
         PetscInt numberSpecies;
         /* store an optional scratch space for individual species diffusion */
         std::vector<PetscReal> speciesDiffusionCoefficient;
-        PetscReal NDDDiffusionCoefficient;
+        PetscReal SingleProgressDiffusionCoefficient;
 
         //! stability factor for condition time step. 0 (default) does not compute factor
         PetscReal diffusiveStabilityFactor;
@@ -94,15 +94,16 @@ class CompactCompressibleNSSpeciesNDDTransport : public FlowProcess {
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculator;
     const std::shared_ptr<eos::EOS> eos;
     const std::shared_ptr<eos::transport::TransportModel> transportModel;
-    const std::shared_ptr<eos::transport::TransportModel> NDDTransportModel;
+    const std::shared_ptr<eos::transport::TransportModel> SingleProgressTransportModel;
 
     eos::ThermodynamicTemperatureFunction computeTemperatureFunction;
     eos::ThermodynamicFunction computePressureFunction;
 
    public:
-    explicit CompactCompressibleNSSpeciesNDDTransport(const std::shared_ptr<parameters::Parameters>& parameters, std::shared_ptr<eos::EOS> eos,
-                                                      std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {}, std::shared_ptr<eos::transport::TransportModel> baseTransport = {},
-                                                      std::shared_ptr<eos::transport::TransportModel> evTransport = {}, std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> = {});
+    explicit CompactCompressibleNSSpeciesSingleProgressTransport(const std::shared_ptr<parameters::Parameters>& parameters, std::shared_ptr<eos::EOS> eos,
+                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {}, std::shared_ptr<eos::transport::TransportModel> baseTransport = {},
+                                                                 std::shared_ptr<eos::transport::TransportModel> evTransport = {},
+                                                                 std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> = {});
     /**
      * public function to link this process with the flow
      * @param flow
@@ -209,4 +210,4 @@ class CompactCompressibleNSSpeciesNDDTransport : public FlowProcess {
 
 }  // namespace ablate::finiteVolume::processes
 
-#endif  // ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESNDDTRANSPORT_H
+#endif  // ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESSingleProgressTRANSPORT_H
