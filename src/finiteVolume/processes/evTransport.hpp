@@ -25,7 +25,7 @@ class EVTransport : public FlowProcess {
         PetscInt numberEV;
 
         // EOS function calls
-        eos::ThermodynamicFunction computeTemperature;
+        eos::ThermodynamicTemperatureFunction computeTemperature;
         eos::ThermodynamicTemperatureFunction computeInternalEnergy;
         eos::ThermodynamicTemperatureFunction computeSpeedOfSound;
         eos::ThermodynamicTemperatureFunction computePressure;
@@ -40,7 +40,7 @@ class EVTransport : public FlowProcess {
         PetscInt numberEV;
 
         /* functions to compute diffusion */
-        eos::ThermodynamicFunction diffFunction;
+        eos::ThermodynamicTemperatureFunction diffFunction;
 
         /* store a scratch space for evDiffusionCoefficient */
         std::vector<PetscReal> evDiffusionCoefficient;

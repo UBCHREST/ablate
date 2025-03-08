@@ -1,24 +1,25 @@
-#ifndef ABLATELIBRARY_SPECIESTRANSPORT_HPP
-#define ABLATELIBRARY_SPECIESTRANSPORT_HPP
+#ifndef ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESTRANSPORT_H
+#define ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESTRANSPORT_H
 
+#include <petsc.h>
 #include "eos/transport/transportModel.hpp"
 #include "finiteVolume/fluxCalculator/fluxCalculator.hpp"
 #include "flowProcess.hpp"
+#include "pressureGradientScaling.hpp"
 
 namespace ablate::finiteVolume::processes {
 
-class SpeciesTransport : public FlowProcess {
+class CompactCompressibleNSSpeciesTransport : public FlowProcess {
    private:
-    const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculator;
-    const std::shared_ptr<eos::EOS> eos;
-    const std::shared_ptr<eos::transport::TransportModel> transportModel;
-
-    // Store ctx needed for static function advection function passed to PETSc
+    // store ctx needed for function advection function that is passed into Petsc
     struct AdvectionData {
-        /* number of gas species */
+        // flow CFL
+        PetscReal cfl;
+
+        /* number of gas species and extra species */
         PetscInt numberSpecies;
 
-        // EOS function calls
+        // EOS function calls (For Temperature it's better to just use the TemperatureTemperature function so we can guess Temperature from t
         eos::ThermodynamicTemperatureFunction computeTemperature;
         eos::ThermodynamicTemperatureFunction computeInternalEnergy;
         eos::ThermodynamicTemperatureFunction computeSpeedOfSound;
@@ -31,15 +32,14 @@ class SpeciesTransport : public FlowProcess {
     AdvectionData advectionData;
 
     struct DiffusionData {
-        /* diffusivity */
+        /* thermal conductivity Diffusivity, and Dynamic Viscosity*/
+        eos::ThermodynamicTemperatureFunction kFunction;
+        eos::ThermodynamicTemperatureFunction muFunction;
         eos::ThermodynamicTemperatureFunction diffFunction;
-
         /* number of gas species */
         PetscInt numberSpecies;
-
         /* functions to compute species enthalpy */
         eos::ThermodynamicTemperatureFunction computeSpeciesSensibleEnthalpyFunction;
-
         /* store a scratch space for speciesSpeciesSensibleEnthalpy */
         std::vector<PetscReal> speciesSpeciesSensibleEnthalpy;
         /* store an optional scratch space for individual species diffusion */
@@ -47,28 +47,53 @@ class SpeciesTransport : public FlowProcess {
     };
     DiffusionData diffusionData;
 
+    // Store the required ctx for time stepping
+    struct CflTimeStepData {
+        /* thermal conductivity*/
+        AdvectionData* advectionData;
+        /* pressure gradient scaling */
+        std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> pgs;
+    };
+    CflTimeStepData timeStepData;
+
     //! methods and functions to compute diffusion based time stepping
     struct DiffusionTimeStepData {
         /* number of gas species */
         PetscInt numberSpecies;
+        /* store an optional scratch space for individual species diffusion */
+        std::vector<PetscReal> speciesDiffusionCoefficient;
 
         //! stability factor for condition time step. 0 (default) does not compute factor
-        PetscReal stabilityFactor;
+        PetscReal diffusiveStabilityFactor;
+        //! stability factor for condition time step. 0 (default) does not compute factor
+        PetscReal conductionStabilityFactor;
+        //! stability factor for viscous diffusion time step. 0 (default) does not compute factor
+        PetscReal viscousStabilityFactor;
 
         /* diffusivity */
         eos::ThermodynamicTemperatureFunction diffFunction;
-        /* store an optional scratch space for individual species diffusion */
-        std::vector<PetscReal> speciesDiffusionCoefficient;
+        /* thermal conductivity*/
+        eos::ThermodynamicTemperatureFunction kFunction;
+        /* dynamic viscosity*/
+        eos::ThermodynamicTemperatureFunction muFunction;
+        /* specific heat*/
+        eos::ThermodynamicTemperatureFunction specificHeat;
+        /* density */
+        eos::ThermodynamicTemperatureFunction density;
     };
     DiffusionTimeStepData diffusionTimeStepData;
 
-    // Store ctx needed for static function diffusion function passed to PETSc
-    PetscInt numberSpecies;
+    const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculator;
+    const std::shared_ptr<eos::EOS> eos;
+    const std::shared_ptr<eos::transport::TransportModel> transportModel;
+
+    eos::ThermodynamicTemperatureFunction computeTemperatureFunction;
+    eos::ThermodynamicFunction computePressureFunction;
 
    public:
-    explicit SpeciesTransport(std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {}, std::shared_ptr<eos::transport::TransportModel> transportModel = {},
-                              const std::shared_ptr<parameters::Parameters>& parametersIn = {});
-
+    explicit CompactCompressibleNSSpeciesTransport(const std::shared_ptr<parameters::Parameters>& parameters, std::shared_ptr<eos::EOS> eos,
+                                                   std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {}, std::shared_ptr<eos::transport::TransportModel> baseTransport = {},
+                                                   std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> = {});
     /**
      * public function to link this process with the flow
      * @param flow
@@ -76,16 +101,24 @@ class SpeciesTransport : public FlowProcess {
     void Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) override;
 
     /**
-     * Function to compute the mass fraction. This function assumes that the input values will be {"euler", "densityYi"}
+     * This Computes the Advective Flow for rho, rhoE, and rhoVel, rhoYi, and rhoEV.
+     * u = {"euler"} or {"euler", "densityYi"} if species are tracked
+     * a = {}
+     * ctx = FlowData_CompressibleFlow
+     * @return
      */
-    static PetscErrorCode UpdateAuxMassFractionField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, const PetscInt aOff[],
-                                                     PetscScalar* auxField, void* ctx);
+    static PetscErrorCode AdvectionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscScalar fieldL[], const PetscScalar fieldR[], const PetscInt aOff[],
+                                        const PetscScalar auxL[], const PetscScalar auxR[], PetscScalar* flux, void* ctx);
 
     /**
-     * Normalize and cleanup the species mass fractions in the solution vector
-     * @param ts
+     * This Computes the diffusion flux for euler rhoE, rhoVel
+     * u = {"euler", "densityYi"}
+     * a = {"temperature", "velocity"}
+     * ctx = FlowData_CompressibleFlow
+     * @return
      */
-    static void NormalizeSpecies(TS ts, ablate::solver::Solver&);
+    static PetscErrorCode DiffusionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
+                                        const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
 
     /**
      * This computes the energy transfer for species diffusion flux for rhoE
@@ -133,18 +166,16 @@ class SpeciesTransport : public FlowProcess {
                                                                            const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
                                                                            const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
 
-    /**
-     * This Computes the advection flux for each species (Yi)
-     * u = {"euler", "densityYi"}
-     * ctx = FlowData_CompressibleFlow
-     * @return
-     */
-    static PetscErrorCode AdvectionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscScalar fieldL[], const PetscScalar fieldR[], const PetscInt aOff[],
-                                        const PetscScalar auxL[], const PetscScalar auxR[], PetscScalar* flux, void* ctx);
-
+    // static function to compute time step for euler advection
+    static double ComputeCflTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
     // static function to compute the conduction based time step
     static double ComputeViscousDiffusionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
+    // static function to compute the conduction based time step
+    static double ComputeConductionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
+    // static function to compute the conduction based time step
+    static double ComputeViscousSpeciesDiffusionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
 };
 
 }  // namespace ablate::finiteVolume::processes
-#endif  // ABLATELIBRARY_SPECIESTRANSPORT_HPP
+
+#endif  // ABLATELIBRARY_COMPACTCOMPRESSIBLENSSPECIESTRANSPORT_H

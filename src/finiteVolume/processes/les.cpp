@@ -24,21 +24,21 @@ void ablate::finiteVolume::processes::LES::Setup(ablate::finiteVolume::FiniteVol
     // Register the euler/Energy LESdiffusion source term tke
     flow.RegisterRHSFunction(LesEnergyFlux,
                              nullptr,
-                             CompressibleFlowFields::EULER_FIELD,
+                             {CompressibleFlowFields::EULER_FIELD},
                              {CompressibleFlowFields::EULER_FIELD},
                              {tkeField, CompressibleFlowFields::VELOCITY_FIELD, CompressibleFlowFields::TEMPERATURE_FIELD});
 
     // Register the N_S LESdiffusion source terms
-    flow.RegisterRHSFunction(LesMomentumFlux, nullptr, CompressibleFlowFields::EULER_FIELD, {CompressibleFlowFields::EULER_FIELD}, {tkeField, CompressibleFlowFields::VELOCITY_FIELD});
+    flow.RegisterRHSFunction(LesMomentumFlux, nullptr, {CompressibleFlowFields::EULER_FIELD}, {CompressibleFlowFields::EULER_FIELD}, {tkeField, CompressibleFlowFields::VELOCITY_FIELD});
 
     // Register the tke LESdiffusion source term
-    flow.RegisterRHSFunction(LesTkeFlux, nullptr, conservedFieldName, {CompressibleFlowFields::EULER_FIELD}, {tkeField, CompressibleFlowFields::VELOCITY_FIELD});
+    flow.RegisterRHSFunction(LesTkeFlux, nullptr, {conservedFieldName}, {CompressibleFlowFields::EULER_FIELD}, {tkeField, CompressibleFlowFields::VELOCITY_FIELD});
 
     // Register the Species LESdiffusion source term
     if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::DENSITY_YI_FIELD)) {
         // the species are treated like any other transported ev
         auto& numberComponent = numberComponents.emplace_back(flow.GetSubDomain().GetField(CompressibleFlowFields::YI_FIELD).numberComponents);
-        flow.RegisterRHSFunction(LesEvFlux, &numberComponent, CompressibleFlowFields::DENSITY_YI_FIELD, {CompressibleFlowFields::EULER_FIELD}, {tkeField, CompressibleFlowFields::YI_FIELD});
+        flow.RegisterRHSFunction(LesEvFlux, &numberComponent, {CompressibleFlowFields::DENSITY_YI_FIELD}, {CompressibleFlowFields::EULER_FIELD}, {tkeField, CompressibleFlowFields::YI_FIELD});
     }
 
     // March over any ev
@@ -48,7 +48,7 @@ void ablate::finiteVolume::processes::LES::Setup(ablate::finiteVolume::FiniteVol
 
         // the species are treated like any other transported ev
         auto& numberComponent = numberComponents.emplace_back(evConservedField.numberComponents);
-        flow.RegisterRHSFunction(LesEvFlux, &numberComponent, evConservedField.name, {CompressibleFlowFields::EULER_FIELD}, {tkeField, nonConservedEvName});
+        flow.RegisterRHSFunction(LesEvFlux, &numberComponent, {evConservedField.name}, {CompressibleFlowFields::EULER_FIELD}, {tkeField, nonConservedEvName});
     }
 }
 
