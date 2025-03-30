@@ -111,14 +111,14 @@ class FiniteVolumeSolver : public solver::CellSolver,
     PetscErrorCode ComputeBoundary(PetscReal time, Vec locX, Vec locX_t) override;
 
     /**
-     * Register a FVM rhs discontinuous flux function
+     * Register a FVM rhs discontinuous flux function for multiple fields
      * @param function
      * @param context
      * @param field
      * @param inputFields
      * @param auxFields
      */
-    void RegisterRHSFunction(CellInterpolant::DiscontinuousFluxFunction function, void* context, const std::string& field, const std::vector<std::string>& inputFields,
+    void RegisterRHSFunction(CellInterpolant::DiscontinuousFluxFunction function, void* context, const std::vector<std::string>& field, const std::vector<std::string>& inputFields,
                              const std::vector<std::string>& auxFields);
 
     /**
@@ -129,7 +129,7 @@ class FiniteVolumeSolver : public solver::CellSolver,
      * @param inputFields
      * @param auxFields
      */
-    void RegisterRHSFunction(FaceInterpolant::ContinuousFluxFunction function, void* context, const std::string& field, const std::vector<std::string>& inputFields,
+    void RegisterRHSFunction(FaceInterpolant::ContinuousFluxFunction function, void* context, const std::vector<std::string>& fields, const std::vector<std::string>& inputFields,
                              const std::vector<std::string>& auxFields);
 
     /**

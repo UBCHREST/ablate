@@ -20,7 +20,7 @@ class NavierStokesTransport : public FlowProcess {
         PetscInt numberSpecies;
 
         // EOS function calls
-        eos::ThermodynamicFunction computeTemperature;
+        eos::ThermodynamicTemperatureFunction computeTemperature;
         eos::ThermodynamicTemperatureFunction computeInternalEnergy;
         eos::ThermodynamicTemperatureFunction computeSpeedOfSound;
         eos::ThermodynamicTemperatureFunction computePressure;
@@ -37,6 +37,13 @@ class NavierStokesTransport : public FlowProcess {
         /* dynamic viscosity*/
         eos::ThermodynamicTemperatureFunction muFunction;
     };
+
+    // static function to compute time step for euler advection
+    static double ComputeCflTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
+    // static function to compute the conduction based time step
+    static double ComputeViscousDiffusionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
+    // static function to compute the conduction based time step
+    static double ComputeConductionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
 
    private:
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculator;
@@ -80,15 +87,6 @@ class NavierStokesTransport : public FlowProcess {
         eos::ThermodynamicTemperatureFunction density;
     };
     DiffusionTimeStepData diffusionTimeStepData;
-
-    // static function to compute time step for euler advection
-    static double ComputeCflTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
-
-    // static function to compute the conduction based time step
-    static double ComputeConductionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
-
-    // static function to compute the conduction based time step
-    static double ComputeViscousDiffusionTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
 
    public:
     /**

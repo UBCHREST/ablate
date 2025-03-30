@@ -30,7 +30,7 @@ TEST_P(NavierStokesTransportFluxTestFixture, ShouldComputeCorrectFlux) {
     // set a perfect gas for testing
     auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>());
     auto eulerFieldMock = ablateTesting::domain::MockField::Create("euler", 3);
-    eulerFlowData.computeTemperature = eos->GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, {eulerFieldMock});
+    eulerFlowData.computeTemperature = eos->GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty::Temperature, {eulerFieldMock});
     eulerFlowData.computeInternalEnergy = eos->GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty::InternalSensibleEnergy, {eulerFieldMock});
     eulerFlowData.computeSpeedOfSound = eos->GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty::SpeedOfSound, {eulerFieldMock});
     eulerFlowData.computePressure = eos->GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty::Pressure, {eulerFieldMock});
@@ -42,7 +42,10 @@ TEST_P(NavierStokesTransportFluxTestFixture, ShouldComputeCorrectFlux) {
     // act
     std::vector<PetscReal> computedFlux(params.expectedFlux.size());
     PetscInt uOff[1] = {0};
-    ablate::finiteVolume::processes::NavierStokesTransport::AdvectionFlux(params.area.size(), &faceGeom, uOff, &params.xLeft[0], &params.xRight[0], NULL, NULL, NULL, &computedFlux[0], &eulerFlowData);
+    PetscInt aOff[1] = {0};
+    PetscReal TempGuess[1] = {300};
+    ablate::finiteVolume::processes::NavierStokesTransport::AdvectionFlux(
+        params.area.size(), &faceGeom, uOff, &params.xLeft[0], &params.xRight[0], aOff, TempGuess, TempGuess, &computedFlux[0], &eulerFlowData);
 
     // assert
     for (std::size_t i = 0; i < params.expectedFlux.size(); i++) {
