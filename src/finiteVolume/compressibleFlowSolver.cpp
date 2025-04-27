@@ -53,8 +53,10 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
 
 #include "registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::finiteVolume::CompressibleFlowSolver, "compressible finite volume flow", ARG(std::string, "id", "the name of the flow field"),
-         OPT(ablate::domain::Region, "region", "the region to apply this solver.  Default is entire domain"), OPT(ablate::parameters::Parameters, "options", "the options passed to PETSc"),
-         ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"), OPT(ablate::parameters::Parameters, "parameters", "the parameters used for field values"),
+         OPT(ablate::domain::Region, "region", "the region to apply this solver.  Default is entire domain"),
+         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSc"),
+         ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"),
+         OPT(ablate::parameters::Parameters, "parameters", "the parameters used for field values"),
          OPT(ablate::eos::transport::TransportModel, "transport", "the diffusion transport model"),
          OPT(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculators (defaults to none)"),
          OPT(std::vector<ablate::finiteVolume::processes::Process>, "additionalProcesses", "any additional processes besides euler/yi/ev transport"),

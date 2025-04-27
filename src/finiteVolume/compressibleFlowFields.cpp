@@ -5,7 +5,7 @@
 #include "utilities/vectorUtilities.hpp"
 
 ablate::finiteVolume::CompressibleFlowFields::CompressibleFlowFields(std::shared_ptr<eos::EOS> eos, std::shared_ptr<domain::Region> region,
-                                                                     std::shared_ptr<parameters::Parameters> conservedFieldParameters)
+                                                                     std::shared_ptr<parameters::Parameters> conservedFieldParameters,double maxgradient)
     : eos(std::move(eos)), region(std::move(region)), conservedFieldOptions(std::move(conservedFieldParameters)) {}
 
 std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::finiteVolume::CompressibleFlowFields::GetFields() {
@@ -78,4 +78,5 @@ std::istream& ablate::finiteVolume::operator>>(std::istream& is, ablate::finiteV
 #include "registrar.hpp"
 REGISTER(ablate::domain::FieldDescriptor, ablate::finiteVolume::CompressibleFlowFields, "FVM fields need for compressible flow",
          ARG(ablate::eos::EOS, "eos", "the equation of state to be used for the flow"), OPT(ablate::domain::Region, "region", "the region for the compressible flow (defaults to entire domain)"),
-         OPT(ablate::parameters::Parameters, "conservedFieldOptions", "petsc options used for the conserved fields.  Common options would be petscfv_type and petsclimiter_type"));
+         OPT(ablate::parameters::Parameters, "conservedFieldOptions", "petsc options used for the conserved fields.  Common options would be petscfv_type and petsclimiter_type"),
+         OPT(double, "maxgradient", "Maximum value of the gradient for the limiter in cellinterpolant"));

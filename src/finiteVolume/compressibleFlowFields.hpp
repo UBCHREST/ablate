@@ -48,6 +48,8 @@ class CompressibleFlowFields : public domain::FieldDescriptor {
     inline const static std::string VELOCITY_FIELD = "velocity";
     inline const static std::string PRESSURE_FIELD = "pressure";
 
+    const std::shared_ptr<parameters::Parameters> limiterOptions;
+
    protected:
     const std::shared_ptr<eos::EOS> eos;
     const std::shared_ptr<domain::Region> region;
@@ -61,7 +63,7 @@ class CompressibleFlowFields : public domain::FieldDescriptor {
      * @param region the region for all of the fields
      * @param conservedFieldParameters override the default field parameters for the conserved field
      */
-    explicit CompressibleFlowFields(std::shared_ptr<eos::EOS> eos, std::shared_ptr<domain::Region> region = {}, std::shared_ptr<parameters::Parameters> conservedFieldParameters = {});
+    explicit CompressibleFlowFields(std::shared_ptr<eos::EOS> eos, std::shared_ptr<domain::Region> region = {}, std::shared_ptr<parameters::Parameters> conservedFieldParameters = {},double maxgradient=0);
 
     /**
      * override and return the compressible flow fields
