@@ -363,6 +363,9 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunction(TS ts, Pets
     VecZeroEntries(locF);
     CHKMEMQ;
 
+    //Sync all the ranks here, to avoid imbalance form PreRHS calls (eg. radiative gain) to distort computeRHS profiling results
+    MPI_Barrier(PETSC_COMM_WORLD);
+
     // Call each of the provided RHS functions
     timeStepper->StartEvent("SolverComputeRHSFunction::ComputeRHSFunction");
     for (auto& solver : timeStepper->rhsFunctionSolvers) {
