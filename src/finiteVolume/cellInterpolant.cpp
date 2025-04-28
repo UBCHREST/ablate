@@ -2,8 +2,8 @@
 #include <petsc/private/dmpleximpl.h>
 #include <utility>
 
-ablate::finiteVolume::CellInterpolant::CellInterpolant(std::shared_ptr<ablate::domain::SubDomain> subDomainIn, const std::shared_ptr<domain::Region>& solverRegion, Vec faceGeomVec, Vec cellGeomVec)
-    : subDomain(std::move(std::move(subDomainIn))) {
+ablate::finiteVolume::CellInterpolant::CellInterpolant(std::shared_ptr<ablate::domain::SubDomain> subDomainIn, const std::shared_ptr<domain::Region>& solverRegion, Vec faceGeomVec, Vec cellGeomVec,double maxGradIn)
+    : subDomain(std::move(std::move(subDomainIn))), maxLimGrad(maxGradIn) {
     auto getGradientDm = [this, solverRegion, faceGeomVec, cellGeomVec](const domain::Field& fieldInfo, std::vector<DM>& gradDMs) {
         auto petscField = subDomain->GetPetscFieldObject(fieldInfo);
         auto petscFieldFV = (PetscFV)petscField;
@@ -454,27 +454,13 @@ void ablate::finiteVolume::CellInterpolant::ComputeFieldGradients(const domain::
                     utilities::PetscUtilities::checkError;
             }
 
-//            /* Apply limiter to gradient. By default, use the minimum limiter. */
-//            PetscBool cancel = PETSC_FALSE;
-//            for (PetscInt pd = 0; pd < dof; ++pd) {
-//                if (cellPhi[2] == 0) cancel = PETSC_TRUE;
-//            }
-//            for (PetscInt pd = 0; pd < dof; ++pd) {
-//                /* Scalar limiter applied to each component separately */
-//                for (PetscInt d = 0; d < dim; ++d) {
-//                    if (cancel) cgrad[pd * dim + d] *= 0;
-//                    else cgrad[pd * dim + d] *= cellPhi[pd];
-//                }
-//            }
-
-//            Gradlim;
-
             /* Apply limiter to gradient */
             PetscBool cancel = PETSC_FALSE;
             for (PetscInt pd = 0; pd < dof; ++pd) {
                 if (cellPhi[pd] ==0) {
                     for (PetscInt d =0; d < dim; d++) {
-                        if (cgrad[pd * dim + d] > 10000) cancel = PETSC_TRUE;
+                        //limit the maxium gradient, this is required for strong shocks in rocket simulations
+                        if (cgrad[pd * dim + d] > maxLimGrad) cancel = PETSC_TRUE;
                     }
                 }
             }

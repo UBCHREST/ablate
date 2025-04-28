@@ -20,7 +20,7 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                                                                      const std::shared_ptr<fluxCalculator::FluxCalculator>& fluxCalculatorIn,
                                                                      std::vector<std::shared_ptr<processes::Process>> additionalProcesses,
                                                                      std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                                     const std::shared_ptr<eos::transport::TransportModel>& evTransport, int compact)
+                                                                     const std::shared_ptr<eos::transport::TransportModel>& evTransport, int compact, double maxLimGrad)
     : FiniteVolumeSolver(
           std::move(solverId), std::move(region), std::move(options),
           compact ? (compact == 1 ? utilities::VectorUtilities::Merge({std::make_shared<ablate::finiteVolume::processes::CompactCompressibleNSSpeciesTransport>(
@@ -41,7 +41,9 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                             std::make_shared<ablate::finiteVolume::processes::EVTransport>(eosIn, fluxCalculatorIn, evTransport ? evTransport : transport),
                         },
                         additionalProcesses),
-          std::move(boundaryConditions)) {}
+          std::move(boundaryConditions)) {
+          ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver::maxlimit=maxLimGrad;
+}
 
 ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                                      const std::shared_ptr<eos::EOS>& eosIn, const std::shared_ptr<parameters::Parameters>& parameters,
@@ -62,4 +64,5 @@ REGISTER(ablate::solver::Solver, ablate::finiteVolume::CompressibleFlowSolver, "
          OPT(std::vector<ablate::finiteVolume::processes::Process>, "additionalProcesses", "any additional processes besides euler/yi/ev transport"),
          OPT(std::vector<ablate::finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
          OPT(ablate::eos::transport::TransportModel, "evTransport", "when provided, this model will be used for ev transport instead of default"),
-         OPT(int, "compact", "Integer value describing whether to treat all the transport seperately, partially combined, or fully combined (see commented code above constructor for values)"));
+         OPT(int, "compact", "Integer value describing whether to treat all the transport seperately, partially combined, or fully combined (see commented code above constructor for values)"),
+         OPT(int, "maxLimGrad", "Maximum gradient in any direction. If Cellinterpolant sees larger gradient, the limiter is set to 0."));

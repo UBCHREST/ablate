@@ -48,13 +48,14 @@ class CompressibleFlowFields : public domain::FieldDescriptor {
     inline const static std::string VELOCITY_FIELD = "velocity";
     inline const static std::string PRESSURE_FIELD = "pressure";
 
-    const std::shared_ptr<parameters::Parameters> limiterOptions;
+
 
    protected:
     const std::shared_ptr<eos::EOS> eos;
     const std::shared_ptr<domain::Region> region;
     const std::shared_ptr<parameters::Parameters> conservedFieldOptions;
     const std::shared_ptr<parameters::Parameters> auxFieldOptions = ablate::parameters::MapParameters::Create({{"petscfv_type", "leastsquares"}, {"petsclimiter_type", "none"}});
+
 
    public:
     /**
@@ -63,7 +64,7 @@ class CompressibleFlowFields : public domain::FieldDescriptor {
      * @param region the region for all of the fields
      * @param conservedFieldParameters override the default field parameters for the conserved field
      */
-    explicit CompressibleFlowFields(std::shared_ptr<eos::EOS> eos, std::shared_ptr<domain::Region> region = {}, std::shared_ptr<parameters::Parameters> conservedFieldParameters = {},double maxgradient=0);
+    explicit CompressibleFlowFields(std::shared_ptr<eos::EOS> eos, std::shared_ptr<domain::Region> region = {}, std::shared_ptr<parameters::Parameters> conservedFieldParameters = {});
 
     /**
      * override and return the compressible flow fields

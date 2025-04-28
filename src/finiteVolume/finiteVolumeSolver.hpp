@@ -79,6 +79,9 @@ class FiniteVolumeSolver : public solver::CellSolver,
     //! Store a dm, vec and array for mesh characteristics specific to the fvm
     Vec meshCharacteristicsLocalVec = nullptr;
 
+   protected:
+    double maxlimit;
+
    public:
     FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<processes::Process>> flowProcesses,
                        std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions);

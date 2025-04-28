@@ -50,6 +50,9 @@ class CellInterpolant {
     //! store the dmGrad, these are specific to this finite volume solver
     std::vector<DM> gradientCellDms;
 
+    // Maximum value for gradients for the multi-direction flux limiter
+    const double maxLimGrad;
+
     /**
      * Function to compute the flux source terms
      */
@@ -99,7 +102,7 @@ class CellInterpolant {
      * @param faceGeomVec
      * @param cellGeomVec
      */
-    CellInterpolant(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<domain::Region>& solverRegion, Vec faceGeomVec, Vec cellGeomVec);
+    CellInterpolant(std::shared_ptr<ablate::domain::SubDomain> subDomain, const std::shared_ptr<domain::Region>& solverRegion, Vec faceGeomVec, Vec cellGeomVec, double maxGradIn);
     ~CellInterpolant();
 
     /**
