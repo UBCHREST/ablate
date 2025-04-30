@@ -4,7 +4,7 @@
 #include "lodiBoundary.hpp"
 
 namespace ablate::boundarySolver::lodi {
-//This class assumes Isothermal inlet with constant mass flux
+// This class assumes Isothermal inlet with constant mass flux
 class MassFluxInlet : public LODIBoundary {
    private:
     //! The prescribed velocity in normal cartesian components (vx, vy, vz)
@@ -13,7 +13,7 @@ class MassFluxInlet : public LODIBoundary {
 
    public:
     explicit MassFluxInlet(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {},
-                   std::shared_ptr<ablate::mathFunctions::MathFunction> prescribedVelocity = {});
+                           std::shared_ptr<ablate::mathFunctions::MathFunction> prescribedVelocity = {});
 
     void Setup(ablate::boundarySolver::BoundarySolver& bSolver) override;
 

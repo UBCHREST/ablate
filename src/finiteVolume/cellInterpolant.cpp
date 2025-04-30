@@ -2,7 +2,8 @@
 #include <petsc/private/dmpleximpl.h>
 #include <utility>
 
-ablate::finiteVolume::CellInterpolant::CellInterpolant(std::shared_ptr<ablate::domain::SubDomain> subDomainIn, const std::shared_ptr<domain::Region>& solverRegion, Vec faceGeomVec, Vec cellGeomVec,double maxGradIn)
+ablate::finiteVolume::CellInterpolant::CellInterpolant(std::shared_ptr<ablate::domain::SubDomain> subDomainIn, const std::shared_ptr<domain::Region>& solverRegion, Vec faceGeomVec, Vec cellGeomVec,
+                                                       double maxGradIn)
     : subDomain(std::move(std::move(subDomainIn))), maxLimGrad(maxGradIn) {
     auto getGradientDm = [this, solverRegion, faceGeomVec, cellGeomVec](const domain::Field& fieldInfo, std::vector<DM>& gradDMs) {
         auto petscField = subDomain->GetPetscFieldObject(fieldInfo);
@@ -285,7 +286,7 @@ static PetscErrorCode DMPlexApplyLimiter_Internal(DM dm, DM dmCell, PetscLimiter
 
     PetscFunctionBegin;
     PetscCall(DMPlexGetTreeChildren(dm, face, &numChildren, &children));
-    if (numChildren) { //if the tree contains children
+    if (numChildren) {  // if the tree contains children
         PetscInt c;
 
         for (c = 0; c < numChildren; c++) {
@@ -295,15 +296,15 @@ static PetscErrorCode DMPlexApplyLimiter_Internal(DM dm, DM dmCell, PetscLimiter
                 PetscCall(DMPlexApplyLimiter_Internal(dm, dmCell, lim, dim, dof, cell, field, childFace, fStart, fEnd, cellPhi, x, cellgeom, cg, cx, cgrad));
             }
         }
-    } else { //if the tree doesn't contain children
-        PetscScalar* ncx; //neighbor cell centered values
-        PetscFVCellGeom* ncg; // neighbor cell geometry
-        const PetscInt* fcells; // cells attached to this face
-        PetscInt ncell, d; //neighbor cell and for loop index
-        PetscReal v[3]; //centr
+    } else {                     // if the tree doesn't contain children
+        PetscScalar* ncx;        // neighbor cell centered values
+        PetscFVCellGeom* ncg;    // neighbor cell geometry
+        const PetscInt* fcells;  // cells attached to this face
+        PetscInt ncell, d;       // neighbor cell and for loop index
+        PetscReal v[3];          // centr
 
         PetscCall(DMPlexGetSupport(dm, face, &fcells));
-        ncell = cell == fcells[0] ? fcells[1] : fcells[0]; //figure out which cell is the neighbor and not this cell
+        ncell = cell == fcells[0] ? fcells[1] : fcells[0];  // figure out which cell is the neighbor and not this cell
         // Read in the neighbor cell information
         if (field >= 0) {
             PetscCall(DMPlexPointLocalFieldRead(dm, ncell, field, x, &ncx));
@@ -312,13 +313,13 @@ static PetscErrorCode DMPlexApplyLimiter_Internal(DM dm, DM dmCell, PetscLimiter
         }
         PetscCall(DMPlexPointLocalRead(dmCell, ncell, cellgeom, &ncg));
         // Calculate the distance between the neighbor cell and this cell
-        DMPlex_WaxpyD_Internal(dim, -1, cg->centroid, ncg->centroid, v); // v_i = NeighborCentroid_i - ThisCentroid_i = dx_i
+        DMPlex_WaxpyD_Internal(dim, -1, cg->centroid, ncg->centroid, v);  // v_i = NeighborCentroid_i - ThisCentroid_i = dx_i
         for (d = 0; d < dof; ++d) {
             /* We use the symmetric slope limited form of Berger, Aftosmis, and Murman 2005 */
-            PetscReal denom = DMPlex_DotD_Internal(dim, &cgrad[d * dim], v); // denominator = \grad u \cdot dx
-            PetscReal phi, flim = 0.5 * PetscRealPart(ncx[d] - cx[d]) / denom; // f = 1/2 * (u_i+1-u_i)/(\Delta u from cell gradient dot with \delta x)
-            //What the above means is that if any cell face has no change, but there was ample enough change close to it such that
-            // the cell gradient dot with delta x is not 0, there is no limiting... i.e f = 0 and all limiters = 0
+            PetscReal denom = DMPlex_DotD_Internal(dim, &cgrad[d * dim], v);    // denominator = \grad u \cdot dx
+            PetscReal phi, flim = 0.5 * PetscRealPart(ncx[d] - cx[d]) / denom;  // f = 1/2 * (u_i+1-u_i)/(\Delta u from cell gradient dot with \delta x)
+            // What the above means is that if any cell face has no change, but there was ample enough change close to it such that
+            //  the cell gradient dot with delta x is not 0, there is no limiting... i.e f = 0 and all limiters = 0
             PetscCall(PetscLimiterLimit(lim, flim, &phi));
             cellPhi[d] = PetscMin(cellPhi[d], phi);
         }
@@ -423,17 +424,17 @@ void ablate::finiteVolume::CellInterpolant::ComputeFieldGradients(const domain::
         VecGetArrayRead(cellGeomVec, &cellGeometryArray);
 
         // create a temp work array
-        PetscReal* cellPhi; //Actual Limiter
-        DMGetWorkArray(dm, dof, MPIU_REAL, &cellPhi) >> utilities::PetscUtilities::checkError; //Size it up to be dof length of reals
+        PetscReal* cellPhi;                                                                     // Actual Limiter
+        DMGetWorkArray(dm, dof, MPIU_REAL, &cellPhi) >> utilities::PetscUtilities::checkError;  // Size it up to be dof length of reals
 
         for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
             PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
-            const PetscInt* cellFaces; //faces belonging to the cell
-            PetscScalar* cx; //cell solution/field values
-            PetscFVCellGeom* cg; //cell geometry
-            PetscScalar* cgrad; //cell gradient
-            PetscInt coneSize; //cell conectivity
+            const PetscInt* cellFaces;  // faces belonging to the cell
+            PetscScalar* cx;            // cell solution/field values
+            PetscFVCellGeom* cg;        // cell geometry
+            PetscScalar* cgrad;         // cell gradient
+            PetscInt coneSize;          // cell conectivity
 
             DMPlexGetConeSize(dm, cell, &coneSize) >> utilities::PetscUtilities::checkError;
             DMPlexGetCone(dm, cell, &cellFaces) >> utilities::PetscUtilities::checkError;
@@ -457,9 +458,9 @@ void ablate::finiteVolume::CellInterpolant::ComputeFieldGradients(const domain::
             /* Apply limiter to gradient */
             PetscBool cancel = PETSC_FALSE;
             for (PetscInt pd = 0; pd < dof; ++pd) {
-                if (cellPhi[pd] ==0) {
-                    for (PetscInt d =0; d < dim; d++) {
-                        //limit the maxium gradient, this is required for strong shocks in rocket simulations
+                if (cellPhi[pd] == 0) {
+                    for (PetscInt d = 0; d < dim; d++) {
+                        // limit the maxium gradient, this is required for strong shocks in rocket simulations
                         if (cgrad[pd * dim + d] > maxLimGrad) cancel = PETSC_TRUE;
                     }
                 }
@@ -704,7 +705,7 @@ static PetscErrorCode BuildGradientReconstruction_Internal(DM dm, DMLabel region
             ++usedFaces;
         }
     }
-    //Free the memory allocated earlier with PetscMalloc3
+    // Free the memory allocated earlier with PetscMalloc3
     PetscCall(PetscFree3(dx, grad, gref));
     PetscFunctionReturn(0);
 }

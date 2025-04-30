@@ -253,7 +253,7 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
         StartEvent("FiniteVolumeSolver::ComputeRHSFunction::pointFunction");
         if (!pointFunctionDescriptions.empty()) {
             if (cellInterpolant == nullptr) {
-                cellInterpolant = std::make_unique<CellInterpolant>(subDomain, GetRegion(), faceGeomVec, cellGeomVec,maxlimit);
+                cellInterpolant = std::make_unique<CellInterpolant>(subDomain, GetRegion(), faceGeomVec, cellGeomVec, maxlimit);
             }
 
             cellInterpolant->ComputeRHS(time, locXVec, subDomain->GetAuxVector(), locFVec, GetRegion(), pointFunctionDescriptions, cellRange, cellGeomVec);

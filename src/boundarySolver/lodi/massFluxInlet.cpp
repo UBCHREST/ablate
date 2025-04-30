@@ -6,7 +6,7 @@
 using fp = ablate::finiteVolume::CompressibleFlowFields;
 
 ablate::boundarySolver::lodi::MassFluxInlet::MassFluxInlet(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling,
-                                           std::shared_ptr<ablate::mathFunctions::MathFunction> prescribedMassFlux)
+                                                           std::shared_ptr<ablate::mathFunctions::MathFunction> prescribedMassFlux)
     : LODIBoundary(std::move(eos), std::move(pressureGradientScaling)), prescribedMassFlux(std::move(prescribedMassFlux)) {}
 
 void ablate::boundarySolver::lodi::MassFluxInlet::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
@@ -30,9 +30,9 @@ void ablate::boundarySolver::lodi::MassFluxInlet::Setup(ablate::boundarySolver::
     }
 }
 PetscErrorCode ablate::boundarySolver::lodi::MassFluxInlet::InletFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg, const PetscFVCellGeom *boundaryCell,
-                                                                  const PetscInt *uOff, const PetscScalar *boundaryValues, const PetscScalar **stencilValues, const PetscInt *aOff,
-                                                                  const PetscScalar *auxValues, const PetscScalar **stencilAuxValues, PetscInt stencilSize, const PetscInt *stencil,
-                                                                  const PetscScalar *stencilWeights, const PetscInt *sOff, PetscScalar *source, void *ctx) {
+                                                                          const PetscInt *uOff, const PetscScalar *boundaryValues, const PetscScalar **stencilValues, const PetscInt *aOff,
+                                                                          const PetscScalar *auxValues, const PetscScalar **stencilAuxValues, PetscInt stencilSize, const PetscInt *stencil,
+                                                                          const PetscScalar *stencilWeights, const PetscInt *sOff, PetscScalar *source, void *ctx) {
     PetscFunctionBeginUser;
     auto inletBoundary = (MassFluxInlet *)ctx;
 
@@ -117,16 +117,15 @@ PetscErrorCode ablate::boundarySolver::lodi::MassFluxInlet::InletFunction(PetscI
     // Outgoing acoustic wave
     scriptL[1 + dim] = lambda[1 + dim] * (dPdNorm - boundaryDensity * PetscSqr(pgsAlpha) * dVeldNorm * (velNormPrim - boundaryNormalVelocity - speedOfSoundPrim));
 
-    //The Following comes from Simit's Massflux_NSCBC sideset, but i assume it's just what falls out from the constant
-    //mass flux isothermal lodi BC w/ pgs scaling
-    PetscReal gam,F;
-    gam = boundaryCp/boundaryCv;
-    F = gam*boundaryNormalVelocity*speedOfSoundPrim;
-    F = F/(boundarySpeedOfSound*boundarySpeedOfSound/PetscSqr(pgsAlpha) +
-           gam*boundaryNormalVelocity * (velNormPrim-boundaryNormalVelocity) );
-    F = (1.+F)/(1.-F);
+    // The Following comes from Simit's Massflux_NSCBC sideset, but i assume it's just what falls out from the constant
+    // mass flux isothermal lodi BC w/ pgs scaling
+    PetscReal gam, F;
+    gam = boundaryCp / boundaryCv;
+    F = gam * boundaryNormalVelocity * speedOfSoundPrim;
+    F = F / (boundarySpeedOfSound * boundarySpeedOfSound / PetscSqr(pgsAlpha) + gam * boundaryNormalVelocity * (velNormPrim - boundaryNormalVelocity));
+    F = (1. + F) / (1. - F);
     // Incoming acoustic wave
-    scriptL[0] = F*scriptL[1 + dim];
+    scriptL[0] = F * scriptL[1 + dim];
     // Entropy wave
     scriptL[1] = 0.5e+0 * (boundaryCp / boundaryCv - 1.e+0) * (scriptL[1 + dim] + scriptL[0]) -
                  0.5 * (boundaryCp / boundaryCv + 1.e+0) * (scriptL[0] - scriptL[1 + dim]) * (velNormPrim - boundaryNormalVelocity) / speedOfSoundPrim;
@@ -175,7 +174,7 @@ PetscErrorCode ablate::boundarySolver::lodi::MassFluxInlet::UpdateMassFluxFuncti
     PetscScalar density = u[fp::RHO];
     for (PetscInt d = 0; d < dim; d++) {
         massFluxArray[d] = u[fp::RHOU + d];
-        kineticEnergy += PetscSqr(massFluxArray[d]/ density);
+        kineticEnergy += PetscSqr(massFluxArray[d] / density);
     }
     kineticEnergy *= 0.5;
 
@@ -192,7 +191,7 @@ PetscErrorCode ablate::boundarySolver::lodi::MassFluxInlet::UpdateMassFluxFuncti
     kineticEnergy = 0.0;
     for (PetscInt d = 0; d < dim; d++) {
         u[fp::RHOU + d] = massFluxArray[d];
-        kineticEnergy += PetscSqr(massFluxArray[d]/density);
+        kineticEnergy += PetscSqr(massFluxArray[d] / density);
     }
     kineticEnergy *= 0.5;
 

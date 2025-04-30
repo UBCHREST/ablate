@@ -147,10 +147,8 @@ void ablate::boundarySolver::lodi::LODIBoundary::Setup(ablate::boundarySolver::B
         }
         if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::PRESSURE_FIELD)) {
             // add in aux update variables
-            bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::NavierStokesTransport::UpdateAuxPressureField,
-                                           &computePressure,
-                                           std::vector<std::string>{finiteVolume::CompressibleFlowFields::PRESSURE_FIELD},
-                                           {});
+            bSolver.RegisterAuxFieldUpdate(
+                ablate::finiteVolume::processes::NavierStokesTransport::UpdateAuxPressureField, &computePressure, std::vector<std::string>{finiteVolume::CompressibleFlowFields::PRESSURE_FIELD}, {});
         }
     }
     if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD)) {

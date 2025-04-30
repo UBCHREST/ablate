@@ -48,14 +48,11 @@ class CompressibleFlowFields : public domain::FieldDescriptor {
     inline const static std::string VELOCITY_FIELD = "velocity";
     inline const static std::string PRESSURE_FIELD = "pressure";
 
-
-
    protected:
     const std::shared_ptr<eos::EOS> eos;
     const std::shared_ptr<domain::Region> region;
     const std::shared_ptr<parameters::Parameters> conservedFieldOptions;
     const std::shared_ptr<parameters::Parameters> auxFieldOptions = ablate::parameters::MapParameters::Create({{"petscfv_type", "leastsquares"}, {"petsclimiter_type", "none"}});
-
 
    public:
     /**
