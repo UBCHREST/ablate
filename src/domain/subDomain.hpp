@@ -36,9 +36,6 @@ class SubDomain : public io::Serializable {
     //! contains the DM field numbers for the fields in this DS, or NULL
     IS fieldMap;
 
-    //! contains the DM field numbers for the fields in this DS, or NULL
-    PetscReal maxGradient;
-
     //! Keep track of fields that live in this subDomain;
     std::map<std::string, Field> fieldsByName;
 
