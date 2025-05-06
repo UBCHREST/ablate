@@ -460,8 +460,12 @@ void ablate::finiteVolume::CellInterpolant::ComputeFieldGradients(const domain::
             for (PetscInt pd = 0; pd < dof; ++pd) {
                 if (cellPhi[pd] == 0) {
                     for (PetscInt d = 0; d < dim; d++) {
-                        // limit the maxium gradient, this is required for strong shocks in rocket simulations
-                        if (cgrad[pd * dim + d] > maxLimGrad) cancel = PETSC_TRUE;
+                        // Due to directional limiting being difficult in unstructured grids,
+                        // a strict gradient limiter is introduced here to revert back to cell centered
+                        // reconstructions if a component limiter is 0 even though there is a strong
+                        // component gradient in a direction (Usually happens at strong shocks seen in
+                        // high pressured rocket simulations)
+                        if (PetscAbsReal(cgrad[pd * dim + d]) > maxLimGrad) cancel = PETSC_TRUE;
                     }
                 }
             }

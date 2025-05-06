@@ -7,6 +7,7 @@
 #include "finiteVolume/processes/navierStokesTransport.hpp"
 #include "finiteVolume/processes/speciesTransport.hpp"
 #include "utilities/vectorUtilities.hpp"
+#include "utilities/constants.hpp"
 
 /**
  * The compact argument in this constructor is used to define whether we use seperate processes for the Euler (NS) transport, species transport, and EV transport.
@@ -42,7 +43,8 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                         },
                         additionalProcesses),
           std::move(boundaryConditions)) {
-    ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver::maxlimit = maxLimGrad;
+    // The user can input something small like 1E-10 but > 0 to turn of projections...
+    if(maxLimGrad!=0) ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver::maxlimit = maxLimGrad;
 }
 
 ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
