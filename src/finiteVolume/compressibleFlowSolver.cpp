@@ -6,8 +6,8 @@
 #include "finiteVolume/processes/evTransport.hpp"
 #include "finiteVolume/processes/navierStokesTransport.hpp"
 #include "finiteVolume/processes/speciesTransport.hpp"
-#include "utilities/vectorUtilities.hpp"
 #include "utilities/constants.hpp"
+#include "utilities/vectorUtilities.hpp"
 
 /**
  * The compact argument in this constructor is used to define whether we use seperate processes for the Euler (NS) transport, species transport, and EV transport.
@@ -44,7 +44,7 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                         additionalProcesses),
           std::move(boundaryConditions)) {
     // The user can input something small like 1E-10 but > 0 to turn of projections...
-    if(maxLimGrad!=0) ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver::maxlimit = maxLimGrad;
+    if (maxLimGrad != 0) ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver::maxlimit = maxLimGrad;
 }
 
 ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
@@ -65,4 +65,4 @@ REGISTER(ablate::solver::Solver, ablate::finiteVolume::CompressibleFlowSolver, "
          OPT(std::vector<ablate::finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
          OPT(ablate::eos::transport::TransportModel, "evTransport", "when provided, this model will be used for ev transport instead of default"),
          OPT(int, "compact", "Integer value describing whether to treat all the transport seperately, partially combined, or fully combined (see commented code above constructor for values)"),
-         OPT(int, "maxLimGrad", "Maximum gradient in any direction. If Cellinterpolant sees larger gradient, the limiter is set to 0."));
+         OPT(double, "maxLimGrad", "Maximum gradient in any direction. If Cellinterpolant sees larger gradient, the limiter is set to 0."));
