@@ -72,6 +72,7 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(const PetscInt sOff[],
     }
     mdFdn[sOff[eulerId] + RHO] = -d[0];
     mdFdn[sOff[eulerId] + RHOVELN] = -(vel[0] * d[0] + rho * d[2]);  // Wall normal component momentum, not really rho u
+
     double KE = vel[0] * vel[0];
     double dvelterm = vel[0] * d[2];
     for (int ndim = 1; ndim < dims; ndim++) {  // Tangential components for momentum
@@ -81,11 +82,11 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(const PetscInt sOff[],
     }
     KE = 0.5e+0 * KE;
     mdFdn[sOff[eulerId] + RHOE] = -(d[0] * (KE + Enth - Cp * T) + d[1] / (Cp / Cv - 1.e+0 + 1.0E-30) + rho * dvelterm);
+
     for (int ns = 0; ns < nSpecEqs; ns++) {
         const PetscReal *rhoYi = conserved + uOff[speciesId];
         mdFdn[sOff[speciesId] + ns] = -(rhoYi[ns] / rho * d[0] + rho * d[2 + dims + ns]);  // species
     }
-
     int ne = 0;
     for (std::size_t ev = 0; ev < evIds.size(); ++ev) {
         const PetscReal *rhoEV = conserved + uOff[evIds[ev]];
@@ -117,7 +118,7 @@ void ablate::boundarySolver::lodi::LODIBoundary::Setup(ablate::boundarySolver::B
     // Compute the number of equations that need to be solved
     dims = bSolver.GetSubDomain().GetDimensions();
 
-    // check if the eos need to do any updates
+    // check if the eos need to do any updates (I.e Chemtab and converting P.V's to Yi's
     auto chemModel = std::dynamic_pointer_cast<eos::ChemistryModel>(eos);
     if (chemModel) {
         for (auto &updateFunction : chemModel->GetSolutionFieldUpdates()) {
@@ -143,6 +144,11 @@ void ablate::boundarySolver::lodi::LODIBoundary::Setup(ablate::boundarySolver::B
                                            &computeTemperatureFunction,
                                            std::vector<std::string>{finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
                                            {});
+        }
+        if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::PRESSURE_FIELD)) {
+            // add in aux update variables
+            bSolver.RegisterAuxFieldUpdate(
+                ablate::finiteVolume::processes::NavierStokesTransport::UpdateAuxPressureField, &computePressure, std::vector<std::string>{finiteVolume::CompressibleFlowFields::PRESSURE_FIELD}, {});
         }
     }
     if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD)) {

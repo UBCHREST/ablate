@@ -11,6 +11,7 @@
 #include "solver/cellSolver.hpp"
 #include "solver/solver.hpp"
 #include "solver/timeStepper.hpp"
+#include "utilities/constants.hpp"
 #include "utilities/vectorUtilities.hpp"
 
 namespace ablate::finiteVolume {
@@ -78,6 +79,9 @@ class FiniteVolumeSolver : public solver::CellSolver,
 
     //! Store a dm, vec and array for mesh characteristics specific to the fvm
     Vec meshCharacteristicsLocalVec = nullptr;
+
+   protected:
+    double maxlimit = ablate::utilities::Constants::large;
 
    public:
     FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<processes::Process>> flowProcesses,

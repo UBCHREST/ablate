@@ -32,7 +32,7 @@ class CompressibleFlowSolver : public FiniteVolumeSolver {
                            const std::shared_ptr<parameters::Parameters>& parameters, const std::shared_ptr<eos::transport::TransportModel>& transport,
                            const std::shared_ptr<fluxCalculator::FluxCalculator>& = {}, std::vector<std::shared_ptr<processes::Process>> additionalProcesses = {},
                            std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {}, const std::shared_ptr<eos::transport::TransportModel>& evTransport = {},
-                           int compact = 0);
+                           int compact = 0, double maxLimGrad = 1E8);
 
     /**
      * Constructor without ev or additional processes
